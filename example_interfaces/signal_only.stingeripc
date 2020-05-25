@@ -1,0 +1,8 @@
+stingeripc: 0.0.1
+interface:
+  name: SignalOnly
+  version: 0.0.1
+signals:
+  theSignal:
+    payload:
+      $ref: "schemas.yaml#/signals/theSignal"

@@ -1,0 +1,14 @@
+
+class {{stinger.name}}Server(object):
+
+    def __init__(self):
+        self.asyncApiClient = foo
+    
+    {%for sig in stinger.signals%}
+    def emit_{{sig}}():
+        pass
+    {%endfor%}
+    {%for p in stinger.params%}
+    def set_{{p}}():
+        pass
+    {%endfor%}

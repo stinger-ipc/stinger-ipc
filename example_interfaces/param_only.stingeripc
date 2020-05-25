@@ -1,0 +1,8 @@
+stingeripc: 0.0.1
+interface:
+  name: ParamOnly
+  version: 0.0.1
+params:
+  theParam:
+    type:
+      $ref: "schemas.yaml#/signals/theSignal"
