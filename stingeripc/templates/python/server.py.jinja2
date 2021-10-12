@@ -1,14 +1,37 @@
+class {{stinger.interface.name}}Server(object):
 
-class {{stinger.name}}Server(object):
-
-    def __init__(self):
-        self.asyncApiClient = foo
+    def __init__(self, connection):
+        self._conn = connection
+        {%for p,v in stinger.params.items()-%}
+        self._{{p}} = {{v.payload.initialValue}}
+        self._conn.subscribe("{{topics.get_param_value(stinger.interface.name, false, p)}}", self.set_{{p}})
+        self.changed_value_callback_for_{{p}} = None
+        {%endfor%}
     
-    {%for sig in stinger.signals%}
+    {%for sig in stinger.signals-%}
     def emit_{{sig}}():
-        pass
-    {%endfor%}
-    {%for p in stinger.params%}
-    def set_{{p}}():
-        pass
+        self.con
+    {%-endfor%}
+
+    {%for p,v in stinger.params.items()-%}
+    {%-set args = payload(v['payload']) %}
+    def set_{{p}}(self, {%for arg in args%}{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        changed = False
+        {%for arg in payload(v['payload'])-%}
+        if {{arg.name}} != self._{{p}}['{{arg.name}}']:
+            changed = True
+            self._{{p}}['{{arg.name}}'] = {{arg.name}}
+        {%endfor-%}
+        if changed:
+            topic = "{{topics.get_param_value(stinger.interface.name, false, p)}}"
+            self._conn.publish(topic, self._{{p}}, 1, True)
+            if self.changed_value_callback_for_{{p}} is not None:
+                self.changed_value_callback_for_{{p}}({%for arg in args%}{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+
+    def get_{{p}}(self):
+        {%if args | length > 1 -%}
+        return self._{{p}}
+        {%-else-%}
+        return self._{{p}}[args[0].name]
+        {%-endif%}
     {%endfor%}

@@ -1,8 +1,20 @@
-stingeripc: 0.0.1
+stingeripc: 0.0.2
+
 interface:
   name: SignalOnly
   version: 0.0.1
+
 signals:
+
   theSignal:
     payload:
-      $ref: "schemas.yaml#/signals/theSignal"
+      schema:
+        $ref: "schemas.yaml#/signals/theSignal"
+  
+  anotherSignal:
+    payload:
+      args:
+        one: float
+        two: bool
+        three: string
+
