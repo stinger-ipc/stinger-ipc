@@ -2,8 +2,8 @@ from jacobsjinjatoo import templator as jj2
 import sys
 import yaml
 import os.path
-import stingeripc.topics
-import stringeripc.payload
+import topics
+import payload
 
 if __name__ == '__main__':
     inname = sys.argv[1]
@@ -11,8 +11,8 @@ if __name__ == '__main__':
     idef = yaml.load(open(inname), Loader=yaml.Loader)
     params = {
         "stinger": idef,
-        "topics": stingeripc.topics.TopicCreator(),
-        "payload": stringeripc.payload.payload_parser, 
+        "topics": topics.TopicCreator(),
+        "payload": payload.payload_parser, 
     }
     t = jj2.CodeTemplator(output_dir=os.path.dirname(outdir))
     t.add_template_dir(os.path.join(os.path.dirname(__file__), "templates", "python"))
