@@ -1,9 +1,9 @@
-
 class TopicCreator(object):
+    """Helper class for creating topics for various stinger elements."""
 
-    def __init__(self, root=''):
+    def __init__(self, root: str = ""):
         self.root = root
-    
+
     def _get_base(self, name, multi):
         ext = ""
         if multi:
