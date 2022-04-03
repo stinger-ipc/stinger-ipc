@@ -9,6 +9,7 @@ from jacobsjinjatoo import templator as jj2
 from jacobsjinjatoo import stringmanip
 import os.path
 from enum import Enum
+from typing import Optional
 
 
 class Direction(Enum):
@@ -23,7 +24,10 @@ class SpecType(Enum):
 
 
 class Message(object):
-    def __init__(self, message_name, schema=None):
+    """ The information needed to create an AsyncAPI Message structure.
+    """
+
+    def __init__(self, message_name: str, schema: Optional[str]=None):
         self.name = message_name
         self.schema = schema or {"type": "null"}
 
@@ -42,7 +46,9 @@ class Message(object):
 
 
 class Channel(object):
-    def __init__(self, topic: str, name: str, direction: Direction, message_name=None):
+    """ The data needed to create an AsyncAPI Channel structure."""
+
+    def __init__(self, topic: str, name: str, direction: Direction, message_name: Optional[str]=None):
         self.topic = topic
         self.name = name
         self.direction = direction
@@ -76,6 +82,11 @@ class Channel(object):
 
 
 class AsyncApiCreator(object):
+    """ A class to create a AsyncAPI specification from several AsyncAPI structures.
+
+    It also accepts a Stinger spec for creating all the structures.
+    """
+
     def __init__(self):
         self.asyncapi = OrderedDict(
             {
