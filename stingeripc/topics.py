@@ -1,40 +1,40 @@
 from typing import Optional
 
 
-class TopicCreatorAbstractBase:
+class TopicCreatorBase:
 
     def __init__(self, root: Optional[str]=None):
-        self._root_topic = root 
+        if root is None:
+            self._base_topic = None
+        else:
+            self._base_topic = root.strip('/')
+
+    def slash(self, *args) -> str:
+        if self._base_topic is None:
+            return "/".join(args)
+        else:
+            return f"{self._base_topic}/{'/'.join(args)}"
 
 
+class SignalTopicCreator(TopicCreatorBase):
 
-class InterfaceTopicCreator(object):
+    def __init__(self, root: str):
+        super().__init__(root)
+
+    def signal_topic(self, signal_name: str) -> str:
+        return self.slash("signal", signal_name)
+
+
+class InterfaceTopicCreator(TopicCreatorBase):
     """Helper class for creating MQTT topics for various stinger elements."""
 
-    def __init__(self, root: str = ""):
-        self.root = root
+    def __init__(self, interface_name: str, root: Optional[str]=None):
+        super().__init__(root)
+        self._interface_name = interface_name
 
-    def _get_base(self, name: str, multi: bool) -> str:
-        ext = ""
-        if multi:
-            ext = "%s/"
-        b = f"{self.root}{name}/{ext}"
-        return b
+    @property
+    def _topic_prefix(self) -> str:
+        return self.slash(self._interface_name)
 
-    def _get_param_base(self, interface_name: str, multi: bool, param_name: str, objects=None) -> str:
-        if objects is None:
-            objects = []
-        t = self._get_base(interface_name, multi)
-        t += "/".join(objects)
-        t += f"{param_name}/"
-        return t
-
-    def get_param_set(self, interface_name: str, multi: bool, param_name: str, objects=None) -> str:
-        t = self._get_param_base(interface_name, multi, param_name, objects)
-        t += "set"
-        return t
-
-    def get_param_value(self, interface_name: str, multi: bool, param_name: str, objects=None) -> str:
-        t = self._get_param_base(interface_name, multi, param_name, objects)
-        t += "value"
-        return t
+    def signal_topic_creator(self) -> SignalTopicCreator:
+        return SignalTopicCreator(self._topic_prefix)
