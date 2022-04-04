@@ -1,0 +1,56 @@
+version: 2.1
+orbs:
+  python: circleci/python@1.4.0
+jobs:
+  test_3_8:
+    executor:
+      name: python/default
+      tag: "3.8"
+    steps:
+      - checkout  # checkout source code to working directory
+      - python/install-packages:
+          pkg-manager: pip
+      - python/install-packages:
+          args: coveralls coverage unittest-xml-reporting
+          pkg-manager: pip
+      - run:
+          command: |
+            mkdir -p /tmp/testresults
+            coverage run --source=stingeripc -m xmlrunner discover -o /tmp/testresults
+            coveralls
+      - store_test_results:
+          path: /tmp/testresults
+  safety_check:
+    executor:
+      name: python/default
+      tag: "3.9"
+    steps:
+      - checkout  # checkout source code to working directory
+      - python/install-packages:
+          pkg-manager: pip
+      - python/install-packages:
+          args: safety
+          pkg-manager: pip
+      - run:
+          command: |
+            safety check -r requirements.txt
+workflows:
+  test:
+    jobs:
+      - test_3_8
+      - safety_check
+      - python/test:
+          version: "3.10"
+          pkg-manager: pip
+          name: build_test_3_10
+  safety_checks:
+    jobs:
+      - safety_check
+    triggers:
+      - schedule:
+          cron: "0 0 5 * *"
+          filters:
+            branches:
+              only:
+                - master
+      

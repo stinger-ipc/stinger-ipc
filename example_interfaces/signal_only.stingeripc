@@ -1,4 +1,4 @@
-stingeripc: 0.0.2
+stingeripc: 0.0.3
 
 interface:
   name: SignalOnly
@@ -14,7 +14,10 @@ signals:
   anotherSignal:
     payload:
       args:
-        one: float
-        two: bool
-        three: string
+        one: 
+          type: float
+        two: 
+          type: bool
+        three: 
+          type: string
 

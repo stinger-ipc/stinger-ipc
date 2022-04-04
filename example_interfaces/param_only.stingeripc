@@ -5,7 +5,7 @@ interface:
   name: ParamOnly
   version: 0.0.1
 
-params:
+properties:
   doubleParam:
     payload:
       args:

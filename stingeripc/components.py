@@ -1,6 +1,9 @@
-
+from __future__ import annotations
 from enum import Enum
-from typing import Dict
+from typing import Dict, List, Optional
+from .topics import SignalTopicCreator, InterfaceTopicCreator
+
+ALLOWED_ARG_TYPES = []
 
 class InvalidStingerStructure(Exception): pass
 
@@ -10,11 +13,51 @@ class PayloadType(Enum):
     ARG_LIST = 1
 
 
+class ArgType(Enum):
+    BOOLEAN = 0
+    INTEGER = 1
+    FLOAT = 2
+    STRING = 3
+
+    @classmethod
+    def from_string(cls, arg_type: str) -> ArgType:
+        if hasattr(cls, arg_type.upper()):
+            return getattr(cls, arg_type.upper())
+        else:
+            raise InvalidStingerStructure(f"No ArgType called '{arg_type}'")
+
+
 class Arg(object):
     
-    def __init__(self, name: str, arg_type: str):
+    def __init__(self, name: str, arg_type: ArgType, description: Optional[str]=None):
         self._name = name
         self._arg_type = arg_type
+        self._description = description
+
+    def set_description(self, description: str) -> Arg:
+        self._description = description
+        return self
+
+    @property
+    def name(self) -> str:
+        return self._name
+    
+    @property
+    def type(self) -> PayloadType:
+        return self._arg_type
+
+    @property
+    def description(self) -> Optional[str]:
+        return self._description
+
+    @classmethod
+    def new_from_stinger(cls, name: str, stinger: Dict[str, str]) -> Arg:
+        if 'type' not in stinger:
+            raise InvalidStingerStructure("No 'type' in arg structure")
+        arg = cls(name, ArgType.from_string(stinger['type']))
+        if 'description' in stinger and isinstance(stinger['description'], str):
+            arg.set_description(stinger['description'])
+        return arg
 
 
 class Schema(object):
@@ -29,7 +72,7 @@ class Schema(object):
 
 class Signal(object):
 
-    def __init__(self, topic_creator, name: str):
+    def __init__(self, topic_creator: SignalTopicCreator, name: str):
         self._topic_creator = topic_creator
         self._name = name
         self._payload_type = PayloadType.ARG_LIST
@@ -54,15 +97,22 @@ class Signal(object):
     def name(self):
         return self._name
 
+    @property
+    def emit_topic(self):
+        return self._topic_creator.signal_topic(self.name)
+
     @classmethod
-    def new_from_stinger(cls, name: str, spec: Dict) -> Signal:
+    def new_from_stinger(cls, topic_creator: SignalTopicCreator, name: str, spec: Dict[str, str]) -> "Signal":
         """ Alternative constructor from a Stinger signal structure.
         """
-        signal = cls(name)
+        signal = cls(topic_creator, name)
         if (('args' in spec and 1 or 0) + ('schema' in spec and 1 or 0)) != 1:
             raise InvalidStingerStructure("Signal specification must have 'args' xor 'schema'")
         if 'args' in spec:
-            arg_list = [Arg(k, v) for k, v in spec['args'].items()]
+            arg_list = []
+            for k, v in spec['args'].items():
+                new_arg = Arg.new_from_stinger(name=k, stinger=v)
+                arg_list.append(new_arg)
             return signal.set_arg_list(arg_list)
         if 'schema' in spec:
             return signal.set_schema(spec['schema'])
@@ -70,7 +120,7 @@ class Signal(object):
 
 class StingerSpec:
 
-    def __name__(self, topic_creator, interface):
+    def __name__(self, topic_creator: InterfaceTopicCreator, interface):
         self._topic_creator = topic_creator
         try:
             self._name = interface['name']
@@ -85,7 +135,7 @@ class StingerSpec:
         self.signals[signal.name] = signal
 
     @classmethod
-    def new_from_stinger(cls, topic_creator, stinger: Dict) -> Stinger:
+    def new_from_stinger(cls, topic_creator, stinger: Dict) -> StingerSpec:
         if 'stingeripc' not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if stinger['stingeripc'] not in ["0.0.2"]:

@@ -1,0 +1,83 @@
+$id: "https://stingeripc.peargrove.com/stingeripc.schema.yaml"
+$schema: "http://json-schema.org/draft-07/schema#"
+description: |
+  This schema is used to validate StingerIPC stinger files.
+type: object
+
+parameters:
+
+  stingeripc:
+    type: object
+    properties:
+      version:
+        type: string
+        const: "0.0.3"
+    required:
+      - version
+
+  interface:
+    type: object
+    parameters:
+      name:
+        type: string
+        version:
+          type: string
+    required:
+      - name
+      - version
+  
+  signals:
+    type: object
+    additionalProperties:
+      $ref: "#/$defs/signal"
+
+  properties:
+    type: object
+    additionalProperties:
+      $ref: "#/$defs/property"
+
+required:
+  - stingeripc
+  - interface
+$defs:
+
+  argList:
+    type: object
+    additionalProperties:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - float
+            - string
+            - integer
+            - boolean
+        description:
+          type: string
+      required:
+        - type
+
+  payload:
+    type: object
+    oneOf:
+      - properties:
+          args:
+            $ref: "#/$defs/argList"
+      - properties:
+          schema:
+            $ref: "#/$defs/schemaDef"
+  schemaDef:
+    type: object
+
+  signal:
+    type: object
+    properties:
+      payload:
+        $ref: "#/$defs/payload"
+
+  property:
+    type: object
+    properties:
+      payload:
+        $ref: "#/$defs/payload"
