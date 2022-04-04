@@ -2,16 +2,15 @@ from jacobsjinjatoo import templator as jj2
 import sys
 import yaml
 import os.path
-import topics
-import payload
+from stingeripc import StingerInterface
 
 if __name__ == '__main__':
     inname = sys.argv[1]
     outdir = sys.argv[2]
-    idef = yaml.load(open(inname), Loader=yaml.Loader)
+    with open(inname, 'r') as f:
+        stinger = StingerInterface.from_yaml(f)
     params = {
-        "stinger": idef,
-        "topics": topics.TopicCreator(),
+        "stinger": stinger,
         "payload": payload.payload_parser, 
     }
     t = jj2.CodeTemplator(output_dir=os.path.dirname(outdir))
