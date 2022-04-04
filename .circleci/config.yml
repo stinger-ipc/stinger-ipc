@@ -39,10 +39,6 @@ workflows:
     jobs:
       - test_3_8
       - safety_check
-      - python/test:
-          version: "3.10"
-          pkg-manager: pip
-          name: build_test_3_10
   safety_checks:
     jobs:
       - safety_check
