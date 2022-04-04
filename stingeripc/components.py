@@ -29,7 +29,8 @@ class Schema(object):
 
 class Signal(object):
 
-    def __init__(self, name: str):
+    def __init__(self, topic_creator, name: str):
+        self._topic_creator = topic_creator
         self._name = name
         self._payload_type = PayloadType.ARG_LIST
         self._schema = None # type: Optional[Schema]
@@ -69,7 +70,8 @@ class Signal(object):
 
 class StingerSpec:
 
-    def __name__(self, interface):
+    def __name__(self, topic_creator, interface):
+        self._topic_creator = topic_creator
         try:
             self._name = interface['name']
             self._version = interface['version']
@@ -83,7 +85,7 @@ class StingerSpec:
         self.signals[signal.name] = signal
 
     @classmethod
-    def new_from_stinger(cls, stinger: Dict) -> Stinger:
+    def new_from_stinger(cls, topic_creator, stinger: Dict) -> Stinger:
         if 'stingeripc' not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if stinger['stingeripc'] not in ["0.0.2"]:
@@ -93,7 +95,7 @@ class StingerSpec:
         try:
             if 'signals' in stinger:
                 for signal_name, signal_spec in stinger['signals'].items():
-                    signal = Signal.new_from_stinger(signal_name, signal_spec)
+                    signal = Signal.new_from_stinger(self._topic_creator.signal_topic_creator(), signal_name, signal_spec)
                     stinger_spec.add_signal(signal)
         except TypeError as e:
             raise InvalidStingerStructure(f"Signal specification appears to be invalid: {e}")

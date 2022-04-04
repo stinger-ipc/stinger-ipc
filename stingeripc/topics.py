@@ -1,4 +1,14 @@
-class TopicCreator(object):
+from typing import Optional
+
+
+class TopicCreatorAbstractBase:
+
+    def __init__(self, root: Optional[str]=None):
+        self._root_topic = root 
+
+
+
+class InterfaceTopicCreator(object):
     """Helper class for creating MQTT topics for various stinger elements."""
 
     def __init__(self, root: str = ""):
