@@ -1,8 +1,9 @@
 
+image: gitpod/workspace-python
+
 vscode:
   extensions:
     - ms-python.python
 
 tasks:
-  - init: python3 -m pip install -r requirements-dev.txt
-  - init: python3 -m pip install -r requirements.txt
+  - init: python3 -m pip install poetry
