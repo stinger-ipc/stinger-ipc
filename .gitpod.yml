@@ -6,4 +6,9 @@ vscode:
     - ms-python.python
 
 tasks:
-  - init: python3 -m pip install poetry
+  - init: |
+      curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+      source $HOME/.poetry/env
+      poetry install --no-ansi --no-interaction
+      exit
+    command: export PATH=$PATH:$HOME/.poetry/bin
