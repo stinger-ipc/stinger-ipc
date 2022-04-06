@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  python: circleci/python@1.4.0
+  python: circleci/python@2.0.3
 jobs:
   test_3_8:
     executor:
@@ -9,15 +9,15 @@ jobs:
     steps:
       - checkout  # checkout source code to working directory
       - python/install-packages:
-          pkg-manager: pip
+          pkg-manager: poetry
       - python/install-packages:
           args: coveralls coverage unittest-xml-reporting
-          pkg-manager: pip
+          pkg-manager: poetry
       - run:
           command: |
             mkdir -p /tmp/testresults
-            coverage run --source=stingeripc -m xmlrunner discover -o /tmp/testresults
-            coveralls
+            poetry run coverage run --source=stingeripc -m xmlrunner discover -o /tmp/testresults
+            poetry run coveralls
       - store_test_results:
           path: /tmp/testresults
   safety_check:
@@ -27,13 +27,13 @@ jobs:
     steps:
       - checkout  # checkout source code to working directory
       - python/install-packages:
-          pkg-manager: pip
+          pkg-manager: poetry
       - python/install-packages:
           args: safety
-          pkg-manager: pip
+          pkg-manager: poetry
       - run:
           command: |
-            safety check -r requirements.txt
+            poetry run safety check -r requirements.txt
 workflows:
   test:
     jobs:

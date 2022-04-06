@@ -24,10 +24,9 @@ class SpecType(Enum):
 
 
 class Message(object):
-    """ The information needed to create an AsyncAPI Message structure.
-    """
+    """The information needed to create an AsyncAPI Message structure."""
 
-    def __init__(self, message_name: str, schema: Optional[str]=None):
+    def __init__(self, message_name: str, schema: Optional[str] = None):
         self.name = message_name
         self.schema = schema or {"type": "null"}
 
@@ -46,9 +45,15 @@ class Message(object):
 
 
 class Channel(object):
-    """ The data needed to create an AsyncAPI Channel structure."""
+    """The data needed to create an AsyncAPI Channel structure."""
 
-    def __init__(self, topic: str, name: str, direction: Direction, message_name: Optional[str]=None):
+    def __init__(
+        self,
+        topic: str,
+        name: str,
+        direction: Direction,
+        message_name: Optional[str] = None,
+    ):
         self.topic = topic
         self.name = name
         self.direction = direction
@@ -68,13 +73,25 @@ class Channel(object):
         }
 
     def get_operation(self, client_type: SpecType, use_common=False) -> OrderedDict:
-        op_item = OrderedDict({"message": {"$ref": f"{use_common or ''}#/components/messages/{self.message_name}"}})
+        op_item = OrderedDict(
+            {
+                "message": {
+                    "$ref": f"{use_common or ''}#/components/messages/{self.message_name}"
+                }
+            }
+        )
         if use_common is not False:
-            op_item["traits"] = [{"$ref": f"{use_common}#/components/operationTraits/{self.name}"}]
+            op_item["traits"] = [
+                {"$ref": f"{use_common}#/components/operationTraits/{self.name}"}
+            ]
         else:
             op_item.update(self.get_operation_trait())
-        if (client_type == SpecType.SERVER and self.direction == Direction.SERVER_PUBLISHES) or (
-            client_type == SpecType.CLIENT and self.direction == Direction.SERVER_SUBSCRIBES
+        if (
+            client_type == SpecType.SERVER
+            and self.direction == Direction.SERVER_PUBLISHES
+        ) or (
+            client_type == SpecType.CLIENT
+            and self.direction == Direction.SERVER_SUBSCRIBES
         ):
             return {"publish": op_item}
         else:
@@ -82,7 +99,7 @@ class Channel(object):
 
 
 class AsyncApiCreator(object):
-    """ A class to create a AsyncAPI specification from several AsyncAPI structures.
+    """A class to create a AsyncAPI specification from several AsyncAPI structures.
 
     It also accepts a Stinger spec for creating all the structures.
     """
@@ -133,7 +150,12 @@ class AsyncApiCreator(object):
         msg_name = f"{signal_name}Signal"
         msg = Message(msg_name).set_reference(signal_def["payload"])
         self._add_message(msg)
-        channel = Channel(f"{self.name}/{signal_name}", signal_name, Direction.SERVER_PUBLISHES, msg.name)
+        channel = Channel(
+            f"{self.name}/{signal_name}",
+            signal_name,
+            Direction.SERVER_PUBLISHES,
+            msg.name,
+        )
         channel.set_mqtt(2, False)
         self._add_channel(channel)
 
@@ -144,13 +166,23 @@ class AsyncApiCreator(object):
 
         value_channel_topic = f"{self.name}/{param_name}/value"
         value_channel_name = f"{param_name}Value"
-        value_channel = Channel(value_channel_topic, value_channel_name, Direction.SERVER_PUBLISHES, msg.name)
+        value_channel = Channel(
+            value_channel_topic,
+            value_channel_name,
+            Direction.SERVER_PUBLISHES,
+            msg.name,
+        )
         value_channel.set_mqtt(1, True)
         self._add_channel(value_channel)
 
         update_channel_topic = f"{self.name}/{param_name}/update"
         update_channel_name = f"Update{param_name}"
-        update_channel = Channel(update_channel_topic, update_channel_name, Direction.SERVER_SUBSCRIBES, msg.name)
+        update_channel = Channel(
+            update_channel_topic,
+            update_channel_name,
+            Direction.SERVER_SUBSCRIBES,
+            msg.name,
+        )
         update_channel.set_mqtt(1, True)
         self._add_channel(update_channel)
 
@@ -171,7 +203,9 @@ class AsyncApiCreator(object):
     def get_asyncapi(self, client_type: SpecType, use_common=None):
         spec = self.asyncapi.copy()
         for ch in self.channels:
-            spec["channels"][ch.topic] = ch.get_operation(client_type, use_common or False)
+            spec["channels"][ch.topic] = ch.get_operation(
+                client_type, use_common or False
+            )
         if use_common is None:
             for msg in self.messages:
                 spec["components"]["messages"][msg.name] = msg.get_message()
