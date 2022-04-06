@@ -11,8 +11,7 @@ if __name__ == '__main__':
         stinger = StingerInterface.from_yaml(f)
     params = {
         "stinger": stinger,
-        "payload": payload.payload_parser, 
     }
     t = jj2.CodeTemplator(output_dir=os.path.dirname(outdir))
-    t.add_template_dir(os.path.join(os.path.dirname(__file__), "templates", "python"))
+    t.add_template_dir(os.path.join(os.path.dirname(__file__), "stingeripc", "templates", "python"))
     t.render_template("server.py.jinja2", "server.py", **params)

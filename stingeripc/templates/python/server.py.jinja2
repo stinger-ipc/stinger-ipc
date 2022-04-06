@@ -1,10 +1,10 @@
-class {{stinger.interface.name}}Server(object):
+class {{stinger.name}}Server(object):
 
     def __init__(self, connection):
         self._conn = connection
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
-        self._conn.subscribe("{{topics.get_param_value(stinger.interface.name, false, p)}}", self.set_{{p}})
+        self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
         self.changed_value_callback_for_{{p}} = None
         {%endfor%}
     
@@ -23,7 +23,7 @@ class {{stinger.interface.name}}Server(object):
             self._{{p}}['{{arg.name}}'] = {{arg.name}}
         {%endfor-%}
         if changed:
-            topic = "{{topics.get_param_value(stinger.interface.name, false, p)}}"
+            topic = "{{topics.get_param_value(stinger.name, false, p)}}"
             self._conn.publish(topic, self._{{p}}, 1, True)
             if self.changed_value_callback_for_{{p}} is not None:
                 self.changed_value_callback_for_{{p}}({%for arg in args%}{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})

@@ -122,11 +122,11 @@ class Signal(object):
 
 
 class StingerSpec:
-    def __name__(self, topic_creator: InterfaceTopicCreator, interface):
+    def __init__(self, topic_creator: InterfaceTopicCreator, interface):
         self._topic_creator = topic_creator
         try:
-            self._name = interface["name"]
-            self._version = interface["version"]
+            self._name = interface['interface']["name"]
+            self._version = interface['interface']["version"]
         except KeyError as e:
             raise InvalidStingerStructure(f"Missing interface property: {e}")
         except TypeError:
@@ -134,9 +134,18 @@ class StingerSpec:
                 f"Interface didn't appear to have a correct type"
             )
         self.signals = {}
+        self.params = {}
 
     def add_signal(self, signal: Signal):
         self.signals[signal.name] = signal
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def version(self):
+        return self._version
 
     @classmethod
     def new_from_stinger(cls, topic_creator, stinger: Dict) -> StingerSpec:

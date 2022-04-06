@@ -1,4 +1,5 @@
-stingeripc: 0.0.3
+stingeripc:
+  version: 0.0.3
 
 interface:
   name: SignalOnly
