@@ -9,15 +9,18 @@ jobs:
     steps:
       - checkout  # checkout source code to working directory
       - python/install-packages:
-          pkg-manager: poetry
+          pkg-manager: pip
+      - python/install-packages:
+          pip-dependency-file: requirements.txt
+          pkg-manager: pip
       - python/install-packages:
           args: coveralls coverage unittest-xml-reporting
-          pkg-manager: poetry
+          pkg-manager: pip
       - run:
           command: |
             mkdir -p /tmp/testresults
-            poetry run coverage run --source=stingeripc -m xmlrunner discover -o /tmp/testresults
-            poetry run coveralls
+            coverage run --source=stingeripc -m xmlrunner discover -o /tmp/testresults
+            coveralls
       - store_test_results:
           path: /tmp/testresults
   safety_check:
@@ -27,13 +30,13 @@ jobs:
     steps:
       - checkout  # checkout source code to working directory
       - python/install-packages:
-          pkg-manager: poetry
+          pkg-manager: pip
       - python/install-packages:
           args: safety
-          pkg-manager: poetry
+          pkg-manager: pip
       - run:
           command: |
-            poetry run safety check -r requirements.txt
+            safety check -r requirements.txt
 workflows:
   test:
     jobs:
