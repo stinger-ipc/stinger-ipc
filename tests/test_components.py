@@ -1,11 +1,10 @@
-
 from stingeripc.components import Signal
-from stingeripc.topics import SignalTopicCreator
+from stingeripc.topic import SignalTopicCreator
 
 import unittest
 
-class TestSignalCreateManually(unittest.TestCase):
 
+class TestSignalCreateManually(unittest.TestCase):
     def setUp(self):
         stc = SignalTopicCreator("test_interface")
         self.sig = Signal(stc, "mySignal")
@@ -16,8 +15,8 @@ class TestSignalCreateManually(unittest.TestCase):
     def test_topic(self):
         self.assertEqual(self.sig.emit_topic, "test_interface/signal/mySignal")
 
-class TestSignalCreateFromStinger(unittest.TestCase):
 
+class TestSignalCreateFromStinger(unittest.TestCase):
     def setUp(self):
         stc = SignalTopicCreator("test_interface")
         stinger = {

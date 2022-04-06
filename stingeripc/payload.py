@@ -17,5 +17,11 @@ def payload_parser(payload_obj, initialValue=None):
     assert "args" in payload_obj
     args = []
     for ak, av in payload_obj["args"].items():
-        args.append({"cpptype": "void", "value": get_initial_value(initialValue, ak), "name": ak})
+        args.append(
+            {
+                "cpptype": "void",
+                "value": get_initial_value(initialValue, ak),
+                "name": ak,
+            }
+        )
     return args

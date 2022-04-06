@@ -2,12 +2,11 @@ from typing import Optional
 
 
 class TopicCreatorBase:
-
-    def __init__(self, root: Optional[str]=None):
+    def __init__(self, root: Optional[str] = None):
         if root is None:
             self._base_topic = None
         else:
-            self._base_topic = root.strip('/')
+            self._base_topic = root.strip("/")
 
     def slash(self, *args) -> str:
         if self._base_topic is None:
@@ -17,7 +16,6 @@ class TopicCreatorBase:
 
 
 class SignalTopicCreator(TopicCreatorBase):
-
     def __init__(self, root: str):
         super().__init__(root)
 
@@ -28,7 +26,7 @@ class SignalTopicCreator(TopicCreatorBase):
 class InterfaceTopicCreator(TopicCreatorBase):
     """Helper class for creating MQTT topics for various stinger elements."""
 
-    def __init__(self, interface_name: str, root: Optional[str]=None):
+    def __init__(self, interface_name: str, root: Optional[str] = None):
         super().__init__(root)
         self._interface_name = interface_name
 

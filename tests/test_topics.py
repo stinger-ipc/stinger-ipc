@@ -1,10 +1,9 @@
-
-from stingeripc.topics import InterfaceTopicCreator
+from stingeripc.topic import InterfaceTopicCreator
 
 import unittest
 
-class TestTopics(unittest.TestCase):
 
+class TestTopics(unittest.TestCase):
     def test_signal_topic(self):
         itc = InterfaceTopicCreator("test_interface")
         stc = itc.signal_topic_creator()
