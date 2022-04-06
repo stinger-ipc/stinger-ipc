@@ -1,14 +1,10 @@
-
-image: gitpod/workspace-python
+image:
+  file: .gitpod.Dockerfile
 
 vscode:
   extensions:
     - ms-python.python
 
 tasks:
-  - init: |
-      curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-      source $HOME/.poetry/env
-      poetry install --no-ansi --no-interaction
-      exit
+  - init: poetry install --no-ansi --no-interaction
     command: export PATH=$PATH:$HOME/.poetry/bin
