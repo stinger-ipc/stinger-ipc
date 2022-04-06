@@ -7,9 +7,11 @@ vscode:
 tasks:
   - name: Install dependencies
     init: |
+      pyenv versions
       pip install -r requirements.txt
       pip install -r requirements-dev.txt
     command: |
+      pyenv versions
       pip install -r requirements.txt
       pip install -r requirements-dev.txt
 
