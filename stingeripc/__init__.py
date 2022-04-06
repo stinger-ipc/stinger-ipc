@@ -1,6 +1,4 @@
 
-from .components import StingerSpec
-
-
+from .interface import StingerInterface
 
 __all__ = [StingerInterface]
