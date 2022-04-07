@@ -28,6 +28,19 @@ class ArgType(Enum):
         else:
             raise InvalidStingerStructure(f"No ArgType called '{arg_type}'")
 
+    @classmethod
+    def to_python_type(cls, arg_type: ArgType) -> str:
+        if arg_type == cls.BOOLEAN:
+            return "bool"
+        elif arg_type == cls.INTEGER:
+            return "int"
+        elif arg_type == cls.FLOAT:
+            return "float"
+        elif arg_type == cls.STRING:
+            return "str"
+        raise InvalidStingerStructure(
+            "Unhandled arg type"
+        )
 
 class Arg(object):
     def __init__(self, name: str, arg_type: ArgType, description: Optional[str] = None):
@@ -46,6 +59,10 @@ class Arg(object):
     @property
     def type(self) -> PayloadType:
         return self._arg_type
+
+    @property
+    def python_type(self) -> str:
+        return ArgType.to_python_type(self._arg_type)
 
     @property
     def description(self) -> Optional[str]:

@@ -1,0 +1,39 @@
+from typing import Dict, Callable, List, Any
+import json
+
+class {{stinger.name}}Client(object):
+
+    def __init__(self, connection):
+        self._conn = connection
+        {%for p,v in stinger.params.items()-%}
+        self._{{p}} = {{v.payload.initialValue}}
+        self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
+        self.changed_value_callback_for_{{p}} = None
+        {%endfor%}
+        {%for sig_name in stinger.signals.keys()-%}
+        self._signal_recv_callbacks_for_{{sig_name}} = {}
+        {%endfor%}
+        {%for sig_name, sig in stinger.signals.items()-%}
+        self._conn.subscribe("{{sig.topic}}", self._receive_message)
+        {%endfor%}
+
+    def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
+        for cb in callbacks.values():
+            cb(**kwargs)
+
+    @staticmethod
+    def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
+        filtered_args = {}
+        for k, v in args:
+            if k in allowed_args:
+                filtered_args[k] = v
+        return filtered_args
+
+    def _receive_message(self, topic, payload):
+        {%for sig_name, sig in stinger.signals.items()-%}
+        {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
+            allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
+            kwargs = self._filter_for_args(json.loads(payload), filtered_args)
+            self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
+        {%endfor%}
+    
