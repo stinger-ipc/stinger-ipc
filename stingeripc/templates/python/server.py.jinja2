@@ -8,10 +8,11 @@ class {{stinger.name}}Server(object):
         self.changed_value_callback_for_{{p}} = None
         {%endfor%}
     
-    {%for sig in stinger.signals-%}
-    def emit_{{sig}}():
-        self.con
-    {%-endfor%}
+    {%for sig_name, sig in stinger.signals.items()-%}
+    def emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.name}}, {%endfor%}):
+        self._conn.publish("{{sig.topic}}")
+
+    {%endfor%}
 
     {%for p,v in stinger.params.items()-%}
     {%-set args = payload(v['payload']) %}

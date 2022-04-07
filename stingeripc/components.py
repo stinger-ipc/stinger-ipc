@@ -90,15 +90,15 @@ class Signal(object):
         return self
 
     @property
-    def arg_list(self):
+    def arg_list(self) -> List[Arg]:
         return self._arg_list
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def emit_topic(self):
+    def topic(self) -> str:
         return self._topic_creator.signal_topic(self.name)
 
     @classmethod
@@ -107,28 +107,31 @@ class Signal(object):
     ) -> "Signal":
         """Alternative constructor from a Stinger signal structure."""
         signal = cls(topic_creator, name)
-        if (("args" in spec and 1 or 0) + ("schema" in spec and 1 or 0)) != 1:
+        if 'payload' not in spec:
+            raise InvalidStingerStructure("Signal specification must have 'payload'")
+        if (("args" in spec['payload'] and 1 or 0) + ("schema" in spec['payload'] and 1 or 0)) != 1:
             raise InvalidStingerStructure(
-                "Signal specification must have 'args' xor 'schema'"
+                f"Signal specification must have 'args' xor 'schema': {spec}"
             )
-        if "args" in spec:
+        if "args" in spec['payload']:
             arg_list = []
-            for k, v in spec["args"].items():
+            for k, v in spec['payload']["args"].items():
                 new_arg = Arg.new_from_stinger(name=k, stinger=v)
                 arg_list.append(new_arg)
-            return signal.set_arg_list(arg_list)
-        if "schema" in spec:
-            return signal.set_schema(spec["schema"])
+            signal.set_arg_list(arg_list)
+            return signal
+        elif "schema" in spec['payload']:
+            return signal.set_schema(spec['payload']["schema"])
 
 
 class StingerSpec:
     def __init__(self, topic_creator: InterfaceTopicCreator, interface):
         self._topic_creator = topic_creator
         try:
-            self._name = interface['interface']["name"]
-            self._version = interface['interface']["version"]
+            self._name = interface["name"]
+            self._version = interface["version"]
         except KeyError as e:
-            raise InvalidStingerStructure(f"Missing interface property: {e}")
+            raise InvalidStingerStructure(f"Missing interface property in {interface}: {e}")
         except TypeError:
             raise InvalidStingerStructure(
                 f"Interface didn't appear to have a correct type"
@@ -137,6 +140,7 @@ class StingerSpec:
         self.params = {}
 
     def add_signal(self, signal: Signal):
+        assert signal is not None
         self.signals[signal.name] = signal
 
     @property
@@ -151,20 +155,22 @@ class StingerSpec:
     def new_from_stinger(cls, topic_creator, stinger: Dict) -> StingerSpec:
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
-        if stinger["stingeripc"] not in ["0.0.2"]:
-            raise InvalidStingerStructure(
-                f"Unsupported stinger format version: {stinger['stingeripc']}"
-            )
-        stinger_spec = StingerSpec(stinger["interface"])
+        if 'version' not in stinger["stingeripc"]:
+            raise InvalidStingerStructure("Stinger spec version not present")
+        if stinger['stingeripc']['version'] not in ["0.0.3"]:
+            raise InvalidStingerStructure(f"Unsupported stinger spec version {stinger['stingeripc']['version']}")
+
+        stinger_spec = StingerSpec(topic_creator, stinger["interface"])
 
         try:
             if "signals" in stinger:
                 for signal_name, signal_spec in stinger["signals"].items():
                     signal = Signal.new_from_stinger(
-                        self._topic_creator.signal_topic_creator(),
+                        topic_creator.signal_topic_creator(),
                         signal_name,
                         signal_spec,
                     )
+                    assert signal is not None, f"Did not create signal from {signal_name} and {signal_spec}"
                     stinger_spec.add_signal(signal)
         except TypeError as e:
             raise InvalidStingerStructure(

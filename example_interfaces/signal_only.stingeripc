@@ -18,7 +18,7 @@ signals:
         one: 
           type: float
         two: 
-          type: bool
+          type: boolean
         three: 
           type: string
 

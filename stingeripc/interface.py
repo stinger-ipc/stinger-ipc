@@ -10,7 +10,11 @@ VERSION_SUPPORTED = "0.0.3"
 
 class StingerInterface(StingerSpec):
     def __init__(self, stinger: Dict[str, Any], topic_prefix: Optional[str] = None):
+        itc = self._create_topic_creator(stinger)
+        super().__init__(itc, stinger['interface'])
 
+    @staticmethod
+    def _create_topic_creator(stinger: Dict[str, Any], topic_prefix: Optional[str] = None) -> InterfaceTopicCreator:
         if (
             "stingeripc" not in stinger
             or "version" not in stinger["stingeripc"]
@@ -24,10 +28,10 @@ class StingerInterface(StingerSpec):
                 "Could not find interface name in Stinger Spec"
             )
         itc = InterfaceTopicCreator(stinger["interface"]["name"], root=topic_prefix)
-
-        super().__init__(itc, stinger)
+        return itc
 
     @classmethod
     def from_yaml(cls, yaml_input: Union[str, IO]) -> StingerSpec:
         yaml_obj = yaml.load(yaml_input, Loader=yamlloader.ordereddict.Loader)
-        return cls(yaml_obj)
+        itc = cls._create_topic_creator(yaml_obj)
+        return cls.new_from_stinger(itc, yaml_obj)

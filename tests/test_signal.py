@@ -13,7 +13,7 @@ class TestSignalCreateManually(unittest.TestCase):
         self.assertEqual(self.sig.name, "mySignal")
 
     def test_topic(self):
-        self.assertEqual(self.sig.emit_topic, "test_interface/signal/mySignal")
+        self.assertEqual(self.sig.topic, "test_interface/signal/mySignal")
 
 
 class TestSignalCreateFromStinger(unittest.TestCase):
@@ -34,4 +34,4 @@ class TestSignalCreateFromStinger(unittest.TestCase):
         self.assertEqual(len(self.sig.arg_list), 2)
 
     def test_topic(self):
-        self.assertEqual(self.sig.emit_topic, "test_interface/signal/mySignal")
+        self.assertEqual(self.sig.topic, "test_interface/signal/mySignal")
