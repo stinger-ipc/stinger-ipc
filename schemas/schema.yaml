@@ -31,10 +31,10 @@ parameters:
     additionalProperties:
       $ref: "#/$defs/signal"
 
-  properties:
+  params:
     type: object
     additionalProperties:
-      $ref: "#/$defs/property"
+      $ref: "#/$defs/param"
 
 required:
   - stingeripc
@@ -76,8 +76,10 @@ $defs:
       payload:
         $ref: "#/$defs/payload"
 
-  property:
+  param:
     type: object
     properties:
       payload:
         $ref: "#/$defs/payload"
+    required:
+      - payload

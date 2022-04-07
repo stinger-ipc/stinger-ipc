@@ -33,9 +33,11 @@ class TestSpecCreateFromStructure(unittest.TestCase):
             },
             "signals": {
                 "mySignal": {
-                    "args": {
-                        "one": {"type": "integer"},
-                        "two": {"type": "string"},
+                    "payload": {
+                        "args": {
+                            "one": {"type": "integer"},
+                            "two": {"type": "string"},
+                        }
                     }
                 }
             }

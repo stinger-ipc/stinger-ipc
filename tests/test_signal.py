@@ -20,10 +20,12 @@ class TestSignalCreateFromStinger(unittest.TestCase):
     def setUp(self):
         stc = SignalTopicCreator("test_interface")
         stinger = {
-            "args": {
-                "one": {"type": "integer"},
-                "two": {"type": "string", "description": "This is the second arg"},
-            },
+            "payload": {
+                "args": {
+                    "one": {"type": "integer"},
+                    "two": {"type": "string", "description": "This is the second arg"},
+                },
+            }
         }
         self.sig = Signal.new_from_stinger(stc, "mySignal", stinger)
 
