@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }, {
+            "name": "Python: Generation",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/python_generator.py ${workspaceFolder}/example_interfaces/signal_only.stingeripc ${workspaceFolder}/example_interfaces/output/",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

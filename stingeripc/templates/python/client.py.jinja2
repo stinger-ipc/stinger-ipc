@@ -1,24 +1,33 @@
+"""
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+This is the Client for the {{stinger.name}} interface.
+"""
+
 from typing import Dict, Callable, List, Any
 import json
+from .connection import MqttConnection
 
 class {{stinger.name}}Client(object):
 
-    def __init__(self, connection):
+    def __init__(self, connection: MqttConnection):
         self._conn = connection
+        self._conn.set_message_callback(self._receive_message)
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
         self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
         self.changed_value_callback_for_{{p}} = None
         {%endfor%}
         {%for sig_name in stinger.signals.keys()-%}
-        self._signal_recv_callbacks_for_{{sig_name}} = {}
+        self._signal_recv_callbacks_for_{{sig_name}} = []
         {%endfor%}
         {%for sig_name, sig in stinger.signals.items()-%}
         self._conn.subscribe("{{sig.topic}}", self._receive_message)
         {%endfor%}
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
-        for cb in callbacks.values():
+        for cb in callbacks:
             cb(**kwargs)
 
     @staticmethod
@@ -36,4 +45,19 @@ class {{stinger.name}}Client(object):
             kwargs = self._filter_for_args(json.loads(payload), filtered_args)
             self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
         {%endfor%}
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    def receive_{{sig_name}}(self, handler):
+        self._signal_recv_callbacks_for_{{sig_name}}.append(handler)
+    {%endfor%}
+
+if __name__ == '__main__':
+    conn = MqttConnection('localhost', 1883):
+    client = {{stinger.name}}Client(conn)
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    @client.receive_{{sig_name}}
+    def print_{{sig_name}}_receipt(self, payload):
+        print(f"Got a '{{sig_name}}' signal: {{payload}}")
+    {%endfor%}
     

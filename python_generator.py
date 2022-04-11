@@ -16,3 +16,4 @@ if __name__ == '__main__':
     t.add_template_dir(os.path.join(os.path.dirname(__file__), "stingeripc", "templates", "python"))
     t.render_template("server.py.jinja2", "server.py", **params)
     t.render_template("client.py.jinja2", "client.py", **params)
+    t.render_template("connection.py.jinja2", "connection.py", **params)
