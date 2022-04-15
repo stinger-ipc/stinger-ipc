@@ -2,7 +2,7 @@ from typing import Callable
 from paho.mqtt import client as mqtt_client
 from queue import Queue, Empty
 
-class Connection:
+class MqttConnection:
 
     def __init__(self, host, port):
         self._host = host
@@ -14,6 +14,10 @@ class Connection:
         self._client.on_message = self._on_message
         self._client.connect(self._host, self._port)
         self._message_callback = None
+        self._client.loop_start()
+
+    def __del__(self):
+        self._client.loop_stop()
 
     def set_message_callback(self, callback: Callable[[str, str], None]):
         self._message_callback = callback
@@ -23,20 +27,24 @@ class Connection:
             self._message_callback(msg.topic, msg.payload.decode())
 
     def _on_connect(self, client, userdata, flags, rc):
-        self._connected = True
+        print("Connected")
         while not self._queued_messages.empty():
             try:
                 msg = self._queued_messages.get_nowait()
             except Empty:
                 break
             else:
+                print(f"Publishing queued up message")
                 self._client.publish(*msg)
+        self._connected = True
     
     def publish(self, topic, msg, qos=1, retain=False):
         if self._connected:
+            print(f"Publishing {topic}")
             self._client.publish(topic, msg, qos, retain)
         else:
-            self._queued_messages.push((topic, msg, qos, retain))
+            print(f"Queueing {topic} for publishing later")
+            self._queued_messages.put((topic, msg, qos, retain))
 
     def subscribe(self, topic):
         self._client.subscribe(topic)

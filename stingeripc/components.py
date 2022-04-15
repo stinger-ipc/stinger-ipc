@@ -1,5 +1,6 @@
 from __future__ import annotations
 from enum import Enum
+import random
 from typing import Dict, List, Optional
 from .topic import SignalTopicCreator, InterfaceTopicCreator
 
@@ -67,6 +68,17 @@ class Arg(object):
     @property
     def description(self) -> Optional[str]:
         return self._description
+
+    @property
+    def random_example_value(self) -> Union[str, float, int, bool]:
+        if self._arg_type == ArgType.BOOLEAN:
+            return random.choice([True, False])
+        elif self._arg_type == ArgType.FLOAT:
+            return random.choice([3.14, 1.0, 2.5, 97.9])
+        elif self._arg_type == ArgType.INTEGER:
+            return random.choice([42, 1981, 2020])
+        elif self._arg_type == ArgType.STRING:
+            return random.choice(['"apples"', '"Joe"', '"example"', '"foo"'])
 
     @classmethod
     def new_from_stinger(cls, name: str, stinger: Dict[str, str]) -> Arg:

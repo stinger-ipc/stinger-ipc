@@ -7,9 +7,7 @@ vscode:
 tasks:
   - name: Install dependencies
     init: |
-      pyenv versions
-      pip install -r requirements.txt
-      pip install -r requirements-dev.txt
+      sudo apt update -y && sudo apt install -y mosquitto mosquitto-clients
     command: |
       pyenv versions
       pip install -r requirements.txt

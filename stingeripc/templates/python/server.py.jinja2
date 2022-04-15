@@ -1,8 +1,9 @@
 import json
+from connection import MqttConnection
 
 class {{stinger.name}}Server(object):
 
-    def __init__(self, connection):
+    def __init__(self, connection: MqttConnection):
         self._conn = connection
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
@@ -11,7 +12,7 @@ class {{stinger.name}}Server(object):
         {%endfor%}
     
     {%for sig_name, sig in stinger.signals.items()-%}
-    def emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
         payload = { {%-for arg in sig.arg_list%}
             "{{arg.name}}": {{arg.name}}, {%endfor%}
         }
@@ -40,4 +41,20 @@ class {{stinger.name}}Server(object):
         {%-else-%}
         return self._{{p}}[args[0].name]
         {%-endif%}
+    {%endfor%}
+
+if __name__ == '__main__':
+    from time import sleep
+
+    conn = MqttConnection('localhost', 1883)
+    server = SignalOnlyServer(conn)
+
+    {%for sig_name, sig in stinger.signals.items()-%}
+    server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.random_example_value}}{%if not loop.last%}, {%endif%}{%endfor%})
+    {%endfor%}
+
+    sleep(4)
+
+    {%for sig_name, sig in stinger.signals.items()-%}
+    server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.name}}={{arg.random_example_value}}{%if not loop.last%}, {%endif%}{%endfor%})
     {%endfor%}
