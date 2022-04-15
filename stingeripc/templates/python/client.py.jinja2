@@ -7,7 +7,7 @@ This is the Client for the {{stinger.name}} interface.
 
 from typing import Dict, Callable, List, Any
 import json
-from .connection import MqttConnection
+from connection import MqttConnection
 
 class {{stinger.name}}Client(object):
 
@@ -23,7 +23,7 @@ class {{stinger.name}}Client(object):
         self._signal_recv_callbacks_for_{{sig_name}} = []
         {%endfor%}
         {%for sig_name, sig in stinger.signals.items()-%}
-        self._conn.subscribe("{{sig.topic}}", self._receive_message)
+        self._conn.subscribe("{{sig.topic}}")
         {%endfor%}
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
@@ -33,7 +33,7 @@ class {{stinger.name}}Client(object):
     @staticmethod
     def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
         filtered_args = {}
-        for k, v in args:
+        for k, v in args.items():
             if k in allowed_args:
                 filtered_args[k] = v
         return filtered_args
@@ -42,7 +42,7 @@ class {{stinger.name}}Client(object):
         {%for sig_name, sig in stinger.signals.items()-%}
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
-            kwargs = self._filter_for_args(json.loads(payload), filtered_args)
+            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
             self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
         {%endfor%}
 
@@ -52,12 +52,16 @@ class {{stinger.name}}Client(object):
     {%endfor%}
 
 if __name__ == '__main__':
-    conn = MqttConnection('localhost', 1883):
+    import signal
+
+    conn = MqttConnection('localhost', 1883)
     client = {{stinger.name}}Client(conn)
 
     {%for sig_name, sig in stinger.signals.items()%}
     @client.receive_{{sig_name}}
-    def print_{{sig_name}}_receipt(self, payload):
-        print(f"Got a '{{sig_name}}' signal: {{payload}}")
+    def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        print(f"Got a '{{sig_name}}' signal")
     {%endfor%}
     
+    print("Ctrl-C will stop the program.")
+    signal.pause()

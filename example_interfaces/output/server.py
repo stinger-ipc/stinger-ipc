@@ -25,19 +25,21 @@ class SignalOnlyServer(object):
     
 
 if __name__ == '__main__':
+    """
+    This shows an example on how to run the code.  Ideally, your app should do something similar, but use the methods in
+    a more meaningful way.
+    """
     from time import sleep
 
     conn = MqttConnection('localhost', 1883)
     server = SignalOnlyServer(conn)
 
     server.emit_theSignal()
-    server.emit_anotherSignal(2.5, False, "apples")
+    server.emit_anotherSignal(1.0, True, "example")
     
 
     sleep(4)
 
     server.emit_theSignal()
-    server.emit_anotherSignal(one=2.5, two=False, three="apples")
-
-    sleep(2)
+    server.emit_anotherSignal(one=3.14, two=True, three="foo")
     
