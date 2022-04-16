@@ -19,7 +19,5 @@ if __name__ == '__main__':
     }
     t = jj2.CodeTemplator(output_dir=os.path.dirname(outdir))
     t.add_template_dir(os.path.join(os.path.dirname(__file__), "../stingeripc", "templates", "python"))
-    t.render_template("server.py.jinja2", "server.py", **params)
-    t.render_template("client.py.jinja2", "client.py", **params)
-    t.render_template("connection.py.jinja2", "connection.py", **params)
-    t.render_template("__init__.py.jinja2", "__init__.py", **params)
+    for output_file in ["server.py", "client.py", "connection.py", "__init__.py", "requirements.txt"]:
+        t.render_template(f"{output_file}.jinja2", output_file, **params)
