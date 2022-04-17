@@ -1,5 +1,13 @@
+"""
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+This is the Server for the {{stinger.name}} interface.
+"""
+
 import json
 from connection import MqttConnection
+{%if stinger.uses_enums()%}import interface_enums as enum{%endif%}
 
 class {{stinger.name}}Server(object):
 

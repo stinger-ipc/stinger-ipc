@@ -39,9 +39,8 @@ class ArgType(Enum):
             return "float"
         elif arg_type == cls.STRING:
             return "str"
-        raise InvalidStingerStructure(
-            "Unhandled arg type"
-        )
+        raise InvalidStingerStructure("Unhandled arg type")
+
 
 class Arg(object):
     def __init__(self, name: str, arg_type: ArgType, description: Optional[str] = None):
@@ -136,40 +135,44 @@ class Signal(object):
     ) -> "Signal":
         """Alternative constructor from a Stinger signal structure."""
         signal = cls(topic_creator, name)
-        if 'payload' not in spec:
+        if "payload" not in spec:
             raise InvalidStingerStructure("Signal specification must have 'payload'")
-        if (("args" in spec['payload'] and 1 or 0) + ("schema" in spec['payload'] and 1 or 0)) != 1:
+        if (
+            ("args" in spec["payload"] and 1 or 0)
+            + ("schema" in spec["payload"] and 1 or 0)
+        ) != 1:
             raise InvalidStingerStructure(
                 f"Signal specification must have 'args' xor 'schema': {spec}"
             )
-        if "args" in spec['payload']:
+        if "args" in spec["payload"]:
             arg_list = []
-            for k, v in spec['payload']["args"].items():
+            for k, v in spec["payload"]["args"].items():
                 new_arg = Arg.new_from_stinger(name=k, stinger=v)
                 arg_list.append(new_arg)
             signal.set_arg_list(arg_list)
             return signal
-        elif "schema" in spec['payload']:
-            return signal.set_schema(spec['payload']["schema"])
+        elif "schema" in spec["payload"]:
+            return signal.set_schema(spec["payload"]["schema"])
+
 
 class InterfaceEnum:
     def __init__(self, name: str):
         self._name = name
         self._values = []
-    
+
     def add_value(self, name):
         self._values = name
 
     @property
     def values(self):
         return self._values
-    
+
     @classmethod
     def new_from_stinger(cls, name, values: List[Dict[str, str]]) -> InterfaceEnum:
         ie = cls(name)
         for enum_obj in values:
-            if 'name' in enum_obj:
-                ie.add_value(enum_obj['name'])
+            if "name" in enum_obj:
+                ie.add_value(enum_obj["name"])
             else:
                 raise InvalidSchemaStructure("InterfaceEnum item must have a name")
         return ie
@@ -182,17 +185,27 @@ class StingerSpec:
             self._name = interface["name"]
             self._version = interface["version"]
         except KeyError as e:
-            raise InvalidStingerStructure(f"Missing interface property in {interface}: {e}")
+            raise InvalidStingerStructure(
+                f"Missing interface property in {interface}: {e}"
+            )
         except TypeError:
             raise InvalidStingerStructure(
                 f"Interface didn't appear to have a correct type"
             )
         self.signals = {}
         self.params = {}
+        self.enums = {}
 
     def add_signal(self, signal: Signal):
         assert signal is not None
         self.signals[signal.name] = signal
+
+    def add_enum(self, interface_enum: InterfaceEnum):
+        assert interface_enum is not None
+        self.enums[interface_enum.name] = interface_enum
+
+    def uses_enums(self):
+        return bool(self.enums)
 
     @property
     def name(self):
@@ -206,10 +219,12 @@ class StingerSpec:
     def new_from_stinger(cls, topic_creator, stinger: Dict) -> StingerSpec:
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
-        if 'version' not in stinger["stingeripc"]:
+        if "version" not in stinger["stingeripc"]:
             raise InvalidStingerStructure("Stinger spec version not present")
-        if stinger['stingeripc']['version'] not in ["0.0.3"]:
-            raise InvalidStingerStructure(f"Unsupported stinger spec version {stinger['stingeripc']['version']}")
+        if stinger["stingeripc"]["version"] not in ["0.0.3", "0.0.4"]:
+            raise InvalidStingerStructure(
+                f"Unsupported stinger spec version {stinger['stingeripc']['version']}"
+            )
 
         stinger_spec = StingerSpec(topic_creator, stinger["interface"])
 
@@ -221,8 +236,21 @@ class StingerSpec:
                         signal_name,
                         signal_spec,
                     )
-                    assert signal is not None, f"Did not create signal from {signal_name} and {signal_spec}"
+                    assert (
+                        signal is not None
+                    ), f"Did not create signal from {signal_name} and {signal_spec}"
                     stinger_spec.add_signal(signal)
+        except TypeError as e:
+            raise InvalidStingerStructure(
+                f"Signal specification appears to be invalid: {e}"
+            )
+
+        try:
+            if "enums" in stinger:
+                for enum_name, enum_spec in stinger["enums"].items():
+                    enum = InterfaceEnum.new_from_stinger(signal_name, enum_spec)
+                    assert (enum is not None), f"Did not create enum from {enum_name} and {enum_spec}"
+                    stinger_spec.add_enum(enum)
         except TypeError as e:
             raise InvalidStingerStructure(
                 f"Signal specification appears to be invalid: {e}"

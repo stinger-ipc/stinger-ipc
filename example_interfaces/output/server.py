@@ -1,3 +1,10 @@
+"""
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+This is the Server for the SignalOnly interface.
+"""
+
 import json
 from connection import MqttConnection
 
@@ -35,11 +42,11 @@ if __name__ == '__main__':
     server = SignalOnlyServer(conn)
 
     server.emit_theSignal()
-    server.emit_anotherSignal(1.0, True, "example")
+    server.emit_anotherSignal(1.0, False, "Joe")
     
 
     sleep(4)
 
     server.emit_theSignal()
-    server.emit_anotherSignal(one=3.14, two=True, three="foo")
+    server.emit_anotherSignal(one=97.9, two=False, three="Joe")
     

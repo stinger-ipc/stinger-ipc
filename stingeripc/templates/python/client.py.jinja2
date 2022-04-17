@@ -8,6 +8,7 @@ This is the Client for the {{stinger.name}} interface.
 from typing import Dict, Callable, List, Any
 import json
 from connection import MqttConnection
+{%if stinger.uses_enums()%}import interface_enums as enum{%endif%}
 
 class {{stinger.name}}Client(object):
 
