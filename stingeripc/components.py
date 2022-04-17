@@ -152,6 +152,28 @@ class Signal(object):
         elif "schema" in spec['payload']:
             return signal.set_schema(spec['payload']["schema"])
 
+class InterfaceEnum:
+    def __init__(self, name: str):
+        self._name = name
+        self._values = []
+    
+    def add_value(self, name):
+        self._values = name
+
+    @property
+    def values(self):
+        return self._values
+    
+    @classmethod
+    def new_from_stinger(cls, name, values: List[Dict[str, str]]) -> InterfaceEnum:
+        ie = cls(name)
+        for enum_obj in values:
+            if 'name' in enum_obj:
+                ie.add_value(enum_obj['name'])
+            else:
+                raise InvalidSchemaStructure("InterfaceEnum item must have a name")
+        return ie
+
 
 class StingerSpec:
     def __init__(self, topic_creator: InterfaceTopicCreator, interface):

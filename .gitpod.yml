@@ -4,6 +4,8 @@ vscode:
   extensions:
     - ms-python.python
 
+    - redhat.vscode-yaml
+
 tasks:
   - name: Install dependencies
     before: |

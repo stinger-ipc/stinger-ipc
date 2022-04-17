@@ -11,5 +11,8 @@
     "python.formatting.provider": "black",
     "python.testing.pytestArgs": [
         "tests"
-    ]
+    ],
+    "yaml.schemas": {
+        "schemas/schema.yaml": "*.stingeripc"
+    }
 }

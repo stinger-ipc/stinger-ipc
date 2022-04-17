@@ -1,0 +1,31 @@
+stingeripc:
+  version: 0.0.4
+
+interface:
+  name: EnumOnly
+  version: 0.0.1
+
+enums:
+
+  fruits:
+    - name: apple
+    - name: banana
+      description: I eat this sometimes.
+    - name: pear
+
+  months:
+     - name: January
+       description: |
+        This is the first month of the year.
+        It is also a good month to be born in.
+     - name: February
+     - name: March
+     - name: April
+     - name: May
+     - name: June
+     - name: July
+     - name: August
+     - name: September
+     - name: October
+     - name: November
+     - name: December

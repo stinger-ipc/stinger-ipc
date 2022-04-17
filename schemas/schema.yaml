@@ -11,7 +11,7 @@ parameters:
     properties:
       version:
         type: string
-        const: "0.0.3"
+        const: "0.0.4"
     required:
       - version
 
@@ -26,6 +26,29 @@ parameters:
       - name
       - version
   
+  broker:
+    type: object
+    additionalProperties:
+      type: object
+      properties:
+        host:
+          type: string
+        port:
+          type: integer
+
+  enums:
+    type: object
+    additionalProperties:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          description:
+            type: string
+        required: [name]
+
   signals:
     type: object
     additionalProperties:
@@ -39,6 +62,7 @@ parameters:
 required:
   - stingeripc
   - interface
+
 $defs:
 
   argList:
@@ -55,6 +79,13 @@ $defs:
             - boolean
         description:
           type: string
+        initialValue:
+          description: Only valid for params. Ignored otherwise.
+          type:
+            - float
+            - string
+            - integer
+            - boolean
       required:
         - type
 

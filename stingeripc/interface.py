@@ -5,7 +5,7 @@ import yamlloader
 from .components import StingerSpec, InvalidStingerStructure
 from .topic import InterfaceTopicCreator
 
-VERSION_SUPPORTED = "0.0.3"
+VERSION_SUPPORTED = "0.0.4"
 
 
 class StingerInterface(StingerSpec):
