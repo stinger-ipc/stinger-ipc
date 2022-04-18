@@ -40,6 +40,12 @@ class TestSpecCreateFromStructure(unittest.TestCase):
                         }
                     }
                 }
+            },
+            "enums": {
+                "milk": [
+                    {"name": "one percent"},
+                    {"name": "two percent"},
+                ]
             }
         }
         itc = InterfaceTopicCreator(self.stinger['interface']['name'])
@@ -52,3 +58,7 @@ class TestSpecCreateFromStructure(unittest.TestCase):
     def test_has_signals(self):
         self.assertEqual(len(self.spec.signals), 1)
         self.assertIn("mySignal", self.spec.signals)
+
+    def test_has_enums(self):
+        self.assertEqual(len(self.spec.enums), 1)
+        self.assertIn("milk", self.spec.enums)

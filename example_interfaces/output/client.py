@@ -2,24 +2,21 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-This is the Client for the SignalOnly interface.
+This is the Client for the EnumOnly interface.
 """
 
 from typing import Dict, Callable, List, Any
 import json
 from connection import MqttConnection
+import interface_enums as enum
 
-class SignalOnlyClient(object):
+class EnumOnlyClient(object):
 
     def __init__(self, connection: MqttConnection):
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
-        self._signal_recv_callbacks_for_theSignal = []
-        self._signal_recv_callbacks_for_anotherSignal = []
         
-        self._conn.subscribe("SignalOnly/signal/theSignal")
-        self._conn.subscribe("SignalOnly/signal/anotherSignal")
         
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
@@ -35,38 +32,16 @@ class SignalOnlyClient(object):
         return filtered_args
 
     def _receive_message(self, topic, payload):
-        if self._conn.is_topic_sub(topic, "SignalOnly/signal/theSignal"):
-            allowed_args = []
-            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-            self._do_callbacks_for(self._signal_recv_callbacks_for_theSignal, **kwargs)
-        elif self._conn.is_topic_sub(topic, "SignalOnly/signal/anotherSignal"):
-            allowed_args = ["one", "two", "three", ]
-            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-            self._do_callbacks_for(self._signal_recv_callbacks_for_anotherSignal, **kwargs)
         
 
-    
-    def receive_theSignal(self, handler):
-        self._signal_recv_callbacks_for_theSignal.append(handler)
-    
-    def receive_anotherSignal(self, handler):
-        self._signal_recv_callbacks_for_anotherSignal.append(handler)
     
 
 if __name__ == '__main__':
     import signal
 
     conn = MqttConnection('localhost', 1883)
-    client = SignalOnlyClient(conn)
+    client = EnumOnlyClient(conn)
 
-    
-    @client.receive_theSignal
-    def print_theSignal_receipt():
-        print(f"Got a 'theSignal' signal")
-    
-    @client.receive_anotherSignal
-    def print_anotherSignal_receipt(one: float, two: bool, three: str):
-        print(f"Got a 'anotherSignal' signal")
     
     
     print("Ctrl-C will stop the program.")

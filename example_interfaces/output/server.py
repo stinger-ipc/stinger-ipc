@@ -2,31 +2,19 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-This is the Server for the SignalOnly interface.
+This is the Server for the EnumOnly interface.
 """
 
 import json
 from connection import MqttConnection
+import interface_enums as enum
 
-class SignalOnlyServer(object):
+class EnumOnlyServer(object):
 
     def __init__(self, connection: MqttConnection):
         self._conn = connection
         
     
-    def emit_theSignal(self, ):
-        payload = {
-        }
-        self._conn.publish("SignalOnly/signal/theSignal", json.dumps(payload), qos=1, retain=False)
-
-    def emit_anotherSignal(self, one: float, two: bool, three: str):
-        payload = {
-            "one": one, 
-            "two": two, 
-            "three": three, 
-        }
-        self._conn.publish("SignalOnly/signal/anotherSignal", json.dumps(payload), qos=1, retain=False)
-
     
 
     
@@ -41,12 +29,8 @@ if __name__ == '__main__':
     conn = MqttConnection('localhost', 1883)
     server = SignalOnlyServer(conn)
 
-    server.emit_theSignal()
-    server.emit_anotherSignal(1.0, False, "Joe")
     
 
     sleep(4)
 
-    server.emit_theSignal()
-    server.emit_anotherSignal(one=97.9, two=False, three="Joe")
     

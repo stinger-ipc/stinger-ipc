@@ -160,8 +160,13 @@ class InterfaceEnum:
         self._name = name
         self._values = []
 
-    def add_value(self, name):
-        self._values = name
+    def add_value(self, value: str):
+        print(f"Adding {value} to {self._name}")
+        self._values.append(value)
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def values(self):
@@ -228,6 +233,18 @@ class StingerSpec:
 
         stinger_spec = StingerSpec(topic_creator, stinger["interface"])
 
+        # Enums must come before other components because other components may use enum values.
+        try:
+            if "enums" in stinger:
+                for enum_name, enum_spec in stinger["enums"].items():
+                    ie = InterfaceEnum.new_from_stinger(enum_name, enum_spec)
+                    assert (ie is not None), f"Did not create enum from {enum_name} and {enum_spec}"
+                    stinger_spec.add_enum(ie)
+        except TypeError as e:
+            raise InvalidStingerStructure(
+                f"Signal specification appears to be invalid: {e}"
+            )
+
         try:
             if "signals" in stinger:
                 for signal_name, signal_spec in stinger["signals"].items():
@@ -245,15 +262,6 @@ class StingerSpec:
                 f"Signal specification appears to be invalid: {e}"
             )
 
-        try:
-            if "enums" in stinger:
-                for enum_name, enum_spec in stinger["enums"].items():
-                    enum = InterfaceEnum.new_from_stinger(signal_name, enum_spec)
-                    assert (enum is not None), f"Did not create enum from {enum_name} and {enum_spec}"
-                    stinger_spec.add_enum(enum)
-        except TypeError as e:
-            raise InvalidStingerStructure(
-                f"Signal specification appears to be invalid: {e}"
-            )
+
 
         return stinger_spec
