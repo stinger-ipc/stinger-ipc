@@ -9,8 +9,6 @@ jobs:
     steps:
       - checkout  # checkout source code to working directory
       - python/install-packages:
-          pkg-manager: pip
-      - python/install-packages:
           pip-dependency-file: requirements.txt
           pkg-manager: pip
       - python/install-packages:
@@ -22,7 +20,7 @@ jobs:
       - run:
           name: Run Tests
           command: |
-            pytest --cov=jacobsjsonschema --junitxml=/tmp/testresults.xml tests
+            pytest --cov=stingeripc --junitxml=/tmp/testresults.xml tests
       - run:
           name: Coveralls test coverate reporting
           command: coveralls
