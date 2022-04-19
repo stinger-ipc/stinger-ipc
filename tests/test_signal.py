@@ -1,4 +1,4 @@
-from stingeripc.components import Signal
+from stingeripc.components import Signal, InvalidStingerStructure
 from stingeripc.topic import SignalTopicCreator
 
 import unittest
@@ -35,3 +35,20 @@ class TestSignalCreateFromStinger(unittest.TestCase):
 
     def test_topic(self):
         self.assertEqual(self.sig.topic, "test_interface/signal/mySignal")
+
+
+class TestSignalRejectsArgsWithSameName(unittest.TestCase):
+
+    def setUp(self):
+        self.topic_creator = SignalTopicCreator("test_interface")
+
+    def test_two_args_with_same_name(self):
+        signal_spec = {
+            "payload": [
+                {"name": "one", "type": "integer"},
+                {"name": "one", "type": "string", "description": "This is the second arg"},
+            ]
+        }
+
+        with self.assertRaises(InvalidStingerStructure):
+            Signal.new_from_stinger(self.topic_creator, "badSignal", signal_spec)

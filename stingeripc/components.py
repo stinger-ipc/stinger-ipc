@@ -158,6 +158,8 @@ class Signal(object):
         self._arg_list = []  # type: List[Arg]
 
     def add_arg(self, arg: Arg) -> Signal:
+        if arg.name in [a.name for a in self._arg_list]:
+            raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
         self._arg_list.append(arg)
         return self
 
