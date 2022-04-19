@@ -8,7 +8,7 @@ It takes a interface description file (.singeripc):
 
 ```yaml
 stingeripc:
-  version: 0.0.4
+  version: 0.0.5
 
 interface:
   name: Example
@@ -18,9 +18,8 @@ signals:
 
   foo:
     payload:
-      args:
-        message: 
-          type: string
+      - name: message
+        type: string
 ```
 
 From the above description file, it generates server code, which can be used like this:

@@ -11,7 +11,7 @@ parameters:
     properties:
       version:
         type: string
-        const: "0.0.4"
+        const: "0.0.5"
     required:
       - version
 
@@ -65,42 +65,49 @@ required:
 
 $defs:
 
-  argList:
-    type: object
-    additionalProperties:
+  payload:
+    type: array
+    items:
       type: object
+      required: ["type"]
       properties:
-        type:
-          type: string
-          enum:
-            - float
-            - string
-            - integer
-            - boolean
         description:
           type: string
-        initialValue:
-          description: Only valid for params. Ignored otherwise.
-          type:
-            - float
-            - string
-            - integer
-            - boolean
-      required:
-        - type
-
-  payload:
-    type: object
-    oneOf:
-      - properties:
-          args:
-            $ref: "#/$defs/argList"
-      - properties:
-          schema:
-            $ref: "#/$defs/schemaDef"
-  schemaDef:
-    type: object
-
+      oneOf:
+        - properties:
+            type:
+              type: string
+              const: "float"
+            initialValue:
+              type: float
+        - properties:
+            type:
+              type: string
+              const: "string"
+            initialValue:
+              type: string
+        - properties:
+            type:
+              type: string
+              const: "integer"
+            initialValue:
+              type: integer
+        - properties:
+            type:
+              type: string
+              const: "boolean"
+            initialValue:
+              type: boolean
+        - properties:
+            type: 
+              type: string
+              const: "enum"
+            enumName:
+              type: string
+            initialValue:
+              type: string
+          required: ["enumName"]
+            
   signal:
     type: object
     properties:
@@ -111,6 +118,9 @@ $defs:
     type: object
     properties:
       payload:
-        $ref: "#/$defs/payload"
+        allOf:
+          - $ref: "#/$defs/payload"
+          - items:
+              required: ["initialValue"]
     required:
       - payload

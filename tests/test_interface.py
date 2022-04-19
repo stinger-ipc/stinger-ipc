@@ -25,7 +25,7 @@ class TestSpecCreateFromStructure(unittest.TestCase):
     def setUp(self):
         self.stinger = {
             "stingeripc": {
-                "version": "0.0.3"
+                "version": "0.0.5"
             },
             "interface": {
                 "name": "test_interface",
@@ -33,12 +33,10 @@ class TestSpecCreateFromStructure(unittest.TestCase):
             },
             "signals": {
                 "mySignal": {
-                    "payload": {
-                        "args": {
-                            "one": {"type": "integer"},
-                            "two": {"type": "string"},
-                        }
-                    }
+                    "payload": [
+                        {"name": "one", "type": "integer"},
+                        {"name": "two", "type": "string"},
+                    ]
                 }
             },
             "enums": {

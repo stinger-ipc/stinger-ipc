@@ -11,12 +11,12 @@ class InvalidStingerStructure(Exception):
     pass
 
 
-class PayloadType(Enum):
-    JSON_SCHEMA = 0
-    ARG_LIST = 1
-
-
 class ArgType(Enum):
+    VALUE = 0
+    ENUM = 1
+    JSON_SCHEMA = 2
+
+class ArgValueType(Enum):
     BOOLEAN = 0
     INTEGER = 1
     FLOAT = 2
@@ -42,11 +42,11 @@ class ArgType(Enum):
         raise InvalidStingerStructure("Unhandled arg type")
 
 
-class Arg(object):
-    def __init__(self, name: str, arg_type: ArgType, description: Optional[str] = None):
+class Arg:
+    def __init__(self, name: str, description: Optional[str] = None):
         self._name = name
-        self._arg_type = arg_type
         self._description = description
+        self._default_value = None
 
     def set_description(self, description: str) -> Arg:
         self._description = description
@@ -57,33 +57,47 @@ class Arg(object):
         return self._name
 
     @property
-    def type(self) -> PayloadType:
+    def description(self) -> Optional[str]:
+        return self._description
+
+
+class ArgValue(Arg):
+    def __init__(self, name: str, arg_type: ArgValueType, description: Optional[str] = None):
+        super().__init__(name, description)
+        self._arg_type = arg_type
+
+    @property
+    def type(self) -> ArgValueType:
         return self._arg_type
 
     @property
     def python_type(self) -> str:
-        return ArgType.to_python_type(self._arg_type)
-
-    @property
-    def description(self) -> Optional[str]:
-        return self._description
+        return ArgValueType.to_python_type(self._arg_type)
 
     @property
     def random_example_value(self) -> Union[str, float, int, bool]:
-        if self._arg_type == ArgType.BOOLEAN:
+        if self._arg_type == ArgValueType.BOOLEAN:
             return random.choice([True, False])
-        elif self._arg_type == ArgType.FLOAT:
-            return random.choice([3.14, 1.0, 2.5, 97.9])
-        elif self._arg_type == ArgType.INTEGER:
-            return random.choice([42, 1981, 2020])
-        elif self._arg_type == ArgType.STRING:
+        elif self._arg_type == ArgValueType.FLOAT:
+            return random.choice([3.14, 1.0, 2.5, 97.9, 1.53])
+        elif self._arg_type == ArgValueType.INTEGER:
+            return random.choice([42, 1981, 2020, 2022])
+        elif self._arg_type == ArgValueType.STRING:
             return random.choice(['"apples"', '"Joe"', '"example"', '"foo"'])
 
+    def __repr__(self) -> str:
+        return f"<ArgValue name={self._name} type={ArgValueType.to_python_type(self.type)}>"
+
     @classmethod
-    def new_from_stinger(cls, name: str, stinger: Dict[str, str]) -> Arg:
+    def new_from_stinger(cls, stinger: Dict[str, str]) -> Arg:
         if "type" not in stinger:
             raise InvalidStingerStructure("No 'type' in arg structure")
-        arg = cls(name, ArgType.from_string(stinger["type"]))
+        if "name" not in stinger:
+            raise InvalidStingerStructure("No 'name' in arg structure")
+
+        arg_value_type = ArgValueType.from_string(stinger["type"])
+        arg = cls(name=stinger["name"], arg_type=arg_value_type)
+
         if "description" in stinger and isinstance(stinger["description"], str):
             arg.set_description(stinger["description"])
         return arg
@@ -103,18 +117,10 @@ class Signal(object):
     def __init__(self, topic_creator: SignalTopicCreator, name: str):
         self._topic_creator = topic_creator
         self._name = name
-        self._payload_type = PayloadType.ARG_LIST
-        self._schema = None  # type: Optional[Schema]
         self._arg_list = []  # type: List[Arg]
 
-    def set_schema(self, schema: Schema) -> Signal:
-        self._schema = schema
-        self._payload_type = PayloadType.JSON_SCHEMA
-        return self
-
-    def set_arg_list(self, arg_list: List[Arg]) -> Signal:
-        self._arg_list = arg_list
-        self._payload_type = PayloadType.ARG_LIST
+    def add_arg(self, arg: Arg) -> Signal:
+        self._arg_list.append(arg)
         return self
 
     @property
@@ -137,23 +143,16 @@ class Signal(object):
         signal = cls(topic_creator, name)
         if "payload" not in spec:
             raise InvalidStingerStructure("Signal specification must have 'payload'")
-        if (
-            ("args" in spec["payload"] and 1 or 0)
-            + ("schema" in spec["payload"] and 1 or 0)
-        ) != 1:
-            raise InvalidStingerStructure(
-                f"Signal specification must have 'args' xor 'schema': {spec}"
-            )
-        if "args" in spec["payload"]:
-            arg_list = []
-            for k, v in spec["payload"]["args"].items():
-                new_arg = Arg.new_from_stinger(name=k, stinger=v)
-                arg_list.append(new_arg)
-            signal.set_arg_list(arg_list)
-            return signal
-        elif "schema" in spec["payload"]:
-            return signal.set_schema(spec["payload"]["schema"])
+        if not isinstance(spec['payload'], list):
+            raise InvalidStingerStructure(f"Payload must be a list.  It is '{type(spec['payload'])}' ")
 
+        for arg in spec["payload"]:
+            if 'name' not in arg or 'type' not in arg:
+                raise InvalidStingerStructure("Arg must have name and type.")
+            new_arg = ArgValue.new_from_stinger(arg)
+            signal.add_arg(new_arg)
+
+        return signal
 
 class InterfaceEnum:
     def __init__(self, name: str):
@@ -226,7 +225,7 @@ class StingerSpec:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if "version" not in stinger["stingeripc"]:
             raise InvalidStingerStructure("Stinger spec version not present")
-        if stinger["stingeripc"]["version"] not in ["0.0.3", "0.0.4"]:
+        if stinger["stingeripc"]["version"] not in ["0.0.5"]:
             raise InvalidStingerStructure(
                 f"Unsupported stinger spec version {stinger['stingeripc']['version']}"
             )

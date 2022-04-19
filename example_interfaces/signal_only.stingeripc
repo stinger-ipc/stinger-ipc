@@ -1,24 +1,18 @@
 stingeripc:
-  version: 0.0.4
+  version: 0.0.5
 
 interface:
   name: SignalOnly
   version: 0.0.1
 
 signals:
-
-  theSignal:
-    payload:
-      schema:
-        $ref: "schemas.yaml#/signals/theSignal"
   
   anotherSignal:
     payload:
-      args:
-        one: 
-          type: float
-        two: 
-          type: boolean
-        three: 
-          type: string
+      - name: one 
+        type: float
+      - name: two 
+        type: boolean
+      - name: three 
+        type: string
 

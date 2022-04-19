@@ -61,6 +61,10 @@ if __name__ == '__main__':
     {%for sig_name, sig in stinger.signals.items()%}
     @client.receive_{{sig_name}}
     def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        """{{sig.description}}
+        {%for arg in sig.arg_list-%}
+        @param {{arg}} {{arg.name}} {{arg.python_type}} {arg.description}
+        {%endfor%}"""
         print(f"Got a '{{sig_name}}' signal")
     {%endfor%}
     
