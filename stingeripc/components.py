@@ -3,6 +3,7 @@ from enum import Enum
 import random
 from typing import Dict, List, Optional
 from .topic import SignalTopicCreator, InterfaceTopicCreator
+from jacobsjinjatoo import stringmanip
 
 ALLOWED_ARG_TYPES = []
 
@@ -12,9 +13,11 @@ class InvalidStingerStructure(Exception):
 
 
 class ArgType(Enum):
-    VALUE = 0
-    ENUM = 1
-    JSON_SCHEMA = 2
+    UNKNOWN = 0
+    VALUE = 1
+    ENUM = 2
+    JSON_SCHEMA = 3
+
 
 class ArgValueType(Enum):
     BOOLEAN = 0
@@ -23,14 +26,14 @@ class ArgValueType(Enum):
     STRING = 3
 
     @classmethod
-    def from_string(cls, arg_type: str) -> ArgType:
+    def from_string(cls, arg_type: str) -> ArgValueType:
         if hasattr(cls, arg_type.upper()):
             return getattr(cls, arg_type.upper())
         else:
             raise InvalidStingerStructure(f"No ArgType called '{arg_type}'")
 
     @classmethod
-    def to_python_type(cls, arg_type: ArgType) -> str:
+    def to_python_type(cls, arg_type: ArgValueType) -> str:
         if arg_type == cls.BOOLEAN:
             return "bool"
         elif arg_type == cls.INTEGER:
@@ -47,6 +50,7 @@ class Arg:
         self._name = name
         self._description = description
         self._default_value = None
+        self._type = ArgType.UNKNOWN
 
     def set_description(self, description: str) -> Arg:
         self._description = description
@@ -60,11 +64,45 @@ class Arg:
     def description(self) -> Optional[str]:
         return self._description
 
+    @classmethod
+    def new_from_stinger(cls, arg_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None) -> Arg:
+        if "type" not in arg_spec:
+            raise InvalidStingerStructure("No 'type' in arg structure")
+        if "name" not in arg_spec:
+            raise InvalidStingerStructure("No 'name' in arg structure")
+
+        if hasattr(ArgValueType, arg_spec["type"].upper()):
+            arg = ArgValue.new_from_stinger(arg_spec)
+            return arg
+        else:
+            if stinger_spec is None:
+                raise RuntimeError("Need the root StingerSpec when creating an enum or schema Arg")
+
+        if arg_spec["type"] == 'enum':
+            if "enumName" not in arg_spec:
+                raise InvalidStingerStructure("Enum args need a 'enumName'")
+            if arg_spec["enumName"] not in stinger_spec.enums:
+                raise InvalidStingerStructure(f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums")
+            arg = ArgEnum(arg_spec["name"], stinger_spec.enums['enumName'])
+            return arg
+
+
+class ArgEnum(Arg):
+    def __init__(self, name: str, enum: InterfaceEnum, ArgValueType, description: Optional[str] = None):
+        super().__init__(name, description)
+        self._enum = enum
+        self._type = ArgType.ENUM
+
+    @property
+    def python_type(self) -> str:
+        return self._enum.python_type
+
 
 class ArgValue(Arg):
     def __init__(self, name: str, arg_type: ArgValueType, description: Optional[str] = None):
         super().__init__(name, description)
         self._arg_type = arg_type
+        self._type = ArgType.VALUE
 
     @property
     def type(self) -> ArgValueType:
@@ -137,19 +175,19 @@ class Signal(object):
 
     @classmethod
     def new_from_stinger(
-        cls, topic_creator: SignalTopicCreator, name: str, spec: Dict[str, str]
+        cls, topic_creator: SignalTopicCreator, name: str, signal_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None
     ) -> "Signal":
         """Alternative constructor from a Stinger signal structure."""
         signal = cls(topic_creator, name)
-        if "payload" not in spec:
+        if "payload" not in signal_spec:
             raise InvalidStingerStructure("Signal specification must have 'payload'")
-        if not isinstance(spec['payload'], list):
-            raise InvalidStingerStructure(f"Payload must be a list.  It is '{type(spec['payload'])}' ")
+        if not isinstance(signal_spec['payload'], list):
+            raise InvalidStingerStructure(f"Payload must be a list.  It is '{type(signal_spec['payload'])}' ")
 
-        for arg in spec["payload"]:
-            if 'name' not in arg or 'type' not in arg:
+        for arg_spec in signal_spec["payload"]:
+            if 'name' not in arg_spec or 'type' not in arg_spec:
                 raise InvalidStingerStructure("Arg must have name and type.")
-            new_arg = ArgValue.new_from_stinger(arg)
+            new_arg = Arg.new_from_stinger(arg_spec, stinger_spec)
             signal.add_arg(new_arg)
 
         return signal
@@ -166,6 +204,10 @@ class InterfaceEnum:
     @property
     def name(self):
         return self._name
+
+    @property
+    def python_type(self) -> str:
+        return f"interface_enums.{stringmanip.upper_camel_case(self.name)}"
 
     @property
     def values(self):
