@@ -14,20 +14,20 @@ class StingerInterface(StingerSpec):
         super().__init__(itc, stinger['interface'])
 
     @staticmethod
-    def _create_topic_creator(stinger: Dict[str, Any], topic_prefix: Optional[str] = None) -> InterfaceTopicCreator:
+    def _create_topic_creator(stinger_spec: Dict[str, Any], topic_prefix: Optional[str] = None) -> InterfaceTopicCreator:
         if (
-            "stingeripc" not in stinger
-            or "version" not in stinger["stingeripc"]
-            or stinger["stingeripc"]["version"] not in [VERSION_SUPPORTED]
+            "stingeripc" not in stinger_spec
+            or "version" not in stinger_spec["stingeripc"]
+            or stinger_spec["stingeripc"]["version"] not in [VERSION_SUPPORTED]
         ):
             raise InvalidStingerStructure(
                 f"Provided Stinger Spec does not claim to be version {VERSION_SUPPORTED}"
             )
-        if "interface" not in stinger or "name" not in stinger["interface"]:
+        if "interface" not in stinger_spec or "name" not in stinger_spec["interface"]:
             raise InvalidStingerStructure(
                 "Could not find interface name in Stinger Spec"
             )
-        itc = InterfaceTopicCreator(stinger["interface"]["name"], root=topic_prefix)
+        itc = InterfaceTopicCreator(stinger_spec["interface"]["name"], root=topic_prefix)
         return itc
 
     @classmethod

@@ -83,12 +83,12 @@ class Arg:
                 raise InvalidStingerStructure("Enum args need a 'enumName'")
             if arg_spec["enumName"] not in stinger_spec.enums:
                 raise InvalidStingerStructure(f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums")
-            arg = ArgEnum(arg_spec["name"], stinger_spec.enums['enumName'])
+            arg = ArgEnum(arg_spec["name"], stinger_spec.enums[arg_spec['enumName']])
             return arg
 
 
 class ArgEnum(Arg):
-    def __init__(self, name: str, enum: InterfaceEnum, ArgValueType, description: Optional[str] = None):
+    def __init__(self, name: str, enum: InterfaceEnum, description: Optional[str] = None):
         super().__init__(name, description)
         self._enum = enum
         self._type = ArgType.ENUM
@@ -207,9 +207,17 @@ class InterfaceEnum:
     def name(self):
         return self._name
 
+    @staticmethod
+    def get_module_name() -> str:
+        return "interface_enums"
+
+    @staticmethod
+    def get_module_alias() -> str:
+        return "iface_enums"
+
     @property
     def python_type(self) -> str:
-        return f"interface_enums.{stringmanip.upper_camel_case(self.name)}"
+        return f"{self.get_module_alias()}.{stringmanip.upper_camel_case(self.name)}"
 
     @property
     def values(self):
@@ -263,6 +271,15 @@ class StingerSpec:
     def version(self):
         return self._version
 
+    @staticmethod
+    def get_enum_module_name() -> str:
+        return InterfaceEnum.get_module_name()
+
+    @staticmethod
+    def get_enum_module_alias() -> str:
+        return InterfaceEnum.get_module_alias()
+
+
     @classmethod
     def new_from_stinger(cls, topic_creator, stinger: Dict) -> StingerSpec:
         if "stingeripc" not in stinger:
@@ -295,6 +312,7 @@ class StingerSpec:
                         topic_creator.signal_topic_creator(),
                         signal_name,
                         signal_spec,
+                        stinger_spec
                     )
                     assert (
                         signal is not None

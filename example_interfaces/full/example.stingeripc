@@ -1,0 +1,26 @@
+stingeripc:
+  version: 0.0.5
+
+interface:
+  name: Example
+  version: 0.0.1
+
+enums:
+    dayOfTheWeek:
+        - name: Sunday
+        - name: Monday
+        - name: Tuesday
+        - name: Wednesday
+        - name: Thursday
+        - name: Friday
+
+signals:
+  
+  todayIs:
+    payload:
+      - name: dayOfMonth
+        type: integer
+      - name: dayOfWeek
+        type: enum
+        enumName: dayOfTheWeek
+

@@ -7,7 +7,7 @@ This is the Server for the {{stinger.name}} interface.
 
 import json
 from connection import MqttConnection
-{%if stinger.uses_enums()%}import interface_enums as enum{%endif%}
+{%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
 
 class {{stinger.name}}Server(object):
 

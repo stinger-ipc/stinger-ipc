@@ -8,7 +8,7 @@ This is the Client for the {{stinger.name}} interface.
 from typing import Dict, Callable, List, Any
 import json
 from connection import MqttConnection
-{%if stinger.uses_enums()%}import interface_enums as enum{%endif%}
+{%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
 
 class {{stinger.name}}Client(object):
 
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """{{sig.description}}
         {%for arg in sig.arg_list-%}
-        @param {{arg}} {{arg.name}} {{arg.python_type}} {arg.description}
+        @param {{arg.name}} {{arg.python_type}} {{arg.description or ''}}
         {%endfor%}"""
         print(f"Got a '{{sig_name}}' signal")
     {%endfor%}
