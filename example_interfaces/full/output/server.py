@@ -40,12 +40,12 @@ if __name__ == '__main__':
     from time import sleep
 
     conn = MqttConnection('localhost', 1883)
-    server = SignalOnlyServer(conn)
+    server = ExampleServer(conn)
 
-    server.emit_todayIs(42, )
+    server.emit_todayIs(2020, iface_enums.DayOfTheWeek.MONDAY)
     
 
     sleep(4)
 
-    server.emit_todayIs(dayOfMonth=42, dayOfWeek=)
+    server.emit_todayIs(dayOfMonth=2020, dayOfWeek=iface_enums.DayOfTheWeek.FRIDAY)
     

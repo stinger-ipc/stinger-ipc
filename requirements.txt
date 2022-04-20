@@ -1,3 +1,4 @@
 jacobs-jinja-too
 yamlloader
 pyyaml
+stringcase

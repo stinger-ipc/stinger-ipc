@@ -44,6 +44,11 @@ class {{stinger.name}}Client(object):
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+
+            # Ensure received payload values have correct type.
+            {%for arg in sig.arg_list-%}
+            kwargs["{{arg.name}}"] = {{arg.python_type}}(kwargs["{{arg.name}}"])
+            {%endfor%}
             self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
         {%endfor%}
 
@@ -65,7 +70,7 @@ if __name__ == '__main__':
         {%for arg in sig.arg_list-%}
         @param {{arg.name}} {{arg.python_type}} {{arg.description or ''}}
         {%endfor%}"""
-        print(f"Got a '{{sig_name}}' signal")
+        print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
     {%endfor%}
     
     print("Ctrl-C will stop the program.")

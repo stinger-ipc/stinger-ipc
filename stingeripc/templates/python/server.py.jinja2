@@ -65,7 +65,7 @@ if __name__ == '__main__':
     from time import sleep
 
     conn = MqttConnection('localhost', 1883)
-    server = SignalOnlyServer(conn)
+    server = {{stinger.name}}Server(conn)
 
     {%for sig_name, sig in stinger.signals.items()-%}
     server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.random_example_value}}{%if not loop.last%}, {%endif%}{%endfor%})

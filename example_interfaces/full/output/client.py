@@ -37,6 +37,11 @@ class ExampleClient(object):
         if self._conn.is_topic_sub(topic, "Example/signal/todayIs"):
             allowed_args = ["dayOfMonth", "dayOfWeek", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+
+            # Ensure received payload values have correct type.
+            kwargs["dayOfMonth"] = int(kwargs["dayOfMonth"])
+            kwargs["dayOfWeek"] = iface_enums.DayOfTheWeek(kwargs["dayOfWeek"])
+            
             self._do_callbacks_for(self._signal_recv_callbacks_for_todayIs, **kwargs)
         
 
@@ -58,7 +63,7 @@ if __name__ == '__main__':
         @param dayOfMonth int 
         @param dayOfWeek iface_enums.DayOfTheWeek 
         """
-        print(f"Got a 'todayIs' signal")
+        print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
     
     
     print("Ctrl-C will stop the program.")

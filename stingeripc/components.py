@@ -1,9 +1,11 @@
 from __future__ import annotations
 from enum import Enum
 import random
+import stringcase
 from typing import Dict, List, Optional
 from .topic import SignalTopicCreator, InterfaceTopicCreator
 from jacobsjinjatoo import stringmanip
+
 
 ALLOWED_ARG_TYPES = []
 
@@ -100,6 +102,11 @@ class ArgEnum(Arg):
     @property
     def python_type(self) -> str:
         return self._enum.python_type
+
+    @property
+    def random_example_value(self, lang="python") -> str:
+        value = stringcase.constcase(random.choice(self._enum.values))
+        return f"{self._enum.get_module_alias()}.{self._enum.class_name}.{value}"
 
 
 class ArgValue(Arg):
@@ -204,12 +211,15 @@ class InterfaceEnum:
         self._values = []
 
     def add_value(self, value: str):
-        print(f"Adding {value} to {self._name}")
         self._values.append(value)
 
     @property
     def name(self):
         return self._name
+
+    @property
+    def class_name(self):
+        return stringmanip.upper_camel_case(self.name)
 
     @staticmethod
     def get_module_name() -> str:
