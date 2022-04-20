@@ -61,6 +61,10 @@ class Arg:
         return self._name
 
     @property
+    def arg_type(self) -> ArgType:
+        return self._type
+
+    @property
     def description(self) -> Optional[str]:
         return self._description
 

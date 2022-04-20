@@ -21,8 +21,14 @@ class {{stinger.name}}Server(object):
     
     {%for sig_name, sig in stinger.signals.items()-%}
     def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        {%for arg in sig.arg_list%}
+        if not isinstance({{arg.name}}, {{arg.python_type}}):
+            raise ValueError(f"The '{{arg.name}}' value must be {{arg.python_type}}.")
+        {%-endfor%}
+        
         payload = { {%-for arg in sig.arg_list%}
-            "{{arg.name}}": {{arg.name}}, {%endfor%}
+            {%if arg.arg_type.name.lower() == 'value'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}),{%endif-%}
+            {%if arg.arg_type.name.lower() == 'enum'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}).value,{%endif%}{%endfor%}
         }
         self._conn.publish("{{sig.topic}}", json.dumps(payload), qos=1, retain=False)
 
