@@ -16,10 +16,18 @@ class SignalOnlyServer(object):
         
     
     def emit_anotherSignal(self, one: float, two: bool, three: str):
+        
+        if not isinstance(one, float):
+            raise ValueError(f"The 'one' value must be float.")
+        if not isinstance(two, bool):
+            raise ValueError(f"The 'two' value must be bool.")
+        if not isinstance(three, str):
+            raise ValueError(f"The 'three' value must be str.")
+        
         payload = {
-            "one": one, 
-            "two": two, 
-            "three": three, 
+            "one": float(one),
+            "two": bool(two),
+            "three": str(three),
         }
         self._conn.publish("SignalOnly/signal/anotherSignal", json.dumps(payload), qos=1, retain=False)
 
@@ -37,10 +45,10 @@ if __name__ == '__main__':
     conn = MqttConnection('localhost', 1883)
     server = SignalOnlyServer(conn)
 
-    server.emit_anotherSignal(3.14, True, "Joe")
+    server.emit_anotherSignal(1.0, False, "example")
     
 
     sleep(4)
 
-    server.emit_anotherSignal(one=2.5, two=False, three="Joe")
+    server.emit_anotherSignal(one=3.14, two=False, three="apples")
     

@@ -42,10 +42,10 @@ if __name__ == '__main__':
     conn = MqttConnection('localhost', 1883)
     server = ExampleServer(conn)
 
-    server.emit_todayIs(2020, iface_enums.DayOfTheWeek.MONDAY)
+    server.emit_todayIs(2022, iface_enums.DayOfTheWeek.WEDNESDAY)
     
 
     sleep(4)
 
-    server.emit_todayIs(dayOfMonth=2020, dayOfWeek=iface_enums.DayOfTheWeek.FRIDAY)
+    server.emit_todayIs(dayOfMonth=1981, dayOfWeek=iface_enums.DayOfTheWeek.TUESDAY)
     

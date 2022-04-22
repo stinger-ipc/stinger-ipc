@@ -37,6 +37,12 @@ class SignalOnlyClient(object):
         if self._conn.is_topic_sub(topic, "SignalOnly/signal/anotherSignal"):
             allowed_args = ["one", "two", "three", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+
+            # Ensure received payload values have correct type.
+            kwargs["one"] = float(kwargs["one"])
+            kwargs["two"] = bool(kwargs["two"])
+            kwargs["three"] = str(kwargs["three"])
+            
             self._do_callbacks_for(self._signal_recv_callbacks_for_anotherSignal, **kwargs)
         
 
@@ -55,11 +61,11 @@ if __name__ == '__main__':
     @client.receive_anotherSignal
     def print_anotherSignal_receipt(one: float, two: bool, three: str):
         """
-        @param <ArgValue name=one type=float> one float {arg.description}
-        @param <ArgValue name=two type=bool> two bool {arg.description}
-        @param <ArgValue name=three type=str> three str {arg.description}
+        @param one float 
+        @param two bool 
+        @param three str 
         """
-        print(f"Got a 'anotherSignal' signal")
+        print(f"Got a 'anotherSignal' signal: one={ one } two={ two } three={ three } ")
     
     
     print("Ctrl-C will stop the program.")
