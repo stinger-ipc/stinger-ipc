@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import Enum
 import random
 import stringcase
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from .topic import SignalTopicCreator, InterfaceTopicCreator
 from jacobsjinjatoo import stringmanip
 
@@ -248,12 +248,48 @@ class InterfaceEnum:
         return ie
 
 
+class Broker:
+    def __init__(self, name: str="Default"):
+        self._name = name
+        self._host: str = None
+        self._port: int = None
+        self._auth = None
+    
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def hostname(self):
+        return self._host
+
+    @hostname.setter
+    def set_hostname(self, value: str):
+        self._host = value
+
+    @property
+    def port(self):
+        return self._port
+
+    @port.setter
+    def set_port(self, port: int):
+        self._port 
+
+    @classmethod
+    def new_from_stinger(cls, name: str, spec: Dict[str, Any]) -> Broker:
+        new_broker = cls(name=name)
+        if 'host' in spec:
+            new_broker.hostname = spec['host']
+        if 'port' in spec:
+            new_broker.port = int(spec['port'])
+        return new_broker
+
 class StingerSpec:
     def __init__(self, topic_creator: InterfaceTopicCreator, interface):
         self._topic_creator = topic_creator
         try:
-            self._name = interface["name"]
-            self._version = interface["version"]
+            self._name: str = interface["name"]
+            self._version: str = interface["version"]
         except KeyError as e:
             raise InvalidStingerStructure(
                 f"Missing interface property in {interface}: {e}"
@@ -262,9 +298,22 @@ class StingerSpec:
             raise InvalidStingerStructure(
                 f"Interface didn't appear to have a correct type"
             )
-        self.signals = {}
+        self.signals: Dict[str, Signal] = {}
         self.params = {}
-        self.enums = {}
+        self.enums: Dict[str, InterfaceEnum] = {}
+        self._brokers: Dict[str, Broker] = {}
+
+    def add_broker(self, broker: Broker):
+        assert broker is not None
+        self._brokers[broker.name] = broker
+
+    @property
+    def brokers(self) -> Dict[str, Broker]:
+        if len(self._brokers) == 0:
+            default_broker = Broker()
+            return {default_broker.name: default_broker}
+        else:
+            return self._brokers
 
     def add_signal(self, signal: Signal):
         assert signal is not None
@@ -293,7 +342,6 @@ class StingerSpec:
     def get_enum_module_alias() -> str:
         return InterfaceEnum.get_module_alias()
 
-
     @classmethod
     def new_from_stinger(cls, topic_creator, stinger: Dict) -> StingerSpec:
         if "stingeripc" not in stinger:
@@ -320,6 +368,17 @@ class StingerSpec:
             )
 
         try:
+            if "brokers" in stinger:
+                for broker_name, broker_spec in stinger["brokers"].items():
+                    broker = Broker.new_from_stinger(broker_name, broker_spec)
+                    assert (broker is not None), f"Did not create broker from {broker_name} and {broker_spec}"
+                    stinger_spec.add_broker(broker)
+        except TypeError as e:
+            raise InvalidStingerStructure(
+                f"Broker specification appears to be invalid: {e}"
+            )
+
+        try:
             if "signals" in stinger:
                 for signal_name, signal_spec in stinger["signals"].items():
                     signal = Signal.new_from_stinger(
@@ -336,7 +395,5 @@ class StingerSpec:
             raise InvalidStingerStructure(
                 f"Signal specification appears to be invalid: {e}"
             )
-
-
 
         return stinger_spec
