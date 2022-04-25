@@ -7,7 +7,7 @@ This is the Server for the EnumOnly interface.
 
 import json
 from connection import MqttConnection
-import interface_enums as enum
+import interface_enums as iface_enums
 
 class EnumOnlyServer(object):
 
@@ -25,9 +25,9 @@ if __name__ == '__main__':
     a more meaningful way.
     """
     from time import sleep
-
-    conn = MqttConnection('localhost', 1883)
-    server = SignalOnlyServer(conn)
+    
+    conn = DefaultConnection('localhost', 1883)
+    server = EnumOnlyServer(conn)
 
     
 

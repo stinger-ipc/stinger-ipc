@@ -1,0 +1,74 @@
+!!python/object/apply:collections.OrderedDict
+- - - asyncapi
+    - 2.0.0
+  - - id
+    - urn:stingeripc:EnumOnly
+  - - info
+    - !!python/object/apply:collections.OrderedDict
+      - []
+  - - channels
+    - !!python/object/apply:collections.OrderedDict
+      - []
+  - - components
+    - !!python/object/apply:collections.OrderedDict
+      - - - operationTraits
+          - !!python/object/apply:collections.OrderedDict
+            - []
+        - - messages
+          - !!python/object/apply:collections.OrderedDict
+            - []
+        - - schemas
+          - !!python/object/apply:collections.OrderedDict
+            - - - enum_fruits
+                - description: 'The fruits enum has the following values:
+
+                    0 - apple
+
+                    1 - banana
+
+                    2 - pear'
+                  enum:
+                  - 0
+                  - 1
+                  - 2
+                  type: integer
+              - - enum_months
+                - description: 'The months enum has the following values:
+
+                    0 - January
+
+                    1 - February
+
+                    2 - March
+
+                    3 - April
+
+                    4 - May
+
+                    5 - June
+
+                    6 - July
+
+                    7 - August
+
+                    8 - September
+
+                    9 - October
+
+                    10 - November
+
+                    11 - December'
+                  enum:
+                  - 0
+                  - 1
+                  - 2
+                  - 3
+                  - 4
+                  - 5
+                  - 6
+                  - 7
+                  - 8
+                  - 9
+                  - 10
+                  - 11
+                  type: integer

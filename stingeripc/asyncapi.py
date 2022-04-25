@@ -9,8 +9,9 @@ from jacobsjinjatoo import templator as jj2
 from jacobsjinjatoo import stringmanip
 import os.path
 from enum import Enum
-from typing import Optional
+from typing import Optional, Dict, Any
 
+from .components import StingerSpec
 
 class Direction(Enum):
     SERVER_PUBLISHES = 1
@@ -115,6 +116,7 @@ class AsyncApiCreator(object):
                     {
                         "operationTraits": OrderedDict(),
                         "messages": OrderedDict(),
+                        "schemas": OrderedDict()
                     }
                 ),
             }
@@ -123,82 +125,18 @@ class AsyncApiCreator(object):
         self.messages = []
         self.name = "interface"
 
+    def add_schema(self, schema_name, schema_spec: Dict[str, Any]):
+        self.asyncapi['components']['schemas'][schema_name] = schema_spec
+
     def _add_channel(self, channel: Channel):
         self.channels.append(channel)
 
     def _add_message(self, message: Message):
         self.messages.append(message)
 
-    def _set_interface_name(self, name):
+    def set_interface_name(self, name):
         self.name = name
         self.asyncapi["id"] = f"urn:stingeripc:{name}"
-
-    def _set_interface_version(self, version_str):
-        self.asyncapi["info"]["version"] = version_str
-        message = Message("stinger_version", {"type": "string"})
-        channel = Channel(
-            topic=f"{self.name}/stingerVersion",
-            name="stinger_version",
-            direction=Direction.SERVER_PUBLISHES,
-            message_name=message.name,
-        )
-        channel.set_mqtt(1, True)
-        self._add_channel(channel)
-        self._add_message(message)
-
-    def _add_signal(self, signal_name, signal_def):
-        msg_name = f"{signal_name}Signal"
-        msg = Message(msg_name).set_reference(signal_def["payload"])
-        self._add_message(msg)
-        channel = Channel(
-            f"{self.name}/{signal_name}",
-            signal_name,
-            Direction.SERVER_PUBLISHES,
-            msg.name,
-        )
-        channel.set_mqtt(2, False)
-        self._add_channel(channel)
-
-    def _add_param(self, param_name, param_def):
-        msg_name = "{}Param".format(stringmanip.upper_camel_case(param_name))
-        msg = Message(msg_name).set_reference(param_def["type"])
-        self._add_message(msg)
-
-        value_channel_topic = f"{self.name}/{param_name}/value"
-        value_channel_name = f"{param_name}Value"
-        value_channel = Channel(
-            value_channel_topic,
-            value_channel_name,
-            Direction.SERVER_PUBLISHES,
-            msg.name,
-        )
-        value_channel.set_mqtt(1, True)
-        self._add_channel(value_channel)
-
-        update_channel_topic = f"{self.name}/{param_name}/update"
-        update_channel_name = f"Update{param_name}"
-        update_channel = Channel(
-            update_channel_topic,
-            update_channel_name,
-            Direction.SERVER_SUBSCRIBES,
-            msg.name,
-        )
-        update_channel.set_mqtt(1, True)
-        self._add_channel(update_channel)
-
-    def add_stinger(self, stinger):
-        assert stinger["stingeripc"] == "0.0.1"
-        try:
-            self._set_interface_name(stinger["interface"]["name"])
-        except KeyError:
-            raise Exception("The Stinger File does not have a name")
-        self._set_interface_version(stinger["interface"]["version"])
-        if "signals" in stinger:
-            for sig_name, sig_def in stinger["signals"].items():
-                self._add_signal(sig_name, sig_def)
-        if "params" in stinger:
-            for param_name, param_def in stinger["params"].items():
-                self._add_param(param_name, param_def)
 
     def get_asyncapi(self, client_type: SpecType, use_common=None):
         spec = self.asyncapi.copy()
@@ -210,3 +148,36 @@ class AsyncApiCreator(object):
             for msg in self.messages:
                 spec["components"]["messages"][msg.name] = msg.get_message()
         return spec
+
+
+class StingerToAsyncApi:
+
+    def __init__(self, stinger: StingerSpec):
+        self._asyncapi: AsyncApiCreator = AsyncApiCreator()
+        self._stinger: StingerSpec = stinger
+        self._convert()
+
+    def _convert(self):
+        self._asyncapi.set_interface_name(self._stinger.name)
+        self._add_enums()
+        return self
+
+    def _add_enums(self):
+        for enum_name, enum_spec in self._stinger.enums.items():
+            schema_name = f"enum_{enum_name}"
+            description = [
+                f"The {enum_name} enum has the following values:"
+            ]
+            accepted_values = []
+            for i, enum_value in enumerate(enum_spec.values):
+                description.append(f"{i} - {enum_value}")
+                accepted_values.append(i)
+            json_schema = {
+                "type":  "integer",
+                "description": "\n".join(description),
+                "enum": accepted_values
+            }
+            self._asyncapi.add_schema(schema_name, json_schema)
+
+    def get_asyncapi(self):
+        return self._asyncapi.get_asyncapi(SpecType.CLIENT)

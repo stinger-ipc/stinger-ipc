@@ -1,13 +1,13 @@
 import os
 import sys
-
-from stingeripc.asyncapi import AsyncApiCreator
-from stingeripc import StingerInterface
+import yaml
 
 libpath = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")
 )
 sys.path.append(libpath)
+
+from stingeripc import StingerInterface, StingerToAsyncApi
 
 if __name__ == '__main__':
     inname = sys.argv[1]
@@ -15,8 +15,9 @@ if __name__ == '__main__':
 
     with open(inname, "r") as f:
         stinger = StingerInterface.from_yaml(f)
-    params = {
-        "stinger": stinger,
-    }
 
-    converter = AsyncApiCreator()
+    converter = StingerToAsyncApi(stinger)
+    asyncapi_spec = converter.get_asyncapi()
+
+    with open(os.path.join(outdir, "asyncapi.yaml"), "w") as f:
+        yaml.dump(asyncapi_spec, f)

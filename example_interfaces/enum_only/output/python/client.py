@@ -8,7 +8,7 @@ This is the Client for the EnumOnly interface.
 from typing import Dict, Callable, List, Any
 import json
 from connection import MqttConnection
-import interface_enums as enum
+import interface_enums as iface_enums
 
 class EnumOnlyClient(object):
 
@@ -38,10 +38,9 @@ class EnumOnlyClient(object):
 
 if __name__ == '__main__':
     import signal
-
-    conn = MqttConnection('localhost', 1883)
+    
+    conn = DefaultConnection('localhost', 1883)
     client = EnumOnlyClient(conn)
-
     
     
     print("Ctrl-C will stop the program.")
