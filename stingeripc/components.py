@@ -247,20 +247,24 @@ class InterfaceEnum:
                 raise InvalidSchemaStructure("InterfaceEnum item must have a name")
         return ie
 
+class MqttTransportProtocol(Enum):
+    TCP = 0
+    WEBSOCKETS = 1
 
 class Broker:
     def __init__(self, name: str="Default"):
-        self._name = name
-        self._host: str = None
-        self._port: int = None
+        self._name: str = name
+        self._host: Optional[str] = None
+        self._port: Optional[int] = None
         self._auth = None
+        self._transport_protocol: MqttTransportProtocol = MqttTransportProtocol.TCP
     
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def hostname(self):
+    def hostname(self) -> Optional[str]:
         return self._host
 
     @hostname.setter
@@ -268,7 +272,7 @@ class Broker:
         self._host = value
 
     @property
-    def port(self):
+    def port(self) -> Optional[int]:
         return self._port
 
     @port.setter

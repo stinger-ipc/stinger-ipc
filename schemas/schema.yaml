@@ -35,20 +35,15 @@ parameters:
           type: string
         port:
           type: integer
+        protocol:
+          type: string
+          enum:
+            - tcp
+            - websockets
+          default: tcp
         authentication:
-          oneOf:
-            - type: null
-            - type: string
-              const: "none"
-            - type: object
-              properties:
-                username:
-                  type: string
-                password:
-                  type: string
-              required:
-                - username
-                - password
+          type:
+
       dependentRequired:
         host: ["port"]
 
