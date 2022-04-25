@@ -1,19 +1,21 @@
-from typing import Callable
+from typing import Callable, Optional
 from paho.mqtt import client as mqtt_client
 from queue import Queue, Empty
 
-class MqttConnection:
 
-    def __init__(self, host, port):
-        self._host = host
-        self._port = port
+
+class DefaultConnection:
+
+    def __init__(self, host: str, port: int):
+        self._host: str = host
+        self._port: int = port
         self._queued_messages = Queue()
-        self._connected = False
+        self._connected: bool = False
         self._client = mqtt_client.Client()
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._client.connect(self._host, self._port)
-        self._message_callback = None
+        self._message_callback: Optional[Callable[[str, str], None]] = None
         self._client.loop_start()
 
     def __del__(self):
@@ -51,3 +53,4 @@ class MqttConnection:
     
     def is_topic_sub(self, topic, sub) -> bool:
         return topic == sub
+

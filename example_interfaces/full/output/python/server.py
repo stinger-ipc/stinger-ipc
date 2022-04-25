@@ -38,14 +38,14 @@ if __name__ == '__main__':
     a more meaningful way.
     """
     from time import sleep
-
-    conn = MqttConnection('localhost', 1883)
+    
+    conn = DefaultConnection('localhost', 1883)
     server = ExampleServer(conn)
 
-    server.emit_todayIs(2022, iface_enums.DayOfTheWeek.WEDNESDAY)
+    server.emit_todayIs(2020, iface_enums.DayOfTheWeek.SUNDAY)
     
 
     sleep(4)
 
-    server.emit_todayIs(dayOfMonth=1981, dayOfWeek=iface_enums.DayOfTheWeek.TUESDAY)
+    server.emit_todayIs(dayOfMonth=2020, dayOfWeek=iface_enums.DayOfTheWeek.MONDAY)
     

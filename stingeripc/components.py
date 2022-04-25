@@ -264,6 +264,10 @@ class Broker:
         return self._name
 
     @property
+    def class_name(self) -> str:
+        return f"{stringcase.pascalcase(self.name)}Connection"
+
+    @property
     def hostname(self) -> Optional[str]:
         return self._host
 
@@ -287,6 +291,10 @@ class Broker:
         if 'port' in spec:
             new_broker.port = int(spec['port'])
         return new_broker
+
+    def __repr__(self) -> str:
+        return f"<Broker name={self.name} host={self.hostname}>"
+
 
 class StingerSpec:
     def __init__(self, topic_creator: InterfaceTopicCreator, interface):
@@ -318,6 +326,10 @@ class StingerSpec:
             return {default_broker.name: default_broker}
         else:
             return self._brokers
+
+    def get_example_broker(self) -> Broker:
+        for broker in self.brokers.values():
+            return broker
 
     def add_signal(self, signal: Signal):
         assert signal is not None

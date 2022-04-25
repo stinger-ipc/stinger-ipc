@@ -59,10 +59,9 @@ class {{stinger.name}}Client(object):
 
 if __name__ == '__main__':
     import signal
-
-    conn = MqttConnection('localhost', 1883)
+    {%set broker = stinger.get_example_broker()%}
+    conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
     client = {{stinger.name}}Client(conn)
-
     {%for sig_name, sig in stinger.signals.items()%}
     @client.receive_{{sig_name}}
     def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):

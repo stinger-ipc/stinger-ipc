@@ -2,12 +2,13 @@ from typing import Callable, Optional
 from paho.mqtt import client as mqtt_client
 from queue import Queue, Empty
 
-{%for broker in stinger.brokers%}
-class {{broker.name | UpperCamelCase}}Connection:
 
-    def __init__(self{%if broker.host is None%}, host: str, port: int{%endif%}):
-        self._host: str = {%if broker.host is None %}host{%else%}{{broker.host}{%endif%}}
-        self._port: int = {%if broker.port is None %}port{%else%}{{broker.port}}{%endif%}
+{%for broker in stinger.brokers.values()%}
+class {{broker.class_name}}:
+
+    def __init__(self{%if broker.hostname is none%}, host: str, port: int{%endif%}):
+        self._host: str = {%if broker.hostname is none %}host{%else%}{{broker.hostname}}{%endif%}
+        self._port: int = {%if broker.port is none %}port{%else%}{{broker.port}}{%endif%}
         self._queued_messages = Queue()
         self._connected: bool = False
         self._client = mqtt_client.Client()

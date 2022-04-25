@@ -3,22 +3,26 @@
 
 #include <mosquitto.h>
 #include <queue>
+#include <string>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "ibrokerconnection.hpp"
 
+
 /*! This class presents a connection to a MQTT broker.
  */
-class BrokerConnection : public IBrokerConnection
+class DefaultConnection : public IBrokerConnection
 {
 public:
 
-    /*! Constructor for a BrokerConnection.
+    /*! Constructor for a DefaultConnection.
+     * \param hostname IP address or hostname of the MQTT broker server.
+     * \param port Port where the MQTT broker is running (often 1883).
      */
-    BrokerConnection();
+    DefaultConnection(const std::string& host, int port);
 
-    virtual ~BrokerConnection();
+    virtual ~DefaultConnection();
 
     /*! Publish a message to the MQTT broker.
      * \param topic the topic of the message.
@@ -82,4 +86,3 @@ private:
     std::vector<std::function<void(const std::string&, const std::string&)>> _messageCallbacks;
     std::queue<MqttMessage> _msgQueue;
 };
-

@@ -53,10 +53,9 @@ class SignalOnlyClient(object):
 
 if __name__ == '__main__':
     import signal
-
-    conn = MqttConnection('localhost', 1883)
+    
+    conn = DefaultConnection('localhost', 1883)
     client = SignalOnlyClient(conn)
-
     
     @client.receive_anotherSignal
     def print_anotherSignal_receipt(one: float, two: bool, three: str):

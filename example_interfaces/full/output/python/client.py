@@ -52,10 +52,9 @@ class ExampleClient(object):
 
 if __name__ == '__main__':
     import signal
-
-    conn = MqttConnection('localhost', 1883)
+    
+    conn = DefaultConnection('localhost', 1883)
     client = ExampleClient(conn)
-
     
     @client.receive_todayIs
     def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: iface_enums.DayOfTheWeek):

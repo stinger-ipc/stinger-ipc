@@ -41,14 +41,14 @@ if __name__ == '__main__':
     a more meaningful way.
     """
     from time import sleep
-
-    conn = MqttConnection('localhost', 1883)
+    
+    conn = DefaultConnection('localhost', 1883)
     server = SignalOnlyServer(conn)
 
-    server.emit_anotherSignal(1.0, False, "example")
+    server.emit_anotherSignal(1.0, True, "Joe")
     
 
     sleep(4)
 
-    server.emit_anotherSignal(one=3.14, two=False, three="apples")
+    server.emit_anotherSignal(one=1.53, two=False, three="Joe")
     
