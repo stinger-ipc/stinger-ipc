@@ -33,3 +33,9 @@ if __name__ == "__main__":
         source_code_path = os.path.join("include", f)
         if f.endswith(".jinja2"):
             t.render_template(source_code_path, source_code_path[:-len(".jinja2")], **params)
+
+    src_template_dir = os.path.join(template_dir, "src")
+    for f in os.listdir(src_template_dir):
+        source_code_path = os.path.join("src", f)
+        if f.endswith(".jinja2"):
+            t.render_template(source_code_path, source_code_path[:-len(".jinja2")], **params)
