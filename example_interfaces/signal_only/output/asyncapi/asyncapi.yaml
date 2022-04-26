@@ -1,0 +1,32 @@
+asyncapi: 2.0.0
+id: urn:stingeripc:SignalOnly
+info: {}
+channels:
+  SignalOnly/signal/anotherSignal:
+    subscribe:
+      message:
+        $ref: '#/components/messages/anotherSignal'
+      operationId: anotherSignal
+      bindings:
+        mqtt:
+          qos: 1
+          retain: false
+components:
+  operationTraits: {}
+  messages:
+    anotherSignal:
+      name: anotherSignal
+      payload:
+        properties:
+          one:
+            type: number
+          three:
+            type: string
+          two:
+            type: boolean
+        required:
+        - one
+        - two
+        - three
+        type: object
+  schemas: {}
