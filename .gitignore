@@ -1,1 +1,10 @@
+
+# Python
 __pycache__
+
+# Rust
+example_interfaces/*/output/rust/target
+Cargo.lock
+
+# CPP
+example_interfaces/*/output/cpp/*/*.o
