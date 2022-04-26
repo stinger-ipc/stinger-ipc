@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Optional, Dict, Any
 
 from .components import StingerSpec
+from .args import ArgType, ArgValueType
 
 class Direction(Enum):
     SERVER_PUBLISHES = 1
@@ -22,6 +23,27 @@ class SpecType(Enum):
     SERVER = 1
     CLIENT = 2
     LIB = 3
+
+
+class ObjectSchema:
+    def __init__(self):
+        self._properties = OrderedDict()
+    
+    def add_value_property(self, name: str, arg_type: ArgValueType):
+        schema = {
+            "type": ArgValueType.
+        }
+        self._properties[name]
+
+    def to_schema(self) -> Dict[str, Union[Dict[str,Any], List[str]]]:
+        schema = {
+            "properties": {},
+            "required": [],
+        }
+        for prop_name, prop_schema in self._properties.items():
+            schema['properties'][prop_name] = prop_schema
+            schema['required'].append(prop_name)
+        return schema
 
 
 class Message(object):
@@ -160,6 +182,7 @@ class StingerToAsyncApi:
     def _convert(self):
         self._asyncapi.set_interface_name(self._stinger.name)
         self._add_enums()
+        self._add_signals()
         return self
 
     def _add_enums(self):
@@ -174,10 +197,17 @@ class StingerToAsyncApi:
                 accepted_values.append(i)
             json_schema = {
                 "type":  "integer",
-                "description": "\n".join(description),
+                "description": "\n ".join(description),
                 "enum": accepted_values
             }
             self._asyncapi.add_schema(schema_name, json_schema)
+
+    def _add_signals(self):
+        for sig_name, sig_spec in self._stinger.signals.items():
+            ch = Channel(sig_spec.topic, sig_name, Direction.SERVER_PUBLISHES)
+            self._asyncapi._add_channel(ch)
+            msg = Message(sig_name)
+            self._asyncapi._add_message(msg)
 
     def get_asyncapi(self):
         return self._asyncapi.get_asyncapi(SpecType.CLIENT)

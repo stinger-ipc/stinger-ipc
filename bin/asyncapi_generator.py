@@ -1,6 +1,7 @@
 import os
 import sys
 import yaml
+import yamlloader
 
 libpath = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")
@@ -20,4 +21,4 @@ if __name__ == '__main__':
     asyncapi_spec = converter.get_asyncapi()
 
     with open(os.path.join(outdir, "asyncapi.yaml"), "w") as f:
-        yaml.dump(asyncapi_spec, f)
+        yaml.dump(asyncapi_spec, f, Dumper=yamlloader.ordereddict.CDumper)

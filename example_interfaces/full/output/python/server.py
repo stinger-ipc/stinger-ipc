@@ -47,5 +47,5 @@ if __name__ == '__main__':
 
     sleep(4)
 
-    server.emit_todayIs(dayOfMonth=2020, dayOfWeek=iface_enums.DayOfTheWeek.MONDAY)
+    server.emit_todayIs(dayOfMonth=2022, dayOfWeek=iface_enums.DayOfTheWeek.MONDAY)
     

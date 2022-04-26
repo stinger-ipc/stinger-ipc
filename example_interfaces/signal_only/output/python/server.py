@@ -45,10 +45,10 @@ if __name__ == '__main__':
     conn = DefaultConnection('localhost', 1883)
     server = SignalOnlyServer(conn)
 
-    server.emit_anotherSignal(1.53, True, "apples")
+    server.emit_anotherSignal(2.5, False, "Joe")
     
 
     sleep(4)
 
-    server.emit_anotherSignal(one=3.14, two=False, three="foo")
+    server.emit_anotherSignal(one=1.53, two=False, three="Joe")
     
