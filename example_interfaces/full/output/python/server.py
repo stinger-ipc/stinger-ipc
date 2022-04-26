@@ -42,10 +42,10 @@ if __name__ == '__main__':
     conn = DefaultConnection('localhost', 1883)
     server = ExampleServer(conn)
 
-    server.emit_todayIs(1981, iface_enums.DayOfTheWeek.WEDNESDAY)
+    server.emit_todayIs(42, iface_enums.DayOfTheWeek.MONDAY)
     
 
     sleep(4)
 
-    server.emit_todayIs(dayOfMonth=2022, dayOfWeek=iface_enums.DayOfTheWeek.MONDAY)
+    server.emit_todayIs(dayOfMonth=42, dayOfWeek=iface_enums.DayOfTheWeek.MONDAY)
     

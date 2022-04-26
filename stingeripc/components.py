@@ -64,14 +64,24 @@ class ArgEnum(Arg):
         self._type = ArgType.ENUM
 
     @property
+    def enum(self) -> InterfaceEnum:
+        return self._enum
+
+    @property
     def python_type(self) -> str:
         return self._enum.python_type
 
     @property
     def random_example_value(self, lang="python") -> str:
+        random_state = random.getstate()
+        random.seed(1)
         value = stringcase.constcase(random.choice(self._enum.values))
-        return f"{self._enum.get_module_alias()}.{self._enum.class_name}.{value}"
+        retval = f"{self._enum.get_module_alias()}.{self._enum.class_name}.{value}"
+        random.setstate(random_state)
+        return retval
 
+    def __repr__(self) -> str:
+        return f"<ArgEnum name={self._name}>"
 
 class ArgValue(Arg):
     def __init__(self, name: str, arg_type: ArgValueType, description: Optional[str] = None):
@@ -89,14 +99,19 @@ class ArgValue(Arg):
 
     @property
     def random_example_value(self) -> Union[str, float, int, bool]:
+        random_state = random.getstate()
+        random.seed(2)
+        retval = None
         if self._arg_type == ArgValueType.BOOLEAN:
-            return random.choice([True, False])
+            retval = random.choice([True, False])
         elif self._arg_type == ArgValueType.FLOAT:
-            return random.choice([3.14, 1.0, 2.5, 97.9, 1.53])
+            retval = random.choice([3.14, 1.0, 2.5, 97.9, 1.53])
         elif self._arg_type == ArgValueType.INTEGER:
-            return random.choice([42, 1981, 2020, 2022])
+            retval = random.choice([42, 1981, 2020, 2022])
         elif self._arg_type == ArgValueType.STRING:
-            return random.choice(['"apples"', '"Joe"', '"example"', '"foo"'])
+            retval = random.choice(['"apples"', '"Joe"', '"example"', '"foo"'])
+        random.setstate(random_state)
+        return retval
 
     def __repr__(self) -> str:
         return f"<ArgValue name={self._name} type={ArgValueType.to_python_type(self.type)}>"

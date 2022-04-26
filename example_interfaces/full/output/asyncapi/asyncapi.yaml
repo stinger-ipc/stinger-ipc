@@ -17,7 +17,15 @@ components:
     todayIs:
       name: todayIs
       payload:
-        type: 'null'
+        properties:
+          dayOfMonth:
+            type: integer
+          dayOfWeek:
+            $ref: '#/components/schemas/enum_dayOfTheWeek'
+        required:
+        - dayOfMonth
+        - dayOfWeek
+        type: object
   schemas:
     enum_dayOfTheWeek:
       description: "The dayOfTheWeek enum has the following values:\n 0 - Sunday\n

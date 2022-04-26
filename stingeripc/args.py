@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 from .exceptions import InvalidStingerStructure
 
@@ -35,4 +36,12 @@ class ArgValueType(Enum):
 
     @classmethod
     def to_json_type(cls, arg_type: ArgValueType) -> str:
-        pass
+        if arg_type == cls.BOOLEAN:
+            return "boolean"
+        elif arg_type == cls.INTEGER:
+            return "integer"
+        elif arg_type == cls.FLOAT:
+            return "number"
+        elif arg_type == cls.STRING:
+            return "string"
+        raise InvalidStingerStructure("Unhandled arg type")

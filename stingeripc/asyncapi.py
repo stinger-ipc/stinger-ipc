@@ -9,7 +9,7 @@ from jacobsjinjatoo import templator as jj2
 from jacobsjinjatoo import stringmanip
 import os.path
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, List
 
 from .components import StingerSpec
 from .args import ArgType, ArgValueType
@@ -31,12 +31,19 @@ class ObjectSchema:
     
     def add_value_property(self, name: str, arg_type: ArgValueType):
         schema = {
-            "type": ArgValueType.
+            "type": ArgValueType.to_json_type(arg_type)
         }
-        self._properties[name]
+        self._properties[name] = schema
+
+    def add_reference_property(self, name: str, dollar_ref: str):
+        schema = {
+            "$ref": dollar_ref
+        }
+        self._properties[name] = schema
 
     def to_schema(self) -> Dict[str, Union[Dict[str,Any], List[str]]]:
         schema = {
+            "type": "object",
             "properties": {},
             "required": [],
         }
@@ -207,6 +214,13 @@ class StingerToAsyncApi:
             ch = Channel(sig_spec.topic, sig_name, Direction.SERVER_PUBLISHES)
             self._asyncapi._add_channel(ch)
             msg = Message(sig_name)
+            schema = ObjectSchema()
+            for arg_spec in sig_spec.arg_list:
+                if arg_spec.arg_type == ArgType.VALUE:
+                    schema.add_value_property(arg_spec.name, arg_spec.type)
+                elif arg_spec.arg_type == ArgType.ENUM:
+                    schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
+            msg.set_schema(schema.to_schema())
             self._asyncapi._add_message(msg)
 
     def get_asyncapi(self):
