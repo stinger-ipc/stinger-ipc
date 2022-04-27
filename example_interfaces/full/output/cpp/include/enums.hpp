@@ -5,6 +5,8 @@ on the next generation.
 It contains enumerations used by the Example interface.
 */
 
+#pragma once
+
 
 enum class DayOfTheWeek {
     Sunday = 1,
@@ -13,4 +15,4 @@ enum class DayOfTheWeek {
     Wednesday = 4,
     Thursday = 5,
     Friday = 6
-}
+};

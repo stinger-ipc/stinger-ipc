@@ -72,6 +72,10 @@ class ArgEnum(Arg):
         return self._enum.python_type
 
     @property
+    def cpp_type(self) -> str:
+        return self._enum.cpp_type
+
+    @property
     def random_example_value(self, lang="python") -> str:
         random_state = random.getstate()
         random.seed(1)
@@ -82,6 +86,7 @@ class ArgEnum(Arg):
 
     def __repr__(self) -> str:
         return f"<ArgEnum name={self._name}>"
+
 
 class ArgValue(Arg):
     def __init__(self, name: str, arg_type: ArgValueType, description: Optional[str] = None):
@@ -96,6 +101,10 @@ class ArgValue(Arg):
     @property
     def python_type(self) -> str:
         return ArgValueType.to_python_type(self._arg_type)
+
+    @property
+    def cpp_type(self) -> str:
+        return ArgValueType.to_cpp_type(self._arg_type)
 
     @property
     def random_example_value(self) -> Union[str, float, int, bool]:
@@ -211,6 +220,10 @@ class InterfaceEnum:
     @property
     def python_type(self) -> str:
         return f"{self.get_module_alias()}.{stringmanip.upper_camel_case(self.name)}"
+
+    @property
+    def cpp_type(self) -> str:
+        return stringmanip.upper_camel_case(self.name)
 
     @property
     def values(self):

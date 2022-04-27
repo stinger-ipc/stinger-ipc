@@ -1,0 +1,35 @@
+
+#pragma once
+
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <exception>
+#include <mutex>
+#include <rapidjson/document.h>
+
+#include "ibrokerconnection.hpp"
+#include "enums.hpp"
+
+class {{stinger.name | UpperCamelCase}}Client {
+
+public:
+    static constexpr char NAME[] = "{{stinger.name}}";
+    static constexpr char INTERFACE_VERSION = "{{stinger.version}}";
+
+    {{stinger.name | UpperCamelCase}}Client(std::shared_ptr<IBrokerConnection> broker);
+
+    virtual {{stinger.name | UpperCamelCase}}Client() = default;
+
+    void ReceiveMessage(const std::string& topic, const std::string& payload);
+    {%for sig_name, sig in stinger.signals.items()%}
+    void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
+    {%endfor%}
+private: 
+    std::shared_ptr<IBrokerConnection> _broker;
+    {%for sig_name, sig in stinger.signals.items()%}
+    std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{sig_name | camelCase}}Callback;
+    {%endfor%}
+    
+};

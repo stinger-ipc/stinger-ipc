@@ -45,3 +45,15 @@ class ArgValueType(Enum):
         elif arg_type == cls.STRING:
             return "string"
         raise InvalidStingerStructure("Unhandled arg type")
+
+    @classmethod
+    def to_cpp_type(cls, arg_type: ArgValueType) -> str:
+        if arg_type == cls.BOOLEAN:
+            return "bool"
+        elif arg_type == cls.INTEGER:
+            return "int"
+        elif arg_type == cls.FLOAT:
+            return "double"
+        elif arg_type == cls.STRING:
+            return "const std::string&"
+        raise InvalidStingerStructure("Unhandled arg type")
