@@ -3,7 +3,6 @@ image: gitpod/workspace-full
 vscode:
   extensions:
     - ms-python.python
-
     - redhat.vscode-yaml
 
 tasks:
@@ -13,5 +12,7 @@ tasks:
       pyenv versions
       pip install -r requirements.txt
       pip install -r requirements-dev.txt
+    init:
+      bin/generate_everything.sh
     command:
       mosquitto
