@@ -76,6 +76,10 @@ class ArgEnum(Arg):
         return self._enum.cpp_type
 
     @property
+    def cpp_rapidjson_type(self) -> str:
+        return ArgValueType.to_cpp_rapidjson_type_str(ArgValueType.INTEGER)
+
+    @property
     def random_example_value(self, lang="python") -> str:
         random_state = random.getstate()
         random.seed(1)
@@ -105,6 +109,10 @@ class ArgValue(Arg):
     @property
     def cpp_type(self) -> str:
         return ArgValueType.to_cpp_type(self._arg_type)
+
+    @property
+    def cpp_rapidjson_type(self) -> str:
+        return ArgValueType.to_cpp_rapidjson_type_str(self._arg_type)
 
     @property
     def random_example_value(self) -> Union[str, float, int, bool]:

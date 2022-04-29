@@ -57,3 +57,15 @@ class ArgValueType(Enum):
         elif arg_type == cls.STRING:
             return "const std::string&"
         raise InvalidStingerStructure("Unhandled arg type")
+
+    @classmethod
+    def to_cpp_rapidjson_type_str(cls, arg_type: ArgValueType) -> str:
+        if arg_type == cls.BOOLEAN:
+            return "Bool"
+        elif arg_type == cls.INTEGER:
+            return "Int"
+        elif arg_type == cls.FLOAT:
+            return "Double"
+        elif arg_type == cls.STRING:
+            return "String"
+        raise InvalidStingerStructure("Unhandled arg type")

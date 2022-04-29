@@ -1,0 +1,82 @@
+
+#include <vector>
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/functional/hash.hpp>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/error/en.h>
+
+#include "client.hpp"
+#include "enums.hpp"
+#include "ibrokerconnection.hpp"
+
+
+constexpr char {{stinger.name | UpperCamelCase}}Client::NAME[];
+constexpr char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[];
+
+{{stinger.name | UpperCamelCase}}Client::{{stinger.name | UpperCamelCase}}Client(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
+{
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    {
+        ReceiveMessage(topic, payload);
+    });
+}
+
+void {{stinger.name | UpperCamelCase}}Client::ReceiveMessage(const std::string& topic, const std::string& payload)
+{
+    {%-for sig_name, sig in stinger.signals.items() %}
+    if (_broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
+    {
+        //Log("Handling {{sig_name}} signal");
+        rapidjson::Document doc;
+        try {
+            if (_{{sig_name | camelCase}}Callback)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse {{sig_name}} signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject()) {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                {%for arg in sig.arg_list%}
+                {{arg.cpp_type}} temp{{arg.name}};
+                { // Scoping
+                    Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
+                    if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+                        {%if arg.arg_type.name.lower() == 'value'%}
+                        temp{{arg.name}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+                        {%elif arg.arg_type.name.lower() == 'enum'%}
+                        temp{{arg.name}} = static_cast<{{arg.cpp_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                        {%endif%}
+                    } else {
+                        throw std::runtime_error("Received payload doesn't have required value/type");
+                    }
+                }
+                {%endfor%}
+
+                _{{sig_name | camelCase}}Callback({%for arg in sig.arg_list%}temp{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely. 
+            // TODO: Log this failure
+        }
+    }
+    {%-endfor%}
+}
+
+
+{%-for sig_name, sig in stinger.signals.items() %}
+void {{stinger.name | UpperCamelCase}}Client::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb) {
+    _{{sig_name | camelCase}}Callback = cb;
+}
+{%-endfor%}
