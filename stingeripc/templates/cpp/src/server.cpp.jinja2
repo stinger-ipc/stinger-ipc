@@ -1,0 +1,36 @@
+
+#include <vector>
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/functional/hash.hpp>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/error/en.h>
+#include <rapidjson/document.h>
+
+#include "server.hpp"
+#include "enums.hpp"
+#include "ibrokerconnection.hpp"
+
+
+constexpr const char {{stinger.name | UpperCamelCase}}Server::NAME[];
+constexpr const char {{stinger.name | UpperCamelCase}}Server::INTERFACE_VERSION[];
+
+{{stinger.name | UpperCamelCase}}Server::{{stinger.name | UpperCamelCase}}Server(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    {
+        ReceiveMessage(topic, payload);
+    });
+}
+
+void {{stinger.name | UpperCamelCase}}Server::ReceiveMessage(const std::string& topic, const std::string& payload) {
+  
+}
+
+{%for sig_name, sig in stinger.signals.items()%}
+void {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+    std::string payload("");
+    _broker->Publish("{{sig.topic}}", payload, 1, false);
+}
+{%endfor%}

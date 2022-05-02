@@ -1,0 +1,32 @@
+
+#pragma once
+
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <exception>
+#include <mutex>
+#include <rapidjson/document.h>
+
+#include "ibrokerconnection.hpp"
+#include "enums.hpp"
+
+class {{stinger.name | UpperCamelCase}}Server {
+
+public:
+    static constexpr const char NAME[] = "{{stinger.name}}";
+    static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
+
+    {{stinger.name | UpperCamelCase}}Server(std::shared_ptr<IBrokerConnection> broker);
+
+    virtual ~{{stinger.name | UpperCamelCase}}Server() = default;
+
+    void ReceiveMessage(const std::string& topic, const std::string& payload);
+    {%for sig_name, sig in stinger.signals.items()%}
+    void emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {%endfor%}
+private: 
+    std::shared_ptr<IBrokerConnection> _broker;
+    
+};
