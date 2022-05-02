@@ -7,14 +7,15 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
+#include <rapidjson/document.h>
 
 #include "client.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
 
 
-constexpr char SignalOnlyClient::NAME[];
-constexpr char SignalOnlyClient::INTERFACE_VERSION[];
+constexpr const char SignalOnlyClient::NAME[];
+constexpr const char SignalOnlyClient::INTERFACE_VERSION[];
 
 SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
@@ -47,7 +48,7 @@ void SignalOnlyClient::ReceiveMessage(const std::string& topic, const std::strin
                 
                 double tempone;
                 { // Scoping
-                    Value::ConstMemberIterator itr = doc.FindMember("one");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("one");
                     if (itr != doc.MemberEnd() && itr->value.IsDouble()) {
                         
                         tempone = itr->value.GetDouble();
@@ -59,7 +60,7 @@ void SignalOnlyClient::ReceiveMessage(const std::string& topic, const std::strin
                 
                 bool temptwo;
                 { // Scoping
-                    Value::ConstMemberIterator itr = doc.FindMember("two");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("two");
                     if (itr != doc.MemberEnd() && itr->value.IsBool()) {
                         
                         temptwo = itr->value.GetBool();
@@ -71,7 +72,7 @@ void SignalOnlyClient::ReceiveMessage(const std::string& topic, const std::strin
                 
                 const std::string& tempthree;
                 { // Scoping
-                    Value::ConstMemberIterator itr = doc.FindMember("three");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("three");
                     if (itr != doc.MemberEnd() && itr->value.IsString()) {
                         
                         tempthree = itr->value.GetString();

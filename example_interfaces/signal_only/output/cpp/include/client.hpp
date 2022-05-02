@@ -15,12 +15,12 @@
 class SignalOnlyClient {
 
 public:
-    static constexpr char NAME[] = "SignalOnly";
-    static constexpr char INTERFACE_VERSION = "0.0.1";
+    static constexpr const char NAME[] = "SignalOnly";
+    static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
     SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual SignalOnlyClient() = default;
+    virtual ~SignalOnlyClient() = default;
 
     void ReceiveMessage(const std::string& topic, const std::string& payload);
     

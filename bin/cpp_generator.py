@@ -47,6 +47,7 @@ if __name__ == "__main__":
         source_code_path = os.path.join("src", f)
         if f.endswith(".jinja2"):
             source_dest_path = source_code_path[:-len(".jinja2")]
+            params['source_files'].append(source_dest_path)
             t.render_template(source_code_path, source_dest_path, **params)
 
     t.render_template("CMakeLists.txt.jinja2", "CMakeLists.txt", **params)

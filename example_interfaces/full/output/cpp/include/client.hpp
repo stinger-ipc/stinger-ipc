@@ -15,12 +15,12 @@
 class ExampleClient {
 
 public:
-    static constexpr char NAME[] = "Example";
-    static constexpr char INTERFACE_VERSION = "0.0.1";
+    static constexpr const char NAME[] = "Example";
+    static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
     ExampleClient(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual ExampleClient() = default;
+    virtual ~ExampleClient() = default;
 
     void ReceiveMessage(const std::string& topic, const std::string& payload);
     

@@ -7,14 +7,15 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
+#include <rapidjson/document.h>
 
 #include "client.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
 
 
-constexpr char ExampleClient::NAME[];
-constexpr char ExampleClient::INTERFACE_VERSION[];
+constexpr const char ExampleClient::NAME[];
+constexpr const char ExampleClient::INTERFACE_VERSION[];
 
 ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
@@ -47,7 +48,7 @@ void ExampleClient::ReceiveMessage(const std::string& topic, const std::string& 
                 
                 int tempdayOfMonth;
                 { // Scoping
-                    Value::ConstMemberIterator itr = doc.FindMember("dayOfMonth");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("dayOfMonth");
                     if (itr != doc.MemberEnd() && itr->value.IsInt()) {
                         
                         tempdayOfMonth = itr->value.GetInt();
@@ -59,7 +60,7 @@ void ExampleClient::ReceiveMessage(const std::string& topic, const std::string& 
                 
                 DayOfTheWeek tempdayOfWeek;
                 { // Scoping
-                    Value::ConstMemberIterator itr = doc.FindMember("dayOfWeek");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("dayOfWeek");
                     if (itr != doc.MemberEnd() && itr->value.IsInt()) {
                         
                         tempdayOfWeek = static_cast<DayOfTheWeek>(itr->value.GetInt());

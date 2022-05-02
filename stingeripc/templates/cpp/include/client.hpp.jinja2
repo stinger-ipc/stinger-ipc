@@ -15,12 +15,12 @@
 class {{stinger.name | UpperCamelCase}}Client {
 
 public:
-    static constexpr char NAME[] = "{{stinger.name}}";
-    static constexpr char INTERFACE_VERSION = "{{stinger.version}}";
+    static constexpr const char NAME[] = "{{stinger.name}}";
+    static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
     {{stinger.name | UpperCamelCase}}Client(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual {{stinger.name | UpperCamelCase}}Client() = default;
+    virtual ~{{stinger.name | UpperCamelCase}}Client() = default;
 
     void ReceiveMessage(const std::string& topic, const std::string& payload);
     {%for sig_name, sig in stinger.signals.items()%}
