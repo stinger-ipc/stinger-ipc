@@ -15,6 +15,10 @@ python3 ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/full/exa
 # C++
 python3 ${BASE_DIR}/cpp_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/cpp/
 python3 ${BASE_DIR}/cpp_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/cpp/
+if [ ! -d "${BASE_DIR}/../example_interfaces/full/output/cpp/build" ]; then
+    mkdir ${BASE_DIR}/../example_interfaces/full/output/cpp/build
+fi
+(cd ${BASE_DIR}/../example_interfaces/full/output/cpp/build && cmake .. && make)
 
 # AsyncAPI
 python3 ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/enum_only/enum_only.stingeripc ${BASE_DIR}/../example_interfaces/enum_only/output/asyncapi/

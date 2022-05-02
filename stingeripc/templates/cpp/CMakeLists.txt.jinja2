@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.23)
+
+project ({{stinger.name}})
+set(CMAKE_CXX_STANDARD 11) 
+
+include_directories(include)
+ 
+set(SOURCE_FILES {%for src_file in source_files%}{{src_file}} {%endfor%})
+
+add_library(lib-{{stinger.name}} ${SOURCE_FILES})
