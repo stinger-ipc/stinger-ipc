@@ -29,8 +29,19 @@ void {{stinger.name | UpperCamelCase}}Server::ReceiveMessage(const std::string& 
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
-void {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
-    std::string payload("");
-    _broker->Publish("{{sig.topic}}", payload, 1, false);
+void {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+    rapidjson::Document doc;
+    doc.SetObject();
+    {%for arg in sig.arg_list%}
+    {%-if arg.arg_type.name.lower() == 'value'%}
+    doc.AddMember("{{arg.name}}", {{arg.name}}, doc.GetAllocator());
+    {%elif arg.arg_type.name.lower() == 'enum'%}
+    doc.AddMember("{{arg.name}}", static_cast<int>({{arg.name}}), doc.GetAllocator());
+    {%-endif-%}
+    {%endfor%}
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false);
 }
 {%endfor%}
