@@ -1,0 +1,20 @@
+
+#include "broker.hpp"
+#include "client.hpp"
+
+int main(int argc, char** argv) {
+
+    {%set broker = stinger.get_example_broker()%}
+    auto conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%});
+    auto client = {{stinger.name | UpperCamelCase}}Client(conn);
+
+    {%-for sig_name, sig in stinger.signals.items() %}
+    client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+        std::cout << {%for arg in sig.arg_list%}"{{arg.name}}=" << {{arg.name}} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
+    });
+    {%-endfor%}
+
+    pause();
+
+    return 0;
+}
