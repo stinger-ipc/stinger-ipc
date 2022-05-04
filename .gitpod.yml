@@ -5,6 +5,8 @@ vscode:
     - ms-python.python
     - redhat.vscode-yaml
 
+    - webfreak.debug
+
 tasks:
   - name: Install dependencies
     before: |

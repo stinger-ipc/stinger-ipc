@@ -2,9 +2,11 @@ from typing import Callable, Optional
 from paho.mqtt import client as mqtt_client
 from queue import Queue, Empty
 
+class IBrokerConnection:
+    pass
 
 
-class DefaultConnection:
+class DefaultConnection(IBrokerConnection):
 
     def __init__(self, host: str, port: int):
         self._host: str = host

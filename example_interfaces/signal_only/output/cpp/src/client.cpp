@@ -23,6 +23,8 @@ SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : 
     {
         ReceiveMessage(topic, payload);
     });
+    _broker->Subscribe("SignalOnly/signal/anotherSignal", 1);
+    
 }
 
 void SignalOnlyClient::ReceiveMessage(const std::string& topic, const std::string& payload)

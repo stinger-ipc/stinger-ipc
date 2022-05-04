@@ -84,7 +84,6 @@ private:
     mosquitto *_mosq;
     std::string _host;
     int _port;
-    std::string _clientId;
     std::queue<MqttSubscription> _subscriptions;
     boost::mutex _mutex;
     std::vector<std::function<void(const std::string&, const std::string&)>> _messageCallbacks;

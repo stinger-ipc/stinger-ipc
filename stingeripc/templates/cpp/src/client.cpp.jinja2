@@ -23,6 +23,10 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
     {
         ReceiveMessage(topic, payload);
     });
+
+    {%-for sig_name, sig in stinger.signals.items() %}
+    _broker->Subscribe("{{sig.topic}}", 1);
+    {%endfor%}
 }
 
 void {{stinger.name | UpperCamelCase}}Client::ReceiveMessage(const std::string& topic, const std::string& payload)

@@ -23,6 +23,8 @@ ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broke
     {
         ReceiveMessage(topic, payload);
     });
+    _broker->Subscribe("Example/signal/todayIs", 1);
+    
 }
 
 void ExampleClient::ReceiveMessage(const std::string& topic, const std::string& payload)

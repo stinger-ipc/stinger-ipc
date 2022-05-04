@@ -6,12 +6,12 @@ This is the Server for the EnumOnly interface.
 """
 
 import json
-from connection import MqttConnection
+from connection import IBrokerConnection
 import interface_enums as iface_enums
 
 class EnumOnlyServer(object):
 
-    def __init__(self, connection: MqttConnection):
+    def __init__(self, connection: IBrokerConnection):
         self._conn = connection
         
     
@@ -26,6 +26,8 @@ if __name__ == '__main__':
     """
     from time import sleep
     
+    from connection import DefaultConnection
+
     conn = DefaultConnection('localhost', 1883)
     server = EnumOnlyServer(conn)
 

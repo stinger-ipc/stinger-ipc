@@ -6,12 +6,12 @@ This is the Server for the {{stinger.name}} interface.
 """
 
 import json
-from connection import MqttConnection
+from connection import IBrokerConnection
 {%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
 
 class {{stinger.name}}Server(object):
 
-    def __init__(self, connection: MqttConnection):
+    def __init__(self, connection: IBrokerConnection):
         self._conn = connection
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
@@ -64,6 +64,8 @@ if __name__ == '__main__':
     """
     from time import sleep
     {%set broker = stinger.get_example_broker()%}
+    from connection import {{broker.class_name}}
+
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
     server = {{stinger.name}}Server(conn)
 

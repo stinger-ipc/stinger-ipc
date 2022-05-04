@@ -8,3 +8,9 @@ include_directories(include)
 set(SOURCE_FILES {%for src_file in source_files%}{{src_file}} {%endfor%})
 
 add_library(lib-{{stinger.name}} ${SOURCE_FILES})
+
+
+add_executable(clinet-demo examples/client_main.cpp)
+
+target_link_libraries(clinet-demo PUBLIC lib-{{stinger.name}})
+target_link_libraries(clinet-demo PUBLIC mosquitto)

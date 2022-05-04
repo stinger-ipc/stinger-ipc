@@ -11,31 +11,35 @@
 
 #include "broker.hpp"
 
+using namespace std;
+
 
 DefaultConnection::DefaultConnection(const std::string& host, int port)
     : _mosq(NULL), _host(host), _port(port)
 {
     boost::mutex::scoped_lock lock(_mutex);
 
-    mosquitto_lib_init();
-    _mosq = mosquitto_new(_clientId.c_str(), false, (void*)this);
+    if (mosquitto_lib_init() != MOSQ_ERR_SUCCESS) {
+        throw std::runtime_error("Mosquitto lib init problem");   
+    };
+    _mosq = mosquitto_new(NULL, true, (void*)this);
 
     mosquitto_connect_callback_set(_mosq, [](struct mosquitto *mosq, void *user, int i)
     {
         DefaultConnection *thisClient = static_cast<DefaultConnection*>(user);
-        //cout << "Connected to " << thisClient->_host << endl;
+        cout << "Connected to " << thisClient->_host << endl;
         boost::mutex::scoped_lock lock(thisClient->_mutex);
         while(!thisClient->_subscriptions.empty())
         {
             auto sub = thisClient->_subscriptions.front();
-            //cout << "Subscribing to " << sub._topic << endl;
+            cout << "Subscribing to " << sub._topic << endl;
             mosquitto_subscribe(mosq, NULL, sub._topic.c_str(), sub._qos);
             thisClient->_subscriptions.pop();
         }
         while(!thisClient->_msgQueue.empty())
         {
             auto msg = thisClient->_msgQueue.front();
-            //cout << "Sending message to " << msg._topic << endl;
+            cout << "Sending message to " << msg._topic << endl;
             mosquitto_publish(mosq, NULL, msg._topic.c_str(), msg._payload.size(), msg._payload.c_str(), msg._qos, msg._retain);
             thisClient->_msgQueue.pop();
         }
@@ -44,7 +48,7 @@ DefaultConnection::DefaultConnection(const std::string& host, int port)
     mosquitto_message_callback_set(_mosq, [](struct mosquitto *mosq, void *user, const struct mosquitto_message *mmsg)
     {
         DefaultConnection *thisClient = static_cast<DefaultConnection*>(user);
-        //cout << "Fowarding message (" << mmsg->topic << ") to " << thisClient->_messageCallbacks.size() << " callbacks" << endl;
+        cout << "Fowarding message (" << mmsg->topic << ") to " << thisClient->_messageCallbacks.size() << " callbacks" << endl;
         std::string topic(mmsg->topic);
         std::string payload(static_cast<char*>(mmsg->payload), mmsg->payloadlen);
         for (auto& cb : thisClient->_messageCallbacks)
