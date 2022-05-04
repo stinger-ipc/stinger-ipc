@@ -9,8 +9,10 @@ set(SOURCE_FILES {%for src_file in source_files%}{{src_file}} {%endfor%})
 
 add_library(lib-{{stinger.name}} ${SOURCE_FILES})
 
+add_executable(client-demo examples/client_main.cpp)
+target_link_libraries(client-demo PUBLIC lib-{{stinger.name}})
+target_link_libraries(client-demo PUBLIC mosquitto)
 
-add_executable(clinet-demo examples/client_main.cpp)
-
-target_link_libraries(clinet-demo PUBLIC lib-{{stinger.name}})
-target_link_libraries(clinet-demo PUBLIC mosquitto)
+add_executable(server-demo examples/server_main.cpp)
+target_link_libraries(server-demo PUBLIC lib-{{stinger.name}})
+target_link_libraries(server-demo PUBLIC mosquitto)

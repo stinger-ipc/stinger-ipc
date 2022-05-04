@@ -9,8 +9,10 @@ set(SOURCE_FILES src/broker.cpp src/client.cpp src/server.cpp )
 
 add_library(lib-Example ${SOURCE_FILES})
 
+add_executable(client-demo examples/client_main.cpp)
+target_link_libraries(client-demo PUBLIC lib-Example)
+target_link_libraries(client-demo PUBLIC mosquitto)
 
-add_executable(clinet-demo examples/client_main.cpp)
-
-target_link_libraries(clinet-demo PUBLIC lib-Example)
-target_link_libraries(clinet-demo PUBLIC mosquitto)
+add_executable(server-demo examples/server_main.cpp)
+target_link_libraries(server-demo PUBLIC lib-Example)
+target_link_libraries(server-demo PUBLIC mosquitto)

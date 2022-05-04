@@ -13,10 +13,9 @@ int main(int argc, char** argv) {
         std::cout << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << static_cast<int>(dayOfWeek) <<  std::endl;
     });
 
-    std::cout << "Connected and waiting" << std::endl;
+    std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;
 
     while (true) {
-        std::cout << ".";
         sleep(10);
     }
 

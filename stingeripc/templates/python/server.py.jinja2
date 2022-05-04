@@ -6,12 +6,12 @@ This is the Server for the {{stinger.name}} interface.
 """
 
 import json
-from connection import IBrokerConnection
+from connection import BrokerConnection
 {%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
 
 class {{stinger.name}}Server(object):
 
-    def __init__(self, connection: IBrokerConnection):
+    def __init__(self, connection: BrokerConnection):
         self._conn = connection
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}

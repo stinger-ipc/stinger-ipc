@@ -6,12 +6,12 @@ This is the Server for the Example interface.
 """
 
 import json
-from connection import IBrokerConnection
+from connection import BrokerConnection
 import interface_enums as iface_enums
 
 class ExampleServer(object):
 
-    def __init__(self, connection: IBrokerConnection):
+    def __init__(self, connection: BrokerConnection):
         self._conn = connection
         
     

@@ -6,12 +6,12 @@ This is the Server for the SignalOnly interface.
 """
 
 import json
-from connection import IBrokerConnection
+from connection import BrokerConnection
 
 
 class SignalOnlyServer(object):
 
-    def __init__(self, connection: IBrokerConnection):
+    def __init__(self, connection: BrokerConnection):
         self._conn = connection
         
     

@@ -1,12 +1,20 @@
 from typing import Callable, Optional
 from paho.mqtt import client as mqtt_client
 from queue import Queue, Empty
+from abc import ABC, abstractmethod
 
-class IBrokerConnection:
-    pass
+class BrokerConnection(ABC):
+    
+    @abstractmethod
+    def publish(self, topic, msg, qos=1, retain=False):
+        pass
+
+    @abstractmethod
+    def subscribe(self, topic):
+        pass
 
 
-class DefaultConnection(IBrokerConnection):
+class DefaultConnection(BrokerConnection):
 
     def __init__(self, host: str, port: int):
         self._host: str = host
@@ -42,7 +50,7 @@ class DefaultConnection(IBrokerConnection):
                 self._client.publish(*msg)
         self._connected = True
     
-    def publish(self, topic, msg, qos=1, retain=False):
+    def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False):
         if self._connected:
             print(f"Publishing {topic}")
             self._client.publish(topic, msg, qos, retain)
@@ -50,9 +58,9 @@ class DefaultConnection(IBrokerConnection):
             print(f"Queueing {topic} for publishing later")
             self._queued_messages.put((topic, msg, qos, retain))
 
-    def subscribe(self, topic):
+    def subscribe(self, topic: str):
         self._client.subscribe(topic)
     
-    def is_topic_sub(self, topic, sub) -> bool:
-        return topic == sub
+    def is_topic_sub(self, topic: str, sub: str) -> bool:
+        return self._client.topic_matches_sub(sub, topic)
 
