@@ -18,7 +18,7 @@ class TestArgCreationFromSpec(unittest.TestCase):
                 self.assertEqual(arg.name, obj['name'])
                 self.assertEqual(arg.python_type, obj['python_type'])
                 self.assertEqual(arg.type, obj['value_type'])
-                example = arg.random_example_value
+                example = arg.get_random_example_value()
                 real_python_type = eval(arg.python_type)
                 self.assertIsInstance(example, real_python_type)
 

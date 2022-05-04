@@ -3,6 +3,7 @@
 
 #include "broker.hpp"
 #include "server.hpp"
+#include "enums.hpp"
 
 int main(int argc, char** argv) {
 

@@ -70,11 +70,11 @@ if __name__ == '__main__':
     server = {{stinger.name}}Server(conn)
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.random_example_value}}{%if not loop.last%}, {%endif%}{%endfor%})
+    server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
     {%endfor%}
 
     sleep(4)
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.name}}={{arg.random_example_value}}{%if not loop.last%}, {%endif%}{%endfor%})
+    server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
     {%endfor%}

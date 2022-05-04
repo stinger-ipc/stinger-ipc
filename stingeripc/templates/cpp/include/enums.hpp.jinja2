@@ -10,7 +10,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 {%for ie_name, ie in stinger.enums.items() %}
 enum class {{ie_name | UpperCamelCase }} {
     {%-for value in ie.values %}
-    {{value | UpperCamelCase}} = {{loop.index}}{%if not loop.last%},{%endif%}
+    {{value | CONST_CASE}} = {{loop.index}}{%if not loop.last%},{%endif%}
     {%-endfor%}
 };
 {%endfor%}
