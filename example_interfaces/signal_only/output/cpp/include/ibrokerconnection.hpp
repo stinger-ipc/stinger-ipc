@@ -4,13 +4,17 @@
 #include <functional>
 #include <string>
 
+#define BOOST_THREAD_PROVIDES_FUTURE
+#include <boost/thread/future.hpp>
+
+
 class IBrokerConnection
 {
 public:
     /*! Publish to a topic.
      * Implementations should queue up messages when not connected.
      */
-    virtual void Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain) = 0;
+    virtual boost::future<bool> Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain) = 0;
     
     /*! Subscribe to a topic.
      * Implementation should queue up subscriptions when not connected.

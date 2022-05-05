@@ -4,33 +4,37 @@
 #include <mosquitto.h>
 #include <queue>
 #include <string>
+#include <map>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "ibrokerconnection.hpp"
+#define BOOST_THREAD_PROVIDES_FUTURE
+#include <boost/thread/future.hpp>
 
+#include "ibrokerconnection.hpp"
 
 /*! This class presents a connection to a MQTT broker.
  */
-class DefaultConnection : public IBrokerConnection
+class MqttConnection : public IBrokerConnection
 {
 public:
 
-    /*! Constructor for a DefaultConnection.
+    /*! Constructor for a MqttConnection.
      * \param hostname IP address or hostname of the MQTT broker server.
      * \param port Port where the MQTT broker is running (often 1883).
      */
-    DefaultConnection(const std::string& host, int port);
+    MqttConnection(const std::string& host, int port);
 
-    virtual ~DefaultConnection();
+    virtual ~MqttConnection();
 
     /*! Publish a message to the MQTT broker.
      * \param topic the topic of the message.
      * \param payload is the payload body of the message.
      * \param qos the MQTT quality of service value between 0 and 2 inclusive.
      * \param retain an indicator that the MQTT broker should retain the message.
+     * \return A future which is resolved to true when the message has been published to the MQTT broker.
      */
-    virtual void Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain);
+    virtual boost::future<bool> Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain);
 
     /*! Subscribe to a topic.
      * \param topic the subscription topic.
@@ -55,7 +59,6 @@ protected:
     /*! Establishes the connection to the broker.
      */
     virtual void Connect();
-
 
 private:
     class MqttMessage
@@ -83,5 +86,22 @@ private:
     std::queue<MqttSubscription> _subscriptions;
     boost::mutex _mutex;
     std::vector<std::function<void(const std::string&, const std::string&)>> _messageCallbacks;
-    std::queue<MqttMessage> _msgQueue;
+    std::queue<std::pair<MqttMessage, boost::promise<bool>> _msgQueue;
+    std::map<int, boost::promise<bool>> _sendMessages;
+};
+
+
+/*! This class presents a connection to a MQTT broker.
+ */
+class DefaultConnection : public MqttConnection
+{
+public:
+
+    /*! Constructor for a DefaultConnection.
+     * \param hostname IP address or hostname of the MQTT broker server.
+     * \param port Port where the MQTT broker is running (often 1883).
+     */
+    DefaultConnection(const std::string& host, int port);
+
+    virtual ~DefaultConnection() = default;
 };
