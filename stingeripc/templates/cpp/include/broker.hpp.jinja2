@@ -5,8 +5,10 @@
 #include <queue>
 #include <string>
 #include <map>
+#include <utility>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/core/noncopyable.hpp>
 
 #define BOOST_THREAD_PROVIDES_FUTURE
 #include <boost/thread/future.hpp>
@@ -61,15 +63,18 @@ protected:
     virtual void Connect();
 
 private:
-    class MqttMessage
+    class MqttMessage : private boost::noncopyable
     {
     public:
         MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain) : _topic(topic), _payload(payload), _qos(qos), _retain(retain) {}
+        MqttMessage(const MqttMessage& other) : _topic(other._topic), _payload(other._payload), _qos(other._qos), _retain(other._retain), _pSentPromise(other._pSentPromise) {}
         virtual ~MqttMessage() = default;
+        boost::future<bool> getFuture() { return _pSentPromise->get_future(); };
         std::string _topic;
         std::string _payload;
         int _qos;
         bool _retain;
+        std::shared_ptr<boost::promise<bool>> _pSentPromise;
     };
 
     struct MqttSubscription
@@ -86,8 +91,8 @@ private:
     std::queue<MqttSubscription> _subscriptions;
     boost::mutex _mutex;
     std::vector<std::function<void(const std::string&, const std::string&)>> _messageCallbacks;
-    std::queue<std::pair<MqttMessage, boost::promise<bool>> _msgQueue;
-    std::map<int, boost::promise<bool>> _sendMessages;
+    std::queue<MqttMessage> _msgQueue;
+    std::map<int, std::shared_ptr<boost::promise<bool>>> _sendMessages;
 };
 
 {%for broker in stinger.brokers.values()%}

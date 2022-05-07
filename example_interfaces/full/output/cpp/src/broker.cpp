@@ -37,11 +37,11 @@ MqttConnection::MqttConnection(const std::string& host, int port)
         }
         while(!thisClient->_msgQueue.empty())
         {
-            auto msg_promise = thisClient->_msgQueue.front();
-            cout << "Sending message to " << msg_promise.first._topic << endl;
+            MqttMessage& msg = thisClient->_msgQueue.front();
+            cout << "Sending message to " << msg._topic << endl;
             int mid;
-            mosquitto_publish(mosq, &mid, msg_promise.first._topic.c_str(), msg_promise.first._payload.size(), msg_promise.first._payload.c_str(), msg_promise.first._qos, msg_promise.first._retain);
-            thisClient->_sendMessages.insert({mid, std::move(msg_promise.second))
+            mosquitto_publish(mosq, &mid, msg._topic.c_str(), msg._payload.size(), msg._payload.c_str(), msg._qos, msg._retain);
+            thisClient->_sendMessages[mid] = msg._pSentPromise;
             thisClient->_msgQueue.pop();
         }
     });
@@ -56,7 +56,6 @@ MqttConnection::MqttConnection(const std::string& host, int port)
         {
             cb(topic, payload);
         }
-    
     });
 
     mosquitto_publish_callback_set(_mosq, [](struct mosquitto *mosq, void *user, int mid)
@@ -65,7 +64,7 @@ MqttConnection::MqttConnection(const std::string& host, int port)
         auto found = thisClient->_sendMessages.find(mid);
         if (found != thisClient->_sendMessages.end())
         {
-            found->second.set_value(true);
+            found->second->set_value(true);
             thisClient->_sendMessages.erase(found);
         }
     });
@@ -93,20 +92,24 @@ boost::future<bool> MqttConnection::Publish(const std::string& topic, const std:
 {
     int mid;
     int rc = mosquitto_publish(_mosq, &mid, topic.c_str(), payload.size(), payload.c_str(), qos, retain);
-    auto promise = boost::promise<bool>();
-    auto future = promise.get_future();
+
     if (rc == MOSQ_ERR_NO_CONN)
     {
         MqttConnection::MqttMessage msg(topic, payload, qos, retain);
+        auto future = msg.getFuture();
         boost::mutex::scoped_lock lock(_mutex);
-        _msgQueue.push(std::make_pair<MqttConnection::MqttMessage, boost::future<bool>>(msg, std::move(future)));
+        _msgQueue.push(std::move(msg));
+        return future;
     }
     else if (rc == MOSQ_ERR_SUCCESS)
     {
+        auto pPromise = std::make_shared<boost::promise<bool>>();
+        auto future = pPromise->get_future();
         boost::mutex::scoped_lock lock(_mutex);
-        _sendMessages.insert({mid, std::move(promise)});
+        _sendMessages[mid] = std::move(pPromise);
+        return future;
     }
-    return future;
+    throw std::runtime_error("Unhandled rc");
 }
 
 void MqttConnection::Subscribe(const std::string& topic, int qos)
