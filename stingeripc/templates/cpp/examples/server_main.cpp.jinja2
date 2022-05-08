@@ -12,8 +12,10 @@ int main(int argc, char** argv) {
     {{stinger.name | UpperCamelCase}}Server server(conn);
 
     {%-for sig_name, sig in stinger.signals.items() %}
-    server.emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+    auto {{sig_name}}Future = server.emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%-endfor%}
-
+    {%-for sig_name in stinger.signals.keys() %}
+    {{sig_name}}Future.wait();
+    {%-endfor%}
     return 0;
 }

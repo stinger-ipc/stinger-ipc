@@ -29,7 +29,7 @@ void ExampleServer::ReceiveMessage(const std::string& topic, const std::string& 
 }
 
 
-void ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWeek dayOfWeek) {
+boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWeek dayOfWeek) {
     rapidjson::Document doc;
     doc.SetObject();
     
@@ -39,5 +39,5 @@ void ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWeek dayOfWeek) {
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    _broker->Publish("Example/signal/todayIs", buf.GetString(), 1, false);
+    return _broker->Publish("Example/signal/todayIs", buf.GetString(), 1, false);
 }

@@ -24,7 +24,7 @@ public:
 
     void ReceiveMessage(const std::string& topic, const std::string& payload);
     
-    void emitAnotherSignalSignal(double, bool, const std::string&);
+    boost::future<bool> emitAnotherSignalSignal(double, bool, const std::string&);
     
 private: 
     std::shared_ptr<IBrokerConnection> _broker;

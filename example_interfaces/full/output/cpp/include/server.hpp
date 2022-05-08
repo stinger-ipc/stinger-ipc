@@ -24,7 +24,7 @@ public:
 
     void ReceiveMessage(const std::string& topic, const std::string& payload);
     
-    void emitTodayIsSignal(int, DayOfTheWeek);
+    boost::future<bool> emitTodayIsSignal(int, DayOfTheWeek);
     
 private: 
     std::shared_ptr<IBrokerConnection> _broker;

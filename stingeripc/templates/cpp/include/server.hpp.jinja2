@@ -24,7 +24,7 @@ public:
 
     void ReceiveMessage(const std::string& topic, const std::string& payload);
     {%for sig_name, sig in stinger.signals.items()%}
-    void emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%});
+    boost::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;

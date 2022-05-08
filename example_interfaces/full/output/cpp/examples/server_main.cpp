@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
     
     auto conn = std::make_shared<DefaultConnection>("localhost", 1883);
     ExampleServer server(conn);
-    server.emitTodayIsSignal(42, DayOfTheWeek::MONDAY);
-
+    auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::MONDAY);
+    todayIsFuture.wait();
     return 0;
 }

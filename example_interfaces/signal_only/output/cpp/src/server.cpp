@@ -29,7 +29,7 @@ void SignalOnlyServer::ReceiveMessage(const std::string& topic, const std::strin
 }
 
 
-void SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, const std::string& three) {
+boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, const std::string& three) {
     rapidjson::Document doc;
     doc.SetObject();
     
@@ -42,5 +42,5 @@ void SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, const std::
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    _broker->Publish("SignalOnly/signal/anotherSignal", buf.GetString(), 1, false);
+    return _broker->Publish("SignalOnly/signal/anotherSignal", buf.GetString(), 1, false);
 }
