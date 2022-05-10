@@ -41,8 +41,11 @@ parameters:
             - tcp
             - websockets
           default: tcp
-        authentication:
-          type:
+        secure:
+          type: boolean
+          default: false
+        description:
+          type: string
 
       dependentRequired:
         host: ["port"]

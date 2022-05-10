@@ -34,5 +34,8 @@ class InterfaceTopicCreator(TopicCreatorBase):
     def _topic_prefix(self) -> str:
         return self.slash(self._interface_name)
 
+    def interface_info_topic(self) -> str:
+        return f"{self._topic_prefix}/interface"
+
     def signal_topic_creator(self) -> SignalTopicCreator:
         return SignalTopicCreator(self._topic_prefix)

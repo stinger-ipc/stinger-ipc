@@ -1,7 +1,16 @@
-asyncapi: 2.0.0
+asyncapi: 2.4.0
 id: urn:stingeripc:Example
 info: {}
 channels:
+  Example/interface:
+    subscribe:
+      message:
+        $ref: '#/components/messages/interfaceInfo'
+      operationId: interfaceInfo
+      bindings:
+        mqtt:
+          qos: 1
+          retain: true
   Example/signal/todayIs:
     subscribe:
       message:
@@ -14,6 +23,20 @@ channels:
 components:
   operationTraits: {}
   messages:
+    interfaceInfo:
+      name: interfaceInfo
+      payload:
+        properties:
+          name:
+            const: Example
+            type: string
+          version:
+            const: 0.0.1
+            type: string
+        required:
+        - name
+        - version
+        type: object
     todayIs:
       name: todayIs
       payload:
@@ -38,3 +61,6 @@ components:
       - 4
       - 5
       type: integer
+servers:
+  Default:
+    protocol: mqtt

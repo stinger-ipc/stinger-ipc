@@ -316,6 +316,13 @@ class StingerSpec:
         self.enums: Dict[str, InterfaceEnum] = {}
         self._brokers: Dict[str, Broker] = {}
 
+    @property
+    def interface_info(self) -> Tuple[str, Dict[str, Any]]:
+        return (
+            self._topic_creator.interface_info_topic(),
+            {"name": self._name, "version": self._version}
+        )
+
     def add_broker(self, broker: Broker):
         assert broker is not None
         self._brokers[broker.name] = broker

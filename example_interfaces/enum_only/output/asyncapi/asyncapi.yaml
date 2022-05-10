@@ -1,10 +1,33 @@
-asyncapi: 2.0.0
+asyncapi: 2.4.0
 id: urn:stingeripc:EnumOnly
 info: {}
-channels: {}
+channels:
+  EnumOnly/interface:
+    subscribe:
+      message:
+        $ref: '#/components/messages/interfaceInfo'
+      operationId: interfaceInfo
+      bindings:
+        mqtt:
+          qos: 1
+          retain: true
 components:
   operationTraits: {}
-  messages: {}
+  messages:
+    interfaceInfo:
+      name: interfaceInfo
+      payload:
+        properties:
+          name:
+            const: EnumOnly
+            type: string
+          version:
+            const: 0.0.1
+            type: string
+        required:
+        - name
+        - version
+        type: object
   schemas:
     enum_fruits:
       description: "The fruits enum has the following values:\n 0 - apple\n 1 - banana\n
@@ -32,3 +55,6 @@ components:
       - 10
       - 11
       type: integer
+servers:
+  Default:
+    protocol: mqtt

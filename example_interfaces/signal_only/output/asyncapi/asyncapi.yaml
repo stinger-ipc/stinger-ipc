@@ -1,7 +1,16 @@
-asyncapi: 2.0.0
+asyncapi: 2.4.0
 id: urn:stingeripc:SignalOnly
 info: {}
 channels:
+  SignalOnly/interface:
+    subscribe:
+      message:
+        $ref: '#/components/messages/interfaceInfo'
+      operationId: interfaceInfo
+      bindings:
+        mqtt:
+          qos: 1
+          retain: true
   SignalOnly/signal/anotherSignal:
     subscribe:
       message:
@@ -14,6 +23,20 @@ channels:
 components:
   operationTraits: {}
   messages:
+    interfaceInfo:
+      name: interfaceInfo
+      payload:
+        properties:
+          name:
+            const: SignalOnly
+            type: string
+          version:
+            const: 0.0.1
+            type: string
+        required:
+        - name
+        - version
+        type: object
     anotherSignal:
       name: anotherSignal
       payload:
@@ -30,3 +53,6 @@ components:
         - three
         type: object
   schemas: {}
+servers:
+  Default:
+    protocol: mqtt

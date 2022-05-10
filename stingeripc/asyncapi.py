@@ -35,6 +35,10 @@ class ObjectSchema:
         }
         self._properties[name] = schema
 
+    def add_const_value_property(self, name: str, arg_type: ArgValueType, const_value):
+        self.add_value_property(name, arg_type)
+        self._properties[name]['const'] = const_value
+
     def add_reference_property(self, name: str, dollar_ref: str):
         schema = {
             "$ref": dollar_ref
@@ -128,6 +132,16 @@ class Channel(object):
             return {"subscribe": op_item}
 
 
+class Server(object):
+    def __init__(self, name: str):
+        self.name = name
+        self._protocol = "mqtt"
+
+    def get_server(self) -> Dict[str, Any]:
+        return {
+            "protocol": self._protocol
+        }
+
 class AsyncApiCreator(object):
     """A class to create a AsyncAPI specification from several AsyncAPI structures.
 
@@ -137,7 +151,7 @@ class AsyncApiCreator(object):
     def __init__(self):
         self.asyncapi = OrderedDict(
             {
-                "asyncapi": "2.0.0",
+                "asyncapi": "2.4.0",
                 "id": "",
                 "info": OrderedDict(),
                 "channels": OrderedDict(),
@@ -152,16 +166,20 @@ class AsyncApiCreator(object):
         )
         self.channels = []
         self.messages = []
+        self.servers = []
         self.name = "interface"
 
     def add_schema(self, schema_name, schema_spec: Dict[str, Any]):
         self.asyncapi['components']['schemas'][schema_name] = schema_spec
 
-    def _add_channel(self, channel: Channel):
+    def add_channel(self, channel: Channel):
         self.channels.append(channel)
 
-    def _add_message(self, message: Message):
+    def add_message(self, message: Message):
         self.messages.append(message)
+
+    def add_server(self, server: Server):
+        self.servers.append(server)
 
     def set_interface_name(self, name):
         self.name = name
@@ -169,6 +187,10 @@ class AsyncApiCreator(object):
 
     def get_asyncapi(self, client_type: SpecType, use_common=None):
         spec = self.asyncapi.copy()
+        if len(self.servers) > 0:
+            spec['servers'] = {}
+        for svr in self.servers:
+            spec['servers'][svr.name] = svr.get_server()
         for ch in self.channels:
             spec["channels"][ch.topic] = ch.get_operation(
                 client_type, use_common or False
@@ -188,9 +210,28 @@ class StingerToAsyncApi:
 
     def _convert(self):
         self._asyncapi.set_interface_name(self._stinger.name)
+        self._add_interface_info()
+        self._add_servers()
         self._add_enums()
         self._add_signals()
         return self
+
+    def _add_interface_info(self):
+        topic, info = self._stinger.interface_info
+        ch = Channel(topic, "interfaceInfo", Direction.SERVER_PUBLISHES)
+        ch.set_mqtt(qos=1, retain=True)
+        self._asyncapi.add_channel(ch)
+        msg = Message("interfaceInfo")
+        schema = ObjectSchema()
+        for k,v in info.items():
+            schema.add_const_value_property(k, ArgValueType.STRING, v)
+        msg.set_schema(schema.to_schema())
+        self._asyncapi.add_message(msg)
+
+    def _add_servers(self):
+        for broker_name, broker_def in self._stinger.brokers.items():
+            svr = Server(broker_name)
+            self._asyncapi.add_server(svr)
 
     def _add_enums(self):
         for enum_name, enum_spec in self._stinger.enums.items():
@@ -212,7 +253,7 @@ class StingerToAsyncApi:
     def _add_signals(self):
         for sig_name, sig_spec in self._stinger.signals.items():
             ch = Channel(sig_spec.topic, sig_name, Direction.SERVER_PUBLISHES)
-            self._asyncapi._add_channel(ch)
+            self._asyncapi.add_channel(ch)
             msg = Message(sig_name)
             schema = ObjectSchema()
             for arg_spec in sig_spec.arg_list:
@@ -221,7 +262,7 @@ class StingerToAsyncApi:
                 elif arg_spec.arg_type == ArgType.ENUM:
                     schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
             msg.set_schema(schema.to_schema())
-            self._asyncapi._add_message(msg)
+            self._asyncapi.add_message(msg)
 
     def get_asyncapi(self):
         return self._asyncapi.get_asyncapi(SpecType.CLIENT)
