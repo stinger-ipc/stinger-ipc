@@ -17,7 +17,7 @@ class BrokerConnection(ABC):
 class {{broker.class_name}}(BrokerConnection):
 
     def __init__(self{%if broker.hostname is none%}, host: str, port: int{%endif%}):
-        self._host: str = {%if broker.hostname is none %}host{%else%}{{broker.hostname}}{%endif%}
+        self._host: str = {%if broker.hostname is none %}host{%else%}"{{broker.hostname}}"{%endif%}
         self._port: int = {%if broker.port is none %}port{%else%}{{broker.port}}{%endif%}
         self._queued_messages = Queue()
         self._connected: bool = False

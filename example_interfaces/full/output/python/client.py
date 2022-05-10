@@ -53,7 +53,7 @@ class ExampleClient(object):
 if __name__ == '__main__':
     import signal
     
-    conn = DefaultConnection('localhost', 1883)
+    conn = LocalConnection()
     client = ExampleClient(conn)
     
     @client.receive_todayIs

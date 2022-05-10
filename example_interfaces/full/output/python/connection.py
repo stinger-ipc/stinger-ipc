@@ -14,11 +14,11 @@ class BrokerConnection(ABC):
         pass
 
 
-class DefaultConnection(BrokerConnection):
+class LocalConnection(BrokerConnection):
 
-    def __init__(self, host: str, port: int):
-        self._host: str = host
-        self._port: int = port
+    def __init__(self):
+        self._host: str = "127.0.0.1"
+        self._port: int = 1883
         self._queued_messages = Queue()
         self._connected: bool = False
         self._client = mqtt_client.Client()

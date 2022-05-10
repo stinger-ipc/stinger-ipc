@@ -147,8 +147,11 @@ bool MqttConnection::TopicMatchesSubscription(const std::string& topic, const st
 }
 
 
-DefaultConnection::DefaultConnection(const std::string& host, int port)
-    :  MqttConnection(host, port)
+/*
+ * Debug: <Broker name=local host=127.0.0.1:1883>
+ */
+LocalConnection::LocalConnection()
+    :  MqttConnection("127.0.0.1", 1883)
 {
 
 }

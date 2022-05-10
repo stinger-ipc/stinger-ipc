@@ -273,7 +273,7 @@ class Broker:
         return self._host
 
     @hostname.setter
-    def set_hostname(self, value: str):
+    def hostname(self, value: str):
         self._host = value
 
     @property
@@ -281,8 +281,8 @@ class Broker:
         return self._port
 
     @port.setter
-    def set_port(self, port: int):
-        self._port 
+    def port(self, port: int):
+        self._port = port
 
     @classmethod
     def new_from_stinger(cls, name: str, spec: Dict[str, Any]) -> Broker:
@@ -294,7 +294,7 @@ class Broker:
         return new_broker
 
     def __repr__(self) -> str:
-        return f"<Broker name={self.name} host={self.hostname}>"
+        return f"<Broker name={self.name} host={self.hostname}:{self.port}>"
 
 
 class StingerSpec:

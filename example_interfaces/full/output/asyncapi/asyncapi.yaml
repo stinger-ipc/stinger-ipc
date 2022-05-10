@@ -62,5 +62,6 @@ components:
       - 5
       type: integer
 servers:
-  Default:
+  local:
     protocol: mqtt
+    url: mqtt://{hostname}:{port}

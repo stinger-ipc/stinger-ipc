@@ -147,6 +147,9 @@ bool MqttConnection::TopicMatchesSubscription(const std::string& topic, const st
 }
 
 
+/*
+ * Debug: <Broker name=Default host=None:None>
+ */
 DefaultConnection::DefaultConnection(const std::string& host, int port)
     :  MqttConnection(host, port)
 {

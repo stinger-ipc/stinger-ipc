@@ -56,3 +56,4 @@ components:
 servers:
   Default:
     protocol: mqtt
+    url: mqtt://{hostname}:{port}

@@ -98,15 +98,13 @@ private:
 
 /*! This class presents a connection to a MQTT broker.
  */
-class DefaultConnection : public MqttConnection
+class LocalConnection : public MqttConnection
 {
 public:
 
-    /*! Constructor for a DefaultConnection.
-     * \param hostname IP address or hostname of the MQTT broker server.
-     * \param port Port where the MQTT broker is running (often 1883).
+    /*! Constructor for a LocalConnection.
      */
-    DefaultConnection(const std::string& host, int port);
+    LocalConnection();
 
-    virtual ~DefaultConnection() = default;
+    virtual ~LocalConnection() = default;
 };

@@ -39,9 +39,9 @@ if __name__ == '__main__':
     """
     from time import sleep
     
-    from connection import DefaultConnection
+    from connection import LocalConnection
 
-    conn = DefaultConnection('localhost', 1883)
+    conn = LocalConnection()
     server = ExampleServer(conn)
 
     server.emit_todayIs(42, iface_enums.DayOfTheWeek.MONDAY)

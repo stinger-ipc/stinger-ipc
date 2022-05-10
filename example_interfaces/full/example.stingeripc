@@ -5,6 +5,12 @@ interface:
   name: Example
   version: 0.0.1
 
+brokers:
+  local:
+    host: 127.0.0.1
+    port: 1883
+    description: This talks to a locally running MQTT broker.
+
 enums:
     dayOfTheWeek:
         - name: Sunday

@@ -136,10 +136,20 @@ class Server(object):
     def __init__(self, name: str):
         self.name = name
         self._protocol = "mqtt"
+        self._host = None
+        self._port = None
+
+    @property
+    def url(self) -> str:
+        return "mqtt://{}:{}".format(
+            self._host or "{hostname}",
+            self._port or "{port}"
+        )
 
     def get_server(self) -> Dict[str, Any]:
         return {
-            "protocol": self._protocol
+            "protocol": self._protocol,
+            "url": self.url,
         }
 
 class AsyncApiCreator(object):
