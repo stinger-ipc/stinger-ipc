@@ -147,9 +147,6 @@ bool MqttConnection::TopicMatchesSubscription(const std::string& topic, const st
 }
 
 
-/*
- * Debug: <Broker name=local host=127.0.0.1:1883>
- */
 LocalConnection::LocalConnection()
     :  MqttConnection("127.0.0.1", 1883)
 {

@@ -25,21 +25,39 @@ signals:
 From the above description file, it generates server code, which can be used like this:
 
 ```py
+# Python
 conn = MqttConnection('localhost', 1883)
 server = ExampleServer(conn)
 
 server.emit_foo("Hello World")
 ```
 
+```c++
+// C++
+auto conn = std::make_shared<LocalConnection>();
+ExampleServer server(conn);
+server.emitFoo("Hello World").wait();
+```
+
 and it generates client code which can be used like this:
 
 ```py
+# Python
 conn = MqttConnection('localhost', 1883)
 client = ExampleClient(conn)
 
 @client.receive_foo
 def print_foo_receipt(message):
     print(f"Got a 'foo' signal with message: {message}")
+```
+
+```c++
+// C++
+auto conn = std::make_shared<LocalConnection>();
+ExampleClient client(conn);
+client.registerFooCallback([](const std::string& message) {
+    std::cout << message <<  std::endl;
+});
 ```
 
 ## Inter-process communication (IPC)
