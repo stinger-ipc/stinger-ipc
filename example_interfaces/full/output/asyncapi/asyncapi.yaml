@@ -64,4 +64,5 @@ components:
 servers:
   local:
     protocol: mqtt
-    url: mqtt://{hostname}:{port}
+    protocolVersion: 3.1.1
+    url: 127.0.0.1:1883

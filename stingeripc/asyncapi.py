@@ -139,18 +139,34 @@ class Server(object):
         self._host = None
         self._port = None
 
+    def set_host(self, host: str, port: int):
+        self._host = host
+        self._port = port
+
     @property
     def url(self) -> str:
-        return "mqtt://{}:{}".format(
+        return "{}:{}".format(
             self._host or "{hostname}",
             self._port or "{port}"
         )
 
     def get_server(self) -> Dict[str, Any]:
-        return {
+        spec = {
             "protocol": self._protocol,
+            "protocolVersion": "3.1.1",
             "url": self.url,
         }
+        if self._host is None or self._port is None:
+            spec['variables'] = {}
+        if self._host is None:
+            spec['variables']['hostname'] = {
+                "description": "The hosthame or IP address of the MQTT broker."
+            }
+        if self._port is None:
+            spec['variables']['port'] = {
+                "description": "The port for the MQTT server"
+            }
+        return spec
 
 class AsyncApiCreator(object):
     """A class to create a AsyncAPI specification from several AsyncAPI structures.
@@ -239,8 +255,10 @@ class StingerToAsyncApi:
         self._asyncapi.add_message(msg)
 
     def _add_servers(self):
-        for broker_name, broker_def in self._stinger.brokers.items():
+        for broker_name, broker_spec in self._stinger.brokers.items():
             svr = Server(broker_name)
+            if broker_spec.hostname is not None and broker_spec.port is not None:
+                svr.set_host(broker_spec.hostname, broker_spec.port)
             self._asyncapi.add_server(svr)
 
     def _add_enums(self):

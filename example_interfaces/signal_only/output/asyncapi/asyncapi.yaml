@@ -56,4 +56,10 @@ components:
 servers:
   Default:
     protocol: mqtt
-    url: mqtt://{hostname}:{port}
+    protocolVersion: 3.1.1
+    url: '{hostname}:{port}'
+    variables:
+      hostname:
+        description: The hosthame or IP address of the MQTT broker.
+      port:
+        description: The port for the MQTT server
