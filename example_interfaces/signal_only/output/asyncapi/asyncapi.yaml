@@ -65,6 +65,13 @@ components:
   schemas: {}
 servers:
   Default:
+    bindings:
+      mqtt:
+        lastWill:
+          message: null
+          qos: 1
+          retain: false
+          topic: SignalOnly/interface
     protocol: mqtt
     protocolVersion: 3.1.1
     url: '{hostname}:{port}'

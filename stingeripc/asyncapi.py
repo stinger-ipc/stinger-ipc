@@ -138,10 +138,16 @@ class Server(object):
         self._protocol = "mqtt"
         self._host = None
         self._port = None
+        self._lwt_topic = None
 
     def set_host(self, host: str, port: int):
         self._host = host
         self._port = port
+        return self
+
+    def set_lwt_topic(self, topic: str):
+        self._lwt_topic = topic
+        return self
 
     @property
     def url(self) -> str:
@@ -156,6 +162,17 @@ class Server(object):
             "protocolVersion": "3.1.1",
             "url": self.url,
         }
+        if self._lwt_topic is not None:
+            spec['bindings'] = {
+                "mqtt": {
+                    "lastWill": {
+                        "retain": False,
+                        "message": None,
+                        "qos": 1,
+                        "topic": self._lwt_topic,
+                    }
+                }
+            }
         if self._host is None or self._port is None:
             spec['variables'] = {}
         if self._host is None:
@@ -260,10 +277,12 @@ class StingerToAsyncApi:
         self._asyncapi.add_message(msg)
 
     def _add_servers(self):
+        info_topic, _ = self._stinger.interface_info
         for broker_name, broker_spec in self._stinger.brokers.items():
             svr = Server(broker_name)
             if broker_spec.hostname is not None and broker_spec.port is not None:
                 svr.set_host(broker_spec.hostname, broker_spec.port)
+            svr.set_lwt_topic(info_topic)
             self._asyncapi.add_server(svr)
 
     def _add_enums(self):
