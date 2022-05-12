@@ -20,8 +20,20 @@ parameters:
     parameters:
       name:
         type: string
-        version:
-          type: string
+        pattern: "[a-zA-Z0-9_]+"
+        maxLength: 32
+        description: "A short token that will be used to create class names, folder names, filenames, etc."
+      title:
+        type: string
+        maxLength: 64
+        description: "A few words that are the title for the API.  Used at the top of documentation, etc.  The interface name is used if not provided."
+      summary:
+        type: string
+        description: "A one sentence description of the service."
+        maxLength: 128
+      version:
+        type: string
+        maxLength: 32
     required:
       - name
       - version

@@ -211,6 +211,9 @@ class AsyncApiCreator(object):
         self.name = name
         self.asyncapi["id"] = f"urn:stingeripc:{name}"
 
+    def add_to_info(self, key, value):
+        self.asyncapi["info"][key] = value
+
     def get_asyncapi(self, client_type: SpecType, use_common=None):
         spec = self.asyncapi.copy()
         if len(self.servers) > 0:
@@ -244,6 +247,8 @@ class StingerToAsyncApi:
 
     def _add_interface_info(self):
         topic, info = self._stinger.interface_info
+        self._asyncapi.add_to_info("version", info['version'])
+        self._asyncapi.add_to_info("title", info['title'])
         ch = Channel(topic, "interfaceInfo", Direction.SERVER_PUBLISHES)
         ch.set_mqtt(qos=1, retain=True)
         self._asyncapi.add_channel(ch)

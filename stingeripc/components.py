@@ -311,6 +311,10 @@ class StingerSpec:
             raise InvalidStingerStructure(
                 f"Interface didn't appear to have a correct type"
             )
+        
+        self._summary = interface['summary'] if 'summary' in interface else None
+        self._title = interface['title'] if 'title' in interface else None
+
         self.signals: Dict[str, Signal] = {}
         self.params = {}
         self.enums: Dict[str, InterfaceEnum] = {}
@@ -318,9 +322,15 @@ class StingerSpec:
 
     @property
     def interface_info(self) -> Tuple[str, Dict[str, Any]]:
+        info = {
+            "name": self._name, 
+            "version": self._version,
+            "title": self._title or self._name,
+            "summary": self._summary or '',
+        }
         return (
             self._topic_creator.interface_info_topic(),
-            {"name": self._name, "version": self._version}
+            info
         )
 
     def add_broker(self, broker: Broker):

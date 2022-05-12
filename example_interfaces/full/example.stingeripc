@@ -4,6 +4,8 @@ stingeripc:
 interface:
   name: Example
   version: 0.0.1
+  title: Fully Featured Example Interface
+  summary: Example StingerAPI interface which demonstrates most features.
 
 brokers:
   local:

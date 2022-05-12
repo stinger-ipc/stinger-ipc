@@ -1,6 +1,8 @@
 asyncapi: 2.4.0
 id: urn:stingeripc:Example
-info: {}
+info:
+  version: 0.0.1
+  title: Fully Featured Example Interface
 channels:
   Example/interface:
     subscribe:
@@ -30,12 +32,20 @@ components:
           name:
             const: Example
             type: string
+          summary:
+            const: Example StingerAPI interface which demonstrates most features.
+            type: string
+          title:
+            const: Fully Featured Example Interface
+            type: string
           version:
             const: 0.0.1
             type: string
         required:
         - name
         - version
+        - title
+        - summary
         type: object
     todayIs:
       name: todayIs

@@ -1,6 +1,8 @@
 asyncapi: 2.4.0
 id: urn:stingeripc:EnumOnly
-info: {}
+info:
+  version: 0.0.1
+  title: EnumOnly
 channels:
   EnumOnly/interface:
     subscribe:
@@ -21,12 +23,20 @@ components:
           name:
             const: EnumOnly
             type: string
+          summary:
+            const: ''
+            type: string
+          title:
+            const: EnumOnly
+            type: string
           version:
             const: 0.0.1
             type: string
         required:
         - name
         - version
+        - title
+        - summary
         type: object
   schemas:
     enum_fruits:

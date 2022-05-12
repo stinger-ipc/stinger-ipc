@@ -1,6 +1,8 @@
 asyncapi: 2.4.0
 id: urn:stingeripc:SignalOnly
-info: {}
+info:
+  version: 0.0.1
+  title: SignalOnly
 channels:
   SignalOnly/interface:
     subscribe:
@@ -30,12 +32,20 @@ components:
           name:
             const: SignalOnly
             type: string
+          summary:
+            const: ''
+            type: string
+          title:
+            const: SignalOnly
+            type: string
           version:
             const: 0.0.1
             type: string
         required:
         - name
         - version
+        - title
+        - summary
         type: object
     anotherSignal:
       name: anotherSignal
