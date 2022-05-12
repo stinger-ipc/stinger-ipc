@@ -14,6 +14,8 @@ tasks:
       pyenv versions
       pip install -r requirements.txt
       pip install -r requirements-dev.txt
+      npm install -g npm@8.10.0
+      npm install -g @asyncapi/generator
     init:
       bin/generate_everything.sh
     command:
