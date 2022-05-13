@@ -31,7 +31,7 @@ class LocalConnection(BrokerConnection):
 
     def __del__(self):
         if self._last_will is not None:
-            self.publish(*self._last_will)
+            self._client.publish(*self._last_will).wait_for_publish()
         self._client.disconnect()
         self._client.loop_stop()
 
