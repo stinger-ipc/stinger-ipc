@@ -13,8 +13,12 @@ class ExampleServer(object):
 
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
+        self._conn.set_last_will("Example/interface", payload=None, qos=1, retain=True)
         
     
+    def _publish_interface_info(self):
+        self._conn.publish("Example/interface", '''{"name": "Example", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}''', qos=1, retain=True)
+
     def emit_todayIs(self, dayOfMonth: int, dayOfWeek: iface_enums.DayOfTheWeek):
         
         if not isinstance(dayOfMonth, int):

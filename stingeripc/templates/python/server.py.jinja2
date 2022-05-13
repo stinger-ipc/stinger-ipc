@@ -13,12 +13,17 @@ class {{stinger.name}}Server(object):
 
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
+        self._conn.set_last_will("{{stinger.interface_info.0}}", payload=None, qos=1, retain=True)
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
         self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
         self.changed_value_callback_for_{{p}} = None
+        self._publish_interface_info()
         {%endfor%}
     
+    def _publish_interface_info(self):
+        self._conn.publish("{{stinger.interface_info.0}}", '''{{stinger.interface_info.1 | tojson}}''', qos=1, retain=True)
+
     {%for sig_name, sig in stinger.signals.items()-%}
     def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
         {%for arg in sig.arg_list%}

@@ -13,8 +13,12 @@ class SignalOnlyServer(object):
 
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
+        self._conn.set_last_will("SignalOnly/interface", payload=None, qos=1, retain=True)
         
     
+    def _publish_interface_info(self):
+        self._conn.publish("SignalOnly/interface", '''{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}''', qos=1, retain=True)
+
     def emit_anotherSignal(self, one: float, two: bool, three: str):
         
         if not isinstance(one, float):

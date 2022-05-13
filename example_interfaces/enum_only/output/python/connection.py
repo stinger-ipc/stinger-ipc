@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 from paho.mqtt import client as mqtt_client
 from queue import Queue, Empty
 from abc import ABC, abstractmethod
@@ -19,6 +19,7 @@ class DefaultConnection(BrokerConnection):
     def __init__(self, host: str, port: int):
         self._host: str = host
         self._port: int = port
+        self._last_will: Optional[Tuple[str, Optional[str], int, bool]] = None
         self._queued_messages = Queue()
         self._connected: bool = False
         self._client = mqtt_client.Client()
@@ -29,7 +30,14 @@ class DefaultConnection(BrokerConnection):
         self._client.loop_start()
 
     def __del__(self):
+        if self._last_will is not None:
+            self.publish(*self._last_will)
+        self._client.disconnect()
         self._client.loop_stop()
+
+    def set_last_will(topic: str, payload: Optional[str]=None, qos: int, retain: bool):
+        self._last_will = (topic, payload, qos, retain)
+        self._client.will_set(*self._last_will)
 
     def set_message_callback(self, callback: Callable[[str, str], None]):
         self._message_callback = callback
