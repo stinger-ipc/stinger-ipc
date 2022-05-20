@@ -2,9 +2,11 @@
 
 Stinger IPC is an application layer on top of [AsyncAPI](https://asyncapio.org).  
 
-It provides inter-process communications (IPC) using an MQTT broker to pass messages between processes.
+StingerIPC provides inter-process communications (IPC) between a server and multiple clients running on the same or separate hosts.  It uses an MQTT server to pass messages between processes, implementing several IPC patterns: signals, properties, and proceedures.
 
-It takes a interface description file (.singeripc):
+## Interface Description
+
+StingerIPC takes a interface description file (.singeripc), and will generate code and documentation from it.  A very brief example of a interface description is:
 
 ```yaml
 stingeripc:
@@ -21,8 +23,13 @@ signals:
       - name: message
         type: string
 ```
+## First class code generation 
 
-From the above description file, it generates server code, which can be used like this:
+From the StingerIPC description file, we directly generate server and client code for these languages: Python3, C++11, and Rust.
+
+### Server Code
+
+From the above description file, StingerIPC generates server code, which can be used like this:
 
 ```py
 # Python
@@ -39,7 +46,9 @@ ExampleServer server(conn);
 server.emitFoo("Hello World").wait();
 ```
 
-and it generates client code which can be used like this:
+### Client Code
+
+From the above description file, StingerIPC generates client code which can be used like this:
 
 ```py
 # Python
@@ -59,6 +68,12 @@ client.registerFooCallback([](const std::string& message) {
     std::cout << message <<  std::endl;
 });
 ```
+
+## AsyncAPI and second-class code generation
+
+[AsyncAPI](https://www.asyncapi.com/) is a specification format for describing asynchronous message APIs.  Since StingerIPC uses and abstracts asynchonous messages between server and clients, we can describe a StingerIPC system with an AsyncAPI document.  
+
+From that AsyncAPI document, we can [generate code and documentation](https://www.asyncapi.com/tools/generator) in additional languages.  While this code generation won't implement our standard IPC design patterns, it does make accessing the communications more easy.
 
 ## Inter-process communication (IPC)
 
