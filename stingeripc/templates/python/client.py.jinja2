@@ -23,9 +23,6 @@ class {{stinger.name}}Client(object):
         {%for sig_name in stinger.signals.keys()-%}
         self._signal_recv_callbacks_for_{{sig_name}} = []
         {%endfor%}
-        {%for sig_name, sig in stinger.signals.items()-%}
-        self._conn.subscribe("{{sig.topic}}")
-        {%endfor%}
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
         for cb in callbacks:
@@ -55,6 +52,8 @@ class {{stinger.name}}Client(object):
     {%for sig_name, sig in stinger.signals.items()%}
     def receive_{{sig_name}}(self, handler):
         self._signal_recv_callbacks_for_{{sig_name}}.append(handler)
+        if len(self._signal_recv_callbacks_for_{{sig_name}}) == 1:
+            self._conn.subscribe("{{sig.topic}}")
     {%endfor%}
 
 if __name__ == '__main__':

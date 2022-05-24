@@ -18,8 +18,6 @@ class ExampleClient(object):
         
         self._signal_recv_callbacks_for_todayIs = []
         
-        self._conn.subscribe("Example/signal/todayIs")
-        
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
         for cb in callbacks:
@@ -48,6 +46,8 @@ class ExampleClient(object):
     
     def receive_todayIs(self, handler):
         self._signal_recv_callbacks_for_todayIs.append(handler)
+        if len(self._signal_recv_callbacks_for_todayIs) == 1:
+            self._conn.subscribe("Example/signal/todayIs")
     
 
 if __name__ == '__main__':

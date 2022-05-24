@@ -18,8 +18,6 @@ class SignalOnlyClient(object):
         
         self._signal_recv_callbacks_for_anotherSignal = []
         
-        self._conn.subscribe("SignalOnly/signal/anotherSignal")
-        
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
         for cb in callbacks:
@@ -49,6 +47,8 @@ class SignalOnlyClient(object):
     
     def receive_anotherSignal(self, handler):
         self._signal_recv_callbacks_for_anotherSignal.append(handler)
+        if len(self._signal_recv_callbacks_for_anotherSignal) == 1:
+            self._conn.subscribe("SignalOnly/signal/anotherSignal")
     
 
 if __name__ == '__main__':

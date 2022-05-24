@@ -17,7 +17,6 @@ class EnumOnlyClient(object):
         self._conn.set_message_callback(self._receive_message)
         
         
-        
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
         for cb in callbacks:
