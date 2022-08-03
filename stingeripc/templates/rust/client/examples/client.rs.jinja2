@@ -1,0 +1,23 @@
+use futures::{executor::block_on};
+
+use client::{{stinger.name}}Client;
+use connection::Connection;
+
+{%for sig_name, sig in stinger.signals.items()%}
+fn print_{{sig_name}}(i: u32) {
+    println!("Got a '{{sig_name}}' signal: {}", i);
+}
+{%endfor%}
+
+fn main() {
+    {%set broker = stinger.get_example_broker()%}
+    let mut connection = Connection(String::from("tcp://{%if broker.hostname is none%}localhost{%else%}{{broker.hostname}}{%endif%}:1883"));
+    let mut client = {{stinger.name}}Client::new(connection);
+    {%for sig_name, sig in stinger.signals.items()%}
+    client.set_signal_recv_callbacks_for_{{sig_name}}(print_{{sig_name}});
+    {%endfor%}
+    block_on(async {
+        client.process().await;
+    });
+    // Ctrl-C to stop
+}

@@ -3,6 +3,7 @@ name = "{{stinger.name | snake_case}}_interface"
 version = "{{stinger.version}}"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = ["server", "client", "connection"]
 
 [dependencies]
