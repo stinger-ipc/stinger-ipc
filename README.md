@@ -1,7 +1,5 @@
 # Stinger IPC
 
-Stinger IPC is an application layer on top of [AsyncAPI](https://asyncapio.org).  
-
 StingerIPC provides inter-process communications (IPC) between a server and multiple clients running on the same or separate hosts.  It uses an MQTT server to pass messages between processes, implementing several IPC patterns: signals, properties, and proceedures.
 
 ## Interface Description

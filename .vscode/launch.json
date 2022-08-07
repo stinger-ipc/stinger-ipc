@@ -6,8 +6,6 @@
     "configurations": [
 
 
-
-
         {
             "type": "gdb",
             "request": "launch",
@@ -17,7 +15,6 @@
             "valuesFormatting": "parseText",
             "justMyCode": false,
         },
-
         {
             "name": "Python: Current File",
             "type": "python",
@@ -25,7 +22,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true
-        }, {
+        },
+        {
             "name": "Python: Generation",
             "type": "python",
             "request": "launch",

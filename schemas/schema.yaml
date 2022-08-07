@@ -96,8 +96,12 @@ $defs:
     uniqueItems: true
     items:
       type: object
-      required: ["type"]
+      required:
+        - "type"
+        - "name"
       properties:
+        name:
+          type: string
         description:
           type: string
       oneOf:
