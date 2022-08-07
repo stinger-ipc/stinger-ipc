@@ -10,10 +10,11 @@ python3 ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/enum_o
 
 # Rust
 echo "----------- Generating Rust ----------------"
+#rm -rf ${BASE_DIR}/../example_interfaces/full/output/rust/ ${BASE_DIR}/../example_interfaces/signal_only/output/rust/
 python3 ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/rust/
 python3 ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/rust/
 if [ $? -eq 0 ]; then
-    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build)
+    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example client)
 fi
 
 # C++

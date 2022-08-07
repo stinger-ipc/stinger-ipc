@@ -1,5 +1,5 @@
 /*
-DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+DO NOT MODIFY THIS FILE{# <-- Ignore this because you are editing the template file. #}.  It is automatically generated and changes will be over-written
 on the next generation.
 
 This is the Client for the {{stinger.name}} interface.
@@ -11,7 +11,7 @@ use connection::Connection;
 pub struct {{stinger.name}}Client {
     connection: Connection,
     {%for sig_name in stinger.signals.keys()-%}
-        signal_recv_callback_for_{{sig_name}}: Box<dyn FnMut(u32)->()>,
+        signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut(u32)->()>,
     {%endfor%}
 }
 
@@ -21,24 +21,24 @@ impl {{stinger.name}}Client {
         {{stinger.name}}Client {
             connection: connection,
             {%for sig_name in stinger.signals.keys()-%}
-            signal_recv_callback_for_{{sig_name}}: Box::new( |_| {} ),
+            signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |_| {} ),
             {%endfor%}
         }
     }
 
-    {%for sig_name in stinger.signals.keys()-%}
-    pub fn set_signal_recv_callbacks_for_{{sig_name}}(&mut self, cb: impl FnMut(u32)->() + 'static) {
-        self.signal_recv_callback_for_{{sig_name}} = Box::new(cb);
-        self.connection.subscribe(String::from("{{sig.topic}}"));
+    {%for sig_name, sig in stinger.signals.items()-%}
+    pub fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut(u32)->() + 'static) {
+        self.signal_recv_callback_for_{{sig_name|snake_case}} = Box::new(cb);
+        self.connection.subscribe(String::from("{{sig.topic}}"), 2);
     }
     {%endfor%}
 
     pub async fn process(&mut self) {
         while let Some(opt_msg) = self.connection.rx.next().await {
             if let Some(msg) = opt_msg {
-                {%for sig_name in stinger.signals.keys()-%}
+                {%for sig_name, sig in stinger.signals.items()-%}
                 if msg.topic() == "{{sig.topic}}" {
-                    (signal_recv_callback_for_{{sig_name}})(1);
+                    (self.signal_recv_callback_for_{{sig_name|snake_case}})(1);
                 }
                 {%endfor%}
             }

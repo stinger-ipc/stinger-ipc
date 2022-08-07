@@ -3,7 +3,9 @@
 __pycache__
 
 # Rust
-example_interfaces/*/output/rust/target
+stingeripc/templates/rust/**/target
+example_interfaces/*/output/rust/target/
+example_interfaces/*/output/rust/**/target/
 Cargo.lock
 
 # CPP
