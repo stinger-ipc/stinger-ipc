@@ -72,7 +72,7 @@ void SignalOnlyClient::ReceiveMessage(const std::string& topic, const std::strin
                     }
                 }
                 
-                const std::string& tempthree;
+                std::string tempthree;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("three");
                     if (itr != doc.MemberEnd() && itr->value.IsString()) {

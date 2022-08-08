@@ -76,6 +76,10 @@ class ArgEnum(Arg):
         return self._enum.cpp_type
 
     @property
+    def cpp_temp_type(self) -> str:
+        return self.cpp_type
+
+    @property
     def cpp_rapidjson_type(self) -> str:
         return ArgValueType.to_cpp_rapidjson_type_str(ArgValueType.INTEGER)
 
@@ -113,6 +117,13 @@ class ArgValue(Arg):
         return ArgValueType.to_cpp_type(self._arg_type)
 
     @property
+    def cpp_temp_type(self) -> str:
+        if self._arg_type == ArgValueType.STRING:
+            return "std::string"
+        else:
+            return self.cpp_type
+
+    @property
     def cpp_rapidjson_type(self) -> str:
         return ArgValueType.to_cpp_rapidjson_type_str(self._arg_type)
 
@@ -122,6 +133,8 @@ class ArgValue(Arg):
         retval = None
         if self._arg_type == ArgValueType.BOOLEAN:
             retval = random.choice([True, False])
+            if lang != "python":
+                retval = str(retval).lower()
         elif self._arg_type == ArgValueType.FLOAT:
             retval = random.choice([3.14, 1.0, 2.5, 97.9, 1.53])
         elif self._arg_type == ArgValueType.INTEGER:

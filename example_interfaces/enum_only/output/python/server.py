@@ -13,7 +13,7 @@ class EnumOnlyServer(object):
 
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
-        self._conn.set_last_will("EnumOnly/interface", payload=None, qos=1, retain=True)
+        self._conn.set_last_will(topic="EnumOnly/interface", payload=None, qos=1, retain=True)
         
     
     def _publish_interface_info(self):

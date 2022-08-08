@@ -13,7 +13,7 @@ class SignalOnlyServer(object):
 
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
-        self._conn.set_last_will("SignalOnly/interface", payload=None, qos=1, retain=True)
+        self._conn.set_last_will(topic="SignalOnly/interface", payload=None, qos=1, retain=True)
         
     
     def _publish_interface_info(self):
