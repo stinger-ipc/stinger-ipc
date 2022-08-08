@@ -51,7 +51,7 @@ void {{stinger.name | UpperCamelCase}}Client::ReceiveMessage(const std::string& 
                 }
 
                 {%for arg in sig.arg_list%}
-                {{arg.cpp_type}} temp{{arg.name}};
+                {{arg.cpp_temp_type}} temp{{arg.name}};
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
                     if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {

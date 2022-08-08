@@ -15,6 +15,7 @@ python3 ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/signal_o
 python3 ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/rust/
 if [ $? -eq 0 ]; then
     (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example client)
+    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example client)
 fi
 
 # C++
@@ -26,6 +27,11 @@ if [ $? -eq 0 ]; then
         mkdir ${BASE_DIR}/../example_interfaces/full/output/cpp/build
     fi
     (cd ${BASE_DIR}/../example_interfaces/full/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
+
+    if [ ! -d "${BASE_DIR}/../example_interfaces/signal_only/output/cpp/build" ]; then
+        mkdir ${BASE_DIR}/../example_interfaces/signal_only/output/cpp/build
+    fi
+    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
 fi
 
 # AsyncAPI

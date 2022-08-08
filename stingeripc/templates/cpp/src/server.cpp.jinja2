@@ -34,7 +34,15 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
     doc.SetObject();
     {%for arg in sig.arg_list%}
     {%-if arg.arg_type.name.lower() == 'value'%}
+    {%-if arg.type.name.lower() == 'string'%}
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString({{arg.name}}.c_str(), {{arg.name}}.size(), doc.GetAllocator());
+        doc.AddMember("{{arg.name}}", tempStringValue, doc.GetAllocator());
+    }
+    {%-else%}
     doc.AddMember("{{arg.name}}", {{arg.name}}, doc.GetAllocator());
+    {%-endif%}
     {%elif arg.arg_type.name.lower() == 'enum'%}
     doc.AddMember("{{arg.name}}", static_cast<int>({{arg.name}}), doc.GetAllocator());
     {%-endif-%}

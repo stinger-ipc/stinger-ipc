@@ -47,7 +47,7 @@ class ArgValueType(Enum):
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod
-    def to_cpp_type(cls, arg_type: ArgValueType) -> str:
+    def to_cpp_type(cls, arg_type: ArgValueType, ) -> str:
         if arg_type == cls.BOOLEAN:
             return "bool"
         elif arg_type == cls.INTEGER:

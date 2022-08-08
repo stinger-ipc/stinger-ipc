@@ -1,5 +1,5 @@
 use futures::{executor::block_on};
-
+use example_client::ExampleClient;
 use connection::Connection;
 
 
@@ -10,8 +10,8 @@ fn print_today_is(i: u32) {
 
 fn main() {
     
-    let mut connection = Connection::new(String::from("tcp://127.0.0.1:1883"));
-    let mut client = lib::ExampleClient::new(connection);
+    let connection = Connection::new(String::from("tcp://127.0.0.1:1883"));
+    let mut client = ExampleClient::new(connection);
     
     client.set_signal_recv_callbacks_for_today_is(print_today_is);
     

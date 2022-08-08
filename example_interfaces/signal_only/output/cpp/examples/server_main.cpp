@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
     
     auto conn = std::make_shared<DefaultConnection>("localhost", 1883);
     SignalOnlyServer server(conn);
-    auto anotherSignalFuture = server.emitAnotherSignalSignal(3.14, True, "apples");
+    auto anotherSignalFuture = server.emitAnotherSignalSignal(3.14, true, "apples");
     anotherSignalFuture.wait();
     return 0;
 }
