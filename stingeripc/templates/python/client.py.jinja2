@@ -37,6 +37,7 @@ class {{stinger.name}}Client(object):
         return filtered_args
 
     def _receive_message(self, topic, payload):
+        {%if stinger.signals | length > 0 -%}
         {%for sig_name, sig in stinger.signals.items()-%}
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
@@ -48,6 +49,7 @@ class {{stinger.name}}Client(object):
             {%endfor%}
             self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
         {%endfor%}
+        {%-else%}pass{%-endif%}
 
     {%for sig_name, sig in stinger.signals.items()%}
     def receive_{{sig_name}}(self, handler):

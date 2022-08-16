@@ -31,7 +31,7 @@ class EnumOnlyClient(object):
         return filtered_args
 
     def _receive_message(self, topic, payload):
-        
+        pass
 
     
 
