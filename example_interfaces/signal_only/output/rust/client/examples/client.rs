@@ -3,8 +3,8 @@ use signal_only_client::SignalOnlyClient;
 use connection::Connection;
 
 
-fn print_another_signal(i: u32) {
-    println!("Got a 'anotherSignal' signal: {}", i);
+fn print_another_signal(one: f32, two: bool, three: String) {
+    println!("Got a 'anotherSignal' signal:{} {} {} ", one, two, three);
 }
 
 

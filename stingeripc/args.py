@@ -35,6 +35,18 @@ class ArgValueType(Enum):
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod
+    def to_rust_type(cls, arg_type: ArgValueType) -> str:
+        if arg_type == cls.BOOLEAN:
+            return "bool"
+        elif arg_type == cls.INTEGER:
+            return "i32"
+        elif arg_type == cls.FLOAT:
+            return "f32"
+        elif arg_type == cls.STRING:
+            return "String"
+        raise InvalidStingerStructure("Unhandled arg type")
+
+    @classmethod
     def to_json_type(cls, arg_type: ArgValueType) -> str:
         if arg_type == cls.BOOLEAN:
             return "boolean"

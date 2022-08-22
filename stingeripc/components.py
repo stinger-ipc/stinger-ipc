@@ -76,6 +76,10 @@ class ArgEnum(Arg):
         return self._enum.cpp_type
 
     @property
+    def rust_type(self) -> str:
+        return self._enum.rust_type
+
+    @property
     def cpp_temp_type(self) -> str:
         return self.cpp_type
 
@@ -111,6 +115,10 @@ class ArgValue(Arg):
     @property
     def python_type(self) -> str:
         return ArgValueType.to_python_type(self._arg_type)
+
+    @property
+    def rust_type(self) -> str:
+        return ArgValueType.to_rust_type(self._arg_type)
 
     @property
     def cpp_type(self) -> str:
@@ -242,6 +250,10 @@ class InterfaceEnum:
     @property
     def python_type(self) -> str:
         return f"{self.get_module_alias()}.{stringmanip.upper_camel_case(self.name)}"
+
+    @property
+    def rust_type(self) -> str:
+        return f"connection::enums::{stringmanip.upper_camel_case(self.name)}"
 
     @property
     def cpp_type(self) -> str:

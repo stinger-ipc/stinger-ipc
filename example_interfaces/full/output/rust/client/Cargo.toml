@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 connection = { path = "../connection" }
 futures = "0.3"
+json = "0.12.4"

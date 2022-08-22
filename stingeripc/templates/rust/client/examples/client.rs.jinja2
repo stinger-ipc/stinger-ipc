@@ -3,8 +3,8 @@ use {{stinger.name | snake_case}}_client::{{stinger.name}}Client;
 use connection::Connection;
 
 {%for sig_name, sig in stinger.signals.items()%}
-fn print_{{sig_name|snake_case}}(i: u32) {
-    println!("Got a '{{sig_name}}' signal: {}", i);
+fn print_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+    println!("Got a '{{sig_name}}' signal:{%for arg in sig.arg_list%}{} {%endfor%}", {%for arg in sig.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
 }
 {%endfor%}
 

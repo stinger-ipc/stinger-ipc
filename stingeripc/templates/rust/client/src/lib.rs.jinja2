@@ -10,8 +10,8 @@ use connection::Connection;
 
 pub struct {{stinger.name}}Client {
     connection: Connection,
-    {%for sig_name in stinger.signals.keys()-%}
-        signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut(u32)->()>,
+    {%for sig_name, sig in stinger.signals.items()-%}
+        signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->()>,
     {%endfor%}
 }
 
@@ -20,14 +20,14 @@ impl {{stinger.name}}Client {
 
         {{stinger.name}}Client {
             connection: connection,
-            {%for sig_name in stinger.signals.keys()-%}
-            signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |_| {} ),
+            {%for sig_name, sig in stinger.signals.items()-%}
+            signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |{%for arg in sig.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
             {%endfor%}
         }
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    pub fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut(u32)->() + 'static) {
+    pub fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
         self.signal_recv_callback_for_{{sig_name|snake_case}} = Box::new(cb);
         self.connection.subscribe(String::from("{{sig.topic}}"), 2);
     }
@@ -37,8 +37,16 @@ impl {{stinger.name}}Client {
         while let Some(opt_msg) = self.connection.rx.next().await {
             if let Some(msg) = opt_msg {
                 {%for sig_name, sig in stinger.signals.items()-%}
+                let payload_object = json::parse(&msg.payload_str()).unwrap();
                 if msg.topic() == "{{sig.topic}}" {
-                    (self.signal_recv_callback_for_{{sig_name|snake_case}})(1);
+                    {%for arg in sig.arg_list-%}
+                    {%-if arg.arg_type.name.lower() == 'value'%}
+                    let temp_{{arg.name | snake_case}} = payload_object["{{arg.name}}"].{%if arg.rust_type == 'String'%}as_str().unwrap().to_string(){%else%}as_{{arg.rust_type}}().unwrap(){%endif%};
+                    {%elif arg.arg_type.name.lower() == 'enum'%}
+                    let temp_{{arg.name | snake_case}} = {{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap());
+                    {%endif%}
+                    {%endfor%}
+                    (self.signal_recv_callback_for_{{sig_name|snake_case}})({%for arg in sig.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
                 }
                 {%endfor%}
             }
