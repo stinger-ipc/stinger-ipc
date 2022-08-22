@@ -39,7 +39,7 @@ server.emit_foo("Hello World")
 
 ```c++
 // C++
-auto conn = std::make_shared<LocalConnection>();
+auto conn = std::make_shared<DefaultConnection>("localhost", 1883);
 ExampleServer server(conn);
 server.emitFoo("Hello World").wait();
 ```
@@ -60,10 +60,18 @@ def print_foo_receipt(message):
 
 ```c++
 // C++
-auto conn = std::make_shared<LocalConnection>();
+auto conn = std::make_shared<DefaultConnection>("localhost", 1883);
 ExampleClient client(conn);
 client.registerFooCallback([](const std::string& message) {
     std::cout << message <<  std::endl;
+});
+```
+
+```rust
+let connection = Connection::new(String::from("tcp://localhost:1883"));
+let mut client = ExampleClient::new(connection);
+client.set_signal_recv_callbacks_for_foo(|message| {
+    println!("{}", message);
 });
 ```
 
