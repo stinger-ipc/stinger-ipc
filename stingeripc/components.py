@@ -95,6 +95,8 @@ class ArgEnum(Arg):
             retval = f"{self._enum.get_module_alias()}.{self._enum.class_name}.{value}"
         elif lang == "c++":
             retval = f"{self._enum.class_name}::{value}"
+        elif lang == "rust":
+            retval = f"{self._enum.class_name}::{value}"
         random.setstate(random_state)
         return retval
 

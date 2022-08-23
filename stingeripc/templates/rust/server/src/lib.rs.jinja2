@@ -1,0 +1,36 @@
+/*
+DO NOT MODIFY THIS FILE{# <-- Ignore this because you are editing the template file. #}.  It is automatically generated and changes will be over-written
+on the next generation.
+
+This is the Server for the {{stinger.name}} interface.
+*/
+
+use futures::StreamExt;
+use connection::Connection;
+
+pub struct {{stinger.name}}Server {
+    connection: Connection,
+}
+
+impl {{stinger.name}}Server {
+    pub fn new(connection: Connection) -> {{stinger.name}}Server {
+
+        {{stinger.name}}Server{
+            connection: connection,
+        }
+    }
+
+    {%for sig_name, sig in stinger.signals.items()-%}
+    pub fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+
+    }
+    {%endfor%}
+
+    pub async fn process(&mut self) {
+        while let Some(opt_msg) = self.connection.rx.next().await {
+            if let Some(msg) = opt_msg {
+
+            }
+        }
+    }
+}
