@@ -2,6 +2,10 @@
 
 StingerIPC provides inter-process communications (IPC) between a server and multiple clients running on the same or separate hosts.  It uses an MQTT server to pass messages between processes, implementing several IPC patterns: signals, properties, and proceedures.
 
+## Project Status
+
+This project is in early stages of active development.  You should not use it in any of your projects, both because it doesn't have enough features yet to be useful, and also because things will probably be horribly broken on future updates.
+
 ## Interface Description
 
 StingerIPC takes a interface description file (.singeripc), and will generate code and documentation from it.  A very brief example of a interface description is:
