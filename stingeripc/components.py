@@ -90,11 +90,13 @@ class ArgEnum(Arg):
     def get_random_example_value(self, lang="python") -> str:
         random_state = random.getstate()
         random.seed(1)
-        value = stringcase.constcase(random.choice(self._enum.values))
+        value = random.choice(self._enum.values) 
         if lang == "python":
-            retval = f"{self._enum.get_module_alias()}.{self._enum.class_name}.{value}"
+            retval = f"{self._enum.get_module_alias()}.{self._enum.class_name}.{stringcase.constcase(value) }"
         elif lang == "c++":
-            retval = f"{self._enum.class_name}::{value}"
+            retval = f"{self._enum.class_name}::{stringcase.constcase(value)}"
+        elif lang == "rust":
+            retval = f"connection::enums::{self._enum.class_name}::{value}"
         random.setstate(random_state)
         return retval
 
@@ -149,6 +151,8 @@ class ArgValue(Arg):
             retval = random.choice([42, 1981, 2020, 2022])
         elif self._arg_type == ArgValueType.STRING:
             retval = random.choice(['"apples"', '"Joe"', '"example"', '"foo"'])
+            if lang == "rust":
+                retval = f"{retval}.to_string()"
         random.setstate(random_state)
         return retval
 
@@ -240,11 +244,11 @@ class InterfaceEnum:
         return stringmanip.upper_camel_case(self.name)
 
     @staticmethod
-    def get_module_name() -> str:
+    def get_module_name(lang="python") -> str:
         return "interface_enums"
 
     @staticmethod
-    def get_module_alias() -> str:
+    def get_module_alias(lang="python") -> str:
         return "iface_enums"
 
     @property

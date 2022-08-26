@@ -1,0 +1,47 @@
+/*
+DO NOT MODIFY THIS FILE{# <-- Ignore this because you are editing the template file. #}.  It is automatically generated and changes will be over-written
+on the next generation.
+
+This is the Server for the {{stinger.name}} interface.
+*/
+
+use futures::StreamExt;
+use connection::Connection;
+use json::object;
+
+
+pub struct {{stinger.name}}Server {
+    connection: Connection,
+}
+
+impl {{stinger.name}}Server {
+    pub fn new(connection: Connection) -> {{stinger.name}}Server {
+
+        {{stinger.name}}Server{
+            connection: connection,
+        }
+    }
+
+    {%for sig_name, sig in stinger.signals.items()-%}
+    pub fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+        let data = object!{ {%for arg in sig.arg_list%}
+            {%-if arg.arg_type.name.lower() == 'value'%}
+            {{arg.name}}: {{arg.name|snake_case}},
+            {%elif arg.arg_type.name.lower() == 'enum'%}
+            {{arg.name}}: {{arg.name|snake_case}} as u32,
+            {%endif-%}
+            {%endfor%}
+        };
+        let data_str = json::stringify(data);
+        self.connection.publish("{{sig.topic}}".to_string(), data_str);
+    }
+    {%endfor%}
+
+    pub async fn process(&mut self) {
+        while let Some(opt_msg) = self.connection.rx.next().await {
+            if let Some(_msg) = opt_msg {
+
+            }
+        }
+    }
+}
