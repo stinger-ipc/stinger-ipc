@@ -48,6 +48,13 @@ ExampleServer server(conn);
 server.emitFoo("Hello World").wait();
 ```
 
+```rust
+// Rust
+let connection = Connection::new(String::from("tcp://localhost:1883"));
+let mut server = SignalOnlyServer::new(connection);
+server.emit_foo("Hello World".to_string());
+```
+
 ### Client Code
 
 From the above description file, StingerIPC generates client code which can be used like this:
@@ -72,6 +79,7 @@ client.registerFooCallback([](const std::string& message) {
 ```
 
 ```rust
+// Rust
 let connection = Connection::new(String::from("tcp://localhost:1883"));
 let mut client = ExampleClient::new(connection);
 client.set_signal_recv_callbacks_for_foo(|message| {
