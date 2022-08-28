@@ -49,9 +49,16 @@ impl Connection {
         }
     }
 
-    pub fn publish(&mut self, topic: String, message: String) {
+    
+    pub fn new_default_connection (hostname: String, port: u32) -> Connection {
+        let uri = format!("tcp://{}:{}", hostname, port);
+        Connection::new(uri)
+    }
+    
+
+    pub fn publish(&mut self, topic: String, message: String, qos: u8) {
         // Create a message and publish it
-        let msg = mqtt::Message::new(topic, message, 1);
+        let msg = mqtt::Message::new(topic, message, qos.into());
         let tok = self.cli.publish(msg);
     
         if let Err(e) = tok.wait() {

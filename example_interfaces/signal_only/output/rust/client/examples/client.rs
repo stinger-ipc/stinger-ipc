@@ -10,7 +10,7 @@ fn print_another_signal(one: f32, two: bool, three: String) {
 
 fn main() {
     
-    let connection = Connection::new(String::from("tcp://localhost:1883"));
+    let connection = Connection::new_default_connection(String::from("localhost"), 1883);
     let mut client = SignalOnlyClient::new(connection);
     
     client.set_signal_recv_callbacks_for_another_signal(print_another_signal);

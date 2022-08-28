@@ -15,7 +15,10 @@ pub struct SignalOnlyServer {
 }
 
 impl SignalOnlyServer {
-    pub fn new(connection: Connection) -> SignalOnlyServer {
+    pub fn new(mut connection: Connection) -> SignalOnlyServer {
+
+        let interface_info = String::from(r#"{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}"#);
+        connection.publish("SignalOnly/interface".to_string(), interface_info, 1);
 
         SignalOnlyServer{
             connection: connection,
@@ -32,7 +35,7 @@ impl SignalOnlyServer {
             
         };
         let data_str = json::stringify(data);
-        self.connection.publish("SignalOnly/signal/anotherSignal".to_string(), data_str);
+        self.connection.publish("SignalOnly/signal/anotherSignal".to_string(), data_str, 2);
     }
     
 

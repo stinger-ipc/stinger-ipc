@@ -10,7 +10,7 @@ fn print_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.name|snake_cas
 
 fn main() {
     {%set broker = stinger.get_example_broker()%}
-    let connection = Connection::new(String::from("tcp://{%if broker.hostname is none%}localhost{%else%}{{broker.hostname}}{%endif%}:1883"));
+    let connection = Connection::new_{{broker.class_name|snake_case}}({%if broker.hostname is none%}String::from("localhost"){%if broker.port is none%}, {%endif%}{%endif%}{%if broker.port is none%}1883{%endif%});
     let mut client = {{stinger.name}}Client::new(connection);
     {%for sig_name, sig in stinger.signals.items()%}
     client.set_signal_recv_callbacks_for_{{sig_name|snake_case}}(print_{{sig_name|snake_case}});
