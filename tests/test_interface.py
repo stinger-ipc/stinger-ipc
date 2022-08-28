@@ -25,7 +25,7 @@ class TestSpecCreateFromStructure(unittest.TestCase):
     def setUp(self):
         self.stinger = {
             "stingeripc": {
-                "version": "0.0.5"
+                "version": "0.0.6"
             },
             "interface": {
                 "name": "test_interface",

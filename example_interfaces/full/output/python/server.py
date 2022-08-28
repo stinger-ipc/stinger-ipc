@@ -14,6 +14,7 @@ class ExampleServer(object):
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
         self._conn.set_last_will(topic="Example/interface", payload=None, qos=1, retain=True)
+        self._add_numbers_method_handler = None
         
     
     def _publish_interface_info(self):
@@ -32,6 +33,16 @@ class ExampleServer(object):
         }
         self._conn.publish("Example/signal/todayIs", json.dumps(payload), qos=1, retain=False)
 
+    
+
+    
+    def handle_add_numbers(self, handler):
+        do_subscribe = False
+        if self._add_numbers_method_handler is None and handler is not None:
+            do_subscribe = True
+        self._add_numbers_method_handler = handler
+        if do_subscribe:
+            self._conn.subscribe("Example/method/addNumbers")
     
 
     

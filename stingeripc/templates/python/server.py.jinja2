@@ -19,6 +19,9 @@ class {{stinger.name}}Server(object):
         self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
         self.changed_value_callback_for_{{p}} = None
         self._publish_interface_info()
+        {%endfor-%}
+        {%for method_name, method in stinger.methods.items()-%}
+        self._{{method_name|snake_case}}_method_handler = None
         {%endfor%}
     
     def _publish_interface_info(self):
@@ -37,6 +40,16 @@ class {{stinger.name}}Server(object):
         }
         self._conn.publish("{{sig.topic}}", json.dumps(payload), qos=1, retain=False)
 
+    {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    def handle_{{method_name | snake_case}}(self, handler):
+        do_subscribe = False
+        if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
+            do_subscribe = True
+        self._{{method_name|snake_case}}_method_handler = handler
+        if do_subscribe:
+            self._conn.subscribe("{{method.topic}}")
     {%endfor%}
 
     {%for p,v in stinger.params.items()-%}
