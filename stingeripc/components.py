@@ -275,6 +275,9 @@ class Method(object):
     def topic(self) -> str:
         return self._topic_creator.method_topic(self.name)
 
+    def response_topic(self, client_id) -> str:
+        return self._topic_creator.method_response_topic(self.name, client_id)
+
     @classmethod
     def new_from_stinger(
         cls, topic_creator: MethodTopicCreator, name: str, method_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None

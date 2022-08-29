@@ -93,9 +93,19 @@ class Channel(object):
         self.direction = direction
         self.message_name = message_name or name
         self.mqtt = {"qos": 1, "retain": False}
+        self.description = None # type: Optional[str]
+        self.parameters = dict() # type: Dict[str, str]
 
     def set_mqtt(self, qos: int, retain: bool):
         self.mqtt = {"qos": qos, "retain": retain}
+        return self
+
+    def set_description(self, description: str):
+        self.description = description
+        return self
+
+    def add_topic_parameters(self, name: str, json_schema_type: str):
+        self.parameters[name] = json_schema_type
         return self
 
     def get_operation_trait(self) -> dict:
@@ -107,6 +117,7 @@ class Channel(object):
         }
 
     def get_operation(self, client_type: SpecType, use_common=False) -> OrderedDict:
+        channel_item = dict()
         op_item = OrderedDict(
             {
                 "message": {
@@ -127,9 +138,19 @@ class Channel(object):
             client_type == SpecType.CLIENT
             and self.direction == Direction.SERVER_SUBSCRIBES
         ):
-            return {"publish": op_item}
+            channel_item.update({"publish": op_item})
         else:
-            return {"subscribe": op_item}
+            channel_item.update({"subscribe": op_item})
+        if len(self.parameters) > 0:
+            params_obj = dict()
+            for param_name, param_type in self.parameters.items():
+                params_obj[param_name] = {
+                    "schema": {
+                        "type": param_type
+                    }
+                }
+            channel_item.update({"parameters": params_obj})
+        return channel_item
 
 
 class Server(object):
@@ -260,6 +281,7 @@ class StingerToAsyncApi:
         self._add_servers()
         self._add_enums()
         self._add_signals()
+        self._add_methods()
         return self
 
     def _add_interface_info(self):
@@ -315,6 +337,25 @@ class StingerToAsyncApi:
                     schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
             msg.set_schema(schema.to_schema())
             self._asyncapi.add_message(msg)
+
+    def _add_methods(self):
+        for method_name, method_spec in self._stinger.methods.items():
+            call_ch = Channel(method_spec.topic, method_name, Direction.SERVER_SUBSCRIBES)
+            call_ch.set_mqtt(2, False)
+            self._asyncapi.add_channel(call_ch)
+            call_msg = Message(method_name)
+            call_msg_schema = ObjectSchema()
+            for arg_spec in method_spec.arg_list:
+                if arg_spec.arg_type == ArgType.VALUE:
+                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
+                elif arg_spec.arg_type == ArgType.ENUM:
+                    call_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
+            call_msg.set_schema(call_msg_schema.to_schema())
+            self._asyncapi.add_message(call_msg)
+
+            resp_ch = Channel(method_spec.response_topic("{client_id}"), f"{method_name}Response", Direction.SERVER_PUBLISHES)
+            resp_ch.add_topic_parameters("client_id", "string").set_mqtt(1, False)
+            self._asyncapi.add_channel(resp_ch)
 
     def get_asyncapi(self):
         return self._asyncapi.get_asyncapi(SpecType.CLIENT)

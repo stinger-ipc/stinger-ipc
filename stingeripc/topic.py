@@ -29,6 +29,10 @@ class MethodTopicCreator(TopicCreatorBase):
     def method_topic(self, method_name: str) -> str:
         return self.slash("method", method_name)
 
+    def method_response_topic(self, method_name: str, client_id: str) -> str:
+        method_topic = self.method_topic(method_name)
+        return f"client/{client_id}/{method_topic}/response"
+
 class InterfaceTopicCreator(TopicCreatorBase):
     """Helper class for creating MQTT topics for various stinger elements."""
 
