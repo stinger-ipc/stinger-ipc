@@ -32,4 +32,4 @@ if __name__ == "__main__":
         t.render_template(f"{output_file}.jinja2", output_file, **params)
 
     if stinger.uses_enums():
-        t.render_template("interface_enums.py.jinja2", f"{stinger.get_enum_module_name()}.py", **params)
+        t.render_template("interface_types.py.jinja2", f"{stinger.get_enum_module_name()}.py", **params)

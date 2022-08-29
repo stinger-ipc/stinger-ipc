@@ -6,8 +6,9 @@ This is the Server for the SignalOnly interface.
 """
 
 import json
+from typing import Callable
 from connection import BrokerConnection
-
+import interface_types as stinger_types
 
 class SignalOnlyServer(object):
 

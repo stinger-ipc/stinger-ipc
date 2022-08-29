@@ -6,8 +6,9 @@ This is the Server for the EnumOnly interface.
 """
 
 import json
+from typing import Callable
 from connection import BrokerConnection
-import interface_enums as iface_enums
+import interface_types as stinger_types
 
 class EnumOnlyServer(object):
 

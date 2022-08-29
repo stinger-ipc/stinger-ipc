@@ -8,7 +8,7 @@ This is the Client for the EnumOnly interface.
 from typing import Dict, Callable, List, Any
 import json
 from connection import MqttConnection
-import interface_enums as iface_enums
+import interface_types as stinger_types
 
 class EnumOnlyClient(object):
 

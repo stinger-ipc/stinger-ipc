@@ -8,6 +8,7 @@ It contains enumerations used by the Example interface.
 from enum import Enum
 
 
+
 class DayOfTheWeek(Enum):
     SUNDAY = 1
     MONDAY = 2
@@ -15,4 +16,8 @@ class DayOfTheWeek(Enum):
     WEDNESDAY = 4
     THURSDAY = 5
     FRIDAY = 6
+
+
+
+
 

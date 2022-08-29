@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import Enum
 import random
 import stringcase
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 from .topic import SignalTopicCreator, InterfaceTopicCreator
 from .args import ArgType, ArgValueType
 from .exceptions import InvalidStingerStructure
@@ -255,6 +255,19 @@ class Method(object):
         return self._return_list
 
     @property
+    def has_no_return_value(self) -> bool:
+        return len(self._return_list) == 0
+
+    @property
+    def has_simple_return_value(self) -> bool:
+        return len(self._return_list) == 1
+
+    @property
+    def return_value(self) -> Arg:
+        assert self.has_simple_return_value
+        return self._return_list[0]
+
+    @property
     def name(self) -> str:
         return self._name
 
@@ -309,11 +322,11 @@ class InterfaceEnum:
 
     @staticmethod
     def get_module_name(lang="python") -> str:
-        return "interface_enums"
+        return "interface_types"
 
     @staticmethod
     def get_module_alias(lang="python") -> str:
-        return "iface_enums"
+        return "stinger_types"
 
     @property
     def python_type(self) -> str:
@@ -444,19 +457,25 @@ class StingerSpec:
             return broker
 
     def add_signal(self, signal: Signal):
-        assert signal is not None
+        assert isinstance(signal, Signal)
         self.signals[signal.name] = signal
 
     def add_method(self, method: Method):
-        assert method is not None
+        assert isinstance(method, Method)
         self.methods[method.name] = method
 
     def add_enum(self, interface_enum: InterfaceEnum):
         assert interface_enum is not None
         self.enums[interface_enum.name] = interface_enum
 
-    def uses_enums(self):
+    def uses_enums(self) -> bool:
         return bool(self.enums)
+
+    def uses_named_tuple(self) -> bool:
+        for method in self.methods.values():
+            if len(method.return_value_list) > 1:
+                return True
+        return False
 
     @property
     def name(self):

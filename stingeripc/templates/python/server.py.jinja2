@@ -1,13 +1,14 @@
 """
-DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+DO NOT MODIFY THIS FILE. {# Unless you see this comment, in which case you are modifying the template. #} It is automatically generated and changes will be over-written
 on the next generation.
 
 This is the Server for the {{stinger.name}} interface.
 """
 
 import json
+from typing import Callable
 from connection import BrokerConnection
-{%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
+import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
 
 class {{stinger.name}}Server(object):
 
@@ -43,13 +44,26 @@ class {{stinger.name}}Server(object):
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    def handle_{{method_name | snake_case}}(self, handler):
+    def handle_{{method_name | snake_case}}(self, handler: Callable[[{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], {%if method.has_no_return_value%}None{%elif method.has_simple_return_value%}{{method.return_value.python_type}}{%else%}FIXME{%endif%}]):
         do_subscribe = False
         if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
             do_subscribe = True
         self._{{method_name|snake_case}}_method_handler = handler
         if do_subscribe:
             self._conn.subscribe("{{method.topic}}")
+
+    def _process_{{method_name | snake_case}}_call(self, topic, payload):
+        if self._{{method_name|snake_case}}_method_handler is not None:
+            method_args = []
+            for required_arg in [{%for arg in method.method_args%}"{{arg.name}}", {%endfor%}]:
+                if required_arg in payload:
+                    method_args.append(payload[required_arg])
+                else:
+                    raise ValueError("Missing argument")
+            return_value = self._{{method_name|snake_case}}_method_handler(*method_args)
+            if len(return_value) != {{method.return_value_list|length}}:
+                raise ValueError("Incorrect number of return arguments")
+            
     {%endfor%}
 
     {%for p,v in stinger.params.items()-%}
