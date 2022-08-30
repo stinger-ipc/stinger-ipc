@@ -10,6 +10,8 @@ from typing import Callable
 from connection import BrokerConnection
 import interface_types as stinger_types
 
+
+
 class EnumOnlyServer(object):
 
     def __init__(self, connection: BrokerConnection):
@@ -40,6 +42,6 @@ if __name__ == '__main__':
 
     
 
+    
     sleep(4)
-
     

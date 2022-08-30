@@ -10,12 +10,14 @@ from typing import Callable
 from connection import BrokerConnection
 import interface_types as stinger_types
 
+
+
 class ExampleServer(object):
 
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
         self._conn.set_last_will(topic="Example/interface", payload=None, qos=1, retain=True)
-        self._add_numbers_method_handler = None
+        self._add_numbers_method_handler = None # type: Callable[[int, int], int]
         
     
     def _publish_interface_info(self):
@@ -56,7 +58,15 @@ class ExampleServer(object):
             return_value = self._add_numbers_method_handler(*method_args)
             if len(return_value) != 1:
                 raise ValueError("Incorrect number of return arguments")
-            
+            if 'correlationId' and 'clientId' in payload:
+                response = {
+                    "correlationId": payload['correlationId']
+                }
+                
+                response['returnValue'] = return_value
+                
+                response_topic = f"client/{payload['clientId']}/Example/method/addNumbers/response"
+                self._conn.publish(response_topic, json.dumps(response), qos=1, retain=False)
     
 
     
@@ -73,10 +83,15 @@ if __name__ == '__main__':
     conn = LocalConnection()
     server = ExampleServer(conn)
 
-    server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)
+    
+    @server.handle_add_numbers
+    def add_numbers(first: int, second: int) -> int:
+        print(f"Running add_numbers'({first}, {second})'")
+        return 42
     
 
+    server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)
+    
     sleep(4)
-
     server.emit_todayIs(dayOfMonth=42, dayOfWeek=stinger_types.DayOfTheWeek.MONDAY)
     

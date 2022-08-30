@@ -10,6 +10,8 @@ from typing import Callable
 from connection import BrokerConnection
 import interface_types as stinger_types
 
+
+
 class SignalOnlyServer(object):
 
     def __init__(self, connection: BrokerConnection):
@@ -54,10 +56,10 @@ if __name__ == '__main__':
     conn = DefaultConnection('localhost', 1883)
     server = SignalOnlyServer(conn)
 
-    server.emit_anotherSignal(3.14, True, "apples")
     
 
+    server.emit_anotherSignal(3.14, True, "apples")
+    
     sleep(4)
-
     server.emit_anotherSignal(one=3.14, two=True, three="apples")
     
