@@ -6,6 +6,10 @@ This is the Server for the SignalOnly interface.
 """
 
 import json
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
 from typing import Callable
 from connection import BrokerConnection
 import interface_types as stinger_types
@@ -15,10 +19,18 @@ import interface_types as stinger_types
 class SignalOnlyServer(object):
 
     def __init__(self, connection: BrokerConnection):
+        self._logger = logging.getLogger('SignalOnlyServer')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing SignalOnlyServer")
         self._conn = connection
+        self._conn.set_message_callback(self._receive_message)
         self._conn.set_last_will(topic="SignalOnly/interface", payload=None, qos=1, retain=True)
         
     
+    def _receive_message(self, topic, payload):
+        self._logger.debug("Received message to %s", topic)
+        pass
+
     def _publish_interface_info(self):
         self._conn.publish("SignalOnly/interface", '''{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}''', qos=1, retain=True)
 
@@ -50,6 +62,7 @@ if __name__ == '__main__':
     a more meaningful way.
     """
     from time import sleep
+    import signal
     
     from connection import DefaultConnection
 
@@ -63,3 +76,6 @@ if __name__ == '__main__':
     sleep(4)
     server.emit_anotherSignal(one=3.14, two=True, three="apples")
     
+
+    print("Ctrl-C will stop the program.")
+    signal.pause()

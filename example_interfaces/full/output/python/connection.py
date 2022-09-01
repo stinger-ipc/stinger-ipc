@@ -1,7 +1,11 @@
+
+import logging
 from typing import Callable, Optional, Tuple
 from paho.mqtt import client as mqtt_client
 from queue import Queue, Empty
 from abc import ABC, abstractmethod
+
+logging.basicConfig(level=logging.DEBUG)
 
 class BrokerConnection(ABC):
     
@@ -17,10 +21,13 @@ class BrokerConnection(ABC):
 class LocalConnection(BrokerConnection):
 
     def __init__(self):
+        self._logger = logging.getLogger('Connection')
+        self._logger.setLevel(logging.DEBUG)
         self._host: str = "127.0.0.1"
         self._port: int = 1883
         self._last_will: Optional[Tuple[str, Optional[str], int, bool]] = None
         self._queued_messages = Queue()
+        self._queued_subscriptions = Queue()
         self._connected: bool = False
         self._client = mqtt_client.Client()
         self._client.on_connect = self._on_connect
@@ -47,28 +54,42 @@ class LocalConnection(BrokerConnection):
             self._message_callback(msg.topic, msg.payload.decode())
 
     def _on_connect(self, client, userdata, flags, rc):
-        print("Connected")
+        self._connected = True
+        self._logger.info("Connected")
+        while not self._queued_subscriptions.empty():
+            try:
+                topic = self._queued_subscriptions.get_nowait()
+            except Empty:
+                break
+            else:
+                self._logger.debug("Connected and subscribing to %s", topic)
+                self._client.subscribe(topic)
         while not self._queued_messages.empty():
             try:
                 msg = self._queued_messages.get_nowait()
             except Empty:
                 break
             else:
-                print(f"Publishing queued up message")
+                self._logger.info(f"Publishing queued up message")
                 self._client.publish(*msg)
-        self._connected = True
+        
     
     def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False):
         if self._connected:
-            print(f"Publishing {topic}")
+            self._logger.info("Publishing %s", topic)
             self._client.publish(topic, msg, qos, retain)
         else:
-            print(f"Queueing {topic} for publishing later")
+            self._logger.info("Queueing %s for publishing later", topic)
             self._queued_messages.put((topic, msg, qos, retain))
 
     def subscribe(self, topic: str):
-        self._client.subscribe(topic)
+        if self._connected:
+            self._logger.debug("Subscribing to %s", topic)
+            self._client.subscribe(topic)
+        else:
+            self._logger.debug("Pending subscription to %s", topic)
+            self._queued_subscriptions.put(topic)
     
     def is_topic_sub(self, topic: str, sub: str) -> bool:
-        return self._client.topic_matches_sub(sub, topic)
+        return mqtt_client.topic_matches_sub(sub, topic)
 

@@ -6,6 +6,10 @@ This is the Server for the {{stinger.name}} interface.
 """
 
 import json
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
 from typing import Callable
 from connection import BrokerConnection
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
@@ -15,7 +19,11 @@ import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
 class {{stinger.name}}Server(object):
 
     def __init__(self, connection: BrokerConnection):
+        self._logger = logging.getLogger('{{stinger.name}}Server')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing {{stinger.name}}Server")
         self._conn = connection
+        self._conn.set_message_callback(self._receive_message)
         self._conn.set_last_will(topic="{{stinger.interface_info.0}}", payload=None, qos=1, retain=True)
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
@@ -23,10 +31,27 @@ class {{stinger.name}}Server(object):
         self.changed_value_callback_for_{{p}} = None
         self._publish_interface_info()
         {%endfor-%}
+        {%-for method in stinger.methods.values()%}
+        self._conn.subscribe("{{method.topic}}")
+        {%endfor-%}
         {%for method_name, method in stinger.methods.items()-%}
         self._{{method_name|snake_case}}_method_handler = None # type: {{method_type_annotation(method)}}
         {%endfor%}
     
+    def _receive_message(self, topic, payload):
+        self._logger.debug("Received message to %s", topic)
+        {%if stinger.methods | length > 0 -%}
+        {%for method_name, method in stinger.methods.items()-%}
+        {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{method.topic}}"):
+            try:
+                payload_obj = json.loads(payload)
+            except json.decoder.JSONDecodeError:
+                self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
+            else:
+                self._process_{{method_name | snake_case}}_call(topic, payload_obj)
+        {%endfor%}
+        {%-else%}pass{%-endif%}
+
     def _publish_interface_info(self):
         self._conn.publish("{{stinger.interface_info.0}}", '''{{stinger.interface_info.1 | tojson}}''', qos=1, retain=True)
 
@@ -51,20 +76,25 @@ class {{stinger.name}}Server(object):
         if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
             do_subscribe = True
         self._{{method_name|snake_case}}_method_handler = handler
-        if do_subscribe:
-            self._conn.subscribe("{{method.topic}}")
 
     def _process_{{method_name | snake_case}}_call(self, topic, payload):
         if self._{{method_name|snake_case}}_method_handler is not None:
             method_args = []
-            for required_arg in [{%for arg in method.method_args%}"{{arg.name}}", {%endfor%}]:
-                if required_arg in payload:
-                    method_args.append(payload[required_arg])
+            {%for arg in method.arg_list -%}
+            if "{{arg.name}}" in payload:
+                if not isinstance(payload["{{arg.name}}"], {{arg.python_type}}):
+                    self._logger.warning("The '{{arg.name}}' property in the payload to '%s' wasn't the correct type.  It should have been {{arg.python_type}}.", topic)
+                    return
                 else:
-                    raise ValueError("Missing argument")
+                    method_args.append(payload["{{arg.name}}"])
+            else:
+                self.logger.info("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
+            {%endfor%}
             return_value = self._{{method_name|snake_case}}_method_handler(*method_args)
+            {%if method.return_value_list|length > 1 -%}
             if len(return_value) != {{method.return_value_list|length}}:
                 raise ValueError("Incorrect number of return arguments")
+            {%endif%}
             if 'correlationId' and 'clientId' in payload:
                 response = {
                     "correlationId": payload['correlationId']
@@ -107,6 +137,7 @@ if __name__ == '__main__':
     a more meaningful way.
     """
     from time import sleep
+    import signal
     {%set broker = stinger.get_example_broker()%}
     from connection import {{broker.class_name}}
 
@@ -127,3 +158,6 @@ if __name__ == '__main__':
     {%for sig_name, sig in stinger.signals.items()-%}
     server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
     {%endfor%}
+
+    print("Ctrl-C will stop the program.")
+    signal.pause()

@@ -7,12 +7,12 @@ This is the Client for the EnumOnly interface.
 
 from typing import Dict, Callable, List, Any
 import json
-from connection import MqttConnection
+from connection import BrokerConnection
 import interface_types as stinger_types
 
 class EnumOnlyClient(object):
 
-    def __init__(self, connection: MqttConnection):
+    def __init__(self, connection: BrokerConnection):
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
@@ -37,7 +37,7 @@ class EnumOnlyClient(object):
 
 if __name__ == '__main__':
     import signal
-    
+    from connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
     client = EnumOnlyClient(conn)
     

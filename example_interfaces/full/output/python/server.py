@@ -6,6 +6,10 @@ This is the Server for the Example interface.
 """
 
 import json
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
 from typing import Callable
 from connection import BrokerConnection
 import interface_types as stinger_types
@@ -15,11 +19,28 @@ import interface_types as stinger_types
 class ExampleServer(object):
 
     def __init__(self, connection: BrokerConnection):
+        self._logger = logging.getLogger('ExampleServer')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing ExampleServer")
         self._conn = connection
+        self._conn.set_message_callback(self._receive_message)
         self._conn.set_last_will(topic="Example/interface", payload=None, qos=1, retain=True)
+        
+        self._conn.subscribe("Example/method/addNumbers")
         self._add_numbers_method_handler = None # type: Callable[[int, int], int]
         
     
+    def _receive_message(self, topic, payload):
+        self._logger.debug("Received message to %s", topic)
+        if self._conn.is_topic_sub(topic, "Example/method/addNumbers"):
+            try:
+                payload_obj = json.loads(payload)
+            except json.decoder.JSONDecodeError:
+                self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
+            else:
+                self._process_add_numbers_call(topic, payload_obj)
+        
+
     def _publish_interface_info(self):
         self._conn.publish("Example/interface", '''{"name": "Example", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}''', qos=1, retain=True)
 
@@ -44,20 +65,29 @@ class ExampleServer(object):
         if self._add_numbers_method_handler is None and handler is not None:
             do_subscribe = True
         self._add_numbers_method_handler = handler
-        if do_subscribe:
-            self._conn.subscribe("Example/method/addNumbers")
 
     def _process_add_numbers_call(self, topic, payload):
         if self._add_numbers_method_handler is not None:
             method_args = []
-            for required_arg in []:
-                if required_arg in payload:
-                    method_args.append(payload[required_arg])
+            if "first" in payload:
+                if not isinstance(payload["first"], int):
+                    self._logger.warning("The 'first' property in the payload to '%s' wasn't the correct type.  It should have been int.", topic)
+                    return
                 else:
-                    raise ValueError("Missing argument")
+                    method_args.append(payload["first"])
+            else:
+                self.logger.info("The 'first' property in the payload to '%s' wasn't present", topic)
+            if "second" in payload:
+                if not isinstance(payload["second"], int):
+                    self._logger.warning("The 'second' property in the payload to '%s' wasn't the correct type.  It should have been int.", topic)
+                    return
+                else:
+                    method_args.append(payload["second"])
+            else:
+                self.logger.info("The 'second' property in the payload to '%s' wasn't present", topic)
+            
             return_value = self._add_numbers_method_handler(*method_args)
-            if len(return_value) != 1:
-                raise ValueError("Incorrect number of return arguments")
+            
             if 'correlationId' and 'clientId' in payload:
                 response = {
                     "correlationId": payload['correlationId']
@@ -77,6 +107,7 @@ if __name__ == '__main__':
     a more meaningful way.
     """
     from time import sleep
+    import signal
     
     from connection import LocalConnection
 
@@ -95,3 +126,6 @@ if __name__ == '__main__':
     sleep(4)
     server.emit_todayIs(dayOfMonth=42, dayOfWeek=stinger_types.DayOfTheWeek.MONDAY)
     
+
+    print("Ctrl-C will stop the program.")
+    signal.pause()
