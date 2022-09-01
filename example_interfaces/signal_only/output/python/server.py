@@ -10,11 +10,43 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable
-from connection import BrokerConnection
+from typing import Callable, Dict, Any
+from connection import BrokerConnection, MethodResultCode
 import interface_types as stinger_types
 
 
+
+class MethodResponseBuilder:
+
+    def __init__(self, request: Dict[str, Any]):
+        self._response = {}
+        if "clientId" in request and isinstance(request["clientId"], str):
+            self.client_id(request["clientId"])
+        if "correlationId" in request and isinstance(request["correlationId"], str):
+            self.correlation_id(request["correlationId"])
+
+    @property
+    def response(self):
+        return self._response
+
+    def is_valid(self) -> bool:
+        return "clientId" in self._response and "result" in self._response
+
+    def client_id(self, client_id: str):
+        self._response["clientId"] = client_id
+        return self
+
+    def correlation_id(self, correlationId: str):
+        self._response["correlationId"] = correlationId
+        return self
+    
+    def result_code(self, result_code: MethodResultCode):
+        self._response["result"] = result_code.value
+        return self
+
+    def return_value(self, return_value):
+        self._response["returnValue"] = return_value
+        return self
 
 class SignalOnlyServer(object):
 

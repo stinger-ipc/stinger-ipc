@@ -7,6 +7,13 @@ from abc import ABC, abstractmethod
 
 logging.basicConfig(level=logging.DEBUG)
 
+class MethodResultCode(Enum):
+    SUCCESS = 0
+    CLIENT_ERROR = 1
+    SERVER_ERROR = 2
+    TRANSPORT_ERROR = 3
+    TIMEOUT = 4
+
 class BrokerConnection(ABC):
     
     @abstractmethod

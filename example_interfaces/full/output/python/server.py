@@ -10,11 +10,43 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable
-from connection import BrokerConnection
+from typing import Callable, Dict, Any
+from connection import BrokerConnection, MethodResultCode
 import interface_types as stinger_types
 
 
+
+class MethodResponseBuilder:
+
+    def __init__(self, request: Dict[str, Any]):
+        self._response = {}
+        if "clientId" in request and isinstance(request["clientId"], str):
+            self.client_id(request["clientId"])
+        if "correlationId" in request and isinstance(request["correlationId"], str):
+            self.correlation_id(request["correlationId"])
+
+    @property
+    def response(self):
+        return self._response
+
+    def is_valid(self) -> bool:
+        return "clientId" in self._response and "result" in self._response
+
+    def client_id(self, client_id: str):
+        self._response["clientId"] = client_id
+        return self
+
+    def correlation_id(self, correlationId: str):
+        self._response["correlationId"] = correlationId
+        return self
+    
+    def result_code(self, result_code: MethodResultCode):
+        self._response["result"] = result_code.value
+        return self
+
+    def return_value(self, return_value):
+        self._response["returnValue"] = return_value
+        return self
 
 class ExampleServer(object):
 
@@ -68,6 +100,7 @@ class ExampleServer(object):
 
     def _process_add_numbers_call(self, topic, payload):
         if self._add_numbers_method_handler is not None:
+            response_builder = MethodResponseBuilder(payload)
             method_args = []
             if "first" in payload:
                 if not isinstance(payload["first"], int):
@@ -86,17 +119,21 @@ class ExampleServer(object):
             else:
                 self.logger.info("The 'second' property in the payload to '%s' wasn't present", topic)
             
-            return_value = self._add_numbers_method_handler(*method_args)
+            try:
+                return_value = self._add_numbers_method_handler(*method_args)
+            except:
+                response_builder.result_code(MethodResultCode.SERVER_ERROR)
+            else:
+                response_builder.result_code(MethodResultCode.SUCCESS)
             
-            if 'correlationId' and 'clientId' in payload:
-                response = {
-                    "correlationId": payload['correlationId']
-                }
+            if True:
+            
                 
-                response['returnValue'] = return_value
+                response_builder.return_value(return_value)
                 
+            if response_builder.is_valid():
                 response_topic = f"client/{payload['clientId']}/Example/method/addNumbers/response"
-                self._conn.publish(response_topic, json.dumps(response), qos=1, retain=False)
+                self._conn.publish(response_topic, json.dumps(response_builder.response), qos=1, retain=False)
     
 
     
