@@ -64,10 +64,10 @@ components:
             const: 0.0.1
             type: string
         required:
-        - name
         - version
         - title
         - summary
+        - name
         type: object
     todayIs:
       name: todayIs
@@ -79,12 +79,15 @@ components:
             $ref: '#/components/schemas/enum_dayOfTheWeek'
         required:
         - dayOfMonth
-        - dayOfWeek
         type: object
     addNumbers:
       name: addNumbers
       payload:
         properties:
+          clientId:
+            type: string
+          correlationId:
+            type: string
           first:
             type: integer
           second:
@@ -92,6 +95,18 @@ components:
         required:
         - first
         - second
+        type: object
+    addNumbersResponse:
+      name: addNumbersResponse
+      payload:
+        properties:
+          correlationId:
+            type: string
+          sum:
+            type: integer
+        required:
+        - sum
+        - correlationId
         type: object
   schemas:
     enum_dayOfTheWeek:

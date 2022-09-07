@@ -28,12 +28,15 @@ class SpecType(Enum):
 class ObjectSchema:
     def __init__(self):
         self._properties = OrderedDict()
+        self._required = set()
     
-    def add_value_property(self, name: str, arg_type: ArgValueType):
+    def add_value_property(self, name: str, arg_value_type: ArgValueType, required=True):
         schema = {
-            "type": ArgValueType.to_json_type(arg_type)
+            "type": ArgValueType.to_json_type(arg_value_type)
         }
         self._properties[name] = schema
+        if required:
+            self._required.add(name)
 
     def add_const_value_property(self, name: str, arg_type: ArgValueType, const_value):
         self.add_value_property(name, arg_type)
@@ -49,11 +52,10 @@ class ObjectSchema:
         schema = {
             "type": "object",
             "properties": {},
-            "required": [],
+            "required": list(self._required),
         }
         for prop_name, prop_schema in self._properties.items():
             schema['properties'][prop_name] = prop_schema
-            schema['required'].append(prop_name)
         return schema
 
 
@@ -345,6 +347,8 @@ class StingerToAsyncApi:
             self._asyncapi.add_channel(call_ch)
             call_msg = Message(method_name)
             call_msg_schema = ObjectSchema()
+            call_msg_schema.add_value_property("correlationId", ArgValueType.STRING, required=False)
+            call_msg_schema.add_value_property("clientId", ArgValueType.STRING, required=False)
             for arg_spec in method_spec.arg_list:
                 if arg_spec.arg_type == ArgType.VALUE:
                     call_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
@@ -356,6 +360,16 @@ class StingerToAsyncApi:
             resp_ch = Channel(method_spec.response_topic("{client_id}"), f"{method_name}Response", Direction.SERVER_PUBLISHES)
             resp_ch.add_topic_parameters("client_id", "string").set_mqtt(1, False)
             self._asyncapi.add_channel(resp_ch)
+            resp_msg = Message(f"{method_name}Response")
+            resp_msg_schema = ObjectSchema()
+            resp_msg_schema.add_value_property("correlationId", ArgValueType.STRING)
+            for arg_spec in method_spec.return_value_list:
+                if arg_spec.arg_type == ArgType.VALUE:
+                    resp_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
+                elif arg_spec.arg_type == ArgType.ENUM:
+                    resp_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
+            resp_msg.set_schema(resp_msg_schema.to_schema())
+            self._asyncapi.add_message(resp_msg)
 
     def get_asyncapi(self):
         return self._asyncapi.get_asyncapi(SpecType.CLIENT)
