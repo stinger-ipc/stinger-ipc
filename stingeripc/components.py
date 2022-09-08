@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import Enum
 import random
 import stringcase
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 from .topic import SignalTopicCreator, InterfaceTopicCreator
 from .args import ArgType, ArgValueType
 from .exceptions import InvalidStingerStructure
@@ -227,6 +227,86 @@ class Signal(object):
 
         return signal
 
+class Method(object):
+    def __init__(self, topic_creator: MethodTopicCreator, name: str):
+        self._topic_creator = topic_creator
+        self._name = name
+        self._arg_list = []  # type: List[Arg]
+        self._return_list = [] # type: List[Arg]
+
+    def add_arg(self, arg: Arg) -> Method:
+        if arg.name in [a.name for a in self._arg_list]:
+            raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
+        self._arg_list.append(arg)
+        return self
+
+    def add_return_value(self, value: Arg) -> Method:
+        if value.name in [a.name for a in self._return_list]:
+            raise InvalidStingerStructure(f"A return value named '{value.name}' has been added.")
+        self._return_list.append(value)
+        return self
+
+    @property
+    def arg_list(self) -> List[Arg]:
+        return self._arg_list
+
+    @property
+    def return_value_list(self) -> List[Arg]:
+        return self._return_list
+
+    @property
+    def has_no_return_value(self) -> bool:
+        return len(self._return_list) == 0
+
+    @property
+    def has_simple_return_value(self) -> bool:
+        return len(self._return_list) == 1
+
+    @property
+    def return_value(self) -> Arg:
+        assert self.has_simple_return_value
+        return self._return_list[0]
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def topic(self) -> str:
+        return self._topic_creator.method_topic(self.name)
+
+    def response_topic(self, client_id) -> str:
+        return self._topic_creator.method_response_topic(self.name, client_id)
+
+    @classmethod
+    def new_from_stinger(
+        cls, topic_creator: MethodTopicCreator, name: str, method_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None
+    ) -> "Method":
+        """Alternative constructor from a Stinger method structure."""
+        method = cls(topic_creator, name)
+        if "arguments" not in method_spec:
+            raise InvalidStingerStructure("Method specification must have 'arguments'")
+        if not isinstance(method_spec['arguments'], list):
+            raise InvalidStingerStructure(f"Arguments must be a list.  It is '{type(method_spec['arguments'])}' ")
+
+        for arg_spec in method_spec["arguments"]:
+            if 'name' not in arg_spec or 'type' not in arg_spec:
+                raise InvalidStingerStructure("Arg must have name and type.")
+            new_arg = Arg.new_from_stinger(arg_spec, stinger_spec)
+            method.add_arg(new_arg)
+
+        if "returnValues" in method_spec:
+            if not isinstance(method_spec['returnValues'], list):
+                raise InvalidStingerStructure(f"ReturnValues must be a list.")
+            
+            for arg_spec in method_spec["returnValues"]:
+                if 'name' not in arg_spec or 'type' not in arg_spec:
+                    raise InvalidStingerStructure("Return value must have name and type.")
+                new_arg = Arg.new_from_stinger(arg_spec, stinger_spec)
+                method.add_return_value(new_arg)
+
+        return method
+
 class InterfaceEnum:
     def __init__(self, name: str):
         self._name = name
@@ -245,11 +325,11 @@ class InterfaceEnum:
 
     @staticmethod
     def get_module_name(lang="python") -> str:
-        return "interface_enums"
+        return "interface_types"
 
     @staticmethod
     def get_module_alias(lang="python") -> str:
-        return "iface_enums"
+        return "stinger_types"
 
     @property
     def python_type(self) -> str:
@@ -346,6 +426,7 @@ class StingerSpec:
 
         self.signals: Dict[str, Signal] = {}
         self.params = {}
+        self.methods: Dict[str, Method] = {}
         self.enums: Dict[str, InterfaceEnum] = {}
         self._brokers: Dict[str, Broker] = {}
 
@@ -379,15 +460,25 @@ class StingerSpec:
             return broker
 
     def add_signal(self, signal: Signal):
-        assert signal is not None
+        assert isinstance(signal, Signal)
         self.signals[signal.name] = signal
+
+    def add_method(self, method: Method):
+        assert isinstance(method, Method)
+        self.methods[method.name] = method
 
     def add_enum(self, interface_enum: InterfaceEnum):
         assert interface_enum is not None
         self.enums[interface_enum.name] = interface_enum
 
-    def uses_enums(self):
+    def uses_enums(self) -> bool:
         return bool(self.enums)
+
+    def uses_named_tuple(self) -> bool:
+        for method in self.methods.values():
+            if len(method.return_value_list) > 1:
+                return True
+        return False
 
     @property
     def name(self):
@@ -411,7 +502,7 @@ class StingerSpec:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if "version" not in stinger["stingeripc"]:
             raise InvalidStingerStructure("Stinger spec version not present")
-        if stinger["stingeripc"]["version"] not in ["0.0.5"]:
+        if stinger["stingeripc"]["version"] not in ["0.0.6"]:
             raise InvalidStingerStructure(
                 f"Unsupported stinger spec version {stinger['stingeripc']['version']}"
             )
@@ -457,6 +548,24 @@ class StingerSpec:
         except TypeError as e:
             raise InvalidStingerStructure(
                 f"Signal specification appears to be invalid: {e}"
+            )
+
+        try:
+            if "methods" in stinger:
+                for method_name, method_spec in stinger["methods"].items():
+                    method = Method.new_from_stinger(
+                        topic_creator.method_topic_creator(),
+                        method_name,
+                        method_spec,
+                        stinger_spec
+                    )
+                    assert (
+                        method is not None
+                    ), f"Did not create method from {method_name} and {method_spec}"
+                    stinger_spec.add_method(method)
+        except TypeError as e:
+            raise InvalidStingerStructure(
+                f"Method specification appears to be invalid: {e}"
             )
 
         return stinger_spec

@@ -22,6 +22,28 @@ channels:
         mqtt:
           qos: 1
           retain: false
+  Example/method/addNumbers:
+    publish:
+      message:
+        $ref: '#/components/messages/addNumbers'
+      operationId: addNumbers
+      bindings:
+        mqtt:
+          qos: 2
+          retain: false
+  client/{client_id}/Example/method/addNumbers/response:
+    parameters:
+      client_id:
+        schema:
+          type: string
+    subscribe:
+      message:
+        $ref: '#/components/messages/addNumbersResponse'
+      operationId: addNumbersResponse
+      bindings:
+        mqtt:
+          qos: 1
+          retain: false
 components:
   operationTraits: {}
   messages:
@@ -42,10 +64,10 @@ components:
             const: 0.0.1
             type: string
         required:
-        - name
         - version
         - title
         - summary
+        - name
         type: object
     todayIs:
       name: todayIs
@@ -57,7 +79,34 @@ components:
             $ref: '#/components/schemas/enum_dayOfTheWeek'
         required:
         - dayOfMonth
-        - dayOfWeek
+        type: object
+    addNumbers:
+      name: addNumbers
+      payload:
+        properties:
+          clientId:
+            type: string
+          correlationId:
+            type: string
+          first:
+            type: integer
+          second:
+            type: integer
+        required:
+        - first
+        - second
+        type: object
+    addNumbersResponse:
+      name: addNumbersResponse
+      payload:
+        properties:
+          correlationId:
+            type: string
+          sum:
+            type: integer
+        required:
+        - sum
+        - correlationId
         type: object
   schemas:
     enum_dayOfTheWeek:

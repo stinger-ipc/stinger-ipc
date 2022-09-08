@@ -11,7 +11,7 @@ parameters:
     properties:
       version:
         type: string
-        const: "0.0.5"
+        const: "0.0.6"
     required:
       - version
 
@@ -85,6 +85,11 @@ parameters:
     additionalProperties:
       $ref: "#/$defs/param"
 
+  methods:
+    type: object
+    additionalProperties:
+      $ref: "#/$defs/method"
+
 required:
   - stingeripc
   - interface
@@ -155,3 +160,13 @@ $defs:
               required: ["initialValue"]
     required:
       - payload
+  
+  method:
+    type: object
+    properties:
+      arguments:
+        $ref: "#/$defs/payload"
+      returnValues:
+        $ref: "#/$defs/payload"
+    required:
+      - arguments

@@ -22,6 +22,16 @@ class SignalTopicCreator(TopicCreatorBase):
     def signal_topic(self, signal_name: str) -> str:
         return self.slash("signal", signal_name)
 
+class MethodTopicCreator(TopicCreatorBase):
+    def __init__(self, root: str):
+        super().__init__(root)
+
+    def method_topic(self, method_name: str) -> str:
+        return self.slash("method", method_name)
+
+    def method_response_topic(self, method_name: str, client_id: str) -> str:
+        method_topic = self.method_topic(method_name)
+        return f"client/{client_id}/{method_topic}/response"
 
 class InterfaceTopicCreator(TopicCreatorBase):
     """Helper class for creating MQTT topics for various stinger elements."""
@@ -39,3 +49,6 @@ class InterfaceTopicCreator(TopicCreatorBase):
 
     def signal_topic_creator(self) -> SignalTopicCreator:
         return SignalTopicCreator(self._topic_prefix)
+
+    def method_topic_creator(self) -> MethodTopicCreator:
+        return MethodTopicCreator(self._topic_prefix)

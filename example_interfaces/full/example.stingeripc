@@ -1,5 +1,5 @@
 stingeripc:
-  version: 0.0.5
+  version: 0.0.6
 
 interface:
   name: Example
@@ -32,3 +32,14 @@ signals:
         type: enum
         enumName: dayOfTheWeek
 
+methods:
+
+  addNumbers:
+    arguments:
+      - name: first
+        type: integer
+      - name: second
+        type: integer
+    returnValues:
+      - name: sum
+        type: integer

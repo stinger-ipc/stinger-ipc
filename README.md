@@ -12,7 +12,7 @@ StingerIPC takes a interface description file (.singeripc), and will generate co
 
 ```yaml
 stingeripc:
-  version: 0.0.5
+  version: 0.0.6
 
 interface:
   name: Example

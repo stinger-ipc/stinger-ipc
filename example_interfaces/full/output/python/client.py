@@ -7,12 +7,12 @@ This is the Client for the Example interface.
 
 from typing import Dict, Callable, List, Any
 import json
-from connection import MqttConnection
-import interface_enums as iface_enums
+from connection import BrokerConnection
+import interface_types as stinger_types
 
 class ExampleClient(object):
 
-    def __init__(self, connection: MqttConnection):
+    def __init__(self, connection: BrokerConnection):
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
@@ -38,7 +38,7 @@ class ExampleClient(object):
 
             # Ensure received payload values have correct type.
             kwargs["dayOfMonth"] = int(kwargs["dayOfMonth"])
-            kwargs["dayOfWeek"] = iface_enums.DayOfTheWeek(kwargs["dayOfWeek"])
+            kwargs["dayOfWeek"] = stinger_types.DayOfTheWeek(kwargs["dayOfWeek"])
             
             self._do_callbacks_for(self._signal_recv_callbacks_for_todayIs, **kwargs)
         
@@ -52,15 +52,15 @@ class ExampleClient(object):
 
 if __name__ == '__main__':
     import signal
-    
+    from connection import LocalConnection
     conn = LocalConnection()
     client = ExampleClient(conn)
     
     @client.receive_todayIs
-    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: iface_enums.DayOfTheWeek):
+    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek):
         """
         @param dayOfMonth int 
-        @param dayOfWeek iface_enums.DayOfTheWeek 
+        @param dayOfWeek stinger_types.DayOfTheWeek 
         """
         print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
     
