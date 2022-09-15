@@ -65,9 +65,9 @@ components:
             type: string
         required:
         - version
+        - name
         - title
         - summary
-        - name
         type: object
     todayIs:
       name: todayIs
@@ -105,8 +105,8 @@ components:
           sum:
             type: integer
         required:
-        - sum
         - correlationId
+        - sum
         type: object
   schemas:
     enum_dayOfTheWeek:

@@ -17,3 +17,7 @@ tasks:
       bin/generate_everything.sh
     command:
       mosquitto
+    openMode: tab-after
+  - name: MQTT Subscribe
+    command: mosquitto_sub -t '#' -v
+    openMode: split-right

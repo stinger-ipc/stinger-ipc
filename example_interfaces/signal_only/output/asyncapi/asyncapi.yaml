@@ -42,10 +42,10 @@ components:
             const: 0.0.1
             type: string
         required:
-        - title
+        - summary
         - version
         - name
-        - summary
+        - title
         type: object
     anotherSignal:
       name: anotherSignal
@@ -59,8 +59,8 @@ components:
             type: boolean
         required:
         - three
-        - one
         - two
+        - one
         type: object
   schemas: {}
 servers:

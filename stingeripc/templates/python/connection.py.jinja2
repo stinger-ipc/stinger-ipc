@@ -4,6 +4,7 @@ from typing import Callable, Optional, Tuple
 from paho.mqtt import client as mqtt_client
 from queue import Queue, Empty
 from abc import ABC, abstractmethod
+from enum import Enum
 
 logging.basicConfig(level=logging.DEBUG)
 
