@@ -51,7 +51,7 @@ class EnumOnlyClient(object):
 
 if __name__ == '__main__':
     import signal
-    loop = asyncio.get_running_loop()
+
     from connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
     client = EnumOnlyClient(conn)

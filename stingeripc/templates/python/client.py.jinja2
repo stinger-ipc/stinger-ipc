@@ -12,6 +12,7 @@ import json
 import logging
 {%if stinger.methods | length > 0 %}
 import asyncio
+import concurrent.futures as futures
 {%endif%}
 from connection import BrokerConnection
 {%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
@@ -75,8 +76,7 @@ class {{stinger.name}}Client(object):
             if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
                 cb = self._pending_method_responses[response["correlationId"]]
                 del self._pending_method_responses[response["correlationId"]]
-                asyncio.get_event_loop()
-                asyncio.create_task(cb(response))
+                cb(response)
         {%endfor%}
 
     {%for sig_name, sig in stinger.signals.items()%}
@@ -87,13 +87,12 @@ class {{stinger.name}}Client(object):
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    async def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {%if method.has_simple_return_value%}{{method.return_value.python_type}}{%elif not method.has_no_return_value%}FIXME{%endif%}:
+    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {%if method.has_simple_return_value%}{{method.return_value.python_type}}{%elif not method.has_no_return_value%}FIXME{%endif%}:
         {%for arg in method.arg_list%}
         if not isinstance({{arg.name}}, {{arg.python_type}}):
             raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_type}}")
         {%endfor%}
-        loop = asyncio.get_running_loop()
-        fut = loop.create_future()
+        fut = futures.Future()
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
         payload = { {%-for arg in method.arg_list%}
@@ -102,12 +101,9 @@ class {{stinger.name}}Client(object):
             "correlationId": correlation_id,
         }
         self._conn.publish("{{method.topic}}", json.dumps(payload))
-        self._logger.debug("Awaiting future")
-        await fut
-        self._logger.debug("Future resolved")
-        return fut.result()
+        return fut
 
-    async def _handle_{{method_name | snake_case}}_response(self, fut, payload):
+    def _handle_{{method_name | snake_case}}_response(self, fut, payload):
         self._logger.debug("Handling {{method_name | snake_case}} response message %s %s", fut, payload)
         try:
             {%if method.has_no_return_value%}
@@ -130,7 +126,7 @@ class {{stinger.name}}Client(object):
 
 if __name__ == '__main__':
     import signal
-    loop = asyncio.get_running_loop()
+
     {%set broker = stinger.get_example_broker()%}from connection import {{broker.class_name}}
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
     client = {{stinger.name}}Client(conn)
@@ -145,15 +141,11 @@ if __name__ == '__main__':
     {%endfor%}
 
     {%if stinger.methods | length > 0 %}
-    async def do_async_method_calls():
-        await asyncio.sleep(3)
-        {%for method_name, method in stinger.methods.items()%}
-        print("Making call to '{{method_name|snake_case}}'")
-        result = await client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
-        print(result)
-        {%endfor%}
-    
-    asyncio.run(do_async_method_calls())
+    {%for method_name, method in stinger.methods.items()%}
+    print("Making call to '{{method_name|snake_case}}'")
+    future = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+    print(future.result(5))
+    {%endfor%}
     {%endif%}
 
     print("Ctrl-C will stop the program.")

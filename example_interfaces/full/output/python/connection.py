@@ -50,8 +50,6 @@ class LocalConnection(BrokerConnection):
         self._client.disconnect()
         self._client.loop_stop()
 
-    async def connec
-
     def set_last_will(self, topic: str, payload: Optional[str]=None, qos: int=1, retain: bool=True):
         self._last_will = (topic, payload, qos, retain)
         self._client.will_set(*self._last_will)

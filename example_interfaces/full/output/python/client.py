@@ -12,6 +12,7 @@ import json
 import logging
 
 import asyncio
+import concurrent.futures as futures
 
 from connection import BrokerConnection
 import interface_types as stinger_types
@@ -64,8 +65,7 @@ class ExampleClient(object):
             if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
                 cb = self._pending_method_responses[response["correlationId"]]
                 del self._pending_method_responses[response["correlationId"]]
-                asyncio.get_event_loop()
-                asyncio.create_task(cb(response))
+                cb(response)
         
 
     
@@ -76,7 +76,7 @@ class ExampleClient(object):
     
 
     
-    async def add_numbers(self, first: int, second: int) -> int:
+    def add_numbers(self, first: int, second: int) -> int:
         
         if not isinstance(first, int):
             raise ValueError("The 'first' argument wasn't a int")
@@ -84,8 +84,7 @@ class ExampleClient(object):
         if not isinstance(second, int):
             raise ValueError("The 'second' argument wasn't a int")
         
-        loop = asyncio.get_running_loop()
-        fut = loop.create_future()
+        fut = futures.Future()
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_add_numbers_response, fut)
         payload = {
@@ -95,12 +94,9 @@ class ExampleClient(object):
             "correlationId": correlation_id,
         }
         self._conn.publish("Example/method/addNumbers", json.dumps(payload))
-        self._logger.debug("Awaiting future")
-        await fut
-        self._logger.debug("Future resolved")
-        return fut.result()
+        return fut
 
-    async def _handle_add_numbers_response(self, fut, payload):
+    def _handle_add_numbers_response(self, fut, payload):
         self._logger.debug("Handling add_numbers response message %s %s", fut, payload)
         try:
             
@@ -121,7 +117,7 @@ class ExampleClient(object):
 
 if __name__ == '__main__':
     import signal
-    loop = asyncio.get_running_loop()
+
     from connection import LocalConnection
     conn = LocalConnection()
     client = ExampleClient(conn)
@@ -136,15 +132,11 @@ if __name__ == '__main__':
     
 
     
-    async def do_async_method_calls():
-        await asyncio.sleep(3)
-        
-        print("Making call to 'add_numbers'")
-        result = await client.add_numbers(first=42, second=42)
-        print(result)
-        
     
-    asyncio.run(do_async_method_calls())
+    print("Making call to 'add_numbers'")
+    future = client.add_numbers(first=42, second=42)
+    print(future.result(5))
+    
     
 
     print("Ctrl-C will stop the program.")
