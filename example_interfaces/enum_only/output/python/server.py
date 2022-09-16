@@ -48,6 +48,7 @@ class MethodResponseBuilder:
         self._response["returnValue"] = return_value
         return self
 
+
 class EnumOnlyServer(object):
 
     def __init__(self, connection: BrokerConnection):

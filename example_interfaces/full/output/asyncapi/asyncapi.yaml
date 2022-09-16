@@ -64,10 +64,10 @@ components:
             const: 0.0.1
             type: string
         required:
-        - version
-        - name
         - title
         - summary
+        - version
+        - name
         type: object
     todayIs:
       name: todayIs

@@ -33,10 +33,10 @@ components:
             const: 0.0.1
             type: string
         required:
-        - summary
-        - name
-        - version
         - title
+        - name
+        - summary
+        - version
         type: object
   schemas:
     enum_fruits:

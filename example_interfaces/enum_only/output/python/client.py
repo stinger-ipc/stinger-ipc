@@ -6,13 +6,23 @@ This is the Client for the EnumOnly interface.
 """
 
 from typing import Dict, Callable, List, Any
+from uuid import uuid4
+from functools import partial
 import json
+import logging
+
 from connection import BrokerConnection
 import interface_types as stinger_types
+
+logging.basicConfig(level=logging.DEBUG)
 
 class EnumOnlyClient(object):
 
     def __init__(self, connection: BrokerConnection):
+        self._logger = logging.getLogger('EnumOnlyClient')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing EnumOnlyClient")
+        self._client_id = str(uuid4())
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
@@ -31,16 +41,23 @@ class EnumOnlyClient(object):
         return filtered_args
 
     def _receive_message(self, topic, payload):
+        self._logger.debug("Receiving message sent to %s", topic)
         pass
+        
+
+    
 
     
 
 if __name__ == '__main__':
     import signal
+    loop = asyncio.get_running_loop()
     from connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
     client = EnumOnlyClient(conn)
     
+
     
+
     print("Ctrl-C will stop the program.")
     signal.pause()

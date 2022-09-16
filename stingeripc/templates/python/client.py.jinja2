@@ -6,22 +6,40 @@ This is the Client for the {{stinger.name}} interface.
 """
 
 from typing import Dict, Callable, List, Any
+from uuid import uuid4
+from functools import partial
 import json
+import logging
+{%if stinger.methods | length > 0 %}
+import asyncio
+{%endif%}
 from connection import BrokerConnection
 {%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
+
+logging.basicConfig(level=logging.DEBUG)
 
 class {{stinger.name}}Client(object):
 
     def __init__(self, connection: BrokerConnection):
+        self._logger = logging.getLogger('{{stinger.name}}Client')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing {{stinger.name}}Client")
+        self._client_id = str(uuid4())
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
+        {%if stinger.methods | length > 0 %}
+        self._pending_method_responses = {}
+        {%endif%}
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
         self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
         self.changed_value_callback_for_{{p}} = None
-        {%endfor%}
-        {%for sig_name in stinger.signals.keys()-%}
+        {%endfor-%}
+        {%-for sig_name in stinger.signals.keys()-%}
         self._signal_recv_callbacks_for_{{sig_name}} = []
+        {%endfor-%}
+        {%-for method_name, method in stinger.methods.items()-%}
+        self._conn.subscribe(f"{{method.response_topic('{self._client_id}')}}")
         {%endfor%}
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
@@ -37,6 +55,7 @@ class {{stinger.name}}Client(object):
         return filtered_args
 
     def _receive_message(self, topic, payload):
+        self._logger.debug("Receiving message sent to %s", topic)
         {%if stinger.signals | length > 0 -%}
         {%for sig_name, sig in stinger.signals.items()-%}
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
@@ -50,6 +69,15 @@ class {{stinger.name}}Client(object):
             self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
         {%endfor%}
         {%-else%}pass{%-endif%}
+        {%for method_name, method in stinger.methods.items()%}
+        if self._conn.is_topic_sub(topic, f"{{method.response_topic('{self._client_id}')}}"):
+            response = json.loads(payload)
+            if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
+                cb = self._pending_method_responses[response["correlationId"]]
+                del self._pending_method_responses[response["correlationId"]]
+                asyncio.get_event_loop()
+                asyncio.create_task(cb(response))
+        {%endfor%}
 
     {%for sig_name, sig in stinger.signals.items()%}
     def receive_{{sig_name}}(self, handler):
@@ -58,8 +86,51 @@ class {{stinger.name}}Client(object):
             self._conn.subscribe("{{sig.topic}}")
     {%endfor%}
 
+    {%for method_name, method in stinger.methods.items()%}
+    async def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {%if method.has_simple_return_value%}{{method.return_value.python_type}}{%elif not method.has_no_return_value%}FIXME{%endif%}:
+        {%for arg in method.arg_list%}
+        if not isinstance({{arg.name}}, {{arg.python_type}}):
+            raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_type}}")
+        {%endfor%}
+        loop = asyncio.get_running_loop()
+        fut = loop.create_future()
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
+        payload = { {%-for arg in method.arg_list%}
+            "{{arg.name}}": {{arg.name}},{%endfor%}
+            "clientId": self._client_id,
+            "correlationId": correlation_id,
+        }
+        self._conn.publish("{{method.topic}}", json.dumps(payload))
+        self._logger.debug("Awaiting future")
+        await fut
+        self._logger.debug("Future resolved")
+        return fut.result()
+
+    async def _handle_{{method_name | snake_case}}_response(self, fut, payload):
+        self._logger.debug("Handling {{method_name | snake_case}} response message %s %s", fut, payload)
+        try:
+            {%if method.has_no_return_value%}
+            fut.set_result(None)
+            {%elif method.has_simple_return_value%}
+            if "returnValue" in payload:
+                if not isinstance(payload["returnValue"], {{method.return_value.python_type}}):
+                    raise ValueError("Return value had wrong type")
+                self._logger.debug("Setting future result")
+                fut.set_result(payload["returnValue"])
+            else:
+                raise Exception("Response message didn't have the return value")
+            {%else%}FIXME{%endif%}
+        except Exception as e:
+            self._logger.info("Exception while handling {{method_name | snake_case}}", exc_info=e)
+            fut.set_exception(e)
+        if not fut.done():
+            fut.set_exception(Exception("No return value set"))
+    {%endfor%}
+
 if __name__ == '__main__':
     import signal
+    loop = asyncio.get_running_loop()
     {%set broker = stinger.get_example_broker()%}from connection import {{broker.class_name}}
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
     client = {{stinger.name}}Client(conn)
@@ -72,6 +143,18 @@ if __name__ == '__main__':
         {%endfor%}"""
         print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
     {%endfor%}
+
+    {%if stinger.methods | length > 0 %}
+    async def do_async_method_calls():
+        await asyncio.sleep(3)
+        {%for method_name, method in stinger.methods.items()%}
+        print("Making call to '{{method_name|snake_case}}'")
+        result = await client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+        print(result)
+        {%endfor%}
     
+    asyncio.run(do_async_method_calls())
+    {%endif%}
+
     print("Ctrl-C will stop the program.")
     signal.pause()

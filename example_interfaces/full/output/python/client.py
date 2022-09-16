@@ -6,17 +6,32 @@ This is the Client for the Example interface.
 """
 
 from typing import Dict, Callable, List, Any
+from uuid import uuid4
+from functools import partial
 import json
+import logging
+
+import asyncio
+
 from connection import BrokerConnection
 import interface_types as stinger_types
+
+logging.basicConfig(level=logging.DEBUG)
 
 class ExampleClient(object):
 
     def __init__(self, connection: BrokerConnection):
+        self._logger = logging.getLogger('ExampleClient')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing ExampleClient")
+        self._client_id = str(uuid4())
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
+        self._pending_method_responses = {}
+        
         self._signal_recv_callbacks_for_todayIs = []
+        self._conn.subscribe(f"client/{self._client_id}/Example/method/addNumbers/response")
         
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
@@ -32,6 +47,7 @@ class ExampleClient(object):
         return filtered_args
 
     def _receive_message(self, topic, payload):
+        self._logger.debug("Receiving message sent to %s", topic)
         if self._conn.is_topic_sub(topic, "Example/signal/todayIs"):
             allowed_args = ["dayOfMonth", "dayOfWeek", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
@@ -42,6 +58,15 @@ class ExampleClient(object):
             
             self._do_callbacks_for(self._signal_recv_callbacks_for_todayIs, **kwargs)
         
+        
+        if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/addNumbers/response"):
+            response = json.loads(payload)
+            if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
+                cb = self._pending_method_responses[response["correlationId"]]
+                del self._pending_method_responses[response["correlationId"]]
+                asyncio.get_event_loop()
+                asyncio.create_task(cb(response))
+        
 
     
     def receive_todayIs(self, handler):
@@ -50,8 +75,53 @@ class ExampleClient(object):
             self._conn.subscribe("Example/signal/todayIs")
     
 
+    
+    async def add_numbers(self, first: int, second: int) -> int:
+        
+        if not isinstance(first, int):
+            raise ValueError("The 'first' argument wasn't a int")
+        
+        if not isinstance(second, int):
+            raise ValueError("The 'second' argument wasn't a int")
+        
+        loop = asyncio.get_running_loop()
+        fut = loop.create_future()
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_add_numbers_response, fut)
+        payload = {
+            "first": first,
+            "second": second,
+            "clientId": self._client_id,
+            "correlationId": correlation_id,
+        }
+        self._conn.publish("Example/method/addNumbers", json.dumps(payload))
+        self._logger.debug("Awaiting future")
+        await fut
+        self._logger.debug("Future resolved")
+        return fut.result()
+
+    async def _handle_add_numbers_response(self, fut, payload):
+        self._logger.debug("Handling add_numbers response message %s %s", fut, payload)
+        try:
+            
+            if "returnValue" in payload:
+                if not isinstance(payload["returnValue"], int):
+                    raise ValueError("Return value had wrong type")
+                self._logger.debug("Setting future result")
+                fut.set_result(payload["returnValue"])
+            else:
+                raise Exception("Response message didn't have the return value")
+            
+        except Exception as e:
+            self._logger.info("Exception while handling add_numbers", exc_info=e)
+            fut.set_exception(e)
+        if not fut.done():
+            fut.set_exception(Exception("No return value set"))
+    
+
 if __name__ == '__main__':
     import signal
+    loop = asyncio.get_running_loop()
     from connection import LocalConnection
     conn = LocalConnection()
     client = ExampleClient(conn)
@@ -64,6 +134,18 @@ if __name__ == '__main__':
         """
         print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
     
+
     
+    async def do_async_method_calls():
+        await asyncio.sleep(3)
+        
+        print("Making call to 'add_numbers'")
+        result = await client.add_numbers(first=42, second=42)
+        print(result)
+        
+    
+    asyncio.run(do_async_method_calls())
+    
+
     print("Ctrl-C will stop the program.")
     signal.pause()

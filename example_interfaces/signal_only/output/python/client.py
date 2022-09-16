@@ -6,13 +6,23 @@ This is the Client for the SignalOnly interface.
 """
 
 from typing import Dict, Callable, List, Any
+from uuid import uuid4
+from functools import partial
 import json
+import logging
+
 from connection import BrokerConnection
 
+
+logging.basicConfig(level=logging.DEBUG)
 
 class SignalOnlyClient(object):
 
     def __init__(self, connection: BrokerConnection):
+        self._logger = logging.getLogger('SignalOnlyClient')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing SignalOnlyClient")
+        self._client_id = str(uuid4())
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
@@ -32,6 +42,7 @@ class SignalOnlyClient(object):
         return filtered_args
 
     def _receive_message(self, topic, payload):
+        self._logger.debug("Receiving message sent to %s", topic)
         if self._conn.is_topic_sub(topic, "SignalOnly/signal/anotherSignal"):
             allowed_args = ["one", "two", "three", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
@@ -43,6 +54,7 @@ class SignalOnlyClient(object):
             
             self._do_callbacks_for(self._signal_recv_callbacks_for_anotherSignal, **kwargs)
         
+        
 
     
     def receive_anotherSignal(self, handler):
@@ -51,8 +63,11 @@ class SignalOnlyClient(object):
             self._conn.subscribe("SignalOnly/signal/anotherSignal")
     
 
+    
+
 if __name__ == '__main__':
     import signal
+    loop = asyncio.get_running_loop()
     from connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
     client = SignalOnlyClient(conn)
@@ -66,6 +81,8 @@ if __name__ == '__main__':
         """
         print(f"Got a 'anotherSignal' signal: one={ one } two={ two } three={ three } ")
     
+
     
+
     print("Ctrl-C will stop the program.")
     signal.pause()
