@@ -21,13 +21,13 @@ SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : 
 {
     _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
     {
-        ReceiveMessage(topic, payload);
+        _receiveMessage(topic, payload);
     });
     _broker->Subscribe("SignalOnly/signal/anotherSignal", 1);
     
 }
 
-void SignalOnlyClient::ReceiveMessage(const std::string& topic, const std::string& payload)
+void SignalOnlyClient::_receiveMessage(const std::string& topic, const std::string& payload)
 {
     if (_broker->TopicMatchesSubscription(topic, "SignalOnly/signal/anotherSignal"))
     {

@@ -20,16 +20,18 @@ constexpr const char SignalOnlyServer::INTERFACE_VERSION[];
 SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
     _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
     {
-        ReceiveMessage(topic, payload);
+        _receiveMessage(topic, payload);
     });
 }
 
-void SignalOnlyServer::ReceiveMessage(const std::string& topic, const std::string& payload) {
-  
+void SignalOnlyServer::_receiveMessage(const std::string& topic, const std::string& payload)
+{
+    
 }
 
 
-boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, const std::string& three) {
+boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, const std::string& three)
+{
     rapidjson::Document doc;
     doc.SetObject();
     
@@ -48,3 +50,7 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
     doc.Accept(writer);
     return _broker->Publish("SignalOnly/signal/anotherSignal", buf.GetString(), 1, false);
 }
+
+
+
+

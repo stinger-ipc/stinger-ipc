@@ -20,16 +20,46 @@ constexpr const char {{stinger.name | UpperCamelCase}}Server::INTERFACE_VERSION[
 {{stinger.name | UpperCamelCase}}Server::{{stinger.name | UpperCamelCase}}Server(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
     _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
     {
-        ReceiveMessage(topic, payload);
+        _receiveMessage(topic, payload);
     });
 }
 
-void {{stinger.name | UpperCamelCase}}Server::ReceiveMessage(const std::string& topic, const std::string& payload) {
-  
+void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(const std::string& topic, const std::string& payload)
+{
+    {%for method_name, method in stinger.methods.items()%}
+    if (_broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
+    {
+        rapidjson::Document doc;
+        try {
+            if (_{{method_name | camelCase}}Handler)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse {{sig_name}} signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject()) {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                _call{{method_name | camelCase}}Handler(topic, doc);
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely. 
+            // TODO: Log this failure
+        }
+    }
+    {%endfor%}
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
-boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+{
     rapidjson::Document doc;
     doc.SetObject();
     {%for arg in sig.arg_list%}
@@ -52,4 +82,35 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
     doc.Accept(writer);
     return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false);
 }
+{%endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+void {{stinger.name | UpperCamelCase}}Server::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value.cpp_type}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
+{
+    _{{method_name | camelCase}}Handler = func;
+}
+{%endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Handler(const std::string& topic, const rapidjson::Document& doc)
+{
+    if (_{{method_name | camelCase}}Handler) {
+        {%for arg in method.arg_list%}
+        {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}};
+        { // Scoping
+            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
+            if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+                {%if arg.arg_type.name.lower() == 'value'%}
+                temp{{arg.name}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+                {%elif arg.arg_type.name.lower() == 'enum'%}
+                temp{{arg.name}} = static_cast<{{arg.cpp_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                {%endif%}
+            } else {
+                throw std::runtime_error("Received payload doesn't have required value/type");
+            }
+        }
+        {%endfor%}
+
+        _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+    }
 {%endfor%}

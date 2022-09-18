@@ -22,11 +22,20 @@ public:
 
     virtual ~{{stinger.name | UpperCamelCase}}Server() = default;
 
-    void ReceiveMessage(const std::string& topic, const std::string& payload);
     {%for sig_name, sig in stinger.signals.items()%}
     boost::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    void register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value.cpp_type}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func);
+    {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
-    
+    void _receiveMessage(const std::string& topic, const std::string& payload);
+
+    {%for method_name, method in stinger.methods.items()%}
+    void _call{{method_name | camelCase}}Handler(const std::string& topic, const rapidjson::Document& doc);
+    std::function<{{method.return_value.cpp_type}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
+    {%endfor%}
+
 };

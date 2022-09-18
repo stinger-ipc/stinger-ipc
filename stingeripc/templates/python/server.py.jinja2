@@ -105,10 +105,10 @@ class {{stinger.name}}Server(object):
 
     {%for method_name, method in stinger.methods.items()%}
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
-        do_subscribe = False
         if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
-            do_subscribe = True
-        self._{{method_name|snake_case}}_method_handler = handler
+            self._{{method_name|snake_case}}_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
 
     def _process_{{method_name | snake_case}}_call(self, topic, payload):
         if self._{{method_name|snake_case}}_method_handler is not None:

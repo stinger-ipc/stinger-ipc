@@ -94,10 +94,10 @@ class ExampleServer(object):
 
     
     def handle_add_numbers(self, handler: Callable[[int, int], int]):
-        do_subscribe = False
         if self._add_numbers_method_handler is None and handler is not None:
-            do_subscribe = True
-        self._add_numbers_method_handler = handler
+            self._add_numbers_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
 
     def _process_add_numbers_call(self, topic, payload):
         if self._add_numbers_method_handler is not None:

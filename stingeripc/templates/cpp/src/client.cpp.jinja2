@@ -21,7 +21,7 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
 {
     _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
     {
-        ReceiveMessage(topic, payload);
+        _receiveMessage(topic, payload);
     });
 
     {%-for sig_name, sig in stinger.signals.items() %}
@@ -29,7 +29,7 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
     {%endfor%}
 }
 
-void {{stinger.name | UpperCamelCase}}Client::ReceiveMessage(const std::string& topic, const std::string& payload)
+void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(const std::string& topic, const std::string& payload)
 {
     {%-for sig_name, sig in stinger.signals.items() %}
     if (_broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))

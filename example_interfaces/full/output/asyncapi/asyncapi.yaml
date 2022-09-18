@@ -64,9 +64,9 @@ components:
             const: 0.0.1
             type: string
         required:
+        - title
         - name
         - version
-        - title
         - summary
         type: object
     todayIs:
@@ -93,8 +93,8 @@ components:
           second:
             type: integer
         required:
-        - first
         - second
+        - first
         type: object
     addNumbersResponse:
       name: addNumbersResponse

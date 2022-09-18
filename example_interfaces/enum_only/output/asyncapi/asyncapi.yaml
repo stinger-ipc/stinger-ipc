@@ -34,9 +34,9 @@ components:
             type: string
         required:
         - summary
-        - name
-        - title
         - version
+        - title
+        - name
         type: object
   schemas:
     enum_fruits:

@@ -22,12 +22,16 @@ public:
 
     virtual ~{{stinger.name | UpperCamelCase}}Client() = default;
 
-    void ReceiveMessage(const std::string& topic, const std::string& payload);
     {%for sig_name, sig in stinger.signals.items()%}
     void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
     {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    boost::future<{{method.return_value.cpp_type}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) const;
+    {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
+    void _receiveMessage(const std::string& topic, const std::string& payload);
     {%for sig_name, sig in stinger.signals.items()%}
     std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{sig_name | camelCase}}Callback;
     {%endfor%}

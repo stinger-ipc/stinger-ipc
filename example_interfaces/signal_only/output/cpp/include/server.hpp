@@ -22,11 +22,15 @@ public:
 
     virtual ~SignalOnlyServer() = default;
 
-    void ReceiveMessage(const std::string& topic, const std::string& payload);
     
     boost::future<bool> emitAnotherSignalSignal(double, bool, const std::string&);
     
+
+    
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
+    void _receiveMessage(const std::string& topic, const std::string& payload);
+
     
+
 };

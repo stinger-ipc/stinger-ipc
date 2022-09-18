@@ -21,13 +21,13 @@ ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broke
 {
     _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
     {
-        ReceiveMessage(topic, payload);
+        _receiveMessage(topic, payload);
     });
     _broker->Subscribe("Example/signal/todayIs", 1);
     
 }
 
-void ExampleClient::ReceiveMessage(const std::string& topic, const std::string& payload)
+void ExampleClient::_receiveMessage(const std::string& topic, const std::string& payload)
 {
     if (_broker->TopicMatchesSubscription(topic, "Example/signal/todayIs"))
     {

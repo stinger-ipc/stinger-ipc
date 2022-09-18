@@ -22,12 +22,16 @@ public:
 
     virtual ~ExampleClient() = default;
 
-    void ReceiveMessage(const std::string& topic, const std::string& payload);
     
     void registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb);
     
+
+    
+    boost::future<int> addNumbers(int first, int second) const;
+    
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
+    void _receiveMessage(const std::string& topic, const std::string& payload);
     
     std::function<void(int, DayOfTheWeek)> _todayIsCallback;
     
