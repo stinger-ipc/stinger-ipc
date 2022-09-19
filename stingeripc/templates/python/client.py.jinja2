@@ -109,11 +109,11 @@ class {{stinger.name}}Client(object):
             {%if method.has_no_return_value%}
             fut.set_result(None)
             {%elif method.has_simple_return_value%}
-            if "returnValue" in payload:
-                if not isinstance(payload["returnValue"], {{method.return_value.python_type}}):
-                    raise ValueError("Return value had wrong type")
+            if "{{method.return_value.name}}" in payload:
+                if not isinstance(payload["{{method.return_value.name}}"], {{method.return_value.python_type}}):
+                    raise ValueError("Return value '{{method.return_value.name}}'' had wrong type")
                 self._logger.debug("Setting future result")
-                fut.set_result(payload["returnValue"])
+                fut.set_result(payload["{{method.return_value.name}}"])
             else:
                 raise Exception("Response message didn't have the return value")
             {%else%}FIXME{%endif%}

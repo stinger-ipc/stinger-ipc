@@ -44,8 +44,8 @@ class MethodResponseBuilder:
         self._response["result"] = result_code.value
         return self
 
-    def return_value(self, return_value):
-        self._response["returnValue"] = return_value
+    def return_value(self, value_name: str, return_value):
+        self._response[value_name] = return_value
         return self
 
 

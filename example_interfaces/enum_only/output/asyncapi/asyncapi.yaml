@@ -33,9 +33,9 @@ components:
             const: 0.0.1
             type: string
         required:
-        - title
-        - summary
         - name
+        - summary
+        - title
         - version
         type: object
   schemas:

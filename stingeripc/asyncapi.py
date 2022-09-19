@@ -29,6 +29,7 @@ class ObjectSchema:
     def __init__(self):
         self._properties: dict[str, Any] = dict()
         self._required = set()
+        self._dependent_schemas = {}
     
     def add_value_property(self, name: str, arg_value_type: ArgValueType, required=True):
         schema = {
@@ -38,22 +39,38 @@ class ObjectSchema:
         if required:
             self._required.add(name)
 
-    def add_const_value_property(self, name: str, arg_type: ArgValueType, const_value):
-        self.add_value_property(name, arg_type)
+    def add_value_dependency(self, name: str, required_on_name: str, required_on_value):
+        self._dependent_schemas[name] = {
+            "properties": {
+                required_on_name: {
+                    "const": required_on_value
+                }
+            }
+        }
+
+    def add_const_value_property(self, name: str, arg_type: ArgValueType, const_value, required=True):
+        self.add_value_property(name, arg_type, required)
         self._properties[name]['const'] = const_value
 
-    def add_reference_property(self, name: str, dollar_ref: str):
+    def add_enum_value_property(self, name: str, arg_type: ArgValueType, possible_values, required=True):
+        self.add_value_property(name, arg_type, required)
+        self._properties[name]['enum'] = possible_values
+
+    def add_reference_property(self, name: str, dollar_ref: str, required=True):
         schema = {
             "$ref": dollar_ref
         }
         self._properties[name] = schema
+        if required:
+            self._required.add(name)
+
 
     def to_schema(self) -> dict[str, str|dict[str, Any]|list[str]]:
         props: dict[str, Any] = dict()
         schema: dict[str, str|dict[str, Any]|list[str]] = {
             "type": "object",
             "properties": props,
-            "required": list(self._required),
+            "required": sorted(list(self._required)),
         }
         for prop_name, prop_schema in self._properties.items():
             props[prop_name] = prop_schema
@@ -278,6 +295,21 @@ class StingerToAsyncApi:
         self._add_enums()
         self._add_signals()
         self._add_methods()
+        if len(self._stinger.methods) > 0:
+            schema_name = f"stinger_method_return_codes"
+            description = [
+                f"The stinger_method_return_codes enum has the following values:"
+            ]
+            accepted_values = []
+            for i, enum_value in self._stinger.method_return_codes.items():
+                description.append(f"{i} - {enum_value}")
+                accepted_values.append(i)
+            json_schema = {
+                "type":  "integer",
+                "description": "\n ".join(description),
+                "enum": accepted_values
+            }
+            self._asyncapi.add_schema(schema_name, json_schema)
         return self
 
     def _add_interface_info(self):
@@ -357,11 +389,13 @@ class StingerToAsyncApi:
             resp_msg = Message(f"{method_name}Response")
             resp_msg_schema = ObjectSchema()
             resp_msg_schema.add_value_property("correlationId", ArgValueType.STRING)
+            resp_msg_schema.add_reference_property("result", "#/components/schemas/stinger_method_return_codes")
             for arg_spec in method_spec.return_value_list:
                 if arg_spec.arg_type == ArgType.VALUE:
-                    resp_msg_schema.add_value_property(arg_spec.name, arg_spec.arg_type)
+                    resp_msg_schema.add_value_property(arg_spec.name, arg_spec.type, required=False)
                 elif arg_spec.arg_type == ArgType.ENUM:
-                    resp_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
+                    resp_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}", required=False)
+                resp_msg_schema.add_value_dependency(arg_spec.name, "result", 0)
             resp_msg.set_schema(resp_msg_schema.to_schema())
             self._asyncapi.add_message(resp_msg)
 

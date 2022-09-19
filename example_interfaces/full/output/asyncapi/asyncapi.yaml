@@ -64,10 +64,10 @@ components:
             const: 0.0.1
             type: string
         required:
-        - version
-        - summary
         - name
+        - summary
         - title
+        - version
         type: object
     todayIs:
       name: todayIs
@@ -79,6 +79,7 @@ components:
             $ref: '#/components/schemas/enum_dayOfTheWeek'
         required:
         - dayOfMonth
+        - dayOfWeek
         type: object
     addNumbers:
       name: addNumbers
@@ -99,14 +100,21 @@ components:
     addNumbersResponse:
       name: addNumbersResponse
       payload:
+        dependentSchemas:
+          sum:
+            properties:
+              result:
+                const: 0
         properties:
           correlationId:
             type: string
+          result:
+            $ref: '#/components/schemas/stinger_method_return_codes'
           sum:
             type: integer
         required:
         - correlationId
-        - sum
+        - result
         type: object
   schemas:
     enum_dayOfTheWeek:
@@ -119,6 +127,15 @@ components:
       - 3
       - 4
       - 5
+      type: integer
+    stinger_method_return_codes:
+      description: "The stinger_method_return_codes enum has the following values:\n
+        0 - Success\n 1 - Client Error\n 2 - Server Error\n 3 - Transport Error"
+      enum:
+      - 0
+      - 1
+      - 2
+      - 3
       type: integer
 servers:
   local:

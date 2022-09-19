@@ -423,14 +423,23 @@ class StingerSpec:
         self._summary = interface['summary'] if 'summary' in interface else None
         self._title = interface['title'] if 'title' in interface else None
 
-        self.signals: Dict[str, Signal] = {}
+        self.signals: dict[str, Signal] = {}
         self.params: dict[str, Any] = {}
-        self.methods: Dict[str, Method] = {}
-        self.enums: Dict[str, InterfaceEnum] = {}
-        self._brokers: Dict[str, Broker] = {}
+        self.methods: dict[str, Method] = {}
+        self.enums: dict[str, InterfaceEnum] = {}
+        self._brokers: dict[str, Broker] = {}
 
     @property
-    def interface_info(self) -> tuple[str, Dict[str, Any]]:
+    def method_return_codes(self) -> dict[int, str]:
+        return {
+            0: "Success",
+            1: "Client Error",
+            2: "Server Error",
+            3: "Transport Error",
+        }
+
+    @property
+    def interface_info(self) -> tuple[str, dict[str, Any]]:
         info = {
             "name": self._name, 
             "version": self._version,

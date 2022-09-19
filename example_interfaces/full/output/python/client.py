@@ -100,11 +100,11 @@ class ExampleClient(object):
         self._logger.debug("Handling add_numbers response message %s %s", fut, payload)
         try:
             
-            if "returnValue" in payload:
-                if not isinstance(payload["returnValue"], int):
-                    raise ValueError("Return value had wrong type")
+            if "sum" in payload:
+                if not isinstance(payload["sum"], int):
+                    raise ValueError("Return value 'sum'' had wrong type")
                 self._logger.debug("Setting future result")
-                fut.set_result(payload["returnValue"])
+                fut.set_result(payload["sum"])
             else:
                 raise Exception("Response message didn't have the return value")
             

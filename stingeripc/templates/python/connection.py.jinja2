@@ -8,12 +8,9 @@ from enum import Enum
 
 logging.basicConfig(level=logging.DEBUG)
 
-class MethodResultCode(Enum):
-    SUCCESS = 0
-    CLIENT_ERROR = 1
-    SERVER_ERROR = 2
-    TRANSPORT_ERROR = 3
-    TIMEOUT = 4
+class MethodResultCode(Enum):{%for rc_i, rc_name in stinger.method_return_codes.items()%}
+    {{rc_name | CONST_CASE}} = {{rc_i}}
+    {%-endfor%}
 
 class BrokerConnection(ABC):
     

@@ -44,8 +44,8 @@ class MethodResponseBuilder:
         self._response["result"] = result_code.value
         return self
 
-    def return_value(self, return_value):
-        self._response["returnValue"] = return_value
+    def return_value(self, value_name: str, return_value):
+        self._response[value_name] = return_value
         return self
 
 
@@ -130,7 +130,7 @@ class ExampleServer(object):
             if True:
             
                 
-                response_builder.return_value(return_value)
+                response_builder.return_value("sum", return_value)
                 
             if response_builder.is_valid():
                 response_topic = f"client/{payload['clientId']}/Example/method/addNumbers/response"
