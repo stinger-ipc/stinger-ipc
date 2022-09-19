@@ -43,8 +43,20 @@ void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(const std::string&
                 if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
+                boost::optional<std::string> optClientId;
+                boost::optional<std::string> optCorrelationId;
 
-                _call{{method_name | camelCase}}Handler(topic, doc);
+                if (doc.HasMember("clientId") && doc["clientId"].IsString())
+                {
+                    optClientId = doc["clientId"].GetString();
+                }
+
+                if (doc.HasMember("correlationId") && doc["correlationId"].IsString())
+                {
+                    optCorrelationId = doc["correlationId"].GetString();
+                }
+
+                _call{{method_name | camelCase}}Handler(topic, doc, optClientId, optCorrelationId);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -92,7 +104,7 @@ void {{stinger.name | UpperCamelCase}}Server::register{{method_name | UpperCamel
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Handler(const std::string& topic, const rapidjson::Document& doc)
+void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const
 {
     if (_{{method_name | camelCase}}Handler) {
         {%for arg in method.arg_list%}
@@ -101,9 +113,9 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
             if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
                 {%if arg.arg_type.name.lower() == 'value'%}
-                temp{{arg.name}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+                temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
                 {%elif arg.arg_type.name.lower() == 'enum'%}
-                temp{{arg.name}} = static_cast<{{arg.cpp_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
                 {%endif%}
             } else {
                 throw std::runtime_error("Received payload doesn't have required value/type");
@@ -111,6 +123,27 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
         }
         {%endfor%}
 
-        _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+        auto ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+
+        if (clientId)
+        {
+            std::stringstream ss;
+            ss << boost::format("{{method.response_topic('%1%')}}") % *clientId;
+            std::string responseTopic = ss.str();
+
+            rapidjson::Document responseJson;
+            responseJson.SetObject();
+            if (correlationId) {
+                rapidjson::Value correlationIdValue;
+                correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
+                responseJson.AddMember("correlationId", correlationIdValue, responseJson.GetAllocator());
+            }
+
+            rapidjson::StringBuffer buf;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+            responseJson.Accept(writer);
+            _broker->Publish(responseTopic, buf.GetString(), 2, true);
+        }
     }
+}
 {%endfor%}

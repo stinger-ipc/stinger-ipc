@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <string>
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <boost/optional.hpp>
 #include <rapidjson/document.h>
 
 #include "ibrokerconnection.hpp"
@@ -34,7 +36,7 @@ private:
     void _receiveMessage(const std::string& topic, const std::string& payload);
 
     {%for method_name, method in stinger.methods.items()%}
-    void _call{{method_name | camelCase}}Handler(const std::string& topic, const rapidjson::Document& doc);
+    void _call{{method_name | camelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<{{method.return_value.cpp_type}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
     {%endfor%}
 

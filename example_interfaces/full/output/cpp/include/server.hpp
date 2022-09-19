@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <string>
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <boost/optional.hpp>
 #include <rapidjson/document.h>
 
 #include "ibrokerconnection.hpp"
@@ -34,7 +36,7 @@ private:
     void _receiveMessage(const std::string& topic, const std::string& payload);
 
     
-    void _calladdNumbersHandler(const std::string& topic, const rapidjson::Document& doc);
+    void _calladdNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<int(int, int)> _addNumbersHandler;
     
 

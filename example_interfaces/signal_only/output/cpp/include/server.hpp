@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <string>
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <boost/optional.hpp>
 #include <rapidjson/document.h>
 
 #include "ibrokerconnection.hpp"

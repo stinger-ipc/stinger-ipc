@@ -43,8 +43,20 @@ void ExampleServer::_receiveMessage(const std::string& topic, const std::string&
                 if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
+                boost::optional<std::string> optClientId;
+                boost::optional<std::string> optCorrelationId;
 
-                _calladdNumbersHandler(topic, doc);
+                if (doc.HasMember("clientId") && doc["clientId"].IsString())
+                {
+                    optClientId = doc["clientId"].GetString();
+                }
+
+                if (doc.HasMember("correlationId") && doc["correlationId"].IsString())
+                {
+                    optCorrelationId = doc["correlationId"].GetString();
+                }
+
+                _calladdNumbersHandler(topic, doc, optClientId, optCorrelationId);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -81,7 +93,7 @@ void ExampleServer::registerAddNumbersHandler(std::function<int(int, int)> func)
 
 
 
-void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapidjson::Document& doc)
+void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const
 {
     if (_addNumbersHandler) {
         
@@ -90,7 +102,7 @@ void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapid
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("first");
             if (itr != doc.MemberEnd() && itr->value.IsInt()) {
                 
-                tempfirst = itr->value.GetInt();
+                tempFirst = itr->value.GetInt();
                 
             } else {
                 throw std::runtime_error("Received payload doesn't have required value/type");
@@ -102,7 +114,7 @@ void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapid
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("second");
             if (itr != doc.MemberEnd() && itr->value.IsInt()) {
                 
-                tempsecond = itr->value.GetInt();
+                tempSecond = itr->value.GetInt();
                 
             } else {
                 throw std::runtime_error("Received payload doesn't have required value/type");
@@ -110,5 +122,26 @@ void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapid
         }
         
 
-        _addNumbersHandler(tempFirst, tempSecond);
+        auto ret = _addNumbersHandler(tempFirst, tempSecond);
+
+        if (clientId)
+        {
+            std::stringstream ss;
+            ss << boost::format("client/%1%/Example/method/addNumbers/response") % *clientId;
+            std::string responseTopic = ss.str();
+
+            rapidjson::Document responseJson;
+            responseJson.SetObject();
+            if (correlationId) {
+                rapidjson::Value correlationIdValue;
+                correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
+                responseJson.AddMember("correlationId", correlationIdValue, responseJson.GetAllocator());
+            }
+
+            rapidjson::StringBuffer buf;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+            responseJson.Accept(writer);
+            _broker->Publish(responseTopic, buf.GetString(), 2, true);
+        }
     }
+}

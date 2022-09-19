@@ -17,11 +17,12 @@ tasks:
     init:
       bin/generate_everything.sh
     command: |
-      mosquitto
       gp sync-done brokerrun
+      mosquitto
     openMode: tab-after
   - name: MQTT Subscribe
     command: |
       gp sync-await brokerrun
+      sleep 3
       mosquitto_sub -t '#' -v
     openMode: split-right
