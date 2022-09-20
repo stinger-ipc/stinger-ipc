@@ -10,8 +10,9 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable, Dict, Any
-from connection import BrokerConnection, MethodResultCode
+from typing import Callable, Dict, Any, Optional
+from connection import BrokerConnection
+from method_codes import *
 import interface_types as stinger_types
 
 
@@ -38,6 +39,10 @@ class MethodResponseBuilder:
         self._response["result"] = result_code.value
         return self
 
+    def debug_result_message(self, message: str):
+        self._response["debugResultMessage"] = message
+        return self
+
     def return_value(self, value_name: str, return_value):
         self._response[value_name] = return_value
         return self
@@ -54,7 +59,7 @@ class EnumOnlyServer(object):
         self._conn.set_last_will(topic="EnumOnly/interface", payload=None, qos=1, retain=True)
         
     
-    def _receive_message(self, topic, payload):
+    def _receive_message(self, topic: str, payload: str):
         self._logger.debug("Received message to %s", topic)
         pass
 

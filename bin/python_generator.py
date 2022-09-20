@@ -28,6 +28,7 @@ if __name__ == "__main__":
         "connection.py",
         "__init__.py",
         "requirements.txt",
+        "method_codes.py",
     ]:
         t.render_template(f"{output_file}.jinja2", output_file, **params)
 

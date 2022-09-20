@@ -390,6 +390,7 @@ class StingerToAsyncApi:
             resp_msg_schema = ObjectSchema()
             resp_msg_schema.add_value_property("correlationId", ArgValueType.STRING)
             resp_msg_schema.add_reference_property("result", "#/components/schemas/stinger_method_return_codes")
+            resp_msg_schema.add_value_property("debugResultMessage", ArgValueType.STRING, required=False)
             for arg_spec in method_spec.return_value_list:
                 if arg_spec.arg_type == ArgType.VALUE:
                     resp_msg_schema.add_value_property(arg_spec.name, arg_spec.type, required=False)

@@ -10,8 +10,9 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable, Dict, Any
-from connection import BrokerConnection, MethodResultCode
+from typing import Callable, Dict, Any, Optional
+from connection import BrokerConnection
+from method_codes import *
 import interface_types as stinger_types
 
 
@@ -38,6 +39,10 @@ class MethodResponseBuilder:
         self._response["result"] = result_code.value
         return self
 
+    def debug_result_message(self, message: str):
+        self._response["debugResultMessage"] = message
+        return self
+
     def return_value(self, value_name: str, return_value):
         self._response[value_name] = return_value
         return self
@@ -54,10 +59,10 @@ class ExampleServer(object):
         self._conn.set_last_will(topic="Example/interface", payload=None, qos=1, retain=True)
         
         self._conn.subscribe("Example/method/addNumbers")
-        self._add_numbers_method_handler = None # type: Callable[[int, int], int]
+        self._add_numbers_method_handler: Optional[Callable[[int, int], int]] = None
         
     
-    def _receive_message(self, topic, payload):
+    def _receive_message(self, topic: str, payload: str):
         self._logger.debug("Received message to %s", topic)
         if self._conn.is_topic_sub(topic, "Example/method/addNumbers"):
             try:
@@ -116,8 +121,8 @@ class ExampleServer(object):
             
             try:
                 return_value = self._add_numbers_method_handler(*method_args)
-            except:
-                response_builder.result_code(MethodResultCode.SERVER_ERROR)
+            except Exception as e:
+                response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)
             

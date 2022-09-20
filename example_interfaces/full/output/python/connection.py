@@ -4,15 +4,12 @@ from typing import Callable, Optional, Tuple
 from paho.mqtt import client as mqtt_client
 from queue import Queue, Empty
 from abc import ABC, abstractmethod
-from enum import Enum
+from method_codes import *
+
 
 logging.basicConfig(level=logging.DEBUG)
 
-class MethodResultCode(Enum):
-    SUCCESS = 0
-    CLIENT__ERROR = 1
-    SERVER__ERROR = 2
-    TRANSPORT__ERROR = 3
+
 
 class BrokerConnection(ABC):
     

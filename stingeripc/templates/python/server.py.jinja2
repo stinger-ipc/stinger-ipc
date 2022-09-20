@@ -10,8 +10,9 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable, Dict, Any
-from connection import BrokerConnection, MethodResultCode
+from typing import Callable, Dict, Any, Optional
+from connection import BrokerConnection
+from method_codes import *
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
 
 {%macro method_type_annotation(method) %}Callable[[{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], {%if method.has_no_return_value%}None{%elif method.has_simple_return_value%}{{method.return_value.python_type}}{%else%}FIXME{%endif%}]{%endmacro%}
@@ -38,6 +39,10 @@ class MethodResponseBuilder:
         self._response["result"] = result_code.value
         return self
 
+    def debug_result_message(self, message: str):
+        self._response["debugResultMessage"] = message
+        return self
+
     def return_value(self, value_name: str, return_value):
         self._response[value_name] = return_value
         return self
@@ -62,10 +67,10 @@ class {{stinger.name}}Server(object):
         self._conn.subscribe("{{method.topic}}")
         {%endfor-%}
         {%for method_name, method in stinger.methods.items()-%}
-        self._{{method_name|snake_case}}_method_handler = None # type: {{method_type_annotation(method)}}
+        self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
         {%endfor%}
     
-    def _receive_message(self, topic, payload):
+    def _receive_message(self, topic: str, payload: str):
         self._logger.debug("Received message to %s", topic)
         {%if stinger.methods | length > 0 -%}
         {%for method_name, method in stinger.methods.items()-%}
@@ -120,13 +125,13 @@ class {{stinger.name}}Server(object):
             {%endfor%}
             try:
                 return_value = self._{{method_name|snake_case}}_method_handler(*method_args)
-            except:
-                response_builder.result_code(MethodResultCode.SERVER_ERROR)
+            except Exception as e:
+                response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)
             {%if method.return_value_list|length > 1 -%}
             if len(return_value) != {{method.return_value_list|length}}:
-                response_builder.result_code(MethodResultCode.SERVER_ERROR)
+                response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(f"The server code generated the wrong number ({len(return_value)})of return values ({{method.return_value_list|length}} expected).")
                 self._logger.error("The '{{method_name}}' method returned an incorrect number of return values")
             else:
             {%else%}

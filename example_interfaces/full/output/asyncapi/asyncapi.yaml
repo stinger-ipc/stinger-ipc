@@ -108,6 +108,8 @@ components:
         properties:
           correlationId:
             type: string
+          debugResultMessage:
+            type: string
           result:
             $ref: '#/components/schemas/stinger_method_return_codes'
           sum:
