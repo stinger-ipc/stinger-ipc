@@ -20,8 +20,6 @@ class MethodResponseBuilder:
 
     def __init__(self, request: Dict[str, Any]):
         self._response = {}
-        if "clientId" in request and isinstance(request["clientId"], str):
-            self.client_id(request["clientId"])
         if "correlationId" in request and isinstance(request["correlationId"], str):
             self.correlation_id(request["correlationId"])
 
@@ -30,11 +28,7 @@ class MethodResponseBuilder:
         return self._response
 
     def is_valid(self) -> bool:
-        return "clientId" in self._response and "result" in self._response
-
-    def client_id(self, client_id: str):
-        self._response["clientId"] = client_id
-        return self
+        return "correlationId" in self._response and "result" in self._response
 
     def correlation_id(self, correlationId: str):
         self._response["correlationId"] = correlationId
