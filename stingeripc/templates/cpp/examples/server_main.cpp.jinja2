@@ -17,5 +17,15 @@ int main(int argc, char** argv) {
     {%-for sig_name in stinger.signals.keys() %}
     {{sig_name}}Future.wait();
     {%-endfor%}
+
+    {%-for method_name, method in stinger.methods.items() %}
+    server.register{{method_name | UpperCamelCase}}Handler([]({%for arg in method.arg_list%}{{arg.cpp_type}} unused{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value.cpp_type}}
+    {
+        std::cout << "Received call for {{method_name}}\n";
+        return {{method.return_value.get_random_example_value()}};
+    });
+    {%endfor%}
+    std::cout << "Press Enter to exit\n"; 
+    std::cin.ignore();
     return 0;
 }

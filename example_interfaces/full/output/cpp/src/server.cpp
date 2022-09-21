@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -22,6 +23,9 @@ ExampleServer::ExampleServer(std::shared_ptr<IBrokerConnection> broker) : _broke
     {
         _receiveMessage(topic, payload);
     });
+    
+    _broker->Subscribe("Example/method/addNumbers", 2);
+    
 }
 
 void ExampleServer::_receiveMessage(const std::string& topic, const std::string& payload)
@@ -29,6 +33,7 @@ void ExampleServer::_receiveMessage(const std::string& topic, const std::string&
     
     if (_broker->TopicMatchesSubscription(topic, "Example/method/addNumbers"))
     {
+        std::cout << "Message matched topic Example/method/addNumbers\n";
         rapidjson::Document doc;
         try {
             if (_addNumbersHandler)
@@ -88,6 +93,7 @@ boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWee
 
 void ExampleServer::registerAddNumbersHandler(std::function<int(int, int)> func)
 {
+    std::cout << "Registered method to handle Example/method/addNumbers\n";
     _addNumbersHandler = func;
 }
 
@@ -95,6 +101,7 @@ void ExampleServer::registerAddNumbersHandler(std::function<int(int, int)> func)
 
 void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const
 {
+    std::cout << "Handling call to addNumbers\n";
     if (_addNumbersHandler) {
         
         int tempFirst;
@@ -137,6 +144,11 @@ void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapid
                 correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
                 responseJson.AddMember("correlationId", correlationIdValue, responseJson.GetAllocator());
             }
+            
+            rapidjson::Value returnValueSum;
+            returnValueSum.SetInt(ret);  
+            responseJson.AddMember("sum", returnValueSum, responseJson.GetAllocator());
+                 
 
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);

@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -22,6 +23,7 @@ SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker) : 
     {
         _receiveMessage(topic, payload);
     });
+    
 }
 
 void SignalOnlyServer::_receiveMessage(const std::string& topic, const std::string& payload)

@@ -12,5 +12,7 @@ int main(int argc, char** argv) {
     SignalOnlyServer server(conn);
     auto anotherSignalFuture = server.emitAnotherSignalSignal(3.14, true, "apples");
     anotherSignalFuture.wait();
+    std::cout << "Press Enter to exit\n"; 
+    std::cin.ignore();
     return 0;
 }

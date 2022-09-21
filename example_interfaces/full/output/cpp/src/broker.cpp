@@ -114,6 +114,7 @@ boost::future<bool> MqttConnection::Publish(const std::string& topic, const std:
 
 void MqttConnection::Subscribe(const std::string& topic, int qos)
 {
+    std::cout << "Subscribing to " << topic << endl;
     int rc = mosquitto_subscribe(_mosq, NULL, topic.c_str(), qos);
     if (rc == MOSQ_ERR_NO_CONN)
     {
@@ -123,7 +124,7 @@ void MqttConnection::Subscribe(const std::string& topic, int qos)
     }
     else if (rc == MOSQ_ERR_SUCCESS)
     {
-        //cout << "Subscribed to " << topic << endl;
+        std::cout << "Subscribed to " << topic << std::endl;
     }
 }
 

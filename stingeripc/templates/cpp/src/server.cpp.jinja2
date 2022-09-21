@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -22,6 +23,9 @@ constexpr const char {{stinger.name | UpperCamelCase}}Server::INTERFACE_VERSION[
     {
         _receiveMessage(topic, payload);
     });
+    {%for method in stinger.methods.values()%}
+    _broker->Subscribe("{{method.topic}}", 2);
+    {%endfor%}
 }
 
 void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(const std::string& topic, const std::string& payload)
@@ -29,6 +33,7 @@ void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(const std::string&
     {%for method_name, method in stinger.methods.items()%}
     if (_broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
     {
+        std::cout << "Message matched topic {{method.topic}}\n";
         rapidjson::Document doc;
         try {
             if (_{{method_name | camelCase}}Handler)
@@ -99,6 +104,7 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
 {%for method_name, method in stinger.methods.items()%}
 void {{stinger.name | UpperCamelCase}}Server::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value.cpp_type}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
 {
+    std::cout << "Registered method to handle {{method.topic}}\n";
     _{{method_name | camelCase}}Handler = func;
 }
 {%endfor%}
@@ -106,6 +112,7 @@ void {{stinger.name | UpperCamelCase}}Server::register{{method_name | UpperCamel
 {%for method_name, method in stinger.methods.items()%}
 void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const
 {
+    std::cout << "Handling call to {{method_name}}\n";
     if (_{{method_name | camelCase}}Handler) {
         {%for arg in method.arg_list%}
         {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}};
@@ -138,6 +145,21 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
                 correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
                 responseJson.AddMember("correlationId", correlationIdValue, responseJson.GetAllocator());
             }
+            {%if not method.has_no_return_value%}
+                {%-for arg in method.return_value_list %}
+            rapidjson::Value returnValue{{arg.name|UpperCamelCase}};
+                    {%-if arg.arg_type.name.lower() == 'value' %}
+                        {%-if arg.type.name.lower() == 'string' %}
+            returnValue{{arg.name|UpperCamelCase}}.SetString(ret, ret.size(), responseJson.GetAllocator());
+                        {%-else%}
+            returnValue{{arg.name|UpperCamelCase}}.Set{{method.return_value.cpp_rapidjson_type | UpperCamelCase}}(ret);
+                        {%-endif%} {# value type string/primitive #}
+                    {%-elif method.return_value.value.name.lower() == 'enum'%}
+            returnValue{{arg.name|UpperCamelCase}}.SetInteger(static_cast<int>({{arg.name}}));
+                    {%-endif%} {# value or enum#}
+            responseJson.AddMember("{{arg.name}}", returnValue{{arg.name|UpperCamelCase}}, responseJson.GetAllocator());
+                {%endfor-%}
+            {%endif%} {# number of parts to return type#}
 
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
