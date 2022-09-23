@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the Example interface.
 """
-
+from dataclasses import dataclass
 from enum import Enum
 
 
@@ -21,4 +21,11 @@ class DayOfTheWeek(Enum):
 
 
 
-DoSomethingReturnValue = namedtuple("DoSomethingReturnValue", ["label", "identifier", "day", ])
+@dataclass
+class DoSomethingReturnValue:
+    label: str
+    
+    identifier: int
+    
+    day: DayOfTheWeek
+    

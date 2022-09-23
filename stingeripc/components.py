@@ -31,6 +31,10 @@ class Arg:
     def description(self) -> Optional[str]:
         return self._description
 
+    @property
+    def python_local_type(self) -> str:
+        return self.python_type.split('.')[-1]
+
     @classmethod
     def new_arg_from_stinger(cls, arg_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None) -> Arg:
         if "type" not in arg_spec:

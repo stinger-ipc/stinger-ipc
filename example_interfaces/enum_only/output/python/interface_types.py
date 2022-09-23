@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the EnumOnly interface.
 """
-
+from dataclasses import dataclass
 from enum import Enum
 
 
