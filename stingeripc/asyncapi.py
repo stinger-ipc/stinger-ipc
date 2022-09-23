@@ -10,7 +10,7 @@ import os.path
 from enum import Enum
 from typing import Any
 
-from .components import StingerSpec
+from .components import StingerSpec, Arg
 from .args import ArgType, ArgValueType
 
 class Direction(Enum):
@@ -391,12 +391,21 @@ class StingerToAsyncApi:
             resp_msg_schema.add_value_property("correlationId", ArgValueType.STRING)
             resp_msg_schema.add_reference_property("result", "#/components/schemas/stinger_method_return_codes")
             resp_msg_schema.add_value_property("debugResultMessage", ArgValueType.STRING, required=False)
-            for arg_spec in method_spec.return_value_list:
-                if arg_spec.arg_type == ArgType.VALUE:
-                    resp_msg_schema.add_value_property(arg_spec.name, arg_spec.type, required=False)
-                elif arg_spec.arg_type == ArgType.ENUM:
-                    resp_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}", required=False)
-                resp_msg_schema.add_value_dependency(arg_spec.name, "result", 0)
+
+            def add_arg(arg: Arg):
+                if arg.arg_type == ArgType.VALUE:
+                    resp_msg_schema.add_value_property(arg.name, arg.type, required=False)
+                elif arg.arg_type == ArgType.ENUM:
+                    resp_msg_schema.add_reference_property(arg.name, f"#/components/schemas/enum_{arg.enum.name}", required=False)
+
+            if method_spec.return_value.arg_type == ArgType.STRUCT:
+                for arg_spec in method_spec.return_value.members:
+                    add_arg(arg_spec)
+                    resp_msg_schema.add_value_dependency(arg_spec.name, "result", 0)
+            elif method_spec.return_value is not None:
+                add_arg(method_spec.return_value)
+                resp_msg_schema.add_value_dependency(method_spec.return_value.name, "result", 0)
+
             resp_msg.set_schema(resp_msg_schema.to_schema())
             self._asyncapi.add_message(resp_msg)
 

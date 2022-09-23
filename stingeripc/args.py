@@ -21,6 +21,7 @@ class ArgType(Enum):
     VALUE = 1
     ENUM = 2
     JSON_SCHEMA = 3
+    STRUCT = 4
 
 
 class ArgValueType(Enum):

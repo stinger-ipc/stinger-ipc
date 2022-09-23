@@ -33,6 +33,7 @@ class ExampleClient(object):
         
         self._signal_recv_callbacks_for_todayIs = []
         self._conn.subscribe(f"client/{self._client_id}/Example/method/addNumbers/response")
+        self._conn.subscribe(f"client/{self._client_id}/Example/method/doSomething/response")
         
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
@@ -67,6 +68,13 @@ class ExampleClient(object):
                 del self._pending_method_responses[response["correlationId"]]
                 cb(response)
         
+        if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/doSomething/response"):
+            response = json.loads(payload)
+            if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
+                cb = self._pending_method_responses[response["correlationId"]]
+                del self._pending_method_responses[response["correlationId"]]
+                cb(response)
+        
 
     
     def receive_todayIs(self, handler):
@@ -76,7 +84,7 @@ class ExampleClient(object):
     
 
     
-    def add_numbers(self, first: int, second: int) -> int:
+    def add_numbers(self, first: int, second: int) -> FIXME:
         
         if not isinstance(first, int):
             raise ValueError("The 'first' argument wasn't a int")
@@ -99,17 +107,35 @@ class ExampleClient(object):
     def _handle_add_numbers_response(self, fut, payload):
         self._logger.debug("Handling add_numbers response message %s %s", fut, payload)
         try:
-            
-            if "sum" in payload:
-                if not isinstance(payload["sum"], int):
-                    raise ValueError("Return value 'sum'' had wrong type")
-                self._logger.debug("Setting future result")
-                fut.set_result(payload["sum"])
-            else:
-                raise Exception("Response message didn't have the return value")
-            
+            FIXME
         except Exception as e:
             self._logger.info("Exception while handling add_numbers", exc_info=e)
+            fut.set_exception(e)
+        if not fut.done():
+            fut.set_exception(Exception("No return value set"))
+    
+    def do_something(self, aString: str) -> FIXME:
+        
+        if not isinstance(aString, str):
+            raise ValueError("The 'aString' argument wasn't a str")
+        
+        fut = futures.Future()
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_do_something_response, fut)
+        payload = {
+            "aString": aString,
+            "clientId": self._client_id,
+            "correlationId": correlation_id,
+        }
+        self._conn.publish("Example/method/doSomething", json.dumps(payload))
+        return fut
+
+    def _handle_do_something_response(self, fut, payload):
+        self._logger.debug("Handling do_something response message %s %s", fut, payload)
+        try:
+            FIXME
+        except Exception as e:
+            self._logger.info("Exception while handling do_something", exc_info=e)
             fut.set_exception(e)
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
@@ -135,6 +161,10 @@ if __name__ == '__main__':
     
     print("Making call to 'add_numbers'")
     future = client.add_numbers(first=42, second=42)
+    print(future.result(5))
+    
+    print("Making call to 'do_something'")
+    future = client.do_something(aString="apples")
     print(future.result(5))
     
     

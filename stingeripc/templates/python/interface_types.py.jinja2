@@ -6,7 +6,6 @@ It contains enumerations used by the {{stinger.name}} interface.
 """
 
 {%if stinger.uses_enums()%}from enum import Enum{%endif%}
-{%if stinger.uses_named_tuple()%}from collections import namedtuple{%endif%}
 
 {%for ie_name, ie in stinger.enums.items() %}
 class {{ie_name | UpperCamelCase }}(Enum):
@@ -19,7 +18,7 @@ class {{ie_name | UpperCamelCase }}(Enum):
 
 
 {%for method_name, method in stinger.methods.items()%}
-{%-if method.return_value_list | length > 1%}
-{{method_name|UpperCamelCase}}ReturnValue = namedtuple("{{method_name|UpperCamelCase}}ReturnValue", [{%for arg in method.return_value_list%}"{{arg.name}}", {%endfor%}])
+{%-if method.return_value.arg_type.name.lower() == 'struct'%}
+{{method_name|UpperCamelCase}}ReturnValue = namedtuple("{{method_name|UpperCamelCase}}ReturnValue", [{%for arg in method.return_value.members%}"{{arg.name}}", {%endfor%}])
 {%endif-%}
 {%endfor%}

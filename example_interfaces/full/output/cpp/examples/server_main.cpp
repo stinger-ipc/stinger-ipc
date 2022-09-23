@@ -18,6 +18,12 @@ int main(int argc, char** argv) {
         return 42;
     });
     
+    server.registerDoSomethingHandler([](const std::string& unused1) -> DoSomethingReturnValue
+    {
+        std::cout << "Received call for doSomething\n";
+        return {"apples", 42, DayOfTheWeek::MONDAY};
+    });
+    
     std::cout << "Press Enter to exit\n"; 
     std::cin.ignore();
     return 0;

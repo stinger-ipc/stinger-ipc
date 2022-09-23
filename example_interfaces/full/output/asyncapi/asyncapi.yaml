@@ -44,6 +44,28 @@ channels:
         mqtt:
           qos: 1
           retain: false
+  Example/method/doSomething:
+    publish:
+      message:
+        $ref: '#/components/messages/doSomething'
+      operationId: doSomething
+      bindings:
+        mqtt:
+          qos: 2
+          retain: false
+  client/{client_id}/Example/method/doSomething/response:
+    parameters:
+      client_id:
+        schema:
+          type: string
+    subscribe:
+      message:
+        $ref: '#/components/messages/doSomethingResponse'
+      operationId: doSomethingResponse
+      bindings:
+        mqtt:
+          qos: 1
+          retain: false
 components:
   operationTraits: {}
   messages:
@@ -114,6 +136,52 @@ components:
             $ref: '#/components/schemas/stinger_method_return_codes'
           sum:
             type: integer
+        required:
+        - correlationId
+        - result
+        type: object
+    doSomething:
+      name: doSomething
+      payload:
+        properties:
+          aString:
+            type: string
+          clientId:
+            type: string
+          correlationId:
+            type: string
+        required:
+        - aString
+        type: object
+    doSomethingResponse:
+      name: doSomethingResponse
+      payload:
+        dependentSchemas:
+          day:
+            properties:
+              result:
+                const: 0
+          identifier:
+            properties:
+              result:
+                const: 0
+          label:
+            properties:
+              result:
+                const: 0
+        properties:
+          correlationId:
+            type: string
+          day:
+            $ref: '#/components/schemas/enum_dayOfTheWeek'
+          debugResultMessage:
+            type: string
+          identifier:
+            type: integer
+          label:
+            type: string
+          result:
+            $ref: '#/components/schemas/stinger_method_return_codes'
         required:
         - correlationId
         - result

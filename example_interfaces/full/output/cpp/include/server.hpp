@@ -13,6 +13,7 @@
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
+#include "return_types.hpp"
 
 class ExampleServer {
 
@@ -31,6 +32,8 @@ public:
     
     void registerAddNumbersHandler(std::function<int(int, int)> func);
     
+    void registerDoSomethingHandler(std::function<DoSomethingReturnValue(const std::string&)> func);
+    
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
     void _receiveMessage(const std::string& topic, const std::string& payload);
@@ -38,6 +41,9 @@ private:
     
     void _calladdNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<int(int, int)> _addNumbersHandler;
+    
+    void _calldoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    std::function<DoSomethingReturnValue(const std::string&)> _doSomethingHandler;
     
 
 };

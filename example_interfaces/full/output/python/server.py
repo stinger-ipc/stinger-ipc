@@ -59,7 +59,10 @@ class ExampleServer(object):
         self._conn.set_last_will(topic="Example/interface", payload=None, qos=1, retain=True)
         
         self._conn.subscribe("Example/method/addNumbers")
-        self._add_numbers_method_handler: Optional[Callable[[int, int], int]] = None
+        
+        self._conn.subscribe("Example/method/doSomething")
+        self._add_numbers_method_handler: Optional[Callable[[int, int], FIXME]] = None
+        self._do_something_method_handler: Optional[Callable[[str], FIXME]] = None
         
     
     def _receive_message(self, topic: str, payload: str):
@@ -71,6 +74,13 @@ class ExampleServer(object):
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
                 self._process_add_numbers_call(topic, payload_obj)
+        elif self._conn.is_topic_sub(topic, "Example/method/doSomething"):
+            try:
+                payload_obj = json.loads(payload)
+            except json.decoder.JSONDecodeError:
+                self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
+            else:
+                self._process_do_something_call(topic, payload_obj)
         
 
     def _publish_interface_info(self):
@@ -92,7 +102,7 @@ class ExampleServer(object):
     
 
     
-    def handle_add_numbers(self, handler: Callable[[int, int], int]):
+    def handle_add_numbers(self, handler: Callable[[int, int], FIXME]):
         if self._add_numbers_method_handler is None and handler is not None:
             self._add_numbers_method_handler = handler
         else:
@@ -126,13 +136,60 @@ class ExampleServer(object):
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)
             
-            if True:
             
-                
-                response_builder.return_value("sum", return_value)
-                
+            
+            response_builder.return_value("sum", return_value['sum'])
+            
+            
+
             if response_builder.is_valid():
                 response_topic = f"client/{payload['clientId']}/Example/method/addNumbers/response"
+                self._conn.publish(response_topic, json.dumps(response_builder.response), qos=1, retain=False)
+    
+    def handle_do_something(self, handler: Callable[[str], FIXME]):
+        if self._do_something_method_handler is None and handler is not None:
+            self._do_something_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def _process_do_something_call(self, topic, payload):
+        if self._do_something_method_handler is not None:
+            response_builder = MethodResponseBuilder(payload)
+            method_args = []
+            if "aString" in payload:
+                if not isinstance(payload["aString"], str):
+                    self._logger.warning("The 'aString' property in the payload to '%s' wasn't the correct type.  It should have been str.", topic)
+                    return
+                else:
+                    method_args.append(payload["aString"])
+            else:
+                self.logger.info("The 'aString' property in the payload to '%s' wasn't present", topic)
+            
+            try:
+                return_value = self._do_something_method_handler(*method_args)
+            except Exception as e:
+                response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
+            else:
+                response_builder.result_code(MethodResultCode.SUCCESS)
+            
+            
+            
+            
+            response_builder.return_value("label", return_value['label'])
+            
+            
+            
+            response_builder.return_value("identifier", return_value['identifier'])
+            
+            
+            
+            response_builder.return_value("day", return_value['day'])
+            
+            
+            
+
+            if response_builder.is_valid():
+                response_topic = f"client/{payload['clientId']}/Example/method/doSomething/response"
                 self._conn.publish(response_topic, json.dumps(response_builder.response), qos=1, retain=False)
     
 
@@ -153,9 +210,14 @@ if __name__ == '__main__':
 
     
     @server.handle_add_numbers
-    def add_numbers(first: int, second: int) -> int:
+    def add_numbers(first: int, second: int) -> FIXME:
         print(f"Running add_numbers'({first}, {second})'")
-        return 42
+        return FIXME
+    
+    @server.handle_do_something
+    def do_something(aString: str) -> FIXME:
+        print(f"Running do_something'({aString})'")
+        return FIXME
     
 
     server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)

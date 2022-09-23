@@ -8,7 +8,6 @@ It contains enumerations used by the EnumOnly interface.
 from enum import Enum
 
 
-
 class Fruits(Enum):
     APPLE = 1
     BANANA = 2

@@ -43,3 +43,16 @@ methods:
     returnValues:
       - name: sum
         type: integer
+
+  doSomething:
+    arguments:
+      - name: aString
+        type: string
+    returnValues:
+      - name: label
+        type: string
+      - name: identifier
+        type: integer
+      - name: day
+        type: enum
+        enumName: dayOfTheWeek

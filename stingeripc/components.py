@@ -172,6 +172,29 @@ class ArgValue(Arg):
         return arg
 
 
+class ArgStruct(Arg):
+    def __init__(self, name: str, members: Optional[List[Arg]]=None):
+        super().__init__(name)
+        self._members = members or []
+        self._type = ArgType.STRUCT
+
+    @property
+    def members(self) -> List[Arg]:
+        return self._members
+
+    def add_member(self, member: Arg):
+        self._members.append(member)
+
+    @property
+    def cpp_type(self) -> str:
+        return f"{stringcase.pascalcase(self.name)}"
+
+    def get_random_example_value(self, lang="python"):
+        if lang == 'c++':
+            init_list = [str(a.get_random_example_value(lang)) for a in self.members]
+            return "{" + ", ".join(init_list) + "}"
+
+
 class Schema(object):
     """Eventually this will do more than simply be a dumb object.
     It will probably do some parsing of the schema to make it more
@@ -230,7 +253,7 @@ class Method(object):
         self._topic_creator = topic_creator
         self._name = name
         self._arg_list = []  # type: List[Arg]
-        self._return_list = [] # type: List[Arg]
+        self._return_value: Union[None, ArgStruct, ArgValue, ArgEnum] = None
 
     def add_arg(self, arg: Arg) -> Method:
         if arg.name in [a.name for a in self._arg_list]:
@@ -239,9 +262,18 @@ class Method(object):
         return self
 
     def add_return_value(self, value: Arg) -> Method:
-        if value.name in [a.name for a in self._return_list]:
-            raise InvalidStingerStructure(f"A return value named '{value.name}' has been added.")
-        self._return_list.append(value)
+        if self._return_value is None:
+            self._return_value = value
+        elif isinstance(self._return_value, ArgStruct):
+            if value.name in [a.name for a in self._return_value.members]:
+                raise InvalidStingerStructure(f"A return value named '{value.name}' has been already added.")
+            self._return_value.add_member(value)
+        else:
+            if value.name == self.return_value.name:
+                raise InvalidStingerStructure(f"Attempt to add '{value.name}' to return value when it is already been added.")
+            struct_return_value = ArgStruct(f"{self._name}ReturnValue", [self._return_value, value])
+            self._return_value = struct_return_value
+
         return self
 
     @property
@@ -249,21 +281,8 @@ class Method(object):
         return self._arg_list
 
     @property
-    def return_value_list(self) -> List[Arg]:
-        return self._return_list
-
-    @property
-    def has_no_return_value(self) -> bool:
-        return len(self._return_list) == 0
-
-    @property
-    def has_simple_return_value(self) -> bool:
-        return len(self._return_list) == 1
-
-    @property
     def return_value(self) -> Arg:
-        assert self.has_simple_return_value
-        return self._return_list[0]
+        return self._return_value
 
     @property
     def name(self) -> str:
@@ -482,12 +501,6 @@ class StingerSpec:
 
     def uses_enums(self) -> bool:
         return bool(self.enums)
-
-    def uses_named_tuple(self) -> bool:
-        for method in self.methods.values():
-            if len(method.return_value_list) > 1:
-                return True
-        return False
 
     @property
     def name(self):

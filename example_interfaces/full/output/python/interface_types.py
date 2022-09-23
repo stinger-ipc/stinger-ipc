@@ -8,7 +8,6 @@ It contains enumerations used by the Example interface.
 from enum import Enum
 
 
-
 class DayOfTheWeek(Enum):
     SUNDAY = 1
     MONDAY = 2
@@ -21,3 +20,5 @@ class DayOfTheWeek(Enum):
 
 
 
+
+DoSomethingReturnValue = namedtuple("DoSomethingReturnValue", ["label", "identifier", "day", ])

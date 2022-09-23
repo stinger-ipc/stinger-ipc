@@ -11,6 +11,7 @@
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
+#include "return_types.hpp"
 
 class ExampleClient {
 
@@ -28,6 +29,8 @@ public:
 
     
     boost::future<int> addNumbers(int first, int second) const;
+    
+    boost::future<DoSomethingReturnValue> doSomething(const std::string& aString) const;
     
 private: 
     std::shared_ptr<IBrokerConnection> _broker;

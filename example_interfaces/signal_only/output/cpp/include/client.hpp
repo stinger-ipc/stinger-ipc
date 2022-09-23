@@ -11,6 +11,7 @@
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
+#include "return_types.hpp"
 
 class SignalOnlyClient {
 

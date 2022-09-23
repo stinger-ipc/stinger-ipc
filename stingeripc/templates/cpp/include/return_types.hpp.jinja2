@@ -1,0 +1,12 @@
+
+#pragma once
+
+{%for method_name, method in stinger.methods.items()%}
+{%-if method.return_value.arg_type.name.lower() == 'struct'%}
+struct {{method.return_value.cpp_type}} {
+{%for rv in method.return_value.members %}
+    {{rv.cpp_temp_type}} {{rv.name}};
+{%endfor%}
+};
+{%endif%}
+{%-endfor%}

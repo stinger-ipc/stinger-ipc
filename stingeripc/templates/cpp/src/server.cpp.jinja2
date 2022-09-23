@@ -79,7 +79,7 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
 {
     rapidjson::Document doc;
     doc.SetObject();
-    {%for arg in sig.arg_list%}
+    {%macro addToDoc(arg)%}
     {%-if arg.arg_type.name.lower() == 'value'%}
     {%-if arg.type.name.lower() == 'string'%}
     { // restrict scope
@@ -93,6 +93,9 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
     {%elif arg.arg_type.name.lower() == 'enum'%}
     doc.AddMember("{{arg.name}}", static_cast<int>({{arg.name}}), doc.GetAllocator());
     {%-endif-%}
+    {%endmacro%}
+    {%for arg in sig.arg_list%}
+    {{addToDoc(arg)}}
     {%endfor%}
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
@@ -130,7 +133,7 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
         }
         {%endfor%}
 
-        auto ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+        {{method.return_value.cpp_type}} ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
 
         if (clientId)
         {
@@ -145,21 +148,29 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
                 correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
                 responseJson.AddMember("correlationId", correlationIdValue, responseJson.GetAllocator());
             }
-            {%if not method.has_no_return_value%}
-                {%-for arg in method.return_value_list %}
+            {%macro add_arg_to_json(arg, value) %}
+            // add the {{arg.name}} (a/n {{arg.arg_type.name}}) to the json
             rapidjson::Value returnValue{{arg.name|UpperCamelCase}};
-                    {%-if arg.arg_type.name.lower() == 'value' %}
-                        {%-if arg.type.name.lower() == 'string' %}
-            returnValue{{arg.name|UpperCamelCase}}.SetString(ret, ret.size(), responseJson.GetAllocator());
-                        {%-else%}
-            returnValue{{arg.name|UpperCamelCase}}.Set{{method.return_value.cpp_rapidjson_type | UpperCamelCase}}(ret);
-                        {%-endif%} {# value type string/primitive #}
-                    {%-elif method.return_value.value.name.lower() == 'enum'%}
-            returnValue{{arg.name|UpperCamelCase}}.SetInteger(static_cast<int>({{arg.name}}));
-                    {%-endif%} {# value or enum#}
+            {%-if arg.arg_type.name.lower() == 'value' %}
+            {%-if arg.type.name.lower() == 'string' %}
+            returnValue{{arg.name|UpperCamelCase}}.SetString({{value}}.c_str(), {{value}}.size(), responseJson.GetAllocator());
+            {%-else%}
+            returnValue{{arg.name|UpperCamelCase}}.Set{{method.return_value.cpp_rapidjson_type | UpperCamelCase}}({{value}});
+            {%-endif%} {# value type string/primitive #}
+            {%-elif arg.arg_type.name.lower() == 'enum'%}
+            returnValue{{arg.name|UpperCamelCase}}.SetInt(static_cast<int>({{value}}));
+            {%-endif%} {# value or enum#}
             responseJson.AddMember("{{arg.name}}", returnValue{{arg.name|UpperCamelCase}}, responseJson.GetAllocator());
-                {%endfor-%}
-            {%endif%} {# number of parts to return type#}
+            {%endmacro%}
+
+            {%-if method.return_value.arg_type.name.lower() == 'struct'%}
+            // Return type is a struct of values that need added to json
+            {%for member in method.return_value.members-%}
+            {{add_arg_to_json(member, "ret."+member.name)}}
+            {%endfor%}
+            {%-else%}
+            {{add_arg_to_json(method.return_value, "ret")}}
+            {%-endif%}
 
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
