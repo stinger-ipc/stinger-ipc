@@ -62,7 +62,7 @@ class ExampleServer(object):
         
         self._conn.subscribe("Example/method/doSomething")
         self._add_numbers_method_handler: Optional[Callable[[int, int], int]] = None
-        self._do_something_method_handler: Optional[Callable[[str], DoSomethingReturnValue]] = None
+        self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
         
     
     def _receive_message(self, topic: str, payload: str):
@@ -131,20 +131,20 @@ class ExampleServer(object):
             
             try:
                 return_value = self._add_numbers_method_handler(*method_args)
+                
+                
+                response_builder.return_value("sum", return_value)
             except Exception as e:
                 response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)
-            
-            
-            response_builder.return_value("sum", return_value)
-            
+
 
             if response_builder.is_valid():
                 response_topic = f"client/{payload['clientId']}/Example/method/addNumbers/response"
                 self._conn.publish(response_topic, json.dumps(response_builder.response), qos=1, retain=False)
     
-    def handle_do_something(self, handler: Callable[[str], DoSomethingReturnValue]):
+    def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
         if self._do_something_method_handler is None and handler is not None:
             self._do_something_method_handler = handler
         else:
@@ -165,23 +165,18 @@ class ExampleServer(object):
             
             try:
                 return_value = self._do_something_method_handler(*method_args)
+                
+                
+                response_builder.return_value("label", return_value.label)
+                
+                response_builder.return_value("identifier", return_value.identifier)
+                
+                response_builder.return_value("day", return_value.day.value)
             except Exception as e:
                 response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)
-            
-            
-            response_builder.return_value("label", return_value.label)
-            
-            
-            
-            response_builder.return_value("identifier", return_value.identifier)
-            
-            
-            
-            response_builder.return_value("day", return_value.day.value)
-            
-            
+
 
             if response_builder.is_valid():
                 response_topic = f"client/{payload['clientId']}/Example/method/doSomething/response"
@@ -210,7 +205,7 @@ if __name__ == '__main__':
         return 42
     
     @server.handle_do_something
-    def do_something(aString: str) -> DoSomethingReturnValue:
+    def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
         print(f"Running do_something'({aString})'")
         return DoSomethingReturnValue("apples", 42, stinger_types.DayOfTheWeek.MONDAY)
     

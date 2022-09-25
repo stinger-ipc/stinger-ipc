@@ -1,4 +1,5 @@
 
+from typing import Optional
 from enum import Enum
 
 class MethodResultCode(Enum):{%for rc_i, rc_name in stinger.method_return_codes.items()%}
@@ -19,3 +20,11 @@ class {{rc_name | UpperCamelCase}}StingerMethodException(StingerMethodException)
     def __init__(self):
         super().__init__({{rc_i}})
 {%endfor%}
+
+def stinger_exception_factory(result_code: int, message: Optional[str]=None):
+    exc_classes = { {%for rc_i, rc_name in stinger.method_return_codes.items()%}
+        {{rc_i}}: {{rc_name | UpperCamelCase}}StingerMethodException,
+        {%endfor%}
+    }
+    exc_class = exc_classes[result_code]
+    return exc_class(message or "")

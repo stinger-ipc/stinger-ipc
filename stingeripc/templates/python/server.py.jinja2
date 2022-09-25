@@ -125,24 +125,25 @@ class {{stinger.name}}Server(object):
             {%endfor%}
             try:
                 return_value = self._{{method_name|snake_case}}_method_handler(*method_args)
+                {%macro build_response(arg, var)%}
+                {%-if arg.arg_type.name.lower() == 'value'%}
+                response_builder.return_value("{{arg.name}}", {{var}})
+                {%-elif arg.arg_type.name.lower() == 'enum'%}
+                response_builder.return_value("{{arg.name}}", {{var}}.value)
+                {%-endif%}
+                {%-endmacro%}
+                {%-if method.return_value.arg_type.name.lower() == 'struct'%}
+                {%-for arg in method.return_value.members%}
+                {{build_response(arg, "return_value."+arg.name)}}
+                {%-endfor%}
+                {%-else %}
+                {{build_response(method.return_value, "return_value")}}
+                {%-endif%}
             except Exception as e:
                 response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)
-            {%macro build_response(arg, var)%}
-            {%-if arg.arg_type.name.lower() == 'value'%}
-            response_builder.return_value("{{arg.name}}", {{var}})
-            {%-elif arg.arg_type.name.lower() == 'enum'%}
-            response_builder.return_value("{{arg.name}}", {{var}}.value)
-            {%-endif%}
-            {%endmacro%}
-            {%-if method.return_value.arg_type.name.lower() == 'struct'%}
-            {%-for arg in method.return_value.members%}
-            {{build_response(arg, "return_value."+arg.name)}}
-            {%endfor%}
-            {%-else %}
-            {{build_response(method.return_value, "return_value")}}
-            {%-endif%}
+
 
             if response_builder.is_valid():
                 response_topic = f"{{method.response_topic("{payload['clientId']}")}}"

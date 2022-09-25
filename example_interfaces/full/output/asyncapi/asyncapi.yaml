@@ -200,12 +200,14 @@ components:
       type: integer
     stinger_method_return_codes:
       description: "The stinger_method_return_codes enum has the following values:\n
-        0 - Success\n 1 - Client Error\n 2 - Server Error\n 3 - Transport Error"
+        0 - Success\n 1 - Client Error\n 2 - Server Error\n 3 - Transport Error\n
+        4 - Payload Error"
       enum:
       - 0
       - 1
       - 2
       - 3
+      - 4
       type: integer
 servers:
   local:

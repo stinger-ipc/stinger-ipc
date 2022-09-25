@@ -13,6 +13,7 @@ import logging
 
 import asyncio
 import concurrent.futures as futures
+from method_codes import *
 
 from connection import BrokerConnection
 import interface_types as stinger_types
@@ -37,11 +38,15 @@ class ExampleClient(object):
         
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
+        """ Call each callback in the callback dictionary with the provided args.
+        """
         for cb in callbacks:
             cb(**kwargs)
 
     @staticmethod
     def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
+        """ Given a dictionary, reduce the dictionary so that it only has keys in the allowed list.
+        """
         filtered_args = {}
         for k, v in args.items():
             if k in allowed_args:
@@ -49,18 +54,20 @@ class ExampleClient(object):
         return filtered_args
 
     def _receive_message(self, topic, payload):
+        """ New MQTT messages are passed to this method, which, based on the topic,
+        calls the appropriate handler method for the message.
+        """
         self._logger.debug("Receiving message sent to %s", topic)
+        # Handle todayIs
         if self._conn.is_topic_sub(topic, "Example/signal/todayIs"):
             allowed_args = ["dayOfMonth", "dayOfWeek", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-
-            # Ensure received payload values have correct type.
             kwargs["dayOfMonth"] = int(kwargs["dayOfMonth"])
             kwargs["dayOfWeek"] = stinger_types.DayOfTheWeek(kwargs["dayOfWeek"])
             
             self._do_callbacks_for(self._signal_recv_callbacks_for_todayIs, **kwargs)
         
-        
+        # Handle addNumbers
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/addNumbers/response"):
             response = json.loads(payload)
             if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
@@ -68,6 +75,7 @@ class ExampleClient(object):
                 del self._pending_method_responses[response["correlationId"]]
                 cb(response)
         
+        # Handle doSomething
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/doSomething/response"):
             response = json.loads(payload)
             if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
@@ -78,6 +86,8 @@ class ExampleClient(object):
 
     
     def receive_todayIs(self, handler):
+        """ Used as a decorator for methods which handle particular signals.
+        """
         self._signal_recv_callbacks_for_todayIs.append(handler)
         if len(self._signal_recv_callbacks_for_todayIs) == 1:
             self._conn.subscribe("Example/signal/todayIs")
@@ -85,6 +95,8 @@ class ExampleClient(object):
 
     
     def add_numbers(self, first: int, second: int) -> futures.Future:
+        """ Calling this initiates a `addNumbers` IPC method call.
+        """
         
         if not isinstance(first, int):
             raise ValueError("The 'first' argument wasn't a int")
@@ -105,14 +117,21 @@ class ExampleClient(object):
         return fut
 
     def _handle_add_numbers_response(self, fut, payload):
-        self._logger.debug("Handling add_numbers response message %s %s", fut, payload)
+        """ This called with the response to a `addNumbers` IPC method call.
+        """
+        self._logger.debug("Handling add_numbers response message %s", fut)
+        response_json = json.loads(payload)
         try:
+            if 'result' not in response_json:
+                raise PayloadErrorStingerMethodException("The `result` key was not found in the response")
+            if response_json['result'] != MethodResultCode.SUCCESS:
+                raise stinger_exception_factory(response_json['result'], response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             
-            if "sum" in payload:
-                if not isinstance(payload["sum"], int):
+            if "sum" in response_json:
+                if not isinstance(response_json["sum"], int):
                     raise ValueError("Return value 'sum'' had wrong type")
                 self._logger.debug("Setting future result")
-                fut.set_result(payload["sum"])
+                fut.set_result(response_json["sum"])
             else:
                 raise Exception("Response message didn't have the return value")
             
@@ -123,6 +142,8 @@ class ExampleClient(object):
             fut.set_exception(Exception("No return value set"))
     
     def do_something(self, aString: str) -> futures.Future:
+        """ Calling this initiates a `doSomething` IPC method call.
+        """
         
         if not isinstance(aString, str):
             raise ValueError("The 'aString' argument wasn't a str")
@@ -139,11 +160,18 @@ class ExampleClient(object):
         return fut
 
     def _handle_do_something_response(self, fut, payload):
-        self._logger.debug("Handling do_something response message %s %s", fut, payload)
+        """ This called with the response to a `doSomething` IPC method call.
+        """
+        self._logger.debug("Handling do_something response message %s", fut)
+        response_json = json.loads(payload)
         try:
+            if 'result' not in response_json:
+                raise PayloadErrorStingerMethodException("The `result` key was not found in the response")
+            if response_json['result'] != MethodResultCode.SUCCESS:
+                raise stinger_exception_factory(response_json['result'], response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             
-            return_args = self._filter_for_args(json.loads(payload), ["label", "identifier", "day", ])
-            return_obj = DoSomethingReturnValue(**return_args)
+            return_args = self._filter_for_args(response_json, ["label", "identifier", "day", ])
+            return_obj = stinger_types.DoSomethingReturnValue(**return_args)
             fut.set_result(return_obj)
             
         except Exception as e:

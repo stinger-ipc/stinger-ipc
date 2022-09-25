@@ -1,4 +1,5 @@
 
+from typing import Optional
 from enum import Enum
 
 class MethodResultCode(Enum):
@@ -6,6 +7,7 @@ class MethodResultCode(Enum):
     CLIENT_ERROR = 1
     SERVER_ERROR = 2
     TRANSPORT_ERROR = 3
+    PAYLOAD_ERROR = 4
 
 class StingerMethodException(Exception):
     
@@ -32,3 +34,24 @@ class ServerErrorStingerMethodException(StingerMethodException):
 class TransportErrorStingerMethodException(StingerMethodException):
     def __init__(self):
         super().__init__(3)
+
+class PayloadErrorStingerMethodException(StingerMethodException):
+    def __init__(self):
+        super().__init__(4)
+
+
+def stinger_exception_factory(result_code: int, message: Optional[str]=None):
+    exc_classes = { 
+        0: SuccessStingerMethodException,
+        
+        1: ClientErrorStingerMethodException,
+        
+        2: ServerErrorStingerMethodException,
+        
+        3: TransportErrorStingerMethodException,
+        
+        4: PayloadErrorStingerMethodException,
+        
+    }
+    exc_class = exc_classes[result_code]
+    return exc_class(message or "")

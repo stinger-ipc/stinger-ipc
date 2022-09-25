@@ -13,6 +13,7 @@ import logging
 {%if stinger.methods | length > 0 %}
 import asyncio
 import concurrent.futures as futures
+from method_codes import *
 {%endif%}
 from connection import BrokerConnection
 {%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
@@ -44,11 +45,15 @@ class {{stinger.name}}Client(object):
         {%endfor%}
 
     def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
+        """ Call each callback in the callback dictionary with the provided args.
+        """
         for cb in callbacks:
             cb(**kwargs)
 
     @staticmethod
     def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
+        """ Given a dictionary, reduce the dictionary so that it only has keys in the allowed list.
+        """
         filtered_args = {}
         for k, v in args.items():
             if k in allowed_args:
@@ -56,21 +61,24 @@ class {{stinger.name}}Client(object):
         return filtered_args
 
     def _receive_message(self, topic, payload):
+        """ New MQTT messages are passed to this method, which, based on the topic,
+        calls the appropriate handler method for the message.
+        """
         self._logger.debug("Receiving message sent to %s", topic)
         {%if stinger.signals | length > 0 -%}
         {%for sig_name, sig in stinger.signals.items()-%}
+        # Handle {{sig_name}}
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-
-            # Ensure received payload values have correct type.
             {%for arg in sig.arg_list-%}
             kwargs["{{arg.name}}"] = {{arg.python_type}}(kwargs["{{arg.name}}"])
             {%endfor%}
             self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
         {%endfor%}
         {%-else%}pass{%-endif%}
-        {%for method_name, method in stinger.methods.items()%}
+        {%-for method_name, method in stinger.methods.items()%}
+        # Handle {{method_name}}
         if self._conn.is_topic_sub(topic, f"{{method.response_topic('{self._client_id}')}}"):
             response = json.loads(payload)
             if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
@@ -81,6 +89,8 @@ class {{stinger.name}}Client(object):
 
     {%for sig_name, sig in stinger.signals.items()%}
     def receive_{{sig_name}}(self, handler):
+        """ Used as a decorator for methods which handle particular signals.
+        """
         self._signal_recv_callbacks_for_{{sig_name}}.append(handler)
         if len(self._signal_recv_callbacks_for_{{sig_name}}) == 1:
             self._conn.subscribe("{{sig.topic}}")
@@ -88,6 +98,8 @@ class {{stinger.name}}Client(object):
 
     {%for method_name, method in stinger.methods.items()%}
     def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
+        """ Calling this initiates a `{{method_name}}` IPC method call.
+        """
         {%for arg in method.arg_list%}
         if not isinstance({{arg.name}}, {{arg.python_type}}):
             raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_type}}")
@@ -104,20 +116,27 @@ class {{stinger.name}}Client(object):
         return fut
 
     def _handle_{{method_name | snake_case}}_response(self, fut, payload):
-        self._logger.debug("Handling {{method_name | snake_case}} response message %s %s", fut, payload)
+        """ This called with the response to a `{{method_name}}` IPC method call.
+        """
+        self._logger.debug("Handling {{method_name | snake_case}} response message %s", fut)
+        response_json = json.loads(payload)
         try:
+            if 'result' not in response_json:
+                raise PayloadErrorStingerMethodException("The `result` key was not found in the response")
+            if response_json['result'] != MethodResultCode.SUCCESS:
+                raise stinger_exception_factory(response_json['result'], response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             {%if method.return_value is none%}
             fut.set_result(None)
             {%elif method.return_value.arg_type.name.lower() == 'struct' %}
-            return_args = self._filter_for_args(json.loads(payload), [{%for m in method.return_value.members%}"{{m.name}}", {%endfor%}])
+            return_args = self._filter_for_args(response_json, [{%for m in method.return_value.members%}"{{m.name}}", {%endfor%}])
             return_obj = {{method.return_value.python_type}}(**return_args)
             fut.set_result(return_obj)
             {%else%}
-            if "{{method.return_value.name}}" in payload:
-                if not isinstance(payload["{{method.return_value.name}}"], {{method.return_value.python_type}}):
+            if "{{method.return_value.name}}" in response_json:
+                if not isinstance(response_json["{{method.return_value.name}}"], {{method.return_value.python_type}}):
                     raise ValueError("Return value '{{method.return_value.name}}'' had wrong type")
                 self._logger.debug("Setting future result")
-                fut.set_result(payload["{{method.return_value.name}}"])
+                fut.set_result(response_json["{{method.return_value.name}}"])
             else:
                 raise Exception("Response message didn't have the return value")
             {%endif%}
