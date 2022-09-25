@@ -191,12 +191,19 @@ class ArgStruct(Arg):
 
     @property
     def cpp_type(self) -> str:
-        return f"{stringcase.pascalcase(self.name)}"
+        return stringcase.pascalcase(self.name)
+
+    @property
+    def python_type(self) -> str:
+        return stringcase.pascalcase(self.name)
 
     def get_random_example_value(self, lang="python"):
         if lang == 'c++':
             init_list = [str(a.get_random_example_value(lang)) for a in self.members]
             return "{" + ", ".join(init_list) + "}"
+        elif lang == 'python':
+            init_list = ", ".join([str(a.get_random_example_value(lang)) for a in self.members])
+            return f"{self.python_local_type}({init_list})"
 
 
 class Schema(object):

@@ -84,7 +84,7 @@ class ExampleClient(object):
     
 
     
-    def add_numbers(self, first: int, second: int) -> FIXME:
+    def add_numbers(self, first: int, second: int) -> futures.Future:
         
         if not isinstance(first, int):
             raise ValueError("The 'first' argument wasn't a int")
@@ -107,14 +107,22 @@ class ExampleClient(object):
     def _handle_add_numbers_response(self, fut, payload):
         self._logger.debug("Handling add_numbers response message %s %s", fut, payload)
         try:
-            FIXME
+            
+            if "sum" in payload:
+                if not isinstance(payload["sum"], int):
+                    raise ValueError("Return value 'sum'' had wrong type")
+                self._logger.debug("Setting future result")
+                fut.set_result(payload["sum"])
+            else:
+                raise Exception("Response message didn't have the return value")
+            
         except Exception as e:
             self._logger.info("Exception while handling add_numbers", exc_info=e)
             fut.set_exception(e)
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
     
-    def do_something(self, aString: str) -> FIXME:
+    def do_something(self, aString: str) -> futures.Future:
         
         if not isinstance(aString, str):
             raise ValueError("The 'aString' argument wasn't a str")
@@ -133,7 +141,11 @@ class ExampleClient(object):
     def _handle_do_something_response(self, fut, payload):
         self._logger.debug("Handling do_something response message %s %s", fut, payload)
         try:
-            FIXME
+            
+            return_args = self._filter_for_args(json.loads(payload), ["label", "identifier", "day", ])
+            return_obj = DoSomethingReturnValue(**return_args)
+            fut.set_result(return_obj)
+            
         except Exception as e:
             self._logger.info("Exception while handling do_something", exc_info=e)
             fut.set_exception(e)

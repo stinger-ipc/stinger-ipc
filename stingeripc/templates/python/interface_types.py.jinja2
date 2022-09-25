@@ -20,7 +20,7 @@ class {{ie_name | UpperCamelCase }}(Enum):
 {%for method_name, method in stinger.methods.items()%}
 {%-if method.return_value.arg_type.name.lower() == 'struct'%}
 @dataclass
-class {{method_name|UpperCamelCase}}ReturnValue:
+class {{method.return_value.python_local_type}}:
     {%-for arg in method.return_value.members%}
     {{arg.name}}: {{arg.python_local_type}}
     {%endfor%}

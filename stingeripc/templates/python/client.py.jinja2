@@ -1,5 +1,5 @@
 """
-DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+DO NOT MODIFY THIS FILE. {# Unless you see this, which means you are editing the template. #} It is automatically generated and changes will be over-written
 on the next generation.
 
 This is the Client for the {{stinger.name}} interface.
@@ -87,7 +87,7 @@ class {{stinger.name}}Client(object):
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {%if method.has_simple_return_value%}{{method.return_value.python_type}}{%elif not method.has_no_return_value%}FIXME{%endif%}:
+    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
         {%for arg in method.arg_list%}
         if not isinstance({{arg.name}}, {{arg.python_type}}):
             raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_type}}")
@@ -106,9 +106,13 @@ class {{stinger.name}}Client(object):
     def _handle_{{method_name | snake_case}}_response(self, fut, payload):
         self._logger.debug("Handling {{method_name | snake_case}} response message %s %s", fut, payload)
         try:
-            {%if method.has_no_return_value%}
+            {%if method.return_value is none%}
             fut.set_result(None)
-            {%elif method.has_simple_return_value%}
+            {%elif method.return_value.arg_type.name.lower() == 'struct' %}
+            return_args = self._filter_for_args(json.loads(payload), [{%for m in method.return_value.members%}"{{m.name}}", {%endfor%}])
+            return_obj = {{method.return_value.python_type}}(**return_args)
+            fut.set_result(return_obj)
+            {%else%}
             if "{{method.return_value.name}}" in payload:
                 if not isinstance(payload["{{method.return_value.name}}"], {{method.return_value.python_type}}):
                     raise ValueError("Return value '{{method.return_value.name}}'' had wrong type")
@@ -116,7 +120,7 @@ class {{stinger.name}}Client(object):
                 fut.set_result(payload["{{method.return_value.name}}"])
             else:
                 raise Exception("Response message didn't have the return value")
-            {%else%}FIXME{%endif%}
+            {%endif%}
         except Exception as e:
             self._logger.info("Exception while handling {{method_name | snake_case}}", exc_info=e)
             fut.set_exception(e)

@@ -15,7 +15,7 @@ from connection import BrokerConnection
 from method_codes import *
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
 
-{%macro method_type_annotation(method) %}Callable[[{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], {%if method.has_no_return_value%}None{%elif method.has_simple_return_value%}{{method.return_value.python_type}}{%else%}FIXME{%endif%}]{%endmacro%}
+{%macro method_type_annotation(method) %}Callable[[{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], {{method.return_value.python_type}}]{%endmacro%}
 
 class MethodResponseBuilder:
 
@@ -130,17 +130,19 @@ class {{stinger.name}}Server(object):
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)
             {%macro build_response(arg, var)%}
+            {%-if arg.arg_type.name.lower() == 'value'%}
             response_builder.return_value("{{arg.name}}", {{var}})
+            {%-elif arg.arg_type.name.lower() == 'enum'%}
+            response_builder.return_value("{{arg.name}}", {{var}}.value)
+            {%-endif%}
             {%endmacro%}
-            {%if method.return_value.arg_type.name.lower() == 'struct'%}
-            {%for arg in method.return_value.members%}
-            {{build_response(arg, "return_value['"+arg.name+"']")}}
+            {%-if method.return_value.arg_type.name.lower() == 'struct'%}
+            {%-for arg in method.return_value.members%}
+            {{build_response(arg, "return_value."+arg.name)}}
             {%endfor%}
-            {%elif method.return_value.arg_type.name.lower() == 'value'%}
-            {{build_response(method.return_value, "return_value['"+method.return_value.name+"']")}}
-            {%elif method.return_value.arg_type.name.lower() == 'enum'%}
-            {{build_response(method.return_value, "return_value['"+method.return_value.name+"'].value")}}
-            {%endif%}
+            {%-else %}
+            {{build_response(method.return_value, "return_value")}}
+            {%-endif%}
 
             if response_builder.is_valid():
                 response_topic = f"{{method.response_topic("{payload['clientId']}")}}"
@@ -185,9 +187,9 @@ if __name__ == '__main__':
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}}
-    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {%if method.has_no_return_value%}None{%elif method.has_simple_return_value%}{{method.return_value.python_type}}{%else%}FIXME{%endif%}:
+    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value.python_type}}:
         print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
-        return {%if method.has_no_return_value%}None{%elif method.has_simple_return_value%}{{method.return_value.get_random_example_value()}}{%else%}FIXME{%endif%}
+        return {{method.return_value.get_random_example_value('python')}}
     {%endfor%}
 
     {%for sig_name, sig in stinger.signals.items()-%}

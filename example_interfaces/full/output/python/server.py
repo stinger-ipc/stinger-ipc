@@ -61,8 +61,8 @@ class ExampleServer(object):
         self._conn.subscribe("Example/method/addNumbers")
         
         self._conn.subscribe("Example/method/doSomething")
-        self._add_numbers_method_handler: Optional[Callable[[int, int], FIXME]] = None
-        self._do_something_method_handler: Optional[Callable[[str], FIXME]] = None
+        self._add_numbers_method_handler: Optional[Callable[[int, int], int]] = None
+        self._do_something_method_handler: Optional[Callable[[str], DoSomethingReturnValue]] = None
         
     
     def _receive_message(self, topic: str, payload: str):
@@ -102,7 +102,7 @@ class ExampleServer(object):
     
 
     
-    def handle_add_numbers(self, handler: Callable[[int, int], FIXME]):
+    def handle_add_numbers(self, handler: Callable[[int, int], int]):
         if self._add_numbers_method_handler is None and handler is not None:
             self._add_numbers_method_handler = handler
         else:
@@ -137,16 +137,14 @@ class ExampleServer(object):
                 response_builder.result_code(MethodResultCode.SUCCESS)
             
             
-            
-            response_builder.return_value("sum", return_value['sum'])
-            
+            response_builder.return_value("sum", return_value)
             
 
             if response_builder.is_valid():
                 response_topic = f"client/{payload['clientId']}/Example/method/addNumbers/response"
                 self._conn.publish(response_topic, json.dumps(response_builder.response), qos=1, retain=False)
     
-    def handle_do_something(self, handler: Callable[[str], FIXME]):
+    def handle_do_something(self, handler: Callable[[str], DoSomethingReturnValue]):
         if self._do_something_method_handler is None and handler is not None:
             self._do_something_method_handler = handler
         else:
@@ -173,18 +171,15 @@ class ExampleServer(object):
                 response_builder.result_code(MethodResultCode.SUCCESS)
             
             
-            
-            
-            response_builder.return_value("label", return_value['label'])
-            
-            
-            
-            response_builder.return_value("identifier", return_value['identifier'])
+            response_builder.return_value("label", return_value.label)
             
             
             
-            response_builder.return_value("day", return_value['day'])
+            response_builder.return_value("identifier", return_value.identifier)
             
+            
+            
+            response_builder.return_value("day", return_value.day.value)
             
             
 
@@ -210,14 +205,14 @@ if __name__ == '__main__':
 
     
     @server.handle_add_numbers
-    def add_numbers(first: int, second: int) -> FIXME:
+    def add_numbers(first: int, second: int) -> int:
         print(f"Running add_numbers'({first}, {second})'")
-        return FIXME
+        return 42
     
     @server.handle_do_something
-    def do_something(aString: str) -> FIXME:
+    def do_something(aString: str) -> DoSomethingReturnValue:
         print(f"Running do_something'({aString})'")
-        return FIXME
+        return DoSomethingReturnValue("apples", 42, stinger_types.DayOfTheWeek.MONDAY)
     
 
     server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)
