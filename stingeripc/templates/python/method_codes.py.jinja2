@@ -8,8 +8,8 @@ class MethodResultCode(Enum):{%for rc_i, rc_name in stinger.method_return_codes.
 
 class StingerMethodException(Exception):
     
-    def __init__(self, result_code: MethodResultCode):
-        super().__init__()
+    def __init__(self, result_code: MethodResultCode, message: str):
+        super().__init__(message)
         self._result_code = result_code
 
     @property
@@ -17,8 +17,8 @@ class StingerMethodException(Exception):
         return self._result_code
 {%for rc_i, rc_name in stinger.method_return_codes.items()%}
 class {{rc_name | UpperCamelCase}}StingerMethodException(StingerMethodException):
-    def __init__(self):
-        super().__init__({{rc_i}})
+    def __init__(self, message: str):
+        super().__init__({{rc_i}}, message)
 {%endfor%}
 
 def stinger_exception_factory(result_code: int, message: Optional[str]=None):

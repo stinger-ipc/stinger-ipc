@@ -119,7 +119,7 @@ class ExampleServer(object):
                 else:
                     method_args.append(payload["first"])
             else:
-                self.logger.info("The 'first' property in the payload to '%s' wasn't present", topic)
+                self._logger.info("The 'first' property in the payload to '%s' wasn't present", topic)
             if "second" in payload:
                 if not isinstance(payload["second"], int):
                     self._logger.warning("The 'second' property in the payload to '%s' wasn't the correct type.  It should have been int.", topic)
@@ -127,7 +127,7 @@ class ExampleServer(object):
                 else:
                     method_args.append(payload["second"])
             else:
-                self.logger.info("The 'second' property in the payload to '%s' wasn't present", topic)
+                self._logger.info("The 'second' property in the payload to '%s' wasn't present", topic)
             
             try:
                 return_value = self._add_numbers_method_handler(*method_args)
@@ -135,6 +135,7 @@ class ExampleServer(object):
                 
                 response_builder.return_value("sum", return_value)
             except Exception as e:
+                self._logger.exception("Exception while handling addNumbers", exc_info=e)
                 response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)
@@ -161,7 +162,7 @@ class ExampleServer(object):
                 else:
                     method_args.append(payload["aString"])
             else:
-                self.logger.info("The 'aString' property in the payload to '%s' wasn't present", topic)
+                self._logger.info("The 'aString' property in the payload to '%s' wasn't present", topic)
             
             try:
                 return_value = self._do_something_method_handler(*method_args)
@@ -173,6 +174,7 @@ class ExampleServer(object):
                 
                 response_builder.return_value("day", return_value.day.value)
             except Exception as e:
+                self._logger.exception("Exception while handling doSomething", exc_info=e)
                 response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)
@@ -207,7 +209,7 @@ if __name__ == '__main__':
     @server.handle_do_something
     def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
         print(f"Running do_something'({aString})'")
-        return DoSomethingReturnValue("apples", 42, stinger_types.DayOfTheWeek.MONDAY)
+        return stinger_types.DoSomethingReturnValue("apples", 42, stinger_types.DayOfTheWeek.MONDAY)
     
 
     server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)

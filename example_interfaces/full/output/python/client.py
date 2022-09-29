@@ -116,15 +116,15 @@ class ExampleClient(object):
         self._conn.publish("Example/method/addNumbers", json.dumps(payload))
         return fut
 
-    def _handle_add_numbers_response(self, fut, payload):
+    def _handle_add_numbers_response(self, fut: futures.Future, response_json: Dict[str, Any]):
         """ This called with the response to a `addNumbers` IPC method call.
         """
         self._logger.debug("Handling add_numbers response message %s", fut)
-        response_json = json.loads(payload)
         try:
             if 'result' not in response_json:
                 raise PayloadErrorStingerMethodException("The `result` key was not found in the response")
-            if response_json['result'] != MethodResultCode.SUCCESS:
+            if response_json['result'] != MethodResultCode.SUCCESS.value:
+                self._logger.debug("Creating exception for %s", response_json)
                 raise stinger_exception_factory(response_json['result'], response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             
             if "sum" in response_json:
@@ -159,18 +159,22 @@ class ExampleClient(object):
         self._conn.publish("Example/method/doSomething", json.dumps(payload))
         return fut
 
-    def _handle_do_something_response(self, fut, payload):
+    def _handle_do_something_response(self, fut: futures.Future, response_json: Dict[str, Any]):
         """ This called with the response to a `doSomething` IPC method call.
         """
         self._logger.debug("Handling do_something response message %s", fut)
-        response_json = json.loads(payload)
         try:
             if 'result' not in response_json:
                 raise PayloadErrorStingerMethodException("The `result` key was not found in the response")
-            if response_json['result'] != MethodResultCode.SUCCESS:
+            if response_json['result'] != MethodResultCode.SUCCESS.value:
+                self._logger.debug("Creating exception for %s", response_json)
                 raise stinger_exception_factory(response_json['result'], response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             
             return_args = self._filter_for_args(response_json, ["label", "identifier", "day", ])
+            return_args["label"] = str(return_args["label"])
+            return_args["identifier"] = int(return_args["identifier"])
+            return_args["day"] = stinger_types.DayOfTheWeek(return_args["day"])
+            
             return_obj = stinger_types.DoSomethingReturnValue(**return_args)
             fut.set_result(return_obj)
             

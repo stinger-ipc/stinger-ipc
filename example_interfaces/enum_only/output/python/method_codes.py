@@ -11,8 +11,8 @@ class MethodResultCode(Enum):
 
 class StingerMethodException(Exception):
     
-    def __init__(self, result_code: MethodResultCode):
-        super().__init__()
+    def __init__(self, result_code: MethodResultCode, message: str):
+        super().__init__(message)
         self._result_code = result_code
 
     @property
@@ -20,24 +20,24 @@ class StingerMethodException(Exception):
         return self._result_code
 
 class SuccessStingerMethodException(StingerMethodException):
-    def __init__(self):
-        super().__init__(0)
+    def __init__(self, message: str):
+        super().__init__(0, message)
 
 class ClientErrorStingerMethodException(StingerMethodException):
-    def __init__(self):
-        super().__init__(1)
+    def __init__(self, message: str):
+        super().__init__(1, message)
 
 class ServerErrorStingerMethodException(StingerMethodException):
-    def __init__(self):
-        super().__init__(2)
+    def __init__(self, message: str):
+        super().__init__(2, message)
 
 class TransportErrorStingerMethodException(StingerMethodException):
-    def __init__(self):
-        super().__init__(3)
+    def __init__(self, message: str):
+        super().__init__(3, message)
 
 class PayloadErrorStingerMethodException(StingerMethodException):
-    def __init__(self):
-        super().__init__(4)
+    def __init__(self, message: str):
+        super().__init__(4, message)
 
 
 def stinger_exception_factory(result_code: int, message: Optional[str]=None):

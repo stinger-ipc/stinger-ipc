@@ -115,20 +115,23 @@ class {{stinger.name}}Client(object):
         self._conn.publish("{{method.topic}}", json.dumps(payload))
         return fut
 
-    def _handle_{{method_name | snake_case}}_response(self, fut, payload):
+    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json: Dict[str, Any]):
         """ This called with the response to a `{{method_name}}` IPC method call.
         """
         self._logger.debug("Handling {{method_name | snake_case}} response message %s", fut)
-        response_json = json.loads(payload)
         try:
             if 'result' not in response_json:
                 raise PayloadErrorStingerMethodException("The `result` key was not found in the response")
-            if response_json['result'] != MethodResultCode.SUCCESS:
+            if response_json['result'] != MethodResultCode.SUCCESS.value:
+                self._logger.debug("Creating exception for %s", response_json)
                 raise stinger_exception_factory(response_json['result'], response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             {%if method.return_value is none%}
             fut.set_result(None)
             {%elif method.return_value.arg_type.name.lower() == 'struct' %}
             return_args = self._filter_for_args(response_json, [{%for m in method.return_value.members%}"{{m.name}}", {%endfor%}])
+            {%for arg in method.return_value.members-%}
+            return_args["{{arg.name}}"] = {{arg.python_type}}(return_args["{{arg.name}}"])
+            {%endfor%}
             return_obj = {{method.return_value.python_type}}(**return_args)
             fut.set_result(return_obj)
             {%else%}

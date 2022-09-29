@@ -121,7 +121,7 @@ class {{stinger.name}}Server(object):
                 else:
                     method_args.append(payload["{{arg.name}}"])
             else:
-                self.logger.info("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
+                self._logger.info("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
             {%endfor%}
             try:
                 return_value = self._{{method_name|snake_case}}_method_handler(*method_args)
@@ -140,6 +140,7 @@ class {{stinger.name}}Server(object):
                 {{build_response(method.return_value, "return_value")}}
                 {%-endif%}
             except Exception as e:
+                self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
                 response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
             else:
                 response_builder.result_code(MethodResultCode.SUCCESS)

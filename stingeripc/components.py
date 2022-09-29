@@ -208,7 +208,7 @@ class ArgStruct(Arg):
             return "{" + ", ".join(init_list) + "}"
         elif lang == 'python':
             init_list = ", ".join([str(a.get_random_example_value(lang)) for a in self.members])
-            return f"{self.python_local_type}({init_list})"
+            return f"{self.python_type}({init_list})"
 
 
 class Schema(object):
