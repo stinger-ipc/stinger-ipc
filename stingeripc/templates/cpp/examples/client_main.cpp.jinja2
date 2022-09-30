@@ -16,6 +16,10 @@ int main(int argc, char** argv) {
     });
     {%-endfor%}
 
+    {%-for method_name, method in stinger.methods.items() %}
+    
+    {%-endfor%}
+
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;
 
     while (true) {

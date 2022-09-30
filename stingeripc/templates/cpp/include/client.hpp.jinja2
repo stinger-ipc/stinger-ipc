@@ -8,6 +8,7 @@
 #include <exception>
 #include <mutex>
 #include <rapidjson/document.h>
+#include <boost/uuid/uuid.hpp>
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
@@ -28,11 +29,14 @@ public:
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    boost::future<{{method.return_value.cpp_type}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) const;
+    boost::future<{{method.return_value.cpp_type}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
     void _receiveMessage(const std::string& topic, const std::string& payload);
+    {%-for method_name, method in stinger.methods.items()%}
+    std::map<boost::uuids::uuid, boost::promise<{{method.return_value.cpp_type}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+    {%-endfor%}
     {%for sig_name, sig in stinger.signals.items()%}
     std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{sig_name | camelCase}}Callback;
     {%endfor%}

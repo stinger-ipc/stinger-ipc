@@ -8,6 +8,7 @@
 #include <exception>
 #include <mutex>
 #include <rapidjson/document.h>
+#include <boost/uuid/uuid.hpp>
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"

@@ -4,6 +4,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
@@ -86,4 +88,61 @@ void ExampleClient::_receiveMessage(const std::string& topic, const std::string&
 }
 void ExampleClient::registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb) {
     _todayIsCallback = cb;
+}
+
+
+boost::future<int> ExampleClient::addNumbers(int first, int second) {
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pendingAddNumbersMethodCalls[correlationId] = boost::promise<int>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+    rapidjson::Value correlationIdValue;
+    correlationIdValue.SetString(correlationIdStr.c_str(), correlationIdStr.size(), doc.GetAllocator());
+    doc.AddMember("correlationId", correlationIdValue, doc.GetAllocator());
+    
+    
+    
+    doc.AddMember("first", first, doc.GetAllocator());
+    
+    
+    
+    doc.AddMember("second", second, doc.GetAllocator());
+    
+    
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    _broker->Publish("Example/method/addNumbers", buf.GetString(), 2, false);
+
+    return _pendingAddNumbersMethodCalls[correlationId].get_future();
+}
+
+boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::string& aString) {
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pendingDoSomethingMethodCalls[correlationId] = boost::promise<DoSomethingReturnValue>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+    rapidjson::Value correlationIdValue;
+    correlationIdValue.SetString(correlationIdStr.c_str(), correlationIdStr.size(), doc.GetAllocator());
+    doc.AddMember("correlationId", correlationIdValue, doc.GetAllocator());
+    
+    
+    
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(aString.c_str(), aString.size(), doc.GetAllocator());
+        doc.AddMember("aString", tempStringValue, doc.GetAllocator());
+    }
+    
+    
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    _broker->Publish("Example/method/doSomething", buf.GetString(), 2, false);
+
+    return _pendingDoSomethingMethodCalls[correlationId].get_future();
 }

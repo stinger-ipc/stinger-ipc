@@ -4,6 +4,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
@@ -85,3 +87,41 @@ void {{stinger.name | UpperCamelCase}}Client::register{{sig_name | UpperCamelCas
     _{{sig_name | camelCase}}Callback = cb;
 }
 {%-endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}}Client::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId] = boost::promise<{{method.return_value.cpp_type}}>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+    rapidjson::Value correlationIdValue;
+    correlationIdValue.SetString(correlationIdStr.c_str(), correlationIdStr.size(), doc.GetAllocator());
+    doc.AddMember("correlationId", correlationIdValue, doc.GetAllocator());
+    {%macro addToDoc(arg)%}
+    {%-if arg.arg_type.name.lower() == 'value'%}
+    {%-if arg.type.name.lower() == 'string'%}
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString({{arg.name}}.c_str(), {{arg.name}}.size(), doc.GetAllocator());
+        doc.AddMember("{{arg.name}}", tempStringValue, doc.GetAllocator());
+    }
+    {%-else%}
+    doc.AddMember("{{arg.name}}", {{arg.name}}, doc.GetAllocator());
+    {%-endif%}
+    {%elif arg.arg_type.name.lower() == 'enum'%}
+    doc.AddMember("{{arg.name}}", static_cast<int>({{arg.name}}), doc.GetAllocator());
+    {%-endif-%}
+    {%endmacro%}
+    {%for arg in method.arg_list%}
+    {{addToDoc(arg)}}
+    {%endfor%}
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    _broker->Publish("{{method.topic}}", buf.GetString(), 2, false);
+
+    return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
+}
+{%endfor%}
