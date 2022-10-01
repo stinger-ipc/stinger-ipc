@@ -137,8 +137,34 @@ boost::future<int> ExampleClient::addNumbers(int first, int second) {
     return _pendingAddNumbersMethodCalls[correlationId].get_future();
 }
 
-void ExampleClient::_handleAddNumbersResponse(const std::string& topic, const std::string& payload)
-{
+void ExampleClient::_handleAddNumbersResponse(const std::string& topic, const std::string& payload) {
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse addNumbers signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received payload is not an object");
+    }
+
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("correlationId");
+    if (itr != doc.MemberEnd() && itr->value.IsString()) {
+        std::string correlationId(itr->value.GetString());
+        boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+        auto promiseItr = _pendingAddNumbersMethodCalls.find(correlationIdUuid);
+
+        
+        
+        rapidjson::Value::ConstMemberIterator sumItr = doc.FindMember("sum");
+        
+        int sum = sumItr->value.GetInt();
+        
+        
+        promiseItr->second.set_value(sum);
+    }
 
 }
 
@@ -170,7 +196,56 @@ boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::stri
     return _pendingDoSomethingMethodCalls[correlationId].get_future();
 }
 
-void ExampleClient::_handleDoSomethingResponse(const std::string& topic, const std::string& payload)
-{
+void ExampleClient::_handleDoSomethingResponse(const std::string& topic, const std::string& payload) {
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse doSomething signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received payload is not an object");
+    }
+
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("correlationId");
+    if (itr != doc.MemberEnd() && itr->value.IsString()) {
+        std::string correlationId(itr->value.GetString());
+        boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+        auto promiseItr = _pendingDoSomethingMethodCalls.find(correlationIdUuid);
+
+        
+        
+        
+        
+        rapidjson::Value::ConstMemberIterator labelItr = doc.FindMember("label");
+        
+        const std::string& label = labelItr->value.GetString();
+        
+        
+         
+        
+        rapidjson::Value::ConstMemberIterator identifierItr = doc.FindMember("identifier");
+        
+        int identifier = identifierItr->value.GetInt();
+        
+        
+         
+        
+        rapidjson::Value::ConstMemberIterator dayItr = doc.FindMember("day");
+        
+        DayOfTheWeek day = static_cast<DayOfTheWeek>(dayItr->value.GetInt());
+        
+        
+         
+        DoSomethingReturnValue returnValue { //initializer list
+        
+            label,
+            identifier,
+            day
+        };
+        promiseItr->second.set_value(returnValue);
+    }
 
 }

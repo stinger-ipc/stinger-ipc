@@ -138,8 +138,48 @@ boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}
     return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
 }
 
-void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload)
-{
+void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload) {
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse {{method_name}} signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received payload is not an object");
+    }
+
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("correlationId");
+    if (itr != doc.MemberEnd() && itr->value.IsString()) {
+        std::string correlationId(itr->value.GetString());
+        boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+        auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationIdUuid);
+
+        {%macro unpack_rv(arg)%}
+        rapidjson::Value::ConstMemberIterator {{arg.name}}Itr = doc.FindMember("{{arg.name}}");
+        {%if arg.arg_type.name.lower() == 'value'%}
+        {{arg.cpp_type}} {{arg.name}} = {{arg.name}}Itr->value.Get{{arg.cpp_rapidjson_type}}();
+        {%elif arg.arg_type.name.lower() == 'enum'%}
+        {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_type}}>({{arg.name}}Itr->value.GetInt());
+        {%endif%}
+        {%endmacro%}
+        {%if method.return_value.arg_type.name.lower() == 'struct'%}
+        {%for item in method.return_value.members%}
+        {{unpack_rv(item)}}
+         {%endfor%}
+        {{method.return_value.cpp_type}} returnValue { //initializer list
+        {%for item in method.return_value.members%}
+            {{item.name}}{%if not loop.last%},{%endif%}
+        {%-endfor%}
+        };
+        promiseItr->second.set_value(returnValue);
+        {%-else%}
+        {{-unpack_rv(method.return_value)}}
+        promiseItr->second.set_value({{method.return_value.name}});
+        {%-endif%}
+    }
 
 }
 {%endfor%}
