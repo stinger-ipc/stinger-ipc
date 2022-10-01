@@ -30,4 +30,6 @@ public:
      * This probably should be a wrapper around `mosquitto_topic_matches_sub` or similar
      */
     virtual bool TopicMatchesSubscription(const std::string& topic, const std::string& subscr) const = 0;
+
+    virtual std::string GetClientId() const = 0;
 }; 

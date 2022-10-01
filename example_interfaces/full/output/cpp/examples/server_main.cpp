@@ -8,7 +8,7 @@
 int main(int argc, char** argv) {
 
     
-    auto conn = std::make_shared<LocalConnection>();
+    auto conn = std::make_shared<LocalConnection>("ExampleServer");
     ExampleServer server(conn);
     auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::MONDAY);
     todayIsFuture.wait();

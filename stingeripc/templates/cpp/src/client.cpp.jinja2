@@ -29,6 +29,13 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
     {%-for sig_name, sig in stinger.signals.items() %}
     _broker->Subscribe("{{sig.topic}}", 1);
     {%endfor%}
+    {%-for method_name, method in stinger.methods.items() %}
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
+        _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
+    {%-endfor%}
 }
 
 void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(const std::string& topic, const std::string& payload)
@@ -79,6 +86,12 @@ void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(const std::string&
         }
     }
     {%-endfor%}
+    {%-for method_name, method in stinger.methods.items() %}
+    {%if not loop.first%}else{%endif%} if (_broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}"))
+    {
+        _handle{{method_name|UpperCamelCase}}Response(topic, payload);
+    }
+    {%-endfor%}
 }
 
 
@@ -123,5 +136,10 @@ boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}
     _broker->Publish("{{method.topic}}", buf.GetString(), 2, false);
 
     return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
+}
+
+void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload)
+{
+
 }
 {%endfor%}

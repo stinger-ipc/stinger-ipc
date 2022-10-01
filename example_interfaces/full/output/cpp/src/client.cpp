@@ -27,6 +27,16 @@ ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broke
     });
     _broker->Subscribe("Example/signal/todayIs", 1);
     
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("client/%1%/Example/method/addNumbers/response") % _broker->GetClientId();
+        _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("client/%1%/Example/method/doSomething/response") % _broker->GetClientId();
+        _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
 }
 
 void ExampleClient::_receiveMessage(const std::string& topic, const std::string& payload)
@@ -85,6 +95,14 @@ void ExampleClient::_receiveMessage(const std::string& topic, const std::string&
             // TODO: Log this failure
         }
     }
+     if (_broker->TopicMatchesSubscription(topic, "client/+/Example/method/addNumbers/response"))
+    {
+        _handleAddNumbersResponse(topic, payload);
+    }
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/Example/method/doSomething/response"))
+    {
+        _handleDoSomethingResponse(topic, payload);
+    }
 }
 void ExampleClient::registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb) {
     _todayIsCallback = cb;
@@ -119,6 +137,11 @@ boost::future<int> ExampleClient::addNumbers(int first, int second) {
     return _pendingAddNumbersMethodCalls[correlationId].get_future();
 }
 
+void ExampleClient::_handleAddNumbersResponse(const std::string& topic, const std::string& payload)
+{
+
+}
+
 boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::string& aString) {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -145,4 +168,9 @@ boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::stri
     _broker->Publish("Example/method/doSomething", buf.GetString(), 2, false);
 
     return _pendingDoSomethingMethodCalls[correlationId].get_future();
+}
+
+void ExampleClient::_handleDoSomethingResponse(const std::string& topic, const std::string& payload)
+{
+
 }

@@ -41,5 +41,6 @@ private:
     
     std::function<void(int, DayOfTheWeek)> _todayIsCallback;
     
-    
+    void _handleAddNumbersResponse(const std::string& topic, const std::string& payload);
+    void _handleDoSomethingResponse(const std::string& topic, const std::string& payload);
 };

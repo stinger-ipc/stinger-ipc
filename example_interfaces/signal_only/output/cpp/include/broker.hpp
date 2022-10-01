@@ -25,7 +25,7 @@ public:
      * \param hostname IP address or hostname of the MQTT broker server.
      * \param port Port where the MQTT broker is running (often 1883).
      */
-    MqttConnection(const std::string& host, int port);
+    MqttConnection(const std::string& host, int port, const std::string& clientId);
 
     virtual ~MqttConnection();
 
@@ -57,6 +57,7 @@ public:
      */
     virtual bool TopicMatchesSubscription(const std::string& topic, const std::string& subscr) const;
 
+    virtual std::string GetClientId() const;
 protected:
     /*! Establishes the connection to the broker.
      */
@@ -88,6 +89,7 @@ private:
     mosquitto *_mosq;
     std::string _host;
     int _port;
+    std::string _clientId;
     std::queue<MqttSubscription> _subscriptions;
     boost::mutex _mutex;
     std::vector<std::function<void(const std::string&, const std::string&)>> _messageCallbacks;
@@ -106,7 +108,7 @@ public:
      * \param hostname IP address or hostname of the MQTT broker server.
      * \param port Port where the MQTT broker is running (often 1883).
      */
-    DefaultConnection(const std::string& host, int port);
+    DefaultConnection(const std::string& host, int port, const std::string& clientId);
 
     virtual ~DefaultConnection() = default;
 };

@@ -13,15 +13,15 @@
 
 using namespace std;
 
-MqttConnection::MqttConnection(const std::string& host, int port)
-    : _mosq(NULL), _host(host), _port(port)
+MqttConnection::MqttConnection(const std::string& host, int port, const std::string& clientId)
+    : _mosq(NULL), _host(host), _port(port), _clientId(clientId)
 {
     boost::mutex::scoped_lock lock(_mutex);
 
     if (mosquitto_lib_init() != MOSQ_ERR_SUCCESS) {
         throw std::runtime_error("Mosquitto lib init problem");   
     };
-    _mosq = mosquitto_new(NULL, true, (void*)this);
+    _mosq = mosquitto_new(_clientId.c_str(), false, (void*)this);
 
     mosquitto_connect_callback_set(_mosq, [](struct mosquitto *mosq, void *user, int i)
     {
@@ -144,12 +144,16 @@ bool MqttConnection::TopicMatchesSubscription(const std::string& topic, const st
         throw std::runtime_error("Mosquitto error");
     }
     return result;
+}
 
+std::string MqttConnection::GetClientId() const
+{
+    return _clientId;
 }
 
 
-LocalConnection::LocalConnection()
-    :  MqttConnection("127.0.0.1", 1883)
+LocalConnection::LocalConnection(const std::string& clientId)
+    :  MqttConnection("127.0.0.1", 1883, clientId)
 {
 
 }

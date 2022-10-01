@@ -7,7 +7,7 @@
 int main(int argc, char** argv) {
 
     
-    auto conn = std::make_shared<LocalConnection>();
+    auto conn = std::make_shared<LocalConnection>("ExampleServer");
     ExampleClient client(conn);
     client.registerTodayIsCallback([](int dayOfMonth, DayOfTheWeek dayOfWeek) {
         std::cout << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << static_cast<int>(dayOfWeek) <<  std::endl;

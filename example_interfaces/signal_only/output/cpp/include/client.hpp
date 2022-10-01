@@ -35,5 +35,4 @@ private:
     
     std::function<void(double, bool, const std::string&)> _anotherSignalCallback;
     
-    
 };

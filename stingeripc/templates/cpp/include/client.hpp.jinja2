@@ -40,5 +40,7 @@ private:
     {%for sig_name, sig in stinger.signals.items()%}
     std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{sig_name | camelCase}}Callback;
     {%endfor%}
-    
+    {%-for method_name, method in stinger.methods.items()%}
+    void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload);
+    {%-endfor%}
 };

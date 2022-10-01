@@ -8,7 +8,7 @@
 int main(int argc, char** argv) {
 
     {%set broker = stinger.get_example_broker()%}
-    auto conn = std::make_shared<{{broker.class_name}}>({%if broker.hostname is none%}"localhost", 1883{%endif%});
+    auto conn = std::make_shared<{{broker.class_name}}>({%if broker.hostname is none%}"localhost", 1883, {%endif%}"{{stinger.name | UpperCamelCase}}Server");
     {{stinger.name | UpperCamelCase}}Server server(conn);
 
     {%-for sig_name, sig in stinger.signals.items() %}
