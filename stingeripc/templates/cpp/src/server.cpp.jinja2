@@ -143,6 +143,11 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
 
             rapidjson::Document responseJson;
             responseJson.SetObject();
+
+            rapidjson::Value resultValue;
+            resultValue.SetInt(0);
+            responseJson.AddMember("result", resultValue, responseJson.GetAllocator());
+
             if (correlationId) {
                 rapidjson::Value correlationIdValue;
                 correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());

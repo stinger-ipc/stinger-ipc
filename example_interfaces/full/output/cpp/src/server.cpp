@@ -193,6 +193,11 @@ void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapid
 
             rapidjson::Document responseJson;
             responseJson.SetObject();
+
+            rapidjson::Value resultValue;
+            resultValue.SetInt(0);
+            responseJson.AddMember("result", resultValue, responseJson.GetAllocator());
+
             if (correlationId) {
                 rapidjson::Value correlationIdValue;
                 correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
@@ -242,6 +247,11 @@ void ExampleServer::_calldoSomethingHandler(const std::string& topic, const rapi
 
             rapidjson::Document responseJson;
             responseJson.SetObject();
+
+            rapidjson::Value resultValue;
+            resultValue.SetInt(0);
+            responseJson.AddMember("result", resultValue, responseJson.GetAllocator());
+
             if (correlationId) {
                 rapidjson::Value correlationIdValue;
                 correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
