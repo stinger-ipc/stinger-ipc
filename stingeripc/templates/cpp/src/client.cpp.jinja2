@@ -112,6 +112,10 @@ boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}
     rapidjson::Value correlationIdValue;
     correlationIdValue.SetString(correlationIdStr.c_str(), correlationIdStr.size(), doc.GetAllocator());
     doc.AddMember("correlationId", correlationIdValue, doc.GetAllocator());
+    rapidjson::Value clientIdValue;
+    std::string clientId = _broker->GetClientId();
+    clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
+    doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
     {%macro addToDoc(arg)%}
     {%-if arg.arg_type.name.lower() == 'value'%}
     {%-if arg.type.name.lower() == 'string'%}

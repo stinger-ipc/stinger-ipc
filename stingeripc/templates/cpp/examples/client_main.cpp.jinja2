@@ -7,17 +7,27 @@
 int main(int argc, char** argv) {
 
     {%set broker = stinger.get_example_broker()%}
-    auto conn = std::make_shared<{{broker.class_name}}>({%if broker.hostname is none%}"localhost", 1883, {%endif%}"{{stinger.name | UpperCamelCase}}Server");
+    auto conn = std::make_shared<{{broker.class_name}}>({%if broker.hostname is none%}"localhost", 1883, {%endif%}"{{stinger.name | UpperCamelCase}}Client-demo");
     {{stinger.name | UpperCamelCase}}Client client(conn);
 
     {%-for sig_name, sig in stinger.signals.items() %}
     client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
-        std::cout << {%for arg in sig.arg_list%}"{{arg.name}}=" << {%if arg.arg_type.name.lower() == 'enum'%}static_cast<int>({{arg.name}}){%else%}{{arg.name}}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
+        std::cout << {%for arg in sig.arg_list%}"{{arg.name}}=" << {%if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]{%else%}{{arg.name}}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
     });
     {%-endfor%}
 
     {%-for method_name, method in stinger.methods.items() %}
-    
+    std::cout << "Calling {{method_name}}" << std::endl;
+    auto {{method_name|camelCase}}ResultFuture = client.{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {{method_name|camelCase}}ResultFuture.wait();
+    {%if method.return_value.arg_type.name.lower() == 'value'-%}
+    std::cout << "Result: {{method.return_value.name}}=" << {{method_name|camelCase}}ResultFuture.get() << std::endl;
+    {%elif method.return_value.arg_type.name.lower() == 'enum'-%}
+    std::cout << "Result: {{method.return_value.name}}=" << {{method.return_value.enum.name | camelCase }}Strings[{{method_name|camelCase}}ResultFuture.get()] << std::endl;
+    {%elif method.return_value.arg_type.name.lower() == 'struct'-%}
+    {{method.return_value.cpp_type}} returnValue = {{method_name|camelCase}}ResultFuture.get();
+    std::cout << "Results:"{%for m in method.return_value.members%} << " {{m.name}}=" << {%if m.arg_type.name.lower() == 'enum'%}{{m.enum.name | camelCase }}Strings[static_cast<int>(returnValue.{{m.name}})]{%else%}returnValue.{{m.name}}{%endif%} {%endfor%} << std::endl;
+    {%endif%}
     {%-endfor%}
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;

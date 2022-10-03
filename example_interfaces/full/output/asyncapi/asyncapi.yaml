@@ -189,7 +189,8 @@ components:
   schemas:
     enum_dayOfTheWeek:
       description: "The dayOfTheWeek enum has the following values:\n 0 - Sunday\n
-        1 - Monday\n 2 - Tuesday\n 3 - Wednesday\n 4 - Thursday\n 5 - Friday"
+        1 - Monday\n 2 - Tuesday\n 3 - Wednesday\n 4 - Thursday\n 5 - Friday\n 6 -
+        Saturday"
       enum:
       - 0
       - 1
@@ -197,6 +198,7 @@ components:
       - 3
       - 4
       - 5
+      - 6
       type: integer
     stinger_method_return_codes:
       description: "The stinger_method_return_codes enum has the following values:\n

@@ -21,6 +21,7 @@ enums:
         - name: Wednesday
         - name: Thursday
         - name: Friday
+        - name: Saturday
 
 signals:
   

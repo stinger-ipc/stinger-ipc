@@ -8,7 +8,7 @@
 int main(int argc, char** argv) {
 
     
-    auto conn = std::make_shared<DefaultConnection>("localhost", 1883, "SignalOnlyServer");
+    auto conn = std::make_shared<DefaultConnection>("localhost", 1883, "SignalOnlyServe-demo");
     SignalOnlyServer server(conn);
     auto anotherSignalFuture = server.emitAnotherSignalSignal(3.14, true, "apples");
     anotherSignalFuture.wait();

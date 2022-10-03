@@ -13,4 +13,5 @@ enum class {{ie_name | UpperCamelCase }} {
     {{value | CONST_CASE}} = {{loop.index}}{%if not loop.last%},{%endif%}
     {%-endfor%}
 };
+static const char *{{ie_name | camelCase }}Strings[] = {"{{ie_name | UpperCamelCase }}", {%for value in ie.values %}"{{value}}"{%if not loop.last%}, {%endif%}{%endfor%} };
 {%endfor%}

@@ -18,7 +18,8 @@ pub enum DayOfTheWeek {
     Tuesday = 3,
     Wednesday = 4,
     Thursday = 5,
-    Friday = 6
+    Friday = 6,
+    Saturday = 7
 }
 
 impl DayOfTheWeek {

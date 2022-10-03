@@ -14,5 +14,7 @@ enum class DayOfTheWeek {
     TUESDAY = 3,
     WEDNESDAY = 4,
     THURSDAY = 5,
-    FRIDAY = 6
+    FRIDAY = 6,
+    SATURDAY = 7
 };
+static const char *dayOfTheWeekStrings[] = {"DayOfTheWeek", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };

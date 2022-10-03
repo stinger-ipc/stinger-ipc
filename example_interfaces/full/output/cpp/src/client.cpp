@@ -119,6 +119,10 @@ boost::future<int> ExampleClient::addNumbers(int first, int second) {
     rapidjson::Value correlationIdValue;
     correlationIdValue.SetString(correlationIdStr.c_str(), correlationIdStr.size(), doc.GetAllocator());
     doc.AddMember("correlationId", correlationIdValue, doc.GetAllocator());
+    rapidjson::Value clientIdValue;
+    std::string clientId = _broker->GetClientId();
+    clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
+    doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
     
     
     
@@ -178,6 +182,10 @@ boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::stri
     rapidjson::Value correlationIdValue;
     correlationIdValue.SetString(correlationIdStr.c_str(), correlationIdStr.size(), doc.GetAllocator());
     doc.AddMember("correlationId", correlationIdValue, doc.GetAllocator());
+    rapidjson::Value clientIdValue;
+    std::string clientId = _broker->GetClientId();
+    clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
+    doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
     
     
     

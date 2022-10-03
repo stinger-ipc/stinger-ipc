@@ -7,7 +7,7 @@
 int main(int argc, char** argv) {
 
     
-    auto conn = std::make_shared<DefaultConnection>("localhost", 1883, "SignalOnlyServer");
+    auto conn = std::make_shared<DefaultConnection>("localhost", 1883, "SignalOnlyClient-demo");
     SignalOnlyClient client(conn);
     client.registerAnotherSignalCallback([](double one, bool two, const std::string& three) {
         std::cout << "one=" << one << " | " << "two=" << two << " | " << "three=" << three <<  std::endl;
