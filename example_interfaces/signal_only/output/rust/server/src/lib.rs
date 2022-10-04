@@ -9,9 +9,11 @@ use futures::StreamExt;
 use connection::Connection;
 use json::object;
 
+use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct SignalOnlyServer {
     connection: Connection,
+    topic_matcher: TopicMatcher::<u32>,
 }
 
 impl SignalOnlyServer {
@@ -20,8 +22,13 @@ impl SignalOnlyServer {
         let interface_info = String::from(r#"{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}"#);
         connection.publish("SignalOnly/interface".to_string(), interface_info, 1);
 
+        let mut topic_matcher = TopicMatcher::<dyn FnMut(String, String)>::new();
+        topic_matcher.insert("SignalOnly/signal/anotherSignal", Self::handle_another_signal_request);
+        
+
         SignalOnlyServer{
             connection: connection,
+            topic_matcher: topic_matcher,
         }
     }
 
@@ -39,10 +46,19 @@ impl SignalOnlyServer {
     }
     
 
+    fn handle_another_signal_request(_topic: String, _payload: String) {
+
+    }
+    
+
     pub async fn process(&mut self) {
         while let Some(opt_msg) = self.connection.rx.next().await {
-            if let Some(_msg) = opt_msg {
-
+            if let Some(msg) = opt_msg {
+                let payload_object = json::parse(&msg.payload_str()).unwrap();
+                let topic = &msg.topic();
+                if self.topic_matcher.has_match(topic) {
+                    println!("Matches");
+                }
             }
         }
     }

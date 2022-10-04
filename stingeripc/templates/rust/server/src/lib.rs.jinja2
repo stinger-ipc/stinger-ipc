@@ -9,9 +9,11 @@ use futures::StreamExt;
 use connection::Connection;
 use json::object;
 
+use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct {{stinger.name}}Server {
     connection: Connection,
+    topic_matcher: TopicMatcher::<u32>,
 }
 
 impl {{stinger.name}}Server {
@@ -20,8 +22,14 @@ impl {{stinger.name}}Server {
         let interface_info = String::from(r#"{{stinger.interface_info.1 | tojson}}"#);
         connection.publish("{{stinger.interface_info.0}}".to_string(), interface_info, 1);
 
+        let mut topic_matcher = TopicMatcher::<dyn FnMut(String, String)>::new();
+        {%for method_name, method in stinger.signals.items()-%}
+        topic_matcher.insert("{{method.topic}}", Self::handle_{{method_name|snake_case}}_request);
+        {%endfor%}
+
         {{stinger.name}}Server{
             connection: connection,
+            topic_matcher: topic_matcher,
         }
     }
 
@@ -40,10 +48,20 @@ impl {{stinger.name}}Server {
     }
     {%endfor%}
 
+    {%for method_name, method in stinger.signals.items()-%}
+    fn handle_{{method_name|snake_case}}_request(_topic: String, _payload: String) {
+
+    }
+    {%endfor%}
+
     pub async fn process(&mut self) {
         while let Some(opt_msg) = self.connection.rx.next().await {
-            if let Some(_msg) = opt_msg {
-
+            if let Some(msg) = opt_msg {
+                let payload_object = json::parse(&msg.payload_str()).unwrap();
+                let topic = &msg.topic();
+                if self.topic_matcher.has_match(topic) {
+                    println!("Matches");
+                }
             }
         }
     }
