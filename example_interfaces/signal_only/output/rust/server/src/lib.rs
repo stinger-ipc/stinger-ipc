@@ -13,7 +13,7 @@ use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct SignalOnlyServer {
     connection: Connection,
-    topic_matcher: TopicMatcher::<u32>,
+    topic_matcher: TopicMatcher::<Box<dyn FnMut(std::string::String, std::string::String)>>,
 }
 
 impl SignalOnlyServer {
@@ -22,8 +22,8 @@ impl SignalOnlyServer {
         let interface_info = String::from(r#"{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}"#);
         connection.publish("SignalOnly/interface".to_string(), interface_info, 1);
 
-        let mut topic_matcher = TopicMatcher::<dyn FnMut(String, String)>::new();
-        topic_matcher.insert("SignalOnly/signal/anotherSignal", Self::handle_another_signal_request);
+        let mut topic_matcher = TopicMatcher::<Box<dyn FnMut(String, String)>>::new();
+        topic_matcher.insert("SignalOnly/signal/anotherSignal", Box::new(Self::handle_another_signal_request));
         
 
         SignalOnlyServer{
@@ -54,9 +54,9 @@ impl SignalOnlyServer {
     pub async fn process(&mut self) {
         while let Some(opt_msg) = self.connection.rx.next().await {
             if let Some(msg) = opt_msg {
-                let payload_object = json::parse(&msg.payload_str()).unwrap();
+                //let payload_object = json::parse(&msg.payload_str()).unwrap();
                 let topic = &msg.topic();
-                if self.topic_matcher.has_match(topic) {
+                if let Some(_box_fn) = self.topic_matcher.get(topic) {
                     println!("Matches");
                 }
             }
