@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-paho-mqtt = "0.11"
+paho-mqtt = "0.11.1"
 futures = "0.3"
 num-traits = "0.2"
 num-derive = "0.3"

@@ -13,7 +13,7 @@ use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct ExampleServer {
     connection: Connection,
-    topic_matcher: TopicMatcher::<Box<dyn FnMut(std::string::String, std::string::String)>>,
+    topic_matcher: TopicMatcher::<Box<dyn Fn(std::string::String, std::string::String)>>,
 }
 
 impl ExampleServer {
@@ -22,7 +22,7 @@ impl ExampleServer {
         let interface_info = String::from(r#"{"name": "Example", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}"#);
         connection.publish("Example/interface".to_string(), interface_info, 1);
 
-        let mut topic_matcher = TopicMatcher::<Box<dyn FnMut(String, String)>>::new();
+        let mut topic_matcher = TopicMatcher::<Box<dyn Fn(String, String)>>::new();
         topic_matcher.insert("Example/signal/todayIs", Box::new(Self::handle_today_is_request));
         
 
@@ -44,18 +44,18 @@ impl ExampleServer {
     }
     
 
-    fn handle_today_is_request(_topic: String, _payload: String) {
-
+    fn handle_today_is_request(_topic: String, payload: String) {
+        let _payload_object = json::parse(&payload).unwrap();
     }
     
 
     pub async fn process(&mut self) {
         while let Some(opt_msg) = self.connection.rx.next().await {
             if let Some(msg) = opt_msg {
-                //let payload_object = json::parse(&msg.payload_str()).unwrap();
+                //
                 let topic = &msg.topic();
-                if let Some(_box_fn) = self.topic_matcher.get(topic) {
-                    println!("Matches");
+                for item in self.topic_matcher.matches(topic) {
+                    (&item.1)(topic.to_string(),msg.payload_str().to_string());
                 }
             }
         }
