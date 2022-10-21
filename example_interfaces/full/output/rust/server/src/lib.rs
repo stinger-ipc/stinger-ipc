@@ -72,9 +72,23 @@ impl ExampleServer {
         
         
         let rv = (self.method_handler_for_add_numbers)(temp_first, temp_second);
-        match rv {
-            Ok(_v) => println!("OK"),
-            Err(_e) => println!("Error"),
+        if !payload_object["clientId"].is_null() {
+            let mut response_json = json::JsonValue::new_object();
+            if !payload_object["correlationId"].is_null() {
+                response_json["correlationId"] = payload_object["correlationId"].as_str().unwrap().into();
+            }
+            match rv {
+                Ok(return_value) => {
+                    response_json["result"] = 0.into();
+                    
+                    response_json["sum"] = return_value.into();
+                }
+                Err(result_code) => {
+                    response_json["result"] = (result_code as u32).into();
+                }
+            }
+            let response_topic = format!("client/{}/Example/method/addNumbers/response", payload_object["clientId"].as_str().unwrap());
+            self.connection.publish(response_topic, json::stringify(response_json), 2);
         }
     }
     fn handle_do_something_request(&mut self, _topic: String, payload: String) {
@@ -84,9 +98,25 @@ impl ExampleServer {
         
         
         let rv = (self.method_handler_for_do_something)(temp_a_string);
-        match rv {
-            Ok(_v) => println!("OK"),
-            Err(_e) => println!("Error"),
+        if !payload_object["clientId"].is_null() {
+            let mut response_json = json::JsonValue::new_object();
+            if !payload_object["correlationId"].is_null() {
+                response_json["correlationId"] = payload_object["correlationId"].as_str().unwrap().into();
+            }
+            match rv {
+                Ok(return_value) => {
+                    response_json["result"] = 0.into();
+                    
+                    response_json["label"] = return_value.label.into();
+                    response_json["identifier"] = return_value.identifier.into();
+                    response_json["day"] = (return_value.day as u32).into();
+                }
+                Err(result_code) => {
+                    response_json["result"] = (result_code as u32).into();
+                }
+            }
+            let response_topic = format!("client/{}/Example/method/doSomething/response", payload_object["clientId"].as_str().unwrap());
+            self.connection.publish(response_topic, json::stringify(response_json), 2);
         }
     }
     

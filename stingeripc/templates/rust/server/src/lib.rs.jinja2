@@ -73,9 +73,35 @@ impl {{stinger.name}}Server {
         {%endif%}
         {%endfor%}
         let rv = (self.method_handler_for_{{method_name|snake_case}})({%for arg in method.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
-        match rv {
-            Ok(_v) => println!("OK"),
-            Err(_e) => println!("Error"),
+        if !payload_object["clientId"].is_null() {
+            let mut response_json = json::JsonValue::new_object();
+            if !payload_object["correlationId"].is_null() {
+                response_json["correlationId"] = payload_object["correlationId"].as_str().unwrap().into();
+            }
+            match rv {
+                Ok(return_value) => {
+                    response_json["result"] = 0.into();
+                    {%-macro add_arg_to_json(arg, value) %}
+                    {%-if arg.arg_type.name.lower() == 'value' %}
+                    response_json["{{arg.name}}"] = {{value}}.into();
+                    {%-elif arg.arg_type.name.lower() == 'enum'%}
+                    response_json["{{arg.name}}"] = ({{value}} as u32).into();
+                    {%-endif%}
+                    {%-endmacro%}
+                    {%-if method.return_value.arg_type.name.lower() == 'struct'%}
+                    {%for member in method.return_value.members-%}
+                    {{add_arg_to_json(member, "return_value."+member.name)}}
+                    {%-endfor%}
+                    {%-else%}
+                    {{add_arg_to_json(method.return_value, "return_value")}}
+                    {%-endif%}
+                }
+                Err(result_code) => {
+                    response_json["result"] = (result_code as u32).into();
+                }
+            }
+            let response_topic = format!("{{method.response_topic('{}')}}", payload_object["clientId"].as_str().unwrap());
+            self.connection.publish(response_topic, json::stringify(response_json), 2);
         }
     }
     {%endfor%}
