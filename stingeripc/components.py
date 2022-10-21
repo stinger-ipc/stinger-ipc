@@ -36,6 +36,10 @@ class Arg:
     def python_local_type(self) -> str:
         return self.python_type.split('.')[-1]
 
+    @property
+    def rust_local_type(self) -> str:
+        return self.rust_type
+
     @classmethod
     def new_arg_from_stinger(cls, arg_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None) -> Arg:
         if "type" not in arg_spec:
@@ -81,6 +85,10 @@ class ArgEnum(Arg):
     @property
     def rust_type(self) -> str:
         return self._enum.rust_type
+
+    @property
+    def rust_local_type(self) -> str:
+        return self._enum.rust_local_type
 
     @property
     def cpp_temp_type(self) -> str:
@@ -200,6 +208,14 @@ class ArgStruct(Arg):
 
     @property
     def python_local_type(self) -> str:
+        return stringcase.pascalcase(self.name)
+
+    @property
+    def rust_type(self) -> str:
+        return f"connection::return_structs::{self.rust_local_type}"
+
+    @property
+    def rust_local_type(self) -> str:
         return stringcase.pascalcase(self.name)
 
     def get_random_example_value(self, lang="python"):
@@ -370,8 +386,12 @@ class InterfaceEnum:
         return f"{self.get_module_alias()}.{stringmanip.upper_camel_case(self.name)}"
 
     @property
+    def rust_local_type(self) -> str:
+        return stringmanip.upper_camel_case(self.name)
+
+    @property
     def rust_type(self) -> str:
-        return f"connection::enums::{stringmanip.upper_camel_case(self.name)}"
+        return f"connection::enums::{self.rust_local_type}"
 
     @property
     def cpp_type(self) -> str:

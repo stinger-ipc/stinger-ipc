@@ -7,6 +7,7 @@ This is the Server for the {{stinger.name}} interface.
 
 use futures::StreamExt;
 use connection::Connection;
+{%if stinger.methods | length > 0 %}use connection::return_structs::MethodResultCode;{%endif%}
 use json::object;
 
 use paho_mqtt::topic_matcher::TopicMatcher;
@@ -14,7 +15,7 @@ use paho_mqtt::topic_matcher::TopicMatcher;
 pub struct {{stinger.name}}Server {
     connection: Connection,
     {%for method_name, method in stinger.methods.items()-%}
-        method_handler_for_{{method_name|snake_case}}: Box<dyn FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->()>,
+        method_handler_for_{{method_name|snake_case}}: Box<dyn FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode>>,
     {%endfor%}
     topic_matcher: TopicMatcher::<u32>,
 }
@@ -33,7 +34,7 @@ impl {{stinger.name}}Server {
         {{stinger.name}}Server {
             connection: connection,
             {%for method_name, method in stinger.methods.items()-%}
-            method_handler_for_{{method_name|snake_case}}: Box::new( |{%for arg in method.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
+            method_handler_for_{{method_name|snake_case}}: Box::new( |{%for arg in method.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| { Err(MethodResultCode::ServerError) } ),
             {%endfor%}
             topic_matcher: topic_matcher,
         }
@@ -55,7 +56,7 @@ impl {{stinger.name}}Server {
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()-%}
-    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
+    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + 'static) {
         self.method_handler_for_{{method_name|snake_case}} = Box::new(cb);
         self.connection.subscribe(String::from("{{method.topic}}"), 2);
     }
@@ -71,7 +72,11 @@ impl {{stinger.name}}Server {
         let temp_{{arg.name | snake_case}} = {{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap());
         {%endif%}
         {%endfor%}
-        (self.method_handler_for_{{method_name|snake_case}})({%for arg in method.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
+        let rv = (self.method_handler_for_{{method_name|snake_case}})({%for arg in method.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
+        match rv {
+            Ok(_v) => println!("OK"),
+            Err(_e) => println!("Error"),
+        }
     }
     {%endfor%}
 

@@ -1,0 +1,26 @@
+/*
+DO NOT MODIFY THIS FILE {# unless you see this comment #}.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+*/
+
+{%if stinger.enums | length > 0%}
+use crate::enums::{ {%for ie in stinger.enums.values() %}{{ie.rust_local_type}}{%endfor%} };
+{%endif%}
+
+pub enum MethodResultCode { {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
+    {{rc_name | UpperCamelCase}} = {{rc_i}},
+    {%-endfor%}
+}
+
+{%for method_name, method in stinger.methods.items()%}
+{%-if method.return_value.arg_type.name.lower() == 'struct'%}
+#[allow(dead_code)]
+pub struct {{method.return_value.rust_local_type}} {
+{%for arg in method.return_value.members%}
+    pub {{arg.name}}: {{arg.rust_local_type}},
+{%endfor%}
+}
+{%endif-%}
+{%endfor%}

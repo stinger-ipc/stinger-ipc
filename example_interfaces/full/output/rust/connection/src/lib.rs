@@ -6,6 +6,7 @@ use std::thread;
 extern crate paho_mqtt as mqtt;
 
 pub mod enums;
+pub mod return_structs;
 
 pub struct Connection {
     cli: mqtt::AsyncClient,

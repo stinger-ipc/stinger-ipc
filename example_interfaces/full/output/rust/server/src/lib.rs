@@ -7,14 +7,15 @@ This is the Server for the Example interface.
 
 use futures::StreamExt;
 use connection::Connection;
+use connection::return_structs::MethodResultCode;
 use json::object;
 
 use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct ExampleServer {
     connection: Connection,
-    method_handler_for_add_numbers: Box<dyn FnMut(i32, i32)->()>,
-    method_handler_for_do_something: Box<dyn FnMut(String)->()>,
+    method_handler_for_add_numbers: Box<dyn FnMut(i32, i32)->Result<i32, MethodResultCode>>,
+    method_handler_for_do_something: Box<dyn FnMut(String)->Result<connection::return_structs::DoSomethingReturnValue, MethodResultCode>>,
     
     topic_matcher: TopicMatcher::<u32>,
 }
@@ -32,8 +33,8 @@ impl ExampleServer {
 
         ExampleServer {
             connection: connection,
-            method_handler_for_add_numbers: Box::new( |_1, _2| {} ),
-            method_handler_for_do_something: Box::new( |_1| {} ),
+            method_handler_for_add_numbers: Box::new( |_1, _2| { Err(MethodResultCode::ServerError) } ),
+            method_handler_for_do_something: Box::new( |_1| { Err(MethodResultCode::ServerError) } ),
             
             topic_matcher: topic_matcher,
         }
@@ -51,11 +52,11 @@ impl ExampleServer {
     }
     
 
-    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl FnMut(i32, i32)->() + 'static) {
+    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl FnMut(i32, i32)->Result<i32, MethodResultCode> + 'static) {
         self.method_handler_for_add_numbers = Box::new(cb);
         self.connection.subscribe(String::from("Example/method/addNumbers"), 2);
     }
-    pub fn set_method_handler_for_do_something(&mut self, cb: impl FnMut(String)->() + 'static) {
+    pub fn set_method_handler_for_do_something(&mut self, cb: impl FnMut(String)->Result<connection::return_structs::DoSomethingReturnValue, MethodResultCode> + 'static) {
         self.method_handler_for_do_something = Box::new(cb);
         self.connection.subscribe(String::from("Example/method/doSomething"), 2);
     }
@@ -70,7 +71,11 @@ impl ExampleServer {
         let temp_second = payload_object["second"].as_i32().unwrap();
         
         
-        (self.method_handler_for_add_numbers)(temp_first, temp_second);
+        let rv = (self.method_handler_for_add_numbers)(temp_first, temp_second);
+        match rv {
+            Ok(_v) => println!("OK"),
+            Err(_e) => println!("Error"),
+        }
     }
     fn handle_do_something_request(&mut self, _topic: String, payload: String) {
         let payload_object = json::parse(&payload).unwrap();
@@ -78,7 +83,11 @@ impl ExampleServer {
         let temp_a_string = payload_object["aString"].as_str().unwrap().to_string();
         
         
-        (self.method_handler_for_do_something)(temp_a_string);
+        let rv = (self.method_handler_for_do_something)(temp_a_string);
+        match rv {
+            Ok(_v) => println!("OK"),
+            Err(_e) => println!("Error"),
+        }
     }
     
 
