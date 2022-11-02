@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 */
-
+use futures::{executor::block_on};
 use {{stinger.name | snake_case}}_server::{{stinger.name}}Server;
 use connection::Connection;
 {%if stinger.methods | length > 0 %}use connection::return_structs::MethodResultCode;{%endif%}
@@ -36,4 +36,8 @@ fn main() {
     server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
 
+    block_on(async {
+        server.process().await;
+    });
+    // Ctrl-C to stop
 }

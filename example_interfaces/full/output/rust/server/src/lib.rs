@@ -87,8 +87,8 @@ impl ExampleServer {
                     response_json["result"] = (result_code as u32).into();
                 }
             }
-            let response_topic = format!("client/{}/Example/method/addNumbers/response", payload_object["clientId"].as_str().unwrap());
-            self.connection.publish(response_topic, json::stringify(response_json), 2);
+            let _response_topic = format!("client/{}/Example/method/addNumbers/response", payload_object["clientId"].as_str().unwrap());
+            //self.connection.publish(response_topic, json::stringify(response_json), 2);
         }
     }
     fn handle_do_something_request(&mut self, _topic: String, payload: String) {
@@ -115,8 +115,8 @@ impl ExampleServer {
                     response_json["result"] = (result_code as u32).into();
                 }
             }
-            let response_topic = format!("client/{}/Example/method/doSomething/response", payload_object["clientId"].as_str().unwrap());
-            self.connection.publish(response_topic, json::stringify(response_json), 2);
+            let _response_topic = format!("client/{}/Example/method/doSomething/response", payload_object["clientId"].as_str().unwrap());
+            //self.connection.publish(response_topic, json::stringify(response_json), 2);
         }
     }
     

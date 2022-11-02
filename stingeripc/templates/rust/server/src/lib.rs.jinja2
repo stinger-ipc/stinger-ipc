@@ -100,8 +100,8 @@ impl {{stinger.name}}Server {
                     response_json["result"] = (result_code as u32).into();
                 }
             }
-            let response_topic = format!("{{method.response_topic('{}')}}", payload_object["clientId"].as_str().unwrap());
-            self.connection.publish(response_topic, json::stringify(response_json), 2);
+            let _response_topic = format!("{{method.response_topic('{}')}}", payload_object["clientId"].as_str().unwrap());
+            //self.connection.publish(response_topic, json::stringify(response_json), 2);
         }
     }
     {%endfor%}

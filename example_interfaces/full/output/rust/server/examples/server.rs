@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the Example interface.
 */
-
+use futures::{executor::block_on};
 use example_server::ExampleServer;
 use connection::Connection;
 use connection::return_structs::MethodResultCode;
@@ -45,4 +45,8 @@ fn main() {
     server.emit_today_is(42, connection::enums::DayOfTheWeek::Monday);
     
 
+    block_on(async {
+        server.process().await;
+    });
+    // Ctrl-C to stop
 }

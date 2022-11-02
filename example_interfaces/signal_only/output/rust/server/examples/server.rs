@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the SignalOnly interface.
 */
-
+use futures::{executor::block_on};
 use signal_only_server::SignalOnlyServer;
 use connection::Connection;
 
@@ -20,4 +20,8 @@ fn main() {
     server.emit_another_signal(3.14, true, "apples".to_string());
     
 
+    block_on(async {
+        server.process().await;
+    });
+    // Ctrl-C to stop
 }
