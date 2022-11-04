@@ -9,13 +9,14 @@ fn print_today_is(day_of_month: i32, day_of_week: connection::enums::DayOfTheWee
 
 
 fn main() {
-    
-    let connection = Connection::new_local_connection();
-    let mut client = ExampleClient::new(connection);
-    
-    client.set_signal_recv_callbacks_for_today_is(print_today_is);
-    
     block_on(async {
+        
+        let connection = Connection::new_local_connection().await;
+        let mut client = ExampleClient::new(connection);
+        
+        client.set_signal_recv_callbacks_for_today_is(print_today_is);
+        
+        
         client.process().await;
     });
     // Ctrl-C to stop

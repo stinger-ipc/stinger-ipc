@@ -21,10 +21,10 @@ pub struct {{stinger.name}}Server {
 }
 
 impl {{stinger.name}}Server {
-    pub fn new(mut connection: Connection) -> {{stinger.name}}Server {
+    pub async fn new(mut connection: Connection) -> {{stinger.name}}Server {
 
         let interface_info = String::from(r#"{{stinger.interface_info.1 | tojson}}"#);
-        connection.publish("{{stinger.interface_info.0}}".to_string(), interface_info, 1);
+        connection.publish("{{stinger.interface_info.0}}".to_string(), interface_info, 1).await;
 
         let {%if stinger.methods | length > 0%}mut{%endif%} topic_matcher = TopicMatcher::<u32>::new();
         {%for method_name, method in stinger.methods.items()-%}
@@ -41,7 +41,7 @@ impl {{stinger.name}}Server {
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    pub fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
         let data = object!{ {%for arg in sig.arg_list%}
             {%-if arg.arg_type.name.lower() == 'value'%}
             {{arg.name}}: {{arg.name|snake_case}},
@@ -51,7 +51,7 @@ impl {{stinger.name}}Server {
             {%endfor%}
         };
         let data_str = json::stringify(data);
-        self.connection.publish("{{sig.topic}}".to_string(), data_str, 2);
+        self.connection.publish("{{sig.topic}}".to_string(), data_str, 2).await;
     }
     {%endfor%}
 

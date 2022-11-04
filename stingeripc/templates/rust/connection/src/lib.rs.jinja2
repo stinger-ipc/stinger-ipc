@@ -15,7 +15,7 @@ pub struct Connection {
 
 impl Connection {
 
-    pub fn new(url: String) -> Connection {
+    pub async fn new(url: String) -> Connection {
         let mut cli = mqtt::AsyncClient::new(url).unwrap_or_else(|err| {
             println!("Error creating the client: {:?}", err);
             process::exit(1);
@@ -29,7 +29,7 @@ impl Connection {
         .finalize();
 
         // Connect and wait for it to complete or fail
-        if let Err(e) = cli.connect(conn_opts).wait() {
+        if let Err(e) = cli.connect(conn_opts).await {
             println!("Unable to connect:\n\t{:?}", e);
             process::exit(1);
         }
@@ -51,18 +51,18 @@ impl Connection {
     }
 
     {%for broker in stinger.brokers.values()%}
-    pub fn new_{{broker.class_name | snake_case}} ({%if broker.hostname is none%}hostname: String{%if broker.port is none%}, {%endif%}{%endif%}{%if broker.port is none%}port: u32{%endif%}) -> Connection {
+    pub async fn new_{{broker.class_name | snake_case}} ({%if broker.hostname is none%}hostname: String{%if broker.port is none%}, {%endif%}{%endif%}{%if broker.port is none%}port: u32{%endif%}) -> Connection {
         let uri = format!("tcp://{}:{}", {%if broker.hostname is none%}hostname{%else%}"{{broker.hostname}}"{%endif%}, {%if broker.port is none%}port{%else%}{{broker.port}}{%endif%});
-        Connection::new(uri)
+        Connection::new(uri).await
     }
     {%endfor%}
 
-    pub fn publish(&mut self, topic: String, message: String, qos: u8) {
+    pub async fn publish(&mut self, topic: String, message: String, qos: u8) {
         // Create a message and publish it
         let msg = mqtt::Message::new(topic, message, qos.into());
         let tok = self.cli.publish(msg);
     
-        if let Err(e) = tok.wait() {
+        if let Err(e) = tok.await {
             println!("Error sending message: {:?}", e);
         }
     }

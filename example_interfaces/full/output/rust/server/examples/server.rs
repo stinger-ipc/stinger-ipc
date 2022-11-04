@@ -33,19 +33,20 @@ fn do_something_handler(_a_string: String) -> Result<connection::return_structs:
 
 
 fn main() {
-    
-    let connection = Connection::new_local_connection();
-    let mut server = ExampleServer::new(connection);
-    
-    server.set_method_handler_for_add_numbers(add_numbers_handler);
-    
-    server.set_method_handler_for_do_something(do_something_handler);
-    
-    
-    server.emit_today_is(42, connection::enums::DayOfTheWeek::Monday);
-    
-
     block_on(async {
+        
+        let connection = Connection::new_local_connection().await;
+        let mut server = ExampleServer::new(connection).await;
+        
+        server.set_method_handler_for_add_numbers(add_numbers_handler);
+        
+        server.set_method_handler_for_do_something(do_something_handler);
+        
+        
+        server.emit_today_is(42, connection::enums::DayOfTheWeek::Monday).await;
+        
+
+    
         server.process().await;
     });
     // Ctrl-C to stop

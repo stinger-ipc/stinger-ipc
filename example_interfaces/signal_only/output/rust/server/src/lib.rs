@@ -19,10 +19,10 @@ pub struct SignalOnlyServer {
 }
 
 impl SignalOnlyServer {
-    pub fn new(mut connection: Connection) -> SignalOnlyServer {
+    pub async fn new(mut connection: Connection) -> SignalOnlyServer {
 
         let interface_info = String::from(r#"{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}"#);
-        connection.publish("SignalOnly/interface".to_string(), interface_info, 1);
+        connection.publish("SignalOnly/interface".to_string(), interface_info, 1).await;
 
         let  topic_matcher = TopicMatcher::<u32>::new();
         
@@ -34,7 +34,7 @@ impl SignalOnlyServer {
         }
     }
 
-    pub fn emit_another_signal(&mut self, one: f32, two: bool, three: String) {
+    pub async fn emit_another_signal(&mut self, one: f32, two: bool, three: String) {
         let data = object!{ 
             one: one,
             
@@ -44,7 +44,7 @@ impl SignalOnlyServer {
             
         };
         let data_str = json::stringify(data);
-        self.connection.publish("SignalOnly/signal/anotherSignal".to_string(), data_str, 2);
+        self.connection.publish("SignalOnly/signal/anotherSignal".to_string(), data_str, 2).await;
     }
     
 

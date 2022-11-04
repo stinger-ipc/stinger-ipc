@@ -21,10 +21,10 @@ pub struct ExampleServer {
 }
 
 impl ExampleServer {
-    pub fn new(mut connection: Connection) -> ExampleServer {
+    pub async fn new(mut connection: Connection) -> ExampleServer {
 
         let interface_info = String::from(r#"{"name": "Example", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}"#);
-        connection.publish("Example/interface".to_string(), interface_info, 1);
+        connection.publish("Example/interface".to_string(), interface_info, 1).await;
 
         let mut topic_matcher = TopicMatcher::<u32>::new();
         topic_matcher.insert("Example/method/addNumbers", 1);
@@ -40,7 +40,7 @@ impl ExampleServer {
         }
     }
 
-    pub fn emit_today_is(&mut self, day_of_month: i32, day_of_week: connection::enums::DayOfTheWeek) {
+    pub async fn emit_today_is(&mut self, day_of_month: i32, day_of_week: connection::enums::DayOfTheWeek) {
         let data = object!{ 
             dayOfMonth: day_of_month,
             
@@ -48,7 +48,7 @@ impl ExampleServer {
             
         };
         let data_str = json::stringify(data);
-        self.connection.publish("Example/signal/todayIs".to_string(), data_str, 2);
+        self.connection.publish("Example/signal/todayIs".to_string(), data_str, 2).await;
     }
     
 

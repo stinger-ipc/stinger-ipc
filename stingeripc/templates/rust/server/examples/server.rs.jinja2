@@ -26,17 +26,18 @@ fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|
 {%endfor%}
 
 fn main() {
-    {%set broker = stinger.get_example_broker()%}
-    let connection = Connection::new_{{broker.class_name|snake_case}}({%if broker.hostname is none%}String::from("localhost"){%if broker.port is none%}, {%endif%}{%endif%}{%if broker.port is none%}1883{%endif%});
-    let mut server = {{stinger.name}}Server::new(connection);
-    {%for method_name, method in stinger.methods.items()%}
-    server.set_method_handler_for_{{method_name|snake_case}}({{method_name|snake_case}}_handler);
-    {%endfor%}
-    {%for sig_name, sig in stinger.signals.items()%}
-    server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%});
-    {%endfor%}
-
     block_on(async {
+        {%set broker = stinger.get_example_broker()%}
+        let connection = Connection::new_{{broker.class_name|snake_case}}({%if broker.hostname is none%}String::from("localhost"){%if broker.port is none%}, {%endif%}{%endif%}{%if broker.port is none%}1883{%endif%}).await;
+        let mut server = {{stinger.name}}Server::new(connection).await;
+        {%for method_name, method in stinger.methods.items()%}
+        server.set_method_handler_for_{{method_name|snake_case}}({{method_name|snake_case}}_handler);
+        {%endfor%}
+        {%for sig_name, sig in stinger.signals.items()%}
+        server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+        {%endfor%}
+
+    
         server.process().await;
     });
     // Ctrl-C to stop
