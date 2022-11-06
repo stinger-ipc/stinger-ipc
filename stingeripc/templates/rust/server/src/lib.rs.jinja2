@@ -63,7 +63,7 @@ impl {{stinger.name}}Server {
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()-%}
-    fn handle_{{method_name|snake_case}}_request(&mut self, _topic: String, payload: String) {
+    async fn handle_{{method_name|snake_case}}_request(&mut self, _topic: String, payload: String) {
         let payload_object = json::parse(&payload).unwrap();
         {%for arg in method.arg_list-%}
         {%-if arg.arg_type.name.lower() == 'value'%}
@@ -100,8 +100,8 @@ impl {{stinger.name}}Server {
                     response_json["result"] = (result_code as u32).into();
                 }
             }
-            let _response_topic = format!("{{method.response_topic('{}')}}", payload_object["clientId"].as_str().unwrap());
-            //self.connection.publish(response_topic, json::stringify(response_json), 2);
+            let response_topic = format!("{{method.response_topic('{}')}}", payload_object["clientId"].as_str().unwrap());
+            self.connection.publish(response_topic, json::stringify(response_json), 2).await;
         }
     }
     {%endfor%}
@@ -116,7 +116,7 @@ impl {{stinger.name}}Server {
                 }
                 for func_index in func_indexs.iter() {
                     match func_index { {%-for method_name, method in stinger.methods.items()%}
-                        {{loop.index}} => self.handle_{{method_name|snake_case}}_request(topic.to_string(), msg.payload_str().to_string()),
+                        {{loop.index}} => self.handle_{{method_name|snake_case}}_request(topic.to_string(), msg.payload_str().to_string()).await,
                     {%endfor-%}
                         _ => ()
                     }

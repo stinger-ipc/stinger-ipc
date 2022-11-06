@@ -62,7 +62,7 @@ impl ExampleServer {
     }
     
 
-    fn handle_add_numbers_request(&mut self, _topic: String, payload: String) {
+    async fn handle_add_numbers_request(&mut self, _topic: String, payload: String) {
         let payload_object = json::parse(&payload).unwrap();
         
         let temp_first = payload_object["first"].as_i32().unwrap();
@@ -87,11 +87,11 @@ impl ExampleServer {
                     response_json["result"] = (result_code as u32).into();
                 }
             }
-            let _response_topic = format!("client/{}/Example/method/addNumbers/response", payload_object["clientId"].as_str().unwrap());
-            //self.connection.publish(response_topic, json::stringify(response_json), 2);
+            let response_topic = format!("client/{}/Example/method/addNumbers/response", payload_object["clientId"].as_str().unwrap());
+            self.connection.publish(response_topic, json::stringify(response_json), 2).await;
         }
     }
-    fn handle_do_something_request(&mut self, _topic: String, payload: String) {
+    async fn handle_do_something_request(&mut self, _topic: String, payload: String) {
         let payload_object = json::parse(&payload).unwrap();
         
         let temp_a_string = payload_object["aString"].as_str().unwrap().to_string();
@@ -115,8 +115,8 @@ impl ExampleServer {
                     response_json["result"] = (result_code as u32).into();
                 }
             }
-            let _response_topic = format!("client/{}/Example/method/doSomething/response", payload_object["clientId"].as_str().unwrap());
-            //self.connection.publish(response_topic, json::stringify(response_json), 2);
+            let response_topic = format!("client/{}/Example/method/doSomething/response", payload_object["clientId"].as_str().unwrap());
+            self.connection.publish(response_topic, json::stringify(response_json), 2).await;
         }
     }
     
@@ -131,9 +131,9 @@ impl ExampleServer {
                 }
                 for func_index in func_indexs.iter() {
                     match func_index {
-                        1 => self.handle_add_numbers_request(topic.to_string(), msg.payload_str().to_string()),
+                        1 => self.handle_add_numbers_request(topic.to_string(), msg.payload_str().to_string()).await,
                     
-                        2 => self.handle_do_something_request(topic.to_string(), msg.payload_str().to_string()),
+                        2 => self.handle_do_something_request(topic.to_string(), msg.payload_str().to_string()).await,
                     _ => ()
                     }
                 }
