@@ -9,7 +9,6 @@ use futures::StreamExt;
 use connection::Connection;
 
 use json::object;
-
 use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct SignalOnlyServer {

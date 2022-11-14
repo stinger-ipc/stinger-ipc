@@ -5,24 +5,44 @@ on the next generation.
 This is the Client for the {{stinger.name}} interface.
 */
 
-use futures::StreamExt;
+
+use futures::{StreamExt};
 use connection::Connection;
+{%if stinger.methods | length > 0 %}
+use json::{JsonValue, object};
+use std::collections::HashMap;
+use uuid::Uuid;
+use connection::return_structs::MethodResultCode;
+{%endif%}
+use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct {{stinger.name}}Client {
     connection: Connection,
     {%for sig_name, sig in stinger.signals.items()-%}
         signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->()>,
     {%endfor%}
+    topic_matcher: TopicMatcher::<u32>,
+    {%if stinger.methods | length > 0 %}pending_responses: HashMap::<Uuid, oneshot::Sender::<JsonValue>>,{%endif%}
 }
 
 impl {{stinger.name}}Client {
     pub fn new(connection: Connection) -> {{stinger.name}}Client {
+
+        let mut topic_matcher = TopicMatcher::<u32>::new();
+        {%for sig_name, sig in stinger.signals.items()-%}
+        topic_matcher.insert("{{sig.topic}}", {{1234+loop.index}});
+        {%endfor%}
+        {%for method in stinger.methods.values()%}
+        topic_matcher.insert(format!("{{method.response_topic('{}')}}", connection.client_id), {{loop.index}});
+        {%endfor%}
 
         {{stinger.name}}Client {
             connection: connection,
             {%for sig_name, sig in stinger.signals.items()-%}
             signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |{%for arg in sig.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
             {%endfor%}
+            topic_matcher: topic_matcher,
+            {%if stinger.methods | length > 0 %}pending_responses: HashMap::new(),{%endif%}
         }
     }
 
@@ -33,22 +53,101 @@ impl {{stinger.name}}Client {
     }
     {%endfor%}
 
+    {%for method_name, method in stinger.methods.items()-%}
+    pub async fn {{method_name|snake_case}}(&mut self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> {
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        let correlation_id_str = format!("{}", correlation_id);
+        self.pending_responses.insert(correlation_id, sender);
+        let data = object!{
+            correlationId: correlation_id_str,
+            clientId: self.connection.client_id.clone(),
+            {%-for arg in method.arg_list%}
+            {%-if arg.arg_type.name.lower() == 'value'%}
+            {{arg.name}}: {{arg.name|snake_case}},
+            {%elif arg.arg_type.name.lower() == 'enum'%}
+            {{arg.name}}: {{arg.name|snake_case}} as u32,
+            {%endif-%}
+            {%endfor%}
+        };
+        let data_str = json::stringify(data);
+        self.connection.publish("{{method.topic}}".to_string(), data_str, 2).await;
+        let resp_obj = receiver.recv().unwrap();
+        
+        {%-if method.return_value.arg_type.name.lower() == 'value' %}
+        Ok(resp_obj["{{method.return_value.name}}"].as_{{method.return_value.rust_type}}().unwrap())
+        {%-elif method.return_value.arg_type.name.lower() == 'enum'%}
+        Ok({{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap())
+        {%-elif method.return_value.arg_type.name.lower() == 'struct'%}
+        Ok({{method.return_value.rust_type}} { {%for member in method.return_value.members-%}
+            {%if member.arg_type.name.lower() == 'value'%}
+            {%if member.rust_type == 'String'%}
+            {{member.name|snake_case}}: resp_obj["{{member.name}}"].as_str().unwrap().to_string(),
+            {%else%}
+            {{member.name|snake_case}}: resp_obj["{{member.name}}"].as_{{member.rust_type}}().unwrap(),
+            {%endif%}
+            {%elif member.arg_type.name.lower() == 'enum'%}
+            {{member.name|snake_case}}: {{member.rust_type}}::from_u32(resp_obj["{{member.name}}"].as_u32().unwrap()),
+            {%endif%}
+        {%endfor-%} })
+                    
+        {%-endif %}
+    }
+
+    fn handle_{{method_name|snake_case}}_response(&mut self, payload: String) {
+        let payload_object = json::parse(&payload).unwrap();
+        if !payload_object["correlationId"].is_null() {
+            let correlation_id_str = payload_object["correlationId"].as_str().unwrap().into();
+            let correlation_id = Uuid::parse_str(correlation_id_str).unwrap();
+            let sender_opt = self.pending_responses.remove(&correlation_id);
+            match sender_opt {
+                Some(sender) => {
+                    let oss: oneshot::Sender<JsonValue> = sender;
+                    match oss.send(payload_object) {
+                        Ok(_) => (),
+                        Err(_) => ()
+                    }
+                },
+                None => ()
+            }
+        }
+    }
+    {%endfor%}
+
     pub async fn process(&mut self) {
         while let Some(opt_msg) = self.connection.rx.next().await {
             if let Some(msg) = opt_msg {
-                {%for sig_name, sig in stinger.signals.items()-%}
-                let payload_object = json::parse(&msg.payload_str()).unwrap();
-                if msg.topic() == "{{sig.topic}}" {
-                    {%for arg in sig.arg_list-%}
-                    {%-if arg.arg_type.name.lower() == 'value'%}
-                    let temp_{{arg.name | snake_case}} = payload_object["{{arg.name}}"].{%if arg.rust_type == 'String'%}as_str().unwrap().to_string(){%else%}as_{{arg.rust_type}}().unwrap(){%endif%};
-                    {%elif arg.arg_type.name.lower() == 'enum'%}
-                    let temp_{{arg.name | snake_case}} = {{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap());
-                    {%endif%}
-                    {%endfor%}
-                    (self.signal_recv_callback_for_{{sig_name|snake_case}})({%for arg in sig.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
+                let topic = &msg.topic();
+                let mut func_indexs: Vec<u32> = Vec::new();
+                for item in self.topic_matcher.matches(topic) {
+                    func_indexs.push(item.1);
                 }
-                {%endfor%}
+                for func_index in func_indexs.iter() {
+                    if func_index >= &1234 {
+                        let payload_object = json::parse(&msg.payload_str()).unwrap();
+                        match func_index {
+                            {%for sig_name, sig in stinger.signals.items()-%}
+                            {{1234 + loop.index}} => {
+                                {%for arg in sig.arg_list-%}
+                                {%-if arg.arg_type.name.lower() == 'value'%}
+                                let temp_{{arg.name | snake_case}} = payload_object["{{arg.name}}"].{%if arg.rust_type == 'String'%}as_str().unwrap().to_string(){%else%}as_{{arg.rust_type}}().unwrap(){%endif%};
+                                {%elif arg.arg_type.name.lower() == 'enum'%}
+                                let temp_{{arg.name | snake_case}} = {{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap());
+                                {%endif%}
+                                {%endfor%}
+                                (self.signal_recv_callback_for_{{sig_name|snake_case}})({%for arg in sig.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
+                            }{%endfor%}
+                            _ => ()
+                        }
+                    
+                    } else {
+                        match func_index { {%-for method_name, method in stinger.methods.items()%}
+                            {{loop.index}} => self.handle_{{method_name|snake_case}}_response(msg.payload_str().to_string()),
+                        {%endfor-%}
+                            _ => ()
+                        }
+                    }
+                }
             }
         }
     }

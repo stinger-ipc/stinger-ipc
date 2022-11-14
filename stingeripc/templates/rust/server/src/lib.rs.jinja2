@@ -9,7 +9,6 @@ use futures::StreamExt;
 use connection::Connection;
 {%if stinger.methods | length > 0 %}use connection::return_structs::MethodResultCode;{%endif%}
 use json::object;
-
 use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct {{stinger.name}}Server {

@@ -9,7 +9,6 @@ use futures::StreamExt;
 use connection::Connection;
 use connection::return_structs::MethodResultCode;
 use json::object;
-
 use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct ExampleServer {
