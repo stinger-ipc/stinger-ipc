@@ -9,3 +9,13 @@ edition = "2021"
 connection = { path = "../connection" }
 futures = "0.3"
 json = "0.12.4"
+paho-mqtt = "0.11.1"
+oneshot = "0.1.5"
+
+[dependencies.uuid]
+version = "1.2.1"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]

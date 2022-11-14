@@ -1,9 +1,11 @@
 
+extern crate uuid;
+extern crate paho_mqtt as mqtt;
+
 use std::process;
 use std::time::Duration;
 use std::thread;
-
-extern crate paho_mqtt as mqtt;
+use uuid::Uuid;
 
 pub mod enums;
 pub mod return_structs;
@@ -11,12 +13,18 @@ pub mod return_structs;
 pub struct Connection {
     cli: mqtt::AsyncClient,
     pub rx: mqtt::AsyncReceiver<Option<mqtt::Message>>,
+    pub client_id: String,
 }
 
 impl Connection {
 
-    pub async fn new(url: String) -> Connection {
-        let mut cli = mqtt::AsyncClient::new(url).unwrap_or_else(|err| {
+    pub async fn new_with_client_id(uri: String, client_id: String) -> Connection {
+        let create_opts = mqtt::CreateOptionsBuilder::new()
+            .server_uri(uri)
+            .client_id(client_id.clone())
+            .finalize();
+
+        let mut cli = mqtt::AsyncClient::new(create_opts).unwrap_or_else(|err| {
             println!("Error creating the client: {:?}", err);
             process::exit(1);
         });
@@ -24,9 +32,9 @@ impl Connection {
         let rx = cli.get_stream(1024);
 
         let conn_opts = mqtt::ConnectOptionsBuilder::new()
-        .keep_alive_interval(Duration::from_secs(20))
-        .clean_session(true)
-        .finalize();
+            .keep_alive_interval(Duration::from_secs(20))
+            .clean_session(true)
+            .finalize();
 
         // Connect and wait for it to complete or fail
         if let Err(e) = cli.connect(conn_opts).await {
@@ -47,7 +55,14 @@ impl Connection {
         Connection { 
             cli: cli, 
             rx: rx,
+            client_id: client_id
         }
+    }
+
+    pub async fn new(uri: String) -> Connection {
+        let client_id = format!("{}", Uuid::new_v4());
+        let conn: Connection = Self::new_with_client_id(uri, client_id).await;
+        conn
     }
 
     {%for broker in stinger.brokers.values()%}
