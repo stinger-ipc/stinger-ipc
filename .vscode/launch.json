@@ -10,7 +10,7 @@
             "type": "gdb",
             "request": "launch",
             "name": "GDB",
-            "target": "example_interfaces/full/output/cpp/build/clinet-demo",
+            "target": "example_interfaces/full/output/cpp/build/client-demo",
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText",
             "justMyCode": false,
@@ -27,7 +27,7 @@
             "name": "Python: Generation",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/python_generator.py ${workspaceFolder}/example_interfaces/signal_only.stingeripc ${workspaceFolder}/example_interfaces/output/",
+            "program": "uv run ${workspaceFolder}/python_generator.py ${workspaceFolder}/example_interfaces/signal_only.stingeripc ${workspaceFolder}/example_interfaces/output/",
             "console": "integratedTerminal",
             "justMyCode": true
         }
