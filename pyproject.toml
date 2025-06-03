@@ -15,6 +15,7 @@ dependencies = [
 dev = [
     "black>=25.1.0",
     "jacobs-json-schema>=0.4.2",
+    "mypy>=1.16.0",
     "paho-mqtt>=2.1.0",
     "pytest>=8.4.0",
     "pyyaml>=6.0.2",

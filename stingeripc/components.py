@@ -8,9 +8,6 @@ from .args import ArgType, ArgValueType
 from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
 
-
-ALLOWED_ARG_TYPES = []
-
 class Arg:
     def __init__(self, name: str, description: Optional[str] = None):
         self._name = name
@@ -137,10 +134,10 @@ class ArgValue(Arg):
     def cpp_rapidjson_type(self) -> str:
         return ArgValueType.to_cpp_rapidjson_type_str(self._arg_type)
 
-    def get_random_example_value(self, lang="python") -> Union[str, float, int, bool]:
+    def get_random_example_value(self, lang="python") -> str|float|int|bool|None:
         random_state = random.getstate()
         random.seed(2)
-        retval = None
+        retval: str|float|int|bool|None = None
         if self._arg_type == ArgValueType.BOOLEAN:
             retval = random.choice([True, False])
             if lang != "python":

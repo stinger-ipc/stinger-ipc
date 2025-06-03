@@ -9,7 +9,7 @@ from jacobsjinjatoo import templator as jj2
 from jacobsjinjatoo import stringmanip
 import os.path
 from enum import Enum
-from typing import Optional, Dict, Any, Union, List
+from typing import Any
 
 from .components import StingerSpec
 from .args import ArgType, ArgValueType
@@ -26,8 +26,9 @@ class SpecType(Enum):
 
 
 class ObjectSchema:
+
     def __init__(self):
-        self._properties = OrderedDict()
+        self._properties: OrderedDict[str, Any] = OrderedDict()
         self._required = set()
     
     def add_value_property(self, name: str, arg_value_type: ArgValueType, required=True):
@@ -48,10 +49,10 @@ class ObjectSchema:
         }
         self._properties[name] = schema
 
-    def to_schema(self) -> Dict[str, Union[Dict[str,Any], List[str]]]:
+    def to_schema(self) -> dict[str, dict[str,Any]|list[str]]:
         schema = {
             "type": "object",
-            "properties": {},
+            "properties": dict(),
             "required": list(self._required),
         }
         for prop_name, prop_schema in self._properties.items():
@@ -62,7 +63,7 @@ class ObjectSchema:
 class Message(object):
     """The information needed to create an AsyncAPI Message structure."""
 
-    def __init__(self, message_name: str, schema: Optional[str] = None):
+    def __init__(self, message_name: str, schema: str|None = None):
         self.name = message_name
         self.schema = schema or {"type": "null"}
 
@@ -88,15 +89,15 @@ class Channel(object):
         topic: str,
         name: str,
         direction: Direction,
-        message_name: Optional[str] = None,
+        message_name: str|None = None,
     ):
         self.topic = topic
         self.name = name
         self.direction = direction
         self.message_name = message_name or name
         self.mqtt = {"qos": 1, "retain": False}
-        self.description = None # type: Optional[str]
-        self.parameters = dict() # type: Dict[str, str]
+        self.description: str|None = None
+        self.parameters: dict[str, str] = dict()
 
     def set_mqtt(self, qos: int, retain: bool):
         self.mqtt = {"qos": qos, "retain": retain}
@@ -118,9 +119,9 @@ class Channel(object):
             },
         }
 
-    def get_operation(self, client_type: SpecType, use_common=False) -> OrderedDict:
-        channel_item = dict()
-        op_item = OrderedDict(
+    def get_operation(self, client_type: SpecType, use_common=False) -> dict[str, OrderedDict[str, Any]|dict[str, Any]]:
+        channel_item: dict[str, OrderedDict[str, Any]|dict[str, Any]] = dict()
+        op_item: OrderedDict[str, Any] = OrderedDict(
             {
                 "message": {
                     "$ref": f"{use_common or ''}#/components/messages/{self.message_name}"
@@ -159,9 +160,9 @@ class Server(object):
     def __init__(self, name: str):
         self.name = name
         self._protocol = "mqtt"
-        self._host = None
-        self._port = None
-        self._lwt_topic = None
+        self._host: str|None = None
+        self._port: int|None = None
+        self._lwt_topic: str|None = None
 
     def set_host(self, host: str, port: int):
         self._host = host
@@ -179,8 +180,8 @@ class Server(object):
             self._port or "{port}"
         )
 
-    def get_server(self) -> Dict[str, Any]:
-        spec = {
+    def get_server(self) -> dict[str, Any]:
+        spec: dict[str, Any] = {
             "protocol": self._protocol,
             "protocolVersion": "3.1.1",
             "url": self.url,
@@ -235,7 +236,7 @@ class AsyncApiCreator(object):
         self.servers = []
         self.name = "interface"
 
-    def add_schema(self, schema_name, schema_spec: Dict[str, Any]):
+    def add_schema(self, schema_name, schema_spec: dict[str, Any]):
         self.asyncapi['components']['schemas'][schema_name] = schema_spec
 
     def add_channel(self, channel: Channel):
