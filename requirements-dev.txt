@@ -1,5 +1,0 @@
-black
-jacobs-json-schema
-pytest
-paho-mqtt
-pyyaml

@@ -1,0 +1,21 @@
+[project]
+name = "stinger-ipc"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "jacobs-jinja-too>=0.0.8",
+    "pyyaml>=6.0.2",
+    "stringcase>=1.2.0",
+    "yamlloader>=1.5.1",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "jacobs-json-schema>=0.4.2",
+    "paho-mqtt>=2.1.0",
+    "pytest>=8.4.0",
+    "pyyaml>=6.0.2",
+]
