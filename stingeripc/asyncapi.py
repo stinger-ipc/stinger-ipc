@@ -4,12 +4,11 @@ Provides the functionality needed to create an AsyncAPI service specification fr
 
 
 import sys
-from collections import OrderedDict
 from jacobsjinjatoo import templator as jj2
 from jacobsjinjatoo import stringmanip
 import os.path
 from enum import Enum
-from typing import Optional, Dict, Any, Union, List
+from typing import Any
 
 from .components import StingerSpec
 from .args import ArgType, ArgValueType
@@ -26,8 +25,9 @@ class SpecType(Enum):
 
 
 class ObjectSchema:
+
     def __init__(self):
-        self._properties = OrderedDict()
+        self._properties: dict[str, Any] = dict()
         self._required = set()
     
     def add_value_property(self, name: str, arg_value_type: ArgValueType, required=True):
@@ -48,21 +48,21 @@ class ObjectSchema:
         }
         self._properties[name] = schema
 
-    def to_schema(self) -> Dict[str, Union[Dict[str,Any], List[str]]]:
-        schema = {
+    def to_schema(self) -> dict[str, str|dict[str, Any]|list[str]]:
+        props: dict[str, Any] = dict()
+        schema: dict[str, str|dict[str, Any]|list[str]] = {
             "type": "object",
-            "properties": {},
+            "properties": props,
             "required": list(self._required),
         }
         for prop_name, prop_schema in self._properties.items():
-            schema['properties'][prop_name] = prop_schema
+            props[prop_name] = prop_schema
         return schema
-
 
 class Message(object):
     """The information needed to create an AsyncAPI Message structure."""
 
-    def __init__(self, message_name: str, schema: Optional[str] = None):
+    def __init__(self, message_name: str, schema: str|None = None):
         self.name = message_name
         self.schema = schema or {"type": "null"}
 
@@ -88,15 +88,15 @@ class Channel(object):
         topic: str,
         name: str,
         direction: Direction,
-        message_name: Optional[str] = None,
+        message_name: str|None = None,
     ):
         self.topic = topic
         self.name = name
         self.direction = direction
         self.message_name = message_name or name
         self.mqtt = {"qos": 1, "retain": False}
-        self.description = None # type: Optional[str]
-        self.parameters = dict() # type: Dict[str, str]
+        self.description: str|None = None
+        self.parameters: dict[str, str] = dict()
 
     def set_mqtt(self, qos: int, retain: bool):
         self.mqtt = {"qos": qos, "retain": retain}
@@ -118,15 +118,13 @@ class Channel(object):
             },
         }
 
-    def get_operation(self, client_type: SpecType, use_common=False) -> OrderedDict:
-        channel_item = dict()
-        op_item = OrderedDict(
-            {
-                "message": {
-                    "$ref": f"{use_common or ''}#/components/messages/{self.message_name}"
-                }
+    def get_operation(self, client_type: SpecType, use_common=False) -> dict[str, dict[str, Any]]:
+        channel_item: dict[str, dict[str, Any]] = dict()
+        op_item: dict[str, Any] = {
+            "message": {
+                "$ref": f"{use_common or ''}#/components/messages/{self.message_name}"
             }
-        )
+        }
         if use_common is not False:
             op_item["traits"] = [
                 {"$ref": f"{use_common}#/components/operationTraits/{self.name}"}
@@ -159,9 +157,9 @@ class Server(object):
     def __init__(self, name: str):
         self.name = name
         self._protocol = "mqtt"
-        self._host = None
-        self._port = None
-        self._lwt_topic = None
+        self._host: str|None = None
+        self._port: int|None = None
+        self._lwt_topic: str|None = None
 
     def set_host(self, host: str, port: int):
         self._host = host
@@ -179,8 +177,8 @@ class Server(object):
             self._port or "{port}"
         )
 
-    def get_server(self) -> Dict[str, Any]:
-        spec = {
+    def get_server(self) -> dict[str, Any]:
+        spec: dict[str, Any] = {
             "protocol": self._protocol,
             "protocolVersion": "3.1.1",
             "url": self.url,
@@ -215,27 +213,23 @@ class AsyncApiCreator(object):
     """
 
     def __init__(self):
-        self.asyncapi = OrderedDict(
-            {
-                "asyncapi": "2.4.0",
-                "id": "",
-                "info": OrderedDict(),
-                "channels": OrderedDict(),
-                "components": OrderedDict(
-                    {
-                        "operationTraits": OrderedDict(),
-                        "messages": OrderedDict(),
-                        "schemas": OrderedDict()
-                    }
-                ),
+        self.asyncapi: dict[str, str|dict[str, Any]|dict[str, dict[str, Any]]] = {
+            "asyncapi": "2.4.0",
+            "id": "",
+            "info": dict(),
+            "channels": dict(),
+            "components": {
+                "operationTraits": dict(),
+                "messages": dict(),
+                "schemas": dict()
             }
-        )
+        }
         self.channels = []
         self.messages = []
         self.servers = []
         self.name = "interface"
 
-    def add_schema(self, schema_name, schema_spec: Dict[str, Any]):
+    def add_schema(self, schema_name: str, schema_spec: dict[str, Any]):
         self.asyncapi['components']['schemas'][schema_name] = schema_spec
 
     def add_channel(self, channel: Channel):
@@ -334,7 +328,7 @@ class StingerToAsyncApi:
             schema = ObjectSchema()
             for arg_spec in sig_spec.arg_list:
                 if arg_spec.arg_type == ArgType.VALUE:
-                    schema.add_value_property(arg_spec.name, arg_spec.type)
+                    schema.add_value_property(arg_spec.name, arg_spec.arg_type)
                 elif arg_spec.arg_type == ArgType.ENUM:
                     schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
             msg.set_schema(schema.to_schema())
@@ -351,9 +345,9 @@ class StingerToAsyncApi:
             call_msg_schema.add_value_property("clientId", ArgValueType.STRING, required=False)
             for arg_spec in method_spec.arg_list:
                 if arg_spec.arg_type == ArgType.VALUE:
-                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
+                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.arg_type)
                 elif arg_spec.arg_type == ArgType.ENUM:
-                    call_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
+                    call_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
             call_msg.set_schema(call_msg_schema.to_schema())
             self._asyncapi.add_message(call_msg)
 
@@ -365,9 +359,9 @@ class StingerToAsyncApi:
             resp_msg_schema.add_value_property("correlationId", ArgValueType.STRING)
             for arg_spec in method_spec.return_value_list:
                 if arg_spec.arg_type == ArgType.VALUE:
-                    resp_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
+                    resp_msg_schema.add_value_property(arg_spec.name, arg_spec.arg_type)
                 elif arg_spec.arg_type == ArgType.ENUM:
-                    resp_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
+                    resp_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
             resp_msg.set_schema(resp_msg_schema.to_schema())
             self._asyncapi.add_message(resp_msg)
 

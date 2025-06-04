@@ -3,20 +3,17 @@ from enum import Enum
 import random
 import stringcase
 from typing import Dict, List, Optional, Any, Union
-from .topic import SignalTopicCreator, InterfaceTopicCreator
+from .topic import SignalTopicCreator, InterfaceTopicCreator, MethodTopicCreator
 from .args import ArgType, ArgValueType
 from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
-
-
-ALLOWED_ARG_TYPES = []
 
 class Arg:
     def __init__(self, name: str, description: Optional[str] = None):
         self._name = name
         self._description = description
         self._default_value = None
-        self._type = ArgType.UNKNOWN
+        self._type: ArgType = ArgType.UNKNOWN
 
     def set_description(self, description: str) -> Arg:
         self._description = description
@@ -35,14 +32,14 @@ class Arg:
         return self._description
 
     @classmethod
-    def new_from_stinger(cls, arg_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None) -> Arg:
+    def new_arg_from_stinger(cls, arg_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None) -> Arg:
         if "type" not in arg_spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in arg_spec:
             raise InvalidStingerStructure("No 'name' in arg structure")
 
         if hasattr(ArgValueType, arg_spec["type"].upper()):
-            arg = ArgValue.new_from_stinger(arg_spec)
+            arg = ArgValue.new_arg_value_from_stinger(arg_spec)
             return arg
         else:
             if stinger_spec is None:
@@ -55,6 +52,7 @@ class Arg:
                 raise InvalidStingerStructure(f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums")
             arg = ArgEnum(arg_spec["name"], stinger_spec.enums[arg_spec['enumName']])
             return arg
+        raise RuntimeError("unknown arg type: {arg_spec['type']}")
 
 
 class ArgEnum(Arg):
@@ -137,10 +135,10 @@ class ArgValue(Arg):
     def cpp_rapidjson_type(self) -> str:
         return ArgValueType.to_cpp_rapidjson_type_str(self._arg_type)
 
-    def get_random_example_value(self, lang="python") -> Union[str, float, int, bool]:
+    def get_random_example_value(self, lang="python") -> str|float|int|bool|None:
         random_state = random.getstate()
         random.seed(2)
-        retval = None
+        retval: str|float|int|bool|None = None
         if self._arg_type == ArgValueType.BOOLEAN:
             retval = random.choice([True, False])
             if lang != "python":
@@ -160,14 +158,14 @@ class ArgValue(Arg):
         return f"<ArgValue name={self._name} type={ArgValueType.to_python_type(self.type)}>"
 
     @classmethod
-    def new_from_stinger(cls, stinger: Dict[str, str]) -> Arg:
+    def new_arg_value_from_stinger(cls, stinger: Dict[str, str]) -> Arg:
         if "type" not in stinger:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in stinger:
             raise InvalidStingerStructure("No 'name' in arg structure")
 
         arg_value_type = ArgValueType.from_string(stinger["type"])
-        arg = cls(name=stinger["name"], arg_type=arg_value_type)
+        arg: Arg = cls(name=stinger["name"], arg_type=arg_value_type)
 
         if "description" in stinger and isinstance(stinger["description"], str):
             arg.set_description(stinger["description"])
@@ -197,7 +195,7 @@ class Signal(object):
         return self
 
     @property
-    def arg_list(self) -> List[Arg]:
+    def arg_list(self) -> list[Arg]:
         return self._arg_list
 
     @property
@@ -209,7 +207,7 @@ class Signal(object):
         return self._topic_creator.signal_topic(self.name)
 
     @classmethod
-    def new_from_stinger(
+    def new_signal_from_stinger(
         cls, topic_creator: SignalTopicCreator, name: str, signal_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None
     ) -> "Signal":
         """Alternative constructor from a Stinger signal structure."""
@@ -222,7 +220,7 @@ class Signal(object):
         for arg_spec in signal_spec["payload"]:
             if 'name' not in arg_spec or 'type' not in arg_spec:
                 raise InvalidStingerStructure("Arg must have name and type.")
-            new_arg = Arg.new_from_stinger(arg_spec, stinger_spec)
+            new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
             signal.add_arg(new_arg)
 
         return signal
@@ -279,7 +277,7 @@ class Method(object):
         return self._topic_creator.method_response_topic(self.name, client_id)
 
     @classmethod
-    def new_from_stinger(
+    def new_method_from_stinger(
         cls, topic_creator: MethodTopicCreator, name: str, method_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None
     ) -> "Method":
         """Alternative constructor from a Stinger method structure."""
@@ -292,7 +290,7 @@ class Method(object):
         for arg_spec in method_spec["arguments"]:
             if 'name' not in arg_spec or 'type' not in arg_spec:
                 raise InvalidStingerStructure("Arg must have name and type.")
-            new_arg = Arg.new_from_stinger(arg_spec, stinger_spec)
+            new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
             method.add_arg(new_arg)
 
         if "returnValues" in method_spec:
@@ -302,15 +300,16 @@ class Method(object):
             for arg_spec in method_spec["returnValues"]:
                 if 'name' not in arg_spec or 'type' not in arg_spec:
                     raise InvalidStingerStructure("Return value must have name and type.")
-                new_arg = Arg.new_from_stinger(arg_spec, stinger_spec)
+                new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
                 method.add_return_value(new_arg)
 
         return method
 
 class InterfaceEnum:
+
     def __init__(self, name: str):
         self._name = name
-        self._values = []
+        self._values: list[Any] = []
 
     def add_value(self, value: str):
         self._values.append(value)
@@ -348,13 +347,13 @@ class InterfaceEnum:
         return self._values
 
     @classmethod
-    def new_from_stinger(cls, name, values: List[Dict[str, str]]) -> InterfaceEnum:
+    def new_enum_from_stinger(cls, name, values: List[Dict[str, str]]) -> InterfaceEnum:
         ie = cls(name)
         for enum_obj in values:
             if "name" in enum_obj:
                 ie.add_value(enum_obj["name"])
             else:
-                raise InvalidSchemaStructure("InterfaceEnum item must have a name")
+                raise InvalidStingerStructure("InterfaceEnum item must have a name")
         return ie
 
 class MqttTransportProtocol(Enum):
@@ -394,7 +393,7 @@ class Broker:
         self._port = port
 
     @classmethod
-    def new_from_stinger(cls, name: str, spec: Dict[str, Any]) -> Broker:
+    def new_broker_from_stinger(cls, name: str, spec: Dict[str, Any]) -> Broker:
         new_broker = cls(name=name)
         if 'host' in spec:
             new_broker.hostname = spec['host']
@@ -425,13 +424,13 @@ class StingerSpec:
         self._title = interface['title'] if 'title' in interface else None
 
         self.signals: Dict[str, Signal] = {}
-        self.params = {}
+        self.params: dict[str, Any] = {}
         self.methods: Dict[str, Method] = {}
         self.enums: Dict[str, InterfaceEnum] = {}
         self._brokers: Dict[str, Broker] = {}
 
     @property
-    def interface_info(self) -> Tuple[str, Dict[str, Any]]:
+    def interface_info(self) -> tuple[str, Dict[str, Any]]:
         info = {
             "name": self._name, 
             "version": self._version,
@@ -455,9 +454,10 @@ class StingerSpec:
         else:
             return self._brokers
 
-    def get_example_broker(self) -> Broker:
+    def get_example_broker(self) -> Broker|None:
         for broker in self.brokers.values():
             return broker
+        return None
 
     def add_signal(self, signal: Signal):
         assert isinstance(signal, Signal)
@@ -497,7 +497,7 @@ class StingerSpec:
         return InterfaceEnum.get_module_alias()
 
     @classmethod
-    def new_from_stinger(cls, topic_creator, stinger: Dict) -> StingerSpec:
+    def new_spec_from_stinger(cls, topic_creator, stinger: Dict) -> StingerSpec:
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if "version" not in stinger["stingeripc"]:
@@ -513,7 +513,7 @@ class StingerSpec:
         try:
             if "enums" in stinger:
                 for enum_name, enum_spec in stinger["enums"].items():
-                    ie = InterfaceEnum.new_from_stinger(enum_name, enum_spec)
+                    ie = InterfaceEnum.new_enum_from_stinger(enum_name, enum_spec)
                     assert (ie is not None), f"Did not create enum from {enum_name} and {enum_spec}"
                     stinger_spec.add_enum(ie)
         except TypeError as e:
@@ -524,7 +524,7 @@ class StingerSpec:
         try:
             if "brokers" in stinger:
                 for broker_name, broker_spec in stinger["brokers"].items():
-                    broker = Broker.new_from_stinger(broker_name, broker_spec)
+                    broker = Broker.new_broker_from_stinger(broker_name, broker_spec)
                     assert (broker is not None), f"Did not create broker from {broker_name} and {broker_spec}"
                     stinger_spec.add_broker(broker)
         except TypeError as e:
@@ -535,7 +535,7 @@ class StingerSpec:
         try:
             if "signals" in stinger:
                 for signal_name, signal_spec in stinger["signals"].items():
-                    signal = Signal.new_from_stinger(
+                    signal = Signal.new_signal_from_stinger(
                         topic_creator.signal_topic_creator(),
                         signal_name,
                         signal_spec,
@@ -553,7 +553,7 @@ class StingerSpec:
         try:
             if "methods" in stinger:
                 for method_name, method_spec in stinger["methods"].items():
-                    method = Method.new_from_stinger(
+                    method = Method.new_method_from_stinger(
                         topic_creator.method_topic_creator(),
                         method_name,
                         method_spec,

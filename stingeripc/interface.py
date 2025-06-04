@@ -9,6 +9,7 @@ VERSION_SUPPORTED = "0.0.6"
 
 
 class StingerInterface(StingerSpec):
+
     def __init__(self, stinger: Dict[str, Any], topic_prefix: Optional[str] = None):
         itc = self._create_topic_creator(stinger)
         super().__init__(itc, stinger['interface'])
@@ -34,4 +35,4 @@ class StingerInterface(StingerSpec):
     def from_yaml(cls, yaml_input: Union[str, IO]) -> StingerSpec:
         yaml_obj = yaml.load(yaml_input, Loader=yamlloader.ordereddict.Loader)
         itc = cls._create_topic_creator(yaml_obj)
-        return cls.new_from_stinger(itc, yaml_obj)
+        return cls.new_spec_from_stinger(itc, yaml_obj)

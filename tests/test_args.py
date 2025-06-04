@@ -14,7 +14,7 @@ class TestArgCreationFromSpec(unittest.TestCase):
     def test_arg(self):
         for obj in self.spec_objs:
             with self.subTest(obj):
-                arg = Arg.new_from_stinger(obj)
+                arg = Arg.new_arg_from_stinger(obj)
                 self.assertEqual(arg.name, obj['name'])
                 self.assertEqual(arg.python_type, obj['python_type'])
                 self.assertEqual(arg.type, obj['value_type'])
@@ -27,7 +27,7 @@ class TestInvalidArgCreation(unittest.TestCase):
 
     def test_not_an_arg_type_from_spec(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgValue.new_from_stinger({"name": "one", "type": "double"})
+            ArgValue.new_arg_value_from_stinger({"name": "one", "type": "double"})
 
     def test_not_an_arg_type(self):
         with self.assertRaises(InvalidStingerStructure):
@@ -35,19 +35,19 @@ class TestInvalidArgCreation(unittest.TestCase):
 
     def test_arg_value_name_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgValue.new_from_stinger({"type": "integer"})  
+            ArgValue.new_frnew_arg_value_from_stingerom_stinger({"type": "integer"})  
 
     def test_arg_name_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            Arg.new_from_stinger({"type": "integer"})  
+            Arg.new_arg_value_from_stinger({"type": "integer"})  
     
     def test_arg_value_type_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgValue.new_from_stinger({"name": "foo"})  
+            ArgValue.new_arg_value_from_stinger({"name": "foo"})  
 
     def test_arg_type_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            Arg.new_from_stinger({"name": "foo"})  
+            Arg.new_arg_value_from_stinger({"name": "foo"})  
 
 class TestPythonTypes(unittest.TestCase):
 

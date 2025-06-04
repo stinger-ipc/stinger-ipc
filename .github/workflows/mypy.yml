@@ -24,4 +24,5 @@ jobs:
 
     - name: Run Mypy
       run: |
-        uvx mypy stingeripc/
+        uv sync
+        uv run mypy stingeripc/
