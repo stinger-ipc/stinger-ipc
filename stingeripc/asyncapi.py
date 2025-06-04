@@ -213,7 +213,7 @@ class AsyncApiCreator(object):
     """
 
     def __init__(self):
-        self.asyncapi = {
+        self.asyncapi: dict[str, str|dict[str, Any]|dict[str, dict[str, Any]]] = {
             "asyncapi": "2.4.0",
             "id": "",
             "info": dict(),
@@ -229,7 +229,7 @@ class AsyncApiCreator(object):
         self.servers = []
         self.name = "interface"
 
-    def add_schema(self, schema_name, schema_spec: dict[str, Any]):
+    def add_schema(self, schema_name: str, schema_spec: dict[str, Any]):
         self.asyncapi['components']['schemas'][schema_name] = schema_spec
 
     def add_channel(self, channel: Channel):

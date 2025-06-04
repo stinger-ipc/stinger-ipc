@@ -1,3 +1,17 @@
+"""
+An `Arg` one of the following:
+ * An argument to a method
+ * A component of the return type of a method
+ * A component of a signal
+
+An `Arg` can be defined in several different ways:
+ * `Value` means that the type of the Arg is simply provided.
+ * `Enum` means that the type of the Arg is an integer and the value of the integer is controlled by an enumerated list.
+ * `JSON Schema` means that the value of the arg is controlled by a JSON schema.
+
+When the `Arg` type is `Value` then it has an `ArgValueType` which controlls which type the arg is.
+"""
+
 from __future__ import annotations
 from enum import Enum
 from .exceptions import InvalidStingerStructure
