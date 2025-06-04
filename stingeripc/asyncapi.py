@@ -4,7 +4,6 @@ Provides the functionality needed to create an AsyncAPI service specification fr
 
 
 import sys
-from collections import OrderedDict
 from jacobsjinjatoo import templator as jj2
 from jacobsjinjatoo import stringmanip
 import os.path
@@ -119,15 +118,13 @@ class Channel(object):
             },
         }
 
-    def get_operation(self, client_type: SpecType, use_common=False) -> dict[str, OrderedDict[str, Any]|dict[str, Any]]:
-        channel_item: dict[str, OrderedDict[str, Any]|dict[str, Any]] = dict()
-        op_item: OrderedDict[str, Any] = OrderedDict(
-            {
-                "message": {
-                    "$ref": f"{use_common or ''}#/components/messages/{self.message_name}"
-                }
+    def get_operation(self, client_type: SpecType, use_common=False) -> dict[str, dict[str, Any]]:
+        channel_item: dict[str, dict[str, Any]] = dict()
+        op_item: dict[str, Any] = {
+            "message": {
+                "$ref": f"{use_common or ''}#/components/messages/{self.message_name}"
             }
-        )
+        }
         if use_common is not False:
             op_item["traits"] = [
                 {"$ref": f"{use_common}#/components/operationTraits/{self.name}"}
@@ -216,21 +213,17 @@ class AsyncApiCreator(object):
     """
 
     def __init__(self):
-        self.asyncapi = OrderedDict(
-            {
-                "asyncapi": "2.4.0",
-                "id": "",
-                "info": OrderedDict(),
-                "channels": OrderedDict(),
-                "components": OrderedDict(
-                    {
-                        "operationTraits": OrderedDict(),
-                        "messages": OrderedDict(),
-                        "schemas": OrderedDict()
-                    }
-                ),
+        self.asyncapi = {
+            "asyncapi": "2.4.0",
+            "id": "",
+            "info": dict(),
+            "channels": dict(),
+            "components": {
+                "operationTraits": dict(),
+                "messages": dict(),
+                "schemas": dict()
             }
-        )
+        }
         self.channels = []
         self.messages = []
         self.servers = []
@@ -335,7 +328,7 @@ class StingerToAsyncApi:
             schema = ObjectSchema()
             for arg_spec in sig_spec.arg_list:
                 if arg_spec.arg_type == ArgType.VALUE:
-                    schema.add_value_property(arg_spec.name, arg_spec.type)
+                    schema.add_value_property(arg_spec.name, arg_spec.arg_type)
                 elif arg_spec.arg_type == ArgType.ENUM:
                     schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
             msg.set_schema(schema.to_schema())
@@ -352,9 +345,9 @@ class StingerToAsyncApi:
             call_msg_schema.add_value_property("clientId", ArgValueType.STRING, required=False)
             for arg_spec in method_spec.arg_list:
                 if arg_spec.arg_type == ArgType.VALUE:
-                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
+                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.arg_type)
                 elif arg_spec.arg_type == ArgType.ENUM:
-                    call_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
+                    call_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
             call_msg.set_schema(call_msg_schema.to_schema())
             self._asyncapi.add_message(call_msg)
 
@@ -366,9 +359,9 @@ class StingerToAsyncApi:
             resp_msg_schema.add_value_property("correlationId", ArgValueType.STRING)
             for arg_spec in method_spec.return_value_list:
                 if arg_spec.arg_type == ArgType.VALUE:
-                    resp_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
+                    resp_msg_schema.add_value_property(arg_spec.name, arg_spec.arg_type)
                 elif arg_spec.arg_type == ArgType.ENUM:
-                    resp_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
+                    resp_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
             resp_msg.set_schema(resp_msg_schema.to_schema())
             self._asyncapi.add_message(resp_msg)
 

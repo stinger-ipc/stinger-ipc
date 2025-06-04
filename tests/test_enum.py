@@ -23,7 +23,7 @@ class TestSignalCreateFromStinger(unittest.TestCase):
             {"name": "blue"},
             {"name": "red"},
         ]
-        self.enum = InterfaceEnum.new_from_stinger("color", stinger)
+        self.enum = InterfaceEnum.new_enum_from_stinger("color", stinger)
 
     def test_name(self):
         self.assertEqual(self.enum.name, "color")

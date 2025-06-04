@@ -47,7 +47,7 @@ class TestSpecCreateFromStructure(unittest.TestCase):
             }
         }
         itc = InterfaceTopicCreator(self.stinger['interface']['name'])
-        self.spec = StingerSpec.new_from_stinger(itc, self.stinger)
+        self.spec = StingerSpec.new_spec_from_stinger(itc, self.stinger)
 
     def test_create_spec(self):
         self.assertIsNotNone(self.spec)

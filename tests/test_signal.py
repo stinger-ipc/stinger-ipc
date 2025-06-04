@@ -25,7 +25,7 @@ class TestSignalCreateFromStinger(unittest.TestCase):
                 {"name": "two", "type": "string", "description": "This is the second arg"},
             ]
         }
-        self.sig = Signal.new_from_stinger(stc, "mySignal", stinger)
+        self.sig = Signal.new_signal_from_stinger(stc, "mySignal", stinger)
 
     def test_create_signal(self):
         self.assertEqual(self.sig.name, "mySignal")
@@ -51,4 +51,4 @@ class TestSignalRejectsArgsWithSameName(unittest.TestCase):
         }
 
         with self.assertRaises(InvalidStingerStructure):
-            Signal.new_from_stinger(self.topic_creator, "badSignal", signal_spec)
+            Signal.new_signal_from_stinger(self.topic_creator, "badSignal", signal_spec)
