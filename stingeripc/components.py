@@ -3,9 +3,10 @@ from enum import Enum
 import random
 import stringcase
 from typing import Dict, List, Optional, Any, Union
-from .topic import SignalTopicCreator, InterfaceTopicCreator
+from .topic import SignalTopicCreator, InterfaceTopicCreator, MethodTopicCreator
 from .args import ArgType, ArgValueType
 from .exceptions import InvalidStingerStructure
+from .components import InvalidSchemaStructure
 from jacobsjinjatoo import stringmanip
 
 class Arg:
@@ -52,6 +53,7 @@ class Arg:
                 raise InvalidStingerStructure(f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums")
             arg = ArgEnum(arg_spec["name"], stinger_spec.enums[arg_spec['enumName']])
             return arg
+        raise RuntimeError("unknown arg type: {arg_spec['type']}")
 
 
 class ArgEnum(Arg):
@@ -164,7 +166,7 @@ class ArgValue(Arg):
             raise InvalidStingerStructure("No 'name' in arg structure")
 
         arg_value_type = ArgValueType.from_string(stinger["type"])
-        arg = cls(name=stinger["name"], arg_type=arg_value_type)
+        arg: Arg = cls(name=stinger["name"], arg_type=arg_value_type)
 
         if "description" in stinger and isinstance(stinger["description"], str):
             arg.set_description(stinger["description"])
@@ -305,9 +307,10 @@ class Method(object):
         return method
 
 class InterfaceEnum:
+
     def __init__(self, name: str):
         self._name = name
-        self._values = []
+        self._values: list[Any] = []
 
     def add_value(self, value: str):
         self._values.append(value)
@@ -422,13 +425,13 @@ class StingerSpec:
         self._title = interface['title'] if 'title' in interface else None
 
         self.signals: Dict[str, Signal] = {}
-        self.params = {}
+        self.params: dict[str, Any] = {}
         self.methods: Dict[str, Method] = {}
         self.enums: Dict[str, InterfaceEnum] = {}
         self._brokers: Dict[str, Broker] = {}
 
     @property
-    def interface_info(self) -> Tuple[str, Dict[str, Any]]:
+    def interface_info(self) -> tuple[str, Dict[str, Any]]:
         info = {
             "name": self._name, 
             "version": self._version,
@@ -452,9 +455,10 @@ class StingerSpec:
         else:
             return self._brokers
 
-    def get_example_broker(self) -> Broker:
+    def get_example_broker(self) -> Broker|None:
         for broker in self.brokers.values():
             return broker
+        return None
 
     def add_signal(self, signal: Signal):
         assert isinstance(signal, Signal)

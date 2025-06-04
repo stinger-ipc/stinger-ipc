@@ -19,4 +19,5 @@ dev = [
     "paho-mqtt>=2.1.0",
     "pytest>=8.4.0",
     "pyyaml>=6.0.2",
+    "types-pyyaml>=6.0.12.20250516",
 ]

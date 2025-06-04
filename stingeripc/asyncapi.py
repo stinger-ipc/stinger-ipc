@@ -28,7 +28,7 @@ class SpecType(Enum):
 class ObjectSchema:
 
     def __init__(self):
-        self._properties: OrderedDict[str, Any] = OrderedDict()
+        self._properties: dict[str, Any] = dict()
         self._required = set()
     
     def add_value_property(self, name: str, arg_value_type: ArgValueType, required=True):
@@ -49,16 +49,16 @@ class ObjectSchema:
         }
         self._properties[name] = schema
 
-    def to_schema(self) -> dict[str, dict[str,Any]|list[str]]:
-        schema = {
+    def to_schema(self) -> dict[str, str|dict[str, Any]|list[str]]:
+        props: dict[str, Any] = dict()
+        schema: dict[str, str|dict[str, Any]|list[str]] = {
             "type": "object",
-            "properties": dict(),
+            "properties": props,
             "required": list(self._required),
         }
         for prop_name, prop_schema in self._properties.items():
-            schema['properties'][prop_name] = prop_schema
+            props[prop_name] = prop_schema
         return schema
-
 
 class Message(object):
     """The information needed to create an AsyncAPI Message structure."""
