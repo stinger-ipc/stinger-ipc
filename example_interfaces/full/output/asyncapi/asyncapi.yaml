@@ -122,11 +122,6 @@ components:
     addNumbersResponse:
       name: addNumbersResponse
       payload:
-        dependentSchemas:
-          sum:
-            properties:
-              result:
-                const: 0
         properties:
           correlationId:
             type: string
@@ -156,19 +151,6 @@ components:
     doSomethingResponse:
       name: doSomethingResponse
       payload:
-        dependentSchemas:
-          day:
-            properties:
-              result:
-                const: 0
-          identifier:
-            properties:
-              result:
-                const: 0
-          label:
-            properties:
-              result:
-                const: 0
         properties:
           correlationId:
             type: string
@@ -216,9 +198,9 @@ servers:
     bindings:
       mqtt:
         lastWill:
+          retain: false
           message: null
           qos: 1
-          retain: false
           topic: Example/interface
     protocol: mqtt
     protocolVersion: 3.1.1

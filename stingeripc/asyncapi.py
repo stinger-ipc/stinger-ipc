@@ -9,7 +9,7 @@ from jacobsjinjatoo import stringmanip
 import os.path
 from enum import Enum
 from typing import Any
-
+from collections import OrderedDict
 from .components import StingerSpec, Arg, ArgValue, ArgEnum, ArgStruct
 from .args import ArgType, ArgValueType
 
@@ -137,11 +137,11 @@ class Channel(object):
 
     def get_operation(self, client_type: SpecType, use_common=False) -> dict[str, dict[str, Any]]:
         channel_item: dict[str, dict[str, Any]] = dict()
-        op_item: dict[str, Any] = {
+        op_item: OrderedDict[str, Any] = OrderedDict({
             "message": {
                 "$ref": f"{use_common or ''}#/components/messages/{self.message_name}"
             }
-        }
+        })
         if use_common is not False:
             op_item["traits"] = [
                 {"$ref": f"{use_common}#/components/operationTraits/{self.name}"}
@@ -201,16 +201,16 @@ class Server(object):
             "url": self.url,
         }
         if self._lwt_topic is not None:
-            spec['bindings'] = {
-                "mqtt": {
-                    "lastWill": {
+            spec['bindings'] = OrderedDict({
+                "mqtt": OrderedDict({
+                    "lastWill": OrderedDict({
                         "retain": False,
                         "message": None,
                         "qos": 1,
                         "topic": self._lwt_topic,
-                    }
-                }
-            }
+                    })
+                })
+            })
         if self._host is None or self._port is None:
             spec['variables'] = {}
         if self._host is None:
@@ -231,17 +231,17 @@ class AsyncApiCreator(object):
 
     def __init__(self):
         self.info = dict()
-        self.asyncapi: dict[str, Any] = {
+        self.asyncapi: OrderedDict[str, Any] = OrderedDict({
             "asyncapi": "2.4.0",
             "id": "",
-            "info": dict(),
-            "channels": dict(),
-            "components": {
-                "operationTraits": dict(),
-                "messages": dict(),
-                "schemas": dict()
-            }
-        }
+            "info": OrderedDict(),
+            "channels": OrderedDict(),
+            "components": OrderedDict({
+                "operationTraits": OrderedDict(),
+                "messages": OrderedDict(),
+                "schemas": OrderedDict(),
+            })
+        })
         self.channels = []
         self.messages = []
         self.servers = []
