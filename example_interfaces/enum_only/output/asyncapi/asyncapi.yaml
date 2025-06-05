@@ -6,13 +6,9 @@ info:
 channels:
   EnumOnly/interface:
     subscribe:
+      operationId: interfaceInfo
       message:
         $ref: '#/components/messages/interfaceInfo'
-      operationId: interfaceInfo
-      bindings:
-        mqtt:
-          qos: 1
-          retain: true
 components:
   operationTraits:
     methodCall:
@@ -26,6 +22,12 @@ components:
         mqtt:
           bindingVersion: 0.2.0
           qos: 1
+          retain: false
+    signal:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
           retain: false
   messageTraits:
     methodJsonArguments:
@@ -46,6 +48,11 @@ components:
             format: uuid
           responseTopic:
             type: string
+    signalJson:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
   messages:
     interfaceInfo:
       name: interfaceInfo

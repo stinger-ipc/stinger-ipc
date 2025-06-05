@@ -6,66 +6,44 @@ info:
 channels:
   Example/interface:
     subscribe:
+      operationId: interfaceInfo
       message:
         $ref: '#/components/messages/interfaceInfo'
-      operationId: interfaceInfo
-      bindings:
-        mqtt:
-          qos: 1
-          retain: true
   Example/signal/todayIs:
     subscribe:
+      operationId: todayIs
       message:
         $ref: '#/components/messages/todayIs'
-      operationId: todayIs
-      bindings:
-        mqtt:
-          qos: 1
-          retain: false
+      traits:
+      - $ref: '#/components/operationTraits/signal'
   Example/method/addNumbers:
     publish:
+      operationId: addNumbers
       message:
         $ref: '#/components/messages/addNumbers'
-      operationId: addNumbers
-      bindings:
-        mqtt:
-          qos: 2
-          retain: false
+      traits:
+      - $ref: '#/components/operationTraits/methodCall'
   client/{client_id}/Example/method/addNumbers/response:
-    parameters:
-      client_id:
-        schema:
-          type: string
     subscribe:
+      operationId: addNumbersResponse
       message:
         $ref: '#/components/messages/addNumbersResponse'
-      operationId: addNumbersResponse
-      bindings:
-        mqtt:
-          qos: 1
-          retain: false
+      traits:
+      - $ref: '#/components/operationTraits/methodCall'
   Example/method/doSomething:
     publish:
+      operationId: doSomething
       message:
         $ref: '#/components/messages/doSomething'
-      operationId: doSomething
-      bindings:
-        mqtt:
-          qos: 2
-          retain: false
+      traits:
+      - $ref: '#/components/operationTraits/methodCall'
   client/{client_id}/Example/method/doSomething/response:
-    parameters:
-      client_id:
-        schema:
-          type: string
     subscribe:
+      operationId: doSomethingResponse
       message:
         $ref: '#/components/messages/doSomethingResponse'
-      operationId: doSomethingResponse
-      bindings:
-        mqtt:
-          qos: 1
-          retain: false
+      traits:
+      - $ref: '#/components/operationTraits/methodCall'
 components:
   operationTraits:
     methodCall:
@@ -79,6 +57,12 @@ components:
         mqtt:
           bindingVersion: 0.2.0
           qos: 1
+          retain: false
+    signal:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
           retain: false
   messageTraits:
     methodJsonArguments:
@@ -99,6 +83,11 @@ components:
             format: uuid
           responseTopic:
             type: string
+    signalJson:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
   messages:
     interfaceInfo:
       name: interfaceInfo
@@ -134,6 +123,8 @@ components:
         - dayOfMonth
         - dayOfWeek
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/signalJson'
     addNumbers:
       name: addNumbers
       payload:
@@ -149,17 +140,21 @@ components:
       traits:
       - $ref: '#/components/messageTraits/methodJsonArguments'
     addNumbersResponse:
+      headers:
+        properties:
+          result:
+            $ref: '#/components/schemas/stinger_method_return_codes'
+          debug:
+            type: string
+        required:
+        - result
       name: addNumbersResponse
       payload:
         properties:
-          debugResultMessage:
-            type: string
-          result:
-            $ref: '#/components/schemas/stinger_method_return_codes'
           sum:
             type: integer
         required:
-        - result
+        - sum
         type: object
       traits:
       - $ref: '#/components/messageTraits/methodJsonArguments'
@@ -175,21 +170,27 @@ components:
       traits:
       - $ref: '#/components/messageTraits/methodJsonArguments'
     doSomethingResponse:
+      headers:
+        properties:
+          result:
+            $ref: '#/components/schemas/stinger_method_return_codes'
+          debug:
+            type: string
+        required:
+        - result
       name: doSomethingResponse
       payload:
         properties:
           day:
             $ref: '#/components/schemas/enum_dayOfTheWeek'
-          debugResultMessage:
-            type: string
           identifier:
             type: integer
           label:
             type: string
-          result:
-            $ref: '#/components/schemas/stinger_method_return_codes'
         required:
-        - result
+        - day
+        - identifier
+        - label
         type: object
       traits:
       - $ref: '#/components/messageTraits/methodJsonArguments'

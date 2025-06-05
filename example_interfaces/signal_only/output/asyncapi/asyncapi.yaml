@@ -6,22 +6,16 @@ info:
 channels:
   SignalOnly/interface:
     subscribe:
+      operationId: interfaceInfo
       message:
         $ref: '#/components/messages/interfaceInfo'
-      operationId: interfaceInfo
-      bindings:
-        mqtt:
-          qos: 1
-          retain: true
   SignalOnly/signal/anotherSignal:
     subscribe:
+      operationId: anotherSignal
       message:
         $ref: '#/components/messages/anotherSignal'
-      operationId: anotherSignal
-      bindings:
-        mqtt:
-          qos: 1
-          retain: false
+      traits:
+      - $ref: '#/components/operationTraits/signal'
 components:
   operationTraits:
     methodCall:
@@ -35,6 +29,12 @@ components:
         mqtt:
           bindingVersion: 0.2.0
           qos: 1
+          retain: false
+    signal:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
           retain: false
   messageTraits:
     methodJsonArguments:
@@ -55,6 +55,11 @@ components:
             format: uuid
           responseTopic:
             type: string
+    signalJson:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
   messages:
     interfaceInfo:
       name: interfaceInfo
@@ -93,6 +98,8 @@ components:
         - three
         - two
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/signalJson'
   schemas: {}
 servers:
   Default:
