@@ -2,6 +2,7 @@ from __future__ import annotations
 from enum import Enum
 import random
 import stringcase
+from abc import abstractmethod
 from typing import Dict, List, Optional, Any, Union
 from .topic import SignalTopicCreator, InterfaceTopicCreator, MethodTopicCreator
 from .args import ArgType, ArgValueType
@@ -33,8 +34,16 @@ class Arg:
         return self._description
 
     @property
+    def python_type(self) -> str:
+        return self.name
+
+    @property
     def python_local_type(self) -> str:
         return self.python_type.split('.')[-1]
+
+    @property
+    def rust_type(self) -> str:
+        return self.name
 
     @property
     def rust_local_type(self) -> str:
@@ -63,6 +72,9 @@ class Arg:
             return arg
         raise RuntimeError("unknown arg type: {arg_spec['type']}")
 
+    @abstractmethod
+    def get_random_example_value(self, lang="python"):
+        ...
 
 class ArgEnum(Arg):
     def __init__(self, name: str, enum: InterfaceEnum, description: Optional[str] = None):
@@ -143,6 +155,10 @@ class ArgValue(Arg):
             return "std::string"
         else:
             return self.cpp_type
+            
+    @property
+    def json_type(self) -> str:
+        return ArgValueType.to_json_type(self._arg_type)
 
     @property
     def cpp_rapidjson_type(self) -> str:
@@ -192,7 +208,7 @@ class ArgStruct(Arg):
         self._type = ArgType.STRUCT
 
     @property
-    def members(self) -> List[Arg]:
+    def members(self) -> list[Arg]:
         return self._members
 
     def add_member(self, member: Arg):
@@ -218,13 +234,14 @@ class ArgStruct(Arg):
     def rust_local_type(self) -> str:
         return stringcase.pascalcase(self.name)
 
-    def get_random_example_value(self, lang="python"):
+    def get_random_example_value(self, lang="python") -> str|None:
+        example_list: list[str] = [str(a.get_random_example_value(lang)) for a in self.members]
         if lang == 'c++':
-            init_list = [str(a.get_random_example_value(lang)) for a in self.members]
-            return "{" + ", ".join(init_list) + "}"
+            return "{" + ", ".join(example_list) + "}"
         elif lang == 'python':
-            init_list = ", ".join([str(a.get_random_example_value(lang)) for a in self.members])
+            init_list = ", ".join(example_list)
             return f"{self.python_type}({init_list})"
+        return None
 
 
 class Schema(object):
@@ -285,7 +302,7 @@ class Method(object):
         self._topic_creator = topic_creator
         self._name = name
         self._arg_list = []  # type: List[Arg]
-        self._return_value: Union[None, ArgStruct, ArgValue, ArgEnum] = None
+        self._return_value: Arg|None = None
 
     def add_arg(self, arg: Arg) -> Method:
         if arg.name in [a.name for a in self._arg_list]:
@@ -301,7 +318,7 @@ class Method(object):
                 raise InvalidStingerStructure(f"A return value named '{value.name}' has been already added.")
             self._return_value.add_member(value)
         else:
-            if value.name == self.return_value.name:
+            if value.name == self._return_value.name:
                 raise InvalidStingerStructure(f"Attempt to add '{value.name}' to return value when it is already been added.")
             struct_return_value = ArgStruct(f"{self._name}ReturnValue", [self._return_value, value])
             self._return_value = struct_return_value
@@ -309,11 +326,11 @@ class Method(object):
         return self
 
     @property
-    def arg_list(self) -> List[Arg]:
+    def arg_list(self) -> list[Arg]:
         return self._arg_list
 
     @property
-    def return_value(self) -> Arg:
+    def return_value(self) -> Arg|None:
         return self._return_value
 
     @property

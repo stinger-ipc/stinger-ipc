@@ -10,7 +10,7 @@ import os.path
 from enum import Enum
 from typing import Any
 
-from .components import StingerSpec, Arg
+from .components import StingerSpec, Arg, ArgValue, ArgEnum, ArgStruct
 from .args import ArgType, ArgValueType
 
 class Direction(Enum):
@@ -230,7 +230,8 @@ class AsyncApiCreator(object):
     """
 
     def __init__(self):
-        self.asyncapi: dict[str, str|dict[str, Any]|dict[str, dict[str, Any]]] = {
+        self.info = dict()
+        self.asyncapi: dict[str, Any] = {
             "asyncapi": "2.4.0",
             "id": "",
             "info": dict(),
@@ -247,7 +248,8 @@ class AsyncApiCreator(object):
         self.name = "interface"
 
     def add_schema(self, schema_name: str, schema_spec: dict[str, Any]):
-        self.asyncapi['components']['schemas'][schema_name] = schema_spec
+        schema_dict: dict[str, Any] = self.asyncapi['components']['schemas']
+        schema_dict[schema_name] = schema_spec
 
     def add_channel(self, channel: Channel):
         self.channels.append(channel)
@@ -359,9 +361,9 @@ class StingerToAsyncApi:
             msg = Message(sig_name)
             schema = ObjectSchema()
             for arg_spec in sig_spec.arg_list:
-                if arg_spec.arg_type == ArgType.VALUE:
-                    schema.add_value_property(arg_spec.name, arg_spec.arg_type)
-                elif arg_spec.arg_type == ArgType.ENUM:
+                if isinstance(arg_spec, ArgValue):
+                    schema.add_value_property(arg_spec.name, arg_spec.type)
+                elif isinstance(arg_spec, ArgEnum):
                     schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
             msg.set_schema(schema.to_schema())
             self._asyncapi.add_message(msg)
@@ -376,9 +378,9 @@ class StingerToAsyncApi:
             call_msg_schema.add_value_property("correlationId", ArgValueType.STRING, required=False)
             call_msg_schema.add_value_property("clientId", ArgValueType.STRING, required=False)
             for arg_spec in method_spec.arg_list:
-                if arg_spec.arg_type == ArgType.VALUE:
-                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.arg_type)
-                elif arg_spec.arg_type == ArgType.ENUM:
+                if isinstance(arg_spec, ArgValue):
+                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
+                elif isinstance(arg_spec, ArgEnum):
                     call_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
             call_msg.set_schema(call_msg_schema.to_schema())
             self._asyncapi.add_message(call_msg)
@@ -393,12 +395,12 @@ class StingerToAsyncApi:
             resp_msg_schema.add_value_property("debugResultMessage", ArgValueType.STRING, required=False)
 
             def add_arg(arg: Arg):
-                if arg.arg_type == ArgType.VALUE:
+                if isinstance(arg, ArgValue):
                     resp_msg_schema.add_value_property(arg.name, arg.type, required=False)
-                elif arg.arg_type == ArgType.ENUM:
+                elif isinstance(arg, ArgEnum):
                     resp_msg_schema.add_reference_property(arg.name, f"#/components/schemas/enum_{arg.enum.name}", required=False)
 
-            if method_spec.return_value.arg_type == ArgType.STRUCT:
+            if isinstance(method_spec.return_value, ArgStruct):
                 for arg_spec in method_spec.return_value.members:
                     add_arg(arg_spec)
                     resp_msg_schema.add_value_dependency(arg_spec.name, "result", 0)
