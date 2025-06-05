@@ -23,7 +23,38 @@ channels:
           qos: 1
           retain: false
 components:
-  operationTraits: {}
+  operationTraits:
+    methodCall:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
+          retain: false
+    methodCallback:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 1
+          retain: false
+  messageTraits:
+    methodJsonArguments:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+    methodJsonResponse:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+          responseTopic:
+            type: string
   messages:
     interfaceInfo:
       name: interfaceInfo

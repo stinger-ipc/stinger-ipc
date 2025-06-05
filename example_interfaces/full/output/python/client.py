@@ -13,12 +13,20 @@ import logging
 
 import asyncio
 import concurrent.futures as futures
-from method_codes import *
+from .method_codes import *
 
-from connection import BrokerConnection
-import interface_types as stinger_types
+from .connection import BrokerConnection
+from . import interface_types as stinger_types
 
 logging.basicConfig(level=logging.DEBUG)
+
+
+TodayIsSignalCallbackType = Callable[[int, stinger_types.DayOfTheWeek], None]
+
+AddNumbersMethodResponseCallbackType = Callable[[int], None]
+
+DoSomethingMethodResponseCallbackType = Callable[[stinger_types.DoSomethingReturnValue], None]
+
 
 class ExampleClient(object):
 
@@ -30,14 +38,14 @@ class ExampleClient(object):
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
-        self._pending_method_responses = {}
+        self._pending_method_responses = {} # type: Dict[str, Callable[[...], None]]
         
-        self._signal_recv_callbacks_for_todayIs = []
+        self._signal_recv_callbacks_for_todayIs = [] # type: List[TodayIsSignalCallbackType]
         self._conn.subscribe(f"client/{self._client_id}/Example/method/addNumbers/response")
         self._conn.subscribe(f"client/{self._client_id}/Example/method/doSomething/response")
         
 
-    def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
+    def _do_callbacks_for(self, callbacks: List[Callable[...], None], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
         """
         for cb in callbacks:
@@ -58,7 +66,7 @@ class ExampleClient(object):
         calls the appropriate handler method for the message.
         """
         self._logger.debug("Receiving message sent to %s", topic)
-        # Handle todayIs
+        # Handle 'todayIs' signal.
         if self._conn.is_topic_sub(topic, "Example/signal/todayIs"):
             allowed_args = ["dayOfMonth", "dayOfWeek", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
@@ -67,7 +75,7 @@ class ExampleClient(object):
             
             self._do_callbacks_for(self._signal_recv_callbacks_for_todayIs, **kwargs)
         
-        # Handle addNumbers
+        # Handle 'addNumbers' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/addNumbers/response"):
             response = json.loads(payload)
             if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
@@ -75,7 +83,7 @@ class ExampleClient(object):
                 del self._pending_method_responses[response["correlationId"]]
                 cb(response)
         
-        # Handle doSomething
+        # Handle 'doSomething' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/doSomething/response"):
             response = json.loads(payload)
             if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
@@ -104,7 +112,7 @@ class ExampleClient(object):
         if not isinstance(second, int):
             raise ValueError("The 'second' argument wasn't a int")
         
-        fut = futures.Future()
+        fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_add_numbers_response, fut)
         payload = {
@@ -148,7 +156,7 @@ class ExampleClient(object):
         if not isinstance(aString, str):
             raise ValueError("The 'aString' argument wasn't a str")
         
-        fut = futures.Future()
+        fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_do_something_response, fut)
         payload = {
@@ -188,7 +196,7 @@ class ExampleClient(object):
 if __name__ == '__main__':
     import signal
 
-    from connection import LocalConnection
+    from .connection import LocalConnection
     conn = LocalConnection()
     client = ExampleClient(conn)
     

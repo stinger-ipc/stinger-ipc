@@ -11,10 +11,14 @@ from functools import partial
 import json
 import logging
 
-from connection import BrokerConnection
+from .connection import BrokerConnection
 
 
 logging.basicConfig(level=logging.DEBUG)
+
+
+AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]
+
 
 class SignalOnlyClient(object):
 
@@ -26,10 +30,10 @@ class SignalOnlyClient(object):
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
-        self._signal_recv_callbacks_for_anotherSignal = []
+        self._signal_recv_callbacks_for_anotherSignal = [] # type: List[AnotherSignalSignalCallbackType]
         
 
-    def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
+    def _do_callbacks_for(self, callbacks: List[Callable[...], None], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
         """
         for cb in callbacks:
@@ -50,7 +54,7 @@ class SignalOnlyClient(object):
         calls the appropriate handler method for the message.
         """
         self._logger.debug("Receiving message sent to %s", topic)
-        # Handle anotherSignal
+        # Handle 'anotherSignal' signal.
         if self._conn.is_topic_sub(topic, "SignalOnly/signal/anotherSignal"):
             allowed_args = ["one", "two", "three", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
@@ -75,7 +79,7 @@ class SignalOnlyClient(object):
 if __name__ == '__main__':
     import signal
 
-    from connection import DefaultConnection
+    from .connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
     client = SignalOnlyClient(conn)
     

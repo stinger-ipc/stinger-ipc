@@ -67,7 +67,38 @@ channels:
           qos: 1
           retain: false
 components:
-  operationTraits: {}
+  operationTraits:
+    methodCall:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
+          retain: false
+    methodCallback:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 1
+          retain: false
+  messageTraits:
+    methodJsonArguments:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+    methodJsonResponse:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+          responseTopic:
+            type: string
   messages:
     interfaceInfo:
       name: interfaceInfo
@@ -107,10 +138,6 @@ components:
       name: addNumbers
       payload:
         properties:
-          clientId:
-            type: string
-          correlationId:
-            type: string
           first:
             type: integer
           second:
@@ -119,12 +146,12 @@ components:
         - first
         - second
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/methodJsonArguments'
     addNumbersResponse:
       name: addNumbersResponse
       payload:
         properties:
-          correlationId:
-            type: string
           debugResultMessage:
             type: string
           result:
@@ -132,28 +159,25 @@ components:
           sum:
             type: integer
         required:
-        - correlationId
         - result
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/methodJsonArguments'
     doSomething:
       name: doSomething
       payload:
         properties:
           aString:
             type: string
-          clientId:
-            type: string
-          correlationId:
-            type: string
         required:
         - aString
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/methodJsonArguments'
     doSomethingResponse:
       name: doSomethingResponse
       payload:
         properties:
-          correlationId:
-            type: string
           day:
             $ref: '#/components/schemas/enum_dayOfTheWeek'
           debugResultMessage:
@@ -165,9 +189,10 @@ components:
           result:
             $ref: '#/components/schemas/stinger_method_return_codes'
         required:
-        - correlationId
         - result
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/methodJsonArguments'
   schemas:
     enum_dayOfTheWeek:
       description: "The dayOfTheWeek enum has the following values:\n 0 - Sunday\n

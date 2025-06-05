@@ -13,12 +13,19 @@ import logging
 {%if stinger.methods | length > 0 %}
 import asyncio
 import concurrent.futures as futures
-from method_codes import *
+from .method_codes import *
 {%endif%}
-from connection import BrokerConnection
-{%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
+from .connection import BrokerConnection
+{%if stinger.uses_enums()%}from . import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
 
 logging.basicConfig(level=logging.DEBUG)
+
+{%for sig_name, sig in stinger.signals.items()%}
+{{sig_name | UpperCamelCase}}SignalCallbackType = Callable[[{%for arg in sig.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]
+{%endfor%}
+{%-for method_name, method in stinger.methods.items()%}
+{{method_name | UpperCamelCase}}MethodResponseCallbackType = Callable[[{%if method.return_value%}{{method.return_value.python_type}}{%endif%}], None]
+{%endfor%}
 
 class {{stinger.name}}Client(object):
 
@@ -30,7 +37,7 @@ class {{stinger.name}}Client(object):
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         {%if stinger.methods | length > 0 %}
-        self._pending_method_responses = {}
+        self._pending_method_responses = {} # type: Dict[str, Callable[[...], None]]
         {%endif%}
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
@@ -38,13 +45,13 @@ class {{stinger.name}}Client(object):
         self.changed_value_callback_for_{{p}} = None
         {%endfor-%}
         {%-for sig_name in stinger.signals.keys()-%}
-        self._signal_recv_callbacks_for_{{sig_name}} = []
+        self._signal_recv_callbacks_for_{{sig_name}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()-%}
         self._conn.subscribe(f"{{method.response_topic('{self._client_id}')}}")
         {%endfor%}
 
-    def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
+    def _do_callbacks_for(self, callbacks: List[Callable[...], None], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
         """
         for cb in callbacks:
@@ -67,7 +74,7 @@ class {{stinger.name}}Client(object):
         self._logger.debug("Receiving message sent to %s", topic)
         {%if stinger.signals | length > 0 -%}
         {%for sig_name, sig in stinger.signals.items()-%}
-        # Handle {{sig_name}}
+        # Handle '{{sig_name}}' signal.
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
@@ -78,7 +85,7 @@ class {{stinger.name}}Client(object):
         {%endfor%}
         {%-else%}pass{%-endif%}
         {%-for method_name, method in stinger.methods.items()%}
-        # Handle {{method_name}}
+        # Handle '{{method_name}}' method response.
         if self._conn.is_topic_sub(topic, f"{{method.response_topic('{self._client_id}')}}"):
             response = json.loads(payload)
             if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
@@ -104,7 +111,7 @@ class {{stinger.name}}Client(object):
         if not isinstance({{arg.name}}, {{arg.python_type}}):
             raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_type}}")
         {%endfor%}
-        fut = futures.Future()
+        fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
         payload = { {%-for arg in method.arg_list%}
@@ -153,7 +160,7 @@ class {{stinger.name}}Client(object):
 if __name__ == '__main__':
     import signal
 
-    {%set broker = stinger.get_example_broker()%}from connection import {{broker.class_name}}
+    {%set broker = stinger.get_example_broker()%}from .connection import {{broker.class_name}}
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
     client = {{stinger.name}}Client(conn)
     {%for sig_name, sig in stinger.signals.items()%}

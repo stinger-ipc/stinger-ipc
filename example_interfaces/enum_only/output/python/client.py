@@ -11,10 +11,12 @@ from functools import partial
 import json
 import logging
 
-from connection import BrokerConnection
-import interface_types as stinger_types
+from .connection import BrokerConnection
+from . import interface_types as stinger_types
 
 logging.basicConfig(level=logging.DEBUG)
+
+
 
 class EnumOnlyClient(object):
 
@@ -28,7 +30,7 @@ class EnumOnlyClient(object):
         
         
 
-    def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
+    def _do_callbacks_for(self, callbacks: List[Callable[...], None], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
         """
         for cb in callbacks:
@@ -58,7 +60,7 @@ class EnumOnlyClient(object):
 if __name__ == '__main__':
     import signal
 
-    from connection import DefaultConnection
+    from .connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
     client = EnumOnlyClient(conn)
     

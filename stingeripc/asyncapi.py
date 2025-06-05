@@ -82,6 +82,7 @@ class Message(object):
     def __init__(self, message_name: str, schema: str|None = None):
         self.name = message_name
         self.schema = schema or {"type": "null"}
+        self._traits = []
 
     def set_schema(self, schema: dict):
         self.schema = schema
@@ -90,11 +91,17 @@ class Message(object):
     def set_reference(self, reference):
         return self.set_schema({"$ref": reference})
 
-    def get_message(self):
-        return {
+    def add_trait(self, trait):
+        self._traits.append(trait)
+
+    def get_message(self) -> dict[str, Any]:
+        msg = {
             "name": self.name,
             "payload": self.schema,
         }
+        if len(self._traits) > 0:
+            msg["traits"] = self._traits
+        return msg
 
 
 class Channel(object):
@@ -237,10 +244,58 @@ class AsyncApiCreator(object):
             "info": OrderedDict(),
             "channels": OrderedDict(),
             "components": OrderedDict({
-                "operationTraits": OrderedDict(),
+                "operationTraits": OrderedDict({
+                    "methodCall": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "qos": 2,
+                                "retain": False,
+                            }),
+                        }),
+                    }),
+                    "methodCallback": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "qos": 1,
+                                "retain": False,
+                            }),
+                        }),
+                    }),
+                }),
+                "messageTraits": OrderedDict({
+                    "methodJsonArguments": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "contentType": "application/json",
+                                "correlationData": OrderedDict({
+                                    "type": "string",
+                                    "format": "uuid",
+                                }),
+                            }),
+                        }),
+                    }),
+                    "methodJsonResponse": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "contentType": "application/json",
+                                "correlationData": OrderedDict({
+                                    "type": "string",
+                                    "format": "uuid",
+                                }),
+                                "responseTopic": {
+                                    "type": "string",
+                                }
+                            }),
+                        }),
+                    }),
+                }),
                 "messages": OrderedDict(),
                 "schemas": OrderedDict(),
-            })
+            }),
         })
         self.channels = []
         self.messages = []
@@ -374,9 +429,8 @@ class StingerToAsyncApi:
             call_ch.set_mqtt(2, False)
             self._asyncapi.add_channel(call_ch)
             call_msg = Message(method_name)
+            call_msg.add_trait({"$ref": "#/components/messageTraits/methodJsonArguments"})
             call_msg_schema = ObjectSchema()
-            call_msg_schema.add_value_property("correlationId", ArgValueType.STRING, required=False)
-            call_msg_schema.add_value_property("clientId", ArgValueType.STRING, required=False)
             for arg_spec in method_spec.arg_list:
                 if isinstance(arg_spec, ArgValue):
                     call_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
@@ -389,8 +443,8 @@ class StingerToAsyncApi:
             resp_ch.add_topic_parameters("client_id", "string").set_mqtt(1, False)
             self._asyncapi.add_channel(resp_ch)
             resp_msg = Message(f"{method_name}Response")
+            resp_msg.add_trait({"$ref": "#/components/messageTraits/methodJsonArguments"})
             resp_msg_schema = ObjectSchema()
-            resp_msg_schema.add_value_property("correlationId", ArgValueType.STRING)
             resp_msg_schema.add_reference_property("result", "#/components/schemas/stinger_method_return_codes")
             resp_msg_schema.add_value_property("debugResultMessage", ArgValueType.STRING, required=False)
 

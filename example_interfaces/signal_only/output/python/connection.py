@@ -21,6 +21,14 @@ class BrokerConnection(ABC):
     def subscribe(self, topic):
         pass
 
+    @abstractmethod
+    def set_message_callback(self, callback: Callable[[str, str], None]) -> None:
+        pass
+
+    @abstractmethod
+    def is_topic_sub(self, topic: str, sub: str) -> bool:
+        pass
+
 
 class DefaultConnection(BrokerConnection):
 
@@ -30,8 +38,8 @@ class DefaultConnection(BrokerConnection):
         self._host: str = host
         self._port: int = port
         self._last_will: Optional[Tuple[str, Optional[str], int, bool]] = None
-        self._queued_messages = Queue()
-        self._queued_subscriptions = Queue()
+        self._queued_messages = Queue() # type: Queue[Tuple[str, str, int, bool]]
+        self._queued_subscriptions = Queue() # type: Queue[str]
         self._connected: bool = False
         self._client = mqtt_client.Client()
         self._client.on_connect = self._on_connect
