@@ -38,14 +38,14 @@ class ExampleClient(object):
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
-        self._pending_method_responses = {} # type: Dict[str, Callable[[...], None]]
+        self._pending_method_responses = {} # type: Dict[str, Callable[..., None]]
         
         self._signal_recv_callbacks_for_todayIs = [] # type: List[TodayIsSignalCallbackType]
         self._conn.subscribe(f"client/{self._client_id}/Example/method/addNumbers/response")
         self._conn.subscribe(f"client/{self._client_id}/Example/method/doSomething/response")
         
 
-    def _do_callbacks_for(self, callbacks: List[Callable[...], None], **kwargs):
+    def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
         """
         for cb in callbacks:

@@ -37,7 +37,7 @@ class {{stinger.name}}Client(object):
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         {%if stinger.methods | length > 0 %}
-        self._pending_method_responses = {} # type: Dict[str, Callable[[...], None]]
+        self._pending_method_responses = {} # type: Dict[str, Callable[..., None]]
         {%endif%}
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
@@ -51,7 +51,7 @@ class {{stinger.name}}Client(object):
         self._conn.subscribe(f"{{method.response_topic('{self._client_id}')}}")
         {%endfor%}
 
-    def _do_callbacks_for(self, callbacks: List[Callable[...], None], **kwargs):
+    def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
         """
         for cb in callbacks:

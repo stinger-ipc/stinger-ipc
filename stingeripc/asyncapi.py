@@ -217,7 +217,7 @@ class Server(object):
     def get_server(self) -> dict[str, Any]:
         spec: dict[str, Any] = {
             "protocol": self._protocol,
-            "protocolVersion": "3.1.1",
+            "protocolVersion": "5",
             "url": self.url,
         }
         if self._lwt_topic is not None:

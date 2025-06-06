@@ -229,5 +229,5 @@ servers:
           qos: 1
           topic: Example/interface
     protocol: mqtt
-    protocolVersion: 3.1.1
+    protocolVersion: '5'
     url: 127.0.0.1:1883

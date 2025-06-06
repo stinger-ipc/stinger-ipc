@@ -111,7 +111,7 @@ servers:
           qos: 1
           topic: SignalOnly/interface
     protocol: mqtt
-    protocolVersion: 3.1.1
+    protocolVersion: '5'
     url: '{hostname}:{port}'
     variables:
       hostname:

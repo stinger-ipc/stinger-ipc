@@ -30,7 +30,7 @@ class EnumOnlyClient(object):
         
         
 
-    def _do_callbacks_for(self, callbacks: List[Callable[...], None], **kwargs):
+    def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
         """
         for cb in callbacks:
