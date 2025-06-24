@@ -28,7 +28,7 @@ AddNumbersMethodResponseCallbackType = Callable[[int], None]
 DoSomethingMethodResponseCallbackType = Callable[[stinger_types.DoSomethingReturnValue], None]
 
 
-class ExampleClient(object):
+class ExampleClient:
 
     def __init__(self, connection: BrokerConnection):
         self._logger = logging.getLogger('ExampleClient')
@@ -61,13 +61,16 @@ class ExampleClient(object):
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_message(self, topic, payload):
+    def _receive_message(self, topic, payload, properties):
         """ New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
         self._logger.debug("Receiving message sent to %s", topic)
         # Handle 'todayIs' signal.
         if self._conn.is_topic_sub(topic, "Example/signal/todayIs"):
+            if 'contentType' not in properties or properties['contentType'] != 'application/json':
+                self._logger.warning("Received 'todayIs' signal with non-JSON content type")
+                return
             allowed_args = ["dayOfMonth", "dayOfWeek", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
             kwargs["dayOfMonth"] = int(kwargs["dayOfMonth"])
@@ -78,17 +81,17 @@ class ExampleClient(object):
         # Handle 'addNumbers' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/addNumbers/response"):
             response = json.loads(payload)
-            if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
-                cb = self._pending_method_responses[response["correlationId"]]
-                del self._pending_method_responses[response["correlationId"]]
+            if "CorrelationData" in properties and properties["CorrelationData"] in self._pending_method_responses:
+                cb = self._pending_method_responses[properties["CorrelationData"]]
+                del self._pending_method_responses[properties["CorrelationData"]]
                 cb(response)
         
         # Handle 'doSomething' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/doSomething/response"):
             response = json.loads(payload)
-            if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
-                cb = self._pending_method_responses[response["correlationId"]]
-                del self._pending_method_responses[response["correlationId"]]
+            if "CorrelationData" in properties and properties["CorrelationData"] in self._pending_method_responses:
+                cb = self._pending_method_responses[properties["CorrelationData"]]
+                del self._pending_method_responses[properties["CorrelationData"]]
                 cb(response)
         
 
@@ -118,10 +121,9 @@ class ExampleClient(object):
         payload = {
             "first": first,
             "second": second,
-            "clientId": self._client_id,
-            "correlationId": correlation_id,
         }
-        self._conn.publish("Example/method/addNumbers", json.dumps(payload))
+        self._conn.publish("Example/method/addNumbers", json.dumps(payload), qos=2, retain=False,
+                           correlation_id=correlation_id, response_topic=f"client/{self._client_id}/Example/method/addNumbers/response")
         return fut
 
     def _handle_add_numbers_response(self, fut: futures.Future, response_json: Dict[str, Any]):
@@ -161,10 +163,9 @@ class ExampleClient(object):
         self._pending_method_responses[correlation_id] = partial(self._handle_do_something_response, fut)
         payload = {
             "aString": aString,
-            "clientId": self._client_id,
-            "correlationId": correlation_id,
         }
-        self._conn.publish("Example/method/doSomething", json.dumps(payload))
+        self._conn.publish("Example/method/doSomething", json.dumps(payload), qos=2, retain=False,
+                           correlation_id=correlation_id, response_topic=f"client/{self._client_id}/Example/method/doSomething/response")
         return fut
 
     def _handle_do_something_response(self, fut: futures.Future, response_json: Dict[str, Any]):
@@ -193,14 +194,44 @@ class ExampleClient(object):
             fut.set_exception(Exception("No return value set"))
     
 
+class ExampleClientBuilder:
+
+    def __init__(self, broker: BrokerConnection):
+        """ Creates a new ExampleClientBuilder.
+        """
+        self._conn = broker
+        self._logger = logging.getLogger('ExampleClientBuilder')
+        self._signal_recv_callbacks_for_todayIs = [] # type: List[TodayIsSignalCallbackType]
+        
+    def receive_todayIs(self, handler):
+        """ Used as a decorator for methods which handle particular signals.
+        """
+        self._signal_recv_callbacks_for_todayIs.append(handler)
+    
+
+    def build(self) -> ExampleClient:
+        """ Builds a new ExampleClient.
+        """
+        self._logger.debug("Building ExampleClient")
+        client = ExampleClient(self._conn)
+        
+        def receive_todayIs(self, handler):
+            """ Used as a decorator for methods which handle particular signals.
+            """
+            for cb in self._signal_recv_callbacks_for_todayIs:
+                client.receive_todayIs(cb)
+        
+        return client
+
+
 if __name__ == '__main__':
     import signal
 
     from .connection import LocalConnection
     conn = LocalConnection()
-    client = ExampleClient(conn)
+    client_builder = ExampleClientBuilder(conn)
     
-    @client.receive_todayIs
+    @client_builder.receive_todayIs
     def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek):
         """
         @param dayOfMonth int 
@@ -209,7 +240,7 @@ if __name__ == '__main__':
         print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
     
 
-    
+    client = client_builder.build()
     
     print("Making call to 'add_numbers'")
     future = client.add_numbers(first=42, second=42)

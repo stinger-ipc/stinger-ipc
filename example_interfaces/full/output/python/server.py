@@ -11,44 +11,14 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 from typing import Callable, Dict, Any, Optional
-from connection import BrokerConnection
+from .connection import BrokerConnection
 from method_codes import *
-import interface_types as stinger_types
+from . import interface_types as stinger_types
 
 
 
-class MethodResponseBuilder:
 
-    def __init__(self, request: Dict[str, Any]):
-        self._response = {}
-        if "correlationId" in request and isinstance(request["correlationId"], str):
-            self.correlation_id(request["correlationId"])
-
-    @property
-    def response(self):
-        return self._response
-
-    def is_valid(self) -> bool:
-        return "correlationId" in self._response and "result" in self._response
-
-    def correlation_id(self, correlationId: str):
-        self._response["correlationId"] = correlationId
-        return self
-    
-    def result_code(self, result_code: MethodResultCode):
-        self._response["result"] = result_code.value
-        return self
-
-    def debug_result_message(self, message: str):
-        self._response["debugResultMessage"] = message
-        return self
-
-    def return_value(self, value_name: str, return_value):
-        self._response[value_name] = return_value
-        return self
-
-
-class ExampleServer(object):
+class ExampleServer:
 
     def __init__(self, connection: BrokerConnection):
         self._logger = logging.getLogger('ExampleServer')
@@ -186,6 +156,31 @@ class ExampleServer(object):
     
 
     
+
+class ExampleServerBuilder:
+    """
+    This is a builder for the ExampleServer.  It is used to create a server with the desired parameters.
+    """
+
+    def __init__(self, connection: BrokerConnection):
+        self._conn = connection
+        
+
+    
+    def handle_add_numbers(self, handler: Callable[[int, int], int]):
+        if self._add_numbers_method_handler is None and handler is not None:
+            self._add_numbers_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+    def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
+        if self._do_something_method_handler is None and handler is not None:
+            self._do_something_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def build(self) -> ExampleServer:
+        new_server = ExampleServer(self._conn)
+        return new_server
 
 if __name__ == '__main__':
     """

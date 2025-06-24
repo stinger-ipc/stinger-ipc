@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.DEBUG)
 AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]
 
 
-class SignalOnlyClient(object):
+class SignalOnlyClient:
 
     def __init__(self, connection: BrokerConnection):
         self._logger = logging.getLogger('SignalOnlyClient')
@@ -49,13 +49,16 @@ class SignalOnlyClient(object):
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_message(self, topic, payload):
+    def _receive_message(self, topic, payload, properties):
         """ New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
         self._logger.debug("Receiving message sent to %s", topic)
         # Handle 'anotherSignal' signal.
         if self._conn.is_topic_sub(topic, "SignalOnly/signal/anotherSignal"):
+            if 'contentType' not in properties or properties['contentType'] != 'application/json':
+                self._logger.warning("Received 'anotherSignal' signal with non-JSON content type")
+                return
             allowed_args = ["one", "two", "three", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
             kwargs["one"] = float(kwargs["one"])
@@ -76,14 +79,44 @@ class SignalOnlyClient(object):
 
     
 
+class SignalOnlyClientBuilder:
+
+    def __init__(self, broker: BrokerConnection):
+        """ Creates a new SignalOnlyClientBuilder.
+        """
+        self._conn = broker
+        self._logger = logging.getLogger('SignalOnlyClientBuilder')
+        self._signal_recv_callbacks_for_anotherSignal = [] # type: List[AnotherSignalSignalCallbackType]
+        
+    def receive_anotherSignal(self, handler):
+        """ Used as a decorator for methods which handle particular signals.
+        """
+        self._signal_recv_callbacks_for_anotherSignal.append(handler)
+    
+
+    def build(self) -> SignalOnlyClient:
+        """ Builds a new SignalOnlyClient.
+        """
+        self._logger.debug("Building SignalOnlyClient")
+        client = SignalOnlyClient(self._conn)
+        
+        def receive_anotherSignal(self, handler):
+            """ Used as a decorator for methods which handle particular signals.
+            """
+            for cb in self._signal_recv_callbacks_for_anotherSignal:
+                client.receive_anotherSignal(cb)
+        
+        return client
+
+
 if __name__ == '__main__':
     import signal
 
     from .connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
-    client = SignalOnlyClient(conn)
+    client_builder = SignalOnlyClientBuilder(conn)
     
-    @client.receive_anotherSignal
+    @client_builder.receive_anotherSignal
     def print_anotherSignal_receipt(one: float, two: bool, three: str):
         """
         @param one float 
@@ -93,6 +126,7 @@ if __name__ == '__main__':
         print(f"Got a 'anotherSignal' signal: one={ one } two={ two } three={ three } ")
     
 
+    client = client_builder.build()
     
 
     print("Ctrl-C will stop the program.")

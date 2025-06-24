@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 
-class EnumOnlyClient(object):
+class EnumOnlyClient:
 
     def __init__(self, connection: BrokerConnection):
         self._logger = logging.getLogger('EnumOnlyClient')
@@ -46,7 +46,7 @@ class EnumOnlyClient(object):
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_message(self, topic, payload):
+    def _receive_message(self, topic, payload, properties):
         """ New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
@@ -57,14 +57,33 @@ class EnumOnlyClient(object):
 
     
 
+class EnumOnlyClientBuilder:
+
+    def __init__(self, broker: BrokerConnection):
+        """ Creates a new EnumOnlyClientBuilder.
+        """
+        self._conn = broker
+        self._logger = logging.getLogger('EnumOnlyClientBuilder')
+        
+
+    def build(self) -> EnumOnlyClient:
+        """ Builds a new EnumOnlyClient.
+        """
+        self._logger.debug("Building EnumOnlyClient")
+        client = EnumOnlyClient(self._conn)
+        
+        return client
+
+
 if __name__ == '__main__':
     import signal
 
     from .connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
-    client = EnumOnlyClient(conn)
+    client_builder = EnumOnlyClientBuilder(conn)
     
 
+    client = client_builder.build()
     
 
     print("Ctrl-C will stop the program.")

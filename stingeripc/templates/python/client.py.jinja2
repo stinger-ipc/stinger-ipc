@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.DEBUG)
 {{method_name | UpperCamelCase}}MethodResponseCallbackType = Callable[[{%if method.return_value%}{{method.return_value.python_type}}{%endif%}], None]
 {%endfor%}
 
-class {{stinger.name}}Client(object):
+class {{stinger.name}}Client:
 
     def __init__(self, connection: BrokerConnection):
         self._logger = logging.getLogger('{{stinger.name}}Client')
@@ -67,7 +67,7 @@ class {{stinger.name}}Client(object):
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_message(self, topic, payload):
+    def _receive_message(self, topic, payload, properties):
         """ New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
@@ -76,6 +76,9 @@ class {{stinger.name}}Client(object):
         {%for sig_name, sig in stinger.signals.items()-%}
         # Handle '{{sig_name}}' signal.
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
+            if 'contentType' not in properties or properties['contentType'] != 'application/json':
+                self._logger.warning("Received '{{sig_name}}' signal with non-JSON content type")
+                return
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
             {%for arg in sig.arg_list-%}
@@ -88,9 +91,9 @@ class {{stinger.name}}Client(object):
         # Handle '{{method_name}}' method response.
         if self._conn.is_topic_sub(topic, f"{{method.response_topic('{self._client_id}')}}"):
             response = json.loads(payload)
-            if "correlationId" in response and response["correlationId"] in self._pending_method_responses:
-                cb = self._pending_method_responses[response["correlationId"]]
-                del self._pending_method_responses[response["correlationId"]]
+            if "CorrelationData" in properties and properties["CorrelationData"] in self._pending_method_responses:
+                cb = self._pending_method_responses[properties["CorrelationData"]]
+                del self._pending_method_responses[properties["CorrelationData"]]
                 cb(response)
         {%endfor%}
 
@@ -116,10 +119,9 @@ class {{stinger.name}}Client(object):
         self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
         payload = { {%-for arg in method.arg_list%}
             "{{arg.name}}": {{arg.name}},{%endfor%}
-            "clientId": self._client_id,
-            "correlationId": correlation_id,
         }
-        self._conn.publish("{{method.topic}}", json.dumps(payload))
+        self._conn.publish("{{method.topic}}", json.dumps(payload), qos=2, retain=False,
+                           correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._client_id}')}}")
         return fut
 
     def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json: Dict[str, Any]):
@@ -157,14 +159,47 @@ class {{stinger.name}}Client(object):
             fut.set_exception(Exception("No return value set"))
     {%endfor%}
 
+class {{stinger.name}}ClientBuilder:
+
+    def __init__(self, broker: BrokerConnection):
+        """ Creates a new {{stinger.name}}ClientBuilder.
+        """
+        self._conn = broker
+        self._logger = logging.getLogger('{{stinger.name}}ClientBuilder')
+        {%for sig_name in stinger.signals.keys()-%}
+        self._signal_recv_callbacks_for_{{sig_name}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
+        {%endfor-%}
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    def receive_{{sig_name}}(self, handler):
+        """ Used as a decorator for methods which handle particular signals.
+        """
+        self._signal_recv_callbacks_for_{{sig_name}}.append(handler)
+    {%endfor%}
+
+    def build(self) -> {{stinger.name}}Client:
+        """ Builds a new {{stinger.name}}Client.
+        """
+        self._logger.debug("Building {{stinger.name}}Client")
+        client = {{stinger.name}}Client(self._conn)
+        {%for sig_name, sig in stinger.signals.items()%}
+        def receive_{{sig_name}}(self, handler):
+            """ Used as a decorator for methods which handle particular signals.
+            """
+            for cb in self._signal_recv_callbacks_for_{{sig_name}}:
+                client.receive_{{sig_name}}(cb)
+        {%endfor%}
+        return client
+
+
 if __name__ == '__main__':
     import signal
 
     {%set broker = stinger.get_example_broker()%}from .connection import {{broker.class_name}}
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
-    client = {{stinger.name}}Client(conn)
+    client_builder = {{stinger.name}}ClientBuilder(conn)
     {%for sig_name, sig in stinger.signals.items()%}
-    @client.receive_{{sig_name}}
+    @client_builder.receive_{{sig_name}}
     def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """{{sig.description}}
         {%for arg in sig.arg_list-%}
@@ -173,8 +208,9 @@ if __name__ == '__main__':
         print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
     {%endfor%}
 
+    client = client_builder.build()
     {%if stinger.methods | length > 0 %}
-    {%for method_name, method in stinger.methods.items()%}
+    {%-for method_name, method in stinger.methods.items()%}
     print("Making call to '{{method_name|snake_case}}'")
     future = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
     print(future.result(5))
