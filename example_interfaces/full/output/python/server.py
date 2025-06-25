@@ -16,8 +16,6 @@ from method_codes import *
 from . import interface_types as stinger_types
 
 
-
-
 class ExampleServer:
 
     def __init__(self, connection: BrokerConnection):
@@ -165,21 +163,28 @@ class ExampleServerBuilder:
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
         
-
+        self._add_numbers_method_handler: Optional[Callable[[int, int], int]] = None
+        self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
     
     def handle_add_numbers(self, handler: Callable[[int, int], int]):
         if self._add_numbers_method_handler is None and handler is not None:
             self._add_numbers_method_handler = handler
         else:
             raise Exception("Method handler already set")
+    
     def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
         if self._do_something_method_handler is None and handler is not None:
             self._do_something_method_handler = handler
         else:
             raise Exception("Method handler already set")
-
+    
     def build(self) -> ExampleServer:
         new_server = ExampleServer(self._conn)
+        
+        if self._add_numbers_method_handler is not None:
+            new_server.handle_add_numbers(self._add_numbers_method_handler)
+        if self._do_something_method_handler is not None:
+            new_server.handle_do_something(self._do_something_method_handler)
         return new_server
 
 if __name__ == '__main__':

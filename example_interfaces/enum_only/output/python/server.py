@@ -16,8 +16,6 @@ from method_codes import *
 from . import interface_types as stinger_types
 
 
-
-
 class EnumOnlyServer:
 
     def __init__(self, connection: BrokerConnection):
@@ -50,11 +48,10 @@ class EnumOnlyServerBuilder:
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
         
-
     
-
     def build(self) -> EnumOnlyServer:
         new_server = EnumOnlyServer(self._conn)
+        
         return new_server
 
 if __name__ == '__main__':

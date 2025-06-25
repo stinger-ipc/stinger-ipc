@@ -150,18 +150,21 @@ class {{stinger.name}}ServerBuilder:
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
         {%for method_name, method in stinger.methods.items()%}
+        self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
         {%-endfor%}
-
     {%for method_name, method in stinger.methods.items()%}
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
         if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
             self._{{method_name|snake_case}}_method_handler = handler
         else:
             raise Exception("Method handler already set")
-    {%-endfor%}
-
+    {%endfor%}
     def build(self) -> {{stinger.name}}Server:
         new_server = {{stinger.name}}Server(self._conn)
+        {%for method_name, method in stinger.methods.items()%}
+        if self._{{method_name|snake_case}}_method_handler is not None:
+            new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler)
+        {%-endfor%}
         return new_server
 
 if __name__ == '__main__':

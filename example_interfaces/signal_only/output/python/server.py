@@ -16,8 +16,6 @@ from method_codes import *
 from . import interface_types as stinger_types
 
 
-
-
 class SignalOnlyServer:
 
     def __init__(self, connection: BrokerConnection):
@@ -66,11 +64,10 @@ class SignalOnlyServerBuilder:
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
         
-
     
-
     def build(self) -> SignalOnlyServer:
         new_server = SignalOnlyServer(self._conn)
+        
         return new_server
 
 if __name__ == '__main__':
