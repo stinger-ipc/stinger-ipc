@@ -94,13 +94,21 @@ class DefaultConnection(BrokerConnection):
         
     
     def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
-            correlation_id: Optional[str] = None, response_topic: Optional[str] = None):
+            correlation_id: Optional[str] = None, response_topic: Optional[str] = None,
+            return_value: Optional[int] = None, debug_info: Optional[str] = None):
         properties = paho.mqtt.properties.Properties(mqtt.PUBLISH)
         properties.ContentType = "application/json"
         if correlation_id is not None:
             properties.CorrelationData = correlation_id
         if response_topic is not None:
             properties.ResponseTopic = response_topic
+        user_properties = []
+        if response_code is not None:
+            user_properties.append(("ReturnValue", str(response_code)))
+        if debug_info is not None:
+            user_properties.append(("DebugInfo", debug_info))
+        if len(user_properties) > 0:
+            properties.UserProperties = user_properties
         if self._connected:
             self._logger.info("Publishing %s", topic)
             self._client.publish(topic, msg, qos, retain, properties)

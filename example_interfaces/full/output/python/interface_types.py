@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the Example interface.
 """
-from dataclasses import dataclass
+from pydantic import BaseModel
 from enum import Enum
 
 
@@ -19,14 +19,7 @@ class DayOfTheWeek(Enum):
 
 
 
-
-
-
-@dataclass
-class DoSomethingReturnValue:
+class DoSomethingReturnValue(BaseModel):
     label: str
-    
     identifier: int
-    
     day: DayOfTheWeek
-    

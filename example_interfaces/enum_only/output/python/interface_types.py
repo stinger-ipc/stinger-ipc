@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the EnumOnly interface.
 """
-from dataclasses import dataclass
+from pydantic import BaseModel
 from enum import Enum
 
 
@@ -12,7 +12,6 @@ class Fruits(Enum):
     APPLE = 1
     BANANA = 2
     PEAR = 3
-
 
 class Months(Enum):
     JANUARY = 1
@@ -27,8 +26,5 @@ class Months(Enum):
     OCTOBER = 10
     NOVEMBER = 11
     DECEMBER = 12
-
-
-
 
 

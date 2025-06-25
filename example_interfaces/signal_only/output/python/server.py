@@ -28,6 +28,8 @@ class SignalOnlyServer:
         
     
     def _receive_message(self, topic: str, payload: str):
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
         self._logger.debug("Received message to %s", topic)
         pass
 
@@ -35,7 +37,8 @@ class SignalOnlyServer:
         self._conn.publish("SignalOnly/interface", '''{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}''', qos=1, retain=True)
 
     def emit_anotherSignal(self, one: float, two: bool, three: str):
-        
+        """ Server application code should call this method to emit the 'anotherSignal' signal.
+        """
         if not isinstance(one, float):
             raise ValueError(f"The 'one' value must be float.")
         if not isinstance(two, bool):

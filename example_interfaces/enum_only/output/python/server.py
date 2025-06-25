@@ -28,6 +28,8 @@ class EnumOnlyServer:
         
     
     def _receive_message(self, topic: str, payload: str):
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
         self._logger.debug("Received message to %s", topic)
         pass
 

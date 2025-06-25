@@ -2,12 +2,12 @@
 import logging
 from typing import Callable, Optional, Tuple, Any
 from paho.mqtt import client as mqtt_client
-from paho.mqtt.properties import Properties
-from paho.mqtt.packettypes import PacketTypes
+from paho.mqtt.properties import Properties as MqttProperties
+from paho.mqtt.packettypes import PacketTypes as MqttPacketTypes
 from queue import Queue, Empty
 from abc import ABC, abstractmethod
 from method_codes import *
-
+from interface_types import MethodResultCode
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -94,13 +94,21 @@ class LocalConnection(BrokerConnection):
         
     
     def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
-            correlation_id: Optional[str] = None, response_topic: Optional[str] = None):
-        properties = paho.mqtt.properties.Properties(mqtt.PUBLISH)
+            correlation_id: Optional[str] = None, response_topic: Optional[str] = None,
+            result_code: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
+        properties = MqttProperties(MqttPacketTypes.PUBLISH)
         properties.ContentType = "application/json"
         if correlation_id is not None:
             properties.CorrelationData = correlation_id
         if response_topic is not None:
             properties.ResponseTopic = response_topic
+        user_properties = []
+        if result_code is not None:
+            user_properties.append(("result", str(result_code)))
+        if debug_info is not None:
+            user_properties.append(("debug", debug_info))
+        if len(user_properties) > 0:
+            properties.UserProperties = user_properties
         if self._connected:
             self._logger.info("Publishing %s", topic)
             self._client.publish(topic, msg, qos, retain, properties)

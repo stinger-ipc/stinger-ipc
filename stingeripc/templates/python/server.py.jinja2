@@ -39,6 +39,8 @@ class {{stinger.name}}Server:
         {%endfor%}
     
     def _receive_message(self, topic: str, payload: str):
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
         self._logger.debug("Received message to %s", topic)
         {%if stinger.methods | length > 0 -%}
         {%for method_name, method in stinger.methods.items()-%}
@@ -57,7 +59,9 @@ class {{stinger.name}}Server:
 
     {%for sig_name, sig in stinger.signals.items()-%}
     def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
-        {%for arg in sig.arg_list%}
+        """ Server application code should call this method to emit the '{{sig_name}}' signal.
+        """
+        {%-for arg in sig.arg_list%}
         if not isinstance({{arg.name}}, {{arg.python_type}}):
             raise ValueError(f"The '{{arg.name}}' value must be {{arg.python_type}}.")
         {%-endfor%}
@@ -72,14 +76,20 @@ class {{stinger.name}}Server:
 
     {%for method_name, method in stinger.methods.items()%}
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
+        """ This is a decorator to decorate a method that will handle the '{{method_name}}' method calls.
+        """
         if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
             self._{{method_name|snake_case}}_method_handler = handler
         else:
             raise Exception("Method handler already set")
 
-    def _process_{{method_name | snake_case}}_call(self, topic, payload):
+    def _process_{{method_name | snake_case}}_call(self, topic, payload, properties):
+        """ This processes a call to the '{{method_name}}' method.  It deserializes the payload to find the method arguments,
+        then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
+        """
+        correlation_id = payload.get('CorrelationData')
+        response_topic = payload.get('ResponseTopic', f"{{method.response_topic("{payload['clientId']}")}}")
         if self._{{method_name|snake_case}}_method_handler is not None:
-            response_builder = MethodResponseBuilder(payload)
             method_args = []
             {%for arg in method.arg_list -%}
             if "{{arg.name}}" in payload:
@@ -91,32 +101,22 @@ class {{stinger.name}}Server:
             else:
                 self._logger.info("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
             {%endfor%}
+            
+            return_data = None
             try:
-                return_value = self._{{method_name|snake_case}}_method_handler(*method_args)
-                {%macro build_response(arg, var)%}
-                {%-if arg.arg_type.name.lower() == 'value'%}
-                response_builder.return_value("{{arg.name}}", {{var}})
-                {%-elif arg.arg_type.name.lower() == 'enum'%}
-                response_builder.return_value("{{arg.name}}", {{var}}.value)
-                {%-endif%}
-                {%-endmacro%}
-                {%-if method.return_value.arg_type.name.lower() == 'struct'%}
-                {%-for arg in method.return_value.members%}
-                {{build_response(arg, "return_value."+arg.name)}}
-                {%-endfor%}
-                {%-else %}
-                {{build_response(method.return_value, "return_value")}}
-                {%-endif%}
+                return_struct = self._{{method_name|snake_case}}_method_handler(*method_args)
+                if return_struct is not None:
+                    return_data = return_struct.model_dump()
             except Exception as e:
                 self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
-                response_builder.result_code(MethodResultCode.SERVER_ERROR).debug_result_message(str(e))
+                return_value = MethodResultCode.SERVER_ERROR
+                debug_msg = str(e)
             else:
-                response_builder.result_code(MethodResultCode.SUCCESS)
+                return_value = MethodResultCode.SUCCESS
+                debug_msg = None
 
-
-            if response_builder.is_valid():
-                response_topic = f"{{method.response_topic("{payload['clientId']}")}}"
-                self._conn.publish(response_topic, json.dumps(response_builder.response), qos=1, retain=False)
+            self._conn.publish(response_topic, json.dumps(return_data), qos=1, retain=False, 
+                correlation_id=correlation_id, return_valuedebug_info=debug_msg)
     {%endfor%}
 
     {%for p,v in stinger.params.items()-%}

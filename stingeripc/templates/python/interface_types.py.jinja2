@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 """
-from dataclasses import dataclass
+from pydantic import BaseModel
 {%if stinger.uses_enums()%}from enum import Enum{%endif%}
 
 {%for ie_name, ie in stinger.enums.items() %}
@@ -12,17 +12,13 @@ class {{ie_name | UpperCamelCase }}(Enum):
     {%-for value in ie.values %}
     {{value | CONST_CASE}} = {{loop.index}}
     {%-endfor%}
-
 {%endfor%}
-
-
 
 {%for method_name, method in stinger.methods.items()%}
 {%-if method.return_value.arg_type.name.lower() == 'struct'%}
-@dataclass
-class {{method.return_value.python_local_type}}:
+class {{method.return_value.python_local_type}}(BaseModel):
     {%-for arg in method.return_value.members%}
     {{arg.name}}: {{arg.python_local_type}}
-    {%endfor%}
+    {%-endfor%}
 {%endif-%}
 {%endfor%}
