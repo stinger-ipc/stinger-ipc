@@ -1,7 +1,7 @@
 
 import logging
-from typing import Callable, Optional, Tuple, Any
-from paho.mqtt.client import Client as MqttClient
+from typing import Callable, Optional, Tuple, Any, Union
+from paho.mqtt.client import Client as MqttClient, topic_matches_sub
 from paho.mqtt.enums import MQTTProtocolVersion, CallbackAPIVersion
 from paho.mqtt.properties import Properties as MqttProperties
 from paho.mqtt.packettypes import PacketTypes
@@ -18,7 +18,7 @@ class BrokerConnection(ABC):
     
     @abstractmethod
     def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
-            correlation_id: Optional[str] = None, response_topic: Optional[str] = None,
+            correlation_id: Union[str, bytes, None] = None, response_topic: Optional[str] = None,
             return_value: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
         pass
 
@@ -101,12 +101,14 @@ class DefaultConnection(BrokerConnection):
         
     
     def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
-            correlation_id: Optional[str] = None, response_topic: Optional[str] = None,
+            correlation_id: Union[str, bytes, None] = None, response_topic: Optional[str] = None,
             return_value: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
         properties = MqttProperties(PacketTypes.PUBLISH)
         properties.ContentType = "application/json"
-        if correlation_id is not None:
+        if isinstance(correlation_id, str):
             properties.CorrelationData = correlation_id.encode('utf-8')
+        elif isinstance(correlation_id, bytes):
+            properties.CorrelationData = correlation_id
         if response_topic is not None:
             properties.ResponseTopic = response_topic
         user_properties = []
@@ -132,5 +134,5 @@ class DefaultConnection(BrokerConnection):
             self._queued_subscriptions.put(topic)
     
     def is_topic_sub(self, topic: str, sub: str) -> bool:
-        return paho.mqtt.topic_matches_sub(sub, topic)
+        return topic_matches_sub(sub, topic)
 

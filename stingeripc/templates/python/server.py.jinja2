@@ -87,8 +87,8 @@ class {{stinger.name}}Server:
         """ This processes a call to the '{{method_name}}' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        correlation_id = properties.get('CorrelationData')
-        response_topic = properties.get('ResponseTopic')
+        correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
+        response_topic = properties.get('ResponseTopic') # type: Optional[str]
         if self._{{method_name|snake_case}}_method_handler is not None:
             method_args = [] # type: List[Any]
             {%for arg in method.arg_list -%}

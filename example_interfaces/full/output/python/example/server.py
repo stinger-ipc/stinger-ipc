@@ -85,8 +85,8 @@ class ExampleServer:
         """ This processes a call to the 'addNumbers' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        correlation_id = properties.get('CorrelationData')
-        response_topic = properties.get('ResponseTopic')
+        correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
+        response_topic = properties.get('ResponseTopic') # type: Optional[str]
         if self._add_numbers_method_handler is not None:
             method_args = [] # type: List[Any]
             if "first" in payload:
@@ -137,8 +137,8 @@ class ExampleServer:
         """ This processes a call to the 'doSomething' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        correlation_id = properties.get('CorrelationData')
-        response_topic = properties.get('ResponseTopic')
+        correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
+        response_topic = properties.get('ResponseTopic') # type: Optional[str]
         if self._do_something_method_handler is not None:
             method_args = [] # type: List[Any]
             if "aString" in payload:
