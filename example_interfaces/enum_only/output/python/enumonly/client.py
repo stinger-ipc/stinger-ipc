@@ -11,8 +11,8 @@ from functools import partial
 import json
 import logging
 
-from enumonly.connection import BrokerConnection
-from enumonly import interface_types as stinger_types
+from connection import BrokerConnection
+import interface_types as stinger_types
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -78,7 +78,7 @@ class EnumOnlyClientBuilder:
 if __name__ == '__main__':
     import signal
 
-    from .connection import DefaultConnection
+    from connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
     client_builder = EnumOnlyClientBuilder(conn)
     

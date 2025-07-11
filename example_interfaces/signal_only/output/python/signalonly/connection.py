@@ -106,7 +106,7 @@ class DefaultConnection(BrokerConnection):
         properties = MqttProperties(PacketTypes.PUBLISH)
         properties.ContentType = "application/json"
         if correlation_id is not None:
-            properties.CorrelationData = correlation_id
+            properties.CorrelationData = correlation_id.encode('utf-8')
         if response_topic is not None:
             properties.ResponseTopic = response_topic
         user_properties = []

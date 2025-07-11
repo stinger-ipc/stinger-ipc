@@ -11,7 +11,7 @@ from functools import partial
 import json
 import logging
 
-from signalonly.connection import BrokerConnection
+from connection import BrokerConnection
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -112,7 +112,7 @@ class SignalOnlyClientBuilder:
 if __name__ == '__main__':
     import signal
 
-    from .connection import DefaultConnection
+    from connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
     client_builder = SignalOnlyClientBuilder(conn)
     

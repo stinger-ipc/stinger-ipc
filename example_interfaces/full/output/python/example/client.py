@@ -13,10 +13,10 @@ import logging
 
 import asyncio
 import concurrent.futures as futures
-from example.method_codes import *
+from method_codes import *
 
-from example.connection import BrokerConnection
-from example import interface_types as stinger_types
+from connection import BrokerConnection
+import interface_types as stinger_types
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -227,7 +227,7 @@ class ExampleClientBuilder:
 if __name__ == '__main__':
     import signal
 
-    from .connection import LocalConnection
+    from connection import LocalConnection
     conn = LocalConnection()
     client_builder = ExampleClientBuilder(conn)
     
@@ -244,11 +244,17 @@ if __name__ == '__main__':
     
     print("Making call to 'add_numbers'")
     future = client.add_numbers(first=42, second=42)
-    print(future.result(5))
+    try:
+        print(future.result(5))
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'add_numbers' call")
     
     print("Making call to 'do_something'")
     future = client.do_something(aString="apples")
-    print(future.result(5))
+    try:
+        print(future.result(5))
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'do_something' call")
     
     
 
