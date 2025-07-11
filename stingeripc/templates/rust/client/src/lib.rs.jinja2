@@ -16,7 +16,7 @@ use connection::return_structs::MethodResultCode;
 {%endif%}
 use paho_mqtt::topic_matcher::TopicMatcher;
 
-pub struct {{stinger.name}}Client {
+pub struct {{stinger.name | UpperCamelCase }}Client {
     connection: Connection,
     {%for sig_name, sig in stinger.signals.items()-%}
         signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->()>,
@@ -25,8 +25,8 @@ pub struct {{stinger.name}}Client {
     {%if stinger.methods | length > 0 %}pending_responses: HashMap::<Uuid, oneshot::Sender::<JsonValue>>,{%endif%}
 }
 
-impl {{stinger.name}}Client {
-    pub fn new(connection: Connection) -> {{stinger.name}}Client {
+impl {{stinger.name | UpperCamelCase }}Client {
+    pub fn new(connection: Connection) -> {{stinger.name | UpperCamelCase }}Client {
 
         let mut topic_matcher = TopicMatcher::<u32>::new();
         {%for sig_name, sig in stinger.signals.items()-%}
@@ -36,7 +36,7 @@ impl {{stinger.name}}Client {
         topic_matcher.insert(format!("{{method.response_topic('{}')}}", connection.client_id), {{loop.index}});
         {%endfor%}
 
-        {{stinger.name}}Client {
+        {{stinger.name | UpperCamelCase }}Client {
             connection: connection,
             {%for sig_name, sig in stinger.signals.items()-%}
             signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |{%for arg in sig.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
@@ -71,7 +71,7 @@ impl {{stinger.name}}Client {
             {%endfor%}
         };
         let data_str = json::stringify(data);
-        self.connection.publish("{{method.topic}}".to_string(), data_str, 2).await;
+        self.connection.publish("{{method.topic}}".to_string(), data_str, 2, None).await;
         let resp_obj = receiver.recv().unwrap();
         
         {%-if method.return_value.arg_type.name.lower() == 'value' %}

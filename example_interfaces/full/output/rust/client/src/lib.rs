@@ -65,7 +65,7 @@ impl ExampleClient {
             
         };
         let data_str = json::stringify(data);
-        self.connection.publish("Example/method/addNumbers".to_string(), data_str, 2).await;
+        self.connection.publish("Example/method/addNumbers".to_string(), data_str, 2, None).await;
         let resp_obj = receiver.recv().unwrap();
         Ok(resp_obj["sum"].as_i32().unwrap())
     }
@@ -100,7 +100,7 @@ impl ExampleClient {
             
         };
         let data_str = json::stringify(data);
-        self.connection.publish("Example/method/doSomething".to_string(), data_str, 2).await;
+        self.connection.publish("Example/method/doSomething".to_string(), data_str, 2, None).await;
         let resp_obj = receiver.recv().unwrap();
         Ok(connection::return_structs::DoSomethingReturnValue { 
             

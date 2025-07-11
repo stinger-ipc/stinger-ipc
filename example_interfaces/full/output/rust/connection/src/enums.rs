@@ -23,8 +23,8 @@ pub enum DayOfTheWeek {
 }
 
 impl DayOfTheWeek {
-    pub fn from_u32(value: u32) -> DayOfTheWeek {
-        FromPrimitive::from_u32(value).unwrap()
+    pub fn from_u32(value: u32) -> Option<Self> {
+        FromPrimitive::from_u32(value)
     }
 }
 

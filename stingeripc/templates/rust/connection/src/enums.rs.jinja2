@@ -19,8 +19,8 @@ pub enum {{ie_name | UpperCamelCase }} {
 }
 
 impl {{ie_name | UpperCamelCase }} {
-    pub fn from_u32(value: u32) -> {{ie_name | UpperCamelCase }} {
-        FromPrimitive::from_u32(value).unwrap()
+    pub fn from_u32(value: u32) -> Option<Self> {
+        FromPrimitive::from_u32(value)
     }
 }
 

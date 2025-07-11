@@ -72,14 +72,29 @@ impl Connection {
     }
     {%endfor%}
 
-    pub async fn publish(&mut self, topic: String, message: String, qos: u8) {
+    pub async fn publish(&mut self, topic: String, message: String, qos: u8, correlation_data: Option<Vec<u8>>) -> Result<u32, mqtt::Error> {
+
+        // Create PUBLISH properties
+        let mut properties = mqtt::Properties::new();
+
+        if let Some(cd) = correlation_data {
+            let prop = mqtt::Property::new(mqtt::PropertyCode::CorrelationData, cd)?;
+            properties.push(prop)?;
+        }
+
         // Create a message and publish it
-        let msg = mqtt::Message::new(topic, message, qos.into());
+        let msg = mqtt::MessageBuilder::new()
+            .topic(topic)
+            .payload(message)
+            .qos(qos as u32)
+            .finalize();
         let tok = self.cli.publish(msg);
     
         if let Err(e) = tok.await {
             println!("Error sending message: {:?}", e);
         }
+
+        Ok(1)
     }
 
     pub fn subscribe(&mut self, topic: String, qos: i32) {

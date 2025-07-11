@@ -3,10 +3,12 @@ name = "signal_only_server"
 version = "0.0.1"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 connection = { path = "../connection" }
 futures = "0.3"
 json = "0.12.4"
-paho-mqtt = "0.11.1"
+paho-mqtt = "0.13.3"
+
+[[example]]
+name = "signal_only_server_example"
+path = "examples/server.rs"
