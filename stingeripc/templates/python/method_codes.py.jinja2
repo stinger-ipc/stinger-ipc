@@ -18,7 +18,7 @@ class StingerMethodException(Exception):
 {%for rc_i, rc_name in stinger.method_return_codes.items()%}
 class {{rc_name | UpperCamelCase}}StingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__({{rc_i}}, message)
+        super().__init__(MethodResultCode.{{rc_name | CONST_CASE}}, message)
 {%endfor%}
 
 def stinger_exception_factory(result_code: int, message: Optional[str]=None):

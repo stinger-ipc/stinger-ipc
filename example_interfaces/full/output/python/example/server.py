@@ -10,10 +10,10 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable, Dict, Any, Optional
-from .connection import BrokerConnection
+from typing import Callable, Dict, Any, Optional, List
+from connection import BrokerConnection
 from method_codes import *
-from . import interface_types as stinger_types
+import interface_types as stinger_types
 
 
 class ExampleServer:
@@ -33,7 +33,7 @@ class ExampleServer:
         self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
         
     
-    def _receive_message(self, topic: str, payload: str):
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ This is the callback that is called whenever any message is received on a subscribed topic.
         """
         self._logger.debug("Received message to %s", topic)
@@ -43,14 +43,14 @@ class ExampleServer:
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
-                self._process_add_numbers_call(topic, payload_obj)
+                self._process_add_numbers_call(topic, payload_obj, properties)
         elif self._conn.is_topic_sub(topic, "Example/method/doSomething"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
-                self._process_do_something_call(topic, payload_obj)
+                self._process_do_something_call(topic, payload_obj, properties)
         
 
     def _publish_interface_info(self):
@@ -81,12 +81,14 @@ class ExampleServer:
         else:
             raise Exception("Method handler already set")
 
-    def _process_add_numbers_call(self, topic, payload, properties=None):
+    def _process_add_numbers_call(self, topic: str, payload: Dict[str, Any], properties: Dict[str, Any]):
         """ This processes a call to the 'addNumbers' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
+        correlation_id = properties.get('CorrelationData')
+        response_topic = properties.get('ResponseTopic')
         if self._add_numbers_method_handler is not None:
-            method_args = []
+            method_args = [] # type: List[Any]
             if "first" in payload:
                 if not isinstance(payload["first"], int):
                     self._logger.warning("The 'first' property in the payload to '%s' wasn't the correct type.  It should have been int.", topic)
@@ -105,21 +107,23 @@ class ExampleServer:
                 self._logger.info("The 'second' property in the payload to '%s' wasn't present", topic)
             
             
-            try:
-                return_struct = self._add_numbers_method_handler(*method_args)
-                if return_struct is not None:
-                    return_value = return_struct.model_dump()
-            except Exception as e:
-                self._logger.exception("Exception while handling addNumbers", exc_info=e)
-                return_value = MethodResultCode.SERVER_ERROR
-                debug_msg = str(e)
-            else:
-                return_value = MethodResultCode.SUCCESS
-                debug_msg = None
+            if response_topic is not None:
+                return_data = None
+                debug_msg = None # type: Optional[str]
+                try:
+                    return_struct = self._add_numbers_method_handler(*method_args)
+                    if return_struct is not None:
+                        return_data = return_struct.model_dump()
+                except Exception as e:
+                    self._logger.exception("Exception while handling addNumbers", exc_info=e)
+                    return_value = MethodResultCode.SERVER_ERROR
+                    debug_msg = str(e)
+                else:
+                    return_value = MethodResultCode.SUCCESS
+                    debug_msg = None
 
-            response_topic = f"client/{payload['clientId']}/Example/method/addNumbers/response"
-            self._conn.publish(response_topic, json.dumps(response_builder.response), qos=1, retain=False, return_value=return_value, 
-                correlation_id=payload.get('correlationId'), response_topic=payload.get('responseTopic'), debug_info=debug_msg)
+                self._conn.publish(response_topic, json.dumps(return_data), qos=1, retain=False, 
+                    correlation_id=correlation_id, return_value=return_value, debug_info=debug_msg)
     
     def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
         """ This is a decorator to decorate a method that will handle the 'doSomething' method calls.
@@ -129,12 +133,14 @@ class ExampleServer:
         else:
             raise Exception("Method handler already set")
 
-    def _process_do_something_call(self, topic, payload, properties=None):
+    def _process_do_something_call(self, topic: str, payload: Dict[str, Any], properties: Dict[str, Any]):
         """ This processes a call to the 'doSomething' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
+        correlation_id = properties.get('CorrelationData')
+        response_topic = properties.get('ResponseTopic')
         if self._do_something_method_handler is not None:
-            method_args = []
+            method_args = [] # type: List[Any]
             if "aString" in payload:
                 if not isinstance(payload["aString"], str):
                     self._logger.warning("The 'aString' property in the payload to '%s' wasn't the correct type.  It should have been str.", topic)
@@ -145,21 +151,23 @@ class ExampleServer:
                 self._logger.info("The 'aString' property in the payload to '%s' wasn't present", topic)
             
             
-            try:
-                return_struct = self._do_something_method_handler(*method_args)
-                if return_struct is not None:
-                    return_value = return_struct.model_dump()
-            except Exception as e:
-                self._logger.exception("Exception while handling doSomething", exc_info=e)
-                return_value = MethodResultCode.SERVER_ERROR
-                debug_msg = str(e)
-            else:
-                return_value = MethodResultCode.SUCCESS
-                debug_msg = None
+            if response_topic is not None:
+                return_data = None
+                debug_msg = None # type: Optional[str]
+                try:
+                    return_struct = self._do_something_method_handler(*method_args)
+                    if return_struct is not None:
+                        return_data = return_struct.model_dump()
+                except Exception as e:
+                    self._logger.exception("Exception while handling doSomething", exc_info=e)
+                    return_value = MethodResultCode.SERVER_ERROR
+                    debug_msg = str(e)
+                else:
+                    return_value = MethodResultCode.SUCCESS
+                    debug_msg = None
 
-            response_topic = f"client/{payload['clientId']}/Example/method/doSomething/response"
-            self._conn.publish(response_topic, json.dumps(response_builder.response), qos=1, retain=False, return_value=return_value, 
-                correlation_id=payload.get('correlationId'), response_topic=payload.get('responseTopic'), debug_info=debug_msg)
+                self._conn.publish(response_topic, json.dumps(return_data), qos=1, retain=False, 
+                    correlation_id=correlation_id, return_value=return_value, debug_info=debug_msg)
     
 
     
@@ -218,7 +226,7 @@ if __name__ == '__main__':
     @server.handle_do_something
     def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
         print(f"Running do_something'({aString})'")
-        return stinger_types.DoSomethingReturnValue("apples", 42, stinger_types.DayOfTheWeek.MONDAY)
+        return stinger_types.DoSomethingReturnValue(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.MONDAY)
     
 
     server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)

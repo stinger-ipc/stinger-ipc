@@ -10,10 +10,10 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable, Dict, Any, Optional
-from .connection import BrokerConnection
+from typing import Callable, Dict, Any, Optional, List
+from connection import BrokerConnection
 from method_codes import *
-from . import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
+import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
 {%macro method_type_annotation(method) %}Callable[[{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], {{method.return_value.python_type}}]{%endmacro%}
 
 class {{stinger.name}}Server:
@@ -38,7 +38,7 @@ class {{stinger.name}}Server:
         self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
         {%endfor%}
     
-    def _receive_message(self, topic: str, payload: str):
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ This is the callback that is called whenever any message is received on a subscribed topic.
         """
         self._logger.debug("Received message to %s", topic)
@@ -50,7 +50,7 @@ class {{stinger.name}}Server:
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
-                self._process_{{method_name | snake_case}}_call(topic, payload_obj)
+                self._process_{{method_name | snake_case}}_call(topic, payload_obj, properties)
         {%endfor%}
         {%-else%}pass{%-endif%}
 
@@ -83,14 +83,14 @@ class {{stinger.name}}Server:
         else:
             raise Exception("Method handler already set")
 
-    def _process_{{method_name | snake_case}}_call(self, topic, payload, properties):
+    def _process_{{method_name | snake_case}}_call(self, topic: str, payload: Dict[str, Any], properties: Dict[str, Any]):
         """ This processes a call to the '{{method_name}}' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        correlation_id = payload.get('CorrelationData')
-        response_topic = payload.get('ResponseTopic', f"{{method.response_topic("{payload['clientId']}")}}")
+        correlation_id = properties.get('CorrelationData')
+        response_topic = properties.get('ResponseTopic')
         if self._{{method_name|snake_case}}_method_handler is not None:
-            method_args = []
+            method_args = [] # type: List[Any]
             {%for arg in method.arg_list -%}
             if "{{arg.name}}" in payload:
                 if not isinstance(payload["{{arg.name}}"], {{arg.python_type}}):
@@ -102,21 +102,23 @@ class {{stinger.name}}Server:
                 self._logger.info("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
             {%endfor%}
             
-            return_data = None
-            try:
-                return_struct = self._{{method_name|snake_case}}_method_handler(*method_args)
-                if return_struct is not None:
-                    return_data = return_struct.model_dump()
-            except Exception as e:
-                self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
-                return_value = MethodResultCode.SERVER_ERROR
-                debug_msg = str(e)
-            else:
-                return_value = MethodResultCode.SUCCESS
-                debug_msg = None
+            if response_topic is not None:
+                return_data = None
+                debug_msg = None # type: Optional[str]
+                try:
+                    return_struct = self._{{method_name|snake_case}}_method_handler(*method_args)
+                    if return_struct is not None:
+                        return_data = return_struct.model_dump()
+                except Exception as e:
+                    self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
+                    return_value = MethodResultCode.SERVER_ERROR
+                    debug_msg = str(e)
+                else:
+                    return_value = MethodResultCode.SUCCESS
+                    debug_msg = None
 
-            self._conn.publish(response_topic, json.dumps(return_data), qos=1, retain=False, 
-                correlation_id=correlation_id, return_valuedebug_info=debug_msg)
+                self._conn.publish(response_topic, json.dumps(return_data), qos=1, retain=False, 
+                    correlation_id=correlation_id, return_value=return_value, debug_info=debug_msg)
     {%endfor%}
 
     {%for p,v in stinger.params.items()-%}

@@ -10,10 +10,10 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable, Dict, Any, Optional
-from .connection import BrokerConnection
+from typing import Callable, Dict, Any, Optional, List
+from connection import BrokerConnection
 from method_codes import *
-from . import interface_types as stinger_types
+import interface_types as stinger_types
 
 
 class EnumOnlyServer:
@@ -27,7 +27,7 @@ class EnumOnlyServer:
         self._conn.set_last_will(topic="EnumOnly/interface", payload=None, qos=1, retain=True)
         
     
-    def _receive_message(self, topic: str, payload: str):
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ This is the callback that is called whenever any message is received on a subscribed topic.
         """
         self._logger.debug("Received message to %s", topic)

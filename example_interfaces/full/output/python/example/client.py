@@ -13,10 +13,10 @@ import logging
 
 import asyncio
 import concurrent.futures as futures
-from .method_codes import *
+from example.method_codes import *
 
-from .connection import BrokerConnection
-from . import interface_types as stinger_types
+from example.connection import BrokerConnection
+from example import interface_types as stinger_types
 
 logging.basicConfig(level=logging.DEBUG)
 

@@ -21,23 +21,23 @@ class StingerMethodException(Exception):
 
 class SuccessStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(0, message)
+        super().__init__(MethodResultCode.SUCCESS, message)
 
 class ClientErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(1, message)
+        super().__init__(MethodResultCode.CLIENT_ERROR, message)
 
 class ServerErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(2, message)
+        super().__init__(MethodResultCode.SERVER_ERROR, message)
 
 class TransportErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(3, message)
+        super().__init__(MethodResultCode.TRANSPORT_ERROR, message)
 
 class PayloadErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(4, message)
+        super().__init__(MethodResultCode.PAYLOAD_ERROR, message)
 
 
 def stinger_exception_factory(result_code: int, message: Optional[str]=None):

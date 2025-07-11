@@ -11,8 +11,8 @@ from functools import partial
 import json
 import logging
 
-from .connection import BrokerConnection
-from . import interface_types as stinger_types
+from enumonly.connection import BrokerConnection
+from enumonly import interface_types as stinger_types
 
 logging.basicConfig(level=logging.DEBUG)
 

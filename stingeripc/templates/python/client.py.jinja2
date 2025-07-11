@@ -13,10 +13,10 @@ import logging
 {%if stinger.methods | length > 0 %}
 import asyncio
 import concurrent.futures as futures
-from .method_codes import *
+from {{stinger.name | lower}}.method_codes import *
 {%endif%}
-from .connection import BrokerConnection
-{%if stinger.uses_enums()%}from . import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
+from {{stinger.name | lower}}.connection import BrokerConnection
+{%if stinger.uses_enums()%}from {{stinger.name | lower}} import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
 
 logging.basicConfig(level=logging.DEBUG)
 

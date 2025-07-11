@@ -11,7 +11,7 @@ from functools import partial
 import json
 import logging
 
-from .connection import BrokerConnection
+from signalonly.connection import BrokerConnection
 
 
 logging.basicConfig(level=logging.DEBUG)

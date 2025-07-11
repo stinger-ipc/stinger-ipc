@@ -235,11 +235,11 @@ class ArgStruct(Arg):
         return stringcase.pascalcase(self.name)
 
     def get_random_example_value(self, lang="python") -> str|None:
-        example_list: list[str] = [str(a.get_random_example_value(lang)) for a in self.members]
+        example_list: dict[str] = {a.name: str(a.get_random_example_value(lang)) for a in self.members}
         if lang == 'c++':
-            return "{" + ", ".join(example_list) + "}"
+            return "{" + ", ".join(example_list.values()) + "}"
         elif lang == 'python':
-            init_list = ", ".join(example_list)
+            init_list = ", ".join([f"{k}={v}" for k, v in example_list.items()])
             return f"{self.python_type}({init_list})"
         return None
 

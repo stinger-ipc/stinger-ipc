@@ -1,8 +1,9 @@
 
 import logging
 from typing import Callable, Optional, Tuple, Any
-from paho.mqtt import client as mqtt_client
-from paho.mqtt.properties import Properties
+from paho.mqtt.client import Client as MqttClient
+from paho.mqtt.enums import MQTTProtocolVersion, CallbackAPIVersion
+from paho.mqtt.properties import Properties as MqttProperties
 from paho.mqtt.packettypes import PacketTypes
 from queue import Queue, Empty
 from abc import ABC, abstractmethod
@@ -16,7 +17,9 @@ MessageCallback = Callable[[str, str, dict[str, Any]], None]
 class BrokerConnection(ABC):
     
     @abstractmethod
-    def publish(self, topic, msg, qos=1, retain=False):
+    def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
+            correlation_id: Optional[str] = None, response_topic: Optional[str] = None,
+            return_value: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
         pass
 
     @abstractmethod
@@ -31,6 +34,10 @@ class BrokerConnection(ABC):
     def is_topic_sub(self, topic: str, sub: str) -> bool:
         pass
 
+    @abstractmethod
+    def set_last_will(self, topic: str, payload: Optional[str]=None, qos: int=1, retain: bool=True):
+        pass
+
 {%for broker in stinger.brokers.values()%}
 class {{broker.class_name}}(BrokerConnection):
 
@@ -40,10 +47,10 @@ class {{broker.class_name}}(BrokerConnection):
         self._host: str = {%if broker.hostname is none %}host{%else%}"{{broker.hostname}}"{%endif%}
         self._port: int = {%if broker.port is none %}port{%else%}{{broker.port}}{%endif%}
         self._last_will: Optional[Tuple[str, Optional[str], int, bool]] = None
-        self._queued_messages = Queue() # type: Queue[Tuple[str, str, int, bool]]
+        self._queued_messages = Queue() # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
         self._queued_subscriptions = Queue() # type: Queue[str]
         self._connected: bool = False
-        self._client = mqtt_client.Client(mqtt.CallbackAPIVersion.VERSION2, protocol=mqtt.MQTTv5)
+        self._client = MqttClient(CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5)
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._client.connect(self._host, self._port)
@@ -95,16 +102,16 @@ class {{broker.class_name}}(BrokerConnection):
     
     def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
             correlation_id: Optional[str] = None, response_topic: Optional[str] = None,
-            return_value: Optional[int] = None, debug_info: Optional[str] = None):
-        properties = paho.mqtt.properties.Properties(mqtt.PUBLISH)
+            return_value: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
+        properties = MqttProperties(PacketTypes.PUBLISH)
         properties.ContentType = "application/json"
         if correlation_id is not None:
             properties.CorrelationData = correlation_id
         if response_topic is not None:
             properties.ResponseTopic = response_topic
         user_properties = []
-        if response_code is not None:
-            user_properties.append(("ReturnValue", str(response_code)))
+        if return_value is not None:
+            user_properties.append(("ReturnValue", str(return_value)))
         if debug_info is not None:
             user_properties.append(("DebugInfo", debug_info))
         if len(user_properties) > 0:
@@ -125,6 +132,6 @@ class {{broker.class_name}}(BrokerConnection):
             self._queued_subscriptions.put(topic)
     
     def is_topic_sub(self, topic: str, sub: str) -> bool:
-        return mqtt_client.topic_matches_sub(sub, topic)
+        return paho.mqtt.topic_matches_sub(sub, topic)
 
 {%endfor%}
