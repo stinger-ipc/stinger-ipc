@@ -23,7 +23,7 @@ impl SignalOnlyClient {
     pub fn new(connection: Connection) -> SignalOnlyClient {
 
         let mut topic_matcher = TopicMatcher::<u32>::new();
-        topic_matcher.insert("SignalOnly/signal/anotherSignal", 1235);
+        topic_matcher.insert("SignalOnly/signal/anotherSignal", 101);
         
         
 
@@ -38,7 +38,7 @@ impl SignalOnlyClient {
 
     pub fn set_signal_recv_callbacks_for_another_signal(&mut self, cb: impl FnMut(f32, bool, String)->() + 'static) {
         self.signal_recv_callback_for_another_signal = Box::new(cb);
-        self.connection.subscribe(String::from("SignalOnly/signal/anotherSignal"), 2);
+        self.connection.subscribe(String::from("SignalOnly/signal/anotherSignal"), 2, 101);
     }
     
 
@@ -50,7 +50,7 @@ impl SignalOnlyClient {
                 let topic = &msg.topic();
                 let mut func_indexs: Vec<u32> = Vec::new();
                 for item in self.topic_matcher.matches(topic) {
-                    func_indexs.push(item.1);
+                    func_indexs.push(*item.1);
                 }
                 for func_index in func_indexs.iter() {
                     if func_index >= &1234 {

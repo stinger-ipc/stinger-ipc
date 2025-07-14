@@ -97,8 +97,18 @@ impl Connection {
         Ok(1)
     }
 
-    pub fn subscribe(&mut self, topic: String, qos: i32) {
-        self.cli.subscribe(topic, qos);
+    pub fn subscribe(&mut self, topic: String, qos: i32, subscription_identifier: Option<u32>) {
+        let subscribe_options = mqtt::SubscribeOptions::new(true, false, mqtt::RetainHandling::SendRetainedOnSubscribe);
+        let subscribe_properties = mqtt::Properties::new();
+        if let Some(si) = subscription_identifier {
+            let prop = mqtt::Property::new(mqtt::PropertyCode::SubscriptionIdentifier, si);
+            match prop {
+                Ok(prop) => subscribe_properties.push(prop),
+                Err(prop) => println!("Error: {}", prop),
+            }
+            
+        }
+        self.cli.subscribe_with_options(topic, qos, subscribe_options, subscribe_properties);
     }
 }
 

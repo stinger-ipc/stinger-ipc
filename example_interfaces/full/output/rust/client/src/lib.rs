@@ -28,7 +28,7 @@ impl ExampleClient {
     pub fn new(connection: Connection) -> ExampleClient {
 
         let mut topic_matcher = TopicMatcher::<u32>::new();
-        topic_matcher.insert("Example/signal/todayIs", 1235);
+        topic_matcher.insert("Example/signal/todayIs", 101);
         
         
         topic_matcher.insert(format!("client/{}/Example/method/addNumbers/response", connection.client_id), 1);
@@ -47,7 +47,7 @@ impl ExampleClient {
 
     pub fn set_signal_recv_callbacks_for_today_is(&mut self, cb: impl FnMut(i32, connection::enums::DayOfTheWeek)->() + 'static) {
         self.signal_recv_callback_for_today_is = Box::new(cb);
-        self.connection.subscribe(String::from("Example/signal/todayIs"), 2);
+        self.connection.subscribe(String::from("Example/signal/todayIs"), 2, 101);
     }
     
 
@@ -144,7 +144,7 @@ impl ExampleClient {
                 let topic = &msg.topic();
                 let mut func_indexs: Vec<u32> = Vec::new();
                 for item in self.topic_matcher.matches(topic) {
-                    func_indexs.push(item.1);
+                    func_indexs.push(*item.1);
                 }
                 for func_index in func_indexs.iter() {
                     if func_index >= &1234 {
