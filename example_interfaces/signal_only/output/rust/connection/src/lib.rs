@@ -99,11 +99,17 @@ impl Connection {
 
     pub fn subscribe(&mut self, topic: String, qos: i32, subscription_identifier: Option<u32>) {
         let subscribe_options = mqtt::SubscribeOptions::new(true, false, mqtt::RetainHandling::SendRetainedOnSubscribe);
-        let subscribe_properties = mqtt::Properties::new();
+        let mut subscribe_properties = mqtt::Properties::new();
         if let Some(si) = subscription_identifier {
             let prop = mqtt::Property::new(mqtt::PropertyCode::SubscriptionIdentifier, si);
             match prop {
-                Ok(prop) => subscribe_properties.push(prop),
+                Ok(prop) => {
+                    let prop_add_result = subscribe_properties.push(prop);
+                    if let Err(e) = prop_add_result {
+                        println!("Error adding subscription identifier property: {:?}", e);
+                    }
+                    ()
+                },
                 Err(prop) => println!("Error: {}", prop),
             }
             

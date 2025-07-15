@@ -14,40 +14,27 @@ use std::collections::HashMap;
 use uuid::Uuid;
 use connection::return_structs::MethodResultCode;
 
-use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct ExampleClient {
     connection: Connection,
     signal_recv_callback_for_today_is: Box<dyn FnMut(i32, connection::enums::DayOfTheWeek)->()>,
     
-    topic_matcher: TopicMatcher::<u32>,
     pending_responses: HashMap::<Uuid, oneshot::Sender::<JsonValue>>,
 }
 
 impl ExampleClient {
     pub fn new(connection: Connection) -> ExampleClient {
-
-        let mut topic_matcher = TopicMatcher::<u32>::new();
-        topic_matcher.insert("Example/signal/todayIs", 101);
-        
-        
-        topic_matcher.insert(format!("client/{}/Example/method/addNumbers/response", connection.client_id), 1);
-        
-        topic_matcher.insert(format!("client/{}/Example/method/doSomething/response", connection.client_id), 2);
-        
-
         ExampleClient {
             connection: connection,
             signal_recv_callback_for_today_is: Box::new( |_1, _2| {} ),
             
-            topic_matcher: topic_matcher,
             pending_responses: HashMap::new(),
         }
     }
 
     pub fn set_signal_recv_callbacks_for_today_is(&mut self, cb: impl FnMut(i32, connection::enums::DayOfTheWeek)->() + 'static) {
         self.signal_recv_callback_for_today_is = Box::new(cb);
-        self.connection.subscribe(String::from("Example/signal/todayIs"), 2, 101);
+        self.connection.subscribe(String::from("Example/signal/todayIs"), 2, Some(101));
     }
     
 
@@ -105,15 +92,11 @@ impl ExampleClient {
         Ok(connection::return_structs::DoSomethingReturnValue { 
             
             label: resp_obj["label"].as_str().unwrap().to_string(),
-            
-            
         
             
             identifier: resp_obj["identifier"].as_i32().unwrap(),
-            
-            
         
-            day: connection::enums::DayOfTheWeek::from_u32(resp_obj["day"].as_u32().unwrap()),
+            day: connection::enums::DayOfTheWeek::from_u32(resp_obj["day"].as_u32().unwrap()).unwrap(),
             
         })
     }
@@ -143,9 +126,10 @@ impl ExampleClient {
             if let Some(msg) = opt_msg {
                 let topic = &msg.topic();
                 let mut func_indexs: Vec<u32> = Vec::new();
-                for item in self.topic_matcher.matches(topic) {
-                    func_indexs.push(*item.1);
-                }
+
+                //for item in self.topic_matcher.matches(topic) {
+                //    func_indexs.push(*item.1);
+                //}
                 for func_index in func_indexs.iter() {
                     if func_index >= &1234 {
                         let payload_object = json::parse(&msg.payload_str()).unwrap();
@@ -155,7 +139,7 @@ impl ExampleClient {
                                 let temp_day_of_month = payload_object["dayOfMonth"].as_i32().unwrap();
                                 
                                 
-                                let temp_day_of_week = connection::enums::DayOfTheWeek::from_u32(payload_object["dayOfWeek"].as_u32().unwrap());
+                                let temp_day_of_week = connection::enums::DayOfTheWeek::from_u32(payload_object["dayOfWeek"].as_u32().unwrap()).unwrap();
                                 
                                 
                                 (self.signal_recv_callback_for_today_is)(temp_day_of_month, temp_day_of_week);

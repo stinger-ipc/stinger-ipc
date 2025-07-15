@@ -9,36 +9,27 @@ This is the Client for the SignalOnly interface.
 use futures::{StreamExt};
 use connection::Connection;
 
-use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct SignalOnlyClient {
     connection: Connection,
     signal_recv_callback_for_another_signal: Box<dyn FnMut(f32, bool, String)->()>,
     
-    topic_matcher: TopicMatcher::<u32>,
     
 }
 
 impl SignalOnlyClient {
     pub fn new(connection: Connection) -> SignalOnlyClient {
-
-        let mut topic_matcher = TopicMatcher::<u32>::new();
-        topic_matcher.insert("SignalOnly/signal/anotherSignal", 101);
-        
-        
-
         SignalOnlyClient {
             connection: connection,
             signal_recv_callback_for_another_signal: Box::new( |_1, _2, _3| {} ),
             
-            topic_matcher: topic_matcher,
             
         }
     }
 
     pub fn set_signal_recv_callbacks_for_another_signal(&mut self, cb: impl FnMut(f32, bool, String)->() + 'static) {
         self.signal_recv_callback_for_another_signal = Box::new(cb);
-        self.connection.subscribe(String::from("SignalOnly/signal/anotherSignal"), 2, 101);
+        self.connection.subscribe(String::from("SignalOnly/signal/anotherSignal"), 2, Some(101));
     }
     
 
@@ -49,9 +40,10 @@ impl SignalOnlyClient {
             if let Some(msg) = opt_msg {
                 let topic = &msg.topic();
                 let mut func_indexs: Vec<u32> = Vec::new();
-                for item in self.topic_matcher.matches(topic) {
-                    func_indexs.push(*item.1);
-                }
+
+                //for item in self.topic_matcher.matches(topic) {
+                //    func_indexs.push(*item.1);
+                //}
                 for func_index in func_indexs.iter() {
                     if func_index >= &1234 {
                         let payload_object = json::parse(&msg.payload_str()).unwrap();
