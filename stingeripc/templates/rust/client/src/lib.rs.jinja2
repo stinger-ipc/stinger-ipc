@@ -5,7 +5,7 @@ on the next generation.
 This is the Client for the {{stinger.name}} interface.
 */
 
-
+extern crate paho_mqtt as mqtt;
 use futures::{StreamExt};
 use connection::Connection;
 {%if stinger.methods | length > 0 %}
@@ -14,19 +14,34 @@ use std::collections::HashMap;
 use uuid::Uuid;
 use connection::return_structs::MethodResultCode;
 {%endif%}
-{%set signal_ident_start=100%}
+{%-set signal_ident_start=200%}
+{%-set method_ident_start=100%}
+{%-for sig_name, sig in stinger.signals.items() -%}
+    {%set signal_ident_start=signal_ident_start + 1 %}
+{%endfor%}
+{%-for method_name, method in stinger.methods.items() -%}
+    {%set method_ident_start=method_ident_start + 1 %}
+{%endfor%}
 pub struct {{stinger.name | UpperCamelCase }}Client {
     connection: Connection,
+    subsc_id_start: u32,
     {%for sig_name, sig in stinger.signals.items()-%}
         signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->()>,
     {%endfor%}
-    {%if stinger.methods | length > 0 %}pending_responses: HashMap::<Uuid, oneshot::Sender::<JsonValue>>,{%endif%}
+    {%-if stinger.methods | length > 0 %}pending_responses: HashMap::<Uuid, oneshot::Sender::<JsonValue>>,{%endif%}
 }
 
 impl {{stinger.name | UpperCamelCase }}Client {
     pub fn new(connection: Connection) -> {{stinger.name | UpperCamelCase }}Client {
+        let subsc_id_start = connection.get_subcr_id_range_start();
+        {%for method_name, method in stinger.methods.items()-%}
+        connection.subscribe(String::from(format!("{{method.response_topic('{}')}}", connection.client_id)), 2, Some(subsc_id_start+{{method_ident_start + loop.index}}));
+        {%endfor%}
+        {%-for sig_name, sig in stinger.signals.items()-%}
+        {%endfor%}
         {{stinger.name | UpperCamelCase }}Client {
             connection: connection,
+            subsc_id_start: subsc_id_start,
             {%for sig_name, sig in stinger.signals.items()-%}
             signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |{%for arg in sig.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
             {%endfor%}
@@ -82,12 +97,11 @@ impl {{stinger.name | UpperCamelCase }}Client {
         {%-endif %}
     }
 
-    fn handle_{{method_name|snake_case}}_response(&mut self, payload: String) {
+    fn handle_{{method_name|snake_case}}_response(&mut self, payload: String, correlation_id_str: Option<String>) {
         let payload_object = json::parse(&payload).unwrap();
-        if !payload_object["correlationId"].is_null() {
-            let correlation_id_str = payload_object["correlationId"].as_str().unwrap().into();
-            let correlation_id = Uuid::parse_str(correlation_id_str).unwrap();
-            let sender_opt = self.pending_responses.remove(&correlation_id);
+        if Some(correlation_id_str) {
+            let corr_id = Uuid::parse_str(correlation_id_str).unwrap();
+            let sender_opt = self.pending_responses.remove(&corr_id);
             match sender_opt {
                 Some(sender) => {
                     let oss: oneshot::Sender<JsonValue> = sender;
@@ -105,38 +119,34 @@ impl {{stinger.name | UpperCamelCase }}Client {
     pub async fn process(&mut self) {
         while let Some(opt_msg) = self.connection.rx.next().await {
             if let Some(msg) = opt_msg {
-                let topic = &msg.topic();
-                let mut func_indexs: Vec<u32> = Vec::new();
+                let payload_str = msg.payload_str().to_string();
+                let payload_object = json::parse(&payload_str).unwrap();
+                let correlation_id = msg.properties().iter(mqtt::PropertyCode::CorrelationData).next().map(|p| p.get_string().unwrap().to_string());
+                let prop_itr = msg.properties().iter(mqtt::PropertyCode::SubscriptionIdentifier);
 
-                //for item in self.topic_matcher.matches(topic) {
-                //    func_indexs.push(*item.1);
-                //}
-                for func_index in func_indexs.iter() {
-                    if func_index >= &1234 {
-                        let payload_object = json::parse(&msg.payload_str()).unwrap();
-                        match func_index {
-                            {%for sig_name, sig in stinger.signals.items()-%}
-                            {{1234 + loop.index}} => {
-                                {%for arg in sig.arg_list-%}
-                                {%-if arg.arg_type.name.lower() == 'value'%}
-                                let temp_{{arg.name | snake_case}} = payload_object["{{arg.name}}"].{%if arg.rust_type == 'String'%}as_str().unwrap().to_string(){%else%}as_{{arg.rust_type}}().unwrap(){%endif%};
-                                {%elif arg.arg_type.name.lower() == 'enum'%}
-                                let temp_{{arg.name | snake_case}} = {{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap()).unwrap();
-                                {%endif%}
-                                {%endfor%}
-                                (self.signal_recv_callback_for_{{sig_name|snake_case}})({%for arg in sig.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
-                            }{%endfor%}
-                            _ => ()
+                for subscription_identifier in prop_itr {
+                    let subsc_id = subscription_identifier.get_u32().unwrap() - self.subsc_id_start;
+                    match subsc_id {
+                        {%-for method_name, method in stinger.methods.items()%}
+                        {{method_ident_start + loop.index}} => {
+                            self.handle_{{method_name|snake_case}}_response(msg.payload_str().to_string(), correlation_id);
                         }
-                    
-                    } else {
-                        match func_index { {%-for method_name, method in stinger.methods.items()%}
-                            {{loop.index}} => self.handle_{{method_name|snake_case}}_response(msg.payload_str().to_string()),
                         {%endfor-%}
-                            _ => ()
-                        }
+                        {%for sig_name, sig in stinger.signals.items()-%}
+                        {{signal_ident_start + loop.index}} => {
+                            {%for arg in sig.arg_list-%}
+                            {%-if arg.arg_type.name.lower() == 'value'%}
+                            let temp_{{arg.name | snake_case}} = payload_object["{{arg.name}}"].{%if arg.rust_type == 'String'%}as_str().unwrap().to_string(){%else%}as_{{arg.rust_type}}().unwrap(){%endif%};
+                            {%elif arg.arg_type.name.lower() == 'enum'%}
+                            let temp_{{arg.name | snake_case}} = {{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap()).unwrap();
+                            {%endif%}
+                            {%endfor%}
+                            (self.signal_recv_callback_for_{{sig_name|snake_case}})({%for arg in sig.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
+                        }{%endfor%}
+                        _ => ()
                     }
                 }
+            
             }
         }
     }

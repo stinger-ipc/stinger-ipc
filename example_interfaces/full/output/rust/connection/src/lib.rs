@@ -14,6 +14,7 @@ pub struct Connection {
     cli: mqtt::AsyncClient,
     pub rx: mqtt::AsyncReceiver<Option<mqtt::Message>>,
     pub client_id: String,
+    next_subsc_id_range: u32,
 }
 
 impl Connection {
@@ -55,7 +56,8 @@ impl Connection {
         Connection { 
             cli: cli, 
             rx: rx,
-            client_id: client_id
+            client_id: client_id,
+            next_subsc_id_range: 1000,
         }
     }
 
@@ -115,6 +117,12 @@ impl Connection {
             
         }
         self.cli.subscribe_with_options(topic, qos, subscribe_options, subscribe_properties);
+    }
+
+    pub fn get_subcr_id_range_start(&mut self) -> u32 {
+        let subsc_id = self.next_subsc_id_range;
+        self.next_subsc_id_range += 1000;
+        subsc_id
     }
 }
 
