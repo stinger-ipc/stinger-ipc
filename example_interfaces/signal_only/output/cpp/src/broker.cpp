@@ -7,6 +7,7 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <mosquitto.h>
+#include <mqtt_protocol.h>
 #include <iostream>
 
 #include "broker.hpp"
@@ -85,13 +86,24 @@ MqttConnection::~MqttConnection()
 
 void MqttConnection::Connect()
 {
+    mosquitto_int_option(_mosq, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
     mosquitto_connect(_mosq, _host.c_str(), _port, 120);
 }
 
-boost::future<bool> MqttConnection::Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain)
+boost::future<bool> MqttConnection::Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic)
 {
     int mid;
-    int rc = mosquitto_publish(_mosq, &mid, topic.c_str(), payload.size(), payload.c_str(), qos, retain);
+    mosquitto_property *propList = NULL;
+    if (optCorrelationId)
+    {
+        mosquitto_property_add_string(&propList, MQTT_PROP_CORRELATION_DATA, optCorrelationId->c_str());
+    }
+    if (optResponseTopic)
+    {
+        mosquitto_property_add_string(&propList, MQTT_PROP_RESPONSE_TOPIC, optResponseTopic->c_str());
+    }
+    
+    int rc = mosquitto_publish_v5(_mosq, &mid, topic.c_str(), payload.size(), payload.c_str(), qos, retain, propList);
 
     if (rc == MOSQ_ERR_NO_CONN)
     {

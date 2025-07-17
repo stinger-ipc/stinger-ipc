@@ -39,6 +39,7 @@ impl SignalOnlyClient {
     
 
     pub async fn process(&mut self) {
+        print!("Processing connection stuff");
         while let Some(opt_msg) = self.connection.rx.next().await {
             if let Some(msg) = opt_msg {
                 let payload_str = msg.payload_str().to_string();

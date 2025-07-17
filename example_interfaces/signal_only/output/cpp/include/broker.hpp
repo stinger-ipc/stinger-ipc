@@ -34,9 +34,11 @@ public:
      * \param payload is the payload body of the message.
      * \param qos the MQTT quality of service value between 0 and 2 inclusive.
      * \param retain an indicator that the MQTT broker should retain the message.
+     * \param optCorrelationId Optional correlation ID string that will be used to associate responses to requests.
+     * \param optResponseTopic Optional MQTT topic used for publishing responses to requests.
      * \return A future which is resolved to true when the message has been published to the MQTT broker.
      */
-    virtual boost::future<bool> Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain);
+    virtual boost::future<bool> Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic);
 
     /*! Subscribe to a topic.
      * \param topic the subscription topic.
@@ -76,6 +78,8 @@ private:
         int _qos;
         bool _retain;
         std::shared_ptr<boost::promise<bool>> _pSentPromise;
+        boost::optional<std::string> _optCorrelationId;
+        boost::optional<std::string> _optResponseTopic;
     };
 
     struct MqttSubscription
@@ -84,6 +88,7 @@ private:
         ~MqttSubscription() = default;
         std::string _topic;
         int _qos;
+        int subscription_id;
     };
 
     mosquitto *_mosq;
