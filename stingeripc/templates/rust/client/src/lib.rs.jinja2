@@ -32,7 +32,7 @@ pub struct {{stinger.name | UpperCamelCase }}Client {
 }
 
 impl {{stinger.name | UpperCamelCase }}Client {
-    pub fn new(connection: Connection) -> {{stinger.name | UpperCamelCase }}Client {
+    pub fn new(mut connection: Connection) -> {{stinger.name | UpperCamelCase }}Client {
         let subsc_id_start = connection.get_subcr_id_range_start();
         {%for method_name, method in stinger.methods.items()-%}
         connection.subscribe(String::from(format!("{{method.response_topic('{}')}}", connection.client_id)), 2, Some(subsc_id_start+{{method_ident_start + loop.index}}));
@@ -74,7 +74,7 @@ impl {{stinger.name | UpperCamelCase }}Client {
             {%endfor%}
         };
         let data_str = json::stringify(data);
-        self.connection.publish("{{method.topic}}".to_string(), data_str, 2, None).await;
+        let _ = self.connection.publish("{{method.topic}}".to_string(), data_str, 2, None).await;
         let resp_obj = receiver.recv().unwrap();
         
         {%-if method.return_value.arg_type.name.lower() == 'value' %}
@@ -97,11 +97,12 @@ impl {{stinger.name | UpperCamelCase }}Client {
         {%-endif %}
     }
 
-    fn handle_{{method_name|snake_case}}_response(&mut self, payload: String, correlation_id_str: Option<String>) {
+    fn handle_{{method_name|snake_case}}_response(&mut self, payload: String, opt_correlation_id: &Option<String>) {
         let payload_object = json::parse(&payload).unwrap();
-        if Some(correlation_id_str) {
-            let corr_id = Uuid::parse_str(correlation_id_str).unwrap();
-            let sender_opt = self.pending_responses.remove(&corr_id);
+        if opt_correlation_id.is_some() {
+            let sender_opt = opt_correlation_id.as_ref()
+                .and_then(|cid| Uuid::parse_str(cid.as_str()).ok())
+                .and_then(|uuid| self.pending_responses.remove(&uuid));
             match sender_opt {
                 Some(sender) => {
                     let oss: oneshot::Sender<JsonValue> = sender;
@@ -121,7 +122,10 @@ impl {{stinger.name | UpperCamelCase }}Client {
             if let Some(msg) = opt_msg {
                 let payload_str = msg.payload_str().to_string();
                 let payload_object = json::parse(&payload_str).unwrap();
-                let correlation_id = msg.properties().iter(mqtt::PropertyCode::CorrelationData).next().map(|p| p.get_string().unwrap().to_string());
+                {%if stinger.methods | length > 0 %}
+                let opt_corr_id_prop = msg.properties().iter(mqtt::PropertyCode::CorrelationData).next();
+                let opt_corr_id_str = opt_corr_id_prop.and_then(|p| p.get_string());
+                {%endif%}
                 let prop_itr = msg.properties().iter(mqtt::PropertyCode::SubscriptionIdentifier);
 
                 for subscription_identifier in prop_itr {
@@ -129,7 +133,7 @@ impl {{stinger.name | UpperCamelCase }}Client {
                     match subsc_id {
                         {%-for method_name, method in stinger.methods.items()%}
                         {{method_ident_start + loop.index}} => {
-                            self.handle_{{method_name|snake_case}}_response(msg.payload_str().to_string(), correlation_id);
+                            self.handle_{{method_name|snake_case}}_response(msg.payload_str().to_string(), &opt_corr_id_str);
                         }
                         {%endfor-%}
                         {%for sig_name, sig in stinger.signals.items()-%}

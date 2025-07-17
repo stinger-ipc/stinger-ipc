@@ -25,7 +25,7 @@ pub struct ExampleClient {
 }
 
 impl ExampleClient {
-    pub fn new(connection: Connection) -> ExampleClient {
+    pub fn new(mut connection: Connection) -> ExampleClient {
         let subsc_id_start = connection.get_subcr_id_range_start();
         connection.subscribe(String::from(format!("client/{}/Example/method/addNumbers/response", connection.client_id)), 2, Some(subsc_id_start+101));
         connection.subscribe(String::from(format!("client/{}/Example/method/doSomething/response", connection.client_id)), 2, Some(subsc_id_start+102));
@@ -59,16 +59,17 @@ impl ExampleClient {
             
         };
         let data_str = json::stringify(data);
-        self.connection.publish("Example/method/addNumbers".to_string(), data_str, 2, None).await;
+        let _ = self.connection.publish("Example/method/addNumbers".to_string(), data_str, 2, None).await;
         let resp_obj = receiver.recv().unwrap();
         Ok(resp_obj["sum"].as_i32().unwrap())
     }
 
-    fn handle_add_numbers_response(&mut self, payload: String, correlation_id_str: Option<String>) {
+    fn handle_add_numbers_response(&mut self, payload: String, opt_correlation_id: &Option<String>) {
         let payload_object = json::parse(&payload).unwrap();
-        if Some(correlation_id_str) {
-            let corr_id = Uuid::parse_str(correlation_id_str).unwrap();
-            let sender_opt = self.pending_responses.remove(&corr_id);
+        if opt_correlation_id.is_some() {
+            let sender_opt = opt_correlation_id.as_ref()
+                .and_then(|cid| Uuid::parse_str(cid.as_str()).ok())
+                .and_then(|uuid| self.pending_responses.remove(&uuid));
             match sender_opt {
                 Some(sender) => {
                     let oss: oneshot::Sender<JsonValue> = sender;
@@ -93,7 +94,7 @@ impl ExampleClient {
             
         };
         let data_str = json::stringify(data);
-        self.connection.publish("Example/method/doSomething".to_string(), data_str, 2, None).await;
+        let _ = self.connection.publish("Example/method/doSomething".to_string(), data_str, 2, None).await;
         let resp_obj = receiver.recv().unwrap();
         Ok(connection::return_structs::DoSomethingReturnValue { 
             
@@ -107,11 +108,12 @@ impl ExampleClient {
         })
     }
 
-    fn handle_do_something_response(&mut self, payload: String, correlation_id_str: Option<String>) {
+    fn handle_do_something_response(&mut self, payload: String, opt_correlation_id: &Option<String>) {
         let payload_object = json::parse(&payload).unwrap();
-        if Some(correlation_id_str) {
-            let corr_id = Uuid::parse_str(correlation_id_str).unwrap();
-            let sender_opt = self.pending_responses.remove(&corr_id);
+        if opt_correlation_id.is_some() {
+            let sender_opt = opt_correlation_id.as_ref()
+                .and_then(|cid| Uuid::parse_str(cid.as_str()).ok())
+                .and_then(|uuid| self.pending_responses.remove(&uuid));
             match sender_opt {
                 Some(sender) => {
                     let oss: oneshot::Sender<JsonValue> = sender;
@@ -131,18 +133,21 @@ impl ExampleClient {
             if let Some(msg) = opt_msg {
                 let payload_str = msg.payload_str().to_string();
                 let payload_object = json::parse(&payload_str).unwrap();
-                let correlation_id = msg.properties().iter(mqtt::PropertyCode::CorrelationData).next().map(|p| p.get_string().unwrap().to_string());
+                
+                let opt_corr_id_prop = msg.properties().iter(mqtt::PropertyCode::CorrelationData).next();
+                let opt_corr_id_str = opt_corr_id_prop.and_then(|p| p.get_string());
+                
                 let prop_itr = msg.properties().iter(mqtt::PropertyCode::SubscriptionIdentifier);
 
                 for subscription_identifier in prop_itr {
                     let subsc_id = subscription_identifier.get_u32().unwrap() - self.subsc_id_start;
                     match subsc_id {
                         101 => {
-                            self.handle_add_numbers_response(msg.payload_str().to_string(), correlation_id);
+                            self.handle_add_numbers_response(msg.payload_str().to_string(), &opt_corr_id_str);
                         }
                         
                         102 => {
-                            self.handle_do_something_response(msg.payload_str().to_string(), correlation_id);
+                            self.handle_do_something_response(msg.payload_str().to_string(), &opt_corr_id_str);
                         }
                         201 => {
                             

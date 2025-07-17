@@ -18,7 +18,7 @@ pub struct SignalOnlyClient {
 }
 
 impl SignalOnlyClient {
-    pub fn new(connection: Connection) -> SignalOnlyClient {
+    pub fn new(mut connection: Connection) -> SignalOnlyClient {
         let subsc_id_start = connection.get_subcr_id_range_start();
         
         SignalOnlyClient {
@@ -43,7 +43,7 @@ impl SignalOnlyClient {
             if let Some(msg) = opt_msg {
                 let payload_str = msg.payload_str().to_string();
                 let payload_object = json::parse(&payload_str).unwrap();
-                let correlation_id = msg.properties().iter(mqtt::PropertyCode::CorrelationData).next().map(|p| p.get_string().unwrap().to_string());
+                
                 let prop_itr = msg.properties().iter(mqtt::PropertyCode::SubscriptionIdentifier);
 
                 for subscription_identifier in prop_itr {
