@@ -11,8 +11,7 @@ pub mod enums;
 pub mod return_structs;
 
 pub struct Connection {
-    cli: mqtt::AsyncClient,
-    pub rx: mqtt::AsyncReceiver<Option<mqtt::Message>>,
+    pub cli: mqtt::AsyncClient,
     pub client_id: String,
     next_subsc_id_range: u32,
 }
@@ -31,8 +30,6 @@ impl Connection {
             println!("Error creating the client: {:?}", err);
             process::exit(1);
         });
-
-        let rx = cli.get_stream(1024);
 
         let conn_opts = mqtt::ConnectOptionsBuilder::new_v5()
             .keep_alive_interval(Duration::from_secs(20))
@@ -57,7 +54,6 @@ impl Connection {
        
         Connection { 
             cli: cli, 
-            rx: rx,
             client_id: client_id,
             next_subsc_id_range: 1000,
         }

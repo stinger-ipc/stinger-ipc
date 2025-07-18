@@ -30,13 +30,16 @@ impl ExampleClient {
         connection.subscribe(String::from(format!("client/{}/Example/method/addNumbers/response", connection.client_id)), 2, Some(subsc_id_start+101));
         connection.subscribe(String::from(format!("client/{}/Example/method/doSomething/response", connection.client_id)), 2, Some(subsc_id_start+102));
         
-        ExampleClient {
+        
+        let inst = ExampleClient {
             connection: connection,
             subsc_id_start: subsc_id_start,
             signal_recv_callback_for_today_is: Box::new( |_1, _2| {} ),
             
             pending_responses: HashMap::new(),
-        }
+        };
+        connection.cli.set_message_callback(|cli, msg| inst.on_receive_message(cli, msg));
+        inst
     }
 
     pub fn set_signal_recv_callbacks_for_today_is(&mut self, cb: impl FnMut(i32, connection::enums::DayOfTheWeek)->() + 'static) {
@@ -128,6 +131,16 @@ impl ExampleClient {
     }
     
 
+    pub fn on_receive_message(&self, _cli: &mqtt::AsyncClient, msg: Option<mqtt::Message>) {
+        print!("Received message: {}", msg.unwrap());
+        ()
+    }
+
+    pub async fn unused(&mut self) {
+        ()
+    }
+
+/*
     pub async fn process(&mut self) {
         print!("Processing connection stuff");
         while let Some(opt_msg) = self.connection.rx.next().await {
@@ -167,4 +180,5 @@ impl ExampleClient {
             }
         }
     }
+    */
 }

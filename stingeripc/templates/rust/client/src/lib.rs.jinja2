@@ -39,14 +39,17 @@ impl {{stinger.name | UpperCamelCase }}Client {
         {%endfor%}
         {%-for sig_name, sig in stinger.signals.items()-%}
         {%endfor%}
-        {{stinger.name | UpperCamelCase }}Client {
+        
+        let inst = {{stinger.name | UpperCamelCase }}Client {
             connection: connection,
             subsc_id_start: subsc_id_start,
             {%for sig_name, sig in stinger.signals.items()-%}
             signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |{%for arg in sig.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
             {%endfor%}
             {%if stinger.methods | length > 0 %}pending_responses: HashMap::new(),{%endif%}
-        }
+        };
+        connection.cli.set_message_callback(|cli, msg| inst.on_receive_message(cli, msg));
+        inst
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
@@ -117,6 +120,16 @@ impl {{stinger.name | UpperCamelCase }}Client {
     }
     {%endfor%}
 
+    pub fn on_receive_message(&self, _cli: &mqtt::AsyncClient, msg: Option<mqtt::Message>) {
+        print!("Received message: {}", msg.unwrap());
+        ()
+    }
+
+    pub async fn unused(&mut self) {
+        ()
+    }
+
+/*
     pub async fn process(&mut self) {
         print!("Processing connection stuff");
         while let Some(opt_msg) = self.connection.rx.next().await {
@@ -155,4 +168,5 @@ impl {{stinger.name | UpperCamelCase }}Client {
             }
         }
     }
+    */
 }

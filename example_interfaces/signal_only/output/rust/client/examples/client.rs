@@ -17,7 +17,7 @@ fn main() {
         client.set_signal_recv_callbacks_for_another_signal(print_another_signal);
         
         
-        client.process().await;
+        client.unused().await;
     });
     // Ctrl-C to stop
 }

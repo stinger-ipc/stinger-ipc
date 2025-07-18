@@ -17,7 +17,7 @@ fn main() {
         client.set_signal_recv_callbacks_for_today_is(print_today_is);
         
         
-        client.process().await;
+        client.unused().await;
     });
     // Ctrl-C to stop
 }
