@@ -23,6 +23,8 @@ impl Connection {
         let create_opts = mqtt::CreateOptionsBuilder::new()
             .server_uri(uri)
             .client_id(client_id.clone())
+            .mqtt_version(mqtt::MQTT_VERSION_5)
+            .allow_disconnected_send_at_anytime(true)
             .finalize();
 
         let mut cli = mqtt::AsyncClient::new(create_opts).unwrap_or_else(|err| {
@@ -32,9 +34,9 @@ impl Connection {
 
         let rx = cli.get_stream(1024);
 
-        let conn_opts = mqtt::ConnectOptionsBuilder::new()
+        let conn_opts = mqtt::ConnectOptionsBuilder::new_v5()
             .keep_alive_interval(Duration::from_secs(20))
-            .clean_session(true)
+            .clean_start(true)
             .finalize();
 
         // Connect and wait for it to complete or fail
@@ -103,7 +105,7 @@ impl Connection {
         let subscribe_options = mqtt::SubscribeOptions::new(true, false, mqtt::RetainHandling::SendRetainedOnSubscribe);
         let mut subscribe_properties = mqtt::Properties::new();
         if let Some(si) = subscription_identifier {
-            let prop = mqtt::Property::new(mqtt::PropertyCode::SubscriptionIdentifier, si);
+            let prop = mqtt::Property::new(mqtt::PropertyCode::SubscriptionIdentifier, si as i32);
             match prop {
                 Ok(prop) => {
                     let prop_add_result = subscribe_properties.push(prop);
@@ -112,7 +114,7 @@ impl Connection {
                     }
                     ()
                 },
-                Err(prop) => println!("Error: {}", prop),
+                Err(prop) => println!("Error with creating Subscription Identifier property: {}", prop),
             }
             
         }
