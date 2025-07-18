@@ -134,7 +134,7 @@ boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWee
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("Example/signal/todayIs", buf.GetString(), 1, false);
+    return _broker->Publish("Example/signal/todayIs", buf.GetString(), 1, false, boost::none, boost::none);
 }
 
 
@@ -214,7 +214,7 @@ void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapid
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(responseTopic, buf.GetString(), 2, true);
+            _broker->Publish(responseTopic, buf.GetString(), 2, true, boost::none, boost::none).wait();
         }
     }
 }
@@ -282,7 +282,7 @@ void ExampleServer::_calldoSomethingHandler(const std::string& topic, const rapi
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(responseTopic, buf.GetString(), 2, true);
+            _broker->Publish(responseTopic, buf.GetString(), 2, true, boost::none, boost::none).wait();
         }
     }
 }

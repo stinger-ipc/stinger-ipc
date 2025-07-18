@@ -57,7 +57,7 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("SignalOnly/signal/anotherSignal", buf.GetString(), 1, false);
+    return _broker->Publish("SignalOnly/signal/anotherSignal", buf.GetString(), 1, false, boost::none, boost::none);
 }
 
 

@@ -100,7 +100,7 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false);
+    return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false, boost::none, boost::none);
 }
 {%endfor%}
 
@@ -180,7 +180,7 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(responseTopic, buf.GetString(), 2, true);
+            _broker->Publish(responseTopic, buf.GetString(), 2, true, boost::none, boost::none).wait();
         }
     }
 }

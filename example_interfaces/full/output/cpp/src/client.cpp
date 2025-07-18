@@ -116,9 +116,6 @@ boost::future<int> ExampleClient::addNumbers(int first, int second) {
 
     rapidjson::Document doc;
     doc.SetObject();
-    rapidjson::Value correlationIdValue;
-    correlationIdValue.SetString(correlationIdStr.c_str(), correlationIdStr.size(), doc.GetAllocator());
-    doc.AddMember("correlationId", correlationIdValue, doc.GetAllocator());
     rapidjson::Value clientIdValue;
     std::string clientId = _broker->GetClientId();
     clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
@@ -136,7 +133,9 @@ boost::future<int> ExampleClient::addNumbers(int first, int second) {
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    _broker->Publish("Example/method/addNumbers", buf.GetString(), 2, false);
+    std::stringstream responseTopicStringStream;
+    responseTopicStringStream << boost::format("client/%1%/Example/method/addNumbers/response") % _broker->GetClientId();
+    _broker->Publish("Example/method/addNumbers", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str());
 
     return _pendingAddNumbersMethodCalls[correlationId].get_future();
 }
@@ -179,9 +178,6 @@ boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::stri
 
     rapidjson::Document doc;
     doc.SetObject();
-    rapidjson::Value correlationIdValue;
-    correlationIdValue.SetString(correlationIdStr.c_str(), correlationIdStr.size(), doc.GetAllocator());
-    doc.AddMember("correlationId", correlationIdValue, doc.GetAllocator());
     rapidjson::Value clientIdValue;
     std::string clientId = _broker->GetClientId();
     clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
@@ -199,7 +195,9 @@ boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::stri
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    _broker->Publish("Example/method/doSomething", buf.GetString(), 2, false);
+    std::stringstream responseTopicStringStream;
+    responseTopicStringStream << boost::format("client/%1%/Example/method/doSomething/response") % _broker->GetClientId();
+    _broker->Publish("Example/method/doSomething", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str());
 
     return _pendingDoSomethingMethodCalls[correlationId].get_future();
 }
