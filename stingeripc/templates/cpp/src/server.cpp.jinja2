@@ -19,16 +19,16 @@ constexpr const char {{stinger.name | UpperCamelCase}}Server::NAME[];
 constexpr const char {{stinger.name | UpperCamelCase}}Server::INTERFACE_VERSION[];
 
 {{stinger.name | UpperCamelCase}}Server::{{stinger.name | UpperCamelCase}}Server(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
     {
-        _receiveMessage(topic, payload);
+        _receiveMessage(topic, payload, optCorrelationId);
     });
     {%for method in stinger.methods.values()%}
     _broker->Subscribe("{{method.topic}}", 2);
     {%endfor%}
 }
 
-void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(const std::string& topic, const std::string& payload)
+void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
 {
     {%for method_name, method in stinger.methods.items()%}
     if (_broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
@@ -49,16 +49,10 @@ void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(const std::string&
                     throw std::runtime_error("Received payload is not an object");
                 }
                 boost::optional<std::string> optClientId;
-                boost::optional<std::string> optCorrelationId;
 
                 if (doc.HasMember("clientId") && doc["clientId"].IsString())
                 {
                     optClientId = doc["clientId"].GetString();
-                }
-
-                if (doc.HasMember("correlationId") && doc["correlationId"].IsString())
-                {
-                    optCorrelationId = doc["correlationId"].GetString();
                 }
 
                 _call{{method_name | camelCase}}Handler(topic, doc, optClientId, optCorrelationId);

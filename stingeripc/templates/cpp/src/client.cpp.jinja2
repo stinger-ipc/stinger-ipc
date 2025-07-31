@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -21,9 +22,9 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
 
 {{stinger.name | UpperCamelCase}}Client::{{stinger.name | UpperCamelCase}}Client(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
     {
-        _receiveMessage(topic, payload);
+        _receiveMessage(topic, payload, optCorrelationId);
     });
 
     {%-for sig_name, sig in stinger.signals.items() %}
@@ -38,8 +39,9 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
     {%-endfor%}
 }
 
-void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(const std::string& topic, const std::string& payload)
+void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
 {
+    std::cout << "RECEIVED MESSAGE to " << topic << std::endl;
     {%-for sig_name, sig in stinger.signals.items() %}
     if (_broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
     {
@@ -87,32 +89,35 @@ void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(const std::string&
     }
     {%-endfor%}
     {%-for method_name, method in stinger.methods.items() %}
-    {%if not loop.first%}else{%endif%} if (_broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}"))
+    {%if not loop.first%}else {%endif%}if (_broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && optCorrelationId)
     {
-        _handle{{method_name|UpperCamelCase}}Response(topic, payload);
+        std::cout << "Matched topic for {{method_name}} response" << std::endl;
+        _handle{{method_name|UpperCamelCase}}Response(topic, payload, *optCorrelationId);
     }
     {%-endfor%}
 }
 
 
 {%-for sig_name, sig in stinger.signals.items() %}
-void {{stinger.name | UpperCamelCase}}Client::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb) {
+void {{stinger.name | UpperCamelCase}}Client::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb)
+{
     _{{sig_name | camelCase}}Callback = cb;
 }
 {%-endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}}Client::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}}Client::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+{
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
     _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId] = boost::promise<{{method.return_value.cpp_type}}>();
 
     rapidjson::Document doc;
     doc.SetObject();
-    rapidjson::Value clientIdValue;
-    std::string clientId = _broker->GetClientId();
-    clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
-    doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
+    //rapidjson::Value clientIdValue;
+    //std::string clientId = _broker->GetClientId();
+    //clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
+    //doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
     {%macro addToDoc(arg)%}
     {%-if arg.arg_type.name.lower() == 'value'%}
     {%-if arg.type.name.lower() == 'string'%}
@@ -141,7 +146,12 @@ boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}
     return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
 }
 
-void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload) {
+void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCase}}Response(
+        const std::string& topic, 
+        const std::string& payload, 
+        const std::string &correlationId) 
+{
+    std::cout << "In response handler for " << topic << std::endl;
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
     if (!ok)
@@ -183,6 +193,6 @@ void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCas
         promiseItr->second.set_value({{method.return_value.name}});
         {%-endif%}
     }
-
+    std::cout << "End of response handler for " << topic << std::endl;
 }
 {%endfor%}

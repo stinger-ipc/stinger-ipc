@@ -19,9 +19,9 @@ constexpr const char ExampleServer::NAME[];
 constexpr const char ExampleServer::INTERFACE_VERSION[];
 
 ExampleServer::ExampleServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
     {
-        _receiveMessage(topic, payload);
+        _receiveMessage(topic, payload, optCorrelationId);
     });
     
     _broker->Subscribe("Example/method/addNumbers", 2);
@@ -30,7 +30,7 @@ ExampleServer::ExampleServer(std::shared_ptr<IBrokerConnection> broker) : _broke
     
 }
 
-void ExampleServer::_receiveMessage(const std::string& topic, const std::string& payload)
+void ExampleServer::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
 {
     
     if (_broker->TopicMatchesSubscription(topic, "Example/method/addNumbers"))
@@ -51,16 +51,10 @@ void ExampleServer::_receiveMessage(const std::string& topic, const std::string&
                     throw std::runtime_error("Received payload is not an object");
                 }
                 boost::optional<std::string> optClientId;
-                boost::optional<std::string> optCorrelationId;
 
                 if (doc.HasMember("clientId") && doc["clientId"].IsString())
                 {
                     optClientId = doc["clientId"].GetString();
-                }
-
-                if (doc.HasMember("correlationId") && doc["correlationId"].IsString())
-                {
-                    optCorrelationId = doc["correlationId"].GetString();
                 }
 
                 _calladdNumbersHandler(topic, doc, optClientId, optCorrelationId);
@@ -92,16 +86,10 @@ void ExampleServer::_receiveMessage(const std::string& topic, const std::string&
                     throw std::runtime_error("Received payload is not an object");
                 }
                 boost::optional<std::string> optClientId;
-                boost::optional<std::string> optCorrelationId;
 
                 if (doc.HasMember("clientId") && doc["clientId"].IsString())
                 {
                     optClientId = doc["clientId"].GetString();
-                }
-
-                if (doc.HasMember("correlationId") && doc["correlationId"].IsString())
-                {
-                    optCorrelationId = doc["correlationId"].GetString();
                 }
 
                 _calldoSomethingHandler(topic, doc, optClientId, optCorrelationId);

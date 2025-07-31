@@ -34,7 +34,7 @@ public:
     {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
-    void _receiveMessage(const std::string& topic, const std::string& payload);
+    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId);
 
     {%for method_name, method in stinger.methods.items()%}
     void _call{{method_name | camelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;

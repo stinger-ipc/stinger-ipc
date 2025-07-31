@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -21,16 +22,17 @@ constexpr const char SignalOnlyClient::INTERFACE_VERSION[];
 
 SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
     {
-        _receiveMessage(topic, payload);
+        _receiveMessage(topic, payload, optCorrelationId);
     });
     _broker->Subscribe("SignalOnly/signal/anotherSignal", 1);
     
 }
 
-void SignalOnlyClient::_receiveMessage(const std::string& topic, const std::string& payload)
+void SignalOnlyClient::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
 {
+    std::cout << "RECEIVED MESSAGE to " << topic << std::endl;
     if (_broker->TopicMatchesSubscription(topic, "SignalOnly/signal/anotherSignal"))
     {
         //Log("Handling anotherSignal signal");
@@ -98,7 +100,8 @@ void SignalOnlyClient::_receiveMessage(const std::string& topic, const std::stri
         }
     }
 }
-void SignalOnlyClient::registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb) {
+void SignalOnlyClient::registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb)
+{
     _anotherSignalCallback = cb;
 }
 

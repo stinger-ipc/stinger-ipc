@@ -72,7 +72,7 @@ class DefaultConnection(BrokerConnection):
 
     def _on_message(self, client, userdata, msg):
         if self._message_callback:
-            properties = msg.properties.__dict__.items() if hasattr(msg, 'properties') else {}
+            properties = msg.properties.__dict__ if hasattr(msg, 'properties') else {}
             self._message_callback(msg.topic, msg.payload.decode(), properties)
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
@@ -117,7 +117,7 @@ class DefaultConnection(BrokerConnection):
         if debug_info is not None:
             user_properties.append(("DebugInfo", debug_info))
         if len(user_properties) > 0:
-            properties.UserProperties = user_properties
+            properties.UserProperty = user_properties
         if self._connected:
             self._logger.info("Publishing %s", topic)
             self._client.publish(topic, msg, qos, retain, properties)

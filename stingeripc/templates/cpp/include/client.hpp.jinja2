@@ -33,7 +33,7 @@ public:
     {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
-    void _receiveMessage(const std::string& topic, const std::string& payload);
+    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId);
     {%-for method_name, method in stinger.methods.items()%}
     std::map<boost::uuids::uuid, boost::promise<{{method.return_value.cpp_type}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
     {%-endfor%}
@@ -41,6 +41,6 @@ private:
     std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{sig_name | camelCase}}Callback;
     {%endfor%}
     {%-for method_name, method in stinger.methods.items()%}
-    void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload);
+    void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);
     {%-endfor%}
 };

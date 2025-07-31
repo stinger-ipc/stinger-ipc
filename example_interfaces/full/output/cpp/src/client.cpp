@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -21,9 +22,9 @@ constexpr const char ExampleClient::INTERFACE_VERSION[];
 
 ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
     {
-        _receiveMessage(topic, payload);
+        _receiveMessage(topic, payload, optCorrelationId);
     });
     _broker->Subscribe("Example/signal/todayIs", 1);
     
@@ -39,8 +40,9 @@ ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broke
     }
 }
 
-void ExampleClient::_receiveMessage(const std::string& topic, const std::string& payload)
+void ExampleClient::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
 {
+    std::cout << "RECEIVED MESSAGE to " << topic << std::endl;
     if (_broker->TopicMatchesSubscription(topic, "Example/signal/todayIs"))
     {
         //Log("Handling todayIs signal");
@@ -95,31 +97,35 @@ void ExampleClient::_receiveMessage(const std::string& topic, const std::string&
             // TODO: Log this failure
         }
     }
-     if (_broker->TopicMatchesSubscription(topic, "client/+/Example/method/addNumbers/response"))
+    if (_broker->TopicMatchesSubscription(topic, "client/+/Example/method/addNumbers/response") && optCorrelationId)
     {
-        _handleAddNumbersResponse(topic, payload);
+        std::cout << "Matched topic for addNumbers response" << std::endl;
+        _handleAddNumbersResponse(topic, payload, *optCorrelationId);
     }
-    else if (_broker->TopicMatchesSubscription(topic, "client/+/Example/method/doSomething/response"))
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/Example/method/doSomething/response") && optCorrelationId)
     {
-        _handleDoSomethingResponse(topic, payload);
+        std::cout << "Matched topic for doSomething response" << std::endl;
+        _handleDoSomethingResponse(topic, payload, *optCorrelationId);
     }
 }
-void ExampleClient::registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb) {
+void ExampleClient::registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb)
+{
     _todayIsCallback = cb;
 }
 
 
-boost::future<int> ExampleClient::addNumbers(int first, int second) {
+boost::future<int> ExampleClient::addNumbers(int first, int second)
+{
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
     _pendingAddNumbersMethodCalls[correlationId] = boost::promise<int>();
 
     rapidjson::Document doc;
     doc.SetObject();
-    rapidjson::Value clientIdValue;
-    std::string clientId = _broker->GetClientId();
-    clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
-    doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
+    //rapidjson::Value clientIdValue;
+    //std::string clientId = _broker->GetClientId();
+    //clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
+    //doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
     
     
     
@@ -140,7 +146,12 @@ boost::future<int> ExampleClient::addNumbers(int first, int second) {
     return _pendingAddNumbersMethodCalls[correlationId].get_future();
 }
 
-void ExampleClient::_handleAddNumbersResponse(const std::string& topic, const std::string& payload) {
+void ExampleClient::_handleAddNumbersResponse(
+        const std::string& topic, 
+        const std::string& payload, 
+        const std::string &correlationId) 
+{
+    std::cout << "In response handler for " << topic << std::endl;
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
     if (!ok)
@@ -168,20 +179,21 @@ void ExampleClient::_handleAddNumbersResponse(const std::string& topic, const st
         
         promiseItr->second.set_value(sum);
     }
-
+    std::cout << "End of response handler for " << topic << std::endl;
 }
 
-boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::string& aString) {
+boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::string& aString)
+{
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
     _pendingDoSomethingMethodCalls[correlationId] = boost::promise<DoSomethingReturnValue>();
 
     rapidjson::Document doc;
     doc.SetObject();
-    rapidjson::Value clientIdValue;
-    std::string clientId = _broker->GetClientId();
-    clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
-    doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
+    //rapidjson::Value clientIdValue;
+    //std::string clientId = _broker->GetClientId();
+    //clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
+    //doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
     
     
     
@@ -202,7 +214,12 @@ boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::stri
     return _pendingDoSomethingMethodCalls[correlationId].get_future();
 }
 
-void ExampleClient::_handleDoSomethingResponse(const std::string& topic, const std::string& payload) {
+void ExampleClient::_handleDoSomethingResponse(
+        const std::string& topic, 
+        const std::string& payload, 
+        const std::string &correlationId) 
+{
+    std::cout << "In response handler for " << topic << std::endl;
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
     if (!ok)
@@ -253,5 +270,5 @@ void ExampleClient::_handleDoSomethingResponse(const std::string& topic, const s
         };
         promiseItr->second.set_value(returnValue);
     }
-
+    std::cout << "End of response handler for " << topic << std::endl;
 }

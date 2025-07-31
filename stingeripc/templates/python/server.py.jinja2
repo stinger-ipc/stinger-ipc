@@ -89,6 +89,7 @@ class {{stinger.name}}Server:
         """
         correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
         response_topic = properties.get('ResponseTopic') # type: Optional[str]
+        self._logger.info("Correlation Data %s", correlation_id)
         if self._{{method_name|snake_case}}_method_handler is not None:
             method_args = [] # type: List[Any]
             {%for arg in method.arg_list -%}
@@ -103,22 +104,37 @@ class {{stinger.name}}Server:
             {%endfor%}
             
             if response_topic is not None:
-                return_data = None
+                return_json = ""
                 debug_msg = None # type: Optional[str]
                 try:
                     return_struct = self._{{method_name|snake_case}}_method_handler(*method_args)
+                    self._logger.debug("Return value is %s", return_struct)
+                    {%if method.return_value is none%}
+                        return_json = "{}"
+                    {%else%}
                     if return_struct is not None:
-                        return_data = return_struct.model_dump()
+                        {%-if method.return_value.arg_type.name.lower() == "value" %}
+                        return_json = json.dumps({
+                            "{{method.return_value.name}}": return_struct
+                        })
+                        {%-elif method.return_value.arg_type.name.lower() == "enum" %}
+                        return_json = json.dumps({
+                            "{{method.return_value.name}}": return_struct.value
+                        })
+                        {%else%}
+                        return_json = return_struct.model_dump_json()
+                        {%endif%}
+                    {%-endif%}
                 except Exception as e:
                     self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
-                    return_value = MethodResultCode.SERVER_ERROR
+                    return_code = MethodResultCode.SERVER_ERROR
                     debug_msg = str(e)
                 else:
-                    return_value = MethodResultCode.SUCCESS
+                    return_code = MethodResultCode.SUCCESS
                     debug_msg = None
 
-                self._conn.publish(response_topic, json.dumps(return_data), qos=1, retain=False, 
-                    correlation_id=correlation_id, return_value=return_value, debug_info=debug_msg)
+                self._conn.publish(response_topic, return_json, qos=1, retain=False, 
+                    correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
     {%endfor%}
 
     {%for p,v in stinger.params.items()-%}

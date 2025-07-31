@@ -5,15 +5,15 @@ on the next generation.
 It contains enumerations used by the EnumOnly interface.
 """
 from pydantic import BaseModel
-from enum import Enum
+from enum import IntEnum
 
 
-class Fruits(Enum):
+class Fruits(IntEnum):
     APPLE = 1
     BANANA = 2
     PEAR = 3
 
-class Months(Enum):
+class Months(IntEnum):
     JANUARY = 1
     FEBRUARY = 2
     MARCH = 3

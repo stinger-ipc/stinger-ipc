@@ -24,7 +24,7 @@ public:
     /*! Provide a callback to be called on an incoming message.
      * Implementation should accept this at any time, even when not connected.
      */
-    virtual void AddMessageCallback(const std::function<void(const std::string&, const std::string&)>& cb) = 0;
+    virtual void AddMessageCallback(const std::function<void(const std::string&, const std::string&, const boost::optional<std::string>)>& cb) = 0;
 
     /*! Utility for matching topics.
      * This probably should be a wrapper around `mosquitto_topic_matches_sub` or similar

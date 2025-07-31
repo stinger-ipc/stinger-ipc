@@ -5,10 +5,10 @@ on the next generation.
 It contains enumerations used by the {{stinger.name}} interface.
 """
 from pydantic import BaseModel
-{%if stinger.uses_enums()%}from enum import Enum{%endif%}
+{%if stinger.uses_enums()%}from enum import IntEnum{%endif%}
 
 {%for ie_name, ie in stinger.enums.items() %}
-class {{ie_name | UpperCamelCase }}(Enum):
+class {{ie_name | UpperCamelCase }}(IntEnum):
     {%-for value in ie.values %}
     {{value | CONST_CASE}} = {{loop.index}}
     {%-endfor%}

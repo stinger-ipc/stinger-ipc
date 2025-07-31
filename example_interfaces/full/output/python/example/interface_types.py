@@ -5,10 +5,10 @@ on the next generation.
 It contains enumerations used by the Example interface.
 """
 from pydantic import BaseModel
-from enum import Enum
+from enum import IntEnum
 
 
-class DayOfTheWeek(Enum):
+class DayOfTheWeek(IntEnum):
     SUNDAY = 1
     MONDAY = 2
     TUESDAY = 3

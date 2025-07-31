@@ -87,6 +87,7 @@ class ExampleServer:
         """
         correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
         response_topic = properties.get('ResponseTopic') # type: Optional[str]
+        self._logger.info("Correlation Data %s", correlation_id)
         if self._add_numbers_method_handler is not None:
             method_args = [] # type: List[Any]
             if "first" in payload:
@@ -108,22 +109,26 @@ class ExampleServer:
             
             
             if response_topic is not None:
-                return_data = None
+                return_json = ""
                 debug_msg = None # type: Optional[str]
                 try:
                     return_struct = self._add_numbers_method_handler(*method_args)
+                    self._logger.debug("Return value is %s", return_struct)
+                    
                     if return_struct is not None:
-                        return_data = return_struct.model_dump()
+                        return_json = json.dumps({
+                            "sum": return_struct
+                        })
                 except Exception as e:
                     self._logger.exception("Exception while handling addNumbers", exc_info=e)
-                    return_value = MethodResultCode.SERVER_ERROR
+                    return_code = MethodResultCode.SERVER_ERROR
                     debug_msg = str(e)
                 else:
-                    return_value = MethodResultCode.SUCCESS
+                    return_code = MethodResultCode.SUCCESS
                     debug_msg = None
 
-                self._conn.publish(response_topic, json.dumps(return_data), qos=1, retain=False, 
-                    correlation_id=correlation_id, return_value=return_value, debug_info=debug_msg)
+                self._conn.publish(response_topic, return_json, qos=1, retain=False, 
+                    correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
     
     def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
         """ This is a decorator to decorate a method that will handle the 'doSomething' method calls.
@@ -139,6 +144,7 @@ class ExampleServer:
         """
         correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
         response_topic = properties.get('ResponseTopic') # type: Optional[str]
+        self._logger.info("Correlation Data %s", correlation_id)
         if self._do_something_method_handler is not None:
             method_args = [] # type: List[Any]
             if "aString" in payload:
@@ -152,22 +158,25 @@ class ExampleServer:
             
             
             if response_topic is not None:
-                return_data = None
+                return_json = ""
                 debug_msg = None # type: Optional[str]
                 try:
                     return_struct = self._do_something_method_handler(*method_args)
+                    self._logger.debug("Return value is %s", return_struct)
+                    
                     if return_struct is not None:
-                        return_data = return_struct.model_dump()
+                        return_json = return_struct.model_dump_json()
+                        
                 except Exception as e:
                     self._logger.exception("Exception while handling doSomething", exc_info=e)
-                    return_value = MethodResultCode.SERVER_ERROR
+                    return_code = MethodResultCode.SERVER_ERROR
                     debug_msg = str(e)
                 else:
-                    return_value = MethodResultCode.SUCCESS
+                    return_code = MethodResultCode.SUCCESS
                     debug_msg = None
 
-                self._conn.publish(response_topic, json.dumps(return_data), qos=1, retain=False, 
-                    correlation_id=correlation_id, return_value=return_value, debug_info=debug_msg)
+                self._conn.publish(response_topic, return_json, qos=1, retain=False, 
+                    correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
     
 
     
