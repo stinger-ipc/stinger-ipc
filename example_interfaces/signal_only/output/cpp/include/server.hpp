@@ -32,7 +32,7 @@ public:
     
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
-    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId);
+    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic);
 
     
 

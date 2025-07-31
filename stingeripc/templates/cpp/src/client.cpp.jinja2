@@ -22,9 +22,9 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
 
 {{stinger.name | UpperCamelCase}}Client::{{stinger.name | UpperCamelCase}}Client(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> unusedRespTopic, const boost::optional<MethodResultCode> optResultCode)
     {
-        _receiveMessage(topic, payload, optCorrelationId);
+        _receiveMessage(topic, payload, optCorrelationId, optResultCode);
     });
 
     {%-for sig_name, sig in stinger.signals.items() %}
@@ -39,9 +39,12 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
     {%-endfor%}
 }
 
-void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const boost::optional<std::string> optCorrelationId, 
+        const boost::optional<MethodResultCode> optResultCode)
 {
-    std::cout << "RECEIVED MESSAGE to " << topic << " with correlationId=" << *optCorrelationId << std::endl;
     {%-for sig_name, sig in stinger.signals.items() %}
     if (_broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
     {
@@ -141,7 +144,7 @@ boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
     responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
-    _broker->Publish("{{method.topic}}", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str());
+    _broker->Publish("{{method.topic}}", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
 
     return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
 }
@@ -179,7 +182,7 @@ void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCas
         {%if method.return_value.arg_type.name.lower() == 'struct'-%}
         {%for item in method.return_value.members%}
         {{unpack_rv(item)}}
-            {%endfor%}
+        {%-endfor%}
         {{method.return_value.cpp_type}} returnValue { //initializer list
         {%for item in method.return_value.members%}
             {{item.name}}{%if not loop.last%},{%endif%}

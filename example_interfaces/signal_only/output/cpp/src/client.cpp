@@ -22,17 +22,20 @@ constexpr const char SignalOnlyClient::INTERFACE_VERSION[];
 
 SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> unusedRespTopic, const boost::optional<MethodResultCode> optResultCode)
     {
-        _receiveMessage(topic, payload, optCorrelationId);
+        _receiveMessage(topic, payload, optCorrelationId, optResultCode);
     });
     _broker->Subscribe("SignalOnly/signal/anotherSignal", 1);
     
 }
 
-void SignalOnlyClient::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+void SignalOnlyClient::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const boost::optional<std::string> optCorrelationId, 
+        const boost::optional<MethodResultCode> optResultCode)
 {
-    std::cout << "RECEIVED MESSAGE to " << topic << " with correlationId=" << *optCorrelationId << std::endl;
     if (_broker->TopicMatchesSubscription(topic, "SignalOnly/signal/anotherSignal"))
     {
         //Log("Handling anotherSignal signal");

@@ -19,16 +19,20 @@ constexpr const char {{stinger.name | UpperCamelCase}}Server::NAME[];
 constexpr const char {{stinger.name | UpperCamelCase}}Server::INTERFACE_VERSION[];
 
 {{stinger.name | UpperCamelCase}}Server::{{stinger.name | UpperCamelCase}}Server(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
     {
-        _receiveMessage(topic, payload, optCorrelationId);
+        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
     });
     {%for method in stinger.methods.values()%}
     _broker->Subscribe("{{method.topic}}", 2);
     {%endfor%}
 }
 
-void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const boost::optional<std::string> optCorrelationId, 
+        const boost::optional<std::string> optResponseTopic)
 {
     {%for method_name, method in stinger.methods.items()%}
     if (_broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
@@ -48,14 +52,8 @@ void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(const std::string&
                 if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
-                boost::optional<std::string> optClientId;
 
-                if (doc.HasMember("clientId") && doc["clientId"].IsString())
-                {
-                    optClientId = doc["clientId"].GetString();
-                }
-
-                _call{{method_name | camelCase}}Handler(topic, doc, optClientId, optCorrelationId);
+                _call{{method_name | UpperCamelCase}}Handler(topic, doc, optCorrelationId, optResponseTopic);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -94,7 +92,7 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false, boost::none, boost::none);
+    return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
 }
 {%endfor%}
 
@@ -107,7 +105,11 @@ void {{stinger.name | UpperCamelCase}}Server::register{{method_name | UpperCamel
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const
+void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | UpperCamelCase}}Handler(
+        const std::string& topic, 
+        const rapidjson::Document& doc, 
+        const boost::optional<std::string> optCorrelationId,
+        const boost::optional<std::string> optResponseTopic) const
 {
     std::cout << "Handling call to {{method_name}}\n";
     if (_{{method_name | camelCase}}Handler) {
@@ -129,12 +131,8 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
 
         {{method.return_value.cpp_type}} ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
 
-        if (clientId)
+        if (optResponseTopic)
         {
-            std::stringstream ss;
-            ss << boost::format("{{method.response_topic('%1%')}}") % *clientId;
-            std::string responseTopic = ss.str();
-
             rapidjson::Document responseJson;
             responseJson.SetObject();
 
@@ -142,11 +140,6 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
             resultValue.SetInt(0);
             responseJson.AddMember("result", resultValue, responseJson.GetAllocator());
 
-            if (correlationId) {
-                rapidjson::Value correlationIdValue;
-                correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
-                responseJson.AddMember("correlationId", correlationIdValue, responseJson.GetAllocator());
-            }
             {%macro add_arg_to_json(arg, value) %}
             // add the {{arg.name}} (a/n {{arg.arg_type.name}}) to the json
             rapidjson::Value returnValue{{arg.name|UpperCamelCase}};
@@ -174,7 +167,7 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | camelCase}}Ha
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(responseTopic, buf.GetString(), 2, true, boost::none, boost::none).wait();
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS).wait();
         }
     }
 }

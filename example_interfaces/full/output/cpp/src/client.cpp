@@ -22,9 +22,9 @@ constexpr const char ExampleClient::INTERFACE_VERSION[];
 
 ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> unusedRespTopic, const boost::optional<MethodResultCode> optResultCode)
     {
-        _receiveMessage(topic, payload, optCorrelationId);
+        _receiveMessage(topic, payload, optCorrelationId, optResultCode);
     });
     _broker->Subscribe("Example/signal/todayIs", 1);
     
@@ -40,9 +40,12 @@ ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broke
     }
 }
 
-void ExampleClient::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+void ExampleClient::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const boost::optional<std::string> optCorrelationId, 
+        const boost::optional<MethodResultCode> optResultCode)
 {
-    std::cout << "RECEIVED MESSAGE to " << topic << " with correlationId=" << *optCorrelationId << std::endl;
     if (_broker->TopicMatchesSubscription(topic, "Example/signal/todayIs"))
     {
         //Log("Handling todayIs signal");
@@ -141,7 +144,7 @@ boost::future<int> ExampleClient::addNumbers(int first, int second)
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
     responseTopicStringStream << boost::format("client/%1%/Example/method/addNumbers/response") % _broker->GetClientId();
-    _broker->Publish("Example/method/addNumbers", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str());
+    _broker->Publish("Example/method/addNumbers", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
 
     return _pendingAddNumbersMethodCalls[correlationId].get_future();
 }
@@ -204,7 +207,7 @@ boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::stri
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
     responseTopicStringStream << boost::format("client/%1%/Example/method/doSomething/response") % _broker->GetClientId();
-    _broker->Publish("Example/method/doSomething", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str());
+    _broker->Publish("Example/method/doSomething", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
 
     return _pendingDoSomethingMethodCalls[correlationId].get_future();
 }
@@ -235,15 +238,12 @@ void ExampleClient::_handleDoSomethingResponse(
         rapidjson::Value::ConstMemberIterator labelItr = doc.FindMember("label");
         const std::string& label = labelItr->value.GetString();
         
-            
         rapidjson::Value::ConstMemberIterator identifierItr = doc.FindMember("identifier");
         int identifier = identifierItr->value.GetInt();
         
-            
         rapidjson::Value::ConstMemberIterator dayItr = doc.FindMember("day");
         DayOfTheWeek day = static_cast<DayOfTheWeek>(dayItr->value.GetInt());
         
-            
         DoSomethingReturnValue returnValue { //initializer list
         
             label,

@@ -19,14 +19,18 @@ constexpr const char SignalOnlyServer::NAME[];
 constexpr const char SignalOnlyServer::INTERFACE_VERSION[];
 
 SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
     {
-        _receiveMessage(topic, payload, optCorrelationId);
+        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
     });
     
 }
 
-void SignalOnlyServer::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+void SignalOnlyServer::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const boost::optional<std::string> optCorrelationId, 
+        const boost::optional<std::string> optResponseTopic)
 {
     
 }
@@ -57,7 +61,7 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("SignalOnly/signal/anotherSignal", buf.GetString(), 1, false, boost::none, boost::none);
+    return _broker->Publish("SignalOnly/signal/anotherSignal", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
 }
 
 

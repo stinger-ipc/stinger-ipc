@@ -35,7 +35,7 @@ public:
     
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
-    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId);
+    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<MethodResultCode> optResultCode);
     std::map<boost::uuids::uuid, boost::promise<int>> _pendingAddNumbersMethodCalls;
     std::map<boost::uuids::uuid, boost::promise<DoSomethingReturnValue>> _pendingDoSomethingMethodCalls;
     

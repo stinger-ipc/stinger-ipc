@@ -19,9 +19,9 @@ constexpr const char ExampleServer::NAME[];
 constexpr const char ExampleServer::INTERFACE_VERSION[];
 
 ExampleServer::ExampleServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
     {
-        _receiveMessage(topic, payload, optCorrelationId);
+        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
     });
     
     _broker->Subscribe("Example/method/addNumbers", 2);
@@ -30,7 +30,11 @@ ExampleServer::ExampleServer(std::shared_ptr<IBrokerConnection> broker) : _broke
     
 }
 
-void ExampleServer::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
+void ExampleServer::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const boost::optional<std::string> optCorrelationId, 
+        const boost::optional<std::string> optResponseTopic)
 {
     
     if (_broker->TopicMatchesSubscription(topic, "Example/method/addNumbers"))
@@ -50,14 +54,8 @@ void ExampleServer::_receiveMessage(const std::string& topic, const std::string&
                 if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
-                boost::optional<std::string> optClientId;
 
-                if (doc.HasMember("clientId") && doc["clientId"].IsString())
-                {
-                    optClientId = doc["clientId"].GetString();
-                }
-
-                _calladdNumbersHandler(topic, doc, optClientId, optCorrelationId);
+                _callAddNumbersHandler(topic, doc, optCorrelationId, optResponseTopic);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -85,14 +83,8 @@ void ExampleServer::_receiveMessage(const std::string& topic, const std::string&
                 if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
-                boost::optional<std::string> optClientId;
 
-                if (doc.HasMember("clientId") && doc["clientId"].IsString())
-                {
-                    optClientId = doc["clientId"].GetString();
-                }
-
-                _calldoSomethingHandler(topic, doc, optClientId, optCorrelationId);
+                _callDoSomethingHandler(topic, doc, optCorrelationId, optResponseTopic);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -122,7 +114,7 @@ boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWee
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("Example/signal/todayIs", buf.GetString(), 1, false, boost::none, boost::none);
+    return _broker->Publish("Example/signal/todayIs", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
 }
 
 
@@ -141,7 +133,11 @@ void ExampleServer::registerDoSomethingHandler(std::function<DoSomethingReturnVa
 
 
 
-void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const
+void ExampleServer::_callAddNumbersHandler(
+        const std::string& topic, 
+        const rapidjson::Document& doc, 
+        const boost::optional<std::string> optCorrelationId,
+        const boost::optional<std::string> optResponseTopic) const
 {
     std::cout << "Handling call to addNumbers\n";
     if (_addNumbersHandler) {
@@ -173,12 +169,8 @@ void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapid
 
         int ret = _addNumbersHandler(tempFirst, tempSecond);
 
-        if (clientId)
+        if (optResponseTopic)
         {
-            std::stringstream ss;
-            ss << boost::format("client/%1%/Example/method/addNumbers/response") % *clientId;
-            std::string responseTopic = ss.str();
-
             rapidjson::Document responseJson;
             responseJson.SetObject();
 
@@ -186,11 +178,6 @@ void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapid
             resultValue.SetInt(0);
             responseJson.AddMember("result", resultValue, responseJson.GetAllocator());
 
-            if (correlationId) {
-                rapidjson::Value correlationIdValue;
-                correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
-                responseJson.AddMember("correlationId", correlationIdValue, responseJson.GetAllocator());
-            }
             
             
             // add the sum (a/n VALUE) to the json
@@ -202,12 +189,16 @@ void ExampleServer::_calladdNumbersHandler(const std::string& topic, const rapid
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(responseTopic, buf.GetString(), 2, true, boost::none, boost::none).wait();
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS).wait();
         }
     }
 }
 
-void ExampleServer::_calldoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const
+void ExampleServer::_callDoSomethingHandler(
+        const std::string& topic, 
+        const rapidjson::Document& doc, 
+        const boost::optional<std::string> optCorrelationId,
+        const boost::optional<std::string> optResponseTopic) const
 {
     std::cout << "Handling call to doSomething\n";
     if (_doSomethingHandler) {
@@ -227,12 +218,8 @@ void ExampleServer::_calldoSomethingHandler(const std::string& topic, const rapi
 
         DoSomethingReturnValue ret = _doSomethingHandler(tempAString);
 
-        if (clientId)
+        if (optResponseTopic)
         {
-            std::stringstream ss;
-            ss << boost::format("client/%1%/Example/method/doSomething/response") % *clientId;
-            std::string responseTopic = ss.str();
-
             rapidjson::Document responseJson;
             responseJson.SetObject();
 
@@ -240,11 +227,6 @@ void ExampleServer::_calldoSomethingHandler(const std::string& topic, const rapi
             resultValue.SetInt(0);
             responseJson.AddMember("result", resultValue, responseJson.GetAllocator());
 
-            if (correlationId) {
-                rapidjson::Value correlationIdValue;
-                correlationIdValue.SetString(correlationId->c_str(), correlationId->size(), responseJson.GetAllocator());
-                responseJson.AddMember("correlationId", correlationIdValue, responseJson.GetAllocator());
-            }
             
             // Return type is a struct of values that need added to json
             
@@ -270,7 +252,7 @@ void ExampleServer::_calldoSomethingHandler(const std::string& topic, const rapi
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(responseTopic, buf.GetString(), 2, true, boost::none, boost::none).wait();
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS).wait();
         }
     }
 }

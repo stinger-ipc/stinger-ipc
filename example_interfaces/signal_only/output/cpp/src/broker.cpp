@@ -64,6 +64,8 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         std::string topic(mmsg->topic);
         std::string payload(static_cast<char*>(mmsg->payload), mmsg->payloadlen);
         boost::optional<std::string> optCorrelationId;
+        boost::optional<std::string> optResponseTopic;
+        boost::optional<MethodResultCode> optResultCode;
         const mosquitto_property *prop;
         for (prop = props; prop != NULL; prop = mosquitto_property_next(prop))
         {
@@ -75,13 +77,36 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
                 {
                     optCorrelationId = std::string(static_cast<char*>(correlation_data), correlation_data_len);
                 }
-                break;
+            }
+            else if (mosquitto_property_identifier(prop) == MQTT_PROP_RESPONSE_TOPIC)
+            {
+                char *responseTopic = NULL;
+                if (mosquitto_property_read_string(prop, MQTT_PROP_RESPONSE_TOPIC, &responseTopic, false))
+                {
+                    optResponseTopic = std::string(responseTopic);
+                    free(responseTopic);
+                }
+            }
+            else if (mosquitto_property_identifier(prop) == MQTT_PROP_USER_PROPERTY)
+            {
+                char *name = NULL;
+                char *value = NULL;
+                if (mosquitto_property_read_string_pair(prop, MQTT_PROP_USER_PROPERTY, &name, &value, false))
+                {
+                    if (strcmp(name, "ReturnValue") == 0)
+                    {
+                        int returnValueInt = boost::lexical_cast<int>(value);
+                        optResultCode = static_cast<MethodResultCode>(returnValueInt);
+                    }
+                    free(name);
+                    free(value);
+                }
             }
         }
         for (auto& cb : thisClient->_messageCallbacks)
         {
             cout << "Calling callback" << endl;
-            cb(topic, payload, optCorrelationId);
+            cb(topic, payload, optCorrelationId, optResponseTopic, optResultCode);
         }
     });
 
@@ -116,7 +141,14 @@ void MqttConnection::Connect()
     mosquitto_connect(_mosq, _host.c_str(), _port, 120);
 }
 
-boost::future<bool> MqttConnection::Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic)
+boost::future<bool> MqttConnection::Publish(
+        const std::string& topic, 
+        const std::string& payload, 
+        unsigned qos, 
+        bool retain, 
+        boost::optional<std::string> optCorrelationId, 
+        boost::optional<std::string> optResponseTopic,
+        boost::optional<MethodResultCode> optResultCode)
 {
     int mid;
     mosquitto_property *propList = NULL;
@@ -128,6 +160,11 @@ boost::future<bool> MqttConnection::Publish(const std::string& topic, const std:
     if (optResponseTopic)
     {
         mosquitto_property_add_string(&propList, MQTT_PROP_RESPONSE_TOPIC, optResponseTopic->c_str());
+    }
+    if (optResultCode)
+    {
+        std::string resultCodeStr = std::to_string(static_cast<int>(*optResultCode));
+        mosquitto_property_add_string_pair(&propList, MQTT_PROP_USER_PROPERTY, "ReturnValue", resultCodeStr.c_str());
     }
     int rc = mosquitto_publish_v5(_mosq, &mid, topic.c_str(), payload.size(), payload.c_str(), qos, retain, propList);
     mosquitto_property_free_all(&propList);
@@ -172,7 +209,8 @@ void MqttConnection::Subscribe(const std::string& topic, int qos)
     }
 }
 
-void MqttConnection::AddMessageCallback(const std::function<void(const std::string&, const std::string&, const boost::optional<std::string>)>& cb)
+void MqttConnection::AddMessageCallback(
+        const std::function<void(const std::string&, const std::string&, const boost::optional<std::string>, const boost::optional<std::string>, const boost::optional<MethodResultCode>)>& cb)
 {
     boost::mutex::scoped_lock lock(_mutex);
     _messageCallbacks.push_back(cb);

@@ -36,9 +36,17 @@ public:
      * \param retain an indicator that the MQTT broker should retain the message.
      * \param optCorrelationId Optional correlation ID string that will be used to associate responses to requests.
      * \param optResponseTopic Optional MQTT topic used for publishing responses to requests.
+     * \param optReturnValue Optional (predetermined) value for the result of a method call.
      * \return A future which is resolved to true when the message has been published to the MQTT broker.
      */
-    virtual boost::future<bool> Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic);
+    virtual boost::future<bool> Publish(
+            const std::string& topic, 
+            const std::string& payload, 
+            unsigned qos, 
+            bool retain, 
+            boost::optional<std::string> optCorrelationId, 
+            boost::optional<std::string> optResponseTopic,
+            boost::optional<MethodResultCode> optResultCode);
 
     /*! Subscribe to a topic.
      * \param topic the subscription topic.
@@ -50,7 +58,7 @@ public:
      * Many callbacks can be added, and each will be called in the order in which the callbacks were added.
      * \param cb the callback function.
      */
-    virtual void AddMessageCallback(const std::function<void(const std::string&, const std::string&, const boost::optional<std::string>)>& cb);
+    virtual void AddMessageCallback(const std::function<void(const std::string&, const std::string&, const boost::optional<std::string>, const boost::optional<std::string>, const boost::optional<MethodResultCode>)>& cb);
 
     /*! Determines if a topic string matches a subscription topic.
      * \param topic a topic to match against a subscription.
@@ -97,7 +105,7 @@ private:
     std::string _clientId;
     std::queue<MqttSubscription> _subscriptions;
     boost::mutex _mutex;
-    std::vector<std::function<void(const std::string&, const std::string&, const boost::optional<std::string>)>> _messageCallbacks;
+    std::vector<std::function<void(const std::string&, const std::string&, const boost::optional<std::string>, const boost::optional<std::string>, const boost::optional<MethodResultCode>)>> _messageCallbacks;
     std::queue<MqttMessage> _msgQueue;
     std::map<int, std::shared_ptr<boost::promise<bool>>> _sendMessages;
 };

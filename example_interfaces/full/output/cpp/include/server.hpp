@@ -36,13 +36,13 @@ public:
     
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
-    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId);
+    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic);
 
     
-    void _calladdNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    void _callAddNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<int(int, int)> _addNumbersHandler;
     
-    void _calldoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    void _callDoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<DoSomethingReturnValue(const std::string&)> _doSomethingHandler;
     
 
