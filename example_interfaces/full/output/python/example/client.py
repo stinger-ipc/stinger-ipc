@@ -61,7 +61,7 @@ class ExampleClient:
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_message(self, topic, payload, properties):
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
@@ -80,19 +80,45 @@ class ExampleClient:
         
         # Handle 'addNumbers' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/addNumbers/response"):
+            result_code = MethodResultCode.SUCCESS
+            if "UserProperty" in properties:
+                user_properties = properties["UserProperty"]
+                if "DebugInfo" in user_properties:
+                    self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                if "ReturnValue" in user_properties:
+                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
             response = json.loads(payload)
-            if "CorrelationData" in properties and properties["CorrelationData"] in self._pending_method_responses:
-                cb = self._pending_method_responses[properties["CorrelationData"]]
-                del self._pending_method_responses[properties["CorrelationData"]]
-                cb(response)
+            if "CorrelationData" in properties:
+                correlation_id = properties["CorrelationData"].decode()
+                if correlation_id in self._pending_method_responses:
+                    cb = self._pending_method_responses[correlation_id]
+                    del self._pending_method_responses[correlation_id]
+                    cb(response, result_code)
+                else:
+                    self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+            else:
+                self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
         
         # Handle 'doSomething' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/doSomething/response"):
+            result_code = MethodResultCode.SUCCESS
+            if "UserProperty" in properties:
+                user_properties = properties["UserProperty"]
+                if "DebugInfo" in user_properties:
+                    self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                if "ReturnValue" in user_properties:
+                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
             response = json.loads(payload)
-            if "CorrelationData" in properties and properties["CorrelationData"] in self._pending_method_responses:
-                cb = self._pending_method_responses[properties["CorrelationData"]]
-                del self._pending_method_responses[properties["CorrelationData"]]
-                cb(response)
+            if "CorrelationData" in properties:
+                correlation_id = properties["CorrelationData"].decode()
+                if correlation_id in self._pending_method_responses:
+                    cb = self._pending_method_responses[correlation_id]
+                    del self._pending_method_responses[correlation_id]
+                    cb(response, result_code)
+                else:
+                    self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+            else:
+                self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
         
 
     
@@ -126,16 +152,13 @@ class ExampleClient:
                            correlation_id=correlation_id, response_topic=f"client/{self._client_id}/Example/method/addNumbers/response")
         return fut
 
-    def _handle_add_numbers_response(self, fut: futures.Future, response_json: Dict[str, Any]):
+    def _handle_add_numbers_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
         """ This called with the response to a `addNumbers` IPC method call.
         """
         self._logger.debug("Handling add_numbers response message %s", fut)
         try:
-            if 'result' not in response_json:
-                raise PayloadErrorStingerMethodException("The `result` key was not found in the response")
-            if response_json['result'] != MethodResultCode.SUCCESS.value:
-                self._logger.debug("Creating exception for %s", response_json)
-                raise stinger_exception_factory(response_json['result'], response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
+            if return_value != MethodResultCode.SUCCESS.value:
+                raise stinger_exception_factory(return_value, response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             
             if "sum" in response_json:
                 if not isinstance(response_json["sum"], int):
@@ -168,16 +191,13 @@ class ExampleClient:
                            correlation_id=correlation_id, response_topic=f"client/{self._client_id}/Example/method/doSomething/response")
         return fut
 
-    def _handle_do_something_response(self, fut: futures.Future, response_json: Dict[str, Any]):
+    def _handle_do_something_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
         """ This called with the response to a `doSomething` IPC method call.
         """
         self._logger.debug("Handling do_something response message %s", fut)
         try:
-            if 'result' not in response_json:
-                raise PayloadErrorStingerMethodException("The `result` key was not found in the response")
-            if response_json['result'] != MethodResultCode.SUCCESS.value:
-                self._logger.debug("Creating exception for %s", response_json)
-                raise stinger_exception_factory(response_json['result'], response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
+            if return_value != MethodResultCode.SUCCESS.value:
+                raise stinger_exception_factory(return_value, response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             
             return_args = self._filter_for_args(response_json, ["label", "identifier", "day", ])
             return_args["label"] = str(return_args["label"])
@@ -245,14 +265,14 @@ if __name__ == '__main__':
     print("Making call to 'add_numbers'")
     future = client.add_numbers(first=42, second=42)
     try:
-        print(future.result(5))
+        print(f"RESULT:  {future.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'add_numbers' call")
     
     print("Making call to 'do_something'")
     future = client.do_something(aString="apples")
     try:
-        print(future.result(5))
+        print(f"RESULT:  {future.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'do_something' call")
     

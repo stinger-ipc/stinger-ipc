@@ -6,6 +6,8 @@ vscode:
     - redhat.vscode-yaml
     - webfreak.debug
 
+    - rust-lang.rust-analyzer
+
 tasks:
   - name: Install dependencies
     before: |
@@ -24,5 +26,5 @@ tasks:
     command: |
       gp sync-await brokerrun
       sleep 3
-      mosquitto_sub -t '#' -F '%t %p\n    content=>%C correlation=>%D responses=>%R' -V 5
+      mosquitto_sub -t '#' -F '%t %p\n    content=>%C correlation=>%D responses=>%R\n    %P' -V 5
     openMode: split-right

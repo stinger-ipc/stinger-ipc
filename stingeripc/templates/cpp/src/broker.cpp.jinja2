@@ -69,11 +69,11 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         {
             if (mosquitto_property_identifier(prop) == MQTT_PROP_CORRELATION_DATA)
             {
-                const void *correlation_data;
-                size_t correlation_data_len;
-                if (mosquitto_property_read_binary(prop, &correlation_data, &correlation_data_len))
+                void *correlation_data;
+                uint16_t correlation_data_len;
+                if (mosquitto_property_read_binary(prop, MQTT_PROP_CORRELATION_DATA, &correlation_data, &correlation_data_len, false))
                 {
-                    
+                    optCorrelationId = std::string(static_cast<char*>(correlation_data), correlation_data_len);
                 }
                 break;
             }
@@ -81,7 +81,7 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         for (auto& cb : thisClient->_messageCallbacks)
         {
             cout << "Calling callback" << endl;
-            cb(topic, payload, boost::none);
+            cb(topic, payload, optCorrelationId);
         }
     });
 

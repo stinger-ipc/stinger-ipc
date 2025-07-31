@@ -57,16 +57,31 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         }
     });
 
-    mosquitto_message_callback_set(_mosq, [](struct mosquitto *mosq, void *user, const struct mosquitto_message *mmsg)
+    mosquitto_message_v5_callback_set(_mosq, [](struct mosquitto *mosq, void *user, const struct mosquitto_message *mmsg, const mosquitto_property *props)
     {
         MqttConnection *thisClient = static_cast<MqttConnection*>(user);
         cout << "Fowarding message (" << mmsg->topic << ") to " << thisClient->_messageCallbacks.size() << " callbacks" << endl;
         std::string topic(mmsg->topic);
         std::string payload(static_cast<char*>(mmsg->payload), mmsg->payloadlen);
+        boost::optional<std::string> optCorrelationId;
+        const mosquitto_property *prop;
+        for (prop = props; prop != NULL; prop = mosquitto_property_next(prop))
+        {
+            if (mosquitto_property_identifier(prop) == MQTT_PROP_CORRELATION_DATA)
+            {
+                void *correlation_data;
+                uint16_t correlation_data_len;
+                if (mosquitto_property_read_binary(prop, MQTT_PROP_CORRELATION_DATA, &correlation_data, &correlation_data_len, false))
+                {
+                    optCorrelationId = std::string(static_cast<char*>(correlation_data), correlation_data_len);
+                }
+                break;
+            }
+        }
         for (auto& cb : thisClient->_messageCallbacks)
         {
             cout << "Calling callback" << endl;
-            cb(topic, payload, boost::none);
+            cb(topic, payload, optCorrelationId);
         }
     });
 

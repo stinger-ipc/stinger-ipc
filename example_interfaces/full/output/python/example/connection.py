@@ -73,6 +73,8 @@ class LocalConnection(BrokerConnection):
     def _on_message(self, client, userdata, msg):
         if self._message_callback:
             properties = msg.properties.__dict__ if hasattr(msg, 'properties') else {}
+            if "UserProperty" in properties:
+                properties["UserProperty"] = dict(properties["UserProperty"])
             self._message_callback(msg.topic, msg.payload.decode(), properties)
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
@@ -113,7 +115,7 @@ class LocalConnection(BrokerConnection):
             properties.ResponseTopic = response_topic
         user_properties = []
         if return_value is not None:
-            user_properties.append(("ReturnValue", str(return_value)))
+            user_properties.append(("ReturnValue", str(return_value.value)))
         if debug_info is not None:
             user_properties.append(("DebugInfo", debug_info))
         if len(user_properties) > 0:

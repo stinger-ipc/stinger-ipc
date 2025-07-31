@@ -1,8 +1,8 @@
 
 from typing import Optional
-from enum import Enum
+from enum import IntEnum
 
-class MethodResultCode(Enum):
+class MethodResultCode(IntEnum):
     SUCCESS = 0
     CLIENT_ERROR = 1
     SERVER_ERROR = 2

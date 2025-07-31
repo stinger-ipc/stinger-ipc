@@ -1,8 +1,8 @@
 
 from typing import Optional
-from enum import Enum
+from enum import IntEnum
 
-class MethodResultCode(Enum):{%for rc_i, rc_name in stinger.method_return_codes.items()%}
+class MethodResultCode(IntEnum):{%for rc_i, rc_name in stinger.method_return_codes.items()%}
     {{rc_name | CONST_CASE}} = {{rc_i}}
     {%-endfor%}
 

@@ -49,7 +49,7 @@ class SignalOnlyClient:
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_message(self, topic, payload, properties):
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """

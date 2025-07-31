@@ -32,7 +32,7 @@ SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : 
 
 void SignalOnlyClient::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
 {
-    std::cout << "RECEIVED MESSAGE to " << topic << std::endl;
+    std::cout << "RECEIVED MESSAGE to " << topic << " with correlationId=" << *optCorrelationId << std::endl;
     if (_broker->TopicMatchesSubscription(topic, "SignalOnly/signal/anotherSignal"))
     {
         //Log("Handling anotherSignal signal");

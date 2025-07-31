@@ -41,7 +41,7 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
 
 void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
 {
-    std::cout << "RECEIVED MESSAGE to " << topic << std::endl;
+    std::cout << "RECEIVED MESSAGE to " << topic << " with correlationId=" << *optCorrelationId << std::endl;
     {%-for sig_name, sig in stinger.signals.items() %}
     if (_broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
     {
@@ -151,7 +151,7 @@ void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCas
         const std::string& payload, 
         const std::string &correlationId) 
 {
-    std::cout << "In response handler for " << topic << std::endl;
+    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
     if (!ok)
@@ -164,24 +164,22 @@ void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCas
         throw std::runtime_error("Received payload is not an object");
     }
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("correlationId");
-    if (itr != doc.MemberEnd() && itr->value.IsString()) {
-        std::string correlationId(itr->value.GetString());
-        boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
-        auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationIdUuid);
-
-        {%macro unpack_rv(arg)%}
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())
+    {
+        {%macro unpack_rv(arg)-%}
         rapidjson::Value::ConstMemberIterator {{arg.name}}Itr = doc.FindMember("{{arg.name}}");
-        {%if arg.arg_type.name.lower() == 'value'%}
+        {%if arg.arg_type.name.lower() == 'value'-%}
         {{arg.cpp_type}} {{arg.name}} = {{arg.name}}Itr->value.Get{{arg.cpp_rapidjson_type}}();
-        {%elif arg.arg_type.name.lower() == 'enum'%}
+        {%elif arg.arg_type.name.lower() == 'enum'-%}
         {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_type}}>({{arg.name}}Itr->value.GetInt());
-        {%endif%}
-        {%endmacro%}
-        {%if method.return_value.arg_type.name.lower() == 'struct'%}
+        {%endif-%}
+        {%endmacro-%}
+        {%if method.return_value.arg_type.name.lower() == 'struct'-%}
         {%for item in method.return_value.members%}
         {{unpack_rv(item)}}
-         {%endfor%}
+            {%endfor%}
         {{method.return_value.cpp_type}} returnValue { //initializer list
         {%for item in method.return_value.members%}
             {{item.name}}{%if not loop.last%},{%endif%}
@@ -193,6 +191,7 @@ void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCas
         promiseItr->second.set_value({{method.return_value.name}});
         {%-endif%}
     }
+
     std::cout << "End of response handler for " << topic << std::endl;
 }
 {%endfor%}

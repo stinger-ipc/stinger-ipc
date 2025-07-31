@@ -42,7 +42,7 @@ ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broke
 
 void ExampleClient::_receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId)
 {
-    std::cout << "RECEIVED MESSAGE to " << topic << std::endl;
+    std::cout << "RECEIVED MESSAGE to " << topic << " with correlationId=" << *optCorrelationId << std::endl;
     if (_broker->TopicMatchesSubscription(topic, "Example/signal/todayIs"))
     {
         //Log("Handling todayIs signal");
@@ -151,7 +151,7 @@ void ExampleClient::_handleAddNumbersResponse(
         const std::string& payload, 
         const std::string &correlationId) 
 {
-    std::cout << "In response handler for " << topic << std::endl;
+    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
     if (!ok)
@@ -164,21 +164,16 @@ void ExampleClient::_handleAddNumbersResponse(
         throw std::runtime_error("Received payload is not an object");
     }
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("correlationId");
-    if (itr != doc.MemberEnd() && itr->value.IsString()) {
-        std::string correlationId(itr->value.GetString());
-        boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
-        auto promiseItr = _pendingAddNumbersMethodCalls.find(correlationIdUuid);
-
-        
-        
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    auto promiseItr = _pendingAddNumbersMethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pendingAddNumbersMethodCalls.end())
+    {
         rapidjson::Value::ConstMemberIterator sumItr = doc.FindMember("sum");
-        
         int sum = sumItr->value.GetInt();
-        
         
         promiseItr->second.set_value(sum);
     }
+
     std::cout << "End of response handler for " << topic << std::endl;
 }
 
@@ -219,7 +214,7 @@ void ExampleClient::_handleDoSomethingResponse(
         const std::string& payload, 
         const std::string &correlationId) 
 {
-    std::cout << "In response handler for " << topic << std::endl;
+    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
     if (!ok)
@@ -232,36 +227,23 @@ void ExampleClient::_handleDoSomethingResponse(
         throw std::runtime_error("Received payload is not an object");
     }
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("correlationId");
-    if (itr != doc.MemberEnd() && itr->value.IsString()) {
-        std::string correlationId(itr->value.GetString());
-        boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
-        auto promiseItr = _pendingDoSomethingMethodCalls.find(correlationIdUuid);
-
-        
-        
-        
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    auto promiseItr = _pendingDoSomethingMethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pendingDoSomethingMethodCalls.end())
+    {
         
         rapidjson::Value::ConstMemberIterator labelItr = doc.FindMember("label");
-        
         const std::string& label = labelItr->value.GetString();
         
-        
-         
-        
+            
         rapidjson::Value::ConstMemberIterator identifierItr = doc.FindMember("identifier");
-        
         int identifier = identifierItr->value.GetInt();
         
-        
-         
-        
+            
         rapidjson::Value::ConstMemberIterator dayItr = doc.FindMember("day");
-        
         DayOfTheWeek day = static_cast<DayOfTheWeek>(dayItr->value.GetInt());
         
-        
-         
+            
         DoSomethingReturnValue returnValue { //initializer list
         
             label,
@@ -270,5 +252,6 @@ void ExampleClient::_handleDoSomethingResponse(
         };
         promiseItr->second.set_value(returnValue);
     }
+
     std::cout << "End of response handler for " << topic << std::endl;
 }
