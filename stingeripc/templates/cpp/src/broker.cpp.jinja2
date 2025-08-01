@@ -179,7 +179,7 @@ boost::future<bool> MqttConnection::Publish(
     }
     else if (rc == MOSQ_ERR_SUCCESS)
     {
-        std::cout << "Published to: " << topic << std::endl;
+        std::cout << "Published to: " << topic << " | " << payload << std::endl;
         auto pPromise = std::make_shared<boost::promise<bool>>();
         auto future = pPromise->get_future();
         boost::mutex::scoped_lock lock(_mutex);

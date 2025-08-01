@@ -56,7 +56,7 @@ class SignalOnlyClient:
         self._logger.debug("Receiving message sent to %s", topic)
         # Handle 'anotherSignal' signal.
         if self._conn.is_topic_sub(topic, "SignalOnly/signal/anotherSignal"):
-            if 'contentType' not in properties or properties['contentType'] != 'application/json':
+            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
                 self._logger.warning("Received 'anotherSignal' signal with non-JSON content type")
                 return
             allowed_args = ["one", "two", "three", ]
@@ -100,11 +100,8 @@ class SignalOnlyClientBuilder:
         self._logger.debug("Building SignalOnlyClient")
         client = SignalOnlyClient(self._conn)
         
-        def receive_anotherSignal(self, handler):
-            """ Used as a decorator for methods which handle particular signals.
-            """
-            for cb in self._signal_recv_callbacks_for_anotherSignal:
-                client.receive_anotherSignal(cb)
+        for cb in self._signal_recv_callbacks_for_anotherSignal:
+            client.receive_anotherSignal(cb)
         
         return client
 

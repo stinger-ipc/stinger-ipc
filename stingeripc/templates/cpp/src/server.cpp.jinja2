@@ -135,11 +135,6 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | UpperCamelCas
         {
             rapidjson::Document responseJson;
             responseJson.SetObject();
-
-            rapidjson::Value resultValue;
-            resultValue.SetInt(0);
-            responseJson.AddMember("result", resultValue, responseJson.GetAllocator());
-
             {%macro add_arg_to_json(arg, value) %}
             // add the {{arg.name}} (a/n {{arg.arg_type.name}}) to the json
             rapidjson::Value returnValue{{arg.name|UpperCamelCase}};
@@ -167,7 +162,7 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | UpperCamelCas
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS).wait();
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
         }
     }
 }

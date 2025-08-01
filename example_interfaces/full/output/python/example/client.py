@@ -68,7 +68,7 @@ class ExampleClient:
         self._logger.debug("Receiving message sent to %s", topic)
         # Handle 'todayIs' signal.
         if self._conn.is_topic_sub(topic, "Example/signal/todayIs"):
-            if 'contentType' not in properties or properties['contentType'] != 'application/json':
+            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
                 self._logger.warning("Received 'todayIs' signal with non-JSON content type")
                 return
             allowed_args = ["dayOfMonth", "dayOfWeek", ]
@@ -235,11 +235,8 @@ class ExampleClientBuilder:
         self._logger.debug("Building ExampleClient")
         client = ExampleClient(self._conn)
         
-        def receive_todayIs(self, handler):
-            """ Used as a decorator for methods which handle particular signals.
-            """
-            for cb in self._signal_recv_callbacks_for_todayIs:
-                client.receive_todayIs(cb)
+        for cb in self._signal_recv_callbacks_for_todayIs:
+            client.receive_todayIs(cb)
         
         return client
 

@@ -76,7 +76,7 @@ class {{stinger.name}}Client:
         {%for sig_name, sig in stinger.signals.items()-%}
         # Handle '{{sig_name}}' signal.
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
-            if 'contentType' not in properties or properties['contentType'] != 'application/json':
+            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
                 self._logger.warning("Received '{{sig_name}}' signal with non-JSON content type")
                 return
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
@@ -193,11 +193,8 @@ class {{stinger.name}}ClientBuilder:
         self._logger.debug("Building {{stinger.name}}Client")
         client = {{stinger.name}}Client(self._conn)
         {%for sig_name, sig in stinger.signals.items()%}
-        def receive_{{sig_name}}(self, handler):
-            """ Used as a decorator for methods which handle particular signals.
-            """
-            for cb in self._signal_recv_callbacks_for_{{sig_name}}:
-                client.receive_{{sig_name}}(cb)
+        for cb in self._signal_recv_callbacks_for_{{sig_name}}:
+            client.receive_{{sig_name}}(cb)
         {%endfor%}
         return client
 

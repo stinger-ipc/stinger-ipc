@@ -173,11 +173,6 @@ void ExampleServer::_callAddNumbersHandler(
         {
             rapidjson::Document responseJson;
             responseJson.SetObject();
-
-            rapidjson::Value resultValue;
-            resultValue.SetInt(0);
-            responseJson.AddMember("result", resultValue, responseJson.GetAllocator());
-
             
             
             // add the sum (a/n VALUE) to the json
@@ -189,7 +184,7 @@ void ExampleServer::_callAddNumbersHandler(
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS).wait();
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
         }
     }
 }
@@ -222,11 +217,6 @@ void ExampleServer::_callDoSomethingHandler(
         {
             rapidjson::Document responseJson;
             responseJson.SetObject();
-
-            rapidjson::Value resultValue;
-            resultValue.SetInt(0);
-            responseJson.AddMember("result", resultValue, responseJson.GetAllocator());
-
             
             // Return type is a struct of values that need added to json
             
@@ -252,7 +242,7 @@ void ExampleServer::_callDoSomethingHandler(
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS).wait();
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
         }
     }
 }
