@@ -7,28 +7,44 @@ This is the Client for the Example interface.
 
 extern crate paho_mqtt as mqtt;
 use futures::{StreamExt};
-use connection::Connection;
+use connection::{MessageStreamer, MessagePublisher, Connection, ReceivedMessage};
 
 use json::{JsonValue, object};
 use std::collections::HashMap;
 use uuid::Uuid;
 use connection::return_structs::MethodResultCode;
 
+use std::io::Error;
+use tokio::sync::mpsc::{self};
+use tokio::time::{self, Duration};
+use serde::Serialize;
 
+#[derive(Clone, Debug, Serialize)]
+struct AddNumbersRequestObject {
+    first: i32,
+    second: i32,
+};
+#[derive(Clone, Debug, Serialize)]
+struct DoSomethingRequestObject {
+    aString: String,
+};
 
 
 pub struct ExampleClient {
     connection: Connection,
-    subsc_id_start: u32,
     signal_recv_callback_for_today_is: Box<dyn FnMut(i32, connection::enums::DayOfTheWeek)->()>,
     pending_responses: HashMap::<Uuid, oneshot::Sender::<JsonValue>>,
+    msg_streamer_rx: Receiver<ReceivedMessage>,
+    msg_streamer_tx: Sender<ReceivedMessage>,
+    msg_publisher: MessagePublisher, 
 }
 
 impl ExampleClient {
     pub fn new(mut connection: Connection) -> ExampleClient {
-        let subsc_id_start = connection.get_subcr_id_range_start();
-        connection.subscribe(String::from(format!("client/{}/Example/method/addNumbers/response", connection.client_id)), 2, Some(subsc_id_start+101));
-        connection.subscribe(String::from(format!("client/{}/Example/method/doSomething/response", connection.client_id)), 2, Some(subsc_id_start+102));
+        let (rcvr_tx: Sender<ReceivedMessage>, mut rcvr_rx: Receiver<ReceivedMessage>) = mpsc.channel(64);
+        let publihser = connection.get_publisher()
+        connection.subscribe(String::from(format!("client/{}/Example/method/addNumbers/response", connection.client_id)), rcvr_tx.clone());
+        connection.subscribe(String::from(format!("client/{}/Example/method/doSomething/response", connection.client_id)), rcvr_tx.clone());
         
         
         let inst = ExampleClient {
@@ -37,14 +53,16 @@ impl ExampleClient {
             signal_recv_callback_for_today_is: Box::new( |_1, _2| {} ),
             
             pending_responses: HashMap::new(),
+            msg_streamer_rx: rcvr_rx,
+            msg_streamer_tx: rcvr_tx,
+            msg_publisher: publisher,
         };
-        connection.cli.set_message_callback(|cli, msg| inst.on_receive_message(cli, msg));
         inst
     }
 
     pub fn set_signal_recv_callbacks_for_today_is(&mut self, cb: impl FnMut(i32, connection::enums::DayOfTheWeek)->() + 'static) {
         self.signal_recv_callback_for_today_is = Box::new(cb);
-        self.connection.subscribe(String::from("Example/signal/todayIs"), 2, Some(201));
+        self.connection.subscribe(String::from("Example/signal/todayIs"), self.msg_streamer_tx.clone());
     }
     
 
@@ -131,54 +149,6 @@ impl ExampleClient {
     }
     
 
-    pub fn on_receive_message(&self, _cli: &mqtt::AsyncClient, msg: Option<mqtt::Message>) {
-        print!("Received message: {}", msg.unwrap());
-        ()
-    }
 
-    pub async fn unused(&mut self) {
-        ()
-    }
 
-/*
-    pub async fn process(&mut self) {
-        print!("Processing connection stuff");
-        while let Some(opt_msg) = self.connection.rx.next().await {
-            if let Some(msg) = opt_msg {
-                let payload_str = msg.payload_str().to_string();
-                let payload_object = json::parse(&payload_str).unwrap();
-                
-                let opt_corr_id_prop = msg.properties().iter(mqtt::PropertyCode::CorrelationData).next();
-                let opt_corr_id_str = opt_corr_id_prop.and_then(|p| p.get_string());
-                
-                let prop_itr = msg.properties().iter(mqtt::PropertyCode::SubscriptionIdentifier);
-
-                for subscription_identifier in prop_itr {
-                    let subsc_id = subscription_identifier.get_u32().unwrap() - self.subsc_id_start;
-                    match subsc_id {
-                        101 => {
-                            self.handle_add_numbers_response(msg.payload_str().to_string(), &opt_corr_id_str);
-                        }
-                        
-                        102 => {
-                            self.handle_do_something_response(msg.payload_str().to_string(), &opt_corr_id_str);
-                        }
-                        201 => {
-                            
-                            let temp_day_of_month = payload_object["dayOfMonth"].as_i32().unwrap();
-                            
-                            
-                            let temp_day_of_week = connection::enums::DayOfTheWeek::from_u32(payload_object["dayOfWeek"].as_u32().unwrap()).unwrap();
-                            
-                            
-                            (self.signal_recv_callback_for_today_is)(temp_day_of_month, temp_day_of_week);
-                        }
-                        _ => ()
-                    }
-                }
-            
-            }
-        }
-    }
-    */
 }

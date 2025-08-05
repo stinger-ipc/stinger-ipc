@@ -7,37 +7,48 @@ This is the Client for the {{stinger.name}} interface.
 
 extern crate paho_mqtt as mqtt;
 use futures::{StreamExt};
-use connection::Connection;
+use connection::{MessageStreamer, MessagePublisher, Connection, ReceivedMessage};
 {%if stinger.methods | length > 0 %}
 use json::{JsonValue, object};
 use std::collections::HashMap;
 use uuid::Uuid;
 use connection::return_structs::MethodResultCode;
 {%endif%}
-{%-set signal_ident_start=200%}
-{%-set method_ident_start=100%}
-{%-for sig_name, sig in stinger.signals.items() -%}
-    {%set signal_ident_start=signal_ident_start + 1 %}
+use std::io::Error;
+use tokio::sync::mpsc::{self};
+use tokio::time::{self, Duration};
+use serde::Serialize;
+
+{%for method_name, method in stinger.methods.items()-%}
+#[derive(Clone, Debug, Serialize)]
+struct {{method_name | UpperCamelCase}}RequestObject {
+    {%-for arg in method.arg_list%}
+    {%-if arg.arg_type.name.lower() == 'value'%}
+    {{arg.name}}: {{arg.rust_type}},
+    {%-elif arg.arg_type.name.lower() == 'enum'-%}
+    {{arg.name}}: u32,
+    {%endif-%}
+    {%endfor%}
+};
 {%endfor%}
-{%-for method_name, method in stinger.methods.items() -%}
-    {%set method_ident_start=method_ident_start + 1 %}
-{%endfor%}
+
 pub struct {{stinger.name | UpperCamelCase }}Client {
     connection: Connection,
-    subsc_id_start: u32,
     {%for sig_name, sig in stinger.signals.items()-%}
         signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->()>,
     {%endfor%}
     {%-if stinger.methods | length > 0 %}pending_responses: HashMap::<Uuid, oneshot::Sender::<JsonValue>>,{%endif%}
+    msg_streamer_rx: Receiver<ReceivedMessage>,
+    msg_streamer_tx: Sender<ReceivedMessage>,
+    msg_publisher: MessagePublisher, 
 }
 
 impl {{stinger.name | UpperCamelCase }}Client {
     pub fn new(mut connection: Connection) -> {{stinger.name | UpperCamelCase }}Client {
-        let subsc_id_start = connection.get_subcr_id_range_start();
+        let (rcvr_tx: Sender<ReceivedMessage>, mut rcvr_rx: Receiver<ReceivedMessage>) = mpsc.channel(64);
+        let publihser = connection.get_publisher()
         {%for method_name, method in stinger.methods.items()-%}
-        connection.subscribe(String::from(format!("{{method.response_topic('{}')}}", connection.client_id)), 2, Some(subsc_id_start+{{method_ident_start + loop.index}}));
-        {%endfor%}
-        {%-for sig_name, sig in stinger.signals.items()-%}
+        connection.subscribe(String::from(format!("{{method.response_topic('{}')}}", connection.client_id)), rcvr_tx.clone());
         {%endfor%}
         
         let inst = {{stinger.name | UpperCamelCase }}Client {
@@ -47,15 +58,17 @@ impl {{stinger.name | UpperCamelCase }}Client {
             signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |{%for arg in sig.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
             {%endfor%}
             {%if stinger.methods | length > 0 %}pending_responses: HashMap::new(),{%endif%}
+            msg_streamer_rx: rcvr_rx,
+            msg_streamer_tx: rcvr_tx,
+            msg_publisher: publisher,
         };
-        connection.cli.set_message_callback(|cli, msg| inst.on_receive_message(cli, msg));
         inst
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
     pub fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
         self.signal_recv_callback_for_{{sig_name|snake_case}} = Box::new(cb);
-        self.connection.subscribe(String::from("{{sig.topic}}"), 2, Some({{signal_ident_start+loop.index}}));
+        self.connection.subscribe(String::from("{{sig.topic}}"), self.msg_streamer_tx.clone());
     }
     {%endfor%}
 
@@ -120,53 +133,6 @@ impl {{stinger.name | UpperCamelCase }}Client {
     }
     {%endfor%}
 
-    pub fn on_receive_message(&self, _cli: &mqtt::AsyncClient, msg: Option<mqtt::Message>) {
-        print!("Received message: {}", msg.unwrap());
-        ()
-    }
 
-    pub async fn unused(&mut self) {
-        ()
-    }
 
-/*
-    pub async fn process(&mut self) {
-        print!("Processing connection stuff");
-        while let Some(opt_msg) = self.connection.rx.next().await {
-            if let Some(msg) = opt_msg {
-                let payload_str = msg.payload_str().to_string();
-                let payload_object = json::parse(&payload_str).unwrap();
-                {%if stinger.methods | length > 0 %}
-                let opt_corr_id_prop = msg.properties().iter(mqtt::PropertyCode::CorrelationData).next();
-                let opt_corr_id_str = opt_corr_id_prop.and_then(|p| p.get_string());
-                {%endif%}
-                let prop_itr = msg.properties().iter(mqtt::PropertyCode::SubscriptionIdentifier);
-
-                for subscription_identifier in prop_itr {
-                    let subsc_id = subscription_identifier.get_u32().unwrap() - self.subsc_id_start;
-                    match subsc_id {
-                        {%-for method_name, method in stinger.methods.items()%}
-                        {{method_ident_start + loop.index}} => {
-                            self.handle_{{method_name|snake_case}}_response(msg.payload_str().to_string(), &opt_corr_id_str);
-                        }
-                        {%endfor-%}
-                        {%for sig_name, sig in stinger.signals.items()-%}
-                        {{signal_ident_start + loop.index}} => {
-                            {%for arg in sig.arg_list-%}
-                            {%-if arg.arg_type.name.lower() == 'value'%}
-                            let temp_{{arg.name | snake_case}} = payload_object["{{arg.name}}"].{%if arg.rust_type == 'String'%}as_str().unwrap().to_string(){%else%}as_{{arg.rust_type}}().unwrap(){%endif%};
-                            {%elif arg.arg_type.name.lower() == 'enum'%}
-                            let temp_{{arg.name | snake_case}} = {{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap()).unwrap();
-                            {%endif%}
-                            {%endfor%}
-                            (self.signal_recv_callback_for_{{sig_name|snake_case}})({%for arg in sig.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
-                        }{%endfor%}
-                        _ => ()
-                    }
-                }
-            
-            }
-        }
-    }
-    */
 }

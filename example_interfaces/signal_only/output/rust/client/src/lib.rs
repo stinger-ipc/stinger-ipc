@@ -7,19 +7,28 @@ This is the Client for the SignalOnly interface.
 
 extern crate paho_mqtt as mqtt;
 use futures::{StreamExt};
-use connection::Connection;
+use connection::{MessageStreamer, MessagePublisher, Connection, ReceivedMessage};
+
+use std::io::Error;
+use tokio::sync::mpsc::{self};
+use tokio::time::{self, Duration};
+use serde::Serialize;
+
 
 
 pub struct SignalOnlyClient {
     connection: Connection,
-    subsc_id_start: u32,
     signal_recv_callback_for_another_signal: Box<dyn FnMut(f32, bool, String)->()>,
     
+    msg_streamer_rx: Receiver<ReceivedMessage>,
+    msg_streamer_tx: Sender<ReceivedMessage>,
+    msg_publisher: MessagePublisher, 
 }
 
 impl SignalOnlyClient {
     pub fn new(mut connection: Connection) -> SignalOnlyClient {
-        let subsc_id_start = connection.get_subcr_id_range_start();
+        let (rcvr_tx: Sender<ReceivedMessage>, mut rcvr_rx: Receiver<ReceivedMessage>) = mpsc.channel(64);
+        let publihser = connection.get_publisher()
         
         
         let inst = SignalOnlyClient {
@@ -28,59 +37,21 @@ impl SignalOnlyClient {
             signal_recv_callback_for_another_signal: Box::new( |_1, _2, _3| {} ),
             
             
+            msg_streamer_rx: rcvr_rx,
+            msg_streamer_tx: rcvr_tx,
+            msg_publisher: publisher,
         };
-        connection.cli.set_message_callback(|cli, msg| inst.on_receive_message(cli, msg));
         inst
     }
 
     pub fn set_signal_recv_callbacks_for_another_signal(&mut self, cb: impl FnMut(f32, bool, String)->() + 'static) {
         self.signal_recv_callback_for_another_signal = Box::new(cb);
-        self.connection.subscribe(String::from("SignalOnly/signal/anotherSignal"), 2, Some(201));
+        self.connection.subscribe(String::from("SignalOnly/signal/anotherSignal"), self.msg_streamer_tx.clone());
     }
     
 
     
 
-    pub fn on_receive_message(&self, _cli: &mqtt::AsyncClient, msg: Option<mqtt::Message>) {
-        print!("Received message: {}", msg.unwrap());
-        ()
-    }
 
-    pub async fn unused(&mut self) {
-        ()
-    }
 
-/*
-    pub async fn process(&mut self) {
-        print!("Processing connection stuff");
-        while let Some(opt_msg) = self.connection.rx.next().await {
-            if let Some(msg) = opt_msg {
-                let payload_str = msg.payload_str().to_string();
-                let payload_object = json::parse(&payload_str).unwrap();
-                
-                let prop_itr = msg.properties().iter(mqtt::PropertyCode::SubscriptionIdentifier);
-
-                for subscription_identifier in prop_itr {
-                    let subsc_id = subscription_identifier.get_u32().unwrap() - self.subsc_id_start;
-                    match subsc_id {201 => {
-                            
-                            let temp_one = payload_object["one"].as_f32().unwrap();
-                            
-                            
-                            let temp_two = payload_object["two"].as_bool().unwrap();
-                            
-                            
-                            let temp_three = payload_object["three"].as_str().unwrap().to_string();
-                            
-                            
-                            (self.signal_recv_callback_for_another_signal)(temp_one, temp_two, temp_three);
-                        }
-                        _ => ()
-                    }
-                }
-            
-            }
-        }
-    }
-    */
 }
