@@ -7,6 +7,8 @@ It contains enumerations used by the SignalOnly interface.
 
 
 
+
+
 pub enum MethodResultCode {
     Success = 0,
     ClientError = 1,

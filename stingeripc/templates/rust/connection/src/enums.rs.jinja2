@@ -4,29 +4,3 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 */
-{%if stinger.enums | length > 0%}
-use std::fmt;
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
-{%endif%}
-
-{%for ie_name, ie in stinger.enums.items() %}
-#[derive(Debug, FromPrimitive)]
-pub enum {{ie_name | UpperCamelCase }} {
-    {%-for value in ie.values %}
-    {{value | UpperCamelCase}} = {{loop.index}}{%if not loop.last%},{%endif%}
-    {%-endfor%}
-}
-
-impl {{ie_name | UpperCamelCase }} {
-    pub fn from_u32(value: u32) -> Option<Self> {
-        FromPrimitive::from_u32(value)
-    }
-}
-
-impl fmt::Display for {{ie_name | UpperCamelCase }} {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-       write!(f, "{:?}", self)
-    }
-}
-{%endfor%}

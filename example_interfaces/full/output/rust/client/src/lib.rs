@@ -19,15 +19,6 @@ use tokio::sync::mpsc::{self};
 use tokio::time::{self, Duration};
 use serde::Serialize;
 
-#[derive(Clone, Debug, Serialize)]
-struct AddNumbersRequestObject {
-    first: i32,
-    second: i32,
-};
-#[derive(Clone, Debug, Serialize)]
-struct DoSomethingRequestObject {
-    aString: String,
-};
 
 
 pub struct ExampleClient {

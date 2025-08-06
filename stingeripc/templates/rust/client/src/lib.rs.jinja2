@@ -19,18 +19,7 @@ use tokio::sync::mpsc::{self};
 use tokio::time::{self, Duration};
 use serde::Serialize;
 
-{%for method_name, method in stinger.methods.items()-%}
-#[derive(Clone, Debug, Serialize)]
-struct {{method_name | UpperCamelCase}}RequestObject {
-    {%-for arg in method.arg_list%}
-    {%-if arg.arg_type.name.lower() == 'value'%}
-    {{arg.name}}: {{arg.rust_type}},
-    {%-elif arg.arg_type.name.lower() == 'enum'-%}
-    {{arg.name}}: u32,
-    {%endif-%}
-    {%endfor%}
-};
-{%endfor%}
+
 
 pub struct {{stinger.name | UpperCamelCase }}Client {
     connection: Connection,
