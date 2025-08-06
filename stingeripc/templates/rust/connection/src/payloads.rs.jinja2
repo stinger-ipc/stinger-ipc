@@ -10,6 +10,7 @@ use std::fmt;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 {%endif%}
+use serde::Serialize;
 
 {%for ie_name, ie in stinger.enums.items() %}
 #[derive(Debug, FromPrimitive)]
@@ -19,6 +20,7 @@ pub enum {{ie_name | UpperCamelCase }} {
     {%-endfor%}
 }
 
+#[allow(dead_code)]
 impl {{ie_name | UpperCamelCase }} {
     pub fn from_u32(value: u32) -> Option<Self> {
         FromPrimitive::from_u32(value)
@@ -32,14 +34,16 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 }
 {%endfor%}
 
+#[allow(dead_code)]
 pub enum MethodResultCode { {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
     {{rc_name | UpperCamelCase}} = {{rc_i}},
     {%-endfor%}
 }
 
 {%for method_name, method in stinger.methods.items()%}
+#[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize)]
-struct {{method_name | UpperCamelCase}}RequestObject {
+pub struct {{method_name | UpperCamelCase}}RequestObject {
     {%-for arg in method.arg_list%}
     {%-if arg.arg_type.name.lower() == 'value'%}
     {{arg.name}}: {{arg.rust_type}},

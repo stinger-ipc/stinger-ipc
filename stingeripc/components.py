@@ -119,7 +119,7 @@ class ArgEnum(Arg):
         elif lang == "c++":
             retval = f"{self._enum.class_name}::{stringcase.constcase(value)}"
         elif lang == "rust":
-            retval = f"connection::enums::{self._enum.class_name}::{value}"
+            retval = f"connection::payloads::{self._enum.class_name}::{value}"
         random.setstate(random_state)
         return retval
 
@@ -228,7 +228,7 @@ class ArgStruct(Arg):
 
     @property
     def rust_type(self) -> str:
-        return f"connection::return_structs::{self.rust_local_type}"
+        return f"connection::payloads::{self.rust_local_type}"
 
     @property
     def rust_local_type(self) -> str:
@@ -408,7 +408,7 @@ class InterfaceEnum:
 
     @property
     def rust_type(self) -> str:
-        return f"connection::enums::{self.rust_local_type}"
+        return f"connection::payloads::{self.rust_local_type}"
 
     @property
     def cpp_type(self) -> str:

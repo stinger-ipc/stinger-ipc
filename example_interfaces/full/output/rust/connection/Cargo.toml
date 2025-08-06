@@ -9,6 +9,8 @@ paho-mqtt = "0.13.3"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 tokio = { version = "1", features = ["full"] }
+num-derive = "0.4.2"
+num-traits = "0.2.19"
 
 [dependencies.uuid]
 version = "1.17.0"

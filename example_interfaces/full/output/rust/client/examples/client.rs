@@ -3,7 +3,7 @@ use example_client::ExampleClient;
 use connection::Connection;
 
 
-fn print_today_is(day_of_month: i32, day_of_week: connection::enums::DayOfTheWeek) {
+fn print_today_is(day_of_month: i32, day_of_week: connection::payloads::DayOfTheWeek) {
     println!("Got a 'todayIs' signal:{} {} ", day_of_month, day_of_week);
 }
 

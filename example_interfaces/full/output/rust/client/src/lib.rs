@@ -6,82 +6,93 @@ This is the Client for the Example interface.
 */
 
 extern crate paho_mqtt as mqtt;
-use futures::{StreamExt};
-use connection::{MessageStreamer, MessagePublisher, Connection, ReceivedMessage};
+use connection::{MessagePublisher, Connection, ReceivedMessage};
 
-use json::{JsonValue, object};
+use json::{JsonValue};
 use std::collections::HashMap;
 use uuid::Uuid;
-use connection::payloads::{*};
 
-use std::io::Error;
-use tokio::sync::mpsc::{self};
-use tokio::time::{self, Duration};
-use serde::Serialize;
+#[allow(unused_imports)]
+use connection::payloads::{*, MethodResultCode};
 
+use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc::{self, Sender, Receiver};
 
+#[derive(Clone, Debug)]
+struct ExampleSubscriptionIds {
+    add_numbers: i32,
+    do_something: i32,
+    
+}
 
 pub struct ExampleClient {
     connection: Connection,
-    signal_recv_callback_for_today_is: Box<dyn FnMut(i32, connection::enums::DayOfTheWeek)->()>,
-    pending_responses: HashMap::<Uuid, oneshot::Sender::<JsonValue>>,
+    signal_recv_callback_for_today_is: Box<dyn FnMut(i32, connection::payloads::DayOfTheWeek)->()>,
+    pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,
     msg_streamer_rx: Receiver<ReceivedMessage>,
     msg_streamer_tx: Sender<ReceivedMessage>,
-    msg_publisher: MessagePublisher, 
+    msg_publisher: MessagePublisher,
+    subscription_ids: ExampleSubscriptionIds,
 }
 
 impl ExampleClient {
-    pub fn new(mut connection: Connection) -> ExampleClient {
-        let (rcvr_tx: Sender<ReceivedMessage>, mut rcvr_rx: Receiver<ReceivedMessage>) = mpsc.channel(64);
-        let publihser = connection.get_publisher()
-        connection.subscribe(String::from(format!("client/{}/Example/method/addNumbers/response", connection.client_id)), rcvr_tx.clone());
-        connection.subscribe(String::from(format!("client/{}/Example/method/doSomething/response", connection.client_id)), rcvr_tx.clone());
+    pub async fn new(mut connection: Connection) -> ExampleClient {
+        let (rcvr_tx, rcvr_rx) = mpsc::channel(64);
+        let publisher = connection.get_publisher();
+        let topic_add_numbers = format!("client/{}/Example/method/addNumbers/response", connection.client_id);
+        let subscription_id_add_numbers = connection.subscribe(&topic_add_numbers, rcvr_tx.clone()).await;
+        let subscription_id_add_numbers = subscription_id_add_numbers.unwrap_or_else(|_| -1);
+        let topic_do_something = format!("client/{}/Example/method/doSomething/response", connection.client_id);
+        let subscription_id_do_something = connection.subscribe(&topic_do_something, rcvr_tx.clone()).await;
+        let subscription_id_do_something = subscription_id_do_something.unwrap_or_else(|_| -1);
         
-        
+        let sub_ids = ExampleSubscriptionIds {
+            add_numbers: subscription_id_add_numbers,do_something: subscription_id_do_something,
+        };
         let inst = ExampleClient {
             connection: connection,
-            subsc_id_start: subsc_id_start,
             signal_recv_callback_for_today_is: Box::new( |_1, _2| {} ),
             
-            pending_responses: HashMap::new(),
+            pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: rcvr_rx,
             msg_streamer_tx: rcvr_tx,
             msg_publisher: publisher,
+            subscription_ids: sub_ids,
         };
         inst
     }
 
-    pub fn set_signal_recv_callbacks_for_today_is(&mut self, cb: impl FnMut(i32, connection::enums::DayOfTheWeek)->() + 'static) {
+    pub async fn set_signal_recv_callbacks_for_today_is(&mut self, cb: impl FnMut(i32, connection::payloads::DayOfTheWeek)->() + 'static) {
         self.signal_recv_callback_for_today_is = Box::new(cb);
-        self.connection.subscribe(String::from("Example/signal/todayIs"), self.msg_streamer_tx.clone());
+        self.connection.subscribe("Example/signal/todayIs", self.msg_streamer_tx.clone()).await;
     }
     
 
     pub async fn add_numbers(&mut self, first: i32, second: i32)->Result<i32, MethodResultCode> {
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
-        let correlation_id_str = format!("{}", correlation_id);
-        self.pending_responses.insert(correlation_id, sender);
-        let data = object!{
-            correlationId: correlation_id_str,
-            clientId: self.connection.client_id.clone(),
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let data = connection::payloads::AddNumbersRequestObject {
             first: first,
-            
             second: second,
-            
         };
-        let data_str = json::stringify(data);
-        let _ = self.connection.publish("Example/method/addNumbers".to_string(), data_str, 2, None).await;
+        let _ = self.msg_publisher.publish_request_structure("Example/method/addNumbers".to_string(), &data, "", correlation_id).await;
         let resp_obj = receiver.recv().unwrap();
         Ok(resp_obj["sum"].as_i32().unwrap())
     }
 
-    fn handle_add_numbers_response(&mut self, payload: String, opt_correlation_id: &Option<String>) {
+    fn handle_add_numbers_response(pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>, payload: String, opt_correlation_id: Option<String>) {
         let payload_object = json::parse(&payload).unwrap();
         if opt_correlation_id.is_some() {
             let sender_opt = opt_correlation_id.as_ref()
                 .and_then(|cid| Uuid::parse_str(cid.as_str()).ok())
-                .and_then(|uuid| self.pending_responses.remove(&uuid));
+                .and_then(|uuid| {
+                    let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
+                    hashmap.remove(&uuid)
+                });
             match sender_opt {
                 Some(sender) => {
                     let oss: oneshot::Sender<JsonValue> = sender;
@@ -94,38 +105,39 @@ impl ExampleClient {
             }
         }
     }
-    pub async fn do_something(&mut self, a_string: String)->Result<connection::return_structs::DoSomethingReturnValue, MethodResultCode> {
+    pub async fn do_something(&mut self, a_string: String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> {
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
-        let correlation_id_str = format!("{}", correlation_id);
-        self.pending_responses.insert(correlation_id, sender);
-        let data = object!{
-            correlationId: correlation_id_str,
-            clientId: self.connection.client_id.clone(),
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let data = connection::payloads::DoSomethingRequestObject {
             aString: a_string,
-            
         };
-        let data_str = json::stringify(data);
-        let _ = self.connection.publish("Example/method/doSomething".to_string(), data_str, 2, None).await;
+        let _ = self.msg_publisher.publish_request_structure("Example/method/doSomething".to_string(), &data, "", correlation_id).await;
         let resp_obj = receiver.recv().unwrap();
-        Ok(connection::return_structs::DoSomethingReturnValue { 
+        Ok(connection::payloads::DoSomethingReturnValue { 
             
             label: resp_obj["label"].as_str().unwrap().to_string(),
         
             
             identifier: resp_obj["identifier"].as_i32().unwrap(),
         
-            day: connection::enums::DayOfTheWeek::from_u32(resp_obj["day"].as_u32().unwrap()).unwrap(),
+            day: connection::payloads::DayOfTheWeek::from_u32(resp_obj["day"].as_u32().unwrap()).unwrap(),
             
         })
     }
 
-    fn handle_do_something_response(&mut self, payload: String, opt_correlation_id: &Option<String>) {
+    fn handle_do_something_response(pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>, payload: String, opt_correlation_id: Option<String>) {
         let payload_object = json::parse(&payload).unwrap();
         if opt_correlation_id.is_some() {
             let sender_opt = opt_correlation_id.as_ref()
                 .and_then(|cid| Uuid::parse_str(cid.as_str()).ok())
-                .and_then(|uuid| self.pending_responses.remove(&uuid));
+                .and_then(|uuid| {
+                    let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
+                    hashmap.remove(&uuid)
+                });
             match sender_opt {
                 Some(sender) => {
                     let oss: oneshot::Sender<JsonValue> = sender;
@@ -140,6 +152,28 @@ impl ExampleClient {
     }
     
 
+    pub async fn process_loop(&mut self) {
+        let resp_map = self.pending_responses.clone();
+        let receiver = &self.msg_streamer_rx;
+        let mut streamer = self.connection.get_streamer().await;
+        let task1 = tokio::spawn(async move {
+            streamer.receive_loop().await;
+        });
 
+        let sub_ids = self.subscription_ids.clone();
+        let task2 = tokio::spawn(async move {
+            while let Some(msg) = receiver.recv().await {
+                println!("Received message: {:?}", msg.message.payload_str());
+                if msg.subscription_id == sub_ids.add_numbers {
+                    ExampleClient::handle_add_numbers_response(resp_map.clone(), msg.message.payload_str().to_string(), None);
+                }
+                else if msg.subscription_id == sub_ids.do_something {
+                    ExampleClient::handle_do_something_response(resp_map.clone(), msg.message.payload_str().to_string(), None);
+                }
+            }
+        });
 
+        task1.await;
+        task2.await;
+    }
 }

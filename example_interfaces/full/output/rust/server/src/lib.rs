@@ -7,14 +7,14 @@ This is the Server for the Example interface.
 
 use futures::StreamExt;
 use connection::Connection;
-use connection::return_structs::MethodResultCode;
+use connection::payloads::MethodResultCode;
 use json::object;
 use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct ExampleServer {
     connection: Connection,
     method_handler_for_add_numbers: Box<dyn FnMut(i32, i32)->Result<i32, MethodResultCode>>,
-    method_handler_for_do_something: Box<dyn FnMut(String)->Result<connection::return_structs::DoSomethingReturnValue, MethodResultCode>>,
+    method_handler_for_do_something: Box<dyn FnMut(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode>>,
     
     topic_matcher: TopicMatcher::<u32>,
 }
@@ -39,7 +39,7 @@ impl ExampleServer {
         }
     }
 
-    pub async fn emit_today_is(&mut self, day_of_month: i32, day_of_week: connection::enums::DayOfTheWeek) {
+    pub async fn emit_today_is(&mut self, day_of_month: i32, day_of_week: connection::payloads::DayOfTheWeek) {
         let data = object!{ 
             dayOfMonth: day_of_month,
             
@@ -55,7 +55,7 @@ impl ExampleServer {
         self.method_handler_for_add_numbers = Box::new(cb);
         self.connection.subscribe(String::from("Example/method/addNumbers"), 2);
     }
-    pub fn set_method_handler_for_do_something(&mut self, cb: impl FnMut(String)->Result<connection::return_structs::DoSomethingReturnValue, MethodResultCode> + 'static) {
+    pub fn set_method_handler_for_do_something(&mut self, cb: impl FnMut(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + 'static) {
         self.method_handler_for_do_something = Box::new(cb);
         self.connection.subscribe(String::from("Example/method/doSomething"), 2);
     }

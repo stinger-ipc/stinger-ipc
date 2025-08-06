@@ -86,9 +86,8 @@ impl MessagePublisher {
         self.publish(msg).await
     }
 
-    pub async fn publish_json_request<T: Serialize>(&mut self, topic: String, data: &T, response_topic: &str) -> Result<Uuid, SendError<Message>> {
-        let corr_id = Uuid::new_v4();
-        let uuid_vec: Vec<u8> = corr_id.as_bytes().to_vec();
+    pub async fn publish_json_request<T: Serialize>(&mut self, topic: String, data: &T, response_topic: &str, correlation_id: Uuid) -> Result<(), SendError<Message>> {
+        let uuid_vec: Vec<u8> = correlation_id.as_bytes().to_vec();
         let mut pub_props = mqtt::Properties::new();
         let _ = pub_props.push_binary(mqtt::PropertyCode::CorrelationData, uuid_vec);
         let _ = pub_props.push_string(mqtt::PropertyCode::ResponseTopic, response_topic);
@@ -100,7 +99,7 @@ impl MessagePublisher {
             .payload(payload)
             .finalize();
         self.publish(msg);
-        Ok(corr_id)
+        Ok(())
     }
 
     pub async fn publish_json_response<T: Serialize>(&mut self, topic: String, data: &T, correlation_id: Uuid) -> Result<(), Error> {

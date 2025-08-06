@@ -44,9 +44,9 @@ impl SignalOnlyClient {
         inst
     }
 
-    pub fn set_signal_recv_callbacks_for_another_signal(&mut self, cb: impl FnMut(f32, bool, String)->() + 'static) {
+    async pub fn set_signal_recv_callbacks_for_another_signal(&mut self, cb: impl FnMut(f32, bool, String)->() + 'static) {
         self.signal_recv_callback_for_another_signal = Box::new(cb);
-        self.connection.subscribe(String::from("SignalOnly/signal/anotherSignal"), self.msg_streamer_tx.clone());
+        self.connection.subscribe(String::from("SignalOnly/signal/anotherSignal"), self.msg_streamer_tx.clone()).await;
     }
     
 

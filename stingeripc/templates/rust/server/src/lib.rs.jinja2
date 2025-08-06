@@ -7,7 +7,7 @@ This is the Server for the {{stinger.name}} interface.
 
 use futures::StreamExt;
 use connection::Connection;
-{%if stinger.methods | length > 0 %}use connection::return_structs::MethodResultCode;{%endif%}
+{%if stinger.methods | length > 0 %}use connection::payloads::MethodResultCode;{%endif%}
 use json::object;
 use paho_mqtt::topic_matcher::TopicMatcher;
 

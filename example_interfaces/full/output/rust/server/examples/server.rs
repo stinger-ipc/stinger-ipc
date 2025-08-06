@@ -7,7 +7,7 @@ It contains enumerations used by the Example interface.
 use futures::{executor::block_on};
 use example_server::ExampleServer;
 use connection::Connection;
-use connection::return_structs::MethodResultCode;
+use connection::payloads::MethodResultCode;
 
 
 fn add_numbers_handler(_first: i32, _second: i32) -> Result<i32, MethodResultCode> {
@@ -16,15 +16,15 @@ fn add_numbers_handler(_first: i32, _second: i32) -> Result<i32, MethodResultCod
     
 }
 
-fn do_something_handler(_a_string: String) -> Result<connection::return_structs::DoSomethingReturnValue, MethodResultCode> {
+fn do_something_handler(_a_string: String) -> Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> {
     println!("Handling doSomething");
-    let rv = connection::return_structs::DoSomethingReturnValue {
+    let rv = connection::payloads::DoSomethingReturnValue {
         
         label: "apples".to_string(),
         
         identifier: 42,
         
-        day: connection::enums::DayOfTheWeek::Monday,
+        day: connection::payloads::DayOfTheWeek::Monday,
         
     };
     Ok(rv)
@@ -43,7 +43,7 @@ fn main() {
         server.set_method_handler_for_do_something(do_something_handler);
         
         
-        server.emit_today_is(42, connection::enums::DayOfTheWeek::Monday).await;
+        server.emit_today_is(42, connection::payloads::DayOfTheWeek::Monday).await;
         
 
     

@@ -7,7 +7,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 use futures::{executor::block_on};
 use {{stinger.name | snake_case}}_server::{{stinger.name}}Server;
 use connection::Connection;
-{%if stinger.methods | length > 0 %}use connection::return_structs::MethodResultCode;{%endif%}
+{%if stinger.methods | length > 0 %}use connection::payloads::MethodResultCode;{%endif%}
 
 {%for method_name, method in stinger.methods.items()%}
 fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value.rust_type}}, MethodResultCode> {

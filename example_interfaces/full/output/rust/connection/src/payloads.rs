@@ -10,6 +10,7 @@ use std::fmt;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
+use serde::Serialize;
 
 
 #[derive(Debug, FromPrimitive)]
@@ -23,6 +24,7 @@ pub enum DayOfTheWeek {
     Saturday = 7
 }
 
+#[allow(dead_code)]
 impl DayOfTheWeek {
     pub fn from_u32(value: u32) -> Option<Self> {
         FromPrimitive::from_u32(value)
@@ -36,6 +38,7 @@ impl fmt::Display for DayOfTheWeek {
 }
 
 
+#[allow(dead_code)]
 pub enum MethodResultCode {
     Success = 0,
     ClientError = 1,
@@ -45,14 +48,16 @@ pub enum MethodResultCode {
 }
 
 
+#[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize)]
-struct AddNumbersRequestObject {
+pub struct AddNumbersRequestObject {
     first: i32,
     second: i32,
 }
 
+#[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize)]
-struct DoSomethingRequestObject {
+pub struct DoSomethingRequestObject {
     aString: String,
 }
 
