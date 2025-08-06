@@ -12,7 +12,7 @@ use connection::{MessageStreamer, MessagePublisher, Connection, ReceivedMessage}
 use json::{JsonValue, object};
 use std::collections::HashMap;
 use uuid::Uuid;
-use connection::return_structs::MethodResultCode;
+use connection::payloads::{*};
 
 use std::io::Error;
 use tokio::sync::mpsc::{self};

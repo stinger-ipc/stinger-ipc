@@ -12,7 +12,7 @@ use connection::{MessageStreamer, MessagePublisher, Connection, ReceivedMessage}
 use json::{JsonValue, object};
 use std::collections::HashMap;
 use uuid::Uuid;
-use connection::return_structs::MethodResultCode;
+use connection::payloads::{*};
 {%endif%}
 use std::io::Error;
 use tokio::sync::mpsc::{self};
@@ -55,17 +55,15 @@ impl {{stinger.name | UpperCamelCase }}Client {
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    pub fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
+    async pub fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
         self.signal_recv_callback_for_{{sig_name|snake_case}} = Box::new(cb);
-        self.connection.subscribe(String::from("{{sig.topic}}"), self.msg_streamer_tx.clone());
+        self.connection.subscribe(String::from("{{sig.topic}}"), self.msg_streamer_tx.clone()).await;
     }
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()-%}
     pub async fn {{method_name|snake_case}}(&mut self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> {
         let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        let correlation_id_str = format!("{}", correlation_id);
         self.pending_responses.insert(correlation_id, sender);
         let data = object!{
             correlationId: correlation_id_str,
