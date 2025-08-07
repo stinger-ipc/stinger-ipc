@@ -15,7 +15,7 @@ async fn main() {
         let connection = Connection::new_local_connection().await.expect("Failed to create connection");
         let mut client = ExampleClient::new(connection).await;
         
-        client.set_signal_recv_callbacks_for_today_is(print_today_is);
+        client.set_signal_recv_callbacks_for_today_is(print_today_is).await;
         
         client.process_loop().await;
     });

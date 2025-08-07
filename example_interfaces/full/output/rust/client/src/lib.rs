@@ -171,6 +171,7 @@ impl ExampleClient {
         let resp_map = self.pending_responses.clone();
         let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
         let mut streamer = self.connection.get_streamer().await;
+        let callbacks = self.connection.signal_callbacks.clone();
         let task1 = tokio::spawn(async move {
             streamer.receive_loop().await;
         });
@@ -190,6 +191,7 @@ impl ExampleClient {
                 }
                 if msg.subscription_id == sub_ids.today_is_signal.unwrap_or_default() {
                     println!("Found subscription match for {}({:?}) as a todayIs signal", msg.message.topic(), sub_ids.today_is_signal);
+                    let cb = 
                 }
                 
             }

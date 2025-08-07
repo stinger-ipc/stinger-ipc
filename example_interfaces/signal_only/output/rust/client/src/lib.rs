@@ -14,7 +14,7 @@ use tokio::sync::mpsc::{self, Sender, Receiver};
 #[derive(Clone, Debug)]
 struct SignalOnlySubscriptionIds {
     
-    another_signal: Option<i32>,
+    another_signal_signal: Option<i32>,
     
 }
 
@@ -34,9 +34,14 @@ impl SignalOnlyClient {
         let (rcvr_tx, rcvr_rx) = mpsc::channel(64);
         let publisher = connection.get_publisher();
         
+        // Signal subscriptions here are temporary.  Eventually, we'll subscribe when registering the callback.
+        let topic_another_signal_signal = "SignalOnly/signal/anotherSignal";
+        let subscription_id_another_signal_signal = connection.subscribe(&topic_another_signal_signal, rcvr_tx.clone()).await;
+        let subscription_id_another_signal_signal = subscription_id_another_signal_signal.unwrap_or_else(|_| -1);
+        
         let sub_ids = SignalOnlySubscriptionIds {
             
-            another_signal: None,
+            another_signal_signal: Some(subscription_id_another_signal_signal),
             
         };
         let inst = SignalOnlyClient {
@@ -54,8 +59,10 @@ impl SignalOnlyClient {
 
     pub async fn set_signal_recv_callbacks_for_another_signal(&mut self, cb: impl FnMut(f32, bool, String)->() + 'static) {
         self.signal_recv_callback_for_another_signal = Box::new(cb);
-        let sub_id = self.connection.subscribe("SignalOnly/signal/anotherSignal", self.msg_streamer_tx.clone()).await;
-        self.subscription_ids.another_signal = sub_id.ok();
+        println!("Registering callback handler for signal anotherSignal");
+        // Before we uncomment the following, we need a way to queue subscriptions until after we're connected.
+        //let sub_id = self.connection.subscribe("SignalOnly/signal/anotherSignal", self.msg_streamer_tx.clone()).await;
+        //self.subscription_ids.another_signal = sub_id.ok();
     }
     
 
@@ -65,6 +72,7 @@ impl SignalOnlyClient {
         let resp_map = self.pending_responses.clone();
         let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
         let mut streamer = self.connection.get_streamer().await;
+        let callbacks = self.connection.signal_callbacks.clone();
         let task1 = tokio::spawn(async move {
             streamer.receive_loop().await;
         });
@@ -72,7 +80,13 @@ impl SignalOnlyClient {
         let sub_ids = self.subscription_ids.clone();
         let task2 = tokio::spawn(async move {
             while let Some(msg) = receiver.recv().await {
-                println!("Received message: {:?}", msg.message.payload_str());
+                println!("Received mqtt message: {:?} against subscription id {}", msg.message.payload_str(), msg.subscription_id);
+                println!("Our subscriptions are: {:?}", sub_ids);
+                if msg.subscription_id == sub_ids.another_signal_signal.unwrap_or_default() {
+                    println!("Found subscription match for {}({:?}) as a anotherSignal signal", msg.message.topic(), sub_ids.another_signal_signal);
+                    let cb = 
+                }
+                
             }
         });
 

@@ -151,6 +151,7 @@ impl {{stinger.name | UpperCamelCase }}Client {
         let resp_map = self.pending_responses.clone();
         let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
         let mut streamer = self.connection.get_streamer().await;
+        let callbacks = self.connection.signal_callbacks.clone();
         let task1 = tokio::spawn(async move {
             streamer.receive_loop().await;
         });
@@ -169,6 +170,7 @@ impl {{stinger.name | UpperCamelCase }}Client {
                 {%-for signal_name, signal in stinger.signals.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{signal_name | snake_case}}_signal.unwrap_or_default() {
                     println!("Found subscription match for {}({:?}) as a {{signal_name}} signal", msg.message.topic(), sub_ids.{{signal_name | snake_case}}_signal);
+                    let cb = 
                 }
                 {%endfor%}
             }

@@ -15,7 +15,7 @@ async fn main() {
         let connection = Connection::new_default_connection().await.expect("Failed to create connection");
         let mut client = SignalOnlyClient::new(connection).await;
         
-        client.set_signal_recv_callbacks_for_another_signal(print_another_signal);
+        client.set_signal_recv_callbacks_for_another_signal(print_another_signal).await;
         
         client.process_loop().await;
     });
