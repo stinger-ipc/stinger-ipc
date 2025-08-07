@@ -11,7 +11,7 @@ parameters:
     properties:
       version:
         type: string
-        const: "0.0.6"
+        const: "0.0.7"
     required:
       - version
 
@@ -34,6 +34,8 @@ parameters:
       version:
         type: string
         maxLength: 32
+      documentation:
+        $ref: "#/$defs/documentation"
     required:
       - name
       - version
@@ -75,15 +77,25 @@ parameters:
             type: string
         required: [name]
 
+  structures:
+    type: object
+    additionalProperties:
+      type: object
+      properties:
+        values:
+          $ref: "#/$defs/payload"
+      required:
+        - values
+
   signals:
     type: object
     additionalProperties:
       $ref: "#/$defs/signal"
 
-  params:
+  properties:
     type: object
     additionalProperties:
-      $ref: "#/$defs/param"
+      $ref: "#/$defs/property"
 
   methods:
     type: object
@@ -95,6 +107,9 @@ required:
   - interface
 
 $defs:
+
+  documentation:
+    type: string
 
   payload:
     type: array
@@ -143,16 +158,29 @@ $defs:
             initialValue:
               type: string
           required: ["enumName"]
+        - properties:
+            type: 
+              type: string
+              const: "struct"
+            structName:
+              type: string
+            initialValue:
+              type: object
+          required: ["enumName"]
             
   signal:
     type: object
     properties:
+      documentation:
+        $ref: "#/$defs/documentation"
       payload:
         $ref: "#/$defs/payload"
 
-  param:
+  property:
     type: object
     properties:
+      documentation:
+        $ref: "#/$defs/documentation"
       payload:
         allOf:
           - $ref: "#/$defs/payload"
@@ -164,6 +192,8 @@ $defs:
   method:
     type: object
     properties:
+      documentation:
+        $ref: "#/$defs/documentation"
       arguments:
         $ref: "#/$defs/payload"
       returnValues:
