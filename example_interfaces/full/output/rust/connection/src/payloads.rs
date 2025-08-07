@@ -51,14 +51,14 @@ pub enum MethodResultCode {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize)]
 pub struct AddNumbersRequestObject {
-    first: i32,
-    second: i32,
+    pub first: i32,
+    pub second: i32,
 }
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize)]
 pub struct DoSomethingRequestObject {
-    aString: String,
+    pub aString: String,
 }
 
 #[allow(dead_code)]

@@ -11,13 +11,11 @@ fn print_today_is(day_of_month: i32, day_of_week: connection::payloads::DayOfThe
 fn main() {
     block_on(async {
         
-        let connection = Connection::new_local_connection().await;
-        let mut client = ExampleClient::new(connection);
+        let connection = Connection::new_local_connection().await.expect("Failed to create connection");
+        let mut client = ExampleClient::new(connection).await;
         
         client.set_signal_recv_callbacks_for_today_is(print_today_is);
         
-        
-        client.unused().await;
     });
     // Ctrl-C to stop
 }

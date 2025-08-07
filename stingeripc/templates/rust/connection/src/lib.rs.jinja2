@@ -149,6 +149,12 @@ impl Connection {
         })
     }
 
+    {%for broker_name, broker in stinger.brokers.items()%}
+    pub async fn new_{{broker.class_name | snake_case}}() -> Result<Self, paho_mqtt::Error> {
+        Connection::new("{{broker.hostname or 'localhost'}}:{{broker.port or 1883}}").await
+    }
+    {%endfor%}
+
     fn get_subscription_id(&mut self) -> i32 {
         let id = self.next_subscription_id;
         self.next_subscription_id += 1;

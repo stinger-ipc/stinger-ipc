@@ -46,9 +46,9 @@ pub enum MethodResultCode { {%-for rc_i, rc_name in stinger.method_return_codes.
 pub struct {{method_name | UpperCamelCase}}RequestObject {
     {%-for arg in method.arg_list%}
     {%-if arg.arg_type.name.lower() == 'value'%}
-    {{arg.name}}: {{arg.rust_type}},
+    pub {{arg.name}}: {{arg.rust_type}},
     {%-elif arg.arg_type.name.lower() == 'enum'-%}
-    {{arg.name}}: u32,
+    pub {{arg.name}}: u32,
     {%endif-%}
     {%endfor%}
 }

@@ -6,9 +6,11 @@ It contains enumerations used by the SignalOnly interface.
 */
 
 
+use serde::Serialize;
 
 
 
+#[allow(dead_code)]
 pub enum MethodResultCode {
     Success = 0,
     ClientError = 1,

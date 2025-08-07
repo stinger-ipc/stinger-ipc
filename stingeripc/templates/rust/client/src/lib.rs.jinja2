@@ -23,6 +23,9 @@ struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
     {%for method_name, method in stinger.methods.items()-%}
     {{method_name | snake_case}}: i32,
     {%endfor%}
+    {%for sig_name, sig in stinger.signals.items()-%}
+    {{sig_name | snake_case}}: Option<i32>,
+    {%endfor%}
 }
 
 pub struct {{stinger.name | UpperCamelCase }}Client {
@@ -31,7 +34,7 @@ pub struct {{stinger.name | UpperCamelCase }}Client {
         signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->()>,
     {%endfor%}
     {%-if stinger.methods | length > 0 %}pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,{%endif%}
-    msg_streamer_rx: Receiver<ReceivedMessage>,
+    msg_streamer_rx: Option<Receiver<ReceivedMessage>>,
     msg_streamer_tx: Sender<ReceivedMessage>,
     msg_publisher: MessagePublisher,
     subscription_ids: {{stinger.name | UpperCamelCase }}SubscriptionIds,
@@ -50,6 +53,9 @@ impl {{stinger.name | UpperCamelCase }}Client {
             {%for method_name, method in stinger.methods.items()-%}
             {{method_name | snake_case}}: subscription_id_{{method_name | snake_case}},
             {%-endfor%}
+            {%for sig_name, sig in stinger.signals.items()-%}
+            {{sig_name | snake_case}}: None,
+            {%endfor%}
         };
         let inst = {{stinger.name | UpperCamelCase }}Client {
             connection: connection,
@@ -57,7 +63,7 @@ impl {{stinger.name | UpperCamelCase }}Client {
             signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |{%for arg in sig.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
             {%endfor%}
             {%if stinger.methods | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
-            msg_streamer_rx: rcvr_rx,
+            msg_streamer_rx: Some(rcvr_rx),
             msg_streamer_tx: rcvr_tx,
             msg_publisher: publisher,
             subscription_ids: sub_ids,
@@ -68,7 +74,8 @@ impl {{stinger.name | UpperCamelCase }}Client {
     {%for sig_name, sig in stinger.signals.items()-%}
     pub async fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
         self.signal_recv_callback_for_{{sig_name|snake_case}} = Box::new(cb);
-        self.connection.subscribe("{{sig.topic}}", self.msg_streamer_tx.clone()).await;
+        let sub_id = self.connection.subscribe("{{sig.topic}}", self.msg_streamer_tx.clone()).await;
+        self.subscription_ids.{{sig_name | snake_case}} = sub_id.ok();
     }
     {%endfor%}
 
@@ -133,7 +140,7 @@ impl {{stinger.name | UpperCamelCase }}Client {
 
     pub async fn process_loop(&mut self) {
         let resp_map = self.pending_responses.clone();
-        let receiver = &self.msg_streamer_rx;
+        let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
         let mut streamer = self.connection.get_streamer().await;
         let task1 = tokio::spawn(async move {
             streamer.receive_loop().await;

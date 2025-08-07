@@ -1,5 +1,7 @@
-extern crate paho_mqtt as mqtt;
 
+pub mod payloads;
+
+extern crate paho_mqtt as mqtt;
 use uuid::Uuid;
 use futures::{StreamExt};
 use mqtt::{Message, QOS_1, QOS_2};
@@ -9,7 +11,7 @@ use tokio::sync::mpsc::error::SendError;
 use std::time::Duration;
 use std::sync::{Arc, Mutex};
 use serde::Serialize;
-use serde_json::{self, Error};
+use serde_json::{self};
 
 #[derive(Clone, Debug)]
 pub struct ReceivedMessage {
@@ -86,7 +88,7 @@ impl MessagePublisher {
         self.publish(msg).await
     }
 
-    pub async fn publish_json_request<T: Serialize>(&mut self, topic: String, data: &T, response_topic: &str, correlation_id: Uuid) -> Result<(), SendError<Message>> {
+    pub async fn publish_request_structure<T: Serialize>(&mut self, topic: String, data: &T, response_topic: &str, correlation_id: Uuid) -> Result<(), SendError<Message>> {
         let uuid_vec: Vec<u8> = correlation_id.as_bytes().to_vec();
         let mut pub_props = mqtt::Properties::new();
         let _ = pub_props.push_binary(mqtt::PropertyCode::CorrelationData, uuid_vec);
@@ -98,11 +100,10 @@ impl MessagePublisher {
             .properties(pub_props)
             .payload(payload)
             .finalize();
-        self.publish(msg);
-        Ok(())
+        self.publish(msg).await
     }
 
-    pub async fn publish_json_response<T: Serialize>(&mut self, topic: String, data: &T, correlation_id: Uuid) -> Result<(), Error> {
+    pub async fn publish_response_structure<T: Serialize>(&mut self, topic: String, data: &T, correlation_id: Uuid) -> Result<(), SendError<Message>> {
         let uuid_vec: Vec<u8> = correlation_id.as_bytes().to_vec();
         let mut pub_props = mqtt::Properties::new();
         let _ = pub_props.push_binary(mqtt::PropertyCode::CorrelationData, uuid_vec);
@@ -113,13 +114,13 @@ impl MessagePublisher {
             .qos(QOS_2)
             .properties(pub_props)
             .finalize();
-        self.publish(msg);
-        Ok(())
+        self.publish(msg).await
     }
 }
 
 pub struct Connection {
     pub client: paho_mqtt::AsyncClient,
+    pub client_id: String,
     pub next_subscription_id: i32,
     pub subscriptions: Arc<Mutex<HashMap<i32, Sender<ReceivedMessage>>>>,
     pub pub_chan_rx: Receiver<mqtt::Message>,
@@ -128,16 +129,19 @@ pub struct Connection {
 
 impl Connection {
     pub async fn new(broker: &str) -> Result<Self, paho_mqtt::Error> {
+        let client_id_uuid = Uuid::new_v4();
+        let client_id = client_id_uuid.to_string();
         let create_opts = mqtt::CreateOptionsBuilder::new()
             .server_uri(broker)
             .mqtt_version(mqtt::MQTT_VERSION_5)
             .allow_disconnected_send_at_anytime(true)
-            .client_id("stinger_mqtt_client")
+            .client_id(client_id.clone())
             .finalize();
         let (tx, rx) = mpsc::channel(32);
         let client = paho_mqtt::AsyncClient::new(create_opts)?;
         Ok(Self { 
             client,
+            client_id,
             next_subscription_id: 5,
             subscriptions: Arc::new(Mutex::new(HashMap::new())),
             pub_chan_rx: rx,
@@ -193,7 +197,7 @@ impl Connection {
         Ok(())
     }
 
-    pub async fn subscribe(&mut self, topic: &str, tx: Sender<ReceivedMessage>) -> Result<(), paho_mqtt::Error> {
+    pub async fn subscribe(&mut self, topic: &str, tx: Sender<ReceivedMessage>) -> Result<i32, paho_mqtt::Error> {
         let sub_opts = mqtt::SubscribeOptions::new(true, false, mqtt::RetainHandling::SendRetainedOnSubscribe);
         let mut sub_props = mqtt::Properties::new();
         let subscription_id = self.get_subscription_id();
@@ -201,7 +205,7 @@ impl Connection {
         let _ = sub_props.push(si_prop);
         let _sub_result = self.client.subscribe_with_options(topic, paho_mqtt::QOS_1, sub_opts, sub_props).await;
         self.add_subscription_receiver(subscription_id, tx).await?;
-        Ok(())
+        Ok(subscription_id)
     }
 
     pub async fn start_publish_loop(&mut self) {

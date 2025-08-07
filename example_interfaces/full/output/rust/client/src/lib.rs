@@ -23,13 +23,15 @@ struct ExampleSubscriptionIds {
     add_numbers: i32,
     do_something: i32,
     
+    today_is: Option<i32>,
+    
 }
 
 pub struct ExampleClient {
     connection: Connection,
     signal_recv_callback_for_today_is: Box<dyn FnMut(i32, connection::payloads::DayOfTheWeek)->()>,
     pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,
-    msg_streamer_rx: Receiver<ReceivedMessage>,
+    msg_streamer_rx: Option<Receiver<ReceivedMessage>>,
     msg_streamer_tx: Sender<ReceivedMessage>,
     msg_publisher: MessagePublisher,
     subscription_ids: ExampleSubscriptionIds,
@@ -48,13 +50,15 @@ impl ExampleClient {
         
         let sub_ids = ExampleSubscriptionIds {
             add_numbers: subscription_id_add_numbers,do_something: subscription_id_do_something,
+            today_is: None,
+            
         };
         let inst = ExampleClient {
             connection: connection,
             signal_recv_callback_for_today_is: Box::new( |_1, _2| {} ),
             
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
-            msg_streamer_rx: rcvr_rx,
+            msg_streamer_rx: Some(rcvr_rx),
             msg_streamer_tx: rcvr_tx,
             msg_publisher: publisher,
             subscription_ids: sub_ids,
@@ -64,7 +68,8 @@ impl ExampleClient {
 
     pub async fn set_signal_recv_callbacks_for_today_is(&mut self, cb: impl FnMut(i32, connection::payloads::DayOfTheWeek)->() + 'static) {
         self.signal_recv_callback_for_today_is = Box::new(cb);
-        self.connection.subscribe("Example/signal/todayIs", self.msg_streamer_tx.clone()).await;
+        let sub_id = self.connection.subscribe("Example/signal/todayIs", self.msg_streamer_tx.clone()).await;
+        self.subscription_ids.today_is = sub_id.ok();
     }
     
 
@@ -154,7 +159,7 @@ impl ExampleClient {
 
     pub async fn process_loop(&mut self) {
         let resp_map = self.pending_responses.clone();
-        let receiver = &self.msg_streamer_rx;
+        let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
         let mut streamer = self.connection.get_streamer().await;
         let task1 = tokio::spawn(async move {
             streamer.receive_loop().await;
