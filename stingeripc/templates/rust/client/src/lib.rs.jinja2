@@ -21,10 +21,10 @@ use tokio::sync::mpsc::{self, Sender, Receiver};
 #[derive(Clone, Debug)]
 struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
     {%for method_name, method in stinger.methods.items()-%}
-    {{method_name | snake_case}}: i32,
+    {{method_name | snake_case}}_method: i32,
     {%endfor%}
     {%for sig_name, sig in stinger.signals.items()-%}
-    {{sig_name | snake_case}}: Option<i32>,
+    {{sig_name | snake_case}}_signal: Option<i32>,
     {%endfor%}
 }
 
@@ -46,16 +46,22 @@ impl {{stinger.name | UpperCamelCase }}Client {
         let (rcvr_tx, rcvr_rx) = mpsc::channel(64);
         let publisher = connection.get_publisher();
         {%for method_name, method in stinger.methods.items()-%}
-        let topic_{{method_name | snake_case}} = format!("{{method.response_topic('{}')}}", connection.client_id);
-        let subscription_id_{{method_name | snake_case}} = connection.subscribe(&topic_{{method_name | snake_case}}, rcvr_tx.clone()).await;
-        let subscription_id_{{method_name | snake_case}} = subscription_id_{{method_name | snake_case}}.unwrap_or_else(|_| -1);
+        let topic_{{method_name | snake_case}}_method = format!("{{method.response_topic('{}')}}", connection.client_id);
+        let subscription_id_{{method_name | snake_case}}_method = connection.subscribe(&topic_{{method_name | snake_case}}_method, rcvr_tx.clone()).await;
+        let subscription_id_{{method_name | snake_case}}_method = subscription_id_{{method_name | snake_case}}_method.unwrap_or_else(|_| -1);
+        {%endfor%}
+        // Signal subscriptions here are temporary.  Eventually, we'll subscribe when registering the callback.
+        {%for signal_name, signal in stinger.signals.items()-%}
+        let topic_{{signal_name | snake_case}}_signal = "{{signal.topic}}";
+        let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(&topic_{{signal_name | snake_case}}_signal, rcvr_tx.clone()).await;
+        let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| -1);
         {%endfor%}
         let sub_ids = {{stinger.name | UpperCamelCase }}SubscriptionIds {
             {%for method_name, method in stinger.methods.items()-%}
-            {{method_name | snake_case}}: subscription_id_{{method_name | snake_case}},
-            {%-endfor%}
+            {{method_name | snake_case}}_method: subscription_id_{{method_name | snake_case}}_method,
+            {%endfor%}
             {%for sig_name, sig in stinger.signals.items()-%}
-            {{sig_name | snake_case}}: None,
+            {{sig_name | snake_case}}_signal: Some(subscription_id_{{sig_name | snake_case}}_signal),
             {%endfor%}
         };
         let inst = {{stinger.name | UpperCamelCase }}Client {
@@ -75,8 +81,10 @@ impl {{stinger.name | UpperCamelCase }}Client {
     {%for sig_name, sig in stinger.signals.items()-%}
     pub async fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
         self.signal_recv_callback_for_{{sig_name|snake_case}} = Box::new(cb);
-        let sub_id = self.connection.subscribe("{{sig.topic}}", self.msg_streamer_tx.clone()).await;
-        self.subscription_ids.{{sig_name | snake_case}} = sub_id.ok();
+        println!("Registering callback handler for signal {{sig_name}}");
+        // Before we uncomment the following, we need a way to queue subscriptions until after we're connected.
+        //let sub_id = self.connection.subscribe("{{sig.topic}}", self.msg_streamer_tx.clone()).await;
+        //self.subscription_ids.{{sig_name | snake_case}} = sub_id.ok();
     }
     {%endfor%}
 
@@ -150,12 +158,19 @@ impl {{stinger.name | UpperCamelCase }}Client {
         let sub_ids = self.subscription_ids.clone();
         let task2 = tokio::spawn(async move {
             while let Some(msg) = receiver.recv().await {
-                println!("Received message: {:?}", msg.message.payload_str());
+                println!("Received mqtt message: {:?} against subscription id {}", msg.message.payload_str(), msg.subscription_id);
+                println!("Our subscriptions are: {:?}", sub_ids);
                 {%-for method_name, method in stinger.methods.items()%}
-                {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}} {
+                {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method {
+                    println!("Found subscription match for {}({:?}) as a response to {{method_name}}", msg.message.topic(), sub_ids.{{method_name | snake_case}}_method);
                     {{stinger.name | UpperCamelCase }}Client::handle_{{method_name|snake_case}}_response(resp_map.clone(), msg.message.payload_str().to_string(), None);
                 }
                 {%-endfor%}
+                {%-for signal_name, signal in stinger.signals.items()%}
+                {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{signal_name | snake_case}}_signal.unwrap_or_default() {
+                    println!("Found subscription match for {}({:?}) as a {{signal_name}} signal", msg.message.topic(), sub_ids.{{signal_name | snake_case}}_signal);
+                }
+                {%endfor%}
             }
         });
 

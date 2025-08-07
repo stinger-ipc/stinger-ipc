@@ -15,6 +15,7 @@ async fn main() {
         let connection = Connection::new_{{broker.class_name|snake_case}}().await.expect("Failed to create connection");
         let mut client = {{stinger.name}}Client::new(connection).await;
         {%for sig_name, sig in stinger.signals.items()%}
+        println!("About to register callback handler for {{sig_name|snake_case}}");
         client.set_signal_recv_callbacks_for_{{sig_name|snake_case}}(print_{{sig_name|snake_case}});
         {%endfor%}
         client.process_loop().await;

@@ -20,10 +20,10 @@ use tokio::sync::mpsc::{self, Sender, Receiver};
 
 #[derive(Clone, Debug)]
 struct ExampleSubscriptionIds {
-    add_numbers: i32,
-    do_something: i32,
+    add_numbers_method: i32,
+    do_something_method: i32,
     
-    today_is: Option<i32>,
+    today_is_signal: Option<i32>,
     
 }
 
@@ -42,16 +42,23 @@ impl ExampleClient {
         let _ = connection.connect().await;
         let (rcvr_tx, rcvr_rx) = mpsc::channel(64);
         let publisher = connection.get_publisher();
-        let topic_add_numbers = format!("client/{}/Example/method/addNumbers/response", connection.client_id);
-        let subscription_id_add_numbers = connection.subscribe(&topic_add_numbers, rcvr_tx.clone()).await;
-        let subscription_id_add_numbers = subscription_id_add_numbers.unwrap_or_else(|_| -1);
-        let topic_do_something = format!("client/{}/Example/method/doSomething/response", connection.client_id);
-        let subscription_id_do_something = connection.subscribe(&topic_do_something, rcvr_tx.clone()).await;
-        let subscription_id_do_something = subscription_id_do_something.unwrap_or_else(|_| -1);
+        let topic_add_numbers_method = format!("client/{}/Example/method/addNumbers/response", connection.client_id);
+        let subscription_id_add_numbers_method = connection.subscribe(&topic_add_numbers_method, rcvr_tx.clone()).await;
+        let subscription_id_add_numbers_method = subscription_id_add_numbers_method.unwrap_or_else(|_| -1);
+        let topic_do_something_method = format!("client/{}/Example/method/doSomething/response", connection.client_id);
+        let subscription_id_do_something_method = connection.subscribe(&topic_do_something_method, rcvr_tx.clone()).await;
+        let subscription_id_do_something_method = subscription_id_do_something_method.unwrap_or_else(|_| -1);
+        
+        // Signal subscriptions here are temporary.  Eventually, we'll subscribe when registering the callback.
+        let topic_today_is_signal = "Example/signal/todayIs";
+        let subscription_id_today_is_signal = connection.subscribe(&topic_today_is_signal, rcvr_tx.clone()).await;
+        let subscription_id_today_is_signal = subscription_id_today_is_signal.unwrap_or_else(|_| -1);
         
         let sub_ids = ExampleSubscriptionIds {
-            add_numbers: subscription_id_add_numbers,do_something: subscription_id_do_something,
-            today_is: None,
+            add_numbers_method: subscription_id_add_numbers_method,
+            do_something_method: subscription_id_do_something_method,
+            
+            today_is_signal: Some(subscription_id_today_is_signal),
             
         };
         let inst = ExampleClient {
@@ -69,8 +76,10 @@ impl ExampleClient {
 
     pub async fn set_signal_recv_callbacks_for_today_is(&mut self, cb: impl FnMut(i32, connection::payloads::DayOfTheWeek)->() + 'static) {
         self.signal_recv_callback_for_today_is = Box::new(cb);
-        let sub_id = self.connection.subscribe("Example/signal/todayIs", self.msg_streamer_tx.clone()).await;
-        self.subscription_ids.today_is = sub_id.ok();
+        println!("Registering callback handler for signal todayIs");
+        // Before we uncomment the following, we need a way to queue subscriptions until after we're connected.
+        //let sub_id = self.connection.subscribe("Example/signal/todayIs", self.msg_streamer_tx.clone()).await;
+        //self.subscription_ids.today_is = sub_id.ok();
     }
     
 
@@ -169,13 +178,20 @@ impl ExampleClient {
         let sub_ids = self.subscription_ids.clone();
         let task2 = tokio::spawn(async move {
             while let Some(msg) = receiver.recv().await {
-                println!("Received message: {:?}", msg.message.payload_str());
-                if msg.subscription_id == sub_ids.add_numbers {
+                println!("Received mqtt message: {:?} against subscription id {}", msg.message.payload_str(), msg.subscription_id);
+                println!("Our subscriptions are: {:?}", sub_ids);
+                if msg.subscription_id == sub_ids.add_numbers_method {
+                    println!("Found subscription match for {}({:?}) as a response to addNumbers", msg.message.topic(), sub_ids.add_numbers_method);
                     ExampleClient::handle_add_numbers_response(resp_map.clone(), msg.message.payload_str().to_string(), None);
                 }
-                else if msg.subscription_id == sub_ids.do_something {
+                else if msg.subscription_id == sub_ids.do_something_method {
+                    println!("Found subscription match for {}({:?}) as a response to doSomething", msg.message.topic(), sub_ids.do_something_method);
                     ExampleClient::handle_do_something_response(resp_map.clone(), msg.message.payload_str().to_string(), None);
                 }
+                if msg.subscription_id == sub_ids.today_is_signal.unwrap_or_default() {
+                    println!("Found subscription match for {}({:?}) as a todayIs signal", msg.message.topic(), sub_ids.today_is_signal);
+                }
+                
             }
         });
 
