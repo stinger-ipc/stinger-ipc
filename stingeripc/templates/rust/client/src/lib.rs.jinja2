@@ -42,6 +42,7 @@ pub struct {{stinger.name | UpperCamelCase }}Client {
 
 impl {{stinger.name | UpperCamelCase }}Client {
     pub async fn new(mut connection: Connection) -> {{stinger.name | UpperCamelCase }}Client {
+        let _ = connection.connect().await;
         let (rcvr_tx, rcvr_rx) = mpsc::channel(64);
         let publisher = connection.get_publisher();
         {%for method_name, method in stinger.methods.items()-%}

@@ -39,6 +39,7 @@ pub struct ExampleClient {
 
 impl ExampleClient {
     pub async fn new(mut connection: Connection) -> ExampleClient {
+        let _ = connection.connect().await;
         let (rcvr_tx, rcvr_rx) = mpsc::channel(64);
         let publisher = connection.get_publisher();
         let topic_add_numbers = format!("client/{}/Example/method/addNumbers/response", connection.client_id);

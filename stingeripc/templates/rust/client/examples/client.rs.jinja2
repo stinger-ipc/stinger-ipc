@@ -8,7 +8,8 @@ fn print_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.name|snake_cas
 }
 {%endfor%}
 
-fn main() {
+#[tokio::main]
+async fn main() {
     block_on(async {
         {%set broker = stinger.get_example_broker()%}
         let connection = Connection::new_{{broker.class_name|snake_case}}().await.expect("Failed to create connection");
@@ -16,6 +17,7 @@ fn main() {
         {%for sig_name, sig in stinger.signals.items()%}
         client.set_signal_recv_callbacks_for_{{sig_name|snake_case}}(print_{{sig_name|snake_case}});
         {%endfor%}
+        client.process_loop().await;
     });
     // Ctrl-C to stop
 }

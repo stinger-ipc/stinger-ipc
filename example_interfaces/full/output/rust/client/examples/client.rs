@@ -8,7 +8,8 @@ fn print_today_is(day_of_month: i32, day_of_week: connection::payloads::DayOfThe
 }
 
 
-fn main() {
+#[tokio::main]
+async fn main() {
     block_on(async {
         
         let connection = Connection::new_local_connection().await.expect("Failed to create connection");
@@ -16,6 +17,7 @@ fn main() {
         
         client.set_signal_recv_callbacks_for_today_is(print_today_is);
         
+        client.process_loop().await;
     });
     // Ctrl-C to stop
 }

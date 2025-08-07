@@ -149,6 +149,12 @@ impl Connection {
         })
     }
 
+    
+    pub async fn new_default_connection() -> Result<Self, paho_mqtt::Error> {
+        Connection::new("localhost:1883").await
+    }
+    
+
     fn get_subscription_id(&mut self) -> i32 {
         let id = self.next_subscription_id;
         self.next_subscription_id += 1;
