@@ -70,6 +70,7 @@ pub struct MessagePublisher {
 
 impl MessagePublisher {
     pub async fn publish(&mut self, msg: mqtt::Message) -> Result<(), SendError<Message>> {
+        println!("Message publisher publishing message to {}", msg.topic());
         self.channel.send(msg).await
     }
 
@@ -89,6 +90,7 @@ impl MessagePublisher {
     }
 
     pub async fn publish_request_structure<T: Serialize>(&mut self, topic: String, data: &T, response_topic: &str, correlation_id: Uuid) -> Result<(), SendError<Message>> {
+        println!("Publishing request structure to {}", topic);
         let uuid_vec: Vec<u8> = correlation_id.as_bytes().to_vec();
         let mut pub_props = mqtt::Properties::new();
         let _ = pub_props.push_binary(mqtt::PropertyCode::CorrelationData, uuid_vec);
@@ -129,6 +131,7 @@ pub struct Connection {
 
 impl Connection {
     pub async fn new(broker: &str) -> Result<Self, paho_mqtt::Error> {
+        println!("Creating new connection object");
         let client_id_uuid = Uuid::new_v4();
         let client_id = client_id_uuid.to_string();
         let create_opts = mqtt::CreateOptionsBuilder::new()
@@ -177,6 +180,7 @@ impl Connection {
     }
 
     pub async fn connect(&self) -> Result<paho_mqtt::ServerResponse, paho_mqtt::Error> {
+        println!("Connecting to mqtt");
         let conn_opts = mqtt::ConnectOptionsBuilder::new_v5()
             .keep_alive_interval(Duration::from_secs(20))
             .clean_start(true)
@@ -190,6 +194,7 @@ impl Connection {
     }
     
     pub async fn publish(&self, msg: mqtt::Message) -> Result<(), paho_mqtt::Error> {
+        println!("Publishing message to {}", msg.topic());
         self.client.publish(msg).await
     }
 
@@ -204,6 +209,7 @@ impl Connection {
     }
 
     pub async fn subscribe(&mut self, topic: &str, tx: Sender<ReceivedMessage>) -> Result<i32, paho_mqtt::Error> {
+        println!("Subscribing to {}", topic);
         let sub_opts = mqtt::SubscribeOptions::new(true, false, mqtt::RetainHandling::SendRetainedOnSubscribe);
         let mut sub_props = mqtt::Properties::new();
         let subscription_id = self.get_subscription_id();
