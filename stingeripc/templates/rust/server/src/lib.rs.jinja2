@@ -7,26 +7,40 @@ This is the Server for the {{stinger.name}} interface.
 
 use futures::StreamExt;
 use connection::Connection;
+{%if stinger.methods | length > 0 %}use connection::payloads::MethodResultCode;{%endif%}
 use json::object;
-
+use paho_mqtt::topic_matcher::TopicMatcher;
 
 pub struct {{stinger.name}}Server {
     connection: Connection,
+    {%for method_name, method in stinger.methods.items()-%}
+        method_handler_for_{{method_name|snake_case}}: Box<dyn FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode>>,
+    {%endfor%}
+    topic_matcher: TopicMatcher::<u32>,
 }
 
 impl {{stinger.name}}Server {
-    pub fn new(mut connection: Connection) -> {{stinger.name}}Server {
+    pub async fn new(mut connection: Connection) -> {{stinger.name}}Server {
 
         let interface_info = String::from(r#"{{stinger.interface_info.1 | tojson}}"#);
-        connection.publish("{{stinger.interface_info.0}}".to_string(), interface_info, 1);
+        connection.publish("{{stinger.interface_info.0}}".to_string(), interface_info, 1).await;
 
-        {{stinger.name}}Server{
+        let {%if stinger.methods | length > 0%}mut{%endif%} topic_matcher = TopicMatcher::<u32>::new();
+        {%for method_name, method in stinger.methods.items()-%}
+        topic_matcher.insert("{{method.topic}}", {{loop.index}});
+        {%endfor%}
+
+        {{stinger.name}}Server {
             connection: connection,
+            {%for method_name, method in stinger.methods.items()-%}
+            method_handler_for_{{method_name|snake_case}}: Box::new( |{%for arg in method.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| { Err(MethodResultCode::ServerError) } ),
+            {%endfor%}
+            topic_matcher: topic_matcher,
         }
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    pub fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
         let data = object!{ {%for arg in sig.arg_list%}
             {%-if arg.arg_type.name.lower() == 'value'%}
             {{arg.name}}: {{arg.name|snake_case}},
@@ -36,14 +50,76 @@ impl {{stinger.name}}Server {
             {%endfor%}
         };
         let data_str = json::stringify(data);
-        self.connection.publish("{{sig.topic}}".to_string(), data_str, 2);
+        self.connection.publish("{{sig.topic}}".to_string(), data_str, 2).await;
+    }
+    {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()-%}
+    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + 'static) {
+        self.method_handler_for_{{method_name|snake_case}} = Box::new(cb);
+        self.connection.subscribe(String::from("{{method.topic}}"), 2);
+    }
+    {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()-%}
+    async fn handle_{{method_name|snake_case}}_request(&mut self, _topic: String, payload: String) {
+        let payload_object = json::parse(&payload).unwrap();
+        {%for arg in method.arg_list-%}
+        {%-if arg.arg_type.name.lower() == 'value'%}
+        let temp_{{arg.name | snake_case}} = payload_object["{{arg.name}}"].{%if arg.rust_type == 'String'%}as_str().unwrap().to_string(){%else%}as_{{arg.rust_type}}().unwrap(){%endif%};
+        {%elif arg.arg_type.name.lower() == 'enum'%}
+        let temp_{{arg.name | snake_case}} = {{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap());
+        {%endif%}
+        {%endfor%}
+        let rv = (self.method_handler_for_{{method_name|snake_case}})({%for arg in method.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
+        if !payload_object["clientId"].is_null() {
+            let mut response_json = json::JsonValue::new_object();
+            if !payload_object["correlationId"].is_null() {
+                response_json["correlationId"] = payload_object["correlationId"].as_str().unwrap().into();
+            }
+            match rv {
+                Ok(return_value) => {
+                    response_json["result"] = 0.into();
+                    {%-macro add_arg_to_json(arg, value) %}
+                    {%-if arg.arg_type.name.lower() == 'value' %}
+                    response_json["{{arg.name}}"] = {{value}}.into();
+                    {%-elif arg.arg_type.name.lower() == 'enum'%}
+                    response_json["{{arg.name}}"] = ({{value}} as u32).into();
+                    {%-endif%}
+                    {%-endmacro%}
+                    {%-if method.return_value.arg_type.name.lower() == 'struct'%}
+                    {%for member in method.return_value.members-%}
+                    {{add_arg_to_json(member, "return_value."+member.name)}}
+                    {%-endfor%}
+                    {%-else%}
+                    {{add_arg_to_json(method.return_value, "return_value")}}
+                    {%-endif%}
+                }
+                Err(result_code) => {
+                    response_json["result"] = (result_code as u32).into();
+                }
+            }
+            let response_topic = format!("{{method.response_topic('{}')}}", payload_object["clientId"].as_str().unwrap());
+            self.connection.publish(response_topic, json::stringify(response_json), 2).await;
+        }
     }
     {%endfor%}
 
     pub async fn process(&mut self) {
         while let Some(opt_msg) = self.connection.rx.next().await {
-            if let Some(_msg) = opt_msg {
-
+            if let Some(msg) = opt_msg {
+                let topic = &msg.topic();
+                let mut func_indexs: Vec<u32> = Vec::new();
+                for item in self.topic_matcher.matches(topic) {
+                    func_indexs.push(item.1);
+                }
+                for func_index in func_indexs.iter() {
+                    match func_index { {%-for method_name, method in stinger.methods.items()%}
+                        {{loop.index}} => self.handle_{{method_name|snake_case}}_request(topic.to_string(), msg.payload_str().to_string()).await,
+                    {%endfor-%}
+                        _ => ()
+                    }
+                }
             }
         }
     }

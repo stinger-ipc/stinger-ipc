@@ -10,45 +10,13 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable, Dict, Any
-from connection import BrokerConnection, MethodResultCode
+from typing import Callable, Dict, Any, Optional, List
+from connection import BrokerConnection
+from method_codes import *
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
+{%macro method_type_annotation(method) %}Callable[[{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], {{method.return_value.python_type}}]{%endmacro%}
 
-{%macro method_type_annotation(method) %}Callable[[{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], {%if method.has_no_return_value%}None{%elif method.has_simple_return_value%}{{method.return_value.python_type}}{%else%}FIXME{%endif%}]{%endmacro%}
-
-class MethodResponseBuilder:
-
-    def __init__(self, request: Dict[str, Any]):
-        self._response = {}
-        if "clientId" in request and isinstance(request["clientId"], str):
-            self.client_id(request["clientId"])
-        if "correlationId" in request and isinstance(request["correlationId"], str):
-            self.correlation_id(request["correlationId"])
-
-    @property
-    def response(self):
-        return self._response
-
-    def is_valid(self) -> bool:
-        return "clientId" in self._response and "result" in self._response
-
-    def client_id(self, client_id: str):
-        self._response["clientId"] = client_id
-        return self
-
-    def correlation_id(self, correlationId: str):
-        self._response["correlationId"] = correlationId
-        return self
-    
-    def result_code(self, result_code: MethodResultCode):
-        self._response["result"] = result_code.value
-        return self
-
-    def return_value(self, return_value):
-        self._response["returnValue"] = return_value
-        return self
-
-class {{stinger.name}}Server(object):
+class {{stinger.name}}Server:
 
     def __init__(self, connection: BrokerConnection):
         self._logger = logging.getLogger('{{stinger.name}}Server')
@@ -67,10 +35,12 @@ class {{stinger.name}}Server(object):
         self._conn.subscribe("{{method.topic}}")
         {%endfor-%}
         {%for method_name, method in stinger.methods.items()-%}
-        self._{{method_name|snake_case}}_method_handler = None # type: {{method_type_annotation(method)}}
+        self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
         {%endfor%}
     
-    def _receive_message(self, topic, payload):
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
         self._logger.debug("Received message to %s", topic)
         {%if stinger.methods | length > 0 -%}
         {%for method_name, method in stinger.methods.items()-%}
@@ -80,7 +50,7 @@ class {{stinger.name}}Server(object):
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
-                self._process_{{method_name | snake_case}}_call(topic, payload_obj)
+                self._process_{{method_name | snake_case}}_call(topic, payload_obj, properties)
         {%endfor%}
         {%-else%}pass{%-endif%}
 
@@ -89,7 +59,9 @@ class {{stinger.name}}Server(object):
 
     {%for sig_name, sig in stinger.signals.items()-%}
     def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
-        {%for arg in sig.arg_list%}
+        """ Server application code should call this method to emit the '{{sig_name}}' signal.
+        """
+        {%-for arg in sig.arg_list%}
         if not isinstance({{arg.name}}, {{arg.python_type}}):
             raise ValueError(f"The '{{arg.name}}' value must be {{arg.python_type}}.")
         {%-endfor%}
@@ -104,15 +76,22 @@ class {{stinger.name}}Server(object):
 
     {%for method_name, method in stinger.methods.items()%}
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
-        do_subscribe = False
+        """ This is a decorator to decorate a method that will handle the '{{method_name}}' method calls.
+        """
         if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
-            do_subscribe = True
-        self._{{method_name|snake_case}}_method_handler = handler
+            self._{{method_name|snake_case}}_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
 
-    def _process_{{method_name | snake_case}}_call(self, topic, payload):
+    def _process_{{method_name | snake_case}}_call(self, topic: str, payload: Dict[str, Any], properties: Dict[str, Any]):
+        """ This processes a call to the '{{method_name}}' method.  It deserializes the payload to find the method arguments,
+        then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
+        """
+        correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
+        response_topic = properties.get('ResponseTopic') # type: Optional[str]
+        self._logger.info("Correlation Data %s", correlation_id)
         if self._{{method_name|snake_case}}_method_handler is not None:
-            response_builder = MethodResponseBuilder(payload)
-            method_args = []
+            method_args = [] # type: List[Any]
             {%for arg in method.arg_list -%}
             if "{{arg.name}}" in payload:
                 if not isinstance(payload["{{arg.name}}"], {{arg.python_type}}):
@@ -121,30 +100,41 @@ class {{stinger.name}}Server(object):
                 else:
                     method_args.append(payload["{{arg.name}}"])
             else:
-                self.logger.info("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
+                self._logger.info("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
             {%endfor%}
-            try:
-                return_value = self._{{method_name|snake_case}}_method_handler(*method_args)
-            except:
-                response_builder.result_code(MethodResultCode.SERVER_ERROR)
-            else:
-                response_builder.result_code(MethodResultCode.SUCCESS)
-            {%if method.return_value_list|length > 1 -%}
-            if len(return_value) != {{method.return_value_list|length}}:
-                response_builder.result_code(MethodResultCode.SERVER_ERROR)
-                self._logger.error("The '{{method_name}}' method returned an incorrect number of return values")
-            else:
-            {%else%}
-            if True:
-            {%endif%}
-                {%if method.return_value_list|length == 1%}
-                response_builder.return_value(return_value)
-                {%elif method.return_value_list|length > 1%}
-                FIXME: Implement this
-                {%endif%}
-            if response_builder.is_valid():
-                response_topic = f"{{method.response_topic("{payload['clientId']}")}}"
-                self._conn.publish(response_topic, json.dumps(response_builder.response), qos=1, retain=False)
+            
+            if response_topic is not None:
+                return_json = ""
+                debug_msg = None # type: Optional[str]
+                try:
+                    return_struct = self._{{method_name|snake_case}}_method_handler(*method_args)
+                    self._logger.debug("Return value is %s", return_struct)
+                    {%if method.return_value is none%}
+                        return_json = "{}"
+                    {%else%}
+                    if return_struct is not None:
+                        {%-if method.return_value.arg_type.name.lower() == "value" %}
+                        return_json = json.dumps({
+                            "{{method.return_value.name}}": return_struct
+                        })
+                        {%-elif method.return_value.arg_type.name.lower() == "enum" %}
+                        return_json = json.dumps({
+                            "{{method.return_value.name}}": return_struct.value
+                        })
+                        {%else%}
+                        return_json = return_struct.model_dump_json()
+                        {%endif%}
+                    {%-endif%}
+                except Exception as e:
+                    self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
+                    return_code = MethodResultCode.SERVER_ERROR
+                    debug_msg = str(e)
+                else:
+                    return_code = MethodResultCode.SUCCESS
+                    debug_msg = None
+
+                self._conn.publish(response_topic, return_json, qos=1, retain=False, 
+                    correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
     {%endfor%}
 
     {%for p,v in stinger.params.items()-%}
@@ -170,6 +160,31 @@ class {{stinger.name}}Server(object):
         {%-endif%}
     {%endfor%}
 
+class {{stinger.name}}ServerBuilder:
+    """
+    This is a builder for the {{stinger.name}}Server.  It is used to create a server with the desired parameters.
+    """
+
+    def __init__(self, connection: BrokerConnection):
+        self._conn = connection
+        {%for method_name, method in stinger.methods.items()%}
+        self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
+        {%-endfor%}
+    {%for method_name, method in stinger.methods.items()%}
+    def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
+        if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
+            self._{{method_name|snake_case}}_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+    {%endfor%}
+    def build(self) -> {{stinger.name}}Server:
+        new_server = {{stinger.name}}Server(self._conn)
+        {%for method_name, method in stinger.methods.items()%}
+        if self._{{method_name|snake_case}}_method_handler is not None:
+            new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler)
+        {%-endfor%}
+        return new_server
+
 if __name__ == '__main__':
     """
     This shows an example on how to run the code.  Ideally, your app should do something similar, but use the methods in
@@ -185,9 +200,9 @@ if __name__ == '__main__':
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}}
-    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {%if method.has_no_return_value%}None{%elif method.has_simple_return_value%}{{method.return_value.python_type}}{%else%}FIXME{%endif%}:
+    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value.python_type}}:
         print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
-        return {%if method.has_no_return_value%}None{%elif method.has_simple_return_value%}{{method.return_value.get_random_example_value()}}{%else%}FIXME{%endif%}
+        return {{method.return_value.get_random_example_value('python')}}
     {%endfor%}
 
     {%for sig_name, sig in stinger.signals.items()-%}

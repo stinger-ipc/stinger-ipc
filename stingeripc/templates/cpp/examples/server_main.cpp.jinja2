@@ -8,7 +8,7 @@
 int main(int argc, char** argv) {
 
     {%set broker = stinger.get_example_broker()%}
-    auto conn = std::make_shared<{{broker.class_name}}>({%if broker.hostname is none%}"localhost", 1883{%endif%});
+    auto conn = std::make_shared<{{broker.class_name}}>({%if broker.hostname is none%}"localhost", 1883, {%endif%}"{{stinger.name | UpperCamelCase}}Serve-demo");
     {{stinger.name | UpperCamelCase}}Server server(conn);
 
     {%-for sig_name, sig in stinger.signals.items() %}
@@ -17,5 +17,15 @@ int main(int argc, char** argv) {
     {%-for sig_name in stinger.signals.keys() %}
     {{sig_name}}Future.wait();
     {%-endfor%}
+
+    {%-for method_name, method in stinger.methods.items() %}
+    server.register{{method_name | UpperCamelCase}}Handler([]({%for arg in method.arg_list%}{{arg.cpp_type}} unused{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value.cpp_type}}
+    {
+        std::cout << "Received call for {{method_name}}\n";
+        return {{method.return_value.get_random_example_value('c++')}};
+    });
+    {%endfor%}
+    std::cout << "Press Enter to exit\n"; 
+    std::cin.ignore();
     return 0;
 }

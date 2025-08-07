@@ -2,11 +2,13 @@ from __future__ import annotations
 from enum import Enum
 import random
 import stringcase
+from abc import abstractmethod
 from typing import Dict, List, Optional, Any, Union
 from .topic import SignalTopicCreator, InterfaceTopicCreator, MethodTopicCreator
 from .args import ArgType, ArgValueType
 from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
+
 
 class Arg:
     def __init__(self, name: str, description: Optional[str] = None):
@@ -31,6 +33,22 @@ class Arg:
     def description(self) -> Optional[str]:
         return self._description
 
+    @property
+    def python_type(self) -> str:
+        return self.name
+
+    @property
+    def python_local_type(self) -> str:
+        return self.python_type.split('.')[-1]
+
+    @property
+    def rust_type(self) -> str:
+        return self.name
+
+    @property
+    def rust_local_type(self) -> str:
+        return self.rust_type
+
     @classmethod
     def new_arg_from_stinger(cls, arg_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None) -> Arg:
         if "type" not in arg_spec:
@@ -54,6 +72,9 @@ class Arg:
             return arg
         raise RuntimeError("unknown arg type: {arg_spec['type']}")
 
+    @abstractmethod
+    def get_random_example_value(self, lang="python"):
+        ...
 
 class ArgEnum(Arg):
     def __init__(self, name: str, enum: InterfaceEnum, description: Optional[str] = None):
@@ -78,6 +99,10 @@ class ArgEnum(Arg):
         return self._enum.rust_type
 
     @property
+    def rust_local_type(self) -> str:
+        return self._enum.rust_local_type
+
+    @property
     def cpp_temp_type(self) -> str:
         return self.cpp_type
 
@@ -94,7 +119,7 @@ class ArgEnum(Arg):
         elif lang == "c++":
             retval = f"{self._enum.class_name}::{stringcase.constcase(value)}"
         elif lang == "rust":
-            retval = f"connection::enums::{self._enum.class_name}::{value}"
+            retval = f"connection::payloads::{self._enum.class_name}::{value}"
         random.setstate(random_state)
         return retval
 
@@ -130,6 +155,10 @@ class ArgValue(Arg):
             return "std::string"
         else:
             return self.cpp_type
+            
+    @property
+    def json_type(self) -> str:
+        return ArgValueType.to_json_type(self._arg_type)
 
     @property
     def cpp_rapidjson_type(self) -> str:
@@ -170,6 +199,49 @@ class ArgValue(Arg):
         if "description" in stinger and isinstance(stinger["description"], str):
             arg.set_description(stinger["description"])
         return arg
+
+
+class ArgStruct(Arg):
+    def __init__(self, name: str, members: Optional[List[Arg]]=None):
+        super().__init__(name)
+        self._members = members or []
+        self._type = ArgType.STRUCT
+
+    @property
+    def members(self) -> list[Arg]:
+        return self._members
+
+    def add_member(self, member: Arg):
+        self._members.append(member)
+
+    @property
+    def cpp_type(self) -> str:
+        return stringcase.pascalcase(self.name)
+
+    @property
+    def python_type(self) -> str:
+        return f"stinger_types.{self.python_local_type}"
+
+    @property
+    def python_local_type(self) -> str:
+        return stringcase.pascalcase(self.name)
+
+    @property
+    def rust_type(self) -> str:
+        return f"connection::payloads::{self.rust_local_type}"
+
+    @property
+    def rust_local_type(self) -> str:
+        return stringcase.pascalcase(self.name)
+
+    def get_random_example_value(self, lang="python") -> str|None:
+        example_list: dict[str] = {a.name: str(a.get_random_example_value(lang)) for a in self.members}
+        if lang == 'c++':
+            return "{" + ", ".join(example_list.values()) + "}"
+        elif lang == 'python':
+            init_list = ", ".join([f"{k}={v}" for k, v in example_list.items()])
+            return f"{self.python_type}({init_list})"
+        return None
 
 
 class Schema(object):
@@ -230,7 +302,7 @@ class Method(object):
         self._topic_creator = topic_creator
         self._name = name
         self._arg_list = []  # type: List[Arg]
-        self._return_list = [] # type: List[Arg]
+        self._return_value: Arg|None = None
 
     def add_arg(self, arg: Arg) -> Method:
         if arg.name in [a.name for a in self._arg_list]:
@@ -239,31 +311,27 @@ class Method(object):
         return self
 
     def add_return_value(self, value: Arg) -> Method:
-        if value.name in [a.name for a in self._return_list]:
-            raise InvalidStingerStructure(f"A return value named '{value.name}' has been added.")
-        self._return_list.append(value)
+        if self._return_value is None:
+            self._return_value = value
+        elif isinstance(self._return_value, ArgStruct):
+            if value.name in [a.name for a in self._return_value.members]:
+                raise InvalidStingerStructure(f"A return value named '{value.name}' has been already added.")
+            self._return_value.add_member(value)
+        else:
+            if value.name == self._return_value.name:
+                raise InvalidStingerStructure(f"Attempt to add '{value.name}' to return value when it is already been added.")
+            struct_return_value = ArgStruct(f"{self._name}ReturnValue", [self._return_value, value])
+            self._return_value = struct_return_value
+
         return self
 
     @property
-    def arg_list(self) -> List[Arg]:
+    def arg_list(self) -> list[Arg]:
         return self._arg_list
 
     @property
-    def return_value_list(self) -> List[Arg]:
-        return self._return_list
-
-    @property
-    def has_no_return_value(self) -> bool:
-        return len(self._return_list) == 0
-
-    @property
-    def has_simple_return_value(self) -> bool:
-        return len(self._return_list) == 1
-
-    @property
-    def return_value(self) -> Arg:
-        assert self.has_simple_return_value
-        return self._return_list[0]
+    def return_value(self) -> Arg|None:
+        return self._return_value
 
     @property
     def name(self) -> str:
@@ -335,8 +403,12 @@ class InterfaceEnum:
         return f"{self.get_module_alias()}.{stringmanip.upper_camel_case(self.name)}"
 
     @property
+    def rust_local_type(self) -> str:
+        return stringmanip.upper_camel_case(self.name)
+
+    @property
     def rust_type(self) -> str:
-        return f"connection::enums::{stringmanip.upper_camel_case(self.name)}"
+        return f"connection::payloads::{self.rust_local_type}"
 
     @property
     def cpp_type(self) -> str:
@@ -423,14 +495,24 @@ class StingerSpec:
         self._summary = interface['summary'] if 'summary' in interface else None
         self._title = interface['title'] if 'title' in interface else None
 
-        self.signals: Dict[str, Signal] = {}
+        self.signals: dict[str, Signal] = {}
         self.params: dict[str, Any] = {}
-        self.methods: Dict[str, Method] = {}
-        self.enums: Dict[str, InterfaceEnum] = {}
-        self._brokers: Dict[str, Broker] = {}
+        self.methods: dict[str, Method] = {}
+        self.enums: dict[str, InterfaceEnum] = {}
+        self._brokers: dict[str, Broker] = {}
 
     @property
-    def interface_info(self) -> tuple[str, Dict[str, Any]]:
+    def method_return_codes(self) -> dict[int, str]:
+        return {
+            0: "Success",
+            1: "Client Error",
+            2: "Server Error",
+            3: "Transport Error",
+            4: "Payload Error",
+        }
+
+    @property
+    def interface_info(self) -> tuple[str, dict[str, Any]]:
         info = {
             "name": self._name, 
             "version": self._version,
@@ -473,12 +555,6 @@ class StingerSpec:
 
     def uses_enums(self) -> bool:
         return bool(self.enums)
-
-    def uses_named_tuple(self) -> bool:
-        for method in self.methods.values():
-            if len(method.return_value_list) > 1:
-                return True
-        return False
 
     @property
     def name(self):

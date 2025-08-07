@@ -8,15 +8,16 @@ fn print_another_signal(one: f32, two: bool, three: String) {
 }
 
 
-fn main() {
-    
-    let connection = Connection::new_default_connection(String::from("localhost"), 1883);
-    let mut client = SignalOnlyClient::new(connection);
-    
-    client.set_signal_recv_callbacks_for_another_signal(print_another_signal);
-    
+#[tokio::main]
+async fn main() {
     block_on(async {
-        client.process().await;
+        
+        let connection = Connection::new_default_connection().await.expect("Failed to create connection");
+        let mut client = SignalOnlyClient::new(connection).await;
+        
+        client.set_signal_recv_callbacks_for_another_signal(print_another_signal);
+        
+        client.process_loop().await;
     });
     // Ctrl-C to stop
 }

@@ -4,13 +4,16 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <string>
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <boost/optional.hpp>
 #include <rapidjson/document.h>
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
+#include "return_types.hpp"
 
 class SignalOnlyServer {
 
@@ -22,11 +25,15 @@ public:
 
     virtual ~SignalOnlyServer() = default;
 
-    void ReceiveMessage(const std::string& topic, const std::string& payload);
     
     boost::future<bool> emitAnotherSignalSignal(double, bool, const std::string&);
     
+
+    
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
+    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic);
+
     
+
 };

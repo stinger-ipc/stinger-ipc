@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -18,24 +19,37 @@ constexpr const char SignalOnlyServer::NAME[];
 constexpr const char SignalOnlyServer::INTERFACE_VERSION[];
 
 SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
     {
-        ReceiveMessage(topic, payload);
+        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
     });
+    
 }
 
-void SignalOnlyServer::ReceiveMessage(const std::string& topic, const std::string& payload) {
-  
+void SignalOnlyServer::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const boost::optional<std::string> optCorrelationId, 
+        const boost::optional<std::string> optResponseTopic)
+{
+    
 }
 
 
-boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, const std::string& three) {
+boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, const std::string& three)
+{
     rapidjson::Document doc;
     doc.SetObject();
     
+    
+    
     doc.AddMember("one", one, doc.GetAllocator());
     
+    
+    
     doc.AddMember("two", two, doc.GetAllocator());
+    
+    
     
     { // restrict scope
         rapidjson::Value tempStringValue;
@@ -43,8 +57,13 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
         doc.AddMember("three", tempStringValue, doc.GetAllocator());
     }
     
+    
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("SignalOnly/signal/anotherSignal", buf.GetString(), 1, false);
+    return _broker->Publish("SignalOnly/signal/anotherSignal", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
 }
+
+
+
+

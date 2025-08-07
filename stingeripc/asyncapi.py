@@ -9,8 +9,8 @@ from jacobsjinjatoo import stringmanip
 import os.path
 from enum import Enum
 from typing import Any
-
-from .components import StingerSpec
+from collections import OrderedDict
+from .components import StingerSpec, Arg, ArgValue, ArgEnum, ArgStruct
 from .args import ArgType, ArgValueType
 
 class Direction(Enum):
@@ -29,6 +29,7 @@ class ObjectSchema:
     def __init__(self):
         self._properties: dict[str, Any] = dict()
         self._required = set()
+        self._dependent_schemas = {}
     
     def add_value_property(self, name: str, arg_value_type: ArgValueType, required=True):
         schema = {
@@ -38,22 +39,38 @@ class ObjectSchema:
         if required:
             self._required.add(name)
 
-    def add_const_value_property(self, name: str, arg_type: ArgValueType, const_value):
-        self.add_value_property(name, arg_type)
+    def add_value_dependency(self, name: str, required_on_name: str, required_on_value):
+        self._dependent_schemas[name] = {
+            "properties": {
+                required_on_name: {
+                    "const": required_on_value
+                }
+            }
+        }
+
+    def add_const_value_property(self, name: str, arg_type: ArgValueType, const_value, required=True):
+        self.add_value_property(name, arg_type, required)
         self._properties[name]['const'] = const_value
 
-    def add_reference_property(self, name: str, dollar_ref: str):
+    def add_enum_value_property(self, name: str, arg_type: ArgValueType, possible_values, required=True):
+        self.add_value_property(name, arg_type, required)
+        self._properties[name]['enum'] = possible_values
+
+    def add_reference_property(self, name: str, dollar_ref: str, required=True):
         schema = {
             "$ref": dollar_ref
         }
         self._properties[name] = schema
+        if required:
+            self._required.add(name)
+
 
     def to_schema(self) -> dict[str, str|dict[str, Any]|list[str]]:
         props: dict[str, Any] = dict()
         schema: dict[str, str|dict[str, Any]|list[str]] = {
             "type": "object",
             "properties": props,
-            "required": list(self._required),
+            "required": sorted(list(self._required)),
         }
         for prop_name, prop_schema in self._properties.items():
             props[prop_name] = prop_schema
@@ -65,19 +82,39 @@ class Message(object):
     def __init__(self, message_name: str, schema: str|None = None):
         self.name = message_name
         self.schema = schema or {"type": "null"}
+        self._traits: list[dict[str, Any]] = list()
+        self._headers: dict[str, tuple[bool, Any]] = dict()
 
-    def set_schema(self, schema: dict):
+    def set_schema(self, schema: dict[str, Any]):
         self.schema = schema
         return self
 
     def set_reference(self, reference):
         return self.set_schema({"$ref": reference})
 
-    def get_message(self):
-        return {
+    def add_trait(self, trait):
+        self._traits.append(trait)
+
+    def add_header(self, name: str, schema: dict[str, Any], required: bool=False):
+        self._headers[name] = (required, schema)
+
+    def get_message(self) -> dict[str, Any]:
+        msg: dict[str, Any] = {
             "name": self.name,
             "payload": self.schema,
         }
+        if len(self._traits) > 0:
+            msg["traits"] = self._traits
+        if len(self._headers) > 0:
+            msg["headers"] = OrderedDict({
+                "properties": OrderedDict(),
+                "required": list(),
+            })
+            for header_name, (required, schema) in self._headers.items():
+                msg["headers"]["properties"][header_name] = schema
+                if required:
+                    msg["headers"]["required"].append(header_name)
+        return msg
 
 
 class Channel(object):
@@ -97,6 +134,7 @@ class Channel(object):
         self.mqtt = {"qos": 1, "retain": False}
         self.description: str|None = None
         self.parameters: dict[str, str] = dict()
+        self._operation_traits: list[dict[str, Any]] = list()
 
     def set_mqtt(self, qos: int, retain: bool):
         self.mqtt = {"qos": qos, "retain": retain}
@@ -110,27 +148,26 @@ class Channel(object):
         self.parameters[name] = json_schema_type
         return self
 
-    def get_operation_trait(self) -> dict:
-        return {
-            "operationId": self.name,
-            "bindings": {
-                "mqtt": self.mqtt,
-            },
-        }
+    def add_operation_trait(self, trait: dict[str, Any]):
+        self._operation_traits.append(trait)
+        return self
 
     def get_operation(self, client_type: SpecType, use_common=False) -> dict[str, dict[str, Any]]:
         channel_item: dict[str, dict[str, Any]] = dict()
-        op_item: dict[str, Any] = {
+        op_item: OrderedDict[str, Any] = OrderedDict({
+            "operationId": self.name,
             "message": {
                 "$ref": f"{use_common or ''}#/components/messages/{self.message_name}"
             }
-        }
+        })
         if use_common is not False:
             op_item["traits"] = [
                 {"$ref": f"{use_common}#/components/operationTraits/{self.name}"}
             ]
-        else:
-            op_item.update(self.get_operation_trait())
+        elif len(self._operation_traits) > 0:
+            op_item.update(OrderedDict({
+                "traits": self._operation_traits,
+            }))
         if (
             client_type == SpecType.SERVER
             and self.direction == Direction.SERVER_PUBLISHES
@@ -180,20 +217,20 @@ class Server(object):
     def get_server(self) -> dict[str, Any]:
         spec: dict[str, Any] = {
             "protocol": self._protocol,
-            "protocolVersion": "3.1.1",
+            "protocolVersion": "5",
             "url": self.url,
         }
         if self._lwt_topic is not None:
-            spec['bindings'] = {
-                "mqtt": {
-                    "lastWill": {
+            spec['bindings'] = OrderedDict({
+                "mqtt": OrderedDict({
+                    "lastWill": OrderedDict({
                         "retain": False,
                         "message": None,
                         "qos": 1,
                         "topic": self._lwt_topic,
-                    }
-                }
-            }
+                    })
+                })
+            })
         if self._host is None or self._port is None:
             spec['variables'] = {}
         if self._host is None:
@@ -213,24 +250,91 @@ class AsyncApiCreator(object):
     """
 
     def __init__(self):
-        self.asyncapi: dict[str, str|dict[str, Any]|dict[str, dict[str, Any]]] = {
+        self.info = dict()
+        self.asyncapi: OrderedDict[str, Any] = OrderedDict({
             "asyncapi": "2.4.0",
             "id": "",
-            "info": dict(),
-            "channels": dict(),
-            "components": {
-                "operationTraits": dict(),
-                "messages": dict(),
-                "schemas": dict()
-            }
-        }
+            "info": OrderedDict(),
+            "channels": OrderedDict(),
+            "components": OrderedDict({
+                "operationTraits": OrderedDict({
+                    "methodCall": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "qos": 2,
+                                "retain": False,
+                            }),
+                        }),
+                    }),
+                    "methodCallback": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "qos": 1,
+                                "retain": False,
+                            }),
+                        }),
+                    }),
+                    "signal": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "qos": 2,
+                                "retain": False,
+                            }),
+                        }),
+                    }),
+                }),
+                "messageTraits": OrderedDict({
+                    "methodJsonArguments": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "contentType": "application/json",
+                                "correlationData": OrderedDict({
+                                    "type": "string",
+                                    "format": "uuid",
+                                }),
+                            }),
+                        }),
+                    }),
+                    "methodJsonResponse": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "contentType": "application/json",
+                                "correlationData": OrderedDict({
+                                    "type": "string",
+                                    "format": "uuid",
+                                }),
+                                "responseTopic": {
+                                    "type": "string",
+                                }
+                            }),
+                        }),
+                    }),
+                    "signalJson": OrderedDict({
+                        "bindings": OrderedDict({
+                            "mqtt": OrderedDict({
+                                "bindingVersion": "0.2.0",
+                                "contentType": "application/json",
+                            }),
+                        }),
+                    }),
+                }),
+                "messages": OrderedDict(),
+                "schemas": OrderedDict(),
+            }),
+        })
         self.channels = []
         self.messages = []
         self.servers = []
         self.name = "interface"
 
     def add_schema(self, schema_name: str, schema_spec: dict[str, Any]):
-        self.asyncapi['components']['schemas'][schema_name] = schema_spec
+        schema_dict: dict[str, Any] = self.asyncapi['components']['schemas']
+        schema_dict[schema_name] = schema_spec
 
     def add_channel(self, channel: Channel):
         self.channels.append(channel)
@@ -278,6 +382,21 @@ class StingerToAsyncApi:
         self._add_enums()
         self._add_signals()
         self._add_methods()
+        if len(self._stinger.methods) > 0:
+            schema_name = f"stinger_method_return_codes"
+            description = [
+                f"The stinger_method_return_codes enum has the following values:"
+            ]
+            accepted_values = []
+            for i, enum_value in self._stinger.method_return_codes.items():
+                description.append(f"{i} - {enum_value}")
+                accepted_values.append(i)
+            json_schema = {
+                "type":  "integer",
+                "description": "\n ".join(description),
+                "enum": accepted_values
+            }
+            self._asyncapi.add_schema(schema_name, json_schema)
         return self
 
     def _add_interface_info(self):
@@ -323,13 +442,15 @@ class StingerToAsyncApi:
     def _add_signals(self):
         for sig_name, sig_spec in self._stinger.signals.items():
             ch = Channel(sig_spec.topic, sig_name, Direction.SERVER_PUBLISHES)
+            ch.add_operation_trait({"$ref": "#/components/operationTraits/signal"})
             self._asyncapi.add_channel(ch)
             msg = Message(sig_name)
+            msg.add_trait({"$ref": "#/components/messageTraits/signalJson"})
             schema = ObjectSchema()
             for arg_spec in sig_spec.arg_list:
-                if arg_spec.arg_type == ArgType.VALUE:
-                    schema.add_value_property(arg_spec.name, arg_spec.arg_type)
-                elif arg_spec.arg_type == ArgType.ENUM:
+                if isinstance(arg_spec, ArgValue):
+                    schema.add_value_property(arg_spec.name, arg_spec.type)
+                elif isinstance(arg_spec, ArgEnum):
                     schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
             msg.set_schema(schema.to_schema())
             self._asyncapi.add_message(msg)
@@ -337,31 +458,42 @@ class StingerToAsyncApi:
     def _add_methods(self):
         for method_name, method_spec in self._stinger.methods.items():
             call_ch = Channel(method_spec.topic, method_name, Direction.SERVER_SUBSCRIBES)
-            call_ch.set_mqtt(2, False)
+            call_ch.add_operation_trait({"$ref": "#/components/operationTraits/methodCall"})
             self._asyncapi.add_channel(call_ch)
             call_msg = Message(method_name)
+            call_msg.add_trait({"$ref": "#/components/messageTraits/methodJsonArguments"})
             call_msg_schema = ObjectSchema()
-            call_msg_schema.add_value_property("correlationId", ArgValueType.STRING, required=False)
-            call_msg_schema.add_value_property("clientId", ArgValueType.STRING, required=False)
             for arg_spec in method_spec.arg_list:
-                if arg_spec.arg_type == ArgType.VALUE:
-                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.arg_type)
-                elif arg_spec.arg_type == ArgType.ENUM:
+                if isinstance(arg_spec, ArgValue):
+                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
+                elif isinstance(arg_spec, ArgEnum):
                     call_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
             call_msg.set_schema(call_msg_schema.to_schema())
             self._asyncapi.add_message(call_msg)
 
             resp_ch = Channel(method_spec.response_topic("{client_id}"), f"{method_name}Response", Direction.SERVER_PUBLISHES)
-            resp_ch.add_topic_parameters("client_id", "string").set_mqtt(1, False)
+            resp_ch.add_operation_trait({"$ref": "#/components/operationTraits/methodCall"})
             self._asyncapi.add_channel(resp_ch)
             resp_msg = Message(f"{method_name}Response")
+            resp_msg.add_trait({"$ref": "#/components/messageTraits/methodJsonArguments"})
+            resp_msg.add_header("result", {"$ref": "#/components/schemas/stinger_method_return_codes"}, required=True)
+            resp_msg.add_header("debug", {"type": "string"}, required=False)
             resp_msg_schema = ObjectSchema()
-            resp_msg_schema.add_value_property("correlationId", ArgValueType.STRING)
-            for arg_spec in method_spec.return_value_list:
-                if arg_spec.arg_type == ArgType.VALUE:
-                    resp_msg_schema.add_value_property(arg_spec.name, arg_spec.arg_type)
-                elif arg_spec.arg_type == ArgType.ENUM:
-                    resp_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
+
+            def add_arg(arg: Arg):
+                if isinstance(arg, ArgValue):
+                    resp_msg_schema.add_value_property(arg.name, arg.type, required=True)
+                elif isinstance(arg, ArgEnum):
+                    resp_msg_schema.add_reference_property(arg.name, f"#/components/schemas/enum_{arg.enum.name}", required=True)
+
+            if isinstance(method_spec.return_value, ArgStruct):
+                for arg_spec in method_spec.return_value.members:
+                    add_arg(arg_spec)
+                    resp_msg_schema.add_value_dependency(arg_spec.name, "result", 0)
+            elif method_spec.return_value is not None:
+                add_arg(method_spec.return_value)
+                resp_msg_schema.add_value_dependency(method_spec.return_value.name, "result", 0)
+
             resp_msg.set_schema(resp_msg_schema.to_schema())
             self._asyncapi.add_message(resp_msg)
 

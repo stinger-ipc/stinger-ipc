@@ -4,20 +4,22 @@ on the next generation.
 
 It contains enumerations used by the Example interface.
 """
+from pydantic import BaseModel
+from enum import IntEnum
 
-from enum import Enum
 
-
-
-class DayOfTheWeek(Enum):
+class DayOfTheWeek(IntEnum):
     SUNDAY = 1
     MONDAY = 2
     TUESDAY = 3
     WEDNESDAY = 4
     THURSDAY = 5
     FRIDAY = 6
+    SATURDAY = 7
 
 
 
-
-
+class DoSomethingReturnValue(BaseModel):
+    label: str
+    identifier: int
+    day: DayOfTheWeek

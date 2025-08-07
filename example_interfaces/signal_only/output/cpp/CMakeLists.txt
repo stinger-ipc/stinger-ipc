@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.16)
 
 project (SignalOnly)
 set(CMAKE_CXX_STANDARD 11) 
@@ -16,6 +16,7 @@ add_executable(client-demo examples/client_main.cpp)
 target_link_libraries(client-demo PUBLIC lib-SignalOnly)
 target_link_libraries(client-demo PUBLIC mosquitto)
 target_link_libraries(client-demo PUBLIC boost_thread)
+target_link_libraries(client-demo PUBLIC boost_chrono)
 target_link_libraries(client-demo PRIVATE Threads::Threads)
 
 add_executable(server-demo examples/server_main.cpp)

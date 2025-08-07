@@ -6,24 +6,60 @@ info:
 channels:
   SignalOnly/interface:
     subscribe:
+      operationId: interfaceInfo
       message:
         $ref: '#/components/messages/interfaceInfo'
-      operationId: interfaceInfo
-      bindings:
-        mqtt:
-          qos: 1
-          retain: true
   SignalOnly/signal/anotherSignal:
     subscribe:
+      operationId: anotherSignal
       message:
         $ref: '#/components/messages/anotherSignal'
-      operationId: anotherSignal
+      traits:
+      - $ref: '#/components/operationTraits/signal'
+components:
+  operationTraits:
+    methodCall:
       bindings:
         mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
+          retain: false
+    methodCallback:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
           qos: 1
           retain: false
-components:
-  operationTraits: {}
+    signal:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
+          retain: false
+  messageTraits:
+    methodJsonArguments:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+    methodJsonResponse:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+          responseTopic:
+            type: string
+    signalJson:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
   messages:
     interfaceInfo:
       name: interfaceInfo
@@ -42,10 +78,10 @@ components:
             const: 0.0.1
             type: string
         required:
-        - title
-        - version
         - name
         - summary
+        - title
+        - version
         type: object
     anotherSignal:
       name: anotherSignal
@@ -58,22 +94,24 @@ components:
           two:
             type: boolean
         required:
-        - three
         - one
+        - three
         - two
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/signalJson'
   schemas: {}
 servers:
   Default:
     bindings:
       mqtt:
         lastWill:
+          retain: false
           message: null
           qos: 1
-          retain: false
           topic: SignalOnly/interface
     protocol: mqtt
-    protocolVersion: 3.1.1
+    protocolVersion: '5'
     url: '{hostname}:{port}'
     variables:
       hostname:

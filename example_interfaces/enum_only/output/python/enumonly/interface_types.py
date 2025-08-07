@@ -4,18 +4,16 @@ on the next generation.
 
 It contains enumerations used by the EnumOnly interface.
 """
+from pydantic import BaseModel
+from enum import IntEnum
 
-from enum import Enum
 
-
-
-class Fruits(Enum):
+class Fruits(IntEnum):
     APPLE = 1
     BANANA = 2
     PEAR = 3
 
-
-class Months(Enum):
+class Months(IntEnum):
     JANUARY = 1
     FEBRUARY = 2
     MARCH = 3
@@ -28,8 +26,5 @@ class Months(Enum):
     OCTOBER = 10
     NOVEMBER = 11
     DECEMBER = 12
-
-
-
 
 

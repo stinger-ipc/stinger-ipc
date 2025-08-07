@@ -6,15 +6,53 @@ info:
 channels:
   EnumOnly/interface:
     subscribe:
+      operationId: interfaceInfo
       message:
         $ref: '#/components/messages/interfaceInfo'
-      operationId: interfaceInfo
+components:
+  operationTraits:
+    methodCall:
       bindings:
         mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
+          retain: false
+    methodCallback:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
           qos: 1
-          retain: true
-components:
-  operationTraits: {}
+          retain: false
+    signal:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
+          retain: false
+  messageTraits:
+    methodJsonArguments:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+    methodJsonResponse:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+          responseTopic:
+            type: string
+    signalJson:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
   messages:
     interfaceInfo:
       name: interfaceInfo
@@ -33,10 +71,10 @@ components:
             const: 0.0.1
             type: string
         required:
-        - title
-        - summary
-        - version
         - name
+        - summary
+        - title
+        - version
         type: object
   schemas:
     enum_fruits:
@@ -70,12 +108,12 @@ servers:
     bindings:
       mqtt:
         lastWill:
+          retain: false
           message: null
           qos: 1
-          retain: false
           topic: EnumOnly/interface
     protocol: mqtt
-    protocolVersion: 3.1.1
+    protocolVersion: '5'
     url: '{hostname}:{port}'
     variables:
       hostname:

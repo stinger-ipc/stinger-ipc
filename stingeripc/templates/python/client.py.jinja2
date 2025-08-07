@@ -1,70 +1,212 @@
 """
-DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+DO NOT MODIFY THIS FILE. {# Unless you see this, which means you are editing the template. #} It is automatically generated and changes will be over-written
 on the next generation.
 
 This is the Client for the {{stinger.name}} interface.
 """
 
 from typing import Dict, Callable, List, Any
+from uuid import uuid4
+from functools import partial
 import json
+import logging
+{%if stinger.methods | length > 0 %}
+import asyncio
+import concurrent.futures as futures
+from method_codes import *
+{%endif%}
 from connection import BrokerConnection
 {%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
 
-class {{stinger.name}}Client(object):
+logging.basicConfig(level=logging.DEBUG)
+
+{%for sig_name, sig in stinger.signals.items()%}
+{{sig_name | UpperCamelCase}}SignalCallbackType = Callable[[{%for arg in sig.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]
+{%endfor%}
+{%-for method_name, method in stinger.methods.items()%}
+{{method_name | UpperCamelCase}}MethodResponseCallbackType = Callable[[{%if method.return_value%}{{method.return_value.python_type}}{%endif%}], None]
+{%endfor%}
+
+class {{stinger.name}}Client:
 
     def __init__(self, connection: BrokerConnection):
+        self._logger = logging.getLogger('{{stinger.name}}Client')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing {{stinger.name}}Client")
+        self._client_id = str(uuid4())
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
+        {%if stinger.methods | length > 0 %}
+        self._pending_method_responses = {} # type: Dict[str, Callable[..., None]]
+        {%endif%}
         {%for p,v in stinger.params.items()-%}
         self._{{p}} = {{v.payload.initialValue}}
         self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
         self.changed_value_callback_for_{{p}} = None
-        {%endfor%}
-        {%for sig_name in stinger.signals.keys()-%}
-        self._signal_recv_callbacks_for_{{sig_name}} = []
+        {%endfor-%}
+        {%-for sig_name in stinger.signals.keys()-%}
+        self._signal_recv_callbacks_for_{{sig_name}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
+        {%endfor-%}
+        {%-for method_name, method in stinger.methods.items()-%}
+        self._conn.subscribe(f"{{method.response_topic('{self._client_id}')}}")
         {%endfor%}
 
-    def _do_callbacks_for(self, callbacks: Dict[str, Callable], **kwargs):
+    def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
+        """ Call each callback in the callback dictionary with the provided args.
+        """
         for cb in callbacks:
             cb(**kwargs)
 
     @staticmethod
     def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
+        """ Given a dictionary, reduce the dictionary so that it only has keys in the allowed list.
+        """
         filtered_args = {}
         for k, v in args.items():
             if k in allowed_args:
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_message(self, topic, payload):
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        """ New MQTT messages are passed to this method, which, based on the topic,
+        calls the appropriate handler method for the message.
+        """
+        self._logger.debug("Receiving message sent to %s", topic)
         {%if stinger.signals | length > 0 -%}
         {%for sig_name, sig in stinger.signals.items()-%}
+        # Handle '{{sig_name}}' signal.
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
+            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+                self._logger.warning("Received '{{sig_name}}' signal with non-JSON content type")
+                return
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-
-            # Ensure received payload values have correct type.
             {%for arg in sig.arg_list-%}
             kwargs["{{arg.name}}"] = {{arg.python_type}}(kwargs["{{arg.name}}"])
             {%endfor%}
             self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
         {%endfor%}
         {%-else%}pass{%-endif%}
+        {%-for method_name, method in stinger.methods.items()%}
+        # Handle '{{method_name}}' method response.
+        if self._conn.is_topic_sub(topic, f"{{method.response_topic('{self._client_id}')}}"):
+            result_code = MethodResultCode.SUCCESS
+            if "UserProperty" in properties:
+                user_properties = properties["UserProperty"]
+                if "DebugInfo" in user_properties:
+                    self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                if "ReturnValue" in user_properties:
+                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+            response = json.loads(payload)
+            if "CorrelationData" in properties:
+                correlation_id = properties["CorrelationData"].decode()
+                if correlation_id in self._pending_method_responses:
+                    cb = self._pending_method_responses[correlation_id]
+                    del self._pending_method_responses[correlation_id]
+                    cb(response, result_code)
+                else:
+                    self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+            else:
+                self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+        {%endfor%}
 
     {%for sig_name, sig in stinger.signals.items()%}
     def receive_{{sig_name}}(self, handler):
+        """ Used as a decorator for methods which handle particular signals.
+        """
         self._signal_recv_callbacks_for_{{sig_name}}.append(handler)
         if len(self._signal_recv_callbacks_for_{{sig_name}}) == 1:
             self._conn.subscribe("{{sig.topic}}")
     {%endfor%}
 
+    {%for method_name, method in stinger.methods.items()%}
+    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
+        """ Calling this initiates a `{{method_name}}` IPC method call.
+        """
+        {%for arg in method.arg_list%}
+        if not isinstance({{arg.name}}, {{arg.python_type}}):
+            raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_type}}")
+        {%endfor%}
+        fut = futures.Future() # type: futures.Future
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
+        payload = { {%-for arg in method.arg_list%}
+            "{{arg.name}}": {{arg.name}},{%endfor%}
+        }
+        self._conn.publish("{{method.topic}}", json.dumps(payload), qos=2, retain=False,
+                           correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._client_id}')}}")
+        return fut
+
+    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+        """ This called with the response to a `{{method_name}}` IPC method call.
+        """
+        self._logger.debug("Handling {{method_name | snake_case}} response message %s", fut)
+        try:
+            if return_value != MethodResultCode.SUCCESS.value:
+                raise stinger_exception_factory(return_value, response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
+            {%if method.return_value is none%}
+            fut.set_result(None)
+            {%elif method.return_value.arg_type.name.lower() == 'struct' %}
+            return_args = self._filter_for_args(response_json, [{%for m in method.return_value.members%}"{{m.name}}", {%endfor%}])
+            {%for arg in method.return_value.members-%}
+            return_args["{{arg.name}}"] = {{arg.python_type}}(return_args["{{arg.name}}"])
+            {%endfor%}
+            return_obj = {{method.return_value.python_type}}(**return_args)
+            fut.set_result(return_obj)
+            {%else%}
+            if "{{method.return_value.name}}" in response_json:
+                if not isinstance(response_json["{{method.return_value.name}}"], {{method.return_value.python_type}}):
+                    raise ValueError("Return value '{{method.return_value.name}}'' had wrong type")
+                self._logger.debug("Setting future result")
+                fut.set_result(response_json["{{method.return_value.name}}"])
+            else:
+                raise Exception("Response message didn't have the return value")
+            {%endif%}
+        except Exception as e:
+            self._logger.info("Exception while handling {{method_name | snake_case}}", exc_info=e)
+            fut.set_exception(e)
+        if not fut.done():
+            fut.set_exception(Exception("No return value set"))
+    {%endfor%}
+
+class {{stinger.name}}ClientBuilder:
+
+    def __init__(self, broker: BrokerConnection):
+        """ Creates a new {{stinger.name}}ClientBuilder.
+        """
+        self._conn = broker
+        self._logger = logging.getLogger('{{stinger.name}}ClientBuilder')
+        {%for sig_name in stinger.signals.keys()-%}
+        self._signal_recv_callbacks_for_{{sig_name}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
+        {%endfor-%}
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    def receive_{{sig_name}}(self, handler):
+        """ Used as a decorator for methods which handle particular signals.
+        """
+        self._signal_recv_callbacks_for_{{sig_name}}.append(handler)
+    {%endfor%}
+
+    def build(self) -> {{stinger.name}}Client:
+        """ Builds a new {{stinger.name}}Client.
+        """
+        self._logger.debug("Building {{stinger.name}}Client")
+        client = {{stinger.name}}Client(self._conn)
+        {%for sig_name, sig in stinger.signals.items()%}
+        for cb in self._signal_recv_callbacks_for_{{sig_name}}:
+            client.receive_{{sig_name}}(cb)
+        {%endfor%}
+        return client
+
+
 if __name__ == '__main__':
     import signal
+
     {%set broker = stinger.get_example_broker()%}from connection import {{broker.class_name}}
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
-    client = {{stinger.name}}Client(conn)
+    client_builder = {{stinger.name}}ClientBuilder(conn)
     {%for sig_name, sig in stinger.signals.items()%}
-    @client.receive_{{sig_name}}
+    @client_builder.receive_{{sig_name}}
     def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """{{sig.description}}
         {%for arg in sig.arg_list-%}
@@ -72,6 +214,18 @@ if __name__ == '__main__':
         {%endfor%}"""
         print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
     {%endfor%}
-    
+
+    client = client_builder.build()
+    {%if stinger.methods | length > 0 %}
+    {%-for method_name, method in stinger.methods.items()%}
+    print("Making call to '{{method_name|snake_case}}'")
+    future = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+    try:
+        print(f"RESULT:  {future.result(5)}")
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to '{{method_name|snake_case}}' call")
+    {%endfor%}
+    {%endif%}
+
     print("Ctrl-C will stop the program.")
     signal.pause()

@@ -8,9 +8,11 @@
 #include <exception>
 #include <mutex>
 #include <rapidjson/document.h>
+#include <boost/uuid/uuid.hpp>
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
+#include "return_types.hpp"
 
 class ExampleClient {
 
@@ -22,14 +24,23 @@ public:
 
     virtual ~ExampleClient() = default;
 
-    void ReceiveMessage(const std::string& topic, const std::string& payload);
     
     void registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb);
     
+
+    
+    boost::future<int> addNumbers(int first, int second);
+    
+    boost::future<DoSomethingReturnValue> doSomething(const std::string& aString);
+    
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
+    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<MethodResultCode> optResultCode);
+    std::map<boost::uuids::uuid, boost::promise<int>> _pendingAddNumbersMethodCalls;
+    std::map<boost::uuids::uuid, boost::promise<DoSomethingReturnValue>> _pendingDoSomethingMethodCalls;
     
     std::function<void(int, DayOfTheWeek)> _todayIsCallback;
     
-    
+    void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);
+    void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);
 };

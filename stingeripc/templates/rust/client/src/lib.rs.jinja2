@@ -5,51 +5,176 @@ on the next generation.
 This is the Client for the {{stinger.name}} interface.
 */
 
-use futures::StreamExt;
-use connection::Connection;
+extern crate paho_mqtt as mqtt;
+use connection::{MessagePublisher, Connection, ReceivedMessage};
+{%if stinger.methods | length > 0 %}
+use json::{JsonValue};
+use std::collections::HashMap;
+use uuid::Uuid;
 
-pub struct {{stinger.name}}Client {
+#[allow(unused_imports)]
+use connection::payloads::{*, MethodResultCode};
+{%endif%}
+use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc::{self, Sender, Receiver};
+
+#[derive(Clone, Debug)]
+struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
+    {%for method_name, method in stinger.methods.items()-%}
+    {{method_name | snake_case}}_method: i32,
+    {%endfor%}
+    {%for sig_name, sig in stinger.signals.items()-%}
+    {{sig_name | snake_case}}_signal: Option<i32>,
+    {%endfor%}
+}
+
+pub struct {{stinger.name | UpperCamelCase }}Client {
     connection: Connection,
     {%for sig_name, sig in stinger.signals.items()-%}
         signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->()>,
     {%endfor%}
+    {%-if stinger.methods | length > 0 %}pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,{%endif%}
+    msg_streamer_rx: Option<Receiver<ReceivedMessage>>,
+    msg_streamer_tx: Sender<ReceivedMessage>,
+    msg_publisher: MessagePublisher,
+    subscription_ids: {{stinger.name | UpperCamelCase }}SubscriptionIds,
 }
 
-impl {{stinger.name}}Client {
-    pub fn new(connection: Connection) -> {{stinger.name}}Client {
-
-        {{stinger.name}}Client {
+impl {{stinger.name | UpperCamelCase }}Client {
+    pub async fn new(mut connection: Connection) -> {{stinger.name | UpperCamelCase }}Client {
+        let _ = connection.connect().await;
+        let (rcvr_tx, rcvr_rx) = mpsc::channel(64);
+        let publisher = connection.get_publisher();
+        {%for method_name, method in stinger.methods.items()-%}
+        let topic_{{method_name | snake_case}}_method = format!("{{method.response_topic('{}')}}", connection.client_id);
+        let subscription_id_{{method_name | snake_case}}_method = connection.subscribe(&topic_{{method_name | snake_case}}_method, rcvr_tx.clone()).await;
+        let subscription_id_{{method_name | snake_case}}_method = subscription_id_{{method_name | snake_case}}_method.unwrap_or_else(|_| -1);
+        {%endfor%}
+        // Signal subscriptions here are temporary.  Eventually, we'll subscribe when registering the callback.
+        {%for signal_name, signal in stinger.signals.items()-%}
+        let topic_{{signal_name | snake_case}}_signal = "{{signal.topic}}";
+        let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(&topic_{{signal_name | snake_case}}_signal, rcvr_tx.clone()).await;
+        let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| -1);
+        {%endfor%}
+        let sub_ids = {{stinger.name | UpperCamelCase }}SubscriptionIds {
+            {%for method_name, method in stinger.methods.items()-%}
+            {{method_name | snake_case}}_method: subscription_id_{{method_name | snake_case}}_method,
+            {%endfor%}
+            {%for sig_name, sig in stinger.signals.items()-%}
+            {{sig_name | snake_case}}_signal: Some(subscription_id_{{sig_name | snake_case}}_signal),
+            {%endfor%}
+        };
+        let inst = {{stinger.name | UpperCamelCase }}Client {
             connection: connection,
             {%for sig_name, sig in stinger.signals.items()-%}
             signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |{%for arg in sig.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
             {%endfor%}
-        }
+            {%if stinger.methods | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
+            msg_streamer_rx: Some(rcvr_rx),
+            msg_streamer_tx: rcvr_tx,
+            msg_publisher: publisher,
+            subscription_ids: sub_ids,
+        };
+        inst
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    pub fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
+    pub async fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
         self.signal_recv_callback_for_{{sig_name|snake_case}} = Box::new(cb);
-        self.connection.subscribe(String::from("{{sig.topic}}"), 2);
+        println!("Registering callback handler for signal {{sig_name}}");
+        // Before we uncomment the following, we need a way to queue subscriptions until after we're connected.
+        //let sub_id = self.connection.subscribe("{{sig.topic}}", self.msg_streamer_tx.clone()).await;
+        //self.subscription_ids.{{sig_name | snake_case}} = sub_id.ok();
     }
     {%endfor%}
 
-    pub async fn process(&mut self) {
-        while let Some(opt_msg) = self.connection.rx.next().await {
-            if let Some(msg) = opt_msg {
-                {%for sig_name, sig in stinger.signals.items()-%}
-                let payload_object = json::parse(&msg.payload_str()).unwrap();
-                if msg.topic() == "{{sig.topic}}" {
-                    {%for arg in sig.arg_list-%}
-                    {%-if arg.arg_type.name.lower() == 'value'%}
-                    let temp_{{arg.name | snake_case}} = payload_object["{{arg.name}}"].{%if arg.rust_type == 'String'%}as_str().unwrap().to_string(){%else%}as_{{arg.rust_type}}().unwrap(){%endif%};
-                    {%elif arg.arg_type.name.lower() == 'enum'%}
-                    let temp_{{arg.name | snake_case}} = {{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap());
-                    {%endif%}
-                    {%endfor%}
-                    (self.signal_recv_callback_for_{{sig_name|snake_case}})({%for arg in sig.arg_list%}temp_{{arg.name | snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {%for method_name, method in stinger.methods.items()-%}
+    pub async fn {{method_name|snake_case}}(&mut self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> {
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let data = connection::payloads::{{method_name | UpperCamelCase}}RequestObject {
+            {%-for arg in method.arg_list%}
+            {{arg.name}}: {{arg.name|snake_case}},
+            {%-endfor%}
+        };
+        let _ = self.msg_publisher.publish_request_structure("{{method.topic}}".to_string(), &data, "", correlation_id).await;
+        let resp_obj = receiver.recv().unwrap();
+        
+        {%-if method.return_value.arg_type.name.lower() == 'value' %}
+        Ok(resp_obj["{{method.return_value.name}}"].as_{{method.return_value.rust_type}}().unwrap())
+        {%-elif method.return_value.arg_type.name.lower() == 'enum'%}
+        Ok({{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap())
+        {%-elif method.return_value.arg_type.name.lower() == 'struct'%}
+        Ok({{method.return_value.rust_type}} { {%for member in method.return_value.members-%}
+            {%if member.arg_type.name.lower() == 'value'%}
+            {%if member.rust_type == 'String'%}
+            {{member.name|snake_case}}: resp_obj["{{member.name}}"].as_str().unwrap().to_string(),
+            {%-else%}
+            {{member.name|snake_case}}: resp_obj["{{member.name}}"].as_{{member.rust_type}}().unwrap(),
+            {%-endif-%}
+            {%elif member.arg_type.name.lower() == 'enum'%}
+            {{member.name|snake_case}}: {{member.rust_type}}::from_u32(resp_obj["{{member.name}}"].as_u32().unwrap()).unwrap(),
+            {%endif%}
+        {%endfor-%} })
+                    
+        {%-endif %}
+    }
+
+    fn handle_{{method_name|snake_case}}_response(pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>, payload: String, opt_correlation_id: Option<String>) {
+        let payload_object = json::parse(&payload).unwrap();
+        if opt_correlation_id.is_some() {
+            let sender_opt = opt_correlation_id.as_ref()
+                .and_then(|cid| Uuid::parse_str(cid.as_str()).ok())
+                .and_then(|uuid| {
+                    let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
+                    hashmap.remove(&uuid)
+                });
+            match sender_opt {
+                Some(sender) => {
+                    let oss: oneshot::Sender<JsonValue> = sender;
+                    match oss.send(payload_object) {
+                        Ok(_) => (),
+                        Err(_) => ()
+                    }
+                },
+                None => ()
+            }
+        }
+    }
+    {%endfor%}
+
+    pub async fn process_loop(&mut self) {
+        let resp_map = self.pending_responses.clone();
+        let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
+        let mut streamer = self.connection.get_streamer().await;
+        let task1 = tokio::spawn(async move {
+            streamer.receive_loop().await;
+        });
+
+        let sub_ids = self.subscription_ids.clone();
+        let task2 = tokio::spawn(async move {
+            while let Some(msg) = receiver.recv().await {
+                println!("Received mqtt message: {:?} against subscription id {}", msg.message.payload_str(), msg.subscription_id);
+                println!("Our subscriptions are: {:?}", sub_ids);
+                {%-for method_name, method in stinger.methods.items()%}
+                {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method {
+                    println!("Found subscription match for {}({:?}) as a response to {{method_name}}", msg.message.topic(), sub_ids.{{method_name | snake_case}}_method);
+                    {{stinger.name | UpperCamelCase }}Client::handle_{{method_name|snake_case}}_response(resp_map.clone(), msg.message.payload_str().to_string(), None);
+                }
+                {%-endfor%}
+                {%-for signal_name, signal in stinger.signals.items()%}
+                {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{signal_name | snake_case}}_signal.unwrap_or_default() {
+                    println!("Found subscription match for {}({:?}) as a {{signal_name}} signal", msg.message.topic(), sub_ids.{{signal_name | snake_case}}_signal);
                 }
                 {%endfor%}
             }
-        }
+        });
+
+        task1.await;
+        task2.await;
     }
 }

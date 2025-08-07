@@ -24,6 +24,19 @@ signals:
     payload:
       - name: message
         type: string
+
+methods:
+
+  addNumbers:
+    arguments:
+      - name: left
+        type: integer
+      - name: right
+        type: integer
+    returnValues:
+      - name: sum
+        type: integer
+
 ```
 ## First class code generation 
 
@@ -39,6 +52,10 @@ conn = MqttConnection('localhost', 1883)
 server = ExampleServer(conn)
 
 server.emit_foo("Hello World")
+
+@server.handle_add_numbers
+def add_numbers(left: int, right: int) -> int:
+    return left + right
 ```
 
 ```c++
@@ -46,6 +63,11 @@ server.emit_foo("Hello World")
 auto conn = std::make_shared<DefaultConnection>("localhost", 1883);
 ExampleServer server(conn);
 server.emitFoo("Hello World").wait();
+
+server.registerAddNumbersHandler([](int left, int right) -> int
+{
+  return left + right;
+});
 ```
 
 ```rust
@@ -53,6 +75,10 @@ server.emitFoo("Hello World").wait();
 let connection = Connection::new(String::from("tcp://localhost:1883"));
 let mut server = SignalOnlyServer::new(connection);
 server.emit_foo("Hello World".to_string());
+
+server.register_add_numbers_handler(|left, right| {
+    left + right
+});
 ```
 
 ### Client Code
@@ -67,6 +93,10 @@ client = ExampleClient(conn)
 @client.receive_foo
 def print_foo_receipt(message):
     print(f"Got a 'foo' signal with message: {message}")
+
+future = client.add_numbers(1, 2)
+timeout = 5
+print(future.result(timeout))
 ```
 
 ```c++
@@ -74,8 +104,10 @@ def print_foo_receipt(message):
 auto conn = std::make_shared<DefaultConnection>("localhost", 1883);
 ExampleClient client(conn);
 client.registerFooCallback([](const std::string& message) {
-    std::cout << message <<  std::endl;
+    std::cout << message << std::endl;
 });
+
+std::cout << "One plus three is " << client.addNumbers(1, 3).wait() << std::endl;
 ```
 
 ```rust
@@ -85,6 +117,8 @@ let mut client = ExampleClient::new(connection);
 client.set_signal_recv_callbacks_for_foo(|message| {
     println!("{}", message);
 });
+
+client.add_numbers(1, 4);
 ```
 
 ## AsyncAPI and second-class code generation

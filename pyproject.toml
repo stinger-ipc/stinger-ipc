@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "jacobs-jinja-too>=0.0.8",
+    "pydantic>=2.11.7",
     "pyyaml>=6.0.2",
     "stringcase>=1.2.0",
     "yamlloader>=1.5.1",

@@ -8,9 +8,11 @@
 #include <exception>
 #include <mutex>
 #include <rapidjson/document.h>
+#include <boost/uuid/uuid.hpp>
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
+#include "return_types.hpp"
 
 class SignalOnlyClient {
 
@@ -22,14 +24,15 @@ public:
 
     virtual ~SignalOnlyClient() = default;
 
-    void ReceiveMessage(const std::string& topic, const std::string& payload);
     
     void registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb);
     
+
+    
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
+    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<MethodResultCode> optResultCode);
     
     std::function<void(double, bool, const std::string&)> _anotherSignalCallback;
-    
     
 };

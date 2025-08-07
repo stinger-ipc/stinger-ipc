@@ -1,0 +1,279 @@
+"""
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+This is the Client for the Example interface.
+"""
+
+from typing import Dict, Callable, List, Any
+from uuid import uuid4
+from functools import partial
+import json
+import logging
+
+import asyncio
+import concurrent.futures as futures
+from method_codes import *
+
+from connection import BrokerConnection
+import interface_types as stinger_types
+
+logging.basicConfig(level=logging.DEBUG)
+
+
+TodayIsSignalCallbackType = Callable[[int, stinger_types.DayOfTheWeek], None]
+
+AddNumbersMethodResponseCallbackType = Callable[[int], None]
+
+DoSomethingMethodResponseCallbackType = Callable[[stinger_types.DoSomethingReturnValue], None]
+
+
+class ExampleClient:
+
+    def __init__(self, connection: BrokerConnection):
+        self._logger = logging.getLogger('ExampleClient')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing ExampleClient")
+        self._client_id = str(uuid4())
+        self._conn = connection
+        self._conn.set_message_callback(self._receive_message)
+        
+        self._pending_method_responses = {} # type: Dict[str, Callable[..., None]]
+        
+        self._signal_recv_callbacks_for_todayIs = [] # type: List[TodayIsSignalCallbackType]
+        self._conn.subscribe(f"client/{self._client_id}/Example/method/addNumbers/response")
+        self._conn.subscribe(f"client/{self._client_id}/Example/method/doSomething/response")
+        
+
+    def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
+        """ Call each callback in the callback dictionary with the provided args.
+        """
+        for cb in callbacks:
+            cb(**kwargs)
+
+    @staticmethod
+    def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
+        """ Given a dictionary, reduce the dictionary so that it only has keys in the allowed list.
+        """
+        filtered_args = {}
+        for k, v in args.items():
+            if k in allowed_args:
+                filtered_args[k] = v
+        return filtered_args
+
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        """ New MQTT messages are passed to this method, which, based on the topic,
+        calls the appropriate handler method for the message.
+        """
+        self._logger.debug("Receiving message sent to %s", topic)
+        # Handle 'todayIs' signal.
+        if self._conn.is_topic_sub(topic, "Example/signal/todayIs"):
+            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+                self._logger.warning("Received 'todayIs' signal with non-JSON content type")
+                return
+            allowed_args = ["dayOfMonth", "dayOfWeek", ]
+            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+            kwargs["dayOfMonth"] = int(kwargs["dayOfMonth"])
+            kwargs["dayOfWeek"] = stinger_types.DayOfTheWeek(kwargs["dayOfWeek"])
+            
+            self._do_callbacks_for(self._signal_recv_callbacks_for_todayIs, **kwargs)
+        
+        # Handle 'addNumbers' method response.
+        if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/addNumbers/response"):
+            result_code = MethodResultCode.SUCCESS
+            if "UserProperty" in properties:
+                user_properties = properties["UserProperty"]
+                if "DebugInfo" in user_properties:
+                    self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                if "ReturnValue" in user_properties:
+                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+            response = json.loads(payload)
+            if "CorrelationData" in properties:
+                correlation_id = properties["CorrelationData"].decode()
+                if correlation_id in self._pending_method_responses:
+                    cb = self._pending_method_responses[correlation_id]
+                    del self._pending_method_responses[correlation_id]
+                    cb(response, result_code)
+                else:
+                    self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+            else:
+                self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+        
+        # Handle 'doSomething' method response.
+        if self._conn.is_topic_sub(topic, f"client/{self._client_id}/Example/method/doSomething/response"):
+            result_code = MethodResultCode.SUCCESS
+            if "UserProperty" in properties:
+                user_properties = properties["UserProperty"]
+                if "DebugInfo" in user_properties:
+                    self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                if "ReturnValue" in user_properties:
+                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+            response = json.loads(payload)
+            if "CorrelationData" in properties:
+                correlation_id = properties["CorrelationData"].decode()
+                if correlation_id in self._pending_method_responses:
+                    cb = self._pending_method_responses[correlation_id]
+                    del self._pending_method_responses[correlation_id]
+                    cb(response, result_code)
+                else:
+                    self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+            else:
+                self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+        
+
+    
+    def receive_todayIs(self, handler):
+        """ Used as a decorator for methods which handle particular signals.
+        """
+        self._signal_recv_callbacks_for_todayIs.append(handler)
+        if len(self._signal_recv_callbacks_for_todayIs) == 1:
+            self._conn.subscribe("Example/signal/todayIs")
+    
+
+    
+    def add_numbers(self, first: int, second: int) -> futures.Future:
+        """ Calling this initiates a `addNumbers` IPC method call.
+        """
+        
+        if not isinstance(first, int):
+            raise ValueError("The 'first' argument wasn't a int")
+        
+        if not isinstance(second, int):
+            raise ValueError("The 'second' argument wasn't a int")
+        
+        fut = futures.Future() # type: futures.Future
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_add_numbers_response, fut)
+        payload = {
+            "first": first,
+            "second": second,
+        }
+        self._conn.publish("Example/method/addNumbers", json.dumps(payload), qos=2, retain=False,
+                           correlation_id=correlation_id, response_topic=f"client/{self._client_id}/Example/method/addNumbers/response")
+        return fut
+
+    def _handle_add_numbers_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+        """ This called with the response to a `addNumbers` IPC method call.
+        """
+        self._logger.debug("Handling add_numbers response message %s", fut)
+        try:
+            if return_value != MethodResultCode.SUCCESS.value:
+                raise stinger_exception_factory(return_value, response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
+            
+            if "sum" in response_json:
+                if not isinstance(response_json["sum"], int):
+                    raise ValueError("Return value 'sum'' had wrong type")
+                self._logger.debug("Setting future result")
+                fut.set_result(response_json["sum"])
+            else:
+                raise Exception("Response message didn't have the return value")
+            
+        except Exception as e:
+            self._logger.info("Exception while handling add_numbers", exc_info=e)
+            fut.set_exception(e)
+        if not fut.done():
+            fut.set_exception(Exception("No return value set"))
+    
+    def do_something(self, aString: str) -> futures.Future:
+        """ Calling this initiates a `doSomething` IPC method call.
+        """
+        
+        if not isinstance(aString, str):
+            raise ValueError("The 'aString' argument wasn't a str")
+        
+        fut = futures.Future() # type: futures.Future
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_do_something_response, fut)
+        payload = {
+            "aString": aString,
+        }
+        self._conn.publish("Example/method/doSomething", json.dumps(payload), qos=2, retain=False,
+                           correlation_id=correlation_id, response_topic=f"client/{self._client_id}/Example/method/doSomething/response")
+        return fut
+
+    def _handle_do_something_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+        """ This called with the response to a `doSomething` IPC method call.
+        """
+        self._logger.debug("Handling do_something response message %s", fut)
+        try:
+            if return_value != MethodResultCode.SUCCESS.value:
+                raise stinger_exception_factory(return_value, response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
+            
+            return_args = self._filter_for_args(response_json, ["label", "identifier", "day", ])
+            return_args["label"] = str(return_args["label"])
+            return_args["identifier"] = int(return_args["identifier"])
+            return_args["day"] = stinger_types.DayOfTheWeek(return_args["day"])
+            
+            return_obj = stinger_types.DoSomethingReturnValue(**return_args)
+            fut.set_result(return_obj)
+            
+        except Exception as e:
+            self._logger.info("Exception while handling do_something", exc_info=e)
+            fut.set_exception(e)
+        if not fut.done():
+            fut.set_exception(Exception("No return value set"))
+    
+
+class ExampleClientBuilder:
+
+    def __init__(self, broker: BrokerConnection):
+        """ Creates a new ExampleClientBuilder.
+        """
+        self._conn = broker
+        self._logger = logging.getLogger('ExampleClientBuilder')
+        self._signal_recv_callbacks_for_todayIs = [] # type: List[TodayIsSignalCallbackType]
+        
+    def receive_todayIs(self, handler):
+        """ Used as a decorator for methods which handle particular signals.
+        """
+        self._signal_recv_callbacks_for_todayIs.append(handler)
+    
+
+    def build(self) -> ExampleClient:
+        """ Builds a new ExampleClient.
+        """
+        self._logger.debug("Building ExampleClient")
+        client = ExampleClient(self._conn)
+        
+        for cb in self._signal_recv_callbacks_for_todayIs:
+            client.receive_todayIs(cb)
+        
+        return client
+
+
+if __name__ == '__main__':
+    import signal
+
+    from connection import LocalConnection
+    conn = LocalConnection()
+    client_builder = ExampleClientBuilder(conn)
+    
+    @client_builder.receive_todayIs
+    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek):
+        """
+        @param dayOfMonth int 
+        @param dayOfWeek stinger_types.DayOfTheWeek 
+        """
+        print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
+    
+
+    client = client_builder.build()
+    
+    print("Making call to 'add_numbers'")
+    future = client.add_numbers(first=42, second=42)
+    try:
+        print(f"RESULT:  {future.result(5)}")
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'add_numbers' call")
+    
+    print("Making call to 'do_something'")
+    future = client.do_something(aString="apples")
+    try:
+        print(f"RESULT:  {future.result(5)}")
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'do_something' call")
+    
+    
+
+    print("Ctrl-C will stop the program.")
+    signal.pause()

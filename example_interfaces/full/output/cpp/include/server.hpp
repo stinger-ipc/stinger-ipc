@@ -4,13 +4,16 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <string>
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <boost/optional.hpp>
 #include <rapidjson/document.h>
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
+#include "return_types.hpp"
 
 class ExampleServer {
 
@@ -22,11 +25,25 @@ public:
 
     virtual ~ExampleServer() = default;
 
-    void ReceiveMessage(const std::string& topic, const std::string& payload);
     
     boost::future<bool> emitTodayIsSignal(int, DayOfTheWeek);
     
+
+    
+    void registerAddNumbersHandler(std::function<int(int, int)> func);
+    
+    void registerDoSomethingHandler(std::function<DoSomethingReturnValue(const std::string&)> func);
+    
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
+    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic);
+
     
+    void _callAddNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    std::function<int(int, int)> _addNumbersHandler;
+    
+    void _callDoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    std::function<DoSomethingReturnValue(const std::string&)> _doSomethingHandler;
+    
+
 };

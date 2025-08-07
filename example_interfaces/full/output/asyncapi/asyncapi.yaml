@@ -6,46 +6,88 @@ info:
 channels:
   Example/interface:
     subscribe:
+      operationId: interfaceInfo
       message:
         $ref: '#/components/messages/interfaceInfo'
-      operationId: interfaceInfo
-      bindings:
-        mqtt:
-          qos: 1
-          retain: true
   Example/signal/todayIs:
     subscribe:
+      operationId: todayIs
       message:
         $ref: '#/components/messages/todayIs'
-      operationId: todayIs
-      bindings:
-        mqtt:
-          qos: 1
-          retain: false
+      traits:
+      - $ref: '#/components/operationTraits/signal'
   Example/method/addNumbers:
     publish:
+      operationId: addNumbers
       message:
         $ref: '#/components/messages/addNumbers'
-      operationId: addNumbers
-      bindings:
-        mqtt:
-          qos: 2
-          retain: false
+      traits:
+      - $ref: '#/components/operationTraits/methodCall'
   client/{client_id}/Example/method/addNumbers/response:
-    parameters:
-      client_id:
-        schema:
-          type: string
     subscribe:
+      operationId: addNumbersResponse
       message:
         $ref: '#/components/messages/addNumbersResponse'
-      operationId: addNumbersResponse
+      traits:
+      - $ref: '#/components/operationTraits/methodCall'
+  Example/method/doSomething:
+    publish:
+      operationId: doSomething
+      message:
+        $ref: '#/components/messages/doSomething'
+      traits:
+      - $ref: '#/components/operationTraits/methodCall'
+  client/{client_id}/Example/method/doSomething/response:
+    subscribe:
+      operationId: doSomethingResponse
+      message:
+        $ref: '#/components/messages/doSomethingResponse'
+      traits:
+      - $ref: '#/components/operationTraits/methodCall'
+components:
+  operationTraits:
+    methodCall:
       bindings:
         mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
+          retain: false
+    methodCallback:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
           qos: 1
           retain: false
-components:
-  operationTraits: {}
+    signal:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          qos: 2
+          retain: false
+  messageTraits:
+    methodJsonArguments:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+    methodJsonResponse:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
+          correlationData:
+            type: string
+            format: uuid
+          responseTopic:
+            type: string
+    signalJson:
+      bindings:
+        mqtt:
+          bindingVersion: 0.2.0
+          contentType: application/json
   messages:
     interfaceInfo:
       name: interfaceInfo
@@ -64,10 +106,10 @@ components:
             const: 0.0.1
             type: string
         required:
-        - version
-        - title
-        - summary
         - name
+        - summary
+        - title
+        - version
         type: object
     todayIs:
       name: todayIs
@@ -79,15 +121,14 @@ components:
             $ref: '#/components/schemas/enum_dayOfTheWeek'
         required:
         - dayOfMonth
+        - dayOfWeek
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/signalJson'
     addNumbers:
       name: addNumbers
       payload:
         properties:
-          clientId:
-            type: string
-          correlationId:
-            type: string
           first:
             type: integer
           second:
@@ -96,22 +137,68 @@ components:
         - first
         - second
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/methodJsonArguments'
     addNumbersResponse:
+      headers:
+        properties:
+          result:
+            $ref: '#/components/schemas/stinger_method_return_codes'
+          debug:
+            type: string
+        required:
+        - result
       name: addNumbersResponse
       payload:
         properties:
-          correlationId:
-            type: string
           sum:
             type: integer
         required:
         - sum
-        - correlationId
         type: object
+      traits:
+      - $ref: '#/components/messageTraits/methodJsonArguments'
+    doSomething:
+      name: doSomething
+      payload:
+        properties:
+          aString:
+            type: string
+        required:
+        - aString
+        type: object
+      traits:
+      - $ref: '#/components/messageTraits/methodJsonArguments'
+    doSomethingResponse:
+      headers:
+        properties:
+          result:
+            $ref: '#/components/schemas/stinger_method_return_codes'
+          debug:
+            type: string
+        required:
+        - result
+      name: doSomethingResponse
+      payload:
+        properties:
+          day:
+            $ref: '#/components/schemas/enum_dayOfTheWeek'
+          identifier:
+            type: integer
+          label:
+            type: string
+        required:
+        - day
+        - identifier
+        - label
+        type: object
+      traits:
+      - $ref: '#/components/messageTraits/methodJsonArguments'
   schemas:
     enum_dayOfTheWeek:
       description: "The dayOfTheWeek enum has the following values:\n 0 - Sunday\n
-        1 - Monday\n 2 - Tuesday\n 3 - Wednesday\n 4 - Thursday\n 5 - Friday"
+        1 - Monday\n 2 - Tuesday\n 3 - Wednesday\n 4 - Thursday\n 5 - Friday\n 6 -
+        Saturday"
       enum:
       - 0
       - 1
@@ -119,16 +206,28 @@ components:
       - 3
       - 4
       - 5
+      - 6
+      type: integer
+    stinger_method_return_codes:
+      description: "The stinger_method_return_codes enum has the following values:\n
+        0 - Success\n 1 - Client Error\n 2 - Server Error\n 3 - Transport Error\n
+        4 - Payload Error"
+      enum:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
       type: integer
 servers:
   local:
     bindings:
       mqtt:
         lastWill:
+          retain: false
           message: null
           qos: 1
-          retain: false
           topic: Example/interface
     protocol: mqtt
-    protocolVersion: 3.1.1
+    protocolVersion: '5'
     url: 127.0.0.1:1883

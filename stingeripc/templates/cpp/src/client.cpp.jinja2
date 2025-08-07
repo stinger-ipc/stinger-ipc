@@ -1,9 +1,12 @@
 
 #include <vector>
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
@@ -19,17 +22,28 @@ constexpr const char {{stinger.name | UpperCamelCase}}Client::INTERFACE_VERSION[
 
 {{stinger.name | UpperCamelCase}}Client::{{stinger.name | UpperCamelCase}}Client(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> unusedRespTopic, const boost::optional<MethodResultCode> optResultCode)
     {
-        ReceiveMessage(topic, payload);
+        _receiveMessage(topic, payload, optCorrelationId, optResultCode);
     });
 
     {%-for sig_name, sig in stinger.signals.items() %}
     _broker->Subscribe("{{sig.topic}}", 1);
     {%endfor%}
+    {%-for method_name, method in stinger.methods.items() %}
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
+        _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
+    {%-endfor%}
 }
 
-void {{stinger.name | UpperCamelCase}}Client::ReceiveMessage(const std::string& topic, const std::string& payload)
+void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const boost::optional<std::string> optCorrelationId, 
+        const boost::optional<MethodResultCode> optResultCode)
 {
     {%-for sig_name, sig in stinger.signals.items() %}
     if (_broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
@@ -77,11 +91,110 @@ void {{stinger.name | UpperCamelCase}}Client::ReceiveMessage(const std::string& 
         }
     }
     {%-endfor%}
+    {%-for method_name, method in stinger.methods.items() %}
+    {%if not loop.first%}else {%endif%}if (_broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && optCorrelationId)
+    {
+        std::cout << "Matched topic for {{method_name}} response" << std::endl;
+        _handle{{method_name|UpperCamelCase}}Response(topic, payload, *optCorrelationId);
+    }
+    {%-endfor%}
 }
 
 
 {%-for sig_name, sig in stinger.signals.items() %}
-void {{stinger.name | UpperCamelCase}}Client::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb) {
+void {{stinger.name | UpperCamelCase}}Client::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb)
+{
     _{{sig_name | camelCase}}Callback = cb;
 }
 {%-endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}}Client::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+{
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId] = boost::promise<{{method.return_value.cpp_type}}>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+    //rapidjson::Value clientIdValue;
+    //std::string clientId = _broker->GetClientId();
+    //clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
+    //doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
+    {%macro addToDoc(arg)%}
+    {%-if arg.arg_type.name.lower() == 'value'%}
+    {%-if arg.type.name.lower() == 'string'%}
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString({{arg.name}}.c_str(), {{arg.name}}.size(), doc.GetAllocator());
+        doc.AddMember("{{arg.name}}", tempStringValue, doc.GetAllocator());
+    }
+    {%-else%}
+    doc.AddMember("{{arg.name}}", {{arg.name}}, doc.GetAllocator());
+    {%-endif%}
+    {%elif arg.arg_type.name.lower() == 'enum'%}
+    doc.AddMember("{{arg.name}}", static_cast<int>({{arg.name}}), doc.GetAllocator());
+    {%-endif-%}
+    {%endmacro%}
+    {%for arg in method.arg_list%}
+    {{addToDoc(arg)}}
+    {%endfor%}
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    std::stringstream responseTopicStringStream;
+    responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
+    _broker->Publish("{{method.topic}}", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
+
+    return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
+}
+
+void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCase}}Response(
+        const std::string& topic, 
+        const std::string& payload, 
+        const std::string &correlationId) 
+{
+    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse {{method_name}} signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received payload is not an object");
+    }
+
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())
+    {
+        {%macro unpack_rv(arg)-%}
+        rapidjson::Value::ConstMemberIterator {{arg.name}}Itr = doc.FindMember("{{arg.name}}");
+        {%if arg.arg_type.name.lower() == 'value'-%}
+        {{arg.cpp_type}} {{arg.name}} = {{arg.name}}Itr->value.Get{{arg.cpp_rapidjson_type}}();
+        {%elif arg.arg_type.name.lower() == 'enum'-%}
+        {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_type}}>({{arg.name}}Itr->value.GetInt());
+        {%endif-%}
+        {%endmacro-%}
+        {%if method.return_value.arg_type.name.lower() == 'struct'-%}
+        {%for item in method.return_value.members%}
+        {{unpack_rv(item)}}
+        {%-endfor%}
+        {{method.return_value.cpp_type}} returnValue { //initializer list
+        {%for item in method.return_value.members%}
+            {{item.name}}{%if not loop.last%},{%endif%}
+        {%-endfor%}
+        };
+        promiseItr->second.set_value(returnValue);
+        {%-else%}
+        {{-unpack_rv(method.return_value)}}
+        promiseItr->second.set_value({{method.return_value.name}});
+        {%-endif%}
+    }
+
+    std::cout << "End of response handler for " << topic << std::endl;
+}
+{%endfor%}

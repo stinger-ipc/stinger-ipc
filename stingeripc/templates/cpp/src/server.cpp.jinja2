@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -18,21 +19,59 @@ constexpr const char {{stinger.name | UpperCamelCase}}Server::NAME[];
 constexpr const char {{stinger.name | UpperCamelCase}}Server::INTERFACE_VERSION[];
 
 {{stinger.name | UpperCamelCase}}Server::{{stinger.name | UpperCamelCase}}Server(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload)
+    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
     {
-        ReceiveMessage(topic, payload);
+        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
     });
+    {%for method in stinger.methods.values()%}
+    _broker->Subscribe("{{method.topic}}", 2);
+    {%endfor%}
 }
 
-void {{stinger.name | UpperCamelCase}}Server::ReceiveMessage(const std::string& topic, const std::string& payload) {
-  
+void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const boost::optional<std::string> optCorrelationId, 
+        const boost::optional<std::string> optResponseTopic)
+{
+    {%for method_name, method in stinger.methods.items()%}
+    if (_broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
+    {
+        std::cout << "Message matched topic {{method.topic}}\n";
+        rapidjson::Document doc;
+        try {
+            if (_{{method_name | camelCase}}Handler)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse {{sig_name}} signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject()) {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                _call{{method_name | UpperCamelCase}}Handler(topic, doc, optCorrelationId, optResponseTopic);
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely. 
+            // TODO: Log this failure
+        }
+    }
+    {%endfor%}
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
-boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+{
     rapidjson::Document doc;
     doc.SetObject();
-    {%for arg in sig.arg_list%}
+    {%macro addToDoc(arg)%}
     {%-if arg.arg_type.name.lower() == 'value'%}
     {%-if arg.type.name.lower() == 'string'%}
     { // restrict scope
@@ -46,10 +85,85 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
     {%elif arg.arg_type.name.lower() == 'enum'%}
     doc.AddMember("{{arg.name}}", static_cast<int>({{arg.name}}), doc.GetAllocator());
     {%-endif-%}
+    {%endmacro%}
+    {%for arg in sig.arg_list%}
+    {{addToDoc(arg)}}
     {%endfor%}
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false);
+    return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
+}
+{%endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+void {{stinger.name | UpperCamelCase}}Server::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value.cpp_type}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
+{
+    std::cout << "Registered method to handle {{method.topic}}\n";
+    _{{method_name | camelCase}}Handler = func;
+}
+{%endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | UpperCamelCase}}Handler(
+        const std::string& topic, 
+        const rapidjson::Document& doc, 
+        const boost::optional<std::string> optCorrelationId,
+        const boost::optional<std::string> optResponseTopic) const
+{
+    std::cout << "Handling call to {{method_name}}\n";
+    if (_{{method_name | camelCase}}Handler) {
+        {%for arg in method.arg_list%}
+        {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}};
+        { // Scoping
+            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
+            if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+                {%if arg.arg_type.name.lower() == 'value'%}
+                temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+                {%elif arg.arg_type.name.lower() == 'enum'%}
+                temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                {%endif%}
+            } else {
+                throw std::runtime_error("Received payload doesn't have required value/type");
+            }
+        }
+        {%endfor%}
+
+        {{method.return_value.cpp_type}} ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+
+        if (optResponseTopic)
+        {
+            rapidjson::Document responseJson;
+            responseJson.SetObject();
+            {%macro add_arg_to_json(arg, value) %}
+            // add the {{arg.name}} (a/n {{arg.arg_type.name}}) to the json
+            rapidjson::Value returnValue{{arg.name|UpperCamelCase}};
+            {%-if arg.arg_type.name.lower() == 'value' %}
+            {%-if arg.type.name.lower() == 'string' %}
+            returnValue{{arg.name|UpperCamelCase}}.SetString({{value}}.c_str(), {{value}}.size(), responseJson.GetAllocator());
+            {%-else%}
+            returnValue{{arg.name|UpperCamelCase}}.Set{{method.return_value.cpp_rapidjson_type | UpperCamelCase}}({{value}});
+            {%-endif%} {# value type string/primitive #}
+            {%-elif arg.arg_type.name.lower() == 'enum'%}
+            returnValue{{arg.name|UpperCamelCase}}.SetInt(static_cast<int>({{value}}));
+            {%-endif%} {# value or enum#}
+            responseJson.AddMember("{{arg.name}}", returnValue{{arg.name|UpperCamelCase}}, responseJson.GetAllocator());
+            {%endmacro%}
+
+            {%-if method.return_value.arg_type.name.lower() == 'struct'%}
+            // Return type is a struct of values that need added to json
+            {%for member in method.return_value.members-%}
+            {{add_arg_to_json(member, "ret."+member.name)}}
+            {%endfor%}
+            {%-else%}
+            {{add_arg_to_json(method.return_value, "ret")}}
+            {%-endif%}
+
+            rapidjson::StringBuffer buf;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+            responseJson.Accept(writer);
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
+        }
+    }
 }
 {%endfor%}

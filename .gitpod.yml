@@ -6,14 +6,25 @@ vscode:
     - redhat.vscode-yaml
     - webfreak.debug
 
+    - rust-lang.rust-analyzer
+
 tasks:
   - name: Install dependencies
     before: |
-      sudo apt update -y && sudo apt install -y mosquitto mosquitto-clients libboost-dev libboost-thread-dev libmosquitto-dev rapidjson-dev
+      sudo apt update -y && sudo apt upgrade -y && sudo apt install -y mosquitto mosquitto-clients libboost-dev libboost-thread-dev libmosquitto-dev rapidjson-dev cmake libssl-dev build-essential 
+      gp sync-done aptinstall
       uv sync
       npm install -g npm@8.10.0
       npm install -g @asyncapi/generator
     init:
       bin/generate_everything.sh
-    command:
+    command: |
+      gp sync-done brokerrun
       mosquitto
+    openMode: tab-after
+  - name: MQTT Subscribe
+    command: |
+      gp sync-await brokerrun
+      sleep 3
+      mosquitto_sub -t '#' -F '%t %p\n    content=>%C correlation=>%D responses=>%R\n    %P' -V 5
+    openMode: split-right

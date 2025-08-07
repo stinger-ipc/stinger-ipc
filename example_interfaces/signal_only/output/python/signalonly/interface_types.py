@@ -4,10 +4,7 @@ on the next generation.
 
 It contains enumerations used by the SignalOnly interface.
 """
-
-
-
-
+from pydantic import BaseModel
 
 
 
