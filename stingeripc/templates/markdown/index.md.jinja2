@@ -1,0 +1,73 @@
+# _{{stinger.name}}_ API Overview 
+
+{{stinger.description}}
+
+{%if stinger.signals | length > 0 %}
+## Signals
+
+Signals are messages from the server to clients.
+
+```plantuml
+@startuml
+Client <<- Server : Signal(Parameters)
+@enduml
+```
+
+{%for sig_name, signal in stinger.signals.items()%}
+### {{sig_name}}
+
+{{signal.description}}
+
+#### Signal Parameters
+
+|Name|Type|Description|
+|----|----|-----------|
+{%-for arg in signal.arg_list%}
+|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}|{{arg.description}}|{%endfor%}
+
+{%endfor%}
+{%endif%}
+
+{%if stinger.methods | length > 0 %}
+## Methods
+
+Methods are requests from a client to a server and the server provides a response back to the client:
+
+```plantuml
+@startuml
+Client ->> Server : Request(Parameters)
+Client <<-- Server: Response(Parameters)
+@enduml
+```
+
+{%for method_name, method in stinger.methods.items()%}
+### {{method_name}}
+
+{{method.description}}
+
+#### Request Parameters
+
+|Name|Type|Description|
+|----|----|-----------|
+{%-for arg in method.arg_list%}
+|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}|{{arg.description}}|{%endfor%}
+
+#### Return Parameters
+
+{%if method.return_value.arg_type.name.lower() == "struct" %}
+|Name|Type|Description|
+|----|----|-----------|
+{%-for arg in method.return_value.members%}
+|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}|{{arg.description}}|{%endfor%}{%else-%}
+The return parameter type is `{{method.return_value.json_type}}`.{%endif%}
+{%endfor%}
+{%endif%}
+## Enums
+
+{%for ie_name, ie in stinger.enums.items() %}
+### Enum {{ie.class_name }}
+<a name="Enum-{{ie.class_name}}"></a>
+{%-for value in ie.values %}
+ * {{value}}
+{%-endfor%}
+{%endfor%}

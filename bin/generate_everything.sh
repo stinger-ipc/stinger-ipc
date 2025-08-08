@@ -47,3 +47,8 @@ mkdir -p ${BASE_DIR}/../example_interfaces/signal_only/output/asyncapi/
 uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/enum_only/enum_only.stingeripc ${BASE_DIR}/../example_interfaces/enum_only/output/asyncapi/
 uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/asyncapi/
 uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/asyncapi/
+
+# Markdown
+echo "----------- Creating Markdown Documents ----------------"
+mkdir -p ${BASE_DIR}/../example_interfaces/full/output/markdown/
+uv run ${BASE_DIR}/markdown_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/markdown/

@@ -110,6 +110,10 @@ class ArgEnum(Arg):
     def cpp_rapidjson_type(self) -> str:
         return ArgValueType.to_cpp_rapidjson_type_str(ArgValueType.INTEGER)
 
+    @property
+    def markdown_type(self) -> str:
+        return f"[Enum {self._enum.class_name}](#enum-{self._enum.class_name})"
+
     def get_random_example_value(self, lang="python") -> str:
         random_state = random.getstate()
         random.seed(1)
