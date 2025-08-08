@@ -1,7 +1,5 @@
 import os
 import sys
-import yaml
-import yamlloader
 from jacobsjinjatoo import templator as jj2
 
 libpath = os.path.normpath(
