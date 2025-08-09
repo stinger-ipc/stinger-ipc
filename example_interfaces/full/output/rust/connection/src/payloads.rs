@@ -10,7 +10,7 @@ use std::fmt;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 
 #[derive(Debug, FromPrimitive)]
@@ -66,4 +66,13 @@ pub struct DoSomethingReturnValue {
     pub label: String,
     pub identifier: i32,
     pub day: DayOfTheWeek,
+}
+
+
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TodayIsSignalPayload {
+    pub dayOfMonth: i32,
+    pub dayOfWeek: u32,
+    
 }

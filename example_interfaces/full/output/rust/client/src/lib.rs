@@ -11,30 +11,33 @@ use connection::{MessagePublisher, Connection, ReceivedMessage};
 use json::{JsonValue};
 use std::collections::HashMap;
 use uuid::Uuid;
+use serde_json;
 
 #[allow(unused_imports)]
 use connection::payloads::{*, MethodResultCode};
 
 use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc::{self, Sender, Receiver};
+use tokio::sync::{mpsc, broadcast, oneshot};
 
 #[derive(Clone, Debug)]
 struct ExampleSubscriptionIds {
-    add_numbers_method: i32,
-    do_something_method: i32,
-    
+    add_numbers_method: i32,do_something_method: i32,
     today_is_signal: Option<i32>,
+}
+
+#[derive(Clone)]
+struct ExampleSignalChannels {
+    today_is_sender: broadcast::Sender<TodayIsSignalPayload>,
     
 }
 
 pub struct ExampleClient {
-    connection: Connection,
-    signal_recv_callback_for_today_is: Box<dyn FnMut(i32, connection::payloads::DayOfTheWeek)->()>,
-    pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,
-    msg_streamer_rx: Option<Receiver<ReceivedMessage>>,
-    msg_streamer_tx: Sender<ReceivedMessage>,
+    connection: Connection,pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,
+    msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
+    msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
     msg_publisher: MessagePublisher,
     subscription_ids: ExampleSubscriptionIds,
+    signal_channels: ExampleSignalChannels,
 }
 
 impl ExampleClient {
@@ -61,25 +64,24 @@ impl ExampleClient {
             today_is_signal: Some(subscription_id_today_is_signal),
             
         };
+        let signal_channels = ExampleSignalChannels {
+            today_is_sender: broadcast::channel(64).0,
+            
+        };
         let inst = ExampleClient {
             connection: connection,
-            signal_recv_callback_for_today_is: Box::new( |_1, _2| {} ),
-            
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: Some(rcvr_rx),
             msg_streamer_tx: rcvr_tx,
             msg_publisher: publisher,
             subscription_ids: sub_ids,
+            signal_channels: signal_channels,
         };
         inst
     }
 
-    pub async fn set_signal_recv_callbacks_for_today_is(&mut self, cb: impl FnMut(i32, connection::payloads::DayOfTheWeek)->() + 'static) {
-        self.signal_recv_callback_for_today_is = Box::new(cb);
-        println!("Registering callback handler for signal todayIs");
-        // Before we uncomment the following, we need a way to queue subscriptions until after we're connected.
-        //let sub_id = self.connection.subscribe("Example/signal/todayIs", self.msg_streamer_tx.clone()).await;
-        //self.subscription_ids.today_is = sub_id.ok();
+    pub fn get_today_is_receiver(&self) -> broadcast::Receiver<TodayIsSignalPayload> {
+        self.signal_channels.today_is_sender.subscribe()
     }
     
 
@@ -95,7 +97,7 @@ impl ExampleClient {
             second: second,
         };
         let _ = self.msg_publisher.publish_request_structure("Example/method/addNumbers".to_string(), &data, "", correlation_id).await;
-        let resp_obj = receiver.recv().unwrap();
+        let resp_obj = receiver.await.unwrap();
         Ok(resp_obj["sum"].as_i32().unwrap())
     }
 
@@ -131,7 +133,7 @@ impl ExampleClient {
             aString: a_string,
         };
         let _ = self.msg_publisher.publish_request_structure("Example/method/doSomething".to_string(), &data, "", correlation_id).await;
-        let resp_obj = receiver.recv().unwrap();
+        let resp_obj = receiver.await.unwrap();
         Ok(connection::payloads::DoSomethingReturnValue { 
             
             label: resp_obj["label"].as_str().unwrap().to_string(),
@@ -171,7 +173,7 @@ impl ExampleClient {
         let resp_map = self.pending_responses.clone();
         let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
         let mut streamer = self.connection.get_streamer().await;
-        let callbacks = self.connection.signal_callbacks.clone();
+        let sig_chans = self.signal_channels.clone();
         let task1 = tokio::spawn(async move {
             streamer.receive_loop().await;
         });
@@ -191,10 +193,13 @@ impl ExampleClient {
                 }
                 if msg.subscription_id == sub_ids.today_is_signal.unwrap_or_default() {
                     println!("Found subscription match for {}({:?}) as a todayIs signal", msg.message.topic(), sub_ids.today_is_signal);
-                    let cb = 
+                    let chan = sig_chans.today_is_sender.clone();
+                    let pl: connection::payloads::TodayIsSignalPayload =  serde_json::from_str(&msg.message.payload_str()).expect("Failed to deserialize");
+                    let send_result = chan.send(pl);
+                    println!("Sent todayIs signal with payload: {:?}", msg.message.payload_str());
                 }
                 
-            }
+            }   
         });
 
         task1.await;

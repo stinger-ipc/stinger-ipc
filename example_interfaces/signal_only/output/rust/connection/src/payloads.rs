@@ -19,3 +19,15 @@ pub enum MethodResultCode {
     PayloadError = 4,
 }
 
+
+
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize)]
+pub struct AnotherSignalSignalPayload {
+    pub one: f32,
+    
+    pub two: bool,
+    
+    pub three: String,
+    
+}

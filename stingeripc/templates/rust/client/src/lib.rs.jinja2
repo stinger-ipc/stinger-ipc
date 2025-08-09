@@ -11,33 +11,39 @@ use connection::{MessagePublisher, Connection, ReceivedMessage};
 use json::{JsonValue};
 use std::collections::HashMap;
 use uuid::Uuid;
+use serde_json;
 
 #[allow(unused_imports)]
 use connection::payloads::{*, MethodResultCode};
 {%endif%}
 use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc::{self, Sender, Receiver};
+use tokio::sync::{mpsc, broadcast, oneshot};
 
 #[derive(Clone, Debug)]
 struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
     {%for method_name, method in stinger.methods.items()-%}
     {{method_name | snake_case}}_method: i32,
-    {%endfor%}
+    {%-endfor%}
     {%for sig_name, sig in stinger.signals.items()-%}
     {{sig_name | snake_case}}_signal: Option<i32>,
+    {%-endfor%}
+}
+
+#[derive(Clone)]
+struct {{stinger.name | UpperCamelCase }}SignalChannels {
+    {%for sig_name, sig in stinger.signals.items()-%}
+    {{sig_name|snake_case}}_sender: broadcast::Sender<{%if sig.arg_list | length == 0 %}{{sig.arg_list[0]}}{% else %}{{sig_name | UpperCamelCase}}SignalPayload{% endif %}>,
     {%endfor%}
 }
 
 pub struct {{stinger.name | UpperCamelCase }}Client {
     connection: Connection,
-    {%for sig_name, sig in stinger.signals.items()-%}
-        signal_recv_callback_for_{{sig_name|snake_case}}: Box<dyn FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->()>,
-    {%endfor%}
     {%-if stinger.methods | length > 0 %}pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,{%endif%}
-    msg_streamer_rx: Option<Receiver<ReceivedMessage>>,
-    msg_streamer_tx: Sender<ReceivedMessage>,
+    msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
+    msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
     msg_publisher: MessagePublisher,
     subscription_ids: {{stinger.name | UpperCamelCase }}SubscriptionIds,
+    signal_channels: {{stinger.name | UpperCamelCase }}SignalChannels,
 }
 
 impl {{stinger.name | UpperCamelCase }}Client {
@@ -64,27 +70,26 @@ impl {{stinger.name | UpperCamelCase }}Client {
             {{sig_name | snake_case}}_signal: Some(subscription_id_{{sig_name | snake_case}}_signal),
             {%endfor%}
         };
+        let signal_channels = {{stinger.name | UpperCamelCase }}SignalChannels {
+            {%for sig_name, sig in stinger.signals.items()-%}
+            {{sig_name|snake_case}}_sender: broadcast::channel(64).0,
+            {%endfor%}
+        };
         let inst = {{stinger.name | UpperCamelCase }}Client {
             connection: connection,
-            {%for sig_name, sig in stinger.signals.items()-%}
-            signal_recv_callback_for_{{sig_name|snake_case}}: Box::new( |{%for arg in sig.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| {} ),
-            {%endfor%}
             {%if stinger.methods | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
             msg_streamer_rx: Some(rcvr_rx),
             msg_streamer_tx: rcvr_tx,
             msg_publisher: publisher,
             subscription_ids: sub_ids,
+            signal_channels: signal_channels,
         };
         inst
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    pub async fn set_signal_recv_callbacks_for_{{sig_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in sig.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->() + 'static) {
-        self.signal_recv_callback_for_{{sig_name|snake_case}} = Box::new(cb);
-        println!("Registering callback handler for signal {{sig_name}}");
-        // Before we uncomment the following, we need a way to queue subscriptions until after we're connected.
-        //let sub_id = self.connection.subscribe("{{sig.topic}}", self.msg_streamer_tx.clone()).await;
-        //self.subscription_ids.{{sig_name | snake_case}} = sub_id.ok();
+    pub fn get_{{sig_name|snake_case}}_receiver(&self) -> broadcast::Receiver<{{sig_name | UpperCamelCase}}SignalPayload> {
+        self.signal_channels.{{sig_name | snake_case}}_sender.subscribe()
     }
     {%endfor%}
 
@@ -102,7 +107,7 @@ impl {{stinger.name | UpperCamelCase }}Client {
             {%-endfor%}
         };
         let _ = self.msg_publisher.publish_request_structure("{{method.topic}}".to_string(), &data, "", correlation_id).await;
-        let resp_obj = receiver.recv().unwrap();
+        let resp_obj = receiver.await.unwrap();
         
         {%-if method.return_value.arg_type.name.lower() == 'value' %}
         Ok(resp_obj["{{method.return_value.name}}"].as_{{method.return_value.rust_type}}().unwrap())
@@ -151,7 +156,7 @@ impl {{stinger.name | UpperCamelCase }}Client {
         let resp_map = self.pending_responses.clone();
         let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
         let mut streamer = self.connection.get_streamer().await;
-        let callbacks = self.connection.signal_callbacks.clone();
+        let sig_chans = self.signal_channels.clone();
         let task1 = tokio::spawn(async move {
             streamer.receive_loop().await;
         });
@@ -170,10 +175,13 @@ impl {{stinger.name | UpperCamelCase }}Client {
                 {%-for signal_name, signal in stinger.signals.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{signal_name | snake_case}}_signal.unwrap_or_default() {
                     println!("Found subscription match for {}({:?}) as a {{signal_name}} signal", msg.message.topic(), sub_ids.{{signal_name | snake_case}}_signal);
-                    let cb = 
+                    let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
+                    let pl: connection::payloads::{{signal_name | UpperCamelCase}}SignalPayload =  serde_json::from_str(&msg.message.payload_str()).expect("Failed to deserialize");
+                    let send_result = chan.send(pl);
+                    println!("Sent {{signal_name}} signal with payload: {:?}", msg.message.payload_str());
                 }
                 {%endfor%}
-            }
+            }   
         });
 
         task1.await;

@@ -2,11 +2,6 @@ use futures::{executor::block_on};
 use {{stinger.name | snake_case}}_client::{{stinger.name}}Client;
 use connection::Connection;
 
-{%for sig_name, sig in stinger.signals.items()%}
-fn print_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
-    println!("Got a '{{sig_name}}' signal:{%for arg in sig.arg_list%}{} {%endfor%}", {%for arg in sig.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%});
-}
-{%endfor%}
 
 #[tokio::main]
 async fn main() {
@@ -15,7 +10,20 @@ async fn main() {
         let connection = Connection::new_{{broker.class_name|snake_case}}().await.expect("Failed to create connection");
         let mut client = {{stinger.name}}Client::new(connection).await;
         {%for sig_name, sig in stinger.signals.items()%}
-        client.set_signal_recv_callbacks_for_{{sig_name|snake_case}}(print_{{sig_name|snake_case}}).await;
+        let mut sig_rx = client.get_{{sig_name|snake_case}}_receiver();
+        tokio::spawn(async move {
+            loop {
+                match sig_rx.recv().await {
+                    Ok(payload) => {
+                        println!("Received {{sig_name}} signal with payload: {:?}", payload);
+                    },
+                    Err(e) => {
+                        eprintln!("Error receiving {{sig_name}} signal: {:?}", e);
+                        break;
+                    }
+                }
+            }
+        });
         {%endfor%}
         client.process_loop().await;
     });
