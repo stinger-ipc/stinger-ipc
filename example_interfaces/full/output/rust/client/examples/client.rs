@@ -25,6 +25,12 @@ async fn main() {
             }
         });
         
+
+        
+        let _ = client.add_numbers(42, 42).await.expect("Failed to call addNumbers");
+        
+        let _ = client.do_something("apples".to_string()).await.expect("Failed to call doSomething");
+        
         client.process_loop().await;
     });
     // Ctrl-C to stop

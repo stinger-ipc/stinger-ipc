@@ -35,6 +35,7 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 {%endfor%}
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum MethodResultCode { {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
     {{rc_name | UpperCamelCase}} = {{rc_i}},
     {%-endfor%}

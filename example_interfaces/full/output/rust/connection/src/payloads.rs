@@ -39,6 +39,7 @@ impl fmt::Display for DayOfTheWeek {
 
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum MethodResultCode {
     Success = 0,
     ClientError = 1,

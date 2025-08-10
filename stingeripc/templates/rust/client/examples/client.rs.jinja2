@@ -25,6 +25,10 @@ async fn main() {
             }
         });
         {%endfor%}
+
+        {%for method_name, method in stinger.methods.items()%}
+        let _ = client.{{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang='rust')}}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
+        {%endfor%}
         client.process_loop().await;
     });
     // Ctrl-C to stop
