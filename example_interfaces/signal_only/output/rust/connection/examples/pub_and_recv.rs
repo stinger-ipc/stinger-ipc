@@ -7,7 +7,7 @@ use tokio::sync::mpsc;
 #[tokio::main]
 async fn main() {
     
-    let mut connection = Connection::new_local_connection().await.expect("Failed to create connection");
+    let mut connection = Connection::new_default_connection().await.expect("Failed to create connection");
     let (recv_chan_tx, mut recv_chan_rx) = mpsc::channel(32);
     connection.connect().await.expect("Failed to connect to broker");
     connection.subscribe("example/recv_topic", recv_chan_tx.clone()).await.expect("Failed to subscribe to topic");

@@ -71,9 +71,16 @@ if __name__ == '__main__':
 
     
 
-    
-    sleep(4)
-    
-
     print("Ctrl-C will stop the program.")
+
+    while True:
+        try:
+            
+            sleep(4)
+            
+            sleep(6)
+        except KeyboardInterrupt:
+            break
+
+
     signal.pause()

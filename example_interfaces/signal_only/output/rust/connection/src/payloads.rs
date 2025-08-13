@@ -6,11 +6,12 @@ It contains enumerations used by the SignalOnly interface.
 */
 
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum MethodResultCode {
     Success = 0,
     ClientError = 1,
@@ -22,7 +23,7 @@ pub enum MethodResultCode {
 
 
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnotherSignalSignalPayload {
     pub one: f32,
     

@@ -238,11 +238,18 @@ if __name__ == '__main__':
         return stinger_types.DoSomethingReturnValue(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.MONDAY)
     
 
-    server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)
-    
-    sleep(4)
-    server.emit_todayIs(dayOfMonth=42, dayOfWeek=stinger_types.DayOfTheWeek.MONDAY)
-    
-
     print("Ctrl-C will stop the program.")
+
+    while True:
+        try:
+            server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)
+            
+            sleep(4)
+            server.emit_todayIs(dayOfMonth=42, dayOfWeek=stinger_types.DayOfTheWeek.MONDAY)
+            
+            sleep(6)
+        except KeyboardInterrupt:
+            break
+
+
     signal.pause()

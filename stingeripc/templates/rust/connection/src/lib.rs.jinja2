@@ -30,11 +30,9 @@ impl MessageStreamer {
         println!("Starting message receive loop...");
         while let Some(msg_opt) = self.strm.next().await {
             if let Some(msg) = msg_opt {
-                println!("Received message on topic: {}", msg.topic());
                 let mut sub_id_itr = msg.properties().iter(mqtt::PropertyCode::SubscriptionIdentifier);
                 while let Some(sub_id_prop) = sub_id_itr.next() {
                     let opt_sub_id = sub_id_prop.get_int();
-                    println!("Got message with subscription ID: {:?}", opt_sub_id);
                     if let Some(sub_id) = opt_sub_id {
                         if let Some(tx) = self.subscriptions.lock().unwrap().get(&sub_id) {
                             let tx2 = tx.clone();
@@ -90,11 +88,12 @@ impl MessagePublisher {
     }
 
     pub async fn publish_request_structure<T: Serialize>(&mut self, topic: String, data: &T, response_topic: &str, correlation_id: Uuid) -> Result<(), SendError<Message>> {
-        println!("Publishing request structure to {}", topic);
+        println!("Publishing request structure to {} with responses going to {}", topic, response_topic);
         let uuid_vec: Vec<u8> = correlation_id.as_bytes().to_vec();
         let mut pub_props = mqtt::Properties::new();
         let _ = pub_props.push_binary(mqtt::PropertyCode::CorrelationData, uuid_vec);
         let _ = pub_props.push_string(mqtt::PropertyCode::ResponseTopic, response_topic);
+        let _ = pub_props.push_string(mqtt::PropertyCode::ContentType, "application/json");
         let payload = serde_json::to_string(data).unwrap().into_bytes();
         let msg = mqtt::MessageBuilder::new()
             .topic(topic)
@@ -195,7 +194,8 @@ impl Connection {
     
     pub async fn publish(&self, msg: mqtt::Message) -> Result<(), paho_mqtt::Error> {
         println!("Publishing message to {}", msg.topic());
-        self.client.publish(msg).await
+        let pub_result = self.client.publish(msg).await;
+        pub_result
     }
 
     async fn add_subscription_receiver(
@@ -220,12 +220,22 @@ impl Connection {
         Ok(subscription_id)
     }
 
-    pub async fn start_publish_loop(&mut self) {
-        println!("Starting message publish loop...");
+    pub async fn start_loop(&mut self) {
+        println!("Starting MQTT loop...");
+
+        let mut streamer = self.get_streamer().await;
+        let _stream_task = tokio::spawn(async move {
+            let _ = streamer.receive_loop().await;
+        });
+
         loop {
             let opt_msg = self.pub_chan_rx.recv().await;
             if let Some(msg) = opt_msg {
-                let _ = self.publish(msg).await;
+                let pub_result = self.publish(msg).await;
+                match pub_result {
+                    Ok(r) => println!("Message was published"),
+                    Err(e) => eprintln!("Error publishing: {:?}", e),
+                }
             }
         }
     }

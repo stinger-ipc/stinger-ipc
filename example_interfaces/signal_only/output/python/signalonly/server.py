@@ -88,11 +88,18 @@ if __name__ == '__main__':
 
     
 
-    server.emit_anotherSignal(3.14, True, "apples")
-    
-    sleep(4)
-    server.emit_anotherSignal(one=3.14, two=True, three="apples")
-    
-
     print("Ctrl-C will stop the program.")
+
+    while True:
+        try:
+            server.emit_anotherSignal(3.14, True, "apples")
+            
+            sleep(4)
+            server.emit_anotherSignal(one=3.14, two=True, three="apples")
+            
+            sleep(6)
+        except KeyboardInterrupt:
+            break
+
+
     signal.pause()

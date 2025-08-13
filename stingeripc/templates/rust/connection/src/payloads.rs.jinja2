@@ -13,7 +13,7 @@ use num_traits::FromPrimitive;
 use serde::{Serialize, Deserialize};
 
 {%for ie_name, ie in stinger.enums.items() %}
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, Clone, Serialize, Deserialize)]
 pub enum {{ie_name | UpperCamelCase }} {
     {%-for value in ie.values %}
     {{value | UpperCamelCase}} = {{loop.index}}{%if not loop.last%},{%endif%}
@@ -55,6 +55,7 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
 }
 {%if method.return_value.arg_type.name.lower() == 'struct'%}
 #[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct {{method.return_value.rust_local_type}} {
 {%-for arg in method.return_value.members%}
     pub {{arg.name}}: {{arg.rust_local_type}},

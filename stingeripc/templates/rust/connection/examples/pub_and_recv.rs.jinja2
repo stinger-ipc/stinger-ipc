@@ -12,14 +12,9 @@ async fn main() {
     connection.connect().await.expect("Failed to connect to broker");
     connection.subscribe("example/recv_topic", recv_chan_tx.clone()).await.expect("Failed to subscribe to topic");
     let mut publisher = connection.get_publisher();
-    let mut streamer = connection.get_streamer().await;
-
-    let _stream_task = tokio::spawn(async move {
-        let _ = streamer.receive_loop().await;
-    });
 
     let loop_task = tokio::spawn(async move {
-        connection.start_publish_loop().await;
+        connection.start_loop().await;
     });
 
     let _pub_task = tokio::spawn(async move {

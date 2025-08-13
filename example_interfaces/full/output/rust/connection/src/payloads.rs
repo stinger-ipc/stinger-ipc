@@ -13,7 +13,7 @@ use num_traits::FromPrimitive;
 use serde::{Serialize, Deserialize};
 
 
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, Clone, Serialize, Deserialize)]
 pub enum DayOfTheWeek {
     Sunday = 1,
     Monday = 2,
@@ -63,6 +63,7 @@ pub struct DoSomethingRequestObject {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DoSomethingReturnValue {
     pub label: String,
     pub identifier: i32,
