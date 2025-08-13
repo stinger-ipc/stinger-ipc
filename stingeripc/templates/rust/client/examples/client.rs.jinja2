@@ -1,7 +1,7 @@
 use futures::{executor::block_on};
 use {{stinger.name | snake_case}}_client::{{stinger.name}}Client;
 use connection::Connection;
-
+use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() {
@@ -11,6 +11,10 @@ async fn main() {
         let mut client = {{stinger.name}}Client::new(connection).await;
         {%for sig_name, sig in stinger.signals.items()%}
         let mut sig_rx = client.get_{{sig_name|snake_case}}_receiver();
+
+        client.process_loop().await;
+        sleep(Duration::from_secs(5)).await;
+
         tokio::spawn(async move {
             loop {
                 match sig_rx.recv().await {
@@ -27,9 +31,9 @@ async fn main() {
         {%endfor%}
 
         {%for method_name, method in stinger.methods.items()%}
+        println!("Calling {{method_name}} with example values...");
         let _ = client.{{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang='rust')}}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
         {%endfor%}
-        client.process_loop().await;
     });
     // Ctrl-C to stop
 }

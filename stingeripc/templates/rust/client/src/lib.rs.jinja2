@@ -37,10 +37,10 @@ struct {{stinger.name | UpperCamelCase }}SignalChannels {
 }
 
 pub struct {{stinger.name | UpperCamelCase }}Client {
-    connection: Connection,
     {%-if stinger.methods | length > 0 %}pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,{%endif%}
     msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
+    mqtt_rx: connection::MessageStreamer,
     msg_publisher: MessagePublisher,
     subscription_ids: {{stinger.name | UpperCamelCase }}SubscriptionIds,
     signal_channels: {{stinger.name | UpperCamelCase }}SignalChannels,
@@ -76,10 +76,10 @@ impl {{stinger.name | UpperCamelCase }}Client {
             {%endfor%}
         };
         let inst = {{stinger.name | UpperCamelCase }}Client {
-            connection: connection,
             {%if stinger.methods | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
             msg_streamer_rx: Some(rcvr_rx),
             msg_streamer_tx: rcvr_tx,
+            mqtt_rx: connection.get_streamer().await,
             msg_publisher: publisher,
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
@@ -155,9 +155,12 @@ impl {{stinger.name | UpperCamelCase }}Client {
     pub async fn process_loop(&mut self) {
         let resp_map = self.pending_responses.clone();
         let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
-        let mut streamer = self.connection.get_streamer().await;
+        let mut streamer = self.mqtt_rx.clone();
         let sig_chans = self.signal_channels.clone();
         let task1 = tokio::spawn(async move {
+            streamer.receive_loop().await;
+        });
+        let task3 = tokio::spawn(async move {
             streamer.receive_loop().await;
         });
 
@@ -183,8 +186,5 @@ impl {{stinger.name | UpperCamelCase }}Client {
                 {%endfor%}
             }   
         });
-
-        task1.await;
-        task2.await;
     }
 }

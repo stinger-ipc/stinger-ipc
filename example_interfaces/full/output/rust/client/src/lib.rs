@@ -31,10 +31,10 @@ struct ExampleSignalChannels {
     
 }
 
-pub struct ExampleClient {
-    connection: Connection,pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,
+pub struct ExampleClient {pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,
     msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
+    mqtt_rx: connection::MessageStreamer,
     msg_publisher: MessagePublisher,
     subscription_ids: ExampleSubscriptionIds,
     signal_channels: ExampleSignalChannels,
@@ -69,10 +69,10 @@ impl ExampleClient {
             
         };
         let inst = ExampleClient {
-            connection: connection,
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: Some(rcvr_rx),
             msg_streamer_tx: rcvr_tx,
+            mqtt_rx: connection.get_streamer().await,
             msg_publisher: publisher,
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
@@ -172,9 +172,12 @@ impl ExampleClient {
     pub async fn process_loop(&mut self) {
         let resp_map = self.pending_responses.clone();
         let mut receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
-        let mut streamer = self.connection.get_streamer().await;
+        let mut streamer = self.mqtt_rx.clone();
         let sig_chans = self.signal_channels.clone();
         let task1 = tokio::spawn(async move {
+            streamer.receive_loop().await;
+        });
+        let task3 = tokio::spawn(async move {
             streamer.receive_loop().await;
         });
 
@@ -201,8 +204,5 @@ impl ExampleClient {
                 
             }   
         });
-
-        task1.await;
-        task2.await;
     }
 }

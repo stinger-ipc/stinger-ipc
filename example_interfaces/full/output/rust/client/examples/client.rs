@@ -1,7 +1,7 @@
 use futures::{executor::block_on};
 use example_client::ExampleClient;
 use connection::Connection;
-
+use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() {
@@ -11,6 +11,10 @@ async fn main() {
         let mut client = ExampleClient::new(connection).await;
         
         let mut sig_rx = client.get_today_is_receiver();
+
+        client.process_loop().await;
+        sleep(Duration::from_secs(5)).await;
+
         tokio::spawn(async move {
             loop {
                 match sig_rx.recv().await {
@@ -27,11 +31,12 @@ async fn main() {
         
 
         
+        println!("Calling addNumbers with example values...");
         let _ = client.add_numbers(42, 42).await.expect("Failed to call addNumbers");
         
+        println!("Calling doSomething with example values...");
         let _ = client.do_something("apples".to_string()).await.expect("Failed to call doSomething");
         
-        client.process_loop().await;
     });
     // Ctrl-C to stop
 }
