@@ -117,7 +117,7 @@ impl SignalOnlyClient {
     /// Starts the tasks that process messages received.
     pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
         
-        // Take ownership of the RX channel that receives MQTT messages.  This will be moved into.
+        // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
 
         let sig_chans = self.signal_channels.clone();
