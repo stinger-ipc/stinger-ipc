@@ -50,14 +50,14 @@ pub enum MethodResultCode {
 
 
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AddNumbersRequestObject {
     pub first: i32,
     pub second: i32,
 }
 
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DoSomethingRequestObject {
     pub aString: String,
 }
@@ -75,6 +75,6 @@ pub struct DoSomethingReturnValue {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TodayIsSignalPayload {
     pub dayOfMonth: i32,
-    pub dayOfWeek: u32,
+    pub dayOfWeek: DayOfTheWeek,
     
 }

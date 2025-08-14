@@ -11,18 +11,6 @@ uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/signal_
 uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/python/
 uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/enum_only/enum_only.stingeripc ${BASE_DIR}/../example_interfaces/enum_only/output/python/
 
-# Rust
-echo "----------- Generating Rust ----------------"
-#rm -rf ${BASE_DIR}/../example_interfaces/full/output/rust/ ${BASE_DIR}/../example_interfaces/signal_only/output/rust/
-uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/rust/
-uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/rust/
-if [ $? -eq 0 ]; then
-    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example client)
-    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example server)
-    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example client)
-    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example server)
-fi
-
 # C++
 echo "----------- Generating C++ ----------------"
 uv run ${BASE_DIR}/cpp_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/cpp/
@@ -37,6 +25,18 @@ if [ $? -eq 0 ]; then
         mkdir ${BASE_DIR}/../example_interfaces/signal_only/output/cpp/build
     fi
     (cd ${BASE_DIR}/../example_interfaces/signal_only/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
+fi
+
+# Rust
+echo "----------- Generating Rust ----------------"
+#rm -rf ${BASE_DIR}/../example_interfaces/full/output/rust/ ${BASE_DIR}/../example_interfaces/signal_only/output/rust/
+uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/rust/
+uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/rust/
+if [ $? -eq 0 ]; then
+    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example client)
+    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example example_server_example)
+    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example client)
+    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example server)
 fi
 
 # AsyncAPI

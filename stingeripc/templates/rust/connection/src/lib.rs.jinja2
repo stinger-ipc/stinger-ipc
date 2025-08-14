@@ -234,7 +234,7 @@ impl Connection {
             if let Some(msg) = opt_msg {
                 let pub_result = self.publish(msg).await;
                 match pub_result {
-                    Ok(r) => println!("Message was published"),
+                    Ok(_r) => println!("Message was published"),
                     Err(e) => eprintln!("Error publishing: {:?}", e),
                 }
             }

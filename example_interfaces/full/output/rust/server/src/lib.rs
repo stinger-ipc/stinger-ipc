@@ -25,12 +25,16 @@ struct ExampleServerSubscriptionIds {
     add_numbers_method_req: i32,do_something_method_req: i32,
 }
 
-pub struct ExampleServer {
+#[derive(Clone)]
+struct ExampleServerMethodHandlers {
     /// Pointer to a function to handle the addNumbers method request.
     method_handler_for_add_numbers: Box<dyn FnMut(i32, i32)->Result<i32, MethodResultCode>>,
     /// Pointer to a function to handle the doSomething method request.
     method_handler_for_do_something: Box<dyn FnMut(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode>>,
     
+}
+
+pub struct ExampleServer {
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
     msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
@@ -41,6 +45,12 @@ pub struct ExampleServer {
 
     /// Through this MessagePublisher object, we can publish messages to MQTT.
     msg_publisher: MessagePublisher,
+
+    /// Struct contains all the handlers for the various methods.
+    method_handlers: ExampleServerMethodHandlers,
+
+    /// Subscription IDs for all the subscriptions this makes.
+    subscription_ids: ExampleServerSubscriptionIds,
 
     /// Copy of MQTT Client ID
     client_id: String,
@@ -59,27 +69,32 @@ impl ExampleServer {
 
         let publisher = connection.get_publisher();
 
-        // Subscribe to all the topics needed for method requests.
+        // Create method handler struct
         let subscription_id_add_numbers_method_req = connection.subscribe("Example/method/addNumbers", message_received_tx.clone()).await;
         let subscription_id_add_numbers_method_req = subscription_id_add_numbers_method_req.unwrap_or_else(|_| -1);
         let subscription_id_do_something_method_req = connection.subscribe("Example/method/doSomething", message_received_tx.clone()).await;
         let subscription_id_do_something_method_req = subscription_id_do_something_method_req.unwrap_or_else(|_| -1);
         
 
+        // Create structure for method handlers.
+        let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Box::new( |_1, _2| { Err(MethodResultCode::ServerError) } ),
+            method_handler_for_do_something: Box::new( |_1| { Err(MethodResultCode::ServerError) } ),
+            
+        };
+
         // Create structure for subscription ids.
-        let sub_ids = ExampleSubscriptionIds {
+        let sub_ids = ExampleServerSubscriptionIds {
             add_numbers_method_req: subscription_id_add_numbers_method_req,
             do_something_method_req: subscription_id_do_something_method_req,
             
         };
 
         ExampleServer {
-            method_handler_for_add_numbers: Box::new( |_1, _2| { Err(MethodResultCode::ServerError) } ),
-            method_handler_for_do_something: Box::new( |_1| { Err(MethodResultCode::ServerError) } ),
-            
+
             msg_streamer_rx: Some(message_received_rx),
             msg_streamer_tx: message_received_tx,
             msg_publisher: publisher,
+            method_handlers: method_handlers,
             subscription_ids: sub_ids,
             client_id: connection.client_id.to_string(),
         }
@@ -93,7 +108,7 @@ impl ExampleServer {
             dayOfWeek: day_of_week,
             
         };
-        self.publisher.publish_simple("Example/signal/todayIs".to_string(), data).await;
+        self.msg_publisher.publish_structure("Example/signal/todayIs".to_string(), &data).await;
     }
     
 
@@ -105,34 +120,34 @@ impl ExampleServer {
     }
     
 
-    async fn handle_add_numbers_request(&mut self, msg: mqtt::Message) {
+    async fn handle_add_numbers_request(publisher: &mut MessagePublisher, handlers: &mut ExampleServerMethodHandlers, msg: mqtt::Message) {
         let props = msg.properties();
-        let opt_corr_id_bin: Option<Vec<u8>> = Some(msg_props.get_binary(mqtt::PropertyCode::CorrelationData));
-        let opt_resp_topic = msg_props.get_string(mqtt::PropertyCode::ResponseTopic);
-
-        let payload = serde_json::from_str::<AddNumbersRequestObject>(msg.payload_str().unwrap()).unwrap();
+        let opt_corr_id_bin: Option<Vec<u8>> = props.get_binary(mqtt::PropertyCode::CorrelationData);
+        let opt_resp_topic = props.get_string(mqtt::PropertyCode::ResponseTopic);
+        let payload_str = msg.payload_str();
+        let payload = serde_json::from_str::<AddNumbersRequestObject>(&payload_str).unwrap();
 
         // call the method handler
-        let rv: i32 = (self.method_handler_for_add_numbers)(payload.first, payload.second);
+        let rv: i32 = (handlers.method_handler_for_add_numbers)(payload.first, payload.second).unwrap();
         
         if let Some(resp_topic) = opt_resp_topic {
-            self.publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
+            publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
         } else {
             eprintln!("No response topic found in message properties.");
         }
     }
-    async fn handle_do_something_request(&mut self, msg: mqtt::Message) {
+    async fn handle_do_something_request(publisher: &mut MessagePublisher, handlers: &mut ExampleServerMethodHandlers, msg: mqtt::Message) {
         let props = msg.properties();
-        let opt_corr_id_bin: Option<Vec<u8>> = Some(msg_props.get_binary(mqtt::PropertyCode::CorrelationData));
-        let opt_resp_topic = msg_props.get_string(mqtt::PropertyCode::ResponseTopic);
-
-        let payload = serde_json::from_str::<DoSomethingRequestObject>(msg.payload_str().unwrap()).unwrap();
+        let opt_corr_id_bin: Option<Vec<u8>> = props.get_binary(mqtt::PropertyCode::CorrelationData);
+        let opt_resp_topic = props.get_string(mqtt::PropertyCode::ResponseTopic);
+        let payload_str = msg.payload_str();
+        let payload = serde_json::from_str::<DoSomethingRequestObject>(&payload_str).unwrap();
 
         // call the method handler
-        let rv: connection::payloads::DoSomethingReturnValue = (self.method_handler_for_do_something)(payload.a_string);
+        let rv: connection::payloads::DoSomethingReturnValue = (handlers.method_handler_for_do_something)(payload.aString).unwrap();
         
         if let Some(resp_topic) = opt_resp_topic {
-            self.publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
+            publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
         } else {
             eprintln!("No response topic found in message properties.");
         }
@@ -144,16 +159,17 @@ impl ExampleServer {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
-
+        let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
+        let mut publisher = self.msg_publisher.clone();
 
         let loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
-                if msg.subscription_id == sub_ids.add_numbers_method_resp {
-                    ExampleClient.handle_add_numbers_request(msg.message).await;
+                if msg.subscription_id == sub_ids.add_numbers_method_req {
+                    ExampleServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
-                else if msg.subscription_id == sub_ids.do_something_method_resp {
-                    ExampleClient.handle_do_something_request(msg.message).await;
+                else if msg.subscription_id == sub_ids.do_something_method_req {
+                    ExampleServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
             }   
         });
