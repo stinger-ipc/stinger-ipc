@@ -9,9 +9,21 @@ extern crate paho_mqtt as mqtt;
 use connection::{MessagePublisher, Connection, ReceivedMessage};
 
 use futures::StreamExt;
-use connection::Connection;
-use connection::payloads::MethodResultCode;
 
+#[allow(unused_imports)]
+use connection::payloads::{*, MethodResultCode};
+
+use std::sync::{Arc, Mutex};
+use tokio::sync::{mpsc, broadcast, oneshot};
+use tokio::join;
+use tokio::task::JoinError;
+
+/// This struct is used to store all the MQTTv5 subscription ids
+/// for the subscriptions the client will make.
+#[derive(Clone, Debug)]
+struct ExampleServerSubscriptionIds {
+    add_numbers_method_req: i32,do_something_method_req: i32,
+}
 
 pub struct ExampleServer {
     /// Pointer to a function to handle the addNumbers method request.
