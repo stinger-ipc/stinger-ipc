@@ -25,12 +25,12 @@ struct ExampleServerSubscriptionIds {
     add_numbers_method_req: i32,do_something_method_req: i32,
 }
 
-#[derive(Clone)]
+
 struct ExampleServerMethodHandlers {
     /// Pointer to a function to handle the addNumbers method request.
-    method_handler_for_add_numbers: Box<dyn FnMut(i32, i32)->Result<i32, MethodResultCode>>,
+    method_handler_for_add_numbers: Box<dyn Fn(i32, i32)->Result<i32, MethodResultCode> + 'static + Send>,
     /// Pointer to a function to handle the doSomething method request.
-    method_handler_for_do_something: Box<dyn FnMut(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode>>,
+    method_handler_for_do_something: Box<dyn Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + Send>,
     
 }
 
@@ -112,11 +112,11 @@ impl ExampleServer {
     }
     
 
-    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl FnMut(i32, i32)->Result<i32, MethodResultCode> + 'static) {
-        self.method_handler_for_add_numbers = Box::new(cb);
+    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl Fn(i32, i32)->Result<i32, MethodResultCode> + 'static + Send) {
+        self.method_handlers.method_handler_for_add_numbers = Box::new(cb);
     }
-    pub fn set_method_handler_for_do_something(&mut self, cb: impl FnMut(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + 'static) {
-        self.method_handler_for_do_something = Box::new(cb);
+    pub fn set_method_handler_for_do_something(&mut self, cb: impl Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + 'static + Send) {
+        self.method_handlers.method_handler_for_do_something = Box::new(cb);
     }
     
 
@@ -159,17 +159,17 @@ impl ExampleServer {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
-        let mut method_handlers = self.method_handlers.clone();
+        //let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let mut publisher = self.msg_publisher.clone();
 
         let loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 if msg.subscription_id == sub_ids.add_numbers_method_req {
-                    ExampleServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    //ExampleServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.do_something_method_req {
-                    ExampleServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    //ExampleServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
             }   
         });

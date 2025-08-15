@@ -27,11 +27,11 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
     {%-endfor%}
 }
 
-#[derive(Clone)]
+
 struct {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    method_handler_for_{{method_name|snake_case}}: Box<dyn FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode>>,
+    method_handler_for_{{method_name|snake_case}}: Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + Send>,
     {%endfor%}
 }
 
@@ -113,8 +113,8 @@ impl {{stinger.name | UpperCamelCase}}Server {
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()-%}
-    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + 'static) {
-        self.method_handler_for_{{method_name|snake_case}} = Box::new(cb);
+    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + 'static + Send) {
+        self.method_handlers.method_handler_for_{{method_name|snake_case}} = Box::new(cb);
     }
     {%endfor%}
 
@@ -142,7 +142,7 @@ impl {{stinger.name | UpperCamelCase}}Server {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
-        let mut method_handlers = self.method_handlers.clone();
+        //let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let mut publisher = self.msg_publisher.clone();
 
@@ -150,7 +150,7 @@ impl {{stinger.name | UpperCamelCase}}Server {
             while let Some(msg) = message_receiver.recv().await {
                 {%-for method_name, method in stinger.methods.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method_req {
-                    {{stinger.name | UpperCamelCase}}Server::handle_{{method_name|snake_case}}_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    //{{stinger.name | UpperCamelCase}}Server::handle_{{method_name|snake_case}}_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 {%-endfor%}
             }   
