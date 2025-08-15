@@ -79,9 +79,12 @@ impl MessagePublisher {
 
     pub async fn publish_structure<T: Serialize>(&mut self, topic: String, data: &T) -> Result<(), SendError<Message>> {
         let payload = serde_json::to_string(data).unwrap().into_bytes();
+        let mut pub_props = mqtt::Properties::new();
+        let _ = pub_props.push_string(mqtt::PropertyCode::ContentType, "application/json");
         let msg = mqtt::MessageBuilder::new()
             .topic(topic)
             .payload(payload)
+            .properties(pub_props)
             .qos(QOS_1)
             .finalize();
         self.publish(msg).await
@@ -104,11 +107,13 @@ impl MessagePublisher {
         self.publish(msg).await
     }
 
-    pub async fn publish_response_structure<T: Serialize>(&mut self, topic: String, data: &T, correlation_id: Uuid) -> Result<(), SendError<Message>> {
-        let uuid_vec: Vec<u8> = correlation_id.as_bytes().to_vec();
+    pub async fn publish_response_structure<T: Serialize>(&mut self, topic: String, data: &T, correlation_id: Option<Vec<u8>>) -> Result<(), SendError<Message>> {
         let mut pub_props = mqtt::Properties::new();
-        let _ = pub_props.push_binary(mqtt::PropertyCode::CorrelationData, uuid_vec);
+        if let Some(corr_id) = correlation_id {
+            let _ = pub_props.push_binary(mqtt::PropertyCode::CorrelationData, corr_id);
+        }
         let payload = serde_json::to_string(data).unwrap().into_bytes();
+        let _ = pub_props.push_string(mqtt::PropertyCode::ContentType, "application/json");
         let msg = mqtt::MessageBuilder::new()
             .topic(topic)
             .payload(payload)
@@ -233,7 +238,7 @@ impl Connection {
             if let Some(msg) = opt_msg {
                 let pub_result = self.publish(msg).await;
                 match pub_result {
-                    Ok(r) => println!("Message was published"),
+                    Ok(_r) => println!("Message was published"),
                     Err(e) => eprintln!("Error publishing: {:?}", e),
                 }
             }

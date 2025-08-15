@@ -230,10 +230,10 @@ impl ExampleClient {
 
     /// Starts the tasks that process messages received.
     pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
-        // Clone the Arc pointer to the map.  This will be moved into 
+        // Clone the Arc pointer to the map.  This will be moved into the loop_task.
         let resp_map: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>> = self.pending_responses.clone();
         
-        // Take ownership of the RX channel that receives MQTT messages.  This will be moved into.
+        // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
 
         let sig_chans = self.signal_channels.clone();

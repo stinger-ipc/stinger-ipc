@@ -5,138 +5,182 @@ on the next generation.
 This is the Server for the Example interface.
 */
 
-use futures::StreamExt;
-use connection::Connection;
-use connection::payloads::MethodResultCode;
-use json::object;
-use paho_mqtt::topic_matcher::TopicMatcher;
+extern crate paho_mqtt as mqtt;
+use connection::{MessagePublisher, Connection, ReceivedMessage};
+
+#[allow(unused_imports)]
+use connection::payloads::{*, MethodResultCode};
+
+use std::sync::{Arc, Mutex};
+use tokio::sync::{mpsc};
+use tokio::join;
+use tokio::task::JoinError;
+
+/// This struct is used to store all the MQTTv5 subscription ids
+/// for the subscriptions the client will make.
+#[derive(Clone, Debug)]
+struct ExampleServerSubscriptionIds {
+    add_numbers_method_req: i32,do_something_method_req: i32,
+}
+
+#[derive(Clone)]
+struct ExampleServerMethodHandlers {
+    /// Pointer to a function to handle the addNumbers method request.
+    method_handler_for_add_numbers: Arc<Mutex<Box<dyn Fn(i32, i32)->Result<i32, MethodResultCode> + Send>>>,
+    /// Pointer to a function to handle the doSomething method request.
+    method_handler_for_do_something: Arc<Mutex<Box<dyn Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + Send>>>,
+    
+}
 
 pub struct ExampleServer {
-    connection: Connection,
-    method_handler_for_add_numbers: Box<dyn FnMut(i32, i32)->Result<i32, MethodResultCode>>,
-    method_handler_for_do_something: Box<dyn FnMut(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode>>,
-    
-    topic_matcher: TopicMatcher::<u32>,
+    /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
+    /// to a process loop when it is needed.  MQTT messages will be received with this.
+    msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
+
+    /// The Sender side of MQTT messages that are received from the broker.  This tx
+    /// side is cloned for each subscription made.
+    msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
+
+    /// Through this MessagePublisher object, we can publish messages to MQTT.
+    msg_publisher: MessagePublisher,
+
+    /// Struct contains all the handlers for the various methods.
+    method_handlers: ExampleServerMethodHandlers,
+
+    /// Subscription IDs for all the subscriptions this makes.
+    subscription_ids: ExampleServerSubscriptionIds,
+
+    /// Copy of MQTT Client ID
+    client_id: String,
 }
 
 impl ExampleServer {
-    pub async fn new(mut connection: Connection) -> ExampleServer {
+    pub async fn new(connection: &mut Connection) -> Self {
+        let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
-        let interface_info = String::from(r#"{"name": "Example", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}"#);
-        connection.publish("Example/interface".to_string(), interface_info, 1).await;
+        //let interface_info = String::from(r#"{"name": "Example", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}"#);
+        //connection.publish("Example/interface".to_string(), interface_info, 1).await;
 
-        let mut topic_matcher = TopicMatcher::<u32>::new();
-        topic_matcher.insert("Example/method/addNumbers", 1);
-        topic_matcher.insert("Example/method/doSomething", 2);
+        // Create a channel for messages to get from the Connection object to this ExampleClient object.
+        // The Connection object uses a clone of the tx side of the channel.
+        let (message_received_tx, message_received_rx) = mpsc::channel(64);
+
+        let publisher = connection.get_publisher();
+
+        // Create method handler struct
+        let subscription_id_add_numbers_method_req = connection.subscribe("Example/method/addNumbers", message_received_tx.clone()).await;
+        let subscription_id_add_numbers_method_req = subscription_id_add_numbers_method_req.unwrap_or_else(|_| -1);
+        let subscription_id_do_something_method_req = connection.subscribe("Example/method/doSomething", message_received_tx.clone()).await;
+        let subscription_id_do_something_method_req = subscription_id_do_something_method_req.unwrap_or_else(|_| -1);
         
 
-        ExampleServer {
-            connection: connection,
-            method_handler_for_add_numbers: Box::new( |_1, _2| { Err(MethodResultCode::ServerError) } ),
-            method_handler_for_do_something: Box::new( |_1| { Err(MethodResultCode::ServerError) } ),
+        // Create structure for method handlers.
+        let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2| { Err(MethodResultCode::ServerError) } ))),
+            method_handler_for_do_something: Arc::new(Mutex::new(Box::new( |_1| { Err(MethodResultCode::ServerError) } ))),
             
-            topic_matcher: topic_matcher,
+        };
+
+        // Create structure for subscription ids.
+        let sub_ids = ExampleServerSubscriptionIds {
+            add_numbers_method_req: subscription_id_add_numbers_method_req,
+            do_something_method_req: subscription_id_do_something_method_req,
+            
+        };
+
+        ExampleServer {
+
+            msg_streamer_rx: Some(message_received_rx),
+            msg_streamer_tx: message_received_tx,
+            msg_publisher: publisher,
+            method_handlers: method_handlers,
+            subscription_ids: sub_ids,
+            client_id: connection.client_id.to_string(),
         }
     }
 
     pub async fn emit_today_is(&mut self, day_of_month: i32, day_of_week: connection::payloads::DayOfTheWeek) {
-        let data = object!{ 
+        let data = connection::payloads::TodayIsSignalPayload {
+            
             dayOfMonth: day_of_month,
             
-            dayOfWeek: day_of_week as u32,
+            dayOfWeek: day_of_week,
             
         };
-        let data_str = json::stringify(data);
-        self.connection.publish("Example/signal/todayIs".to_string(), data_str, 2).await;
+        self.msg_publisher.publish_structure("Example/signal/todayIs".to_string(), &data).await;
     }
     
 
-    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl FnMut(i32, i32)->Result<i32, MethodResultCode> + 'static) {
-        self.method_handler_for_add_numbers = Box::new(cb);
-        self.connection.subscribe(String::from("Example/method/addNumbers"), 2);
+    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl Fn(i32, i32)->Result<i32, MethodResultCode> + 'static + Send) {
+        self.method_handlers.method_handler_for_add_numbers = Arc::new(Mutex::new(Box::new(cb)));
     }
-    pub fn set_method_handler_for_do_something(&mut self, cb: impl FnMut(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + 'static) {
-        self.method_handler_for_do_something = Box::new(cb);
-        self.connection.subscribe(String::from("Example/method/doSomething"), 2);
+    pub fn set_method_handler_for_do_something(&mut self, cb: impl Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + 'static + Send) {
+        self.method_handlers.method_handler_for_do_something = Arc::new(Mutex::new(Box::new(cb)));
     }
     
 
-    async fn handle_add_numbers_request(&mut self, _topic: String, payload: String) {
-        let payload_object = json::parse(&payload).unwrap();
+    async fn handle_add_numbers_request(publisher: &mut MessagePublisher, handlers: &mut ExampleServerMethodHandlers, msg: mqtt::Message) {
+        let props = msg.properties();
+        let opt_corr_id_bin: Option<Vec<u8>> = props.get_binary(mqtt::PropertyCode::CorrelationData);
+        let opt_resp_topic = props.get_string(mqtt::PropertyCode::ResponseTopic);
+        let payload_str = msg.payload_str();
+        let payload = serde_json::from_str::<AddNumbersRequestObject>(&payload_str).unwrap();
+
+        // call the method handler
+        let rv: i32 = {
+            let func_guard = handlers.method_handler_for_add_numbers.lock().unwrap();
+            (*func_guard)(payload.first, payload.second).unwrap()
+        };let rv = AddNumbersReturnValue {
+            sum: rv,
+        };
         
-        let temp_first = payload_object["first"].as_i32().unwrap();
-        
-        
-        let temp_second = payload_object["second"].as_i32().unwrap();
-        
-        
-        let rv = (self.method_handler_for_add_numbers)(temp_first, temp_second);
-        if !payload_object["clientId"].is_null() {
-            let mut response_json = json::JsonValue::new_object();
-            if !payload_object["correlationId"].is_null() {
-                response_json["correlationId"] = payload_object["correlationId"].as_str().unwrap().into();
-            }
-            match rv {
-                Ok(return_value) => {
-                    response_json["result"] = 0.into();
-                    
-                    response_json["sum"] = return_value.into();
-                }
-                Err(result_code) => {
-                    response_json["result"] = (result_code as u32).into();
-                }
-            }
-            let response_topic = format!("client/{}/Example/method/addNumbers/response", payload_object["clientId"].as_str().unwrap());
-            self.connection.publish(response_topic, json::stringify(response_json), 2).await;
+        if let Some(resp_topic) = opt_resp_topic {
+            publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
+        } else {
+            eprintln!("No response topic found in message properties.");
         }
     }
-    async fn handle_do_something_request(&mut self, _topic: String, payload: String) {
-        let payload_object = json::parse(&payload).unwrap();
-        
-        let temp_a_string = payload_object["aString"].as_str().unwrap().to_string();
-        
-        
-        let rv = (self.method_handler_for_do_something)(temp_a_string);
-        if !payload_object["clientId"].is_null() {
-            let mut response_json = json::JsonValue::new_object();
-            if !payload_object["correlationId"].is_null() {
-                response_json["correlationId"] = payload_object["correlationId"].as_str().unwrap().into();
-            }
-            match rv {
-                Ok(return_value) => {
-                    response_json["result"] = 0.into();
-                    
-                    response_json["label"] = return_value.label.into();
-                    response_json["identifier"] = return_value.identifier.into();
-                    response_json["day"] = (return_value.day as u32).into();
-                }
-                Err(result_code) => {
-                    response_json["result"] = (result_code as u32).into();
-                }
-            }
-            let response_topic = format!("client/{}/Example/method/doSomething/response", payload_object["clientId"].as_str().unwrap());
-            self.connection.publish(response_topic, json::stringify(response_json), 2).await;
+    async fn handle_do_something_request(publisher: &mut MessagePublisher, handlers: &mut ExampleServerMethodHandlers, msg: mqtt::Message) {
+        let props = msg.properties();
+        let opt_corr_id_bin: Option<Vec<u8>> = props.get_binary(mqtt::PropertyCode::CorrelationData);
+        let opt_resp_topic = props.get_string(mqtt::PropertyCode::ResponseTopic);
+        let payload_str = msg.payload_str();
+        let payload = serde_json::from_str::<DoSomethingRequestObject>(&payload_str).unwrap();
+
+        // call the method handler
+        let rv: connection::payloads::DoSomethingReturnValue = {
+            let func_guard = handlers.method_handler_for_do_something.lock().unwrap();
+            (*func_guard)(payload.aString).unwrap()
+        };
+        if let Some(resp_topic) = opt_resp_topic {
+            publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
+        } else {
+            eprintln!("No response topic found in message properties.");
         }
     }
     
 
-    pub async fn process(&mut self) {
-        while let Some(opt_msg) = self.connection.rx.next().await {
-            if let Some(msg) = opt_msg {
-                let topic = &msg.topic();
-                let mut func_indexs: Vec<u32> = Vec::new();
-                for item in self.topic_matcher.matches(topic) {
-                    func_indexs.push(item.1);
+     /// Starts the tasks that process messages received.
+    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+
+        // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
+        let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
+        let mut method_handlers = self.method_handlers.clone();
+        let sub_ids = self.subscription_ids.clone();
+        let mut publisher = self.msg_publisher.clone();
+
+        let _loop_task = tokio::spawn(async move {
+            while let Some(msg) = message_receiver.recv().await {
+                println!("Got a new message");
+                if msg.subscription_id == sub_ids.add_numbers_method_req {
+                    ExampleServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
-                for func_index in func_indexs.iter() {
-                    match func_index {
-                        1 => self.handle_add_numbers_request(topic.to_string(), msg.payload_str().to_string()).await,
-                    
-                        2 => self.handle_do_something_request(topic.to_string(), msg.payload_str().to_string()).await,
-                    _ => ()
-                    }
+                else if msg.subscription_id == sub_ids.do_something_method_req {
+                    ExampleServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
-            }
-        }
+            }   
+        });
+
+        println!("Started client receive task");
+        Ok(())
     }
 }

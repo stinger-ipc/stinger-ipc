@@ -5,36 +5,92 @@ on the next generation.
 This is the Server for the SignalOnly interface.
 */
 
-use futures::StreamExt;
-use connection::Connection;
+extern crate paho_mqtt as mqtt;
+use connection::{MessagePublisher, Connection, ReceivedMessage};
 
-use json::object;
-use paho_mqtt::topic_matcher::TopicMatcher;
+use futures::StreamExt;
+
+#[allow(unused_imports)]
+use connection::payloads::{*, MethodResultCode};
+
+use std::sync::{Arc, Mutex};
+use tokio::sync::{mpsc, broadcast, oneshot};
+use tokio::join;
+use tokio::task::JoinError;
+
+/// This struct is used to store all the MQTTv5 subscription ids
+/// for the subscriptions the client will make.
+#[derive(Clone, Debug)]
+struct SignalOnlyServerSubscriptionIds {
+    
+}
+
+
+struct SignalOnlyServerMethodHandlers {
+    
+}
 
 pub struct SignalOnlyServer {
-    connection: Connection,
-    
-    topic_matcher: TopicMatcher::<u32>,
+    /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
+    /// to a process loop when it is needed.  MQTT messages will be received with this.
+    msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
+
+    /// The Sender side of MQTT messages that are received from the broker.  This tx
+    /// side is cloned for each subscription made.
+    msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
+
+    /// Through this MessagePublisher object, we can publish messages to MQTT.
+    msg_publisher: MessagePublisher,
+
+    /// Struct contains all the handlers for the various methods.
+    method_handlers: SignalOnlyServerMethodHandlers,
+
+    /// Subscription IDs for all the subscriptions this makes.
+    subscription_ids: SignalOnlyServerSubscriptionIds,
+
+    /// Copy of MQTT Client ID
+    client_id: String,
 }
 
 impl SignalOnlyServer {
-    pub async fn new(mut connection: Connection) -> SignalOnlyServer {
+    pub async fn new(mut connection: Connection) -> Self {
+        let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
-        let interface_info = String::from(r#"{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}"#);
-        connection.publish("SignalOnly/interface".to_string(), interface_info, 1).await;
+        //let interface_info = String::from(r#"{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}"#);
+        //connection.publish("SignalOnly/interface".to_string(), interface_info, 1).await;
 
-        let  topic_matcher = TopicMatcher::<u32>::new();
+        // Create a channel for messages to get from the Connection object to this SignalOnlyClient object.
+        // The Connection object uses a clone of the tx side of the channel.
+        let (message_received_tx, message_received_rx) = mpsc::channel(64);
+
+        let publisher = connection.get_publisher();
+
+        // Create method handler struct
         
 
-        SignalOnlyServer {
-            connection: connection,
+        // Create structure for method handlers.
+        let method_handlers = SignalOnlyServerMethodHandlers {
+        };
+
+        // Create structure for subscription ids.
+        let sub_ids = SignalOnlyServerSubscriptionIds {
             
-            topic_matcher: topic_matcher,
+        };
+
+        SignalOnlyServer {
+
+            msg_streamer_rx: Some(message_received_rx),
+            msg_streamer_tx: message_received_tx,
+            msg_publisher: publisher,
+            method_handlers: method_handlers,
+            subscription_ids: sub_ids,
+            client_id: connection.client_id.to_string(),
         }
     }
 
     pub async fn emit_another_signal(&mut self, one: f32, two: bool, three: String) {
-        let data = object!{ 
+        let data = connection::payloads::AnotherSignalSignalPayload {
+            
             one: one,
             
             two: two,
@@ -42,8 +98,7 @@ impl SignalOnlyServer {
             three: three,
             
         };
-        let data_str = json::stringify(data);
-        self.connection.publish("SignalOnly/signal/anotherSignal".to_string(), data_str, 2).await;
+        self.msg_publisher.publish_structure("SignalOnly/signal/anotherSignal".to_string(), &data).await;
     }
     
 
@@ -51,19 +106,21 @@ impl SignalOnlyServer {
 
     
 
-    pub async fn process(&mut self) {
-        while let Some(opt_msg) = self.connection.rx.next().await {
-            if let Some(msg) = opt_msg {
-                let topic = &msg.topic();
-                let mut func_indexs: Vec<u32> = Vec::new();
-                for item in self.topic_matcher.matches(topic) {
-                    func_indexs.push(item.1);
-                }
-                for func_index in func_indexs.iter() {
-                    match func_index {_ => ()
-                    }
-                }
-            }
-        }
+     /// Starts the tasks that process messages received.
+    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+
+        // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
+        let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
+        //let mut method_handlers = self.method_handlers.clone();
+        let sub_ids = self.subscription_ids.clone();
+        let mut publisher = self.msg_publisher.clone();
+
+        let loop_task = tokio::spawn(async move {
+            while let Some(msg) = message_receiver.recv().await {
+            }   
+        });
+
+        println!("Started client receive task");
+        Ok(())
     }
 }
