@@ -7,13 +7,15 @@ It contains enumerations used by the {{stinger.name}} interface.
 
 {%if stinger.enums | length > 0%}
 use std::fmt;
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::{FromPrimitive, ToPrimitive};
 {%endif%}
 use serde::{Serialize, Deserialize};
 
 {%for ie_name, ie in stinger.enums.items() %}
-#[derive(Debug, FromPrimitive, Clone, Serialize, Deserialize)]
+#[repr(u32)]
+#[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize)]
+#[serde(into = "u32", try_from = "u32")]
 pub enum {{ie_name | UpperCamelCase }} {
     {%-for value in ie.values %}
     {{value | UpperCamelCase}} = {{loop.index}}{%if not loop.last%},{%endif%}
@@ -24,6 +26,18 @@ pub enum {{ie_name | UpperCamelCase }} {
 impl {{ie_name | UpperCamelCase }} {
     pub fn from_u32(value: u32) -> Option<Self> {
         FromPrimitive::from_u32(value)
+    }
+}
+
+impl From<{{ie_name | UpperCamelCase }}> for u32 {
+    fn from(s: {{ie_name | UpperCamelCase }}) -> u32 {
+        s as u32
+    }
+}
+
+impl From<u32> for {{ie_name | UpperCamelCase }} {
+    fn from(s: u32) -> {{ie_name | UpperCamelCase }} {
+        {{ie_name | UpperCamelCase }}::from_u32(s).unwrap()
     }
 }
 
@@ -42,6 +56,8 @@ pub enum MethodResultCode { {%-for rc_i, rc_name in stinger.method_return_codes.
 }
 
 {%for method_name, method in stinger.methods.items()%}
+// Structures for `{{method_name}}` method
+
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct {{method_name | UpperCamelCase}}RequestObject {
@@ -61,9 +77,15 @@ pub struct {{method.return_value.rust_local_type}} {
     pub {{arg.name}}: {{arg.rust_local_type}},
 {%-endfor%}
 }
+{%elif method.return_value.arg_type.name.lower() == 'value'%}
+#[derive(Debug, Clone, Serialize)]
+pub struct {{method_name | UpperCamelCase}}ReturnValue {
+    pub {{method.return_value.name}}: {{method.return_value.rust_local_type}},
+}
 {%endif-%}
 {%-endfor%}
 {%for sig_name, sig in stinger.signals.items()%}
+// Structures for `{{sig_name}}` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct {{sig_name | UpperCamelCase}}SignalPayload {

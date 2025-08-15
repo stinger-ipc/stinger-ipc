@@ -129,7 +129,10 @@ impl ExampleServer {
         let rv: i32 = {
             let func_guard = handlers.method_handler_for_add_numbers.lock().unwrap();
             (*func_guard)(payload.first, payload.second).unwrap()
+        };let rv = AddNumbersReturnValue {
+            sum: rv,
         };
+        
         if let Some(resp_topic) = opt_resp_topic {
             publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
         } else {

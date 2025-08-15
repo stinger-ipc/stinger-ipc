@@ -79,9 +79,12 @@ impl MessagePublisher {
 
     pub async fn publish_structure<T: Serialize>(&mut self, topic: String, data: &T) -> Result<(), SendError<Message>> {
         let payload = serde_json::to_string(data).unwrap().into_bytes();
+        let mut pub_props = mqtt::Properties::new();
+        let _ = pub_props.push_string(mqtt::PropertyCode::ContentType, "application/json");
         let msg = mqtt::MessageBuilder::new()
             .topic(topic)
             .payload(payload)
+            .properties(pub_props)
             .qos(QOS_1)
             .finalize();
         self.publish(msg).await
@@ -110,6 +113,7 @@ impl MessagePublisher {
             let _ = pub_props.push_binary(mqtt::PropertyCode::CorrelationData, corr_id);
         }
         let payload = serde_json::to_string(data).unwrap().into_bytes();
+        let _ = pub_props.push_string(mqtt::PropertyCode::ContentType, "application/json");
         let msg = mqtt::MessageBuilder::new()
             .topic(topic)
             .payload(payload)

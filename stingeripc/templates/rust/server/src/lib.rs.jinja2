@@ -129,6 +129,11 @@ impl {{stinger.name | UpperCamelCase}}Server {
             let func_guard = handlers.method_handler_for_{{method_name|snake_case}}.lock().unwrap();
             (*func_guard)({%for arg in method.arg_list%}payload.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}).unwrap()
         };
+        {%-if method.return_value.arg_type.name.lower() == "value" -%}
+        let rv = {{method_name | UpperCamelCase}}ReturnValue {
+            {{method.return_value.name}}: rv,
+        };
+        {%endif%}
         if let Some(resp_topic) = opt_resp_topic {
             publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
         } else {
