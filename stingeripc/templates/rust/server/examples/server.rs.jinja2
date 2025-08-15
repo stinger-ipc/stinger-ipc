@@ -7,6 +7,8 @@ It contains enumerations used by the {{stinger.name}} interface.
 use futures::{executor::block_on};
 use {{stinger.name | snake_case}}_server::{{stinger.name}}Server;
 use connection::Connection;
+use tokio::time::{sleep, Duration};
+use tokio::join;
 {%if stinger.methods | length > 0 %}use connection::payloads::MethodResultCode;{%endif%}
 
 {%for method_name, method in stinger.methods.items()%}
@@ -25,20 +27,30 @@ fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|
 }
 {%endfor%}
 
-fn main() {
+
+#[tokio::main]
+async fn main() {
     block_on(async {
         {%set broker = stinger.get_example_broker()%}
-        let connection = Connection::new_{{broker.class_name|snake_case}}({%if broker.hostname is none%}String::from("localhost"){%if broker.port is none%}, {%endif%}{%endif%}{%if broker.port is none%}1883{%endif%}).await;
-        let mut server = {{stinger.name}}Server::new(connection).await;
+        let mut connection = Connection::new_{{broker.class_name|snake_case}}({%if broker.hostname is none%}String::from("localhost"){%if broker.port is none%}, {%endif%}{%endif%}{%if broker.port is none%}1883{%endif%}).await.unwrap();
+        let mut server = {{stinger.name}}Server::new(&mut connection).await;
+
+        let loop_task = tokio::spawn(async move {
+            println!("Making call to start connection loop");
+            let _conn_loop = connection.start_loop().await;
+        });
+
         {%for method_name, method in stinger.methods.items()%}
         server.set_method_handler_for_{{method_name|snake_case}}({{method_name|snake_case}}_handler);
         {%endfor%}
+
         {%for sig_name, sig in stinger.signals.items()%}
         server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
         {%endfor%}
 
-    
-        server.process().await;
+        server.receive_loop().await;
+
+        join!(loop_task);
     });
     // Ctrl-C to stop
 }

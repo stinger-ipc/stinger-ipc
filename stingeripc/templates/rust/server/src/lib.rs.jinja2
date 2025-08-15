@@ -8,13 +8,11 @@ This is the Server for the {{stinger.name}} interface.
 extern crate paho_mqtt as mqtt;
 use connection::{MessagePublisher, Connection, ReceivedMessage};
 
-use futures::StreamExt;
-
 #[allow(unused_imports)]
 use connection::payloads::{*, MethodResultCode};
 
 use std::sync::{Arc, Mutex};
-use tokio::sync::{mpsc, broadcast, oneshot};
+use tokio::sync::{mpsc};
 use tokio::join;
 use tokio::task::JoinError;
 
@@ -27,11 +25,11 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
     {%-endfor%}
 }
 
-
+#[derive(Clone)]
 struct {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    method_handler_for_{{method_name|snake_case}}: Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + Send>,
+    method_handler_for_{{method_name|snake_case}}: Arc<Mutex<Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + Send>>>,
     {%endfor%}
 }
 
@@ -58,7 +56,7 @@ pub struct {{stinger.name | UpperCamelCase}}Server {
 }
 
 impl {{stinger.name | UpperCamelCase}}Server {
-    pub async fn new(mut connection: Connection) -> Self {
+    pub async fn new(connection: &mut Connection) -> Self {
         let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
         //let interface_info = String::from(r#"{{stinger.interface_info.1 | tojson}}"#);
@@ -79,7 +77,7 @@ impl {{stinger.name | UpperCamelCase}}Server {
         // Create structure for method handlers.
         let method_handlers = {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
             {%-for method_name, method in stinger.methods.items()-%}
-            method_handler_for_{{method_name|snake_case}}: Box::new( |{%for arg in method.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| { Err(MethodResultCode::ServerError) } ),
+            method_handler_for_{{method_name|snake_case}}: Arc::new(Mutex::new(Box::new( |{%for arg in method.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| { Err(MethodResultCode::ServerError) } ))),
             {%endfor%}
         };
 
@@ -113,8 +111,8 @@ impl {{stinger.name | UpperCamelCase}}Server {
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()-%}
-    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl FnMut({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + 'static + Send) {
-        self.method_handlers.method_handler_for_{{method_name|snake_case}} = Box::new(cb);
+    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + 'static + Send) {
+        self.method_handlers.method_handler_for_{{method_name|snake_case}} = Arc::new(Mutex::new(Box::new(cb)));
     }
     {%endfor%}
 
@@ -127,8 +125,10 @@ impl {{stinger.name | UpperCamelCase}}Server {
         let payload = serde_json::from_str::<{{method_name | UpperCamelCase}}RequestObject>(&payload_str).unwrap();
 
         // call the method handler
-        let rv: {{method.return_value.rust_type}} = (handlers.method_handler_for_{{method_name|snake_case}})({%for arg in method.arg_list%}payload.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}).unwrap();
-        
+        let rv: {{method.return_value.rust_type}} = {
+            let func_guard = handlers.method_handler_for_{{method_name|snake_case}}.lock().unwrap();
+            (*func_guard)({%for arg in method.arg_list%}payload.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}).unwrap()
+        };
         if let Some(resp_topic) = opt_resp_topic {
             publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
         } else {
@@ -142,15 +142,16 @@ impl {{stinger.name | UpperCamelCase}}Server {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
-        //let mut method_handlers = self.method_handlers.clone();
+        let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let mut publisher = self.msg_publisher.clone();
 
-        let loop_task = tokio::spawn(async move {
+        let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
+                println!("Got a new message");
                 {%-for method_name, method in stinger.methods.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method_req {
-                    //{{stinger.name | UpperCamelCase}}Server::handle_{{method_name|snake_case}}_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    {{stinger.name | UpperCamelCase}}Server::handle_{{method_name|snake_case}}_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 {%-endfor%}
             }   

@@ -8,13 +8,11 @@ This is the Server for the Example interface.
 extern crate paho_mqtt as mqtt;
 use connection::{MessagePublisher, Connection, ReceivedMessage};
 
-use futures::StreamExt;
-
 #[allow(unused_imports)]
 use connection::payloads::{*, MethodResultCode};
 
 use std::sync::{Arc, Mutex};
-use tokio::sync::{mpsc, broadcast, oneshot};
+use tokio::sync::{mpsc};
 use tokio::join;
 use tokio::task::JoinError;
 
@@ -25,12 +23,12 @@ struct ExampleServerSubscriptionIds {
     add_numbers_method_req: i32,do_something_method_req: i32,
 }
 
-
+#[derive(Clone)]
 struct ExampleServerMethodHandlers {
     /// Pointer to a function to handle the addNumbers method request.
-    method_handler_for_add_numbers: Box<dyn Fn(i32, i32)->Result<i32, MethodResultCode> + 'static + Send>,
+    method_handler_for_add_numbers: Arc<Mutex<Box<dyn Fn(i32, i32)->Result<i32, MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the doSomething method request.
-    method_handler_for_do_something: Box<dyn Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + Send>,
+    method_handler_for_do_something: Arc<Mutex<Box<dyn Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + Send>>>,
     
 }
 
@@ -57,7 +55,7 @@ pub struct ExampleServer {
 }
 
 impl ExampleServer {
-    pub async fn new(mut connection: Connection) -> Self {
+    pub async fn new(connection: &mut Connection) -> Self {
         let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
         //let interface_info = String::from(r#"{"name": "Example", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}"#);
@@ -77,8 +75,8 @@ impl ExampleServer {
         
 
         // Create structure for method handlers.
-        let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Box::new( |_1, _2| { Err(MethodResultCode::ServerError) } ),
-            method_handler_for_do_something: Box::new( |_1| { Err(MethodResultCode::ServerError) } ),
+        let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2| { Err(MethodResultCode::ServerError) } ))),
+            method_handler_for_do_something: Arc::new(Mutex::new(Box::new( |_1| { Err(MethodResultCode::ServerError) } ))),
             
         };
 
@@ -113,10 +111,10 @@ impl ExampleServer {
     
 
     pub fn set_method_handler_for_add_numbers(&mut self, cb: impl Fn(i32, i32)->Result<i32, MethodResultCode> + 'static + Send) {
-        self.method_handlers.method_handler_for_add_numbers = Box::new(cb);
+        self.method_handlers.method_handler_for_add_numbers = Arc::new(Mutex::new(Box::new(cb)));
     }
     pub fn set_method_handler_for_do_something(&mut self, cb: impl Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + 'static + Send) {
-        self.method_handlers.method_handler_for_do_something = Box::new(cb);
+        self.method_handlers.method_handler_for_do_something = Arc::new(Mutex::new(Box::new(cb)));
     }
     
 
@@ -128,8 +126,10 @@ impl ExampleServer {
         let payload = serde_json::from_str::<AddNumbersRequestObject>(&payload_str).unwrap();
 
         // call the method handler
-        let rv: i32 = (handlers.method_handler_for_add_numbers)(payload.first, payload.second).unwrap();
-        
+        let rv: i32 = {
+            let func_guard = handlers.method_handler_for_add_numbers.lock().unwrap();
+            (*func_guard)(payload.first, payload.second).unwrap()
+        };
         if let Some(resp_topic) = opt_resp_topic {
             publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
         } else {
@@ -144,8 +144,10 @@ impl ExampleServer {
         let payload = serde_json::from_str::<DoSomethingRequestObject>(&payload_str).unwrap();
 
         // call the method handler
-        let rv: connection::payloads::DoSomethingReturnValue = (handlers.method_handler_for_do_something)(payload.aString).unwrap();
-        
+        let rv: connection::payloads::DoSomethingReturnValue = {
+            let func_guard = handlers.method_handler_for_do_something.lock().unwrap();
+            (*func_guard)(payload.aString).unwrap()
+        };
         if let Some(resp_topic) = opt_resp_topic {
             publisher.publish_response_structure(resp_topic, &rv, opt_corr_id_bin).await.expect("Failed to publish response structure");
         } else {
@@ -159,17 +161,18 @@ impl ExampleServer {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
-        //let mut method_handlers = self.method_handlers.clone();
+        let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let mut publisher = self.msg_publisher.clone();
 
-        let loop_task = tokio::spawn(async move {
+        let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
+                println!("Got a new message");
                 if msg.subscription_id == sub_ids.add_numbers_method_req {
-                    //ExampleServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    ExampleServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.do_something_method_req {
-                    //ExampleServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    ExampleServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
             }   
         });
