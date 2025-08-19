@@ -52,6 +52,16 @@ impl fmt::Display for DayOfTheWeek {
 }
 
 
+
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Lunch {
+    pub drink: bool,
+    pub sandwich: String,
+    pub crackers: f32,pub day: DayOfTheWeek,
+    
+}
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum MethodResultCode {
@@ -60,6 +70,9 @@ pub enum MethodResultCode {
     ServerError = 2,
     TransportError = 3,
     PayloadError = 4,
+    Timeout = 5,
+    UnknownError = 6,
+    NotImplemented = 7,
 }
 
 

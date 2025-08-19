@@ -1,15 +1,16 @@
 """
-An `Arg` one of the following:
+An `Arg` is used in one of the following contexts:
  * An argument to a method
  * A component of the return type of a method
  * A component of a signal
+ * A component of a property
 
 An `Arg` can be defined in several different ways:
- * `Value` means that the type of the Arg is simply provided.
+ * `Primitive` means that the type of the Arg is a primitive type that is directly provided.
  * `Enum` means that the type of the Arg is an integer and the value of the integer is controlled by an enumerated list.
- * `JSON Schema` means that the value of the arg is controlled by a JSON schema.
+ * `Struct` means that the type of the Arg is a structure make up of additional args.
 
-When the `Arg` type is `Value` then it has an `ArgValueType` which controlls which type the arg is.
+When the `Arg` type is `Primitive` then it has an `ArgPrimitiveType` which controlls which type the arg is.
 """
 
 from __future__ import annotations
@@ -18,27 +19,30 @@ from .exceptions import InvalidStingerStructure
 
 class ArgType(Enum):
     UNKNOWN = 0
-    VALUE = 1
+    PRIMITIVE = 1
     ENUM = 2
-    JSON_SCHEMA = 3
-    STRUCT = 4
+    STRUCT = 3
 
 
-class ArgValueType(Enum):
+class ArgPrimitiveType(Enum):
+    """ This is not an Arg, rather it is an enumeration of different primitives that an ArgPrimitive can represent."""
+
     BOOLEAN = 0
     INTEGER = 1
     FLOAT = 2
     STRING = 3
 
     @classmethod
-    def from_string(cls, arg_type: str) -> ArgValueType:
+    def from_string(cls, arg_type: str) -> ArgPrimitiveType:
         if hasattr(cls, arg_type.upper()):
             return getattr(cls, arg_type.upper())
         else:
             raise InvalidStingerStructure(f"No ArgType called '{arg_type}'")
 
     @classmethod
-    def to_python_type(cls, arg_type: ArgValueType) -> str:
+    def to_python_type(cls, arg_type: ArgPrimitiveType, optional: bool=False) -> str:
+        if optional:
+            return f"{cls.to_python_type(arg_type, optional=False)} | None"
         if arg_type == cls.BOOLEAN:
             return "bool"
         elif arg_type == cls.INTEGER:
@@ -50,7 +54,9 @@ class ArgValueType(Enum):
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod
-    def to_rust_type(cls, arg_type: ArgValueType) -> str:
+    def to_rust_type(cls, arg_type: ArgPrimitiveType, optional:bool=False) -> str:
+        if optional:
+            return f"{cls.to_rust_type(arg_type, optional=False)} | None"
         if arg_type == cls.BOOLEAN:
             return "bool"
         elif arg_type == cls.INTEGER:
@@ -62,7 +68,7 @@ class ArgValueType(Enum):
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod
-    def to_json_type(cls, arg_type: ArgValueType) -> str:
+    def to_json_type(cls, arg_type: ArgPrimitiveType) -> str:
         if arg_type == cls.BOOLEAN:
             return "boolean"
         elif arg_type == cls.INTEGER:
@@ -74,19 +80,31 @@ class ArgValueType(Enum):
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod
-    def to_cpp_type(cls, arg_type: ArgValueType, ) -> str:
+    def to_cpp_type(cls, arg_type: ArgPrimitiveType, optional: bool=False) -> str:
         if arg_type == cls.BOOLEAN:
-            return "bool"
+            if optional:
+                return "boost::optional<bool>"
+            else:
+                return "bool"
         elif arg_type == cls.INTEGER:
-            return "int"
+            if optional:
+                return "boost::optional<int>"
+            else:
+                return "int"
         elif arg_type == cls.FLOAT:
-            return "double"
+            if optional:
+                return "boost::optional<double>"
+            else:
+                return "double"
         elif arg_type == cls.STRING:
-            return "const std::string&"
+            if optional:
+                return "boost::optional<std::string>"
+            else:
+                return "const std::string&"
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod
-    def to_cpp_rapidjson_type_str(cls, arg_type: ArgValueType) -> str:
+    def to_cpp_rapidjson_type_str(cls, arg_type: ArgPrimitiveType) -> str:
         if arg_type == cls.BOOLEAN:
             return "Bool"
         elif arg_type == cls.INTEGER:

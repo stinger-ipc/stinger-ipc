@@ -19,6 +19,14 @@ class DayOfTheWeek(IntEnum):
 
 
 
+class Lunch(BaseModel):
+    drink: bool
+    sandwich: str
+    crackers: float
+    day: DayOfTheWeek
+
+
+
 class DoSomethingReturnValue(BaseModel):
     label: str
     identifier: int

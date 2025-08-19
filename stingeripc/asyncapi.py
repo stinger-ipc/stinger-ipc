@@ -10,8 +10,8 @@ import os.path
 from enum import Enum
 from typing import Any
 from collections import OrderedDict
-from .components import StingerSpec, Arg, ArgValue, ArgEnum, ArgStruct
-from .args import ArgType, ArgValueType
+from .components import StingerSpec, Arg, ArgPrimitive, ArgEnum, ArgStruct
+from .args import ArgType, ArgPrimitiveType
 
 class Direction(Enum):
     SERVER_PUBLISHES = 1
@@ -31,9 +31,9 @@ class ObjectSchema:
         self._required = set()
         self._dependent_schemas = {}
     
-    def add_value_property(self, name: str, arg_value_type: ArgValueType, required=True):
+    def add_value_property(self, name: str, arg_primitive_type: ArgPrimitiveType, required=True):
         schema = {
-            "type": ArgValueType.to_json_type(arg_value_type)
+            "type": ArgPrimitiveType.to_json_type(arg_primitive_type)
         }
         self._properties[name] = schema
         if required:
@@ -48,11 +48,11 @@ class ObjectSchema:
             }
         }
 
-    def add_const_value_property(self, name: str, arg_type: ArgValueType, const_value, required=True):
+    def add_const_value_property(self, name: str, arg_type: ArgPrimitiveType, const_value, required=True):
         self.add_value_property(name, arg_type, required)
         self._properties[name]['const'] = const_value
 
-    def add_enum_value_property(self, name: str, arg_type: ArgValueType, possible_values, required=True):
+    def add_enum_value_property(self, name: str, arg_type: ArgPrimitiveType, possible_values, required=True):
         self.add_value_property(name, arg_type, required)
         self._properties[name]['enum'] = possible_values
 
@@ -409,7 +409,7 @@ class StingerToAsyncApi:
         msg = Message("interfaceInfo")
         schema = ObjectSchema()
         for k,v in info.items():
-            schema.add_const_value_property(k, ArgValueType.STRING, v)
+            schema.add_const_value_property(k, ArgPrimitiveType.STRING, v)
         msg.set_schema(schema.to_schema())
         self._asyncapi.add_message(msg)
 
@@ -448,7 +448,7 @@ class StingerToAsyncApi:
             msg.add_trait({"$ref": "#/components/messageTraits/signalJson"})
             schema = ObjectSchema()
             for arg_spec in sig_spec.arg_list:
-                if isinstance(arg_spec, ArgValue):
+                if isinstance(arg_spec, ArgPrimitive):
                     schema.add_value_property(arg_spec.name, arg_spec.type)
                 elif isinstance(arg_spec, ArgEnum):
                     schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
@@ -464,7 +464,7 @@ class StingerToAsyncApi:
             call_msg.add_trait({"$ref": "#/components/messageTraits/methodJsonArguments"})
             call_msg_schema = ObjectSchema()
             for arg_spec in method_spec.arg_list:
-                if isinstance(arg_spec, ArgValue):
+                if isinstance(arg_spec, ArgPrimitive):
                     call_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
                 elif isinstance(arg_spec, ArgEnum):
                     call_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
@@ -481,7 +481,7 @@ class StingerToAsyncApi:
             resp_msg_schema = ObjectSchema()
 
             def add_arg(arg: Arg):
-                if isinstance(arg, ArgValue):
+                if isinstance(arg, ArgPrimitive):
                     resp_msg_schema.add_value_property(arg.name, arg.type, required=True)
                 elif isinstance(arg, ArgEnum):
                     resp_msg_schema.add_reference_property(arg.name, f"#/components/schemas/enum_{arg.enum.name}", required=True)

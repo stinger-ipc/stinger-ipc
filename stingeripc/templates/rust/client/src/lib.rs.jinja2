@@ -159,13 +159,13 @@ impl {{stinger.name | UpperCamelCase }}Client {
         let _ = self.msg_publisher.publish_request_structure("{{method.topic}}".to_string(), &data, response_topic.as_str(), correlation_id).await;
         let resp_obj = receiver.await.unwrap();
         
-        {%-if method.return_value.arg_type.name.lower() == 'value' %}
+        {%-if method.return_value.arg_type.name.lower() == 'primitive' %}
         Ok(resp_obj["{{method.return_value.name}}"].as_{{method.return_value.rust_type}}().unwrap())
         {%-elif method.return_value.arg_type.name.lower() == 'enum'%}
         Ok({{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap())
         {%-elif method.return_value.arg_type.name.lower() == 'struct'%}
         Ok({{method.return_value.rust_type}} { {%for member in method.return_value.members-%}
-            {%if member.arg_type.name.lower() == 'value'%}
+            {%if member.arg_type.name.lower() == 'primitive'%}
             {%if member.rust_type == 'String'%}
             {{member.name|snake_case}}: resp_obj["{{member.name}}"].as_str().unwrap().to_string(),
             {%-else%}

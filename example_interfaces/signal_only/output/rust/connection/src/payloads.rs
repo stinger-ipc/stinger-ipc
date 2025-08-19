@@ -10,6 +10,8 @@ use serde::{Serialize, Deserialize};
 
 
 
+
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum MethodResultCode {
@@ -18,10 +20,14 @@ pub enum MethodResultCode {
     ServerError = 2,
     TransportError = 3,
     PayloadError = 4,
+    Timeout = 5,
+    UnknownError = 6,
+    NotImplemented = 7,
 }
 
 
 
+// Structures for `anotherSignal` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnotherSignalSignalPayload {

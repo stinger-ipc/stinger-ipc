@@ -13,7 +13,8 @@
     "tests"
   ],
   "yaml.schemas": {
-    "schemas/schema.yaml": "*.stingeripc"
+
+    "${workspaceFolder}/schemas/schema.yaml": ["*.stingeripc"]
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",

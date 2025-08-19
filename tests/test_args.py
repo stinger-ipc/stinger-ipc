@@ -1,14 +1,15 @@
 import unittest
-from stingeripc.components import Arg, ArgValue, ArgValueType, InvalidStingerStructure
+from stingeripc.components import Arg, ArgPrimitive, InvalidStingerStructure
+from stingeripc.args import ArgPrimitiveType
 
 class TestArgCreationFromSpec(unittest.TestCase):
 
     def setUp(self):
         self.spec_objs = [
-            {"name": "one", "type": "integer", "python_type": "int", "value_type": ArgValueType.INTEGER},
-            {"name": "two", "type": "float", "python_type": "float", "value_type": ArgValueType.FLOAT},
-            {"name": "three", "type": "boolean", "python_type": "bool", "value_type": ArgValueType.BOOLEAN},
-            {"name": "four", "type": "string", "python_type": "str", "value_type": ArgValueType.STRING},
+            {"name": "one", "type": "integer", "python_type": "int", "value_type": ArgPrimitiveType.INTEGER},
+            {"name": "two", "type": "float", "python_type": "float", "value_type": ArgPrimitiveType.FLOAT},
+            {"name": "three", "type": "boolean", "python_type": "bool", "value_type": ArgPrimitiveType.BOOLEAN},
+            {"name": "four", "type": "string", "python_type": "str", "value_type": ArgPrimitiveType.STRING},
         ]
 
     def test_arg(self):
@@ -27,30 +28,30 @@ class TestInvalidArgCreation(unittest.TestCase):
 
     def test_not_an_arg_type_from_spec(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgValue.new_arg_value_from_stinger({"name": "one", "type": "double"})
+            ArgPrimitive.new_arg_primitive_from_stinger({"name": "one", "type": "double"})
 
     def test_not_an_arg_type(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgValueType.from_string("unsigned int")
+            ArgPrimitiveType.from_string("unsigned int")
 
-    def test_arg_value_name_missing(self):
+    def test_arg_primitive_name_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgValue.new_frnew_arg_value_from_stingerom_stinger({"type": "integer"})  
+            ArgPrimitive.new_arg_primitive_from_stinger({"type": "integer"})  
 
     def test_arg_name_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            Arg.new_arg_value_from_stinger({"type": "integer"})  
+            Arg.new_arg_primitive_from_stinger({"type": "integer"})  
     
-    def test_arg_value_type_missing(self):
+    def test_arg_primitive_type_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgValue.new_arg_value_from_stinger({"name": "foo"})  
+            ArgPrimitive.new_arg_primitive_from_stinger({"name": "foo"})  
 
     def test_arg_type_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            Arg.new_arg_value_from_stinger({"name": "foo"})  
+            Arg.new_arg_primitive_from_stinger({"name": "foo"})  
 
 class TestPythonTypes(unittest.TestCase):
 
     def test_from_invalid_input(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgValueType.to_python_type(-1)
+            ArgPrimitiveType.to_python_type(-1)

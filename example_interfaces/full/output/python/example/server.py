@@ -165,7 +165,9 @@ class ExampleServer:
                     self._logger.debug("Return value is %s", return_struct)
                     
                     if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                        return_json = json.dumps({
+                            "doSomethingReturnValue": return_struct.model_dump_json()
+                        })
                         
                 except Exception as e:
                     self._logger.exception("Exception while handling doSomething", exc_info=e)

@@ -72,7 +72,7 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
     rapidjson::Document doc;
     doc.SetObject();
     {%macro addToDoc(arg)%}
-    {%-if arg.arg_type.name.lower() == 'value'%}
+    {%-if arg.arg_type.name.lower() == 'primitive'%}
     {%-if arg.type.name.lower() == 'string'%}
     { // restrict scope
         rapidjson::Value tempStringValue;
@@ -118,7 +118,7 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | UpperCamelCas
         { // Scoping
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
             if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
-                {%if arg.arg_type.name.lower() == 'value'%}
+                {%if arg.arg_type.name.lower() == 'primitive'%}
                 temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
                 {%elif arg.arg_type.name.lower() == 'enum'%}
                 temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
@@ -138,7 +138,7 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | UpperCamelCas
             {%macro add_arg_to_json(arg, value) %}
             // add the {{arg.name}} (a/n {{arg.arg_type.name}}) to the json
             rapidjson::Value returnValue{{arg.name|UpperCamelCase}};
-            {%-if arg.arg_type.name.lower() == 'value' %}
+            {%-if arg.arg_type.name.lower() == 'primitive' %}
             {%-if arg.type.name.lower() == 'string' %}
             returnValue{{arg.name|UpperCamelCase}}.SetString({{value}}.c_str(), {{value}}.size(), responseJson.GetAllocator());
             {%-else%}

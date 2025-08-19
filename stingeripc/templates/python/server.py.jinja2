@@ -67,7 +67,7 @@ class {{stinger.name}}Server:
         {%-endfor%}
         
         payload = { {%-for arg in sig.arg_list%}
-            {%if arg.arg_type.name.lower() == 'value'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}),{%endif-%}
+            {%if arg.arg_type.name.lower() == 'primitive'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}),{%endif-%}
             {%if arg.arg_type.name.lower() == 'enum'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}).value,{%endif%}{%endfor%}
         }
         self._conn.publish("{{sig.topic}}", json.dumps(payload), qos=1, retain=False)
@@ -113,7 +113,7 @@ class {{stinger.name}}Server:
                         return_json = "{}"
                     {%else%}
                     if return_struct is not None:
-                        {%-if method.return_value.arg_type.name.lower() == "value" %}
+                        {%-if method.return_value.arg_type.name.lower() == "primitive" %}
                         return_json = json.dumps({
                             "{{method.return_value.name}}": return_struct
                         })
@@ -121,7 +121,12 @@ class {{stinger.name}}Server:
                         return_json = json.dumps({
                             "{{method.return_value.name}}": return_struct.value
                         })
+                        {%-elif method.return_value.arg_type.name.lower() == "struct" %}
+                        return_json = json.dumps({
+                            "{{method.return_value.name}}": return_struct.model_dump_json()
+                        })
                         {%else%}
+                        // else
                         return_json = return_struct.model_dump_json()
                         {%endif%}
                     {%-endif%}

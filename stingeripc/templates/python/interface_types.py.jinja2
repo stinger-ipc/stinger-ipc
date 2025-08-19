@@ -14,6 +14,13 @@ class {{ie_name | UpperCamelCase }}(IntEnum):
     {%-endfor%}
 {%endfor%}
 
+{%for istruct_name, istruct in stinger.structs.items() %}
+class {{istruct_name | UpperCamelCase }}(BaseModel):
+    {%-for arg in istruct.members%}
+    {{arg.name}}: {{arg.python_local_type}}
+    {%-endfor%}
+{%endfor%}
+
 {%for method_name, method in stinger.methods.items()%}
 {%-if method.return_value.arg_type.name.lower() == 'struct'%}
 class {{method.return_value.python_local_type}}(BaseModel):

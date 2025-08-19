@@ -8,13 +8,11 @@ This is the Server for the SignalOnly interface.
 extern crate paho_mqtt as mqtt;
 use connection::{MessagePublisher, Connection, ReceivedMessage};
 
-use futures::StreamExt;
-
 #[allow(unused_imports)]
 use connection::payloads::{*, MethodResultCode};
 
 use std::sync::{Arc, Mutex};
-use tokio::sync::{mpsc, broadcast, oneshot};
+use tokio::sync::{mpsc};
 use tokio::join;
 use tokio::task::JoinError;
 
@@ -25,7 +23,7 @@ struct SignalOnlyServerSubscriptionIds {
     
 }
 
-
+#[derive(Clone)]
 struct SignalOnlyServerMethodHandlers {
     
 }
@@ -53,7 +51,7 @@ pub struct SignalOnlyServer {
 }
 
 impl SignalOnlyServer {
-    pub async fn new(mut connection: Connection) -> Self {
+    pub async fn new(connection: &mut Connection) -> Self {
         let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
         //let interface_info = String::from(r#"{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}"#);
@@ -111,12 +109,13 @@ impl SignalOnlyServer {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
-        //let mut method_handlers = self.method_handlers.clone();
+        let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let mut publisher = self.msg_publisher.clone();
 
-        let loop_task = tokio::spawn(async move {
+        let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
+                println!("Got a new message");
             }   
         });
 

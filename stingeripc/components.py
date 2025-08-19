@@ -5,7 +5,7 @@ import stringcase
 from abc import abstractmethod
 from typing import Dict, List, Optional, Any, Union
 from .topic import SignalTopicCreator, InterfaceTopicCreator, MethodTopicCreator
-from .args import ArgType, ArgValueType
+from .args import ArgType, ArgPrimitiveType
 from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
 
@@ -16,6 +16,7 @@ class Arg:
         self._description = description
         self._default_value = None
         self._type: ArgType = ArgType.UNKNOWN
+        self._optional: bool = False
 
     def set_description(self, description: str) -> Arg:
         self._description = description
@@ -32,6 +33,14 @@ class Arg:
     @property
     def description(self) -> Optional[str]:
         return self._description
+
+    @property
+    def optional(self) -> bool:
+        return self._optional
+
+    @optional.setter
+    def optional(self, value: bool):
+        self._optional = value
 
     @property
     def python_type(self) -> str:
@@ -56,12 +65,12 @@ class Arg:
         if "name" not in arg_spec:
             raise InvalidStingerStructure("No 'name' in arg structure")
 
-        if hasattr(ArgValueType, arg_spec["type"].upper()):
-            arg = ArgValue.new_arg_value_from_stinger(arg_spec)
+        if hasattr(ArgPrimitiveType, arg_spec["type"].upper()):
+            arg = ArgPrimitive.new_arg_primitive_from_stinger(arg_spec)
             return arg
         else:
             if stinger_spec is None:
-                raise RuntimeError("Need the root StingerSpec when creating an enum or schema Arg")
+                raise RuntimeError("Need the root StingerSpec when creating an enum or struct Arg")
 
         if arg_spec["type"] == 'enum':
             if "enumName" not in arg_spec:
@@ -108,7 +117,7 @@ class ArgEnum(Arg):
 
     @property
     def cpp_rapidjson_type(self) -> str:
-        return ArgValueType.to_cpp_rapidjson_type_str(ArgValueType.INTEGER)
+        return ArgPrimitiveType.to_cpp_rapidjson_type_str(ArgPrimitiveType.INTEGER)
 
     @property
     def markdown_type(self) -> str:
@@ -131,56 +140,56 @@ class ArgEnum(Arg):
         return f"<ArgEnum name={self._name}>"
 
 
-class ArgValue(Arg):
-    def __init__(self, name: str, arg_type: ArgValueType, description: Optional[str] = None):
+class ArgPrimitive(Arg):
+    def __init__(self, name: str, arg_type: ArgPrimitiveType, description: Optional[str] = None):
         super().__init__(name, description)
         self._arg_type = arg_type
-        self._type = ArgType.VALUE
+        self._type = ArgType.PRIMITIVE
 
     @property
-    def type(self) -> ArgValueType:
+    def type(self) -> ArgPrimitiveType:
         return self._arg_type
 
     @property
     def python_type(self) -> str:
-        return ArgValueType.to_python_type(self._arg_type)
+        return ArgPrimitiveType.to_python_type(self._arg_type)
 
     @property
     def rust_type(self) -> str:
-        return ArgValueType.to_rust_type(self._arg_type)
+        return ArgPrimitiveType.to_rust_type(self._arg_type)
 
     @property
     def cpp_type(self) -> str:
-        return ArgValueType.to_cpp_type(self._arg_type)
+        return ArgPrimitiveType.to_cpp_type(self._arg_type)
 
     @property
     def cpp_temp_type(self) -> str:
-        if self._arg_type == ArgValueType.STRING:
+        if self._arg_type == ArgPrimitiveType.STRING:
             return "std::string"
         else:
             return self.cpp_type
             
     @property
     def json_type(self) -> str:
-        return ArgValueType.to_json_type(self._arg_type)
+        return ArgPrimitiveType.to_json_type(self._arg_type)
 
     @property
     def cpp_rapidjson_type(self) -> str:
-        return ArgValueType.to_cpp_rapidjson_type_str(self._arg_type)
+        return ArgPrimitiveType.to_cpp_rapidjson_type_str(self._arg_type)
 
     def get_random_example_value(self, lang="python") -> str|float|int|bool|None:
         random_state = random.getstate()
         random.seed(2)
         retval: str|float|int|bool|None = None
-        if self._arg_type == ArgValueType.BOOLEAN:
+        if self._arg_type == ArgPrimitiveType.BOOLEAN:
             retval = random.choice([True, False])
             if lang != "python":
                 retval = str(retval).lower()
-        elif self._arg_type == ArgValueType.FLOAT:
+        elif self._arg_type == ArgPrimitiveType.FLOAT:
             retval = random.choice([3.14, 1.0, 2.5, 97.9, 1.53])
-        elif self._arg_type == ArgValueType.INTEGER:
+        elif self._arg_type == ArgPrimitiveType.INTEGER:
             retval = random.choice([42, 1981, 2020, 2022])
-        elif self._arg_type == ArgValueType.STRING:
+        elif self._arg_type == ArgPrimitiveType.STRING:
             retval = random.choice(['"apples"', '"Joe"', '"example"', '"foo"'])
             if lang == "rust":
                 retval = f"{retval}.to_string()"
@@ -188,17 +197,17 @@ class ArgValue(Arg):
         return retval
 
     def __repr__(self) -> str:
-        return f"<ArgValue name={self._name} type={ArgValueType.to_python_type(self.type)}>"
+        return f"<ArgPrimitive name={self._name} type={ArgPrimitiveType.to_python_type(self.type)}>"
 
     @classmethod
-    def new_arg_value_from_stinger(cls, stinger: Dict[str, str]) -> Arg:
+    def new_arg_primitive_from_stinger(cls, stinger: Dict[str, str]) -> Arg:
         if "type" not in stinger:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in stinger:
             raise InvalidStingerStructure("No 'name' in arg structure")
 
-        arg_value_type = ArgValueType.from_string(stinger["type"])
-        arg: Arg = cls(name=stinger["name"], arg_type=arg_value_type)
+        arg_primitive_type = ArgPrimitiveType.from_string(stinger["type"])
+        arg: Arg = cls(name=stinger["name"], arg_type=arg_primitive_type)
 
         if "description" in stinger and isinstance(stinger["description"], str):
             arg.set_description(stinger["description"])
@@ -432,9 +441,70 @@ class InterfaceEnum:
                 raise InvalidStingerStructure("InterfaceEnum item must have a name")
         return ie
 
+
+class InterfaceStruct:
+
+    def __init__(self, name: str):
+        self._name = name
+        self._members: list[Arg] = []
+
+    def add_member(self, arg: Arg):
+        self._members.append(arg)
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def class_name(self):
+        return stringmanip.upper_camel_case(self.name)
+
+    @staticmethod
+    def get_module_name(lang="python") -> str:
+        return "interface_types"
+
+    @staticmethod
+    def get_module_alias(lang="python") -> str:
+        return "stinger_types"
+
+    @property
+    def python_type(self) -> str:
+        return f"{self.get_module_alias()}.{stringmanip.upper_camel_case(self.name)}"
+
+    @property
+    def rust_local_type(self) -> str:
+        return stringmanip.upper_camel_case(self.name)
+
+    @property
+    def rust_type(self) -> str:
+        return f"connection::payloads::{self.rust_local_type}"
+
+    @property
+    def cpp_type(self) -> str:
+        return stringmanip.upper_camel_case(self.name)
+
+    @property
+    def values(self) -> list[Arg]:
+        return self._members
+    
+    @property
+    def members(self) -> list[Arg]:
+        return self._members
+
+    @classmethod
+    def new_struct_from_stinger(cls, name, spec: Dict[str, str|List[Dict[str,str]]], stinger_spec: StingerSpec) -> InterfaceStruct:
+        istruct = cls(name)
+        for memb in spec.get('members', []):
+            print(f"Adding member {memb}")
+            arg = Arg.new_arg_from_stinger(memb, stinger_spec=stinger_spec)
+            istruct.add_member(arg)
+        return istruct
+
+
 class MqttTransportProtocol(Enum):
     TCP = 0
     WEBSOCKETS = 1
+
 
 class Broker:
     def __init__(self, name: str="Default"):
@@ -503,6 +573,7 @@ class StingerSpec:
         self.params: dict[str, Any] = {}
         self.methods: dict[str, Method] = {}
         self.enums: dict[str, InterfaceEnum] = {}
+        self.structs: dict[str, InterfaceStruct] = {}
         self._brokers: dict[str, Broker] = {}
 
     @property
@@ -513,6 +584,9 @@ class StingerSpec:
             2: "Server Error",
             3: "Transport Error",
             4: "Payload Error",
+            5: "Timeout",
+            6: "Unknown Error",
+            7: "Not Implemented",
         }
 
     @property
@@ -557,6 +631,10 @@ class StingerSpec:
         assert interface_enum is not None
         self.enums[interface_enum.name] = interface_enum
 
+    def add_struct(self, interface_struct: InterfaceStruct):
+        assert interface_struct is not None
+        self.structs[interface_struct.name] = interface_struct
+
     def uses_enums(self) -> bool:
         return bool(self.enums)
 
@@ -577,7 +655,7 @@ class StingerSpec:
         return InterfaceEnum.get_module_alias()
 
     @classmethod
-    def new_spec_from_stinger(cls, topic_creator, stinger: Dict) -> StingerSpec:
+    def new_spec_from_stinger(cls, topic_creator, stinger: Dict[str, Any]) -> StingerSpec:
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if "version" not in stinger["stingeripc"]:
@@ -599,6 +677,17 @@ class StingerSpec:
         except TypeError as e:
             raise InvalidStingerStructure(
                 f"Signal specification appears to be invalid: {e}"
+            )
+
+        try:
+            if "structures" in stinger:
+                for struct_name, struct_spec in stinger["structures"].items():
+                    istruct = InterfaceStruct.new_struct_from_stinger(struct_name, struct_spec, stinger_spec)
+                    assert (istruct is not None), f"Did not create struct from {struct_name} and {struct_spec}"
+                    stinger_spec.add_struct(istruct)
+        except TypeError as e:
+            raise InvalidStingerStructure(
+                f"Struct specification appears to be invalid: {e}"
             )
 
         try:

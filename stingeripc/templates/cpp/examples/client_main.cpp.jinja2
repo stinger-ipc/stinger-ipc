@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     }
     else
     {
-        {%if method.return_value.arg_type.name.lower() == 'value'-%}
+        {%if method.return_value.arg_type.name.lower() == 'primitive'-%}
         std::cout << "Result: {{method.return_value.name}}=" << {{method_name|camelCase}}ResultFuture.get() << std::endl;
         {%elif method.return_value.arg_type.name.lower() == 'enum'-%}
         std::cout << "Result: {{method.return_value.name}}=" << {{method.return_value.enum.name | camelCase }}Strings[{{method_name|camelCase}}ResultFuture.get()] << std::endl;

@@ -175,7 +175,7 @@ void ExampleServer::_callAddNumbersHandler(
             responseJson.SetObject();
             
             
-            // add the sum (a/n VALUE) to the json
+            // add the sum (a/n PRIMITIVE) to the json
             rapidjson::Value returnValueSum;
             returnValueSum.SetInt(ret);  
             responseJson.AddMember("sum", returnValueSum, responseJson.GetAllocator());
@@ -220,13 +220,13 @@ void ExampleServer::_callDoSomethingHandler(
             
             // Return type is a struct of values that need added to json
             
-            // add the label (a/n VALUE) to the json
+            // add the label (a/n PRIMITIVE) to the json
             rapidjson::Value returnValueLabel;
             returnValueLabel.SetString(ret.label.c_str(), ret.label.size(), responseJson.GetAllocator());  
             responseJson.AddMember("label", returnValueLabel, responseJson.GetAllocator());
             
             
-            // add the identifier (a/n VALUE) to the json
+            // add the identifier (a/n PRIMITIVE) to the json
             rapidjson::Value returnValueIdentifier;
             returnValueIdentifier.Set(ret.identifier);  
             responseJson.AddMember("identifier", returnValueIdentifier, responseJson.GetAllocator());

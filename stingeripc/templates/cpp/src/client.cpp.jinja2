@@ -69,7 +69,7 @@ void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
                     if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
-                        {%if arg.arg_type.name.lower() == 'value'%}
+                        {%if arg.arg_type.name.lower() == 'primitive'%}
                         temp{{arg.name}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
                         {%elif arg.arg_type.name.lower() == 'enum'%}
                         temp{{arg.name}} = static_cast<{{arg.cpp_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
@@ -122,7 +122,7 @@ boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}
     //clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
     //doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
     {%macro addToDoc(arg)%}
-    {%-if arg.arg_type.name.lower() == 'value'%}
+    {%-if arg.arg_type.name.lower() == 'primitive'%}
     {%-if arg.type.name.lower() == 'string'%}
     { // restrict scope
         rapidjson::Value tempStringValue;
@@ -173,7 +173,7 @@ void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCas
     {
         {%macro unpack_rv(arg)-%}
         rapidjson::Value::ConstMemberIterator {{arg.name}}Itr = doc.FindMember("{{arg.name}}");
-        {%if arg.arg_type.name.lower() == 'value'-%}
+        {%if arg.arg_type.name.lower() == 'primitive'-%}
         {{arg.cpp_type}} {{arg.name}} = {{arg.name}}Itr->value.Get{{arg.cpp_rapidjson_type}}();
         {%elif arg.arg_type.name.lower() == 'enum'-%}
         {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_type}}>({{arg.name}}Itr->value.GetInt());
