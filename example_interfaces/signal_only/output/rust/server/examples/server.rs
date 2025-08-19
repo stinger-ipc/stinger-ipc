@@ -18,7 +18,7 @@ use tokio::join;
 async fn main() {
     block_on(async {
         
-        let mut connection = Connection::new_default_connection(String::from("localhost"), 1883).await.unwrap();
+        let mut connection = Connection::new_default_connection().await.unwrap();
         let mut server = SignalOnlyServer::new(&mut connection).await;
 
         let loop_task = tokio::spawn(async move {
@@ -33,7 +33,6 @@ async fn main() {
         
 
         server.receive_loop().await;
-
         join!(loop_task);
     });
     // Ctrl-C to stop

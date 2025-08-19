@@ -43,7 +43,7 @@ async fn main() {
 
         
         println!("Calling addNumbers with example values...");
-        let result = client.add_numbers(42, 42).await.expect("Failed to call addNumbers");
+        let result = client.add_numbers(42, 42, Some(42)).await.expect("Failed to call addNumbers");
         println!("addNumbers response: {:?}", result);
         
         println!("Calling doSomething with example values...");

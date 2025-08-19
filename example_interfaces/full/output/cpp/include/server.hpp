@@ -26,11 +26,11 @@ public:
     virtual ~ExampleServer() = default;
 
     
-    boost::future<bool> emitTodayIsSignal(int, DayOfTheWeek);
+    boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>);
     
 
     
-    void registerAddNumbersHandler(std::function<int(int, int)> func);
+    void registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func);
     
     void registerDoSomethingHandler(std::function<DoSomethingReturnValue(const std::string&)> func);
     
@@ -40,7 +40,7 @@ private:
 
     
     void _callAddNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<int(int, int)> _addNumbersHandler;
+    std::function<int(int, int, boost::optional<int>)> _addNumbersHandler;
     
     void _callDoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<DoSomethingReturnValue(const std::string&)> _doSomethingHandler;

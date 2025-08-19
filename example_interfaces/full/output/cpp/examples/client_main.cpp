@@ -9,11 +9,11 @@ int main(int argc, char** argv) {
     
     auto conn = std::make_shared<LocalConnection>("ExampleClient-demo");
     ExampleClient client(conn);
-    client.registerTodayIsCallback([](int dayOfMonth, DayOfTheWeek dayOfWeek) {
-        std::cout << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << dayOfTheWeekStrings[static_cast<int>(dayOfWeek)] <<  std::endl;
+    client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek) {
+        std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" << "None" <<  std::endl;
     });
     std::cout << "Calling addNumbers" << std::endl;
-    auto addNumbersResultFuture = client.addNumbers(42, 42);
+    auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
     auto addNumbersStatus = addNumbersResultFuture.wait_for(boost::chrono::seconds(5));
     if (addNumbersStatus == boost::future_status::timeout)
     {

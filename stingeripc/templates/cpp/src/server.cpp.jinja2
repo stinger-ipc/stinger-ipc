@@ -72,21 +72,22 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
     rapidjson::Document doc;
     doc.SetObject();
     {%macro addToDoc(arg)%}
+    {%-if arg.optional%}if ({{arg.name}}){%endif%}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
     {%-if arg.type.name.lower() == 'string'%}
     { // restrict scope
         rapidjson::Value tempStringValue;
-        tempStringValue.SetString({{arg.name}}.c_str(), {{arg.name}}.size(), doc.GetAllocator());
+        tempStringValue.SetString({{arg.name}}{%-if arg.optional%}->{%else%}.{%endif%}c_str(), {{arg.name}}.size(), doc.GetAllocator());
         doc.AddMember("{{arg.name}}", tempStringValue, doc.GetAllocator());
     }
     {%-else%}
-    doc.AddMember("{{arg.name}}", {{arg.name}}, doc.GetAllocator());
+    doc.AddMember("{{arg.name}}", {%-if arg.optional%}*{%endif%}{{arg.name}}, doc.GetAllocator());
     {%-endif%}
-    {%elif arg.arg_type.name.lower() == 'enum'%}
-    doc.AddMember("{{arg.name}}", static_cast<int>({{arg.name}}), doc.GetAllocator());
+    {%-elif arg.arg_type.name.lower() == 'enum'%}
+    doc.AddMember("{{arg.name}}", static_cast<int>({%-if arg.optional%}*{%endif%}{{arg.name}}), doc.GetAllocator());
     {%-endif-%}
-    {%endmacro%}
-    {%for arg in sig.arg_list%}
+    {%-endmacro%}
+    {%-for arg in sig.arg_list%}
     {{addToDoc(arg)}}
     {%endfor%}
     rapidjson::StringBuffer buf;

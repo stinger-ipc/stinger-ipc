@@ -4,14 +4,14 @@ import random
 import stringcase
 from abc import abstractmethod
 from typing import Dict, List, Optional, Any, Union
-from .topic import SignalTopicCreator, InterfaceTopicCreator, MethodTopicCreator
+from .topic import SignalTopicCreator, InterfaceTopicCreator, MethodTopicCreator, PropertyTopicCreator
 from .args import ArgType, ArgPrimitiveType
 from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
 
 
 class Arg:
-    def __init__(self, name: str, description: Optional[str] = None):
+    def __init__(self, name: str, description: str|None = None):
         self._name = name
         self._description = description
         self._default_value = None
@@ -31,7 +31,7 @@ class Arg:
         return self._type
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str|None:
         return self._description
 
     @property
@@ -47,6 +47,10 @@ class Arg:
         return self.name
 
     @property
+    def python_class(self) -> str:
+        return self.python_type
+
+    @property
     def python_local_type(self) -> str:
         return self.python_type.split('.')[-1]
 
@@ -59,7 +63,7 @@ class Arg:
         return self.rust_type
 
     @classmethod
-    def new_arg_from_stinger(cls, arg_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None) -> Arg:
+    def new_arg_from_stinger(cls, arg_spec: Dict[str, str], stinger_spec: StingerSpec|None=None) -> Arg:
         if "type" not in arg_spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in arg_spec:
@@ -67,6 +71,8 @@ class Arg:
 
         if hasattr(ArgPrimitiveType, arg_spec["type"].upper()):
             arg = ArgPrimitive.new_arg_primitive_from_stinger(arg_spec)
+            if opt := arg_spec.get('optional', False):
+                arg.optional = opt
             return arg
         else:
             if stinger_spec is None:
@@ -78,6 +84,8 @@ class Arg:
             if arg_spec["enumName"] not in stinger_spec.enums:
                 raise InvalidStingerStructure(f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums")
             arg = ArgEnum(arg_spec["name"], stinger_spec.enums[arg_spec['enumName']])
+            if opt := arg_spec.get('optional', False):
+                arg.optional = opt
             return arg
         raise RuntimeError("unknown arg type: {arg_spec['type']}")
 
@@ -86,7 +94,7 @@ class Arg:
         ...
 
 class ArgEnum(Arg):
-    def __init__(self, name: str, enum: InterfaceEnum, description: Optional[str] = None):
+    def __init__(self, name: str, enum: InterfaceEnum, description: str|None = None):
         super().__init__(name, description)
         self._enum = enum
         self._type = ArgType.ENUM
@@ -97,23 +105,39 @@ class ArgEnum(Arg):
 
     @property
     def python_type(self) -> str:
+        if self.optional:
+            return f"{self._enum.python_type} | None"
+        return self._enum.python_type
+
+    @property
+    def python_class(self) -> str:
         return self._enum.python_type
 
     @property
     def cpp_type(self) -> str:
+        if self.optional:
+            return f"boost::optional<{self._enum.cpp_type}>"
         return self._enum.cpp_type
 
     @property
     def rust_type(self) -> str:
+        if self.optional:
+            return f"Option<{self._enum.rust_type}>"
         return self._enum.rust_type
 
     @property
     def rust_local_type(self) -> str:
+        if self.optional:
+            return f"Option<{self._enum.rust_local_type}>"
         return self._enum.rust_local_type
 
     @property
     def cpp_temp_type(self) -> str:
         return self.cpp_type
+
+    @property
+    def cpp_data_type(self) -> str:
+        return self._enum.cpp_type
 
     @property
     def cpp_rapidjson_type(self) -> str:
@@ -141,7 +165,7 @@ class ArgEnum(Arg):
 
 
 class ArgPrimitive(Arg):
-    def __init__(self, name: str, arg_type: ArgPrimitiveType, description: Optional[str] = None):
+    def __init__(self, name: str, arg_type: ArgPrimitiveType, description: str|None = None):
         super().__init__(name, description)
         self._arg_type = arg_type
         self._type = ArgType.PRIMITIVE
@@ -152,15 +176,15 @@ class ArgPrimitive(Arg):
 
     @property
     def python_type(self) -> str:
-        return ArgPrimitiveType.to_python_type(self._arg_type)
+        return ArgPrimitiveType.to_python_type(self._arg_type, optional=self._optional)
 
     @property
     def rust_type(self) -> str:
-        return ArgPrimitiveType.to_rust_type(self._arg_type)
+        return ArgPrimitiveType.to_rust_type(self._arg_type, optional=self._optional)
 
     @property
     def cpp_type(self) -> str:
-        return ArgPrimitiveType.to_cpp_type(self._arg_type)
+        return ArgPrimitiveType.to_cpp_type(self._arg_type, optional=self._optional)
 
     @property
     def cpp_temp_type(self) -> str:
@@ -200,14 +224,14 @@ class ArgPrimitive(Arg):
         return f"<ArgPrimitive name={self._name} type={ArgPrimitiveType.to_python_type(self.type)}>"
 
     @classmethod
-    def new_arg_primitive_from_stinger(cls, stinger: Dict[str, str]) -> Arg:
+    def new_arg_primitive_from_stinger(cls, stinger: Dict[str, str]) -> ArgPrimitive:
         if "type" not in stinger:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in stinger:
             raise InvalidStingerStructure("No 'name' in arg structure")
 
         arg_primitive_type = ArgPrimitiveType.from_string(stinger["type"])
-        arg: Arg = cls(name=stinger["name"], arg_type=arg_primitive_type)
+        arg: ArgPrimitive = cls(name=stinger["name"], arg_type=arg_primitive_type)
 
         if "description" in stinger and isinstance(stinger["description"], str):
             arg.set_description(stinger["description"])
@@ -215,7 +239,7 @@ class ArgPrimitive(Arg):
 
 
 class ArgStruct(Arg):
-    def __init__(self, name: str, members: Optional[List[Arg]]=None):
+    def __init__(self, name: str, members: List[Arg]|None=None):
         super().__init__(name)
         self._members = members or []
         self._type = ArgType.STRUCT
@@ -256,17 +280,6 @@ class ArgStruct(Arg):
             return f"{self.python_type}({init_list})"
         return None
 
-
-class Schema(object):
-    """Eventually this will do more than simply be a dumb object.
-    It will probably do some parsing of the schema to make it more
-    accessible/powerful.
-    """
-
-    def __init__(self, schema):
-        self._schema = schema
-
-
 class Signal(object):
     def __init__(self, topic_creator: SignalTopicCreator, name: str):
         self._topic_creator = topic_creator
@@ -293,7 +306,7 @@ class Signal(object):
 
     @classmethod
     def new_signal_from_stinger(
-        cls, topic_creator: SignalTopicCreator, name: str, signal_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None
+        cls, topic_creator: SignalTopicCreator, name: str, signal_spec: Dict[str, str], stinger_spec: StingerSpec|None=None
     ) -> "Signal":
         """Alternative constructor from a Stinger signal structure."""
         signal = cls(topic_creator, name)
@@ -359,7 +372,7 @@ class Method(object):
 
     @classmethod
     def new_method_from_stinger(
-        cls, topic_creator: MethodTopicCreator, name: str, method_spec: Dict[str, str], stinger_spec: Optional[StingerSpec]=None
+        cls, topic_creator: MethodTopicCreator, name: str, method_spec: Dict[str, str], stinger_spec: StingerSpec|None=None
     ) -> "Method":
         """Alternative constructor from a Stinger method structure."""
         method = cls(topic_creator, name)
@@ -385,6 +398,63 @@ class Method(object):
                 method.add_return_value(new_arg)
 
         return method
+
+class Property:
+    def __init__(self, topic_creator: PropertyTopicCreator, name: str):
+        self._topic_creator = topic_creator
+        self._name = name
+        self._arg_list = []  # type: List[Arg]
+
+    def add_arg(self, arg: Arg) -> Method:
+        if arg.name in [a.name for a in self._arg_list]:
+            raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
+        self._arg_list.append(arg)
+        return self
+
+    @property
+    def python_class(self) -> str:
+        if len(self._arg_list) == 1:
+            return self._arg_list[0].python_class
+        else:
+            return f"{stringmanip.upper_camel_case(self.name)}Property"
+
+    @property
+    def arg_list(self) -> list[Arg]:
+        return self._arg_list
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def value_topic(self) -> str:
+        return self._topic_creator.property_value_topic(self.name)
+
+    @property
+    def update_topic(self) -> str:
+        return self._topic_creator.property_update_topic(self.name)
+
+    @classmethod
+    def new_method_from_stinger(
+        cls, topic_creator: PropertyTopicCreator, name: str, prop_spec: Dict[str, str], stinger_spec: StingerSpec|None=None
+    ) -> "Property":
+        """Alternative constructor from a Stinger method structure."""
+        prop_obj = cls(topic_creator, name)
+        if "values" not in prop_spec:
+            raise InvalidStingerStructure("Property specification must have 'values'")
+        if not isinstance(prop_spec['values'], list):
+            raise InvalidStingerStructure(f"Values must be a list.  It is '{type(prop_spec['values'])}' ")
+
+        for arg_spec in prop_spec["values"]:
+            if 'name' not in arg_spec or 'type' not in arg_spec:
+                raise InvalidStingerStructure("Arg must have name and type.")
+            new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
+            prop_obj.add_arg(new_arg)
+
+        return prop_obj
+
+    def __str__(self) -> str:
+        return f"Property<name={self.name} values{[a.name for a in self.arg_list].join(",")}>"
 
 class InterfaceEnum:
 
@@ -495,7 +565,6 @@ class InterfaceStruct:
     def new_struct_from_stinger(cls, name, spec: Dict[str, str|List[Dict[str,str]]], stinger_spec: StingerSpec) -> InterfaceStruct:
         istruct = cls(name)
         for memb in spec.get('members', []):
-            print(f"Adding member {memb}")
             arg = Arg.new_arg_from_stinger(memb, stinger_spec=stinger_spec)
             istruct.add_member(arg)
         return istruct
@@ -509,8 +578,8 @@ class MqttTransportProtocol(Enum):
 class Broker:
     def __init__(self, name: str="Default"):
         self._name: str = name
-        self._host: Optional[str] = None
-        self._port: Optional[int] = None
+        self._host: str|None = None
+        self._port: int|None = None
         self._auth = None
         self._transport_protocol: MqttTransportProtocol = MqttTransportProtocol.TCP
     
@@ -523,7 +592,7 @@ class Broker:
         return f"{stringcase.pascalcase(self.name)}Connection"
 
     @property
-    def hostname(self) -> Optional[str]:
+    def hostname(self) -> str|None:
         return self._host
 
     @hostname.setter
@@ -531,7 +600,7 @@ class Broker:
         self._host = value
 
     @property
-    def port(self) -> Optional[int]:
+    def port(self) -> int|None:
         return self._port
 
     @port.setter
@@ -570,7 +639,7 @@ class StingerSpec:
         self._title = interface['title'] if 'title' in interface else None
 
         self.signals: dict[str, Signal] = {}
-        self.params: dict[str, Any] = {}
+        self.properties: dict[str, Any] = {}
         self.methods: dict[str, Method] = {}
         self.enums: dict[str, InterfaceEnum] = {}
         self.structs: dict[str, InterfaceStruct] = {}
@@ -626,6 +695,10 @@ class StingerSpec:
     def add_method(self, method: Method):
         assert isinstance(method, Method)
         self.methods[method.name] = method
+
+    def add_property(self, prop: Property):
+        assert isinstance(prop, Property)
+        self.properties[prop.name] = prop
 
     def add_enum(self, interface_enum: InterfaceEnum):
         assert interface_enum is not None
@@ -735,6 +808,24 @@ class StingerSpec:
         except TypeError as e:
             raise InvalidStingerStructure(
                 f"Method specification appears to be invalid: {e}"
+            )
+
+        try:
+            if "properties" in stinger:
+                for prop_name, prop_spec in stinger["properties"].items():
+                    prop = Property.new_method_from_stinger(
+                        topic_creator.property_topic_creator(),
+                        prop_name,
+                        prop_spec,
+                        stinger_spec
+                    )
+                    assert (
+                        prop is not None
+                    ), f"Did not create property from {prop_name} and {prop_spec}"
+                    stinger_spec.add_property(prop)
+        except TypeError as e:
+            raise InvalidStingerStructure(
+                f"Property specification appears to be invalid: {e}"
             )
 
         return stinger_spec

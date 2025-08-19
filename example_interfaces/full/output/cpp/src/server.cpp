@@ -98,18 +98,16 @@ void ExampleServer::_receiveMessage(
 }
 
 
-boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWeek dayOfWeek)
+boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek)
 {
     rapidjson::Document doc;
     doc.SetObject();
     
     
+    doc.AddMember("dayOfMonth",dayOfMonth, doc.GetAllocator());
     
-    doc.AddMember("dayOfMonth", dayOfMonth, doc.GetAllocator());
-    
-    
-    
-    doc.AddMember("dayOfWeek", static_cast<int>(dayOfWeek), doc.GetAllocator());
+    if (dayOfWeek)
+    doc.AddMember("dayOfWeek", static_cast<int>(*dayOfWeek), doc.GetAllocator());
     
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
@@ -119,7 +117,7 @@ boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWee
 
 
 
-void ExampleServer::registerAddNumbersHandler(std::function<int(int, int)> func)
+void ExampleServer::registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func)
 {
     std::cout << "Registered method to handle Example/method/addNumbers\n";
     _addNumbersHandler = func;
@@ -166,8 +164,20 @@ void ExampleServer::_callAddNumbersHandler(
             }
         }
         
+        boost::optional<int> tempThird;
+        { // Scoping
+            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
+            if (itr != doc.MemberEnd() && itr->value.IsInt()) {
+                
+                tempThird = itr->value.GetInt();
+                
+            } else {
+                throw std::runtime_error("Received payload doesn't have required value/type");
+            }
+        }
+        
 
-        int ret = _addNumbersHandler(tempFirst, tempSecond);
+        int ret = _addNumbersHandler(tempFirst, tempSecond, tempThird);
 
         if (optResponseTopic)
         {

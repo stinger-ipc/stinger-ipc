@@ -39,10 +39,10 @@ class {{stinger.name}}Client:
         {%if stinger.methods | length > 0 %}
         self._pending_method_responses = {} # type: Dict[str, Callable[..., None]]
         {%endif%}
-        {%for p,v in stinger.params.items()-%}
-        self._{{p}} = {{v.payload.initialValue}}
-        self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
-        self.changed_value_callback_for_{{p}} = None
+        {%for prop_name, prop_spec in stinger.properties.items()-%}
+        self._property_{{prop_name}}: {{prop_spec.python_class}}|None = None
+        self._conn.subscribe("{{prop_spec.value_topic}}")
+        self.changed_value_callback_for_{{prop_name}} = None
         {%endfor-%}
         {%-for sig_name in stinger.signals.keys()-%}
         self._signal_recv_callbacks_for_{{sig_name}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
@@ -50,6 +50,16 @@ class {{stinger.name}}Client:
         {%-for method_name, method in stinger.methods.items()-%}
         self._conn.subscribe(f"{{method.response_topic('{self._client_id}')}}")
         {%endfor%}
+
+    {%for prop_name, prop_spec in stinger.properties.items()-%}
+    @property
+    def {{prop_name}}(self):
+        return self._property_{{prop_name}}
+
+    @{{prop_name}}.setter
+    def {{prop_name}}(self, value):
+        pass
+    {%endfor%}
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
@@ -82,7 +92,7 @@ class {{stinger.name}}Client:
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
             {%for arg in sig.arg_list-%}
-            kwargs["{{arg.name}}"] = {{arg.python_type}}(kwargs["{{arg.name}}"])
+            kwargs["{{arg.name}}"] = {{arg.python_class}}(kwargs["{{arg.name}}"]){%if arg.optional %} if kwargs.get("{{arg.name}}") else None {%endif%}
             {%endfor%}
             self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
         {%endfor%}
@@ -124,7 +134,7 @@ class {{stinger.name}}Client:
         """ Calling this initiates a `{{method_name}}` IPC method call.
         """
         {%for arg in method.arg_list%}
-        if not isinstance({{arg.name}}, {{arg.python_type}}):
+        if not isinstance({{arg.name}}, {{arg.python_class}}){%- if not arg.optional -%} and {{arg.name}} is not None{%endif-%}:
             raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_type}}")
         {%endfor%}
         fut = futures.Future() # type: futures.Future

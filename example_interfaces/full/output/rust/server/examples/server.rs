@@ -12,7 +12,7 @@ use tokio::join;
 use connection::payloads::MethodResultCode;
 
 
-fn add_numbers_handler(_first: i32, _second: i32) -> Result<i32, MethodResultCode> {
+fn add_numbers_handler(_first: i32, _second: i32, _third: Option<i32>) -> Result<i32, MethodResultCode> {
     println!("Handling addNumbers");
     Ok(42)
     
@@ -54,11 +54,10 @@ async fn main() {
         
 
         
-        server.emit_today_is(42, connection::payloads::DayOfTheWeek::Monday).await;
+        server.emit_today_is(42, Some(connection::payloads::DayOfTheWeek::Monday)).await;
         
 
         server.receive_loop().await;
-
         join!(loop_task);
     });
     // Ctrl-C to stop

@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
 
     {%-for sig_name, sig in stinger.signals.items() %}
     client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
-        std::cout << {%for arg in sig.arg_list%}"{{arg.name}}=" << {%if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]{%else%}{{arg.name}}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
+        std::cout << {%for arg in sig.arg_list%}"{{arg.name}}=" << {%-if arg.optional%} "None"{%else%}{%if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]{%else%}{{arg.name}}{%endif%}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
     });
     {%-endfor%}
 

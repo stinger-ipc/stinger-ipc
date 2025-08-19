@@ -64,6 +64,7 @@ void SignalOnlyClient::_receiveMessage(
                         
                     } else {
                         throw std::runtime_error("Received payload doesn't have required value/type");
+                    
                     }
                 }
                 
@@ -76,6 +77,7 @@ void SignalOnlyClient::_receiveMessage(
                         
                     } else {
                         throw std::runtime_error("Received payload doesn't have required value/type");
+                    
                     }
                 }
                 
@@ -88,6 +90,7 @@ void SignalOnlyClient::_receiveMessage(
                         
                     } else {
                         throw std::runtime_error("Received payload doesn't have required value/type");
+                    
                     }
                 }
                 

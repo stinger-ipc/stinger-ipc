@@ -35,8 +35,9 @@ uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/full/exam
 if [ $? -eq 0 ]; then
     (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example client)
     (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example example_server_example)
+    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example pub_and_recv)
     (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example client)
-    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example server)
+    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example signal_only_server_example)
 fi
 
 # AsyncAPI

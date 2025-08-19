@@ -24,6 +24,7 @@ class Lunch(BaseModel):
     sandwich: str
     crackers: float
     day: DayOfTheWeek
+    order_number: int | None
 
 
 
@@ -31,3 +32,10 @@ class DoSomethingReturnValue(BaseModel):
     label: str
     identifier: int
     day: DayOfTheWeek
+
+
+
+class FavoriteFoodsProperty(BaseModel):
+    drink: str
+    slices_of_pizza: int
+    breakfast: str | None

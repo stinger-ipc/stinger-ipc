@@ -26,7 +26,7 @@ struct ExampleServerSubscriptionIds {
 #[derive(Clone)]
 struct ExampleServerMethodHandlers {
     /// Pointer to a function to handle the addNumbers method request.
-    method_handler_for_add_numbers: Arc<Mutex<Box<dyn Fn(i32, i32)->Result<i32, MethodResultCode> + Send>>>,
+    method_handler_for_add_numbers: Arc<Mutex<Box<dyn Fn(i32, i32, Option<i32>)->Result<i32, MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the doSomething method request.
     method_handler_for_do_something: Arc<Mutex<Box<dyn Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + Send>>>,
     
@@ -75,7 +75,7 @@ impl ExampleServer {
         
 
         // Create structure for method handlers.
-        let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2| { Err(MethodResultCode::ServerError) } ))),
+        let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2, _3| { Err(MethodResultCode::ServerError) } ))),
             method_handler_for_do_something: Arc::new(Mutex::new(Box::new( |_1| { Err(MethodResultCode::ServerError) } ))),
             
         };
@@ -98,7 +98,7 @@ impl ExampleServer {
         }
     }
 
-    pub async fn emit_today_is(&mut self, day_of_month: i32, day_of_week: connection::payloads::DayOfTheWeek) {
+    pub async fn emit_today_is(&mut self, day_of_month: i32, day_of_week: Option<connection::payloads::DayOfTheWeek>) {
         let data = connection::payloads::TodayIsSignalPayload {
             
             dayOfMonth: day_of_month,
@@ -110,7 +110,7 @@ impl ExampleServer {
     }
     
 
-    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl Fn(i32, i32)->Result<i32, MethodResultCode> + 'static + Send) {
+    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl Fn(i32, i32, Option<i32>)->Result<i32, MethodResultCode> + 'static + Send) {
         self.method_handlers.method_handler_for_add_numbers = Arc::new(Mutex::new(Box::new(cb)));
     }
     pub fn set_method_handler_for_do_something(&mut self, cb: impl Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + 'static + Send) {
@@ -128,7 +128,7 @@ impl ExampleServer {
         // call the method handler
         let rv: i32 = {
             let func_guard = handlers.method_handler_for_add_numbers.lock().unwrap();
-            (*func_guard)(payload.first, payload.second).unwrap()
+            (*func_guard)(payload.first, payload.second, payload.third).unwrap()
         };let rv = AddNumbersReturnValue {
             sum: rv,
         };

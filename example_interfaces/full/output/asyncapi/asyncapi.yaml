@@ -133,9 +133,12 @@ components:
             type: integer
           second:
             type: integer
+          third:
+            type: integer
         required:
         - first
         - second
+        - third
         type: object
       traits:
       - $ref: '#/components/messageTraits/methodJsonArguments'

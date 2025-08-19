@@ -32,7 +32,7 @@ fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|
 async fn main() {
     block_on(async {
         {%set broker = stinger.get_example_broker()%}
-        let mut connection = Connection::new_{{broker.class_name|snake_case}}({%if broker.hostname is none%}String::from("localhost"){%if broker.port is none%}, {%endif%}{%endif%}{%if broker.port is none%}1883{%endif%}).await.unwrap();
+        let mut connection = Connection::new_{{broker.class_name|snake_case}}().await.unwrap();
         let mut server = {{stinger.name}}Server::new(&mut connection).await;
 
         let loop_task = tokio::spawn(async move {
@@ -45,11 +45,10 @@ async fn main() {
         {%endfor%}
 
         {%for sig_name, sig in stinger.signals.items()%}
-        server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+        server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{%if arg.optional%}Some({%endif%}{{arg.get_random_example_value(lang="rust")}}{%if arg.optional%}){%endif%}{%if not loop.last%}, {%endif%}{%endfor%}).await;
         {%endfor%}
 
         server.receive_loop().await;
-
         join!(loop_task);
     });
     // Ctrl-C to stop

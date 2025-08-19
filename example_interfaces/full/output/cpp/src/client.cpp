@@ -74,10 +74,11 @@ void ExampleClient::_receiveMessage(
                         
                     } else {
                         throw std::runtime_error("Received payload doesn't have required value/type");
+                    
                     }
                 }
                 
-                DayOfTheWeek tempdayOfWeek;
+                boost::optional<DayOfTheWeek> tempdayOfWeek;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("dayOfWeek");
                     if (itr != doc.MemberEnd() && itr->value.IsInt()) {
@@ -85,7 +86,8 @@ void ExampleClient::_receiveMessage(
                         tempdayOfWeek = static_cast<DayOfTheWeek>(itr->value.GetInt());
                         
                     } else {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        tempdayOfWeek = boost::none;
+                    
                     }
                 }
                 
@@ -111,13 +113,13 @@ void ExampleClient::_receiveMessage(
         _handleDoSomethingResponse(topic, payload, *optCorrelationId);
     }
 }
-void ExampleClient::registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb)
+void ExampleClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb)
 {
     _todayIsCallback = cb;
 }
 
 
-boost::future<int> ExampleClient::addNumbers(int first, int second)
+boost::future<int> ExampleClient::addNumbers(int first, int second, boost::optional<int> third)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -125,18 +127,19 @@ boost::future<int> ExampleClient::addNumbers(int first, int second)
 
     rapidjson::Document doc;
     doc.SetObject();
-    //rapidjson::Value clientIdValue;
-    //std::string clientId = _broker->GetClientId();
-    //clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
-    //doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
+
     
     
     
-    doc.AddMember("first", first, doc.GetAllocator());
+    doc.AddMember("first",first, doc.GetAllocator());
     
     
     
-    doc.AddMember("second", second, doc.GetAllocator());
+    doc.AddMember("second",second, doc.GetAllocator());
+    
+    
+    if (third) 
+    doc.AddMember("third",*third, doc.GetAllocator());
     
     
     rapidjson::StringBuffer buf;
@@ -188,10 +191,7 @@ boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::stri
 
     rapidjson::Document doc;
     doc.SetObject();
-    //rapidjson::Value clientIdValue;
-    //std::string clientId = _broker->GetClientId();
-    //clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
-    //doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
+
     
     
     

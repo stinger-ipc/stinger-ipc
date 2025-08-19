@@ -19,17 +19,24 @@ structures:
     members:
       - name: drink
         type: boolean
+        documentation: Whether or not lunch comes with a drink
       - name: sandwich
         type: string
+        documentation: The type of sandwich which will be served.
       - name: crackers
         type: float
+        documentation: The number of crackers that come with lunch.
       - name: day
         type: enum
         enumName: dayOfTheWeek
+      - name: order_number
+        type: integer
+        optional: true
 
 enums:
   dayOfTheWeek:
     - name: Sunday
+      documentation: First day of the week.  The sabbath.
     - name: Monday
     - name: Tuesday
     - name: Wednesday
@@ -43,9 +50,11 @@ signals:
     payload:
       - name: dayOfMonth
         type: integer
+        documentation: The calendar day of the month.
       - name: dayOfWeek
         type: enum
         enumName: dayOfTheWeek
+        optional: true
 
 methods:
 
@@ -55,6 +64,9 @@ methods:
         type: integer
       - name: second
         type: integer
+      - name: third
+        type: integer
+        optional: true
     returnValues:
       - name: sum
         type: integer
@@ -71,3 +83,22 @@ methods:
       - name: day
         type: enum
         enumName: dayOfTheWeek
+
+properties:
+
+  favorite_number:
+    documentation: |
+      My favorite number
+    values:
+      - name: number
+        type: integer
+
+  favorite_foods:
+    values:
+      - name: drink
+        type: string
+      - name: slices_of_pizza
+        type: integer
+      - name: breakfast
+        type: string
+        optional: true

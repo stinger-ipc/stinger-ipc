@@ -56,7 +56,7 @@ class ArgPrimitiveType(Enum):
     @classmethod
     def to_rust_type(cls, arg_type: ArgPrimitiveType, optional:bool=False) -> str:
         if optional:
-            return f"{cls.to_rust_type(arg_type, optional=False)} | None"
+            return f"Option<{cls.to_rust_type(arg_type, optional=False)}>"
         if arg_type == cls.BOOLEAN:
             return "bool"
         elif arg_type == cls.INTEGER:

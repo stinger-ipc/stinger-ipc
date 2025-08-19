@@ -25,11 +25,11 @@ public:
     virtual ~ExampleClient() = default;
 
     
-    void registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb);
+    void registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb);
     
 
     
-    boost::future<int> addNumbers(int first, int second);
+    boost::future<int> addNumbers(int first, int second, boost::optional<int> third);
     
     boost::future<DoSomethingReturnValue> doSomething(const std::string& aString);
     
@@ -39,7 +39,7 @@ private:
     std::map<boost::uuids::uuid, boost::promise<int>> _pendingAddNumbersMethodCalls;
     std::map<boost::uuids::uuid, boost::promise<DoSomethingReturnValue>> _pendingDoSomethingMethodCalls;
     
-    std::function<void(int, DayOfTheWeek)> _todayIsCallback;
+    std::function<void(int, boost::optional<DayOfTheWeek>)> _todayIsCallback;
     
     void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);
     void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);

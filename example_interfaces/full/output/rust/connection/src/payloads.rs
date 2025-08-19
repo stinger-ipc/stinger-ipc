@@ -58,8 +58,10 @@ impl fmt::Display for DayOfTheWeek {
 pub struct Lunch {
     pub drink: bool,
     pub sandwich: String,
-    pub crackers: f32,pub day: DayOfTheWeek,
+    pub crackers: f32,
+    pub day: DayOfTheWeek,
     
+    pub order_number: Option<i32>,
 }
 
 #[allow(dead_code)]
@@ -83,6 +85,7 @@ pub enum MethodResultCode {
 pub struct AddNumbersRequestObject {
     pub first: i32,
     pub second: i32,
+    pub third: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -112,6 +115,6 @@ pub struct DoSomethingReturnValue {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TodayIsSignalPayload {
     pub dayOfMonth: i32,
-    pub dayOfWeek: DayOfTheWeek,
+    pub dayOfWeek: Option<DayOfTheWeek>,
     
 }

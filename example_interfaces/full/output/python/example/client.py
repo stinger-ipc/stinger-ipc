@@ -21,7 +21,7 @@ import interface_types as stinger_types
 logging.basicConfig(level=logging.DEBUG)
 
 
-TodayIsSignalCallbackType = Callable[[int, stinger_types.DayOfTheWeek], None]
+TodayIsSignalCallbackType = Callable[[int, stinger_types.DayOfTheWeek | None], None]
 
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
 
@@ -40,10 +40,32 @@ class ExampleClient:
         
         self._pending_method_responses = {} # type: Dict[str, Callable[..., None]]
         
+        self._property_favorite_number: int|None = None
+        self._conn.subscribe("Example/property/favorite_number")
+        self.changed_value_callback_for_favorite_number = None
+        self._property_favorite_foods: FavoriteFoodsProperty|None = None
+        self._conn.subscribe("Example/property/favorite_foods")
+        self.changed_value_callback_for_favorite_foods = None
         self._signal_recv_callbacks_for_todayIs = [] # type: List[TodayIsSignalCallbackType]
         self._conn.subscribe(f"client/{self._client_id}/Example/method/addNumbers/response")
         self._conn.subscribe(f"client/{self._client_id}/Example/method/doSomething/response")
         
+
+    @property
+    def favorite_number(self):
+        return self._property_favorite_number
+
+    @favorite_number.setter
+    def favorite_number(self, value):
+        pass
+    @property
+    def favorite_foods(self):
+        return self._property_favorite_foods
+
+    @favorite_foods.setter
+    def favorite_foods(self, value):
+        pass
+    
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
@@ -74,7 +96,7 @@ class ExampleClient:
             allowed_args = ["dayOfMonth", "dayOfWeek", ]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
             kwargs["dayOfMonth"] = int(kwargs["dayOfMonth"])
-            kwargs["dayOfWeek"] = stinger_types.DayOfTheWeek(kwargs["dayOfWeek"])
+            kwargs["dayOfWeek"] = stinger_types.DayOfTheWeek(kwargs["dayOfWeek"]) if kwargs.get("dayOfWeek") else None 
             
             self._do_callbacks_for(self._signal_recv_callbacks_for_todayIs, **kwargs)
         
@@ -131,15 +153,18 @@ class ExampleClient:
     
 
     
-    def add_numbers(self, first: int, second: int) -> futures.Future:
+    def add_numbers(self, first: int, second: int, third: int | None) -> futures.Future:
         """ Calling this initiates a `addNumbers` IPC method call.
         """
         
-        if not isinstance(first, int):
+        if not isinstance(first, int)and first is not None:
             raise ValueError("The 'first' argument wasn't a int")
         
-        if not isinstance(second, int):
+        if not isinstance(second, int)and second is not None:
             raise ValueError("The 'second' argument wasn't a int")
+        
+        if not isinstance(third, int | None):
+            raise ValueError("The 'third' argument wasn't a int | None")
         
         fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
@@ -147,6 +172,7 @@ class ExampleClient:
         payload = {
             "first": first,
             "second": second,
+            "third": third,
         }
         self._conn.publish("Example/method/addNumbers", json.dumps(payload), qos=2, retain=False,
                            correlation_id=correlation_id, response_topic=f"client/{self._client_id}/Example/method/addNumbers/response")
@@ -178,7 +204,7 @@ class ExampleClient:
         """ Calling this initiates a `doSomething` IPC method call.
         """
         
-        if not isinstance(aString, str):
+        if not isinstance(aString, str)and aString is not None:
             raise ValueError("The 'aString' argument wasn't a str")
         
         fut = futures.Future() # type: futures.Future
@@ -249,10 +275,10 @@ if __name__ == '__main__':
     client_builder = ExampleClientBuilder(conn)
     
     @client_builder.receive_todayIs
-    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek):
+    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
         """
         @param dayOfMonth int 
-        @param dayOfWeek stinger_types.DayOfTheWeek 
+        @param dayOfWeek stinger_types.DayOfTheWeek | None 
         """
         print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
     
@@ -260,7 +286,7 @@ if __name__ == '__main__':
     client = client_builder.build()
     
     print("Making call to 'add_numbers'")
-    future = client.add_numbers(first=42, second=42)
+    future = client.add_numbers(first=42, second=42, third=42)
     try:
         print(f"RESULT:  {future.result(5)}")
     except futures.TimeoutError:

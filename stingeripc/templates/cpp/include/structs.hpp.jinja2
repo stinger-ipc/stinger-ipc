@@ -1,12 +1,13 @@
 
 #pragma once
 #include <string>
+#include <boost/optional.hpp>
 #include "enums.hpp"
 
 {%for istruct_name, istruct in stinger.structs.items() %}
-enum class {{ie_name | UpperCamelCase }} {
-    {%-for value in struct.members %}
-    {{rv.cpp_temp_type}} {{rv.name}};
+struct {{istruct_name | UpperCamelCase }} {
+    {%-for value in istruct.members %}
+    {{value.cpp_temp_type}} {{value.name}};
     {%-endfor%}
 };
 {%endfor%}

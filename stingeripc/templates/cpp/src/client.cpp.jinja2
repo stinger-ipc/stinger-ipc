@@ -72,10 +72,14 @@ void {{stinger.name | UpperCamelCase}}Client::_receiveMessage(
                         {%if arg.arg_type.name.lower() == 'primitive'%}
                         temp{{arg.name}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
                         {%elif arg.arg_type.name.lower() == 'enum'%}
-                        temp{{arg.name}} = static_cast<{{arg.cpp_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                        temp{{arg.name}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
                         {%endif%}
                     } else {
+                    {%-if arg.optional%}
+                        temp{{arg.name}} = boost::none;
+                    {%else%}
                         throw std::runtime_error("Received payload doesn't have required value/type");
+                    {%endif%}
                     }
                 }
                 {%endfor%}
@@ -117,20 +121,18 @@ boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}
 
     rapidjson::Document doc;
     doc.SetObject();
-    //rapidjson::Value clientIdValue;
-    //std::string clientId = _broker->GetClientId();
-    //clientIdValue.SetString(clientId.c_str(), clientId.size(), doc.GetAllocator());
-    //doc.AddMember("clientId", clientIdValue, doc.GetAllocator());
+
     {%macro addToDoc(arg)%}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
+    {%-if arg.optional %}if ({{arg.name}}) {%endif-%}
     {%-if arg.type.name.lower() == 'string'%}
     { // restrict scope
         rapidjson::Value tempStringValue;
-        tempStringValue.SetString({{arg.name}}.c_str(), {{arg.name}}.size(), doc.GetAllocator());
+        tempStringValue.SetString({{arg.name}}{%-if arg.optional %}->{%else%}.{%endif-%}c_str(), {{arg.name}}.size(), doc.GetAllocator());
         doc.AddMember("{{arg.name}}", tempStringValue, doc.GetAllocator());
     }
     {%-else%}
-    doc.AddMember("{{arg.name}}", {{arg.name}}, doc.GetAllocator());
+    doc.AddMember("{{arg.name}}", {%-if arg.optional %}*{%endif-%}{{arg.name}}, doc.GetAllocator());
     {%-endif%}
     {%elif arg.arg_type.name.lower() == 'enum'%}
     doc.AddMember("{{arg.name}}", static_cast<int>({{arg.name}}), doc.GetAllocator());

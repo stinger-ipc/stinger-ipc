@@ -25,11 +25,19 @@ class ExampleServer:
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         self._conn.set_last_will(topic="Example/interface", payload=None, qos=1, retain=True)
+        self._property_favorite_number = None
+        self._conn.subscribe("Example/property/favorite_number/set_value")
+        self.changed_value_callback_for_ = None
+        self._publish_interface_info()
+        self._property_favorite_foods = None
+        self._conn.subscribe("Example/property/favorite_foods/set_value")
+        self.changed_value_callback_for_ = None
+        self._publish_interface_info()
         
         self._conn.subscribe("Example/method/addNumbers")
         
         self._conn.subscribe("Example/method/doSomething")
-        self._add_numbers_method_handler: Optional[Callable[[int, int], int]] = None
+        self._add_numbers_method_handler: Optional[Callable[[int, int, int | None], int]] = None
         self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
         
     
@@ -56,24 +64,24 @@ class ExampleServer:
     def _publish_interface_info(self):
         self._conn.publish("Example/interface", '''{"name": "Example", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}''', qos=1, retain=True)
 
-    def emit_todayIs(self, dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek):
+    def emit_todayIs(self, dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
         """ Server application code should call this method to emit the 'todayIs' signal.
         """
         if not isinstance(dayOfMonth, int):
             raise ValueError(f"The 'dayOfMonth' value must be int.")
-        if not isinstance(dayOfWeek, stinger_types.DayOfTheWeek):
-            raise ValueError(f"The 'dayOfWeek' value must be stinger_types.DayOfTheWeek.")
+        if not isinstance(dayOfWeek, stinger_types.DayOfTheWeek) and dayOfWeek is not None:
+            raise ValueError(f"The 'dayOfWeek' value must be stinger_types.DayOfTheWeek | None.")
         
         payload = {
             "dayOfMonth": int(dayOfMonth),
-            "dayOfWeek": stinger_types.DayOfTheWeek(dayOfWeek).value,
+            "dayOfWeek": stinger_types.DayOfTheWeek(dayOfWeek).value if dayOfWeek is not None else None,
         }
         self._conn.publish("Example/signal/todayIs", json.dumps(payload), qos=1, retain=False)
 
     
 
     
-    def handle_add_numbers(self, handler: Callable[[int, int], int]):
+    def handle_add_numbers(self, handler: Callable[[int, int, int | None], int]):
         """ This is a decorator to decorate a method that will handle the 'addNumbers' method calls.
         """
         if self._add_numbers_method_handler is None and handler is not None:
@@ -93,19 +101,40 @@ class ExampleServer:
             if "first" in payload:
                 if not isinstance(payload["first"], int):
                     self._logger.warning("The 'first' property in the payload to '%s' wasn't the correct type.  It should have been int.", topic)
+                    # TODO: return an error via MQTT
                     return
                 else:
                     method_args.append(payload["first"])
             else:
-                self._logger.info("The 'first' property in the payload to '%s' wasn't present", topic)
+                
+                self._logger.warning("The 'first' property in the payload to '%s' wasn't present", topic)
+                # TODO: return an error via MQTT
+                return
+                
             if "second" in payload:
                 if not isinstance(payload["second"], int):
                     self._logger.warning("The 'second' property in the payload to '%s' wasn't the correct type.  It should have been int.", topic)
+                    # TODO: return an error via MQTT
                     return
                 else:
                     method_args.append(payload["second"])
             else:
-                self._logger.info("The 'second' property in the payload to '%s' wasn't present", topic)
+                
+                self._logger.warning("The 'second' property in the payload to '%s' wasn't present", topic)
+                # TODO: return an error via MQTT
+                return
+                
+            if "third" in payload:
+                if not isinstance(payload["third"], int | None) or third is None:
+                    self._logger.warning("The 'third' property in the payload to '%s' wasn't the correct type.  It should have been int | None.", topic)
+                    # TODO: return an error via MQTT
+                    return
+                else:
+                    method_args.append(payload["third"])
+            else:
+                
+                method_args.append(None)
+                
             
             
             if response_topic is not None:
@@ -150,11 +179,16 @@ class ExampleServer:
             if "aString" in payload:
                 if not isinstance(payload["aString"], str):
                     self._logger.warning("The 'aString' property in the payload to '%s' wasn't the correct type.  It should have been str.", topic)
+                    # TODO: return an error via MQTT
                     return
                 else:
                     method_args.append(payload["aString"])
             else:
-                self._logger.info("The 'aString' property in the payload to '%s' wasn't present", topic)
+                
+                self._logger.warning("The 'aString' property in the payload to '%s' wasn't present", topic)
+                # TODO: return an error via MQTT
+                return
+                
             
             
             if response_topic is not None:
@@ -181,7 +215,6 @@ class ExampleServer:
                     correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
     
 
-    
 
 class ExampleServerBuilder:
     """
@@ -191,10 +224,10 @@ class ExampleServerBuilder:
     def __init__(self, connection: BrokerConnection):
         self._conn = connection
         
-        self._add_numbers_method_handler: Optional[Callable[[int, int], int]] = None
+        self._add_numbers_method_handler: Optional[Callable[[int, int, int | None], int]] = None
         self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
     
-    def handle_add_numbers(self, handler: Callable[[int, int], int]):
+    def handle_add_numbers(self, handler: Callable[[int, int, int | None], int]):
         if self._add_numbers_method_handler is None and handler is not None:
             self._add_numbers_method_handler = handler
         else:
@@ -230,8 +263,8 @@ if __name__ == '__main__':
 
     
     @server.handle_add_numbers
-    def add_numbers(first: int, second: int) -> int:
-        print(f"Running add_numbers'({first}, {second})'")
+    def add_numbers(first: int, second: int, third: int | None) -> int:
+        print(f"Running add_numbers'({first}, {second}, {third})'")
         return 42
     
     @server.handle_do_something

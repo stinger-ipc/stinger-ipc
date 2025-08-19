@@ -55,7 +55,7 @@ pub struct {{struct_name | UpperCamelCase}} {
     {%-for arg in struct.members%}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
     pub {{arg.name}}: {{arg.rust_type}},
-    {%-elif arg.arg_type.name.lower() == 'enum'-%}
+    {%-elif arg.arg_type.name.lower() == 'enum'%}
     pub {{arg.name}}: {{arg.rust_local_type}},
     {%endif-%}
     {%endfor%}

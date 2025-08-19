@@ -23,7 +23,7 @@ Client <<- Server : Signal(Parameters)
 |Name|Type|Description|
 |----|----|-----------|
 {%-for arg in signal.arg_list%}
-|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}|{{arg.description}}|{%endfor%}
+|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}|{{arg.description or ''}}|{%endfor%}
 
 {%endfor%}
 {%endif%}
@@ -50,7 +50,7 @@ Client <<-- Server: Response(Parameters)
 |Name|Type|Description|
 |----|----|-----------|
 {%-for arg in method.arg_list%}
-|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}|{{arg.description}}|{%endfor%}
+|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}
 
 #### Return Parameters
 
@@ -58,16 +58,37 @@ Client <<-- Server: Response(Parameters)
 |Name|Type|Description|
 |----|----|-----------|
 {%-for arg in method.return_value.members%}
-|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}|{{arg.description}}|{%endfor%}{%else-%}
+|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}{%else-%}
 The return parameter type is `{{method.return_value.json_type}}`.{%endif%}
 {%endfor%}
 {%endif%}
-## Enums
+{%if stinger.properties | length > 0 %}## Properties
+{%endif%}
+{%for prop_name, prop in stinger.properties.items()%}
+### {{prop_name}}
 
+|Name|Type|Description|
+|----|----|-----------|
+{%-for arg in prop.arg_list%}
+|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}
+
+{%endfor%}{# for each property #}
+{%if stinger.enums | length > 0%}## Enums
+{%endif%}
 {%for ie_name, ie in stinger.enums.items() %}
-### Enum {{ie.class_name }}
+### Enum `{{ie.class_name }}`
 <a name="Enum-{{ie.class_name}}"></a>
 {%-for value in ie.values %}
- * {{value}}
+ * {{value}} ({{loop.index}})
 {%-endfor%}
+{%endfor%}
+
+## Structures
+{%for istruct_name, istruct in stinger.structs.items() %}
+### Struct `{{istruct.class_name }}`
+<a name="Enum-{{istruct.class_name}}"></a>
+|Name|Type|Description|
+|----|----|-----------|
+{%-for arg in istruct.members%}
+|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.documentation or ''}}|{%endfor%}
 {%endfor%}
