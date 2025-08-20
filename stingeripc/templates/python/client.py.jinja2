@@ -57,7 +57,7 @@ class {{stinger.name}}Client:
         """ Property '{{prop_name}}' getter.
         """
         return self._property_{{prop_name}}
-
+    {%if not prop_spec.read_only %}
     @{{prop_name}}.setter
     def {{prop_name}}(self, value: {{prop_spec.python_class}}):
         """ Serializes and publishes the '{{prop_name}}' property.
@@ -71,7 +71,7 @@ class {{stinger.name}}Client:
         {%endif-%}
         self._logger.debug("Setting '{{prop_name}}' property to %s", serialized)
         self._conn.publish("{{prop_spec.update_topic}}", serialized, qos=1)
-
+    {%endif%}
     def set_property_{{prop_name | snake_case}}_changed_callback(self, callback: Callable[[{{prop_spec.python_class}}], None]):
         """ Sets a callback to be called when the '{{prop_name}}' property changes.
         """

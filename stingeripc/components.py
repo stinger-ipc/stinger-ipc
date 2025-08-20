@@ -405,6 +405,7 @@ class Property:
         self._topic_creator = topic_creator
         self._name = name
         self._arg_list = []  # type: List[Arg]
+        self._read_only = False
 
     def add_arg(self, arg: Arg) -> Property:
         if arg.name in [a.name for a in self._arg_list]:
@@ -453,6 +454,10 @@ class Property:
     def update_topic(self) -> str:
         return self._topic_creator.property_update_topic(self.name)
 
+    @property
+    def read_only(self) -> bool:
+        return self._read_only
+
     @classmethod
     def new_method_from_stinger(
         cls, topic_creator: PropertyTopicCreator, name: str, prop_spec: Dict[str, str], stinger_spec: StingerSpec|None=None
@@ -469,6 +474,9 @@ class Property:
                 raise InvalidStingerStructure("Arg must have name and type.")
             new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
             prop_obj.add_arg(new_arg)
+
+        if r_o := prop_spec.get("readOnly", False):
+            prop_obj._read_only = r_o
 
         return prop_obj
 

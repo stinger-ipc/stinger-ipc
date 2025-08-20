@@ -15,6 +15,8 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc};
 use tokio::join;
 use tokio::task::JoinError;
+use serde::{Serialize, Deserialize};
+use serde_json;
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -23,7 +25,9 @@ struct ExampleServerSubscriptionIds {
     add_numbers_method_req: i32,
     do_something_method_req: i32,
     
+    
     favorite_number_property_update: i32,
+    
     favorite_foods_property_update: i32,
     
 }
@@ -39,9 +43,9 @@ struct ExampleServerMethodHandlers {
 
 #[derive(Clone)]
 struct ExampleProperties {
-    
+    favorite_number_topic: Arc<String>,
     favorite_number: Arc<Mutex<Option<i32>>>,
-    
+    favorite_foods_topic: Arc<String>,
     favorite_foods: Arc<Mutex<Option<connection::payloads::FavoriteFoodsProperty>>>,
 }
 
@@ -90,8 +94,10 @@ impl ExampleServer {
         let subscription_id_do_something_method_req = subscription_id_do_something_method_req.unwrap_or_else(|_| -1);
         
 
+        
         let subscription_id_favorite_number_property_update = connection.subscribe("Example/property/favorite_number/set_value", message_received_tx.clone()).await;
         let subscription_id_favorite_number_property_update = subscription_id_favorite_number_property_update.unwrap_or_else(|_| -1);
+        
         let subscription_id_favorite_foods_property_update = connection.subscribe("Example/property/favorite_foods/set_value", message_received_tx.clone()).await;
         let subscription_id_favorite_foods_property_update = subscription_id_favorite_foods_property_update.unwrap_or_else(|_| -1);
         
@@ -107,14 +113,19 @@ impl ExampleServer {
             add_numbers_method_req: subscription_id_add_numbers_method_req,
             do_something_method_req: subscription_id_do_something_method_req,
             
+            
             favorite_number_property_update: subscription_id_favorite_number_property_update,
+            
             favorite_foods_property_update: subscription_id_favorite_foods_property_update,
             
         };
 
         
         let property_values = ExampleProperties {
+            favorite_number_topic: Arc::new(String::from("Example/property/favorite_number")),
+            
             favorite_number: Arc::new(Mutex::new(None)),
+            favorite_foods_topic: Arc::new(String::from("Example/property/favorite_foods")),
             favorite_foods: Arc::new(Mutex::new(None)),
             
         };
@@ -193,8 +204,84 @@ impl ExampleServer {
         }
     }
     
+    async fn publish_favorite_number_value(mut publisher: MessagePublisher, topic: String, data: i32)
+    {
+        let new_data = FavoriteNumberProperty {
+            number: data,
+        };
+        let _pub_result = publisher.publish_structure(topic, &new_data);
+        
+    }
+    
+    async fn update_favorite_number_value(publisher: &mut MessagePublisher, topic: Arc<String>, data: Arc<Mutex<Option<i32>>>, msg: mqtt::Message)
+    {
+        let payload_str = msg.payload_str();
+        let new_data: FavoriteNumberProperty = serde_json::from_str(&payload_str).unwrap();
+        let mut locked_data = data.lock().unwrap();
+        *locked_data = Some(new_data.number);
+        let publisher2 = publisher.clone();
+        let topic2: String = topic.as_ref().clone();
+        let data2 = new_data.number;
+        let _ = tokio::spawn(async move {
+            ExampleServer::publish_favorite_number_value(publisher2, topic2, data2).await;
+        });
+    }
+    
+    pub async fn set_favorite_number(&mut self, data: i32) {
+        let prop = self.properties.favorite_number.clone();
+        {
+            let mut locked_data = prop.lock().unwrap();
+            *locked_data = Some(data.clone());
+        }
 
-     /// Starts the tasks that process messages received.
+        let publisher2 = self.msg_publisher.clone();
+        let topic2 = self.properties.favorite_number_topic.as_ref().clone();
+        let _ = tokio::spawn(async move {
+            ExampleServer::publish_favorite_number_value(publisher2, topic2, data).await;
+        });
+    }
+    
+    async fn publish_favorite_foods_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::FavoriteFoodsProperty)
+    {
+        let _pub_result = publisher.publish_structure(topic, &data);
+        
+    }
+    
+    async fn update_favorite_foods_value(publisher: &mut MessagePublisher, topic: Arc<String>, data: Arc<Mutex<Option<connection::payloads::FavoriteFoodsProperty>>>, msg: mqtt::Message)
+    {
+        let payload_str = msg.payload_str();
+        let new_data: FavoriteFoodsProperty = serde_json::from_str(&payload_str).unwrap();
+        let mut locked_data = data.lock().unwrap();
+        *locked_data = Some(new_data.clone());
+        
+        let publisher2 = publisher.clone();
+        let topic2: String = topic.as_ref().clone();
+        let data2 = new_data;
+        
+        let _ = tokio::spawn(async move {
+            ExampleServer::publish_favorite_foods_value(publisher2, topic2, data2).await;
+        });
+    }
+    
+    pub async fn set_favorite_foods(&mut self, data: connection::payloads::FavoriteFoodsProperty) {
+        let prop = self.properties.favorite_foods.clone();
+        {
+            let mut locked_data = prop.lock().unwrap();
+            *locked_data = Some(data.clone());
+        }
+
+        let publisher2 = self.msg_publisher.clone();
+        let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
+        let _ = tokio::spawn(async move {
+            ExampleServer::publish_favorite_foods_value(publisher2, topic2, data).await;
+        });
+    }
+    
+
+    /// Starts the tasks that process messages received.
+    /// In the task, it loops over messages received from the rx side of the message_receiver channel.
+    /// Based on the subscription id of the received message, it will call a function to handle the
+    /// received message.
     pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -202,15 +289,21 @@ impl ExampleServer {
         let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let mut publisher = self.msg_publisher.clone();
-
+        let properties = self.properties.clone();
+        
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
-                println!("Got a new message");
                 if msg.subscription_id == sub_ids.add_numbers_method_req {
                     ExampleServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.do_something_method_req {
                     ExampleServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
+                }
+                else if msg.subscription_id == sub_ids.favorite_number_property_update {
+                    ExampleServer::update_favorite_number_value(&mut publisher, properties.favorite_number_topic.clone(), properties.favorite_number.clone(), msg.message).await;
+                }
+                else if msg.subscription_id == sub_ids.favorite_foods_property_update {
+                    ExampleServer::update_favorite_foods_value(&mut publisher, properties.favorite_foods_topic.clone(), properties.favorite_foods.clone(), msg.message).await;
                 }
             }   
         });

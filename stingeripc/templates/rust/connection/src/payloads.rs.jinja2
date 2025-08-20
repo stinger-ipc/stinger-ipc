@@ -113,8 +113,8 @@ pub struct {{sig_name | UpperCamelCase}}SignalPayload {
 }
 {%endfor%}
 
-{%for prop_name, prop in stinger.properties.items()%}{%if prop.arg_list | length > 1%}
-// Structures for `{{sig_name}}` signal
+{%for prop_name, prop in stinger.properties.items()%}
+// `{{prop_name}}` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct {{prop_name | UpperCamelCase}}Property {
@@ -126,4 +126,4 @@ pub struct {{prop_name | UpperCamelCase}}Property {
     {%-endif-%}
     {%endfor%}
 }
-{%endif%}{%endfor%}
+{%endfor%}

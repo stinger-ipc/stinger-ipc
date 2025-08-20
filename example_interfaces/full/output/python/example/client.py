@@ -56,7 +56,7 @@ class ExampleClient:
         """ Property 'favorite_number' getter.
         """
         return self._property_favorite_number
-
+    
     @favorite_number.setter
     def favorite_number(self, value: int):
         """ Serializes and publishes the 'favorite_number' property.
@@ -66,7 +66,7 @@ class ExampleClient:
         serialized = json.dumps({ "number": value.number })
         self._logger.debug("Setting 'favorite_number' property to %s", serialized)
         self._conn.publish("Example/property/favorite_number/set_value", serialized, qos=1)
-
+    
     def set_property_favorite_number_changed_callback(self, callback: Callable[[int], None]):
         """ Sets a callback to be called when the 'favorite_number' property changes.
         """
@@ -79,7 +79,7 @@ class ExampleClient:
         """ Property 'favorite_foods' getter.
         """
         return self._property_favorite_foods
-
+    
     @favorite_foods.setter
     def favorite_foods(self, value: stinger_types.FavoriteFoodsProperty):
         """ Serializes and publishes the 'favorite_foods' property.
@@ -89,7 +89,7 @@ class ExampleClient:
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'favorite_foods' property to %s", serialized)
         self._conn.publish("Example/property/favorite_foods/set_value", serialized, qos=1)
-
+    
     def set_property_favorite_foods_changed_callback(self, callback: Callable[[stinger_types.FavoriteFoodsProperty], None]):
         """ Sets a callback to be called when the 'favorite_foods' property changes.
         """

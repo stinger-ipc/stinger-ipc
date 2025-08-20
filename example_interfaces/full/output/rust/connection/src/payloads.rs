@@ -121,7 +121,15 @@ pub struct TodayIsSignalPayload {
 
 
 
-// Structures for `` signal
+// `favorite_number` property structure.
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FavoriteNumberProperty {
+    pub number: i32,
+    
+}
+
+// `favorite_foods` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FavoriteFoodsProperty {

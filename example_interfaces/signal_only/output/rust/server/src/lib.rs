@@ -15,6 +15,8 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc};
 use tokio::join;
 use tokio::task::JoinError;
+use serde::{Serialize, Deserialize};
+use serde_json;
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -116,7 +118,10 @@ impl SignalOnlyServer {
 
     
 
-     /// Starts the tasks that process messages received.
+    /// Starts the tasks that process messages received.
+    /// In the task, it loops over messages received from the rx side of the message_receiver channel.
+    /// Based on the subscription id of the received message, it will call a function to handle the
+    /// received message.
     pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -124,10 +129,8 @@ impl SignalOnlyServer {
         let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let mut publisher = self.msg_publisher.clone();
-
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
-                println!("Got a new message");
             }   
         });
 
