@@ -179,6 +179,7 @@ class ExampleClient:
                     self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
             else:
                 self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+        
         # Handle 'favorite_number' property change.
         if self._conn.is_topic_sub(topic, "Example/property/favorite_number"):
             if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
@@ -188,9 +189,10 @@ class ExampleClient:
                 payload_obj = json.loads(payload)
                 prop_value = int(payload_obj["number"])
                 self._property_favorite_number = prop_value
-                self._do_callbacks_for(self._changed_value_callbacks_for_favorite_number, self._property_favorite_number)
+                self._do_callbacks_for(self._changed_value_callbacks_for_favorite_number, value=self._property_favorite_number)
             except Exception as e:
                 self._logger.error("Error processing 'favorite_number' property change: %s", e)
+        
         # Handle 'favorite_foods' property change.
         elif self._conn.is_topic_sub(topic, "Example/property/favorite_foods"):
             if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
@@ -199,7 +201,7 @@ class ExampleClient:
             try:
                 prop_value = stinger_types.FavoriteFoodsProperty.model_validate_json(payload)
                 self._property_favorite_foods = prop_value
-                self._do_callbacks_for(self._changed_value_callbacks_for_favorite_foods, self._property_favorite_foods)
+                self._do_callbacks_for(self._changed_value_callbacks_for_favorite_foods, value=self._property_favorite_foods)
             except Exception as e:
                 self._logger.error("Error processing 'favorite_foods' property change: %s", e)
         
@@ -370,13 +372,13 @@ if __name__ == '__main__':
     def print_new_favorite_number_value(value: int):
         """
         """
-        print(f"Property 'favorite_number' has been updated to: {value}", value)
+        print(f"Property 'favorite_number' has been updated to: {value}")
     
     @client_builder.favorite_foods_updated
     def print_new_favorite_foods_value(value: stinger_types.FavoriteFoodsProperty):
         """
         """
-        print(f"Property 'favorite_foods' has been updated to: {value}", value)
+        print(f"Property 'favorite_foods' has been updated to: {value}")
     
 
     client = client_builder.build()

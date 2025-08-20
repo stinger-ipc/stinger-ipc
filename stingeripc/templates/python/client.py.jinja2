@@ -147,7 +147,7 @@ class {{stinger.name}}Client:
             else:
                 self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
         {%endfor%}{# end method loop #}
-        {%-for prop_name, prop_spec in stinger.properties.items()-%}
+        {%-for prop_name, prop_spec in stinger.properties.items()%}
         # Handle '{{prop_name}}' property change.
         {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{prop_spec.value_topic}}"):
             if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
@@ -161,7 +161,7 @@ class {{stinger.name}}Client:
                 prop_value = {{prop_spec.arg_list[0].python_class}}(payload_obj["{{prop_spec.arg_list[0].name}}"])
                 {%endif-%}
                 self._property_{{prop_name}} = prop_value
-                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name}}, self._property_{{prop_name}})
+                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name}}, value=self._property_{{prop_name}})
             except Exception as e:
                 self._logger.error("Error processing '{{prop_name}}' property change: %s", e)
         {%endfor%}{# end property loop #}
@@ -290,7 +290,7 @@ if __name__ == '__main__':
     def print_new_{{prop_name}}_value(value: {{prop.python_class}}):
         """{{prop.description}}
         """
-        print(f"Property '{{prop_name}}' has been updated to: {value}", value)
+        print(f"Property '{{prop_name}}' has been updated to: {value}")
     {%endfor%}
 
     client = client_builder.build()
