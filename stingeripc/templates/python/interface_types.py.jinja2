@@ -31,7 +31,7 @@ class {{method.return_value.python_local_type}}(BaseModel):
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}{%if prop.arg_list | length > 1%}
-class {{prop.python_class}}(BaseModel):
+class {{prop.python_local_type}}(BaseModel):
     {%-for arg in prop.arg_list%}
     {{arg.name}}: {{arg.python_local_type}}
     {%-endfor%}

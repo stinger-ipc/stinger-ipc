@@ -112,3 +112,18 @@ pub struct {{sig_name | UpperCamelCase}}SignalPayload {
     {%endfor%}
 }
 {%endfor%}
+
+{%for prop_name, prop in stinger.properties.items()%}{%if prop.arg_list | length > 1%}
+// Structures for `{{sig_name}}` signal
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct {{prop_name | UpperCamelCase}}Property {
+    {%for arg in prop.arg_list%}
+    {%-if arg.arg_type.name.lower() == 'primitive' -%}
+    pub {{arg.name}}: {{arg.rust_type}},
+    {%elif arg.arg_type.name.lower() == 'enum'-%}
+    pub {{arg.name}}: {{arg.rust_local_type}},
+    {%-endif-%}
+    {%endfor%}
+}
+{%endif%}{%endfor%}

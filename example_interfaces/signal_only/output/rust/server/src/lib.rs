@@ -21,10 +21,16 @@ use tokio::task::JoinError;
 #[derive(Clone, Debug)]
 struct SignalOnlyServerSubscriptionIds {
     
+    
 }
 
 #[derive(Clone)]
 struct SignalOnlyServerMethodHandlers {
+    
+}
+
+#[derive(Clone)]
+struct SignalOnlyProperties {
     
 }
 
@@ -42,7 +48,7 @@ pub struct SignalOnlyServer {
 
     /// Struct contains all the handlers for the various methods.
     method_handlers: SignalOnlyServerMethodHandlers,
-
+    
     /// Subscription IDs for all the subscriptions this makes.
     subscription_ids: SignalOnlyServerSubscriptionIds,
 
@@ -66,6 +72,8 @@ impl SignalOnlyServer {
         // Create method handler struct
         
 
+        
+
         // Create structure for method handlers.
         let method_handlers = SignalOnlyServerMethodHandlers {
         };
@@ -73,7 +81,10 @@ impl SignalOnlyServer {
         // Create structure for subscription ids.
         let sub_ids = SignalOnlyServerSubscriptionIds {
             
+            
         };
+
+        
 
         SignalOnlyServer {
 
@@ -101,6 +112,7 @@ impl SignalOnlyServer {
     
 
     
+
 
     
 

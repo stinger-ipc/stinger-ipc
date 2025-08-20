@@ -43,7 +43,7 @@ class ExampleClient:
         self._property_favorite_number: int|None = None
         self._conn.subscribe("Example/property/favorite_number")
         self.changed_value_callback_for_favorite_number = None
-        self._property_favorite_foods: FavoriteFoodsProperty|None = None
+        self._property_favorite_foods: stinger_types.FavoriteFoodsProperty|None = None
         self._conn.subscribe("Example/property/favorite_foods")
         self.changed_value_callback_for_favorite_foods = None
         self._signal_recv_callbacks_for_todayIs = [] # type: List[TodayIsSignalCallbackType]
@@ -52,19 +52,51 @@ class ExampleClient:
         
 
     @property
-    def favorite_number(self):
+    def favorite_number(self) -> int | None:
+        """ Property 'favorite_number' getter.
+        """
         return self._property_favorite_number
 
     @favorite_number.setter
-    def favorite_number(self, value):
-        pass
+    def favorite_number(self, value: int):
+        """ Serializes and publishes the 'favorite_number' property.
+        """
+        if not isinstance(value, int):
+            raise ValueError("The 'favorite_number' property must be a int")
+        serialized = json.dumps({ "number": value.number })
+        self._logger.debug("Setting 'favorite_number' property to %s", serialized)
+        self._conn.publish("Example/property/favorite_number/set_value", serialized, qos=1)
+
+    def set_property_favorite_number_changed_callback(self, callback: Callable[[int], None]):
+        """ Sets a callback to be called when the 'favorite_number' property changes.
+        """
+        self.changed_value_callback_for_favorite_number = callback
+        if self._property_favorite_number is not None:
+            callback(self._property_favorite_number)
+
     @property
-    def favorite_foods(self):
+    def favorite_foods(self) -> stinger_types.FavoriteFoodsProperty | None:
+        """ Property 'favorite_foods' getter.
+        """
         return self._property_favorite_foods
 
     @favorite_foods.setter
-    def favorite_foods(self, value):
-        pass
+    def favorite_foods(self, value: stinger_types.FavoriteFoodsProperty):
+        """ Serializes and publishes the 'favorite_foods' property.
+        """
+        if not isinstance(value, stinger_types.FavoriteFoodsProperty):
+            raise ValueError("The 'favorite_foods' property must be a stinger_types.FavoriteFoodsProperty")
+        serialized = value.model_dump_json(exclude_none=True)
+        self._logger.debug("Setting 'favorite_foods' property to %s", serialized)
+        self._conn.publish("Example/property/favorite_foods/set_value", serialized, qos=1)
+
+    def set_property_favorite_foods_changed_callback(self, callback: Callable[[stinger_types.FavoriteFoodsProperty], None]):
+        """ Sets a callback to be called when the 'favorite_foods' property changes.
+        """
+        self.changed_value_callback_for_favorite_foods = callback
+        if self._property_favorite_foods is not None:
+            callback(self._property_favorite_foods)
+
     
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
@@ -141,6 +173,31 @@ class ExampleClient:
                     self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
             else:
                 self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+        # Handle 'favorite_number' property change.
+        if self._conn.is_topic_sub(topic, "Example/property/favorite_number"):
+            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+                self._logger.warning("Received 'favorite_number' property change with non-JSON content type")
+                return
+            try:
+                payload_obj = json.loads(payload)
+                prop_value = int(payload_obj["number"])
+                self._property_favorite_number = prop_value
+                if self.changed_value_callback_for_favorite_number is not None:
+                    self.changed_value_callback_for_favorite_number(self._property_favorite_number)
+            except Exception as e:
+                self._logger.error("Error processing 'favorite_number' property change: %s", e)
+        # Handle 'favorite_foods' property change.
+        elif self._conn.is_topic_sub(topic, "Example/property/favorite_foods"):
+            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+                self._logger.warning("Received 'favorite_foods' property change with non-JSON content type")
+                return
+            try:
+                prop_value = stinger_types.FavoriteFoodsProperty.model_validate_json(payload)
+                self._property_favorite_foods = prop_value
+                if self.changed_value_callback_for_favorite_foods is not None:
+                    self.changed_value_callback_for_favorite_foods(self._property_favorite_foods)
+            except Exception as e:
+                self._logger.error("Error processing 'favorite_foods' property change: %s", e)
         
 
     

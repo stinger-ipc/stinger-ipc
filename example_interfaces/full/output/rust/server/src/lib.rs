@@ -20,7 +20,12 @@ use tokio::task::JoinError;
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct ExampleServerSubscriptionIds {
-    add_numbers_method_req: i32,do_something_method_req: i32,
+    add_numbers_method_req: i32,
+    do_something_method_req: i32,
+    
+    favorite_number_property_update: i32,
+    favorite_foods_property_update: i32,
+    
 }
 
 #[derive(Clone)]
@@ -30,6 +35,14 @@ struct ExampleServerMethodHandlers {
     /// Pointer to a function to handle the doSomething method request.
     method_handler_for_do_something: Arc<Mutex<Box<dyn Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + Send>>>,
     
+}
+
+#[derive(Clone)]
+struct ExampleProperties {
+    
+    favorite_number: Arc<Mutex<Option<i32>>>,
+    
+    favorite_foods: Arc<Mutex<Option<connection::payloads::FavoriteFoodsProperty>>>,
 }
 
 pub struct ExampleServer {
@@ -46,7 +59,10 @@ pub struct ExampleServer {
 
     /// Struct contains all the handlers for the various methods.
     method_handlers: ExampleServerMethodHandlers,
-
+    
+    /// Struct contains all the properties.
+    properties: ExampleProperties,
+    
     /// Subscription IDs for all the subscriptions this makes.
     subscription_ids: ExampleServerSubscriptionIds,
 
@@ -74,6 +90,12 @@ impl ExampleServer {
         let subscription_id_do_something_method_req = subscription_id_do_something_method_req.unwrap_or_else(|_| -1);
         
 
+        let subscription_id_favorite_number_property_update = connection.subscribe("Example/property/favorite_number/set_value", message_received_tx.clone()).await;
+        let subscription_id_favorite_number_property_update = subscription_id_favorite_number_property_update.unwrap_or_else(|_| -1);
+        let subscription_id_favorite_foods_property_update = connection.subscribe("Example/property/favorite_foods/set_value", message_received_tx.clone()).await;
+        let subscription_id_favorite_foods_property_update = subscription_id_favorite_foods_property_update.unwrap_or_else(|_| -1);
+        
+
         // Create structure for method handlers.
         let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2, _3| { Err(MethodResultCode::ServerError) } ))),
             method_handler_for_do_something: Arc::new(Mutex::new(Box::new( |_1| { Err(MethodResultCode::ServerError) } ))),
@@ -85,7 +107,18 @@ impl ExampleServer {
             add_numbers_method_req: subscription_id_add_numbers_method_req,
             do_something_method_req: subscription_id_do_something_method_req,
             
+            favorite_number_property_update: subscription_id_favorite_number_property_update,
+            favorite_foods_property_update: subscription_id_favorite_foods_property_update,
+            
         };
+
+        
+        let property_values = ExampleProperties {
+            favorite_number: Arc::new(Mutex::new(None)),
+            favorite_foods: Arc::new(Mutex::new(None)),
+            
+        };
+        
 
         ExampleServer {
 
@@ -93,6 +126,7 @@ impl ExampleServer {
             msg_streamer_tx: message_received_tx,
             msg_publisher: publisher,
             method_handlers: method_handlers,
+            properties: property_values,
             subscription_ids: sub_ids,
             client_id: connection.client_id.to_string(),
         }
@@ -117,6 +151,7 @@ impl ExampleServer {
         self.method_handlers.method_handler_for_do_something = Arc::new(Mutex::new(Box::new(cb)));
     }
     
+
 
     async fn handle_add_numbers_request(publisher: &mut MessagePublisher, handlers: &mut ExampleServerMethodHandlers, msg: mqtt::Message) {
         let props = msg.properties();

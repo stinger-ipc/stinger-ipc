@@ -400,23 +400,42 @@ class Method(object):
         return method
 
 class Property:
+
     def __init__(self, topic_creator: PropertyTopicCreator, name: str):
         self._topic_creator = topic_creator
         self._name = name
         self._arg_list = []  # type: List[Arg]
 
-    def add_arg(self, arg: Arg) -> Method:
+    def add_arg(self, arg: Arg) -> Property:
         if arg.name in [a.name for a in self._arg_list]:
             raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
         self._arg_list.append(arg)
         return self
 
     @property
+    def python_local_type(self) -> str:
+        return self.python_class.split('.')[-1]
+
+    @property
     def python_class(self) -> str:
         if len(self._arg_list) == 1:
             return self._arg_list[0].python_class
         else:
+            return f"stinger_types.{stringmanip.upper_camel_case(self.name)}Property"
+
+    @property
+    def rust_local_type(self) -> str:
+        if len(self._arg_list) == 1:
+            return self._arg_list[0].rust_local_type
+        else:
             return f"{stringmanip.upper_camel_case(self.name)}Property"
+
+    @property
+    def rust_type(self) -> str:
+        if len(self._arg_list) == 1:
+            return self._arg_list[0].rust_type
+        else:
+            return f"connection::payloads::{self.rust_local_type}"
 
     @property
     def arg_list(self) -> list[Arg]:

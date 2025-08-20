@@ -118,3 +118,15 @@ pub struct TodayIsSignalPayload {
     pub dayOfWeek: Option<DayOfTheWeek>,
     
 }
+
+
+
+// Structures for `` signal
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FavoriteFoodsProperty {
+    pub drink: String,
+    pub slices_of_pizza: i32,
+    pub breakfast: Option<String>,
+    
+}

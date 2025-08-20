@@ -22,7 +22,10 @@ use tokio::task::JoinError;
 struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
     {%for method_name, method in stinger.methods.items()-%}
     {{method_name | snake_case}}_method_req: i32,
-    {%-endfor%}
+    {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()-%}
+    {{prop_name | snake_case}}_property_update: i32,
+    {%endfor%}
 }
 
 #[derive(Clone)]
@@ -31,6 +34,17 @@ struct {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
     /// Pointer to a function to handle the {{method_name}} method request.
     method_handler_for_{{method_name|snake_case}}: Arc<Mutex<Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + Send>>>,
     {%endfor%}
+}
+
+#[derive(Clone)]
+struct {{stinger.name | UpperCamelCase}}Properties {
+    {%for prop_name, prop in stinger.properties.items()-%}
+    {%-if prop.arg_list | length > 1%}
+    {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.rust_type}}>>>,
+    {%-else%}
+    {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.arg_list[0].rust_type}}>>>,
+    {%endif%}
+    {%-endfor%}
 }
 
 pub struct {{stinger.name | UpperCamelCase}}Server {
@@ -47,7 +61,10 @@ pub struct {{stinger.name | UpperCamelCase}}Server {
 
     /// Struct contains all the handlers for the various methods.
     method_handlers: {{stinger.name | UpperCamelCase }}ServerMethodHandlers,
-
+    {%if stinger.properties|length > 0%}
+    /// Struct contains all the properties.
+    properties: {{stinger.name | UpperCamelCase}}Properties,
+    {%endif%}
     /// Subscription IDs for all the subscriptions this makes.
     subscription_ids: {{stinger.name | UpperCamelCase }}ServerSubscriptionIds,
 
@@ -74,6 +91,11 @@ impl {{stinger.name | UpperCamelCase}}Server {
         let subscription_id_{{method_name | snake_case}}_method_req = subscription_id_{{method_name | snake_case}}_method_req.unwrap_or_else(|_| -1);
         {%endfor%}
 
+        {%for prop_name, prop in stinger.properties.items()-%}
+        let subscription_id_{{prop_name | snake_case}}_property_update = connection.subscribe("{{prop.update_topic}}", message_received_tx.clone()).await;
+        let subscription_id_{{prop_name | snake_case}}_property_update = subscription_id_{{prop_name | snake_case}}_property_update.unwrap_or_else(|_| -1);
+        {%endfor%}
+
         // Create structure for method handlers.
         let method_handlers = {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
             {%-for method_name, method in stinger.methods.items()-%}
@@ -86,14 +108,30 @@ impl {{stinger.name | UpperCamelCase}}Server {
             {%for method_name, method in stinger.methods.items()-%}
             {{method_name | snake_case}}_method_req: subscription_id_{{method_name | snake_case}}_method_req,
             {%endfor%}
+            {%for prop_name, prop in stinger.properties.items()-%}
+            {{prop_name | snake_case}}_property_update: subscription_id_{{prop_name | snake_case}}_property_update,
+            {%endfor%}
         };
+
+        {%if stinger.properties|length > 0%}
+        let property_values = {{stinger.name | UpperCamelCase}}Properties {
+        {%-for prop_name, prop in stinger.properties.items()-%}
+            {%-if prop.arg_list | length > 1%}
+            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
+            {%else%}
+            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
+            {%-endif%}
+        {%-endfor%}
+        };
+        {%endif%}
 
         {{stinger.name | UpperCamelCase}}Server {
 
             msg_streamer_rx: Some(message_received_rx),
             msg_streamer_tx: message_received_tx,
             msg_publisher: publisher,
-            method_handlers: method_handlers,
+            method_handlers: method_handlers,{%if stinger.properties|length > 0%}
+            properties: property_values,{%endif%}
             subscription_ids: sub_ids,
             client_id: connection.client_id.to_string(),
         }
@@ -115,6 +153,7 @@ impl {{stinger.name | UpperCamelCase}}Server {
         self.method_handlers.method_handler_for_{{method_name|snake_case}} = Arc::new(Mutex::new(Box::new(cb)));
     }
     {%endfor%}
+
 
     {%for method_name, method in stinger.methods.items()-%}
     async fn handle_{{method_name|snake_case}}_request(publisher: &mut MessagePublisher, handlers: &mut {{stinger.name | UpperCamelCase }}ServerMethodHandlers, msg: mqtt::Message) {
