@@ -46,17 +46,37 @@ async fn main() {
             println!("Making call to start connection loop");
             let _conn_loop = connection.start_loop().await;
         });
-
+        
+        server.set_favorite_number(42);
+        
+        let new_value = connection::payloads::FavoriteFoodsProperty {
+                drink: "apples".to_string(),
+                slices_of_pizza: 42,
+                breakfast: Some("apples".to_string()),
+        };
+        server.set_favorite_foods(new_value);
+        
         
         server.set_method_handler_for_add_numbers(add_numbers_handler);
         
         server.set_method_handler_for_do_something(do_something_handler);
         
-
         
+        sleep(Duration::from_secs(1)).await;
         server.emit_today_is(42, Some(connection::payloads::DayOfTheWeek::Monday)).await;
         
-
+        
+        sleep(Duration::from_secs(1)).await;
+        server.set_favorite_number(2022);
+        
+        sleep(Duration::from_secs(1)).await;
+        let new_value = connection::payloads::FavoriteFoodsProperty {
+                drink: "Joe".to_string(),
+                slices_of_pizza: 2022,
+                breakfast: Some("Joe".to_string()),
+        };
+        server.set_favorite_foods(new_value);
+        
         server.receive_loop().await;
         join!(loop_task);
     });

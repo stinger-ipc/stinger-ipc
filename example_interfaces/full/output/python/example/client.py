@@ -20,17 +20,19 @@ import interface_types as stinger_types
 
 logging.basicConfig(level=logging.DEBUG)
 
-
 TodayIsSignalCallbackType = Callable[[int, stinger_types.DayOfTheWeek | None], None]
-
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
-
 DoSomethingMethodResponseCallbackType = Callable[[stinger_types.DoSomethingReturnValue], None]
+
+FavoriteNumberPropertyUpdatedCallbackType = Callable[[int], None]
+FavoriteFoodsPropertyUpdatedCallbackType = Callable[[stinger_types.FavoriteFoodsProperty], None]
 
 
 class ExampleClient:
 
     def __init__(self, connection: BrokerConnection):
+        """ Constructor for a `ExampleClient` object.
+        """
         self._logger = logging.getLogger('ExampleClient')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing ExampleClient")
@@ -38,17 +40,17 @@ class ExampleClient:
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
-        self._pending_method_responses = {} # type: Dict[str, Callable[..., None]]
+        self._pending_method_responses: dict[str, Callable[..., None]] = {}
         
         self._property_favorite_number: int|None = None
-        self._conn.subscribe("Example/property/favorite_number")
-        self.changed_value_callback_for_favorite_number = None
+        self._favorite_number_prop_subscription_id: int = self._conn.subscribe("Example/property/favorite_number")
+        self._changed_value_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
         self._property_favorite_foods: stinger_types.FavoriteFoodsProperty|None = None
-        self._conn.subscribe("Example/property/favorite_foods")
-        self.changed_value_callback_for_favorite_foods = None
-        self._signal_recv_callbacks_for_todayIs = [] # type: List[TodayIsSignalCallbackType]
-        self._conn.subscribe(f"client/{self._client_id}/Example/method/addNumbers/response")
-        self._conn.subscribe(f"client/{self._client_id}/Example/method/doSomething/response")
+        self._favorite_foods_prop_subscription_id: int = self._conn.subscribe("Example/property/favorite_foods")
+        self._changed_value_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
+        self._signal_recv_callbacks_for_todayIs: list[TodayIsSignalCallbackType] = []
+        self._addNumbers_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/Example/method/addNumbers/response")
+        self._doSomething_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/Example/method/doSomething/response")
         
 
     @property
@@ -67,12 +69,14 @@ class ExampleClient:
         self._logger.debug("Setting 'favorite_number' property to %s", serialized)
         self._conn.publish("Example/property/favorite_number/set_value", serialized, qos=1)
     
-    def set_property_favorite_number_changed_callback(self, callback: Callable[[int], None]):
+    def favorite_number_changed(self, handler: FavoriteNumberPropertyUpdatedCallbackType, call_immediately: bool=False):
         """ Sets a callback to be called when the 'favorite_number' property changes.
+        Can be used as a decorator.
         """
-        self.changed_value_callback_for_favorite_number = callback
-        if self._property_favorite_number is not None:
+        self._changed_value_callback_for_favorite_number.append(callback)
+        if call_immediately and self._property_favorite_number is not None:
             callback(self._property_favorite_number)
+        return handler
 
     @property
     def favorite_foods(self) -> stinger_types.FavoriteFoodsProperty | None:
@@ -90,12 +94,14 @@ class ExampleClient:
         self._logger.debug("Setting 'favorite_foods' property to %s", serialized)
         self._conn.publish("Example/property/favorite_foods/set_value", serialized, qos=1)
     
-    def set_property_favorite_foods_changed_callback(self, callback: Callable[[stinger_types.FavoriteFoodsProperty], None]):
+    def favorite_foods_changed(self, handler: FavoriteFoodsPropertyUpdatedCallbackType, call_immediately: bool=False):
         """ Sets a callback to be called when the 'favorite_foods' property changes.
+        Can be used as a decorator.
         """
-        self.changed_value_callback_for_favorite_foods = callback
-        if self._property_favorite_foods is not None:
+        self._changed_value_callback_for_favorite_foods.append(callback)
+        if call_immediately and self._property_favorite_foods is not None:
             callback(self._property_favorite_foods)
+        return handler
 
     
 
@@ -182,8 +188,7 @@ class ExampleClient:
                 payload_obj = json.loads(payload)
                 prop_value = int(payload_obj["number"])
                 self._property_favorite_number = prop_value
-                if self.changed_value_callback_for_favorite_number is not None:
-                    self.changed_value_callback_for_favorite_number(self._property_favorite_number)
+                self._do_callbacks_for(self._changed_value_callback_for_favorite_number, self._property_favorite_number)
             except Exception as e:
                 self._logger.error("Error processing 'favorite_number' property change: %s", e)
         # Handle 'favorite_foods' property change.
@@ -194,19 +199,19 @@ class ExampleClient:
             try:
                 prop_value = stinger_types.FavoriteFoodsProperty.model_validate_json(payload)
                 self._property_favorite_foods = prop_value
-                if self.changed_value_callback_for_favorite_foods is not None:
-                    self.changed_value_callback_for_favorite_foods(self._property_favorite_foods)
+                self._do_callbacks_for(self._changed_value_callback_for_favorite_foods, self._property_favorite_foods)
             except Exception as e:
                 self._logger.error("Error processing 'favorite_foods' property change: %s", e)
         
 
     
-    def receive_todayIs(self, handler):
+    def receive_todayIs(self, handler: TodayIsSignalCallbackType):
         """ Used as a decorator for methods which handle particular signals.
         """
         self._signal_recv_callbacks_for_todayIs.append(handler)
         if len(self._signal_recv_callbacks_for_todayIs) == 1:
             self._conn.subscribe("Example/signal/todayIs")
+        return handler
     
 
     
@@ -304,12 +309,26 @@ class ExampleClientBuilder:
         """
         self._conn = broker
         self._logger = logging.getLogger('ExampleClientBuilder')
-        self._signal_recv_callbacks_for_todayIs = [] # type: List[TodayIsSignalCallbackType]
+        self._signal_recv_callbacks_for_today_is = [] # type: List[TodayIsSignalCallbackType]
+        self._property_updated_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
         
     def receive_todayIs(self, handler):
         """ Used as a decorator for methods which handle particular signals.
         """
-        self._signal_recv_callbacks_for_todayIs.append(handler)
+        self._signal_recv_callbacks_for_today_is.append(handler)
+    
+
+    
+    def favorite_number_updated(self, handler: FavoriteNumberPropertyUpdatedCallbackType):
+        """ Used as a decorator for methods which handle updates to properties.
+        """
+        self._property_updated_callbacks_for_favorite_number.append(handler)
+    
+    def favorite_foods_updated(self, handler: FavoriteFoodsPropertyUpdatedCallbackType):
+        """ Used as a decorator for methods which handle updates to properties.
+        """
+        self._property_updated_callbacks_for_favorite_foods.append(handler)
     
 
     def build(self) -> ExampleClient:
@@ -320,6 +339,13 @@ class ExampleClientBuilder:
         
         for cb in self._signal_recv_callbacks_for_todayIs:
             client.receive_todayIs(cb)
+        
+        
+        for cb in self._property_updated_callbacks_for_favorite_number:
+            client.favorite_number_changed(cb)
+        
+        for cb in self._property_updated_callbacks_for_favorite_foods:
+            client.favorite_foods_changed(cb)
         
         return client
 
@@ -338,6 +364,19 @@ if __name__ == '__main__':
         @param dayOfWeek stinger_types.DayOfTheWeek | None 
         """
         print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
+    
+    
+    @client_builder.favorite_number_changed
+    def print_new_favorite_number_value(value: int):
+        """
+        """
+        print(f"Property 'favorite_number' has been updated to: {value}", value)
+    
+    @client_builder.favorite_foods_changed
+    def print_new_favorite_foods_value(value: stinger_types.FavoriteFoodsProperty):
+        """
+        """
+        print(f"Property 'favorite_foods' has been updated to: {value}", value)
     
 
     client = client_builder.build()

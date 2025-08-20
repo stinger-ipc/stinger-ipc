@@ -25,13 +25,11 @@ async fn main() {
             println!("Making call to start connection loop");
             let _conn_loop = connection.start_loop().await;
         });
-
         
-
         
+        sleep(Duration::from_secs(1)).await;
         server.emit_another_signal(3.14, true, "apples".to_string()).await;
         
-
         server.receive_loop().await;
         join!(loop_task);
     });

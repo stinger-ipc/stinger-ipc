@@ -201,9 +201,9 @@ class ArgPrimitive(Arg):
     def cpp_rapidjson_type(self) -> str:
         return ArgPrimitiveType.to_cpp_rapidjson_type_str(self._arg_type)
 
-    def get_random_example_value(self, lang="python") -> str|float|int|bool|None:
+    def get_random_example_value(self, lang="python", seed:int=2) -> str|float|int|bool|None:
         random_state = random.getstate()
-        random.seed(2)
+        random.seed(seed)
         retval: str|float|int|bool|None = None
         if self._arg_type == ArgPrimitiveType.BOOLEAN:
             retval = random.choice([True, False])
@@ -212,9 +212,9 @@ class ArgPrimitive(Arg):
         elif self._arg_type == ArgPrimitiveType.FLOAT:
             retval = random.choice([3.14, 1.0, 2.5, 97.9, 1.53])
         elif self._arg_type == ArgPrimitiveType.INTEGER:
-            retval = random.choice([42, 1981, 2020, 2022])
+            retval = random.choice([42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955])
         elif self._arg_type == ArgPrimitiveType.STRING:
-            retval = random.choice(['"apples"', '"Joe"', '"example"', '"foo"'])
+            retval = random.choice(['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"'])
             if lang == "rust":
                 retval = f"{retval}.to_string()"
         random.setstate(random_state)
