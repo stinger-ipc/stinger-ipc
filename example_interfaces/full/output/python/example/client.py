@@ -26,6 +26,7 @@ DoSomethingMethodResponseCallbackType = Callable[[stinger_types.DoSomethingRetur
 
 FavoriteNumberPropertyUpdatedCallbackType = Callable[[int], None]
 FavoriteFoodsPropertyUpdatedCallbackType = Callable[[stinger_types.FavoriteFoodsProperty], None]
+LunchMenuPropertyUpdatedCallbackType = Callable[[stinger_types.LunchMenuProperty], None]
 
 
 class ExampleClient:
@@ -48,6 +49,9 @@ class ExampleClient:
         self._property_favorite_foods: stinger_types.FavoriteFoodsProperty|None = None
         self._favorite_foods_prop_subscription_id: int = self._conn.subscribe("Example/property/favorite_foods")
         self._changed_value_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
+        self._property_lunch_menu: stinger_types.LunchMenuProperty|None = None
+        self._lunch_menu_prop_subscription_id: int = self._conn.subscribe("Example/property/lunch_menu")
+        self._changed_value_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
         self._addNumbers_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/Example/method/addNumbers/response")
         self._doSomething_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/Example/method/doSomething/response")
@@ -101,6 +105,31 @@ class ExampleClient:
         self._changed_value_callbacks_for_favorite_foods.append(handler)
         if call_immediately and self._property_favorite_foods is not None:
             handler(self._property_favorite_foods)
+        return handler
+
+    @property
+    def lunch_menu(self) -> stinger_types.LunchMenuProperty | None:
+        """ Property 'lunch_menu' getter.
+        """
+        return self._property_lunch_menu
+    
+    @lunch_menu.setter
+    def lunch_menu(self, value: stinger_types.LunchMenuProperty):
+        """ Serializes and publishes the 'lunch_menu' property.
+        """
+        if not isinstance(value, stinger_types.LunchMenuProperty):
+            raise ValueError("The 'lunch_menu' property must be a stinger_types.LunchMenuProperty")
+        serialized = value.model_dump_json(exclude_none=True)
+        self._logger.debug("Setting 'lunch_menu' property to %s", serialized)
+        self._conn.publish("Example/property/lunch_menu/set_value", serialized, qos=1)
+    
+    def lunch_menu_changed(self, handler: LunchMenuPropertyUpdatedCallbackType, call_immediately: bool=False):
+        """ Sets a callback to be called when the 'lunch_menu' property changes.
+        Can be used as a decorator.
+        """
+        self._changed_value_callbacks_for_lunch_menu.append(handler)
+        if call_immediately and self._property_lunch_menu is not None:
+            handler(self._property_lunch_menu)
         return handler
 
     
@@ -204,6 +233,18 @@ class ExampleClient:
                 self._do_callbacks_for(self._changed_value_callbacks_for_favorite_foods, value=self._property_favorite_foods)
             except Exception as e:
                 self._logger.error("Error processing 'favorite_foods' property change: %s", e)
+        
+        # Handle 'lunch_menu' property change.
+        elif self._conn.is_topic_sub(topic, "Example/property/lunch_menu"):
+            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+                self._logger.warning("Received 'lunch_menu' property change with non-JSON content type")
+                return
+            try:
+                prop_value = stinger_types.LunchMenuProperty.model_validate_json(payload)
+                self._property_lunch_menu = prop_value
+                self._do_callbacks_for(self._changed_value_callbacks_for_lunch_menu, value=self._property_lunch_menu)
+            except Exception as e:
+                self._logger.error("Error processing 'lunch_menu' property change: %s", e)
         
 
     
@@ -314,6 +355,7 @@ class ExampleClientBuilder:
         self._signal_recv_callbacks_for_today_is = [] # type: List[TodayIsSignalCallbackType]
         self._property_updated_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
         
     def receive_today_is(self, handler):
         """ Used as a decorator for methods which handle particular signals.
@@ -332,6 +374,11 @@ class ExampleClientBuilder:
         """
         self._property_updated_callbacks_for_favorite_foods.append(handler)
     
+    def lunch_menu_updated(self, handler: LunchMenuPropertyUpdatedCallbackType):
+        """ Used as a decorator for methods which handle updates to properties.
+        """
+        self._property_updated_callbacks_for_lunch_menu.append(handler)
+    
 
     def build(self) -> ExampleClient:
         """ Builds a new ExampleClient.
@@ -348,6 +395,9 @@ class ExampleClientBuilder:
         
         for cb in self._property_updated_callbacks_for_favorite_foods:
             client.favorite_foods_changed(cb)
+        
+        for cb in self._property_updated_callbacks_for_lunch_menu:
+            client.lunch_menu_changed(cb)
         
         return client
 
@@ -379,6 +429,12 @@ if __name__ == '__main__':
         """
         """
         print(f"Property 'favorite_foods' has been updated to: {value}")
+    
+    @client_builder.lunch_menu_updated
+    def print_new_lunch_menu_value(value: stinger_types.LunchMenuProperty):
+        """
+        """
+        print(f"Property 'lunch_menu' has been updated to: {value}")
     
 
     client = client_builder.build()

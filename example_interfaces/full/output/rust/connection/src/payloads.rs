@@ -138,3 +138,10 @@ pub struct FavoriteFoodsProperty {
     pub breakfast: Option<String>,
     
 }
+
+// `lunch_menu` property structure.
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LunchMenuProperty {
+    
+}

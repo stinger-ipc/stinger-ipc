@@ -96,6 +96,14 @@ The return parameter type is `integer`.
 |breakfast|string (optional)||
 
 
+### lunch_menu
+
+|Name|Type|Description|
+|----|----|-----------|
+|monday|||
+|tuesday|||
+
+
 ## Enums
 
 

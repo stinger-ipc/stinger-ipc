@@ -59,6 +59,14 @@ async fn main() {
         server.set_favorite_foods(new_value).await;
         
         
+        println!("Setting initial value for property 'lunch_menu'");
+        let new_value = connection::payloads::LunchMenuProperty {
+                monday: connection::payloads::Monday (' + ', '.join(example_list.values()) + '),
+                tuesday: connection::payloads::Tuesday (' + ', '.join(example_list.values()) + '),
+        };
+        server.set_lunch_menu(new_value).await;
+        
+        
         server.set_method_handler_for_add_numbers(add_numbers_handler);
         
         server.set_method_handler_for_do_something(do_something_handler);
@@ -81,6 +89,15 @@ async fn main() {
                 breakfast: Some("Joe".to_string()),
         };
         server.set_favorite_foods(new_value).await;
+        
+        
+        sleep(Duration::from_secs(1)).await;
+        println!("Changing property 'lunch_menu'");
+        let new_value = connection::payloads::LunchMenuProperty {
+                monday: connection::payloads::Monday (' + ', '.join(example_list.values()) + '),
+                tuesday: connection::payloads::Tuesday (' + ', '.join(example_list.values()) + '),
+        };
+        server.set_lunch_menu(new_value).await;
         
         server.receive_loop().await;
         join!(loop_task);

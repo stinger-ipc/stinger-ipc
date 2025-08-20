@@ -80,17 +80,27 @@ class Arg:
 
         if arg_spec["type"] == 'enum':
             if "enumName" not in arg_spec:
-                raise InvalidStingerStructure("Enum args need a 'enumName'")
+                raise InvalidStingerStructure(f"Enum args need a 'enumName'")
             if arg_spec["enumName"] not in stinger_spec.enums:
                 raise InvalidStingerStructure(f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums")
             arg = ArgEnum(arg_spec["name"], stinger_spec.enums[arg_spec['enumName']])
             if opt := arg_spec.get('optional', False):
                 arg.optional = opt
             return arg
+        
+        if arg_spec["type"] == "struct":
+            if "structName" not in arg_spec:
+                raise InvalidStingerStructure("Struct args need a 'structName'")
+            if arg_spec["structName"] not in stinger_spec.structs:
+                raise InvalidStingerStructure(f"Struct arg '{arg_spec["structName"]}' was not found in the list of stinger spec structs")
+            arg = ArgStruct(arg_spec["name"], stinger_spec.structs[arg_spec['structName']].members)
+            if opt := arg_spec.get('optional', False):
+                arg.optional = opt
+            return arg
         raise RuntimeError("unknown arg type: {arg_spec['type']}")
 
     @abstractmethod
-    def get_random_example_value(self, lang="python"):
+    def get_random_example_value(self, lang="python", seed:int=0):
         ...
 
 class ArgEnum(Arg):
@@ -147,7 +157,7 @@ class ArgEnum(Arg):
     def markdown_type(self) -> str:
         return f"[Enum {self._enum.class_name}](#enum-{self._enum.class_name})"
 
-    def get_random_example_value(self, lang="python") -> str:
+    def get_random_example_value(self, lang="python", seed:int=2) -> str:
         random_state = random.getstate()
         random.seed(1)
         value = random.choice(self._enum.values) 
@@ -271,13 +281,16 @@ class ArgStruct(Arg):
     def rust_local_type(self) -> str:
         return stringcase.pascalcase(self.name)
 
-    def get_random_example_value(self, lang="python") -> str|None:
-        example_list: dict[str] = {a.name: str(a.get_random_example_value(lang)) for a in self.members}
+    def get_random_example_value(self, lang="python", seed:int=2) -> str|None:
+        print(f"members for example {self._members}")
+        example_list: dict[str] = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self._members}
         if lang == 'c++':
             return "{" + ", ".join(example_list.values()) + "}"
         elif lang == 'python':
             init_list = ", ".join([f"{k}={v}" for k, v in example_list.items()])
             return f"{self.python_type}({init_list})"
+        elif lang == 'rust':
+            return f"{self.rust_type} {" + ", ".join(example_list.values()) + "}"
         return None
 
 class Signal(object):

@@ -33,6 +33,10 @@ class ExampleServer:
         self._conn.subscribe("Example/property/favorite_foods/set_value")
         self.changed_value_callback_for_ = None
         self._publish_interface_info()
+        self._property_lunch_menu = None
+        self._conn.subscribe("Example/property/lunch_menu/set_value")
+        self.changed_value_callback_for_ = None
+        self._publish_interface_info()
         
         self._conn.subscribe("Example/method/addNumbers")
         

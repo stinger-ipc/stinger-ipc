@@ -102,3 +102,12 @@ properties:
       - name: breakfast
         type: string
         optional: true
+
+  lunch_menu:
+    values:
+      - name: monday
+        type: struct
+        structName: lunch
+      - name: tuesday
+        type: struct
+        structName: lunch

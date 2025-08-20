@@ -39,3 +39,7 @@ class FavoriteFoodsProperty(BaseModel):
     drink: str
     slices_of_pizza: int
     breakfast: str | None
+
+class LunchMenuProperty(BaseModel):
+    monday: Monday
+    tuesday: Tuesday

@@ -30,6 +30,8 @@ struct ExampleServerSubscriptionIds {
     
     favorite_foods_property_update: i32,
     
+    lunch_menu_property_update: i32,
+    
 }
 
 #[derive(Clone)]
@@ -46,7 +48,8 @@ struct ExampleProperties {
     favorite_number_topic: Arc<String>,
     favorite_number: Arc<Mutex<Option<i32>>>,
     favorite_foods_topic: Arc<String>,
-    favorite_foods: Arc<Mutex<Option<connection::payloads::FavoriteFoodsProperty>>>,
+    favorite_foods: Arc<Mutex<Option<connection::payloads::FavoriteFoodsProperty>>>,lunch_menu_topic: Arc<String>,
+    lunch_menu: Arc<Mutex<Option<connection::payloads::LunchMenuProperty>>>,
 }
 
 pub struct ExampleServer {
@@ -101,6 +104,9 @@ impl ExampleServer {
         let subscription_id_favorite_foods_property_update = connection.subscribe("Example/property/favorite_foods/set_value", message_received_tx.clone()).await;
         let subscription_id_favorite_foods_property_update = subscription_id_favorite_foods_property_update.unwrap_or_else(|_| -1);
         
+        let subscription_id_lunch_menu_property_update = connection.subscribe("Example/property/lunch_menu/set_value", message_received_tx.clone()).await;
+        let subscription_id_lunch_menu_property_update = subscription_id_lunch_menu_property_update.unwrap_or_else(|_| -1);
+        
 
         // Create structure for method handlers.
         let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2, _3| { Err(MethodResultCode::ServerError) } ))),
@@ -118,6 +124,8 @@ impl ExampleServer {
             
             favorite_foods_property_update: subscription_id_favorite_foods_property_update,
             
+            lunch_menu_property_update: subscription_id_lunch_menu_property_update,
+            
         };
 
         
@@ -127,6 +135,9 @@ impl ExampleServer {
             favorite_number: Arc::new(Mutex::new(None)),
             favorite_foods_topic: Arc::new(String::from("Example/property/favorite_foods")),
             favorite_foods: Arc::new(Mutex::new(None)),
+            
+            lunch_menu_topic: Arc::new(String::from("Example/property/lunch_menu")),
+            lunch_menu: Arc::new(Mutex::new(None)),
             
         };
         
@@ -281,6 +292,44 @@ impl ExampleServer {
         });
     }
     
+    async fn publish_lunch_menu_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::LunchMenuProperty)
+    {
+        let _pub_result = publisher.publish_structure(topic, &data).await;
+        
+    }
+    
+    async fn update_lunch_menu_value(publisher: &mut MessagePublisher, topic: Arc<String>, data: Arc<Mutex<Option<connection::payloads::LunchMenuProperty>>>, msg: mqtt::Message)
+    {
+        let payload_str = msg.payload_str();
+        let new_data: LunchMenuProperty = serde_json::from_str(&payload_str).unwrap();
+        let mut locked_data = data.lock().unwrap();
+        *locked_data = Some(new_data.clone());
+        
+        let publisher2 = publisher.clone();
+        let topic2: String = topic.as_ref().clone();
+        let data2 = new_data;
+        
+        let _ = tokio::spawn(async move {
+            ExampleServer::publish_lunch_menu_value(publisher2, topic2, data2).await;
+        });
+    }
+    
+    pub async fn set_lunch_menu(&mut self, data: connection::payloads::LunchMenuProperty) {
+        println!("Setting lunch_menu of type connection::payloads::LunchMenuProperty");
+        let prop = self.properties.lunch_menu.clone();
+        {
+            let mut locked_data = prop.lock().unwrap();
+            *locked_data = Some(data.clone());
+        }
+
+        let publisher2 = self.msg_publisher.clone();
+        let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
+        let _ = tokio::spawn(async move {
+            println!("Will publish property lunch_menu of type connection::payloads::LunchMenuProperty to {}", topic2);
+            ExampleServer::publish_lunch_menu_value(publisher2, topic2, data).await;
+        });
+    }
+    
 
     /// Starts the tasks that process messages received.
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
@@ -308,6 +357,9 @@ impl ExampleServer {
                 }
                 else if msg.subscription_id == sub_ids.favorite_foods_property_update {
                     ExampleServer::update_favorite_foods_value(&mut publisher, properties.favorite_foods_topic.clone(), properties.favorite_foods.clone(), msg.message).await;
+                }
+                else if msg.subscription_id == sub_ids.lunch_menu_property_update {
+                    ExampleServer::update_lunch_menu_value(&mut publisher, properties.lunch_menu_topic.clone(), properties.lunch_menu.clone(), msg.message).await;
                 }
             }   
         });
