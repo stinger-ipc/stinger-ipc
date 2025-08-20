@@ -192,9 +192,9 @@ impl {{stinger.name | UpperCamelCase}}Server {
         let new_data = {{prop_name | UpperCamelCase}}Property {
             {{prop.arg_list[0].name}}: data,
         };
-        let _pub_result = publisher.publish_structure(topic, &new_data);
+        let _pub_result = publisher.publish_structure(topic, &new_data).await;
         {%else%}
-        let _pub_result = publisher.publish_structure(topic, &data);
+        let _pub_result = publisher.publish_structure(topic, &data).await;
         {%endif%}
     }
     {%if not prop.read_only %}
@@ -221,6 +221,7 @@ impl {{stinger.name | UpperCamelCase}}Server {
     }
     {%endif%}{# not read only property #}
     pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) {
+        println!("Setting {{prop_name}} of type {{prop.rust_type}}");
         let prop = self.properties.{{prop_name}}.clone();
         {
             let mut locked_data = prop.lock().unwrap();
@@ -230,6 +231,7 @@ impl {{stinger.name | UpperCamelCase}}Server {
         let publisher2 = self.msg_publisher.clone();
         let topic2 = self.properties.{{prop_name}}_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
+            println!("Will publish property {{prop_name}} of type {{prop.rust_type}} to {}", topic2);
             {{stinger.name | UpperCamelCase}}Server::publish_{{prop_name}}_value(publisher2, topic2, data).await;
         });
     }

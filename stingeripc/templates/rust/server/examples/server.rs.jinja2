@@ -40,15 +40,16 @@ async fn main() {
             let _conn_loop = connection.start_loop().await;
         });
         {%for prop_name, prop in stinger.properties.items()%}
+        println!("Setting initial value for property '{{prop_name}}'");
         {%-if prop.arg_list | length == 1 %}
-        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}});
+        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
         {%-else%}{# many args in property #}
         let new_value = {{prop.rust_type}} {
             {%-for arg in prop.arg_list %}
                 {{arg.name}}: {%if arg.optional%}Some({%endif%}{{arg.get_random_example_value(lang="rust")}}{%if arg.optional%}){%endif%},
             {%-endfor%}
         };
-        server.set_{{prop_name | snake_case}}(new_value);
+        server.set_{{prop_name | snake_case}}(new_value).await;
         {%endif%}
         {%endfor%}{# property initialization -#}
         {%-for method_name, method in stinger.methods.items()%}
@@ -56,19 +57,21 @@ async fn main() {
         {%endfor%}
         {%for sig_name, sig in stinger.signals.items()%}
         sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal '{{sig_name}}'");
         server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{%if arg.optional%}Some({%endif%}{{arg.get_random_example_value(lang="rust")}}{%if arg.optional%}){%endif%}{%if not loop.last%}, {%endif%}{%endfor%}).await;
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()%}
         sleep(Duration::from_secs(1)).await;
+        println!("Changing property '{{prop_name}}'");
         {%-if prop.arg_list | length == 1 %}
-        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}});
+        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}}).await;
         {%-else%}{# many args in property #}
         let new_value = {{prop.rust_type}} {
             {%-for arg in prop.arg_list %}
                 {{arg.name}}: {%if arg.optional%}Some({%endif%}{{arg.get_random_example_value(lang="rust", seed=4)}}{%if arg.optional%}){%endif%},
             {%-endfor%}
         };
-        server.set_{{prop_name | snake_case}}(new_value);
+        server.set_{{prop_name | snake_case}}(new_value).await;
         {%endif%}
         {%endfor%}{# property initialization -#}
         server.receive_loop().await;

@@ -28,6 +28,7 @@ async fn main() {
         
         
         sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal 'anotherSignal'");
         server.emit_another_signal(3.14, true, "apples".to_string()).await;
         
         server.receive_loop().await;

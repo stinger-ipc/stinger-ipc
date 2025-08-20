@@ -209,7 +209,7 @@ impl ExampleServer {
         let new_data = FavoriteNumberProperty {
             number: data,
         };
-        let _pub_result = publisher.publish_structure(topic, &new_data);
+        let _pub_result = publisher.publish_structure(topic, &new_data).await;
         
     }
     
@@ -228,6 +228,7 @@ impl ExampleServer {
     }
     
     pub async fn set_favorite_number(&mut self, data: i32) {
+        println!("Setting favorite_number of type i32");
         let prop = self.properties.favorite_number.clone();
         {
             let mut locked_data = prop.lock().unwrap();
@@ -237,13 +238,14 @@ impl ExampleServer {
         let publisher2 = self.msg_publisher.clone();
         let topic2 = self.properties.favorite_number_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
+            println!("Will publish property favorite_number of type i32 to {}", topic2);
             ExampleServer::publish_favorite_number_value(publisher2, topic2, data).await;
         });
     }
     
     async fn publish_favorite_foods_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::FavoriteFoodsProperty)
     {
-        let _pub_result = publisher.publish_structure(topic, &data);
+        let _pub_result = publisher.publish_structure(topic, &data).await;
         
     }
     
@@ -264,6 +266,7 @@ impl ExampleServer {
     }
     
     pub async fn set_favorite_foods(&mut self, data: connection::payloads::FavoriteFoodsProperty) {
+        println!("Setting favorite_foods of type connection::payloads::FavoriteFoodsProperty");
         let prop = self.properties.favorite_foods.clone();
         {
             let mut locked_data = prop.lock().unwrap();
@@ -273,6 +276,7 @@ impl ExampleServer {
         let publisher2 = self.msg_publisher.clone();
         let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
+            println!("Will publish property favorite_foods of type connection::payloads::FavoriteFoodsProperty to {}", topic2);
             ExampleServer::publish_favorite_foods_value(publisher2, topic2, data).await;
         });
     }

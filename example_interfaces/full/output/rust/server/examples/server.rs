@@ -47,14 +47,16 @@ async fn main() {
             let _conn_loop = connection.start_loop().await;
         });
         
-        server.set_favorite_number(42);
+        println!("Setting initial value for property 'favorite_number'");
+        server.set_favorite_number(42).await;
         
+        println!("Setting initial value for property 'favorite_foods'");
         let new_value = connection::payloads::FavoriteFoodsProperty {
                 drink: "apples".to_string(),
                 slices_of_pizza: 42,
                 breakfast: Some("apples".to_string()),
         };
-        server.set_favorite_foods(new_value);
+        server.set_favorite_foods(new_value).await;
         
         
         server.set_method_handler_for_add_numbers(add_numbers_handler);
@@ -63,19 +65,22 @@ async fn main() {
         
         
         sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal 'todayIs'");
         server.emit_today_is(42, Some(connection::payloads::DayOfTheWeek::Monday)).await;
         
         
         sleep(Duration::from_secs(1)).await;
-        server.set_favorite_number(2022);
+        println!("Changing property 'favorite_number'");
+        server.set_favorite_number(2022).await;
         
         sleep(Duration::from_secs(1)).await;
+        println!("Changing property 'favorite_foods'");
         let new_value = connection::payloads::FavoriteFoodsProperty {
                 drink: "Joe".to_string(),
                 slices_of_pizza: 2022,
                 breakfast: Some("Joe".to_string()),
         };
-        server.set_favorite_foods(new_value);
+        server.set_favorite_foods(new_value).await;
         
         server.receive_loop().await;
         join!(loop_task);

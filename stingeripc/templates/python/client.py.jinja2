@@ -50,7 +50,7 @@ class {{stinger.name}}Client:
         self._changed_value_callbacks_for_{{prop_name}}: list[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
         {%-for sig_name in stinger.signals.keys()-%}
-        self._signal_recv_callbacks_for_{{sig_name}}: list[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
+        self._signal_recv_callbacks_for_{{sig_name | snake_case }}: list[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()-%}
         self._{{method_name}}_method_call_subscription_id: int = self._conn.subscribe(f"{{method.response_topic('{self._client_id}')}}")
@@ -81,9 +81,9 @@ class {{stinger.name}}Client:
         """ Sets a callback to be called when the '{{prop_name}}' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callback_for_{{prop_name}}.append(callback)
+        self._changed_value_callbacks_for_{{prop_name}}.append(handler)
         if call_immediately and self._property_{{prop_name}} is not None:
-            callback(self._property_{{prop_name}})
+            handler(self._property_{{prop_name}})
         return handler
 
     {%endfor%}
@@ -121,7 +121,7 @@ class {{stinger.name}}Client:
             {%for arg in sig.arg_list-%}
             kwargs["{{arg.name}}"] = {{arg.python_class}}(kwargs["{{arg.name}}"]){%if arg.optional %} if kwargs.get("{{arg.name}}") else None {%endif%}
             {%endfor%}
-            self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
+            self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
         {%endfor%}{# end signal loop #}
         
         {%-else%}pass{%-endif%}
@@ -161,17 +161,17 @@ class {{stinger.name}}Client:
                 prop_value = {{prop_spec.arg_list[0].python_class}}(payload_obj["{{prop_spec.arg_list[0].name}}"])
                 {%endif-%}
                 self._property_{{prop_name}} = prop_value
-                self._do_callbacks_for(self._changed_value_callback_for_{{prop_name}}, self._property_{{prop_name}})
+                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name}}, self._property_{{prop_name}})
             except Exception as e:
                 self._logger.error("Error processing '{{prop_name}}' property change: %s", e)
         {%endfor%}{# end property loop #}
 
     {%for sig_name, sig in stinger.signals.items()%}
-    def receive_{{sig_name}}(self, handler: {{sig_name | UpperCamelCase}}SignalCallbackType):
+    def receive_{{sig_name | snake_case }}(self, handler: {{sig_name | UpperCamelCase}}SignalCallbackType):
         """ Used as a decorator for methods which handle particular signals.
         """
-        self._signal_recv_callbacks_for_{{sig_name}}.append(handler)
-        if len(self._signal_recv_callbacks_for_{{sig_name}}) == 1:
+        self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
+        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) == 1:
             self._conn.subscribe("{{sig.topic}}")
         return handler
     {%endfor%}
@@ -241,7 +241,7 @@ class {{stinger.name}}ClientBuilder:
         {%endfor-%}
 
     {%for sig_name, sig in stinger.signals.items()%}
-    def receive_{{sig_name}}(self, handler):
+    def receive_{{sig_name | snake_case }}(self, handler):
         """ Used as a decorator for methods which handle particular signals.
         """
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
@@ -260,8 +260,8 @@ class {{stinger.name}}ClientBuilder:
         self._logger.debug("Building {{stinger.name}}Client")
         client = {{stinger.name}}Client(self._conn)
         {%for sig_name, sig in stinger.signals.items()%}
-        for cb in self._signal_recv_callbacks_for_{{sig_name}}:
-            client.receive_{{sig_name}}(cb)
+        for cb in self._signal_recv_callbacks_for_{{sig_name | snake_case }}:
+            client.receive_{{sig_name | snake_case}}(cb)
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()%}
         for cb in self._property_updated_callbacks_for_{{prop_name | snake_case}}:
@@ -277,7 +277,7 @@ if __name__ == '__main__':
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
     client_builder = {{stinger.name}}ClientBuilder(conn)
     {%for sig_name, sig in stinger.signals.items()%}
-    @client_builder.receive_{{sig_name}}
+    @client_builder.receive_{{sig_name | snake_case }}
     def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """{{sig.description}}
         {%for arg in sig.arg_list-%}
@@ -286,7 +286,7 @@ if __name__ == '__main__':
         print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
-    @client_builder.{{prop_name | snake_case}}_changed
+    @client_builder.{{prop_name | snake_case}}_updated
     def print_new_{{prop_name}}_value(value: {{prop.python_class}}):
         """{{prop.description}}
         """

@@ -32,7 +32,7 @@ class SignalOnlyClient:
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
-        self._signal_recv_callbacks_for_anotherSignal: list[AnotherSignalSignalCallbackType] = []
+        self._signal_recv_callbacks_for_another_signal: list[AnotherSignalSignalCallbackType] = []
         
 
     
@@ -69,15 +69,15 @@ class SignalOnlyClient:
             kwargs["two"] = bool(kwargs["two"])
             kwargs["three"] = str(kwargs["three"])
             
-            self._do_callbacks_for(self._signal_recv_callbacks_for_anotherSignal, **kwargs)
+            self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
         
 
     
-    def receive_anotherSignal(self, handler: AnotherSignalSignalCallbackType):
+    def receive_another_signal(self, handler: AnotherSignalSignalCallbackType):
         """ Used as a decorator for methods which handle particular signals.
         """
-        self._signal_recv_callbacks_for_anotherSignal.append(handler)
-        if len(self._signal_recv_callbacks_for_anotherSignal) == 1:
+        self._signal_recv_callbacks_for_another_signal.append(handler)
+        if len(self._signal_recv_callbacks_for_another_signal) == 1:
             self._conn.subscribe("SignalOnly/signal/anotherSignal")
         return handler
     
@@ -93,7 +93,7 @@ class SignalOnlyClientBuilder:
         self._logger = logging.getLogger('SignalOnlyClientBuilder')
         self._signal_recv_callbacks_for_another_signal = [] # type: List[AnotherSignalSignalCallbackType]
         
-    def receive_anotherSignal(self, handler):
+    def receive_another_signal(self, handler):
         """ Used as a decorator for methods which handle particular signals.
         """
         self._signal_recv_callbacks_for_another_signal.append(handler)
@@ -107,8 +107,8 @@ class SignalOnlyClientBuilder:
         self._logger.debug("Building SignalOnlyClient")
         client = SignalOnlyClient(self._conn)
         
-        for cb in self._signal_recv_callbacks_for_anotherSignal:
-            client.receive_anotherSignal(cb)
+        for cb in self._signal_recv_callbacks_for_another_signal:
+            client.receive_another_signal(cb)
         
         
         return client
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     conn = DefaultConnection('localhost', 1883)
     client_builder = SignalOnlyClientBuilder(conn)
     
-    @client_builder.receive_anotherSignal
+    @client_builder.receive_another_signal
     def print_anotherSignal_receipt(one: float, two: bool, three: str):
         """
         @param one float 
