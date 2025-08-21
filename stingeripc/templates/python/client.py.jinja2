@@ -203,19 +203,19 @@ class {{stinger.name}}Client:
                 raise stinger_exception_factory(return_value, response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             {%if method.return_value is none%}
             fut.set_result(None)
-            {%elif method.return_value.arg_type.name.lower() == 'struct' %}
-            return_args = self._filter_for_args(response_json, [{%for m in method.return_value.members%}"{{m.name}}", {%endfor%}])
-            {%for arg in method.return_value.members-%}
+            {%elif method.return_value_type == 'struct' %}
+            return_args = self._filter_for_args(response_json, [{%for m in method.return_value%}"{{m.name}}", {%endfor%}])
+            {%for arg in method.return_value-%}
             return_args["{{arg.name}}"] = {{arg.python_type}}(return_args["{{arg.name}}"])
             {%endfor%}
             return_obj = {{method.return_value.python_type}}(**return_args)
             fut.set_result(return_obj)
             {%else%}
-            if "{{method.return_value.name}}" in response_json:
-                if not isinstance(response_json["{{method.return_value.name}}"], {{method.return_value.python_type}}):
-                    raise ValueError("Return value '{{method.return_value.name}}'' had wrong type")
+            if "{{method.return_value_property_name}}" in response_json:
+                if not isinstance(response_json["{{method.return_value_property_name}}"], {{method.return_value.python_type}}):
+                    raise ValueError("Return value '{{method.return_value_property_name}}'' had wrong type")
                 self._logger.debug("Setting future result")
-                fut.set_result(response_json["{{method.return_value.name}}"])
+                fut.set_result(response_json["{{method.return_value_property_name}}"])
             else:
                 raise Exception("Response message didn't have the return value")
             {%endif%}

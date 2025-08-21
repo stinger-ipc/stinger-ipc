@@ -42,7 +42,7 @@ class ExampleServer:
         
         self._conn.subscribe("Example/method/doSomething")
         self._add_numbers_method_handler: Optional[Callable[[int, int, int | None], int]] = None
-        self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
+        self._do_something_method_handler: Optional[Callable[[str], ]] = None
         
     
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
@@ -163,7 +163,7 @@ class ExampleServer:
                 self._conn.publish(response_topic, return_json, qos=1, retain=False, 
                     correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
     
-    def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
+    def handle_do_something(self, handler: Callable[[str], ]):
         """ This is a decorator to decorate a method that will handle the 'doSomething' method calls.
         """
         if self._do_something_method_handler is None and handler is not None:
@@ -204,7 +204,7 @@ class ExampleServer:
                     
                     if return_struct is not None:
                         return_json = json.dumps({
-                            "doSomethingReturnValue": return_struct.model_dump_json()
+                            "doSomething": return_struct.model_dump_json()
                         })
                         
                 except Exception as e:
@@ -229,7 +229,7 @@ class ExampleServerBuilder:
         self._conn = connection
         
         self._add_numbers_method_handler: Optional[Callable[[int, int, int | None], int]] = None
-        self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
+        self._do_something_method_handler: Optional[Callable[[str], ]] = None
     
     def handle_add_numbers(self, handler: Callable[[int, int, int | None], int]):
         if self._add_numbers_method_handler is None and handler is not None:
@@ -237,7 +237,7 @@ class ExampleServerBuilder:
         else:
             raise Exception("Method handler already set")
     
-    def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
+    def handle_do_something(self, handler: Callable[[str], ]):
         if self._do_something_method_handler is None and handler is not None:
             self._do_something_method_handler = handler
         else:
@@ -272,9 +272,9 @@ if __name__ == '__main__':
         return 42
     
     @server.handle_do_something
-    def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
+    def do_something(aString: str) -> :
         print(f"Running do_something'({aString})'")
-        return stinger_types.DoSomethingReturnValue(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.MONDAY)
+        return ['"apples"', 42, 'stinger_types.DayOfTheWeek.MONDAY']
     
 
     print("Ctrl-C will stop the program.")

@@ -28,7 +28,7 @@ class Lunch(BaseModel):
 
 
 
-class DoSomethingReturnValue(BaseModel):
+class (BaseModel):
     label: str
     identifier: int
     day: DayOfTheWeek

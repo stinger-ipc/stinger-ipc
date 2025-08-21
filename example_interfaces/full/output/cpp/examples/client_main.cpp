@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     }
     else
     {
-        std::cout << "Result: sum=" << addNumbersResultFuture.get() << std::endl;
+        std::cout << "Result: Sum=" << addNumbersResultFuture.get() << std::endl;
         
     }
     std::cout << "Calling doSomething" << std::endl;

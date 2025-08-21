@@ -34,7 +34,7 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 struct {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    method_handler_for_{{method_name|snake_case}}: Arc<Mutex<Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + Send>>>,
+    method_handler_for_{{method_name|snake_case}}: Arc<Mutex<Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodResultCode> + Send>>>,
     {%endfor%}
 }
 
@@ -153,7 +153,7 @@ impl {{stinger.name | UpperCamelCase}}Server {
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()-%}
-    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + 'static + Send) {
+    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodResultCode> + 'static + Send) {
         self.method_handlers.method_handler_for_{{method_name|snake_case}} = Arc::new(Mutex::new(Box::new(cb)));
     }
     {%endfor%}
@@ -168,13 +168,13 @@ impl {{stinger.name | UpperCamelCase}}Server {
         let payload = serde_json::from_str::<{{method_name | UpperCamelCase}}RequestObject>(&payload_str).unwrap();
 
         // call the method handler
-        let rv: {{method.return_value.rust_type}} = {
+        let rv: {{method.return_value_rust_type}} = {
             let func_guard = handlers.method_handler_for_{{method_name|snake_case}}.lock().unwrap();
             (*func_guard)({%for arg in method.arg_list%}payload.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}).unwrap()
         };
-        {%-if method.return_value.arg_type.name.lower() == "primitive" -%}
+        {%-if method.return_value_type == "primitive" -%}
         let rv = {{method_name | UpperCamelCase}}ReturnValue {
-            {{method.return_value.name}}: rv,
+            {{method.return_value_property_name}}: rv,
         };
         {%endif%}
         if let Some(resp_topic) = opt_resp_topic {

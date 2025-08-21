@@ -17,14 +17,19 @@
 class SignalOnlyClient {
 
 public:
+    // This is the name of the API.
     static constexpr const char NAME[] = "SignalOnly";
+    // This is the version of the API contract.
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
+    // Constructor taking a connection object.
     SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker);
 
     virtual ~SignalOnlyClient() = default;
 
     
+    // Register a callback for the `anotherSignal` signal.
+    // The provided method will be called whenever a `anotherSignal` is received.
     void registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb);
     
 

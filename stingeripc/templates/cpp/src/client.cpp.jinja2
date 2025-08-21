@@ -113,11 +113,11 @@ void {{stinger.name | UpperCamelCase}}Client::register{{sig_name | UpperCamelCas
 {%-endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-boost::future<{{method.return_value.cpp_type}}> {{stinger.name | UpperCamelCase}}Client::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+boost::future<{{method.return_value_cpp_class}}> {{stinger.name | UpperCamelCase}}Client::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId] = boost::promise<{{method.return_value.cpp_type}}>();
+    _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId] = boost::promise<{{method.return_value_cpp_class}}>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -181,19 +181,19 @@ void {{stinger.name | UpperCamelCase}}Client::_handle{{method_name|UpperCamelCas
         {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_type}}>({{arg.name}}Itr->value.GetInt());
         {%endif-%}
         {%endmacro-%}
-        {%if method.return_value.arg_type.name.lower() == 'struct'-%}
-        {%for item in method.return_value.members%}
+        {%if method.return_value_type == 'struct'-%}
+        {%for item in method.return_value%}
         {{unpack_rv(item)}}
         {%-endfor%}
-        {{method.return_value.cpp_type}} returnValue { //initializer list
-        {%for item in method.return_value.members%}
+        {{method.return_value_cpp_class}} returnValue { //initializer list
+        {%for item in method.return_value%}
             {{item.name}}{%if not loop.last%},{%endif%}
         {%-endfor%}
         };
         promiseItr->second.set_value(returnValue);
         {%-else%}
         {{-unpack_rv(method.return_value)}}
-        promiseItr->second.set_value({{method.return_value.name}});
+        promiseItr->second.set_value({{method.return_value_property_name}});
         {%-endif%}
     }
 

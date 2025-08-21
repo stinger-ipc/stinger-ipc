@@ -183,17 +183,8 @@ components:
         - result
       name: doSomethingResponse
       payload:
-        properties:
-          day:
-            $ref: '#/components/schemas/enum_dayOfTheWeek'
-          identifier:
-            type: integer
-          label:
-            type: string
-        required:
-        - day
-        - identifier
-        - label
+        properties: {}
+        required: []
         type: object
       traits:
       - $ref: '#/components/messageTraits/methodJsonArguments'

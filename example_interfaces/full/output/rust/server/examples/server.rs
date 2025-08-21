@@ -18,9 +18,9 @@ fn add_numbers_handler(_first: i32, _second: i32, _third: Option<i32>) -> Result
     
 }
 
-fn do_something_handler(_a_string: String) -> Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> {
+fn do_something_handler(_a_string: String) -> Result<DoSomethingReturnValue, MethodResultCode> {
     println!("Handling doSomething");
-    let rv = connection::payloads::DoSomethingReturnValue {
+    let rv = DoSomethingReturnValue {
         
         label: "apples".to_string(),
         
@@ -61,8 +61,8 @@ async fn main() {
         
         println!("Setting initial value for property 'lunch_menu'");
         let new_value = connection::payloads::LunchMenuProperty {
-                monday: connection::payloads::Monday (' + ', '.join(example_list.values()) + '),
-                tuesday: connection::payloads::Tuesday (' + ', '.join(example_list.values()) + '),
+                monday: connection::payloads::Monday {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: connection::payloads::DayOfTheWeek::Monday, order_number: 42},
+                tuesday: connection::payloads::Tuesday {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: connection::payloads::DayOfTheWeek::Monday, order_number: 42},
         };
         server.set_lunch_menu(new_value).await;
         
@@ -94,8 +94,8 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'lunch_menu'");
         let new_value = connection::payloads::LunchMenuProperty {
-                monday: connection::payloads::Monday (' + ', '.join(example_list.values()) + '),
-                tuesday: connection::payloads::Tuesday (' + ', '.join(example_list.values()) + '),
+                monday: connection::payloads::Monday {drink: true, sandwich: "Joe".to_string(), crackers: 1.0, day: connection::payloads::DayOfTheWeek::Monday, order_number: 2022},
+                tuesday: connection::payloads::Tuesday {drink: true, sandwich: "Joe".to_string(), crackers: 1.0, day: connection::payloads::DayOfTheWeek::Monday, order_number: 2022},
         };
         server.set_lunch_menu(new_value).await;
         

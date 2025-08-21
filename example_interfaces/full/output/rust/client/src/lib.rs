@@ -179,7 +179,7 @@ impl ExampleClient {
     /// and published to the `Example/method/doSomething` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn do_something(&mut self, a_string: String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> {
+    pub async fn do_something(&mut self, a_string: String)->Result<DoSomethingReturnValue, MethodResultCode> {
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -192,7 +192,7 @@ impl ExampleClient {
         let response_topic = format!("client/{}/Example/method/doSomething/response", self.client_id);
         let _ = self.msg_publisher.publish_request_structure("Example/method/doSomething".to_string(), &data, response_topic.as_str(), correlation_id).await;
         let resp_obj = receiver.await.unwrap();
-        Ok(connection::payloads::DoSomethingReturnValue { 
+        Ok(DoSomethingReturnValue { 
             
             label: resp_obj["label"].as_str().unwrap().to_string(),
         

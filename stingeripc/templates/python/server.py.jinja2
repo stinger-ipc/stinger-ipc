@@ -116,21 +116,21 @@ class {{stinger.name}}Server:
                 try:
                     return_struct = self._{{method_name|snake_case}}_method_handler(*method_args)
                     self._logger.debug("Return value is %s", return_struct)
-                    {%if method.return_value is none%}
+                    {%if method.return_value is false%}
                         return_json = "{}"
                     {%else%}
                     if return_struct is not None:
-                        {%-if method.return_value.arg_type.name.lower() == "primitive" %}
+                        {%-if method.return_value_type == "primitive" %}
                         return_json = json.dumps({
-                            "{{method.return_value.name}}": return_struct
+                            "{{method.return_value_property_name}}": return_struct
                         })
-                        {%-elif method.return_value.arg_type.name.lower() == "enum" %}
+                        {%-elif method.return_value_type == "enum" %}
                         return_json = json.dumps({
-                            "{{method.return_value.name}}": return_struct.value
+                            "{{method.return_value_property_name}}": return_struct.value
                         })
-                        {%-elif method.return_value.arg_type.name.lower() == "struct" %}
+                        {%-elif method.return_value_type == "struct" %}
                         return_json = json.dumps({
-                            "{{method.return_value.name}}": return_struct.model_dump_json()
+                            "{{method.return_value_property_name}}": return_struct.model_dump_json()
                         })
                         {%else%}
                         // else
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     @server.handle_{{method_name | snake_case}}
     def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value.python_type}}:
         print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
-        return {{method.return_value.get_random_example_value('python')}}
+        return {{method.get_return_value_random_example_value('python')}}
     {%endfor%}
 
     print("Ctrl-C will stop the program.")

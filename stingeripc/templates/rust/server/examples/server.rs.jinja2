@@ -12,11 +12,11 @@ use tokio::join;
 {%if stinger.methods | length > 0 %}use connection::payloads::MethodResultCode;{%endif%}
 
 {%for method_name, method in stinger.methods.items()%}
-fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value.rust_type}}, MethodResultCode> {
+fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
     println!("Handling {{method_name}}");
-    {%-if method.return_value.arg_type.name.lower() == 'struct'%}
-    let rv = {{method.return_value.rust_type}} {
-        {%for arg in method.return_value.members%}
+    {%-if method.return_value_type == 'struct'%}
+    let rv = {{method.return_value_rust_type}} {
+        {%for arg in method.return_value%}
         {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
         {%endfor%}
     };

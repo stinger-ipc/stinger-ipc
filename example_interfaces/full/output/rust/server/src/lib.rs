@@ -39,7 +39,7 @@ struct ExampleServerMethodHandlers {
     /// Pointer to a function to handle the addNumbers method request.
     method_handler_for_add_numbers: Arc<Mutex<Box<dyn Fn(i32, i32, Option<i32>)->Result<i32, MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the doSomething method request.
-    method_handler_for_do_something: Arc<Mutex<Box<dyn Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + Send>>>,
+    method_handler_for_do_something: Arc<Mutex<Box<dyn Fn(String)->Result<DoSomethingReturnValue, MethodResultCode> + Send>>>,
     
 }
 
@@ -169,7 +169,7 @@ impl ExampleServer {
     pub fn set_method_handler_for_add_numbers(&mut self, cb: impl Fn(i32, i32, Option<i32>)->Result<i32, MethodResultCode> + 'static + Send) {
         self.method_handlers.method_handler_for_add_numbers = Arc::new(Mutex::new(Box::new(cb)));
     }
-    pub fn set_method_handler_for_do_something(&mut self, cb: impl Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + 'static + Send) {
+    pub fn set_method_handler_for_do_something(&mut self, cb: impl Fn(String)->Result<DoSomethingReturnValue, MethodResultCode> + 'static + Send) {
         self.method_handlers.method_handler_for_do_something = Arc::new(Mutex::new(Box::new(cb)));
     }
     
@@ -204,7 +204,7 @@ impl ExampleServer {
         let payload = serde_json::from_str::<DoSomethingRequestObject>(&payload_str).unwrap();
 
         // call the method handler
-        let rv: connection::payloads::DoSomethingReturnValue = {
+        let rv: DoSomethingReturnValue = {
             let func_guard = handlers.method_handler_for_do_something.lock().unwrap();
             (*func_guard)(payload.aString).unwrap()
         };

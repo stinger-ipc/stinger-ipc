@@ -93,7 +93,7 @@ class Arg:
                 raise InvalidStingerStructure("Struct args need a 'structName'")
             if arg_spec["structName"] not in stinger_spec.structs:
                 raise InvalidStingerStructure(f"Struct arg '{arg_spec["structName"]}' was not found in the list of stinger spec structs")
-            arg = ArgStruct(arg_spec["name"], stinger_spec.structs[arg_spec['structName']].members)
+            arg = ArgStruct(arg_spec["name"], stinger_spec.structs[arg_spec['structName']])
             if opt := arg_spec.get('optional', False):
                 arg.optional = opt
             return arg
@@ -249,17 +249,16 @@ class ArgPrimitive(Arg):
 
 
 class ArgStruct(Arg):
-    def __init__(self, name: str, members: List[Arg]|None=None):
+    def __init__(self, name: str, iface_struct: InterfaceStruct):
         super().__init__(name)
-        self._members = members or []
+        assert isinstance(iface_struct, InterfaceStruct), f"Passed {iface_struct=} is type {type(iface_struct)} which is not InterfaceStruct"
+        self._interface_struct: InterfaceStruct = iface_struct
         self._type = ArgType.STRUCT
 
     @property
     def members(self) -> list[Arg]:
-        return self._members
-
-    def add_member(self, member: Arg):
-        self._members.append(member)
+        print(f"Struct: {self._interface_struct=}")
+        return self._interface_struct.members
 
     @property
     def cpp_type(self) -> str:
@@ -282,15 +281,14 @@ class ArgStruct(Arg):
         return stringcase.pascalcase(self.name)
 
     def get_random_example_value(self, lang="python", seed:int=2) -> str|None:
-        print(f"members for example {self._members}")
-        example_list: dict[str] = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self._members}
+        example_list: dict[str] = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
         if lang == 'c++':
             return "{" + ", ".join(example_list.values()) + "}"
         elif lang == 'python':
             init_list = ", ".join([f"{k}={v}" for k, v in example_list.items()])
             return f"{self.python_type}({init_list})"
         elif lang == 'rust':
-            return f"{self.rust_type} {" + ", ".join(example_list.values()) + "}"
+            return "%s {%s}" % (self.rust_type, ", ".join([f'{k}: {v}' for k,v in example_list.items()]))
         return None
 
 class Signal(object):
@@ -341,7 +339,7 @@ class Method(object):
         self._topic_creator = topic_creator
         self._name = name
         self._arg_list = []  # type: List[Arg]
-        self._return_value: Arg|None = None
+        self._return_value: Arg|list[Arg]|None = None
 
     def add_arg(self, arg: Arg) -> Method:
         if arg.name in [a.name for a in self._arg_list]:
@@ -352,16 +350,14 @@ class Method(object):
     def add_return_value(self, value: Arg) -> Method:
         if self._return_value is None:
             self._return_value = value
-        elif isinstance(self._return_value, ArgStruct):
-            if value.name in [a.name for a in self._return_value.members]:
+        elif isinstance(self._return_value, list):
+            if value.name in [a.name for a in self._return_value]:
                 raise InvalidStingerStructure(f"A return value named '{value.name}' has been already added.")
-            self._return_value.add_member(value)
-        else:
+            self._return_value.append(value)
+        elif isinstance(self._return_value, Arg):
             if value.name == self._return_value.name:
                 raise InvalidStingerStructure(f"Attempt to add '{value.name}' to return value when it is already been added.")
-            struct_return_value = ArgStruct(f"{self._name}ReturnValue", [self._return_value, value])
-            self._return_value = struct_return_value
-
+            self._return_value = [self._return_value, value]
         return self
 
     @property
@@ -369,8 +365,64 @@ class Method(object):
         return self._arg_list
 
     @property
-    def return_value(self) -> Arg|None:
+    def return_value(self) -> Arg|list[Arg]|None:
         return self._return_value
+
+    @property
+    def return_value_name(self) -> str:
+        return f"{self.name} return value"
+
+    @property
+    def return_value_cpp_class(self) -> str:
+        if self._return_value is None:
+            return "null"
+        elif isinstance(self._return_value, Arg):
+            return self._return_value.cpp_type
+        elif isinstance(self._return_value, list):
+            return stringmanip.upper_camel_case(self.return_value_name)
+
+    @property
+    def return_value_rust_type(self) -> str:
+        if self._return_value is None:
+            return "None"
+        elif isinstance(self._return_value, Arg):
+            return self._return_value.rust_type
+        elif isinstance(self._return_value, list):
+            return stringmanip.upper_camel_case(self.return_value_name)
+
+    @property
+    def return_value_property_name(self) -> str:
+        if isinstance(self._return_value, Arg):
+            return self._return_value.name
+        else:
+            return self.name
+
+    @property
+    def return_value_type(self) -> str|bool:
+        if self._return_value is None:
+            return False
+        elif isinstance(self._return_value, Arg):
+            return self._return_value.arg_type.name.lower()
+        elif isinstance(self._return_value, list):
+            return "struct"
+        raise RuntimeError("Method return value type was not recognized")
+
+    def get_return_value_random_example_value(self, lang: str="python", seed: int=2):
+        if lang == "python":
+            if self._return_value is None:
+                return "None"
+            elif isinstance(self._return_value, Arg):
+                return self._return_value.get_random_example_value(lang, seed)
+            elif isinstance(self._return_value, list):
+                return f"{[a.get_random_example_value(lang,seed) for a in self._return_value]}" 
+        if lang == "c++" or lang == "cpp":
+            if self._return_value is None:
+                return "null"
+            elif isinstance(self._return_value, Arg):
+                return self._return_value.get_random_example_value(lang, seed)
+            elif isinstance(self._return_value, list):
+                return ", ".join([str(a.get_random_example_value(lang,seed)) for a in self._return_value])
+        raise RuntimeError(f"No random example for return value for {lang}")
 
     @property
     def name(self) -> str:
@@ -609,6 +661,11 @@ class InterfaceStruct:
             istruct.add_member(arg)
         return istruct
 
+    def __str__(self) -> str:
+        return f"<InterfaceStruct ({[m.name for m in self.members]})>"
+    
+    def __repr__(self):
+        return f"InterfaceStruct(name={self.name})"
 
 class MqttTransportProtocol(Enum):
     TCP = 0
@@ -747,6 +804,7 @@ class StingerSpec:
     def add_struct(self, interface_struct: InterfaceStruct):
         assert interface_struct is not None
         self.structs[interface_struct.name] = interface_struct
+        print(f"All structs so far: {self.structs=}")
 
     def uses_enums(self) -> bool:
         return bool(self.enums)
@@ -797,7 +855,9 @@ class StingerSpec:
                 for struct_name, struct_spec in stinger["structures"].items():
                     istruct = InterfaceStruct.new_struct_from_stinger(struct_name, struct_spec, stinger_spec)
                     assert (istruct is not None), f"Did not create struct from {struct_name} and {struct_spec}"
+                    print(f"Created interface struct {istruct=}")
                     stinger_spec.add_struct(istruct)
+                    print(f"The created structure is {stinger_spec.structs[struct_name]}")
         except TypeError as e:
             raise InvalidStingerStructure(
                 f"Struct specification appears to be invalid: {e}"

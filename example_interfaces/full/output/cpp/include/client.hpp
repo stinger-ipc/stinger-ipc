@@ -17,20 +17,29 @@
 class ExampleClient {
 
 public:
+    // This is the name of the API.
     static constexpr const char NAME[] = "Example";
+    // This is the version of the API contract.
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
+    // Constructor taking a connection object.
     ExampleClient(std::shared_ptr<IBrokerConnection> broker);
 
     virtual ~ExampleClient() = default;
 
     
+    // Register a callback for the `todayIs` signal.
+    // The provided method will be called whenever a `todayIs` is received.
     void registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb);
     
 
     
+    // Calls the `addNumbers` method.
+    // Returns a future.  When that future resolves, it will have the returned value.
     boost::future<int> addNumbers(int first, int second, boost::optional<int> third);
     
+    // Calls the `doSomething` method.
+    // Returns a future.  When that future resolves, it will have the returned value.
     boost::future<DoSomethingReturnValue> doSomething(const std::string& aString);
     
 private: 

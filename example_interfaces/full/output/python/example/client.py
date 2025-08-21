@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 TodayIsSignalCallbackType = Callable[[int, stinger_types.DayOfTheWeek | None], None]
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
-DoSomethingMethodResponseCallbackType = Callable[[stinger_types.DoSomethingReturnValue], None]
+DoSomethingMethodResponseCallbackType = Callable[[], None]
 
 FavoriteNumberPropertyUpdatedCallbackType = Callable[[int], None]
 FavoriteFoodsPropertyUpdatedCallbackType = Callable[[stinger_types.FavoriteFoodsProperty], None]
@@ -335,7 +335,7 @@ class ExampleClient:
             return_args["identifier"] = int(return_args["identifier"])
             return_args["day"] = stinger_types.DayOfTheWeek(return_args["day"])
             
-            return_obj = stinger_types.DoSomethingReturnValue(**return_args)
+            return_obj = (**return_args)
             fut.set_result(return_obj)
             
         except Exception as e:

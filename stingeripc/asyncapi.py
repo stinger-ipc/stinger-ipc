@@ -492,7 +492,7 @@ class StingerToAsyncApi:
                     resp_msg_schema.add_value_dependency(arg_spec.name, "result", 0)
             elif method_spec.return_value is not None:
                 add_arg(method_spec.return_value)
-                resp_msg_schema.add_value_dependency(method_spec.return_value.name, "result", 0)
+                resp_msg_schema.add_value_dependency(method_spec.return_value_name, "result", 0)
 
             resp_msg.set_schema(resp_msg_schema.to_schema())
             self._asyncapi.add_message(resp_msg)
