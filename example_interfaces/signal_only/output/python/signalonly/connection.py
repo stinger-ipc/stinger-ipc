@@ -54,7 +54,7 @@ class DefaultConnection(BrokerConnection):
         self._port: int = port
         self._last_will: Optional[Tuple[str, Optional[str], int, bool]] = None
         self._queued_messages = Queue() # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
-        self._queued_subscriptions = Queue() # type: Queue[PendingSubscription]
+        self._queued_subscriptions = Queue() # type: Queue[DefaultConnection.PendingSubscription]
         self._connected: bool = False
         self._client = MqttClient(CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5)
         self._client.on_connect = self._on_connect
@@ -119,6 +119,8 @@ class DefaultConnection(BrokerConnection):
     def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
             correlation_id: Union[str, bytes, None] = None, response_topic: Optional[str] = None,
             return_value: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
+        """ Publish a message to mqtt.
+        """
         properties = MqttProperties(PacketTypes.PUBLISH)
         properties.ContentType = "application/json"
         if isinstance(correlation_id, str):
@@ -153,7 +155,7 @@ class DefaultConnection(BrokerConnection):
             self._client.subscribe(topic, qos=1, properties=sub_props)
         else:
             self._logger.debug("Pending subscription to %s", topic)
-            self._queued_subscriptions.put(PendingSubscription(topic, sub_id))
+            self._queued_subscriptions.put(self.PendingSubscription(topic, sub_id))
         return sub_id
     
     def is_topic_sub(self, topic: str, sub: str) -> bool:

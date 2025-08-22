@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-This is the Client for the Example interface.
+This is the Client for the Full interface.
 */
 
 extern crate paho_mqtt as mqtt;
@@ -24,23 +24,23 @@ use tokio::task::JoinError;
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
-struct ExampleSubscriptionIds {
+struct FullSubscriptionIds {
     add_numbers_method_resp: i32,do_something_method_resp: i32,
     today_is_signal: Option<i32>,
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
 /// The rx side of the broadcast channels can be created from the tx side later.
-/// When ExampleClient gets a message and determines that it
+/// When FullClient gets a message and determines that it
 /// is a signal, it will send the signal payload via the tx channel that is in this struct.
 #[derive(Clone)]
-struct ExampleSignalChannels {
+struct FullSignalChannels {
     today_is_sender: broadcast::Sender<TodayIsSignalPayload>,
     
 }
 
 /// This is the struct for our API client.
-pub struct ExampleClient {
+pub struct FullClient {
     /// Temporarily holds oneshot channels for responses to method calls.
     pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,
     
@@ -57,22 +57,22 @@ pub struct ExampleClient {
     msg_publisher: MessagePublisher,
     
     /// Contains all the MQTTv5 subscription ids.
-    subscription_ids: ExampleSubscriptionIds,
+    subscription_ids: FullSubscriptionIds,
 
     /// Holds the channels used for sending signals to the application.
-    signal_channels: ExampleSignalChannels,
+    signal_channels: FullSignalChannels,
     
     /// Copy of MQTT Client ID
     client_id: String,
 }
 
-impl ExampleClient {
+impl FullClient {
 
-    /// Creates a new ExampleClient that uses elements from the provided Connection object.
+    /// Creates a new FullClient that uses elements from the provided Connection object.
     pub async fn new(connection: &mut Connection) -> Self {
         let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
-        // Create a channel for messages to get from the Connection object to this ExampleClient object.
+        // Create a channel for messages to get from the Connection object to this FullClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
@@ -80,22 +80,22 @@ impl ExampleClient {
         let publisher = connection.get_publisher();
 
         // Subscribe to all the topics needed for method responses.
-        let topic_add_numbers_method_resp = format!("client/{}/Example/method/addNumbers/response", connection.client_id);
+        let topic_add_numbers_method_resp = format!("client/{}/Full/method/addNumbers/response", connection.client_id);
         let subscription_id_add_numbers_method_resp = connection.subscribe(&topic_add_numbers_method_resp, message_received_tx.clone()).await;
         let subscription_id_add_numbers_method_resp = subscription_id_add_numbers_method_resp.unwrap_or_else(|_| -1);
-        let topic_do_something_method_resp = format!("client/{}/Example/method/doSomething/response", connection.client_id);
+        let topic_do_something_method_resp = format!("client/{}/Full/method/doSomething/response", connection.client_id);
         let subscription_id_do_something_method_resp = connection.subscribe(&topic_do_something_method_resp, message_received_tx.clone()).await;
         let subscription_id_do_something_method_resp = subscription_id_do_something_method_resp.unwrap_or_else(|_| -1);
         
 
         // Subscribe to all the topics needed for signals.
-        let topic_today_is_signal = "Example/signal/todayIs";
+        let topic_today_is_signal = "Full/signal/todayIs";
         let subscription_id_today_is_signal = connection.subscribe(&topic_today_is_signal, message_received_tx.clone()).await;
         let subscription_id_today_is_signal = subscription_id_today_is_signal.unwrap_or_else(|_| -1);
         
 
         // Create structure for subscription ids.
-        let sub_ids = ExampleSubscriptionIds {
+        let sub_ids = FullSubscriptionIds {
             add_numbers_method_resp: subscription_id_add_numbers_method_resp,
             do_something_method_resp: subscription_id_do_something_method_resp,
             today_is_signal: Some(subscription_id_today_is_signal),
@@ -103,13 +103,13 @@ impl ExampleClient {
         };
 
         // Create structure for the tx side of broadcast channels for signals.
-        let signal_channels = ExampleSignalChannels {
+        let signal_channels = FullSignalChannels {
             today_is_sender: broadcast::channel(64).0,
             
         };
 
-        // Create ExampleClient structure.
-        let inst = ExampleClient {
+        // Create FullClient structure.
+        let inst = FullClient {
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: Some(message_received_rx),
             msg_streamer_tx: message_received_tx,
@@ -130,7 +130,7 @@ impl ExampleClient {
 
     /// The `addNumbers` method.
     /// Method arguments are packed into a AddNumbersRequestObject structure
-    /// and published to the `Example/method/addNumbers` MQTT topic.
+    /// and published to the `Full/method/addNumbers` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn add_numbers(&mut self, first: i32, second: i32, third: Option<i32>)->Result<i32, MethodResultCode> {
@@ -145,8 +145,8 @@ impl ExampleClient {
             second: second,
             third: third,
         };
-        let response_topic = format!("client/{}/Example/method/addNumbers/response", self.client_id);
-        let _ = self.msg_publisher.publish_request_structure("Example/method/addNumbers".to_string(), &data, response_topic.as_str(), correlation_id).await;
+        let response_topic = format!("client/{}/Full/method/addNumbers/response", self.client_id);
+        let _ = self.msg_publisher.publish_request_structure("Full/method/addNumbers".to_string(), &data, response_topic.as_str(), correlation_id).await;
         let resp_obj = receiver.await.unwrap();
         Ok(resp_obj["sum"].as_i32().unwrap())
     }
@@ -176,7 +176,7 @@ impl ExampleClient {
     }
     /// The `doSomething` method.
     /// Method arguments are packed into a DoSomethingRequestObject structure
-    /// and published to the `Example/method/doSomething` MQTT topic.
+    /// and published to the `Full/method/doSomething` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn do_something(&mut self, a_string: String)->Result<DoSomethingReturnValue, MethodResultCode> {
@@ -189,8 +189,8 @@ impl ExampleClient {
         let data = connection::payloads::DoSomethingRequestObject {
             aString: a_string,
         };
-        let response_topic = format!("client/{}/Example/method/doSomething/response", self.client_id);
-        let _ = self.msg_publisher.publish_request_structure("Example/method/doSomething".to_string(), &data, response_topic.as_str(), correlation_id).await;
+        let response_topic = format!("client/{}/Full/method/doSomething/response", self.client_id);
+        let _ = self.msg_publisher.publish_request_structure("Full/method/doSomething".to_string(), &data, response_topic.as_str(), correlation_id).await;
         let resp_obj = receiver.await.unwrap();
         Ok(DoSomethingReturnValue { 
             
@@ -246,10 +246,10 @@ impl ExampleClient {
                 let opt_corr_id_bin: Option<Vec<u8>> = msg_props.get_binary(mqtt::PropertyCode::CorrelationData);
                 let corr_id: Option<Uuid> = opt_corr_id_bin.and_then(|b| Uuid::from_slice(&b).ok());
                 if msg.subscription_id == sub_ids.add_numbers_method_resp {
-                    ExampleClient::handle_add_numbers_response(resp_map.clone(), msg.message.payload_str().to_string(), corr_id);
+                    FullClient::handle_add_numbers_response(resp_map.clone(), msg.message.payload_str().to_string(), corr_id);
                 }
                 else if msg.subscription_id == sub_ids.do_something_method_resp {
-                    ExampleClient::handle_do_something_response(resp_map.clone(), msg.message.payload_str().to_string(), corr_id);
+                    FullClient::handle_do_something_response(resp_map.clone(), msg.message.payload_str().to_string(), corr_id);
                 }
                 if msg.subscription_id == sub_ids.today_is_signal.unwrap_or_default() {
                     let chan = sig_chans.today_is_sender.clone();

@@ -97,7 +97,7 @@ class Arg:
             if opt := arg_spec.get('optional', False):
                 arg.optional = opt
             return arg
-        raise RuntimeError("unknown arg type: {arg_spec['type']}")
+        raise RuntimeError(f"unknown arg type: {arg_spec['type']}")
 
     @abstractmethod
     def get_random_example_value(self, lang="python", seed:int=0):
@@ -262,7 +262,6 @@ class ArgStruct(Arg):
 
     @property
     def members(self) -> list[Arg]:
-        print(f"Struct: {self._interface_struct=}")
         return self._interface_struct.members
 
     @property
@@ -395,7 +394,7 @@ class Method(object):
     @property
     def return_value_rust_type(self) -> str:
         if self._return_value is None:
-            return "None"
+            return "()"
         elif isinstance(self._return_value, Arg):
             return self._return_value.rust_type
         elif isinstance(self._return_value, list):
@@ -471,9 +470,9 @@ class Method(object):
         """Alternative constructor from a Stinger method structure."""
         method = cls(topic_creator, name)
         if "arguments" not in method_spec:
-            raise InvalidStingerStructure("Method specification must have 'arguments'")
+            raise InvalidStingerStructure(f"Method '{name}' specification must have 'arguments'")
         if not isinstance(method_spec['arguments'], list):
-            raise InvalidStingerStructure(f"Arguments must be a list.  It is '{type(method_spec['arguments'])}' ")
+            raise InvalidStingerStructure(f"Arguments for '{name}' method must be a list.  It is '{type(method_spec['arguments'])}' ")
 
         for arg_spec in method_spec["arguments"]:
             if 'name' not in arg_spec or 'type' not in arg_spec:
@@ -582,6 +581,7 @@ class InterfaceEnum:
     def __init__(self, name: str):
         self._name = name
         self._values: list[Any] = []
+        self._description: str|None = None
 
     def add_value(self, value: str):
         self._values.append(value)
@@ -589,6 +589,10 @@ class InterfaceEnum:
     @property
     def name(self):
         return self._name
+
+    @property
+    def description(self) -> str|None:
+        return self._description
 
     @property
     def class_name(self):
@@ -623,8 +627,9 @@ class InterfaceEnum:
         return self._values
 
     @classmethod
-    def new_enum_from_stinger(cls, name, values: List[Dict[str, str]]) -> InterfaceEnum:
+    def new_enum_from_stinger(cls, name, values: List[Dict[str, str]], description: str|None=None) -> InterfaceEnum:
         ie = cls(name)
+        ie._description = description
         for enum_obj in values:
             if "name" in enum_obj:
                 ie.add_value(enum_obj["name"])
@@ -638,6 +643,7 @@ class InterfaceStruct:
     def __init__(self, name: str):
         self._name = name
         self._members: list[Arg] = []
+        self._description: str|None = None
 
     def add_member(self, arg: Arg):
         self._members.append(arg)
@@ -645,6 +651,10 @@ class InterfaceStruct:
     @property
     def name(self):
         return self._name
+
+    @property
+    def description(self) -> str|None:
+        return self._description
 
     @property
     def class_name(self):
@@ -692,6 +702,7 @@ class InterfaceStruct:
         for memb in spec.get('members', []):
             arg = Arg.new_arg_from_stinger(memb, stinger_spec=stinger_spec)
             istruct.add_member(arg)
+        istruct._description = spec.get('description', None)
         return istruct
 
     def __str__(self) -> str:
@@ -837,7 +848,6 @@ class StingerSpec:
     def add_struct(self, interface_struct: InterfaceStruct):
         assert interface_struct is not None
         self.structs[interface_struct.name] = interface_struct
-        print(f"All structs so far: {self.structs=}")
 
     def uses_enums(self) -> bool:
         return bool(self.enums)
@@ -864,7 +874,7 @@ class StingerSpec:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if "version" not in stinger["stingeripc"]:
             raise InvalidStingerStructure("Stinger spec version not present")
-        if stinger["stingeripc"]["version"] not in ["0.0.6"]:
+        if stinger["stingeripc"]["version"] not in ["0.0.7"]:
             raise InvalidStingerStructure(
                 f"Unsupported stinger spec version {stinger['stingeripc']['version']}"
             )
@@ -888,9 +898,7 @@ class StingerSpec:
                 for struct_name, struct_spec in stinger["structures"].items():
                     istruct = InterfaceStruct.new_struct_from_stinger(struct_name, struct_spec, stinger_spec)
                     assert (istruct is not None), f"Did not create struct from {struct_name} and {struct_spec}"
-                    print(f"Created interface struct {istruct=}")
                     stinger_spec.add_struct(istruct)
-                    print(f"The created structure is {stinger_spec.structs[struct_name]}")
         except TypeError as e:
             raise InvalidStingerStructure(
                 f"Struct specification appears to be invalid: {e}"

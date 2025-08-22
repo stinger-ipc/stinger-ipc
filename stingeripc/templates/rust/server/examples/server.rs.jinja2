@@ -21,9 +21,11 @@ fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|
         {%endfor%}
     };
     Ok(rv)
-    {%else%}
+    {%elif method.return_value_type is not false %}
     Ok({{method.return_value.get_random_example_value(lang="rust")}})
-    {%endif%}
+    {%else%}
+    Ok(())
+    {%-endif%}
 }
 {%endfor%}
 

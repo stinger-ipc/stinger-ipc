@@ -1,0 +1,176 @@
+stingeripc:
+  version: 0.0.7
+
+interface:
+  name: weather-forecast
+  version: 0.0.1
+  title: NWS weather forecast
+  summary: Current conditions, daily and hourly forecasts from the NWS API
+
+enums:
+
+  weather_condition:
+    - name: rainy
+    - name: sunny
+    - name: partly_cloudy
+    - name: mostly_cloudy
+    - name: overcast
+    - name: windy
+    - name: snowy
+
+structures:
+  forecast_for_hour:
+    members:
+      - name: temperature
+        type: float
+      - name: starttime
+        type: string
+      - name: condition
+        type: enum
+        enumName: weather_condition
+
+  forecast_for_day:
+    members:
+      - name: high_temperature
+        type: float
+      - name: low_temperature
+        type: float
+      - name: condition
+        type: enum
+        enumName: weather_condition
+      - name: start_time
+        type: string
+      - name: end_time
+        type: string
+
+signals:
+  current_time:
+    documentation: |
+      Once in a while (at intervals decided by the provider) the current date
+      and time will be published.  (Mostly for example purposes).
+    payload:
+      - name: current_time
+        type: string
+
+properties:
+  location:
+    documentation: |
+      Weather will be retrieved for the provided location.
+    values:
+      - name: latitude
+        type: float
+      - name: longitude
+        type: float
+
+  current_temperature:
+    documentation: |
+      This is the current (estimated) temperature in degrees fahrenheit.  This values
+      is regularly updated.  The value is extrapolated from the hourly forecast, but
+      adjusted based on the latest conditions at the nearest weather station.
+    values:
+      - name: temperature_f
+        type: float
+    readOnly: true
+
+  current_condition:
+    documentation: |
+      This is the current weather outside.  This comes from the hourly forecast and is
+      updated about once per hour.
+    values:
+      - name: condition
+        type: enum
+        enumName: weather_condition
+      - name: description
+        type: string
+    readOnly: true
+
+  daily_forecast:
+    documentation: |
+      This contains the weather forecast for each day of the next few days.  It is updated
+      a couple of times a day.  The current day may not have the high or low temperature
+      provided.  This is an example which shows only a few days.  The actual implementation
+      will have a value for each day of the week.
+    values:
+      - name: monday
+        type: struct
+        structName: forecast_for_day
+      - name: tuesday
+        type: struct
+        structName: forecast_for_day
+      - name: wednesday
+        type: struct
+        structName: forecast_for_day
+
+  hourly_forecast:
+    documentation: |
+      This contains the weather forecast for each hour of the next 24 hours.  The data source
+      us updated a couple of times per day, but this API property is updated every hour on the
+      hour.
+    values:
+      - name: hour_0
+        type: struct
+        structName: forecast_for_hour
+      - name: hour_1
+        type: struct
+        structName: forecast_for_hour
+      - name: hour_2
+        type: struct
+        structName: forecast_for_hour
+      - name: hour_3
+        type: struct
+        structName: forecast_for_hour
+
+  current_condition_refresh_interval:
+    documentation: |
+      This is the maximum interval, in seconds, that the latest weather conditions at the nearest weather
+      station are retrieved.
+    values:
+      - name: seconds
+        type: integer
+
+  hourly_forecast_refresh_interval:
+    documentation: |
+      This is the maximum interval, in seconds, that the hourly forecast data is retrieved.
+    values:
+      - name: seconds
+        type: integer
+
+  daily_forecast_refresh_interval:
+    documentation: |
+      This is the maximum interval, in seconds, that the daily forecast data is retrieved.
+    values:
+      - name: seconds
+        type: integer
+
+methods:
+  refresh_daily_forecast:
+    documentation: |
+      When called, this method will force the retrieval of the daily weather forecast from
+      the NWS weather API.  
+
+      When called, the `daily_forecast` API property will be republished with the latest data.
+
+      This method has no arguments and provides no return values.
+    arguments: []
+
+  refresh_hourly_forecast:
+    documentation: |
+      When called, this method will force the retrieval of the hourly weather forecast from
+      the NWS weather API.  
+
+      When called, the `hourly_forecast` API property will be republished with the latest data.
+
+      This method has no arguments and provides no return values.
+    arguments: []
+
+  refresh_current_conditions:
+    documentation: |
+      When called, this method will force the retrieval of the latest weather conditions
+      from the nearest weather station.  It also forces a re-calculation of the current
+      temperature.
+
+      When called, the `current_temperature` and `current_condition` API properties are
+      republished with the latest value.
+
+      This method has no arguments and provides no return values.
+    arguments: []
