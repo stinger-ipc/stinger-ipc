@@ -123,7 +123,9 @@ pub struct {{prop_name | UpperCamelCase}}Property {
     pub {{arg.name}}: {{arg.rust_type}},
     {%elif arg.arg_type.name.lower() == 'enum'-%}
     pub {{arg.name}}: {{arg.rust_local_type}},
-    {%-endif-%}
+    {%elif arg.arg_type.name.lower() == 'struct'-%}
+    pub {{arg.name}}: {{arg.rust_local_type}},
+    {%endif-%}
     {%endfor%}
 }
 {%endfor%}

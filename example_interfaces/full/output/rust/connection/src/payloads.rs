@@ -143,5 +143,7 @@ pub struct FavoriteFoodsProperty {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LunchMenuProperty {
+    pub monday: Monday,
+    pub tuesday: Tuesday,
     
 }
