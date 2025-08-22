@@ -43,7 +43,7 @@ async fn main() {
 
         {%for method_name, method in stinger.methods.items()%}
         println!("Calling {{method_name}} with example values...");
-        let result = client.{{method_name | snake_case}}({%for arg in method.arg_list%}{%if arg.optional%}Some({%endif%}{{arg.get_random_example_value(lang='rust')}}{%if arg.optional%}){%endif%}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
+        let result = client.{{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang='rust')}}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
         println!("{{method_name}} response: {:?}", result);
         {%endfor%}
 

@@ -9,7 +9,7 @@ use example_server::ExampleServer;
 use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
-use connection::payloads::MethodResultCode;
+use connection::payloads::{MethodResultCode, *};
 
 
 fn add_numbers_handler(_first: i32, _second: i32, _third: Option<i32>) -> Result<i32, MethodResultCode> {
@@ -21,11 +21,8 @@ fn add_numbers_handler(_first: i32, _second: i32, _third: Option<i32>) -> Result
 fn do_something_handler(_a_string: String) -> Result<DoSomethingReturnValue, MethodResultCode> {
     println!("Handling doSomething");
     let rv = DoSomethingReturnValue {
-        
         label: "apples".to_string(),
-        
         identifier: 42,
-        
         day: connection::payloads::DayOfTheWeek::Monday,
         
     };
@@ -61,8 +58,8 @@ async fn main() {
         
         println!("Setting initial value for property 'lunch_menu'");
         let new_value = connection::payloads::LunchMenuProperty {
-                monday: connection::payloads::Monday {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: connection::payloads::DayOfTheWeek::Monday, order_number: 42},
-                tuesday: connection::payloads::Tuesday {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: connection::payloads::DayOfTheWeek::Monday, order_number: 42},
+                monday: connection::payloads::Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: connection::payloads::DayOfTheWeek::Monday, order_number: Some(42)},
+                tuesday: connection::payloads::Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: connection::payloads::DayOfTheWeek::Monday, order_number: Some(42)},
         };
         server.set_lunch_menu(new_value).await;
         
@@ -94,8 +91,8 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'lunch_menu'");
         let new_value = connection::payloads::LunchMenuProperty {
-                monday: connection::payloads::Monday {drink: true, sandwich: "Joe".to_string(), crackers: 1.0, day: connection::payloads::DayOfTheWeek::Monday, order_number: 2022},
-                tuesday: connection::payloads::Tuesday {drink: true, sandwich: "Joe".to_string(), crackers: 1.0, day: connection::payloads::DayOfTheWeek::Monday, order_number: 2022},
+                monday: connection::payloads::Lunch {drink: true, sandwich: "Joe".to_string(), crackers: 1.0, day: connection::payloads::DayOfTheWeek::Monday, order_number: Some(2022)},
+                tuesday: connection::payloads::Lunch {drink: true, sandwich: "Joe".to_string(), crackers: 1.0, day: connection::payloads::DayOfTheWeek::Monday, order_number: Some(2022)},
         };
         server.set_lunch_menu(new_value).await;
         

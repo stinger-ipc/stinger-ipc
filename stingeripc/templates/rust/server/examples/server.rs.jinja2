@@ -9,14 +9,14 @@ use {{stinger.name | snake_case}}_server::{{stinger.name}}Server;
 use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
-{%if stinger.methods | length > 0 %}use connection::payloads::MethodResultCode;{%endif%}
+use connection::payloads::{MethodResultCode, *};
 
 {%for method_name, method in stinger.methods.items()%}
 fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
     println!("Handling {{method_name}}");
     {%-if method.return_value_type == 'struct'%}
     let rv = {{method.return_value_rust_type}} {
-        {%for arg in method.return_value%}
+        {%for arg in method.return_value-%}
         {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
         {%endfor%}
     };
@@ -46,7 +46,7 @@ async fn main() {
         {%-else%}{# many args in property #}
         let new_value = {{prop.rust_type}} {
             {%-for arg in prop.arg_list %}
-                {{arg.name}}: {%if arg.optional%}Some({%endif%}{{arg.get_random_example_value(lang="rust")}}{%if arg.optional%}){%endif%},
+                {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
             {%-endfor%}
         };
         server.set_{{prop_name | snake_case}}(new_value).await;
@@ -58,7 +58,7 @@ async fn main() {
         {%for sig_name, sig in stinger.signals.items()%}
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal '{{sig_name}}'");
-        server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{%if arg.optional%}Some({%endif%}{{arg.get_random_example_value(lang="rust")}}{%if arg.optional%}){%endif%}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+        server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()%}
         sleep(Duration::from_secs(1)).await;
@@ -68,7 +68,7 @@ async fn main() {
         {%-else%}{# many args in property #}
         let new_value = {{prop.rust_type}} {
             {%-for arg in prop.arg_list %}
-                {{arg.name}}: {%if arg.optional%}Some({%endif%}{{arg.get_random_example_value(lang="rust", seed=4)}}{%if arg.optional%}){%endif%},
+                {{arg.name}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
             {%-endfor%}
         };
         server.set_{{prop_name | snake_case}}(new_value).await;

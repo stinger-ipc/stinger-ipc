@@ -54,7 +54,7 @@ class {{broker.class_name}}(BrokerConnection):
         self._port: int = {%if broker.port is none %}port{%else%}{{broker.port}}{%endif%}
         self._last_will: Optional[Tuple[str, Optional[str], int, bool]] = None
         self._queued_messages = Queue() # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
-        self._queued_subscriptions = Queue() # type: Queue[PendingSubscription]
+        self._queued_subscriptions = Queue() # type: Queue[{{broker.class_name}}.PendingSubscription]
         self._connected: bool = False
         self._client = MqttClient(CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5)
         self._client.on_connect = self._on_connect
@@ -153,7 +153,7 @@ class {{broker.class_name}}(BrokerConnection):
             self._client.subscribe(topic, qos=1, properties=sub_props)
         else:
             self._logger.debug("Pending subscription to %s", topic)
-            self._queued_subscriptions.put(PendingSubscription(topic, sub_id))
+            self._queued_subscriptions.put(self.PendingSubscription(topic, sub_id))
         return sub_id
     
     def is_topic_sub(self, topic: str, sub: str) -> bool:

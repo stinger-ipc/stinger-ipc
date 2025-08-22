@@ -54,7 +54,7 @@ class DefaultConnection(BrokerConnection):
         self._port: int = port
         self._last_will: Optional[Tuple[str, Optional[str], int, bool]] = None
         self._queued_messages = Queue() # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
-        self._queued_subscriptions = Queue() # type: Queue[PendingSubscription]
+        self._queued_subscriptions = Queue() # type: Queue[DefaultConnection.PendingSubscription]
         self._connected: bool = False
         self._client = MqttClient(CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5)
         self._client.on_connect = self._on_connect

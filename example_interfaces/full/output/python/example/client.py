@@ -335,7 +335,7 @@ class ExampleClient:
             return_args["identifier"] = int(return_args["identifier"])
             return_args["day"] = stinger_types.DayOfTheWeek(return_args["day"])
             
-            return_obj = (**return_args)
+            return_obj = stinger_types.DoSomethingReturnValue(**return_args)
             fut.set_result(return_obj)
             
         except Exception as e:

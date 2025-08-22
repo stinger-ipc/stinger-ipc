@@ -208,7 +208,7 @@ class {{stinger.name}}Client:
             {%for arg in method.return_value-%}
             return_args["{{arg.name}}"] = {{arg.python_type}}(return_args["{{arg.name}}"])
             {%endfor%}
-            return_obj = {{method.return_value.python_type}}(**return_args)
+            return_obj = {{method.return_value_python_type}}(**return_args)
             fut.set_result(return_obj)
             {%else%}
             if "{{method.return_value_property_name}}" in response_json:

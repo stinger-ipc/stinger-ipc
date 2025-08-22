@@ -166,7 +166,10 @@ class ArgEnum(Arg):
         elif lang == "c++":
             retval = f"{self._enum.class_name}::{stringcase.constcase(value)}"
         elif lang == "rust":
-            retval = f"connection::payloads::{self._enum.class_name}::{value}"
+            if self.optional:
+                retval = f"Some(connection::payloads::{self._enum.class_name}::{value})"
+            else:
+                retval = f"connection::payloads::{self._enum.class_name}::{value}"
         random.setstate(random_state)
         return retval
 
@@ -227,6 +230,8 @@ class ArgPrimitive(Arg):
             retval = random.choice(['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"'])
             if lang == "rust":
                 retval = f"{retval}.to_string()"
+        if self.optional and lang == "rust":
+            retval = f"Some({retval})"
         random.setstate(random_state)
         return retval
 
@@ -262,23 +267,23 @@ class ArgStruct(Arg):
 
     @property
     def cpp_type(self) -> str:
-        return stringcase.pascalcase(self.name)
+        return self._interface_struct.cpp_type
 
     @property
     def python_type(self) -> str:
-        return f"stinger_types.{self.python_local_type}"
+        return f"stinger_types.{self._interface_struct.python_local_type}"
 
     @property
     def python_local_type(self) -> str:
-        return stringcase.pascalcase(self.name)
+        return self._interface_struct.python_local_type
 
     @property
     def rust_type(self) -> str:
-        return f"connection::payloads::{self.rust_local_type}"
-
+        return self._interface_struct.rust_type
+    
     @property
     def rust_local_type(self) -> str:
-        return stringcase.pascalcase(self.name)
+        return self._interface_struct.rust_local_type
 
     def get_random_example_value(self, lang="python", seed:int=2) -> str|None:
         example_list: dict[str] = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
@@ -290,6 +295,12 @@ class ArgStruct(Arg):
         elif lang == 'rust':
             return "%s {%s}" % (self.rust_type, ", ".join([f'{k}: {v}' for k,v in example_list.items()]))
         return None
+
+    def __str__(self) -> str:
+        return f"<ArgStruct name={self.name}>"
+    
+    def __repr__(self):
+        return f"ArgStruct(name={self.name}, iface_struct={self._interface_struct})"
 
 class Signal(object):
     def __init__(self, topic_creator: SignalTopicCreator, name: str):
@@ -387,6 +398,24 @@ class Method(object):
             return "None"
         elif isinstance(self._return_value, Arg):
             return self._return_value.rust_type
+        elif isinstance(self._return_value, list):
+            return stringmanip.upper_camel_case(self.return_value_name)
+
+    @property
+    def return_value_python_type(self):
+        if self._return_value is None:
+            return "None"
+        elif isinstance(self._return_value, Arg):
+            return self._return_value.python_type
+        elif isinstance(self._return_value, list):
+            return f"stinger_types.{stringmanip.upper_camel_case(self.return_value_name)}"
+
+    @property
+    def return_value_python_local_type(self):
+        if self._return_value is None:
+            return "None"
+        elif isinstance(self._return_value, Arg):
+            return self._return_value.python_local_type
         elif isinstance(self._return_value, list):
             return stringmanip.upper_camel_case(self.return_value_name)
 
@@ -546,7 +575,7 @@ class Property:
         return prop_obj
 
     def __str__(self) -> str:
-        return f"Property<name={self.name} values{[a.name for a in self.arg_list].join(",")}>"
+        return f"Property<name={self.name} values=[{', '.join([a.name for a in self.arg_list])}]>"
 
 class InterfaceEnum:
 
@@ -634,6 +663,10 @@ class InterfaceStruct:
         return f"{self.get_module_alias()}.{stringmanip.upper_camel_case(self.name)}"
 
     @property
+    def python_local_type(self) -> str:
+        return stringmanip.upper_camel_case(self.name)
+
+    @property
     def rust_local_type(self) -> str:
         return stringmanip.upper_camel_case(self.name)
 
@@ -662,7 +695,7 @@ class InterfaceStruct:
         return istruct
 
     def __str__(self) -> str:
-        return f"<InterfaceStruct ({[m.name for m in self.members]})>"
+        return f"<InterfaceStruct members={[m.name for m in self.members]}>"
     
     def __repr__(self):
         return f"InterfaceStruct(name={self.name})"
