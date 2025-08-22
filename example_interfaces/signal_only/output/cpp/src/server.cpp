@@ -42,13 +42,10 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
     doc.SetObject();
     
     
-    
-    doc.AddMember("one", one, doc.GetAllocator());
-    
+    doc.AddMember("one",one, doc.GetAllocator());
     
     
-    doc.AddMember("two", two, doc.GetAllocator());
-    
+    doc.AddMember("two",two, doc.GetAllocator());
     
     
     { // restrict scope
@@ -56,7 +53,6 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
         tempStringValue.SetString(three.c_str(), three.size(), doc.GetAllocator());
         doc.AddMember("three", tempStringValue, doc.GetAllocator());
     }
-    
     
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);

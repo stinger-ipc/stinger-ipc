@@ -133,9 +133,12 @@ components:
             type: integer
           second:
             type: integer
+          third:
+            type: integer
         required:
         - first
         - second
+        - third
         type: object
       traits:
       - $ref: '#/components/messageTraits/methodJsonArguments'
@@ -180,17 +183,8 @@ components:
         - result
       name: doSomethingResponse
       payload:
-        properties:
-          day:
-            $ref: '#/components/schemas/enum_dayOfTheWeek'
-          identifier:
-            type: integer
-          label:
-            type: string
-        required:
-        - day
-        - identifier
-        - label
+        properties: {}
+        required: []
         type: object
       traits:
       - $ref: '#/components/messageTraits/methodJsonArguments'
@@ -211,13 +205,16 @@ components:
     stinger_method_return_codes:
       description: "The stinger_method_return_codes enum has the following values:\n
         0 - Success\n 1 - Client Error\n 2 - Server Error\n 3 - Transport Error\n
-        4 - Payload Error"
+        4 - Payload Error\n 5 - Timeout\n 6 - Unknown Error\n 7 - Not Implemented"
       enum:
       - 0
       - 1
       - 2
       - 3
       - 4
+      - 5
+      - 6
+      - 7
       type: integer
 servers:
   local:

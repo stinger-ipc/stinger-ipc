@@ -20,16 +20,21 @@ from connection import BrokerConnection
 
 logging.basicConfig(level=logging.DEBUG)
 
-{%for sig_name, sig in stinger.signals.items()%}
+{%for sig_name, sig in stinger.signals.items()-%}
 {{sig_name | UpperCamelCase}}SignalCallbackType = Callable[[{%for arg in sig.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]
 {%endfor%}
-{%-for method_name, method in stinger.methods.items()%}
+{%-for method_name, method in stinger.methods.items()-%}
 {{method_name | UpperCamelCase}}MethodResponseCallbackType = Callable[[{%if method.return_value%}{{method.return_value.python_type}}{%endif%}], None]
+{%endfor%}
+{%for prop_name, prop in stinger.properties.items()-%}
+{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Callable[[{{prop.python_class}}], None]
 {%endfor%}
 
 class {{stinger.name}}Client:
 
     def __init__(self, connection: BrokerConnection):
+        """ Constructor for a `{{stinger.name}}Client` object.
+        """
         self._logger = logging.getLogger('{{stinger.name}}Client')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.name}}Client")
@@ -37,19 +42,51 @@ class {{stinger.name}}Client:
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         {%if stinger.methods | length > 0 %}
-        self._pending_method_responses = {} # type: Dict[str, Callable[..., None]]
+        self._pending_method_responses: dict[str, Callable[..., None]] = {}
         {%endif%}
-        {%for p,v in stinger.params.items()-%}
-        self._{{p}} = {{v.payload.initialValue}}
-        self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
-        self.changed_value_callback_for_{{p}} = None
+        {%for prop_name, prop_spec in stinger.properties.items()-%}
+        self._property_{{prop_name}}: {{prop_spec.python_class}}|None = None
+        self._{{prop_name}}_prop_subscription_id: int = self._conn.subscribe("{{prop_spec.value_topic}}")
+        self._changed_value_callbacks_for_{{prop_name}}: list[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
         {%-for sig_name in stinger.signals.keys()-%}
-        self._signal_recv_callbacks_for_{{sig_name}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
+        self._signal_recv_callbacks_for_{{sig_name | snake_case }}: list[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()-%}
-        self._conn.subscribe(f"{{method.response_topic('{self._client_id}')}}")
+        self._{{method_name}}_method_call_subscription_id: int = self._conn.subscribe(f"{{method.response_topic('{self._client_id}')}}")
         {%endfor%}
+
+    {%for prop_name, prop_spec in stinger.properties.items()-%}
+    @property
+    def {{prop_name}}(self) -> {{prop_spec.python_class}} | None:
+        """ Property '{{prop_name}}' getter.
+        """
+        return self._property_{{prop_name}}
+    {%if not prop_spec.read_only %}
+    @{{prop_name}}.setter
+    def {{prop_name}}(self, value: {{prop_spec.python_class}}):
+        """ Serializes and publishes the '{{prop_name}}' property.
+        """
+        if not isinstance(value, {{prop_spec.python_class}}):
+            raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}")
+        {%if prop_spec.arg_list | length > 1 -%}
+        serialized = value.model_dump_json(exclude_none=True)
+        {%else-%}
+        serialized = json.dumps({ "{{prop_spec.arg_list[0].name}}": value.{{prop_spec.arg_list[0].name}} })
+        {%endif-%}
+        self._logger.debug("Setting '{{prop_name}}' property to %s", serialized)
+        self._conn.publish("{{prop_spec.update_topic}}", serialized, qos=1)
+    {%endif%}
+    def {{prop_name | snake_case}}_changed(self, handler: {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType, call_immediately: bool=False):
+        """ Sets a callback to be called when the '{{prop_name}}' property changes.
+        Can be used as a decorator.
+        """
+        self._changed_value_callbacks_for_{{prop_name}}.append(handler)
+        if call_immediately and self._property_{{prop_name}} is not None:
+            handler(self._property_{{prop_name}})
+        return handler
+
+    {%endfor%}
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
@@ -82,10 +119,11 @@ class {{stinger.name}}Client:
             allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
             kwargs = self._filter_for_args(json.loads(payload), allowed_args)
             {%for arg in sig.arg_list-%}
-            kwargs["{{arg.name}}"] = {{arg.python_type}}(kwargs["{{arg.name}}"])
+            kwargs["{{arg.name}}"] = {{arg.python_class}}(kwargs["{{arg.name}}"]){%if arg.optional %} if kwargs.get("{{arg.name}}") else None {%endif%}
             {%endfor%}
-            self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name}}, **kwargs)
-        {%endfor%}
+            self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
+        {%endfor%}{# end signal loop #}
+        
         {%-else%}pass{%-endif%}
         {%-for method_name, method in stinger.methods.items()%}
         # Handle '{{method_name}}' method response.
@@ -108,15 +146,34 @@ class {{stinger.name}}Client:
                     self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
             else:
                 self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
-        {%endfor%}
+        {%endfor%}{# end method loop #}
+        {%-for prop_name, prop_spec in stinger.properties.items()%}
+        # Handle '{{prop_name}}' property change.
+        {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{prop_spec.value_topic}}"):
+            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+                self._logger.warning("Received '{{prop_name}}' property change with non-JSON content type")
+                return
+            try:
+                {%if prop_spec.arg_list | length > 1 -%}
+                prop_value = {{prop_spec.python_class}}.model_validate_json(payload)
+                {%else-%}
+                payload_obj = json.loads(payload)
+                prop_value = {{prop_spec.arg_list[0].python_class}}(payload_obj["{{prop_spec.arg_list[0].name}}"])
+                {%endif-%}
+                self._property_{{prop_name}} = prop_value
+                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name}}, value=self._property_{{prop_name}})
+            except Exception as e:
+                self._logger.error("Error processing '{{prop_name}}' property change: %s", e)
+        {%endfor%}{# end property loop #}
 
     {%for sig_name, sig in stinger.signals.items()%}
-    def receive_{{sig_name}}(self, handler):
+    def receive_{{sig_name | snake_case }}(self, handler: {{sig_name | UpperCamelCase}}SignalCallbackType):
         """ Used as a decorator for methods which handle particular signals.
         """
-        self._signal_recv_callbacks_for_{{sig_name}}.append(handler)
-        if len(self._signal_recv_callbacks_for_{{sig_name}}) == 1:
+        self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
+        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) == 1:
             self._conn.subscribe("{{sig.topic}}")
+        return handler
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
@@ -124,7 +181,7 @@ class {{stinger.name}}Client:
         """ Calling this initiates a `{{method_name}}` IPC method call.
         """
         {%for arg in method.arg_list%}
-        if not isinstance({{arg.name}}, {{arg.python_type}}):
+        if not isinstance({{arg.name}}, {{arg.python_class}}){%- if not arg.optional -%} and {{arg.name}} is not None{%endif-%}:
             raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_type}}")
         {%endfor%}
         fut = futures.Future() # type: futures.Future
@@ -146,19 +203,19 @@ class {{stinger.name}}Client:
                 raise stinger_exception_factory(return_value, response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             {%if method.return_value is none%}
             fut.set_result(None)
-            {%elif method.return_value.arg_type.name.lower() == 'struct' %}
-            return_args = self._filter_for_args(response_json, [{%for m in method.return_value.members%}"{{m.name}}", {%endfor%}])
-            {%for arg in method.return_value.members-%}
+            {%elif method.return_value_type == 'struct' %}
+            return_args = self._filter_for_args(response_json, [{%for m in method.return_value%}"{{m.name}}", {%endfor%}])
+            {%for arg in method.return_value-%}
             return_args["{{arg.name}}"] = {{arg.python_type}}(return_args["{{arg.name}}"])
             {%endfor%}
-            return_obj = {{method.return_value.python_type}}(**return_args)
+            return_obj = {{method.return_value_python_type}}(**return_args)
             fut.set_result(return_obj)
             {%else%}
-            if "{{method.return_value.name}}" in response_json:
-                if not isinstance(response_json["{{method.return_value.name}}"], {{method.return_value.python_type}}):
-                    raise ValueError("Return value '{{method.return_value.name}}'' had wrong type")
+            if "{{method.return_value_property_name}}" in response_json:
+                if not isinstance(response_json["{{method.return_value_property_name}}"], {{method.return_value.python_type}}):
+                    raise ValueError("Return value '{{method.return_value_property_name}}'' had wrong type")
                 self._logger.debug("Setting future result")
-                fut.set_result(response_json["{{method.return_value.name}}"])
+                fut.set_result(response_json["{{method.return_value_property_name}}"])
             else:
                 raise Exception("Response message didn't have the return value")
             {%endif%}
@@ -177,14 +234,24 @@ class {{stinger.name}}ClientBuilder:
         self._conn = broker
         self._logger = logging.getLogger('{{stinger.name}}ClientBuilder')
         {%for sig_name in stinger.signals.keys()-%}
-        self._signal_recv_callbacks_for_{{sig_name}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
+        self._signal_recv_callbacks_for_{{sig_name | snake_case}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
+        {%endfor-%}
+        {%for prop_name in stinger.properties.keys()-%}
+        self._property_updated_callbacks_for_{{prop_name | snake_case}}: list[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
 
     {%for sig_name, sig in stinger.signals.items()%}
-    def receive_{{sig_name}}(self, handler):
+    def receive_{{sig_name | snake_case }}(self, handler):
         """ Used as a decorator for methods which handle particular signals.
         """
-        self._signal_recv_callbacks_for_{{sig_name}}.append(handler)
+        self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    def {{prop_name|snake_case}}_updated(self, handler: {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType):
+        """ Used as a decorator for methods which handle updates to properties.
+        """
+        self._property_updated_callbacks_for_{{prop_name | snake_case}}.append(handler)
     {%endfor%}
 
     def build(self) -> {{stinger.name}}Client:
@@ -193,8 +260,12 @@ class {{stinger.name}}ClientBuilder:
         self._logger.debug("Building {{stinger.name}}Client")
         client = {{stinger.name}}Client(self._conn)
         {%for sig_name, sig in stinger.signals.items()%}
-        for cb in self._signal_recv_callbacks_for_{{sig_name}}:
-            client.receive_{{sig_name}}(cb)
+        for cb in self._signal_recv_callbacks_for_{{sig_name | snake_case }}:
+            client.receive_{{sig_name | snake_case}}(cb)
+        {%endfor%}
+        {%for prop_name, prop in stinger.properties.items()%}
+        for cb in self._property_updated_callbacks_for_{{prop_name | snake_case}}:
+            client.{{prop_name | snake_case}}_changed(cb)
         {%endfor%}
         return client
 
@@ -206,13 +277,20 @@ if __name__ == '__main__':
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
     client_builder = {{stinger.name}}ClientBuilder(conn)
     {%for sig_name, sig in stinger.signals.items()%}
-    @client_builder.receive_{{sig_name}}
+    @client_builder.receive_{{sig_name | snake_case }}
     def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """{{sig.description}}
         {%for arg in sig.arg_list-%}
         @param {{arg.name}} {{arg.python_type}} {{arg.description or ''}}
         {%endfor%}"""
         print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
+    {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    @client_builder.{{prop_name | snake_case}}_updated
+    def print_new_{{prop_name}}_value(value: {{prop.python_class}}):
+        """{{prop.description}}
+        """
+        print(f"Property '{{prop_name}}' has been updated to: {value}")
     {%endfor%}
 
     client = client_builder.build()

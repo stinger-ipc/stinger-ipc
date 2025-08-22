@@ -22,8 +22,8 @@ Client <<- Server : Signal(Parameters)
 
 |Name|Type|Description|
 |----|----|-----------|
-|dayOfMonth|integer|None|
-|dayOfWeek|[Enum DayOfTheWeek](#enum-DayOfTheWeek)|None|
+|dayOfMonth|integer||
+|dayOfWeek|[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
 
 
 
@@ -49,8 +49,9 @@ Client <<-- Server: Response(Parameters)
 
 |Name|Type|Description|
 |----|----|-----------|
-|first|integer|None|
-|second|integer|None|
+|first|integer||
+|second|integer||
+|third|integer (optional)||
 
 #### Return Parameters
 
@@ -64,27 +65,67 @@ The return parameter type is `integer`.
 
 |Name|Type|Description|
 |----|----|-----------|
-|aString|string|None|
+|aString|string||
 
 #### Return Parameters
 
 
 |Name|Type|Description|
 |----|----|-----------|
-|label|string|None|
-|identifier|integer|None|
-|day|[Enum DayOfTheWeek](#enum-DayOfTheWeek)|None|
+|label|string||
+|identifier|integer||
+|day|[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
+
+
+## Properties
+
+
+### favorite_number
+
+|Name|Type|Description|
+|----|----|-----------|
+|number|integer||
+
+
+### favorite_foods
+
+|Name|Type|Description|
+|----|----|-----------|
+|drink|string||
+|slices_of_pizza|integer||
+|breakfast|string (optional)||
+
+
+### lunch_menu
+
+|Name|Type|Description|
+|----|----|-----------|
+|monday|||
+|tuesday|||
 
 
 ## Enums
 
 
-### Enum DayOfTheWeek
+### Enum `DayOfTheWeek`
 <a name="Enum-DayOfTheWeek"></a>
- * Sunday
- * Monday
- * Tuesday
- * Wednesday
- * Thursday
- * Friday
- * Saturday
+ * Sunday (1)
+ * Monday (2)
+ * Tuesday (3)
+ * Wednesday (4)
+ * Thursday (5)
+ * Friday (6)
+ * Saturday (7)
+
+
+## Structures
+
+### Struct `Lunch`
+<a name="Enum-Lunch"></a>
+|Name|Type|Description|
+|----|----|-----------|
+|drink|boolean||
+|sandwich|string||
+|crackers|number||
+|day|[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
+|order_number|integer (optional)||

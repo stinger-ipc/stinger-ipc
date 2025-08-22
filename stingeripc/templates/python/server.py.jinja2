@@ -25,10 +25,10 @@ class {{stinger.name}}Server:
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         self._conn.set_last_will(topic="{{stinger.interface_info.0}}", payload=None, qos=1, retain=True)
-        {%for p,v in stinger.params.items()-%}
-        self._{{p}} = {{v.payload.initialValue}}
-        self._conn.subscribe("{{topics.get_param_value(stinger.name, false, p)}}", self.set_{{p}})
-        self.changed_value_callback_for_{{p}} = None
+        {%for prop_name, prop_spec in stinger.properties.items()-%}
+        self._property_{{prop_name}} = None
+        self._conn.subscribe("{{prop_spec.update_topic}}")
+        self.changed_value_callback_for_{{pprop_name}} = None
         self._publish_interface_info()
         {%endfor-%}
         {%-for method in stinger.methods.values()%}
@@ -62,13 +62,13 @@ class {{stinger.name}}Server:
         """ Server application code should call this method to emit the '{{sig_name}}' signal.
         """
         {%-for arg in sig.arg_list%}
-        if not isinstance({{arg.name}}, {{arg.python_type}}):
+        if not isinstance({{arg.name}}, {{arg.python_class}}){%if arg.optional%} and {{arg.name}} is not None{%endif%}:
             raise ValueError(f"The '{{arg.name}}' value must be {{arg.python_type}}.")
         {%-endfor%}
         
         payload = { {%-for arg in sig.arg_list%}
-            {%if arg.arg_type.name.lower() == 'value'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}),{%endif-%}
-            {%if arg.arg_type.name.lower() == 'enum'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}).value,{%endif%}{%endfor%}
+            {%if arg.arg_type.name.lower() == 'primitive'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}){%if arg.optional%} if {{arg.name}} is not None else None{%endif%},{%endif-%}
+            {%if arg.arg_type.name.lower() == 'enum'%}"{{arg.name}}": {{arg.python_class}}({{arg.name}}).value{%if arg.optional%} if {{arg.name}} is not None else None{%endif%},{%endif%}{%endfor%}
         }
         self._conn.publish("{{sig.topic}}", json.dumps(payload), qos=1, retain=False)
 
@@ -94,13 +94,20 @@ class {{stinger.name}}Server:
             method_args = [] # type: List[Any]
             {%for arg in method.arg_list -%}
             if "{{arg.name}}" in payload:
-                if not isinstance(payload["{{arg.name}}"], {{arg.python_type}}):
+                if not isinstance(payload["{{arg.name}}"], {{arg.python_class}}){%if arg.optional%} or {{arg.name}} is None{%endif%}:
                     self._logger.warning("The '{{arg.name}}' property in the payload to '%s' wasn't the correct type.  It should have been {{arg.python_type}}.", topic)
+                    # TODO: return an error via MQTT
                     return
                 else:
                     method_args.append(payload["{{arg.name}}"])
             else:
-                self._logger.info("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
+                {%if arg.optional%}
+                method_args.append(None)
+                {%else%}
+                self._logger.warning("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
+                # TODO: return an error via MQTT
+                return
+                {%endif%}
             {%endfor%}
             
             if response_topic is not None:
@@ -109,19 +116,24 @@ class {{stinger.name}}Server:
                 try:
                     return_struct = self._{{method_name|snake_case}}_method_handler(*method_args)
                     self._logger.debug("Return value is %s", return_struct)
-                    {%if method.return_value is none%}
+                    {%if method.return_value is false%}
                         return_json = "{}"
                     {%else%}
                     if return_struct is not None:
-                        {%-if method.return_value.arg_type.name.lower() == "value" %}
+                        {%-if method.return_value_type == "primitive" %}
                         return_json = json.dumps({
-                            "{{method.return_value.name}}": return_struct
+                            "{{method.return_value_property_name}}": return_struct
                         })
-                        {%-elif method.return_value.arg_type.name.lower() == "enum" %}
+                        {%-elif method.return_value_type == "enum" %}
                         return_json = json.dumps({
-                            "{{method.return_value.name}}": return_struct.value
+                            "{{method.return_value_property_name}}": return_struct.value
+                        })
+                        {%-elif method.return_value_type == "struct" %}
+                        return_json = json.dumps({
+                            "{{method.return_value_property_name}}": return_struct.model_dump_json()
                         })
                         {%else%}
+                        // else
                         return_json = return_struct.model_dump_json()
                         {%endif%}
                     {%-endif%}
@@ -137,28 +149,6 @@ class {{stinger.name}}Server:
                     correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
     {%endfor%}
 
-    {%for p,v in stinger.params.items()-%}
-    {%-set args = payload(v['payload']) %}
-    def set_{{p}}(self, {%for arg in args%}{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}):
-        changed = False
-        {%for arg in payload(v['payload'])-%}
-        if {{arg.name}} != self._{{p}}['{{arg.name}}']:
-            changed = True
-            self._{{p}}['{{arg.name}}'] = {{arg.name}}
-        {%endfor-%}
-        if changed:
-            topic = "{{topics.get_param_value(stinger.name, false, p)}}"
-            self._conn.publish(topic, self._{{p}}, 1, True)
-            if self.changed_value_callback_for_{{p}} is not None:
-                self.changed_value_callback_for_{{p}}({%for arg in args%}{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
-
-    def get_{{p}}(self):
-        {%if args | length > 1 -%}
-        return self._{{p}}
-        {%-else-%}
-        return self._{{p}}[args[0].name]
-        {%-endif%}
-    {%endfor%}
 
 class {{stinger.name}}ServerBuilder:
     """
@@ -202,7 +192,7 @@ if __name__ == '__main__':
     @server.handle_{{method_name | snake_case}}
     def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value.python_type}}:
         print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
-        return {{method.return_value.get_random_example_value('python')}}
+        return {{method.get_return_value_random_example_value('python')}}
     {%endfor%}
 
     print("Ctrl-C will stop the program.")

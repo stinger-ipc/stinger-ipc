@@ -9,16 +9,40 @@ from pydantic import BaseModel
 
 {%for ie_name, ie in stinger.enums.items() %}
 class {{ie_name | UpperCamelCase }}(IntEnum):
+    """ Interface enum `{{ie_name}}`."""
     {%-for value in ie.values %}
     {{value | CONST_CASE}} = {{loop.index}}
     {%-endfor%}
 {%endfor%}
 
-{%for method_name, method in stinger.methods.items()%}
-{%-if method.return_value.arg_type.name.lower() == 'struct'%}
-class {{method.return_value.python_local_type}}(BaseModel):
-    {%-for arg in method.return_value.members%}
+{%-for istruct_name, istruct in stinger.structs.items() %}
+class {{istruct_name | UpperCamelCase }}(BaseModel):
+    """ Interface struct `{{istruct_name}}`. """
+    {%-for arg in istruct.members%}
+    {{arg.name}}: {{arg.python_local_type}}
+    {%-endfor%}
+{%endfor%}
+
+{%-for method_name, method in stinger.methods.items()%}
+{%-if method.return_value_type == 'struct'%}
+class {{method.return_value_python_local_type}}(BaseModel):
+    """ Interface method `{{method_name}}` return value struct. """
+    {%-for arg in method.return_value%}
     {{arg.name}}: {{arg.python_local_type}}
     {%-endfor%}
 {%endif-%}
 {%endfor%}
+
+{%-for prop_name, prop in stinger.properties.items()%}{%if prop.arg_list | length > 1%}
+class {{prop.python_local_type}}(BaseModel):
+    """ Interface property `{{prop_name}}` (multi-value struct)."""
+    {%for arg in prop.arg_list%}
+    {%-if arg.arg_type.name.lower() == 'primitive' -%}
+    {{arg.name}}: {{arg.python_local_type}}
+    {%elif arg.arg_type.name.lower() == 'enum'-%}
+    {{arg.name}}: {{arg.python_local_type}}
+    {%elif arg.arg_type.name.lower() == 'struct'-%}
+    {{arg.name}}: {{arg.python_local_type}}
+    {%endif-%}
+    {%endfor%}
+{%endif%}{%endfor%}

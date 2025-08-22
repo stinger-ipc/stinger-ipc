@@ -16,13 +16,15 @@ from connection import BrokerConnection
 
 logging.basicConfig(level=logging.DEBUG)
 
-
 AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]
+
 
 
 class SignalOnlyClient:
 
     def __init__(self, connection: BrokerConnection):
+        """ Constructor for a `SignalOnlyClient` object.
+        """
         self._logger = logging.getLogger('SignalOnlyClient')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SignalOnlyClient")
@@ -30,8 +32,10 @@ class SignalOnlyClient:
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         
-        self._signal_recv_callbacks_for_anotherSignal = [] # type: List[AnotherSignalSignalCallbackType]
+        self._signal_recv_callbacks_for_another_signal: list[AnotherSignalSignalCallbackType] = []
         
+
+    
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
@@ -65,16 +69,17 @@ class SignalOnlyClient:
             kwargs["two"] = bool(kwargs["two"])
             kwargs["three"] = str(kwargs["three"])
             
-            self._do_callbacks_for(self._signal_recv_callbacks_for_anotherSignal, **kwargs)
+            self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
         
 
     
-    def receive_anotherSignal(self, handler):
+    def receive_another_signal(self, handler: AnotherSignalSignalCallbackType):
         """ Used as a decorator for methods which handle particular signals.
         """
-        self._signal_recv_callbacks_for_anotherSignal.append(handler)
-        if len(self._signal_recv_callbacks_for_anotherSignal) == 1:
+        self._signal_recv_callbacks_for_another_signal.append(handler)
+        if len(self._signal_recv_callbacks_for_another_signal) == 1:
             self._conn.subscribe("SignalOnly/signal/anotherSignal")
+        return handler
     
 
     
@@ -86,12 +91,14 @@ class SignalOnlyClientBuilder:
         """
         self._conn = broker
         self._logger = logging.getLogger('SignalOnlyClientBuilder')
-        self._signal_recv_callbacks_for_anotherSignal = [] # type: List[AnotherSignalSignalCallbackType]
+        self._signal_recv_callbacks_for_another_signal = [] # type: List[AnotherSignalSignalCallbackType]
         
-    def receive_anotherSignal(self, handler):
+    def receive_another_signal(self, handler):
         """ Used as a decorator for methods which handle particular signals.
         """
-        self._signal_recv_callbacks_for_anotherSignal.append(handler)
+        self._signal_recv_callbacks_for_another_signal.append(handler)
+    
+
     
 
     def build(self) -> SignalOnlyClient:
@@ -100,8 +107,9 @@ class SignalOnlyClientBuilder:
         self._logger.debug("Building SignalOnlyClient")
         client = SignalOnlyClient(self._conn)
         
-        for cb in self._signal_recv_callbacks_for_anotherSignal:
-            client.receive_anotherSignal(cb)
+        for cb in self._signal_recv_callbacks_for_another_signal:
+            client.receive_another_signal(cb)
+        
         
         return client
 
@@ -113,7 +121,7 @@ if __name__ == '__main__':
     conn = DefaultConnection('localhost', 1883)
     client_builder = SignalOnlyClientBuilder(conn)
     
-    @client_builder.receive_anotherSignal
+    @client_builder.receive_another_signal
     def print_anotherSignal_receipt(one: float, two: bool, three: str):
         """
         @param one float 
@@ -121,6 +129,7 @@ if __name__ == '__main__':
         @param three str 
         """
         print(f"Got a 'anotherSignal' signal: one={ one } two={ two } three={ three } ")
+    
     
 
     client = client_builder.build()

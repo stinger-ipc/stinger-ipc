@@ -12,16 +12,19 @@ int main(int argc, char** argv) {
     ExampleServer server(conn);
     auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::MONDAY);
     todayIsFuture.wait();
-    server.registerAddNumbersHandler([](int unused1, int unused2) -> int
+    server.registerAddNumbersHandler([](int unused1, int unused2, boost::optional<int> unused3) -> int
     {
         std::cout << "Received call for addNumbers\n";
+        
         return 42;
     });
     
     server.registerDoSomethingHandler([](const std::string& unused1) -> DoSomethingReturnValue
     {
         std::cout << "Received call for doSomething\n";
-        return {"apples", 42, DayOfTheWeek::MONDAY};
+        
+        return DoSomethingReturnValue{ "apples", 42, DayOfTheWeek::MONDAY };
+        
     });
     
     std::cout << "Press Enter to exit\n"; 

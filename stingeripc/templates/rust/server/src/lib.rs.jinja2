@@ -15,6 +15,8 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc};
 use tokio::join;
 use tokio::task::JoinError;
+use serde::{Serialize, Deserialize};
+use serde_json;
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -22,15 +24,30 @@ use tokio::task::JoinError;
 struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
     {%for method_name, method in stinger.methods.items()-%}
     {{method_name | snake_case}}_method_req: i32,
-    {%-endfor%}
+    {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
+    {{prop_name | snake_case}}_property_update: i32,
+    {%endif%}{%endfor%}
 }
 
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    method_handler_for_{{method_name|snake_case}}: Arc<Mutex<Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + Send>>>,
+    method_handler_for_{{method_name|snake_case}}: Arc<Mutex<Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodResultCode> + Send>>>,
     {%endfor%}
+}
+
+#[derive(Clone)]
+struct {{stinger.name | UpperCamelCase}}Properties {
+    {%for prop_name, prop in stinger.properties.items()-%}
+    {{prop_name | snake_case}}_topic: Arc<String>,
+    {%-if prop.arg_list | length > 1%}
+    {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.rust_type}}>>>,
+    {%-else%}
+    {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.arg_list[0].rust_type}}>>>,
+    {%endif%}
+    {%-endfor%}
 }
 
 pub struct {{stinger.name | UpperCamelCase}}Server {
@@ -47,7 +64,10 @@ pub struct {{stinger.name | UpperCamelCase}}Server {
 
     /// Struct contains all the handlers for the various methods.
     method_handlers: {{stinger.name | UpperCamelCase }}ServerMethodHandlers,
-
+    {%if stinger.properties|length > 0%}
+    /// Struct contains all the properties.
+    properties: {{stinger.name | UpperCamelCase}}Properties,
+    {%endif%}
     /// Subscription IDs for all the subscriptions this makes.
     subscription_ids: {{stinger.name | UpperCamelCase }}ServerSubscriptionIds,
 
@@ -74,6 +94,11 @@ impl {{stinger.name | UpperCamelCase}}Server {
         let subscription_id_{{method_name | snake_case}}_method_req = subscription_id_{{method_name | snake_case}}_method_req.unwrap_or_else(|_| -1);
         {%endfor%}
 
+        {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
+        let subscription_id_{{prop_name | snake_case}}_property_update = connection.subscribe("{{prop.update_topic}}", message_received_tx.clone()).await;
+        let subscription_id_{{prop_name | snake_case}}_property_update = subscription_id_{{prop_name | snake_case}}_property_update.unwrap_or_else(|_| -1);
+        {%endif%}{%endfor%}
+
         // Create structure for method handlers.
         let method_handlers = {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
             {%-for method_name, method in stinger.methods.items()-%}
@@ -86,14 +111,31 @@ impl {{stinger.name | UpperCamelCase}}Server {
             {%for method_name, method in stinger.methods.items()-%}
             {{method_name | snake_case}}_method_req: subscription_id_{{method_name | snake_case}}_method_req,
             {%endfor%}
+            {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
+            {{prop_name | snake_case}}_property_update: subscription_id_{{prop_name | snake_case}}_property_update,
+            {%endif%}{%endfor%}
         };
+
+        {%if stinger.properties|length > 0%}
+        let property_values = {{stinger.name | UpperCamelCase}}Properties {
+        {%-for prop_name, prop in stinger.properties.items()%}
+            {{prop_name | snake_case}}_topic: Arc::new(String::from("{{prop.value_topic}}")),
+            {%if prop.arg_list | length > 1 -%}
+            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
+            {%else%}
+            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
+            {%-endif%}
+        {%-endfor%}
+        };
+        {%endif%}
 
         {{stinger.name | UpperCamelCase}}Server {
 
             msg_streamer_rx: Some(message_received_rx),
             msg_streamer_tx: message_received_tx,
             msg_publisher: publisher,
-            method_handlers: method_handlers,
+            method_handlers: method_handlers,{%if stinger.properties|length > 0%}
+            properties: property_values,{%endif%}
             subscription_ids: sub_ids,
             client_id: connection.client_id.to_string(),
         }
@@ -111,10 +153,11 @@ impl {{stinger.name | UpperCamelCase}}Server {
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()-%}
-    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value.rust_type}}, MethodResultCode> + 'static + Send) {
+    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodResultCode> + 'static + Send) {
         self.method_handlers.method_handler_for_{{method_name|snake_case}} = Arc::new(Mutex::new(Box::new(cb)));
     }
     {%endfor%}
+
 
     {%for method_name, method in stinger.methods.items()-%}
     async fn handle_{{method_name|snake_case}}_request(publisher: &mut MessagePublisher, handlers: &mut {{stinger.name | UpperCamelCase }}ServerMethodHandlers, msg: mqtt::Message) {
@@ -125,13 +168,13 @@ impl {{stinger.name | UpperCamelCase}}Server {
         let payload = serde_json::from_str::<{{method_name | UpperCamelCase}}RequestObject>(&payload_str).unwrap();
 
         // call the method handler
-        let rv: {{method.return_value.rust_type}} = {
+        let rv: {{method.return_value_rust_type}} = {
             let func_guard = handlers.method_handler_for_{{method_name|snake_case}}.lock().unwrap();
             (*func_guard)({%for arg in method.arg_list%}payload.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}).unwrap()
         };
-        {%-if method.return_value.arg_type.name.lower() == "value" -%}
+        {%-if method.return_value_type == "primitive" -%}
         let rv = {{method_name | UpperCamelCase}}ReturnValue {
-            {{method.return_value.name}}: rv,
+            {{method.return_value_property_name}}: rv,
         };
         {%endif%}
         if let Some(resp_topic) = opt_resp_topic {
@@ -142,7 +185,62 @@ impl {{stinger.name | UpperCamelCase}}Server {
     }
     {%endfor%}
 
-     /// Starts the tasks that process messages received.
+    {%-for prop_name, prop in stinger.properties.items()%}
+    async fn publish_{{prop_name}}_value(mut publisher: MessagePublisher, topic: String, data: {{prop.rust_type}})
+    {
+        {%-if prop.arg_list | length == 1%}
+        let new_data = {{prop_name | UpperCamelCase}}Property {
+            {{prop.arg_list[0].name}}: data,
+        };
+        let _pub_result = publisher.publish_structure(topic, &new_data).await;
+        {%else%}
+        let _pub_result = publisher.publish_structure(topic, &data).await;
+        {%endif%}
+    }
+    {%if not prop.read_only %}
+    async fn update_{{prop_name}}_value(publisher: &mut MessagePublisher, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, msg: mqtt::Message)
+    {
+        let payload_str = msg.payload_str();
+        let new_data: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(&payload_str).unwrap();
+        let mut locked_data = data.lock().unwrap();
+        {%-if prop.arg_list | length == 1%}
+        *locked_data = Some(new_data.{{prop.arg_list[0].name}});
+        {%-else%}
+        *locked_data = Some(new_data.clone());
+        {%endif%}
+        let publisher2 = publisher.clone();
+        let topic2: String = topic.as_ref().clone();
+        {%-if prop.arg_list | length == 1%}
+        let data2 = new_data.{{prop.arg_list[0].name}};
+        {%-else%}
+        let data2 = new_data;
+        {%endif%}
+        let _ = tokio::spawn(async move {
+            {{stinger.name | UpperCamelCase}}Server::publish_{{prop_name}}_value(publisher2, topic2, data2).await;
+        });
+    }
+    {%endif%}{# not read only property #}
+    pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) {
+        println!("Setting {{prop_name}} of type {{prop.rust_type}}");
+        let prop = self.properties.{{prop_name}}.clone();
+        {
+            let mut locked_data = prop.lock().unwrap();
+            *locked_data = Some(data.clone());
+        }
+
+        let publisher2 = self.msg_publisher.clone();
+        let topic2 = self.properties.{{prop_name}}_topic.as_ref().clone();
+        let _ = tokio::spawn(async move {
+            println!("Will publish property {{prop_name}} of type {{prop.rust_type}} to {}", topic2);
+            {{stinger.name | UpperCamelCase}}Server::publish_{{prop_name}}_value(publisher2, topic2, data).await;
+        });
+    }
+    {%endfor%}
+
+    /// Starts the tasks that process messages received.
+    /// In the task, it loops over messages received from the rx side of the message_receiver channel.
+    /// Based on the subscription id of the received message, it will call a function to handle the
+    /// received message.
     pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -150,15 +248,21 @@ impl {{stinger.name | UpperCamelCase}}Server {
         let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let mut publisher = self.msg_publisher.clone();
-
+        {%-if stinger.properties | length > 0 %}
+        let properties = self.properties.clone();
+        {%endif%}
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
-                println!("Got a new message");
                 {%-for method_name, method in stinger.methods.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method_req {
                     {{stinger.name | UpperCamelCase}}Server::handle_{{method_name|snake_case}}_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
-                {%-endfor%}
+                {%-endfor%}{# methods #}
+                {%-for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
+                {%if not loop.first or (stinger.methods | length > 0) %}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_update {
+                    {{stinger.name | UpperCamelCase}}Server::update_{{prop_name | snake_case}}_value(&mut publisher, properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), msg.message).await;
+                }
+                {%-endif%}{%endfor%}{# properties #}
             }   
         });
 

@@ -15,21 +15,41 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc};
 use tokio::join;
 use tokio::task::JoinError;
+use serde::{Serialize, Deserialize};
+use serde_json;
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct ExampleServerSubscriptionIds {
-    add_numbers_method_req: i32,do_something_method_req: i32,
+    add_numbers_method_req: i32,
+    do_something_method_req: i32,
+    
+    
+    favorite_number_property_update: i32,
+    
+    favorite_foods_property_update: i32,
+    
+    lunch_menu_property_update: i32,
+    
 }
 
 #[derive(Clone)]
 struct ExampleServerMethodHandlers {
     /// Pointer to a function to handle the addNumbers method request.
-    method_handler_for_add_numbers: Arc<Mutex<Box<dyn Fn(i32, i32)->Result<i32, MethodResultCode> + Send>>>,
+    method_handler_for_add_numbers: Arc<Mutex<Box<dyn Fn(i32, i32, Option<i32>)->Result<i32, MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the doSomething method request.
-    method_handler_for_do_something: Arc<Mutex<Box<dyn Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + Send>>>,
+    method_handler_for_do_something: Arc<Mutex<Box<dyn Fn(String)->Result<DoSomethingReturnValue, MethodResultCode> + Send>>>,
     
+}
+
+#[derive(Clone)]
+struct ExampleProperties {
+    favorite_number_topic: Arc<String>,
+    favorite_number: Arc<Mutex<Option<i32>>>,
+    favorite_foods_topic: Arc<String>,
+    favorite_foods: Arc<Mutex<Option<connection::payloads::FavoriteFoodsProperty>>>,lunch_menu_topic: Arc<String>,
+    lunch_menu: Arc<Mutex<Option<connection::payloads::LunchMenuProperty>>>,
 }
 
 pub struct ExampleServer {
@@ -46,7 +66,10 @@ pub struct ExampleServer {
 
     /// Struct contains all the handlers for the various methods.
     method_handlers: ExampleServerMethodHandlers,
-
+    
+    /// Struct contains all the properties.
+    properties: ExampleProperties,
+    
     /// Subscription IDs for all the subscriptions this makes.
     subscription_ids: ExampleServerSubscriptionIds,
 
@@ -74,8 +97,19 @@ impl ExampleServer {
         let subscription_id_do_something_method_req = subscription_id_do_something_method_req.unwrap_or_else(|_| -1);
         
 
+        
+        let subscription_id_favorite_number_property_update = connection.subscribe("Example/property/favorite_number/set_value", message_received_tx.clone()).await;
+        let subscription_id_favorite_number_property_update = subscription_id_favorite_number_property_update.unwrap_or_else(|_| -1);
+        
+        let subscription_id_favorite_foods_property_update = connection.subscribe("Example/property/favorite_foods/set_value", message_received_tx.clone()).await;
+        let subscription_id_favorite_foods_property_update = subscription_id_favorite_foods_property_update.unwrap_or_else(|_| -1);
+        
+        let subscription_id_lunch_menu_property_update = connection.subscribe("Example/property/lunch_menu/set_value", message_received_tx.clone()).await;
+        let subscription_id_lunch_menu_property_update = subscription_id_lunch_menu_property_update.unwrap_or_else(|_| -1);
+        
+
         // Create structure for method handlers.
-        let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2| { Err(MethodResultCode::ServerError) } ))),
+        let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2, _3| { Err(MethodResultCode::ServerError) } ))),
             method_handler_for_do_something: Arc::new(Mutex::new(Box::new( |_1| { Err(MethodResultCode::ServerError) } ))),
             
         };
@@ -85,7 +119,28 @@ impl ExampleServer {
             add_numbers_method_req: subscription_id_add_numbers_method_req,
             do_something_method_req: subscription_id_do_something_method_req,
             
+            
+            favorite_number_property_update: subscription_id_favorite_number_property_update,
+            
+            favorite_foods_property_update: subscription_id_favorite_foods_property_update,
+            
+            lunch_menu_property_update: subscription_id_lunch_menu_property_update,
+            
         };
+
+        
+        let property_values = ExampleProperties {
+            favorite_number_topic: Arc::new(String::from("Example/property/favorite_number")),
+            
+            favorite_number: Arc::new(Mutex::new(None)),
+            favorite_foods_topic: Arc::new(String::from("Example/property/favorite_foods")),
+            favorite_foods: Arc::new(Mutex::new(None)),
+            
+            lunch_menu_topic: Arc::new(String::from("Example/property/lunch_menu")),
+            lunch_menu: Arc::new(Mutex::new(None)),
+            
+        };
+        
 
         ExampleServer {
 
@@ -93,12 +148,13 @@ impl ExampleServer {
             msg_streamer_tx: message_received_tx,
             msg_publisher: publisher,
             method_handlers: method_handlers,
+            properties: property_values,
             subscription_ids: sub_ids,
             client_id: connection.client_id.to_string(),
         }
     }
 
-    pub async fn emit_today_is(&mut self, day_of_month: i32, day_of_week: connection::payloads::DayOfTheWeek) {
+    pub async fn emit_today_is(&mut self, day_of_month: i32, day_of_week: Option<connection::payloads::DayOfTheWeek>) {
         let data = connection::payloads::TodayIsSignalPayload {
             
             dayOfMonth: day_of_month,
@@ -110,13 +166,14 @@ impl ExampleServer {
     }
     
 
-    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl Fn(i32, i32)->Result<i32, MethodResultCode> + 'static + Send) {
+    pub fn set_method_handler_for_add_numbers(&mut self, cb: impl Fn(i32, i32, Option<i32>)->Result<i32, MethodResultCode> + 'static + Send) {
         self.method_handlers.method_handler_for_add_numbers = Arc::new(Mutex::new(Box::new(cb)));
     }
-    pub fn set_method_handler_for_do_something(&mut self, cb: impl Fn(String)->Result<connection::payloads::DoSomethingReturnValue, MethodResultCode> + 'static + Send) {
+    pub fn set_method_handler_for_do_something(&mut self, cb: impl Fn(String)->Result<DoSomethingReturnValue, MethodResultCode> + 'static + Send) {
         self.method_handlers.method_handler_for_do_something = Arc::new(Mutex::new(Box::new(cb)));
     }
     
+
 
     async fn handle_add_numbers_request(publisher: &mut MessagePublisher, handlers: &mut ExampleServerMethodHandlers, msg: mqtt::Message) {
         let props = msg.properties();
@@ -128,7 +185,7 @@ impl ExampleServer {
         // call the method handler
         let rv: i32 = {
             let func_guard = handlers.method_handler_for_add_numbers.lock().unwrap();
-            (*func_guard)(payload.first, payload.second).unwrap()
+            (*func_guard)(payload.first, payload.second, payload.third).unwrap()
         };let rv = AddNumbersReturnValue {
             sum: rv,
         };
@@ -147,7 +204,7 @@ impl ExampleServer {
         let payload = serde_json::from_str::<DoSomethingRequestObject>(&payload_str).unwrap();
 
         // call the method handler
-        let rv: connection::payloads::DoSomethingReturnValue = {
+        let rv: DoSomethingReturnValue = {
             let func_guard = handlers.method_handler_for_do_something.lock().unwrap();
             (*func_guard)(payload.aString).unwrap()
         };
@@ -158,8 +215,126 @@ impl ExampleServer {
         }
     }
     
+    async fn publish_favorite_number_value(mut publisher: MessagePublisher, topic: String, data: i32)
+    {
+        let new_data = FavoriteNumberProperty {
+            number: data,
+        };
+        let _pub_result = publisher.publish_structure(topic, &new_data).await;
+        
+    }
+    
+    async fn update_favorite_number_value(publisher: &mut MessagePublisher, topic: Arc<String>, data: Arc<Mutex<Option<i32>>>, msg: mqtt::Message)
+    {
+        let payload_str = msg.payload_str();
+        let new_data: FavoriteNumberProperty = serde_json::from_str(&payload_str).unwrap();
+        let mut locked_data = data.lock().unwrap();
+        *locked_data = Some(new_data.number);
+        let publisher2 = publisher.clone();
+        let topic2: String = topic.as_ref().clone();
+        let data2 = new_data.number;
+        let _ = tokio::spawn(async move {
+            ExampleServer::publish_favorite_number_value(publisher2, topic2, data2).await;
+        });
+    }
+    
+    pub async fn set_favorite_number(&mut self, data: i32) {
+        println!("Setting favorite_number of type i32");
+        let prop = self.properties.favorite_number.clone();
+        {
+            let mut locked_data = prop.lock().unwrap();
+            *locked_data = Some(data.clone());
+        }
 
-     /// Starts the tasks that process messages received.
+        let publisher2 = self.msg_publisher.clone();
+        let topic2 = self.properties.favorite_number_topic.as_ref().clone();
+        let _ = tokio::spawn(async move {
+            println!("Will publish property favorite_number of type i32 to {}", topic2);
+            ExampleServer::publish_favorite_number_value(publisher2, topic2, data).await;
+        });
+    }
+    
+    async fn publish_favorite_foods_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::FavoriteFoodsProperty)
+    {
+        let _pub_result = publisher.publish_structure(topic, &data).await;
+        
+    }
+    
+    async fn update_favorite_foods_value(publisher: &mut MessagePublisher, topic: Arc<String>, data: Arc<Mutex<Option<connection::payloads::FavoriteFoodsProperty>>>, msg: mqtt::Message)
+    {
+        let payload_str = msg.payload_str();
+        let new_data: FavoriteFoodsProperty = serde_json::from_str(&payload_str).unwrap();
+        let mut locked_data = data.lock().unwrap();
+        *locked_data = Some(new_data.clone());
+        
+        let publisher2 = publisher.clone();
+        let topic2: String = topic.as_ref().clone();
+        let data2 = new_data;
+        
+        let _ = tokio::spawn(async move {
+            ExampleServer::publish_favorite_foods_value(publisher2, topic2, data2).await;
+        });
+    }
+    
+    pub async fn set_favorite_foods(&mut self, data: connection::payloads::FavoriteFoodsProperty) {
+        println!("Setting favorite_foods of type connection::payloads::FavoriteFoodsProperty");
+        let prop = self.properties.favorite_foods.clone();
+        {
+            let mut locked_data = prop.lock().unwrap();
+            *locked_data = Some(data.clone());
+        }
+
+        let publisher2 = self.msg_publisher.clone();
+        let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
+        let _ = tokio::spawn(async move {
+            println!("Will publish property favorite_foods of type connection::payloads::FavoriteFoodsProperty to {}", topic2);
+            ExampleServer::publish_favorite_foods_value(publisher2, topic2, data).await;
+        });
+    }
+    
+    async fn publish_lunch_menu_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::LunchMenuProperty)
+    {
+        let _pub_result = publisher.publish_structure(topic, &data).await;
+        
+    }
+    
+    async fn update_lunch_menu_value(publisher: &mut MessagePublisher, topic: Arc<String>, data: Arc<Mutex<Option<connection::payloads::LunchMenuProperty>>>, msg: mqtt::Message)
+    {
+        let payload_str = msg.payload_str();
+        let new_data: LunchMenuProperty = serde_json::from_str(&payload_str).unwrap();
+        let mut locked_data = data.lock().unwrap();
+        *locked_data = Some(new_data.clone());
+        
+        let publisher2 = publisher.clone();
+        let topic2: String = topic.as_ref().clone();
+        let data2 = new_data;
+        
+        let _ = tokio::spawn(async move {
+            ExampleServer::publish_lunch_menu_value(publisher2, topic2, data2).await;
+        });
+    }
+    
+    pub async fn set_lunch_menu(&mut self, data: connection::payloads::LunchMenuProperty) {
+        println!("Setting lunch_menu of type connection::payloads::LunchMenuProperty");
+        let prop = self.properties.lunch_menu.clone();
+        {
+            let mut locked_data = prop.lock().unwrap();
+            *locked_data = Some(data.clone());
+        }
+
+        let publisher2 = self.msg_publisher.clone();
+        let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
+        let _ = tokio::spawn(async move {
+            println!("Will publish property lunch_menu of type connection::payloads::LunchMenuProperty to {}", topic2);
+            ExampleServer::publish_lunch_menu_value(publisher2, topic2, data).await;
+        });
+    }
+    
+
+    /// Starts the tasks that process messages received.
+    /// In the task, it loops over messages received from the rx side of the message_receiver channel.
+    /// Based on the subscription id of the received message, it will call a function to handle the
+    /// received message.
     pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -167,15 +342,24 @@ impl ExampleServer {
         let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let mut publisher = self.msg_publisher.clone();
-
+        let properties = self.properties.clone();
+        
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
-                println!("Got a new message");
                 if msg.subscription_id == sub_ids.add_numbers_method_req {
                     ExampleServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.do_something_method_req {
                     ExampleServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
+                }
+                else if msg.subscription_id == sub_ids.favorite_number_property_update {
+                    ExampleServer::update_favorite_number_value(&mut publisher, properties.favorite_number_topic.clone(), properties.favorite_number.clone(), msg.message).await;
+                }
+                else if msg.subscription_id == sub_ids.favorite_foods_property_update {
+                    ExampleServer::update_favorite_foods_value(&mut publisher, properties.favorite_foods_topic.clone(), properties.favorite_foods.clone(), msg.message).await;
+                }
+                else if msg.subscription_id == sub_ids.lunch_menu_property_update {
+                    ExampleServer::update_lunch_menu_value(&mut publisher, properties.lunch_menu_topic.clone(), properties.lunch_menu.clone(), msg.message).await;
                 }
             }   
         });

@@ -48,6 +48,20 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 }
 {%endfor%}
 
+{%for struct_name, struct in stinger.structs.items() %}
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct {{struct_name | UpperCamelCase}} {
+    {%-for arg in struct.members%}
+    {%-if arg.arg_type.name.lower() == 'primitive'%}
+    pub {{arg.name}}: {{arg.rust_type}},
+    {%-elif arg.arg_type.name.lower() == 'enum'%}
+    pub {{arg.name}}: {{arg.rust_local_type}},
+    {%endif-%}
+    {%endfor%}
+}
+{%-endfor%}
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum MethodResultCode { {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
@@ -62,25 +76,25 @@ pub enum MethodResultCode { {%-for rc_i, rc_name in stinger.method_return_codes.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct {{method_name | UpperCamelCase}}RequestObject {
     {%-for arg in method.arg_list%}
-    {%-if arg.arg_type.name.lower() == 'value'%}
+    {%-if arg.arg_type.name.lower() == 'primitive'%}
     pub {{arg.name}}: {{arg.rust_type}},
     {%-elif arg.arg_type.name.lower() == 'enum'-%}
     pub {{arg.name}}: u32,
     {%endif-%}
     {%endfor%}
 }
-{%if method.return_value.arg_type.name.lower() == 'struct'%}
+{%if method.return_value_type == 'struct'%}
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct {{method.return_value.rust_local_type}} {
-{%-for arg in method.return_value.members%}
+pub struct {{method.return_value_name | UpperCamelCase}} {
+{%-for arg in method.return_value %}
     pub {{arg.name}}: {{arg.rust_local_type}},
 {%-endfor%}
 }
-{%elif method.return_value.arg_type.name.lower() == 'value'%}
+{%elif method.return_value_type == 'primitive'%}
 #[derive(Debug, Clone, Serialize)]
-pub struct {{method_name | UpperCamelCase}}ReturnValue {
-    pub {{method.return_value.name}}: {{method.return_value.rust_local_type}},
+pub struct {{method.return_value_name | UpperCamelCase}} {
+    pub {{method.return_value_property_name}}: {{method.return_value.rust_local_type}},
 }
 {%endif-%}
 {%-endfor%}
@@ -90,9 +104,26 @@ pub struct {{method_name | UpperCamelCase}}ReturnValue {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct {{sig_name | UpperCamelCase}}SignalPayload {
     {%-for arg in sig.arg_list%}
-    {%-if arg.arg_type.name.lower() == 'value'%}
+    {%-if arg.arg_type.name.lower() == 'primitive'%}
     pub {{arg.name}}: {{arg.rust_type}},
     {%elif arg.arg_type.name.lower() == 'enum'-%}
+    pub {{arg.name}}: {{arg.rust_local_type}},
+    {%endif-%}
+    {%endfor%}
+}
+{%endfor%}
+
+{%for prop_name, prop in stinger.properties.items()%}
+// `{{prop_name}}` property structure.
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct {{prop_name | UpperCamelCase}}Property {
+    {%for arg in prop.arg_list%}
+    {%-if arg.arg_type.name.lower() == 'primitive' -%}
+    pub {{arg.name}}: {{arg.rust_type}},
+    {%elif arg.arg_type.name.lower() == 'enum'-%}
+    pub {{arg.name}}: {{arg.rust_local_type}},
+    {%elif arg.arg_type.name.lower() == 'struct'-%}
     pub {{arg.name}}: {{arg.rust_local_type}},
     {%endif-%}
     {%endfor%}

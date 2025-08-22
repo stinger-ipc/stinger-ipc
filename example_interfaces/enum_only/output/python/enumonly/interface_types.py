@@ -9,11 +9,13 @@ from enum import IntEnum
 
 
 class Fruits(IntEnum):
+    """ Interface enum `fruits`."""
     APPLE = 1
     BANANA = 2
     PEAR = 3
 
 class Months(IntEnum):
+    """ Interface enum `months`."""
     JANUARY = 1
     FEBRUARY = 2
     MARCH = 3
@@ -26,5 +28,3 @@ class Months(IntEnum):
     OCTOBER = 10
     NOVEMBER = 11
     DECEMBER = 12
-
-

@@ -18,9 +18,12 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 
+
 class EnumOnlyClient:
 
     def __init__(self, connection: BrokerConnection):
+        """ Constructor for a `EnumOnlyClient` object.
+        """
         self._logger = logging.getLogger('EnumOnlyClient')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing EnumOnlyClient")
@@ -29,6 +32,8 @@ class EnumOnlyClient:
         self._conn.set_message_callback(self._receive_message)
         
         
+
+    
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
@@ -66,11 +71,14 @@ class EnumOnlyClientBuilder:
         self._logger = logging.getLogger('EnumOnlyClientBuilder')
         
 
+    
+
     def build(self) -> EnumOnlyClient:
         """ Builds a new EnumOnlyClient.
         """
         self._logger.debug("Building EnumOnlyClient")
         client = EnumOnlyClient(self._conn)
+        
         
         return client
 
@@ -81,6 +89,7 @@ if __name__ == '__main__':
     from connection import DefaultConnection
     conn = DefaultConnection('localhost', 1883)
     client_builder = EnumOnlyClientBuilder(conn)
+    
     
 
     client = client_builder.build()

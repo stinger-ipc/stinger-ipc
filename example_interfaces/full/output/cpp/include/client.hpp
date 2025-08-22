@@ -17,20 +17,29 @@
 class ExampleClient {
 
 public:
+    // This is the name of the API.
     static constexpr const char NAME[] = "Example";
+    // This is the version of the API contract.
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
+    // Constructor taking a connection object.
     ExampleClient(std::shared_ptr<IBrokerConnection> broker);
 
     virtual ~ExampleClient() = default;
 
     
-    void registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb);
+    // Register a callback for the `todayIs` signal.
+    // The provided method will be called whenever a `todayIs` is received.
+    void registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb);
     
 
     
-    boost::future<int> addNumbers(int first, int second);
+    // Calls the `addNumbers` method.
+    // Returns a future.  When that future resolves, it will have the returned value.
+    boost::future<int> addNumbers(int first, int second, boost::optional<int> third);
     
+    // Calls the `doSomething` method.
+    // Returns a future.  When that future resolves, it will have the returned value.
     boost::future<DoSomethingReturnValue> doSomething(const std::string& aString);
     
 private: 
@@ -39,7 +48,7 @@ private:
     std::map<boost::uuids::uuid, boost::promise<int>> _pendingAddNumbersMethodCalls;
     std::map<boost::uuids::uuid, boost::promise<DoSomethingReturnValue>> _pendingDoSomethingMethodCalls;
     
-    std::function<void(int, DayOfTheWeek)> _todayIsCallback;
+    std::function<void(int, boost::optional<DayOfTheWeek>)> _todayIsCallback;
     
     void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);
     void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);

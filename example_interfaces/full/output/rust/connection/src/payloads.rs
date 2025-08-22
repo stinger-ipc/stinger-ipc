@@ -52,6 +52,18 @@ impl fmt::Display for DayOfTheWeek {
 }
 
 
+
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Lunch {
+    pub drink: bool,
+    pub sandwich: String,
+    pub crackers: f32,
+    pub day: DayOfTheWeek,
+    
+    pub order_number: Option<i32>,
+}
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum MethodResultCode {
@@ -60,6 +72,9 @@ pub enum MethodResultCode {
     ServerError = 2,
     TransportError = 3,
     PayloadError = 4,
+    Timeout = 5,
+    UnknownError = 6,
+    NotImplemented = 7,
 }
 
 
@@ -70,6 +85,7 @@ pub enum MethodResultCode {
 pub struct AddNumbersRequestObject {
     pub first: i32,
     pub second: i32,
+    pub third: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -99,6 +115,35 @@ pub struct DoSomethingReturnValue {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TodayIsSignalPayload {
     pub dayOfMonth: i32,
-    pub dayOfWeek: DayOfTheWeek,
+    pub dayOfWeek: Option<DayOfTheWeek>,
+    
+}
+
+
+
+// `favorite_number` property structure.
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FavoriteNumberProperty {
+    pub number: i32,
+    
+}
+
+// `favorite_foods` property structure.
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FavoriteFoodsProperty {
+    pub drink: String,
+    pub slices_of_pizza: i32,
+    pub breakfast: Option<String>,
+    
+}
+
+// `lunch_menu` property structure.
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LunchMenuProperty {
+    pub monday: Lunch,
+    pub tuesday: Lunch,
     
 }

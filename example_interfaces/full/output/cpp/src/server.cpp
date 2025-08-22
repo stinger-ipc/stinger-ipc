@@ -98,18 +98,16 @@ void ExampleServer::_receiveMessage(
 }
 
 
-boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWeek dayOfWeek)
+boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek)
 {
     rapidjson::Document doc;
     doc.SetObject();
     
     
+    doc.AddMember("dayOfMonth",dayOfMonth, doc.GetAllocator());
     
-    doc.AddMember("dayOfMonth", dayOfMonth, doc.GetAllocator());
-    
-    
-    
-    doc.AddMember("dayOfWeek", static_cast<int>(dayOfWeek), doc.GetAllocator());
+    if (dayOfWeek)
+    doc.AddMember("dayOfWeek", static_cast<int>(*dayOfWeek), doc.GetAllocator());
     
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
@@ -119,7 +117,7 @@ boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWee
 
 
 
-void ExampleServer::registerAddNumbersHandler(std::function<int(int, int)> func)
+void ExampleServer::registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func)
 {
     std::cout << "Registered method to handle Example/method/addNumbers\n";
     _addNumbersHandler = func;
@@ -166,8 +164,20 @@ void ExampleServer::_callAddNumbersHandler(
             }
         }
         
+        boost::optional<int> tempThird;
+        { // Scoping
+            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
+            if (itr != doc.MemberEnd() && itr->value.IsInt()) {
+                
+                tempThird = itr->value.GetInt();
+                
+            } else {
+                throw std::runtime_error("Received payload doesn't have required value/type");
+            }
+        }
+        
 
-        int ret = _addNumbersHandler(tempFirst, tempSecond);
+        int ret = _addNumbersHandler(tempFirst, tempSecond, tempThird);
 
         if (optResponseTopic)
         {
@@ -175,7 +185,7 @@ void ExampleServer::_callAddNumbersHandler(
             responseJson.SetObject();
             
             
-            // add the sum (a/n VALUE) to the json
+            // add the sum (a/n PRIMITIVE) to the json
             rapidjson::Value returnValueSum;
             returnValueSum.SetInt(ret);  
             responseJson.AddMember("sum", returnValueSum, responseJson.GetAllocator());
@@ -220,13 +230,13 @@ void ExampleServer::_callDoSomethingHandler(
             
             // Return type is a struct of values that need added to json
             
-            // add the label (a/n VALUE) to the json
+            // add the label (a/n PRIMITIVE) to the json
             rapidjson::Value returnValueLabel;
             returnValueLabel.SetString(ret.label.c_str(), ret.label.size(), responseJson.GetAllocator());  
             responseJson.AddMember("label", returnValueLabel, responseJson.GetAllocator());
             
             
-            // add the identifier (a/n VALUE) to the json
+            // add the identifier (a/n PRIMITIVE) to the json
             rapidjson::Value returnValueIdentifier;
             returnValueIdentifier.Set(ret.identifier);  
             responseJson.AddMember("identifier", returnValueIdentifier, responseJson.GetAllocator());

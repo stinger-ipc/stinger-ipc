@@ -9,14 +9,14 @@ use {{stinger.name | snake_case}}_server::{{stinger.name}}Server;
 use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
-{%if stinger.methods | length > 0 %}use connection::payloads::MethodResultCode;{%endif%}
+use connection::payloads::{MethodResultCode, *};
 
 {%for method_name, method in stinger.methods.items()%}
-fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value.rust_type}}, MethodResultCode> {
+fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
     println!("Handling {{method_name}}");
-    {%-if method.return_value.arg_type.name.lower() == 'struct'%}
-    let rv = {{method.return_value.rust_type}} {
-        {%for arg in method.return_value.members%}
+    {%-if method.return_value_type == 'struct'%}
+    let rv = {{method.return_value_rust_type}} {
+        {%for arg in method.return_value-%}
         {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
         {%endfor%}
     };
@@ -32,24 +32,49 @@ fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|
 async fn main() {
     block_on(async {
         {%set broker = stinger.get_example_broker()%}
-        let mut connection = Connection::new_{{broker.class_name|snake_case}}({%if broker.hostname is none%}String::from("localhost"){%if broker.port is none%}, {%endif%}{%endif%}{%if broker.port is none%}1883{%endif%}).await.unwrap();
+        let mut connection = Connection::new_{{broker.class_name|snake_case}}().await.unwrap();
         let mut server = {{stinger.name}}Server::new(&mut connection).await;
 
         let loop_task = tokio::spawn(async move {
             println!("Making call to start connection loop");
             let _conn_loop = connection.start_loop().await;
         });
-
-        {%for method_name, method in stinger.methods.items()%}
+        {%for prop_name, prop in stinger.properties.items()%}
+        println!("Setting initial value for property '{{prop_name}}'");
+        {%-if prop.arg_list | length == 1 %}
+        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
+        {%-else%}{# many args in property #}
+        let new_value = {{prop.rust_type}} {
+            {%-for arg in prop.arg_list %}
+                {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
+            {%-endfor%}
+        };
+        server.set_{{prop_name | snake_case}}(new_value).await;
+        {%endif%}
+        {%endfor%}{# property initialization -#}
+        {%-for method_name, method in stinger.methods.items()%}
         server.set_method_handler_for_{{method_name|snake_case}}({{method_name|snake_case}}_handler);
         {%endfor%}
-
         {%for sig_name, sig in stinger.signals.items()%}
+        sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal '{{sig_name}}'");
         server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
         {%endfor%}
-
+        {%for prop_name, prop in stinger.properties.items()%}
+        sleep(Duration::from_secs(1)).await;
+        println!("Changing property '{{prop_name}}'");
+        {%-if prop.arg_list | length == 1 %}
+        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}}).await;
+        {%-else%}{# many args in property #}
+        let new_value = {{prop.rust_type}} {
+            {%-for arg in prop.arg_list %}
+                {{arg.name}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
+            {%-endfor%}
+        };
+        server.set_{{prop_name | snake_case}}(new_value).await;
+        {%endif%}
+        {%endfor%}{# property initialization -#}
         server.receive_loop().await;
-
         join!(loop_task);
     });
     // Ctrl-C to stop

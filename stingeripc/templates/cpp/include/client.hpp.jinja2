@@ -17,25 +17,32 @@
 class {{stinger.name | UpperCamelCase}}Client {
 
 public:
+    // This is the name of the API.
     static constexpr const char NAME[] = "{{stinger.name}}";
+    // This is the version of the API contract.
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
+    // Constructor taking a connection object.
     {{stinger.name | UpperCamelCase}}Client(std::shared_ptr<IBrokerConnection> broker);
 
     virtual ~{{stinger.name | UpperCamelCase}}Client() = default;
 
     {%for sig_name, sig in stinger.signals.items()%}
+    // Register a callback for the `{{sig_name}}` signal.
+    // The provided method will be called whenever a `{{sig_name}}` is received.
     void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    boost::future<{{method.return_value.cpp_type}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+    // Calls the `{{method_name}}` method.
+    // Returns a future.  When that future resolves, it will have the returned value.
+    boost::future<{{method.return_value_cpp_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
     void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<MethodResultCode> optResultCode);
     {%-for method_name, method in stinger.methods.items()%}
-    std::map<boost::uuids::uuid, boost::promise<{{method.return_value.cpp_type}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+    std::map<boost::uuids::uuid, boost::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
     {%-endfor%}
     {%for sig_name, sig in stinger.signals.items()%}
     std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{sig_name | camelCase}}Callback;

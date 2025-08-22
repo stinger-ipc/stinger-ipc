@@ -14,7 +14,10 @@ enum class MethodResultCode
     CLIENT_ERROR = 1,
     SERVER_ERROR = 2,
     TRANSPORT_ERROR = 3,
-    PAYLOAD_ERROR = 4
+    PAYLOAD_ERROR = 4,
+    TIMEOUT = 5,
+    UNKNOWN_ERROR = 6,
+    NOT_IMPLEMENTED = 7
 };
 
 class IBrokerConnection
