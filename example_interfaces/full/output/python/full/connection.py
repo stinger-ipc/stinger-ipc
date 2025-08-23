@@ -1,4 +1,3 @@
-
 import logging
 from typing import Callable, Optional, Tuple, Any, Union
 from paho.mqtt.client import Client as MqttClient, topic_matches_sub
@@ -14,12 +13,21 @@ logging.basicConfig(level=logging.DEBUG)
 
 MessageCallback = Callable[[str, str, dict[str, Any]], None]
 
+
 class BrokerConnection(ABC):
-    
+
     @abstractmethod
-    def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
-            correlation_id: Union[str, bytes, None] = None, response_topic: Optional[str] = None,
-            return_value: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
+    def publish(
+        self,
+        topic: str,
+        msg: str,
+        qos: int = 1,
+        retain: bool = False,
+        correlation_id: Union[str, bytes, None] = None,
+        response_topic: Optional[str] = None,
+        return_value: Optional[MethodResultCode] = None,
+        debug_info: Optional[str] = None,
+    ):
         pass
 
     @abstractmethod
@@ -35,9 +43,14 @@ class BrokerConnection(ABC):
         pass
 
     @abstractmethod
-    def set_last_will(self, topic: str, payload: Optional[str]=None, qos: int=1, retain: bool=True):
+    def set_last_will(
+        self,
+        topic: str,
+        payload: Optional[str] = None,
+        qos: int = 1,
+        retain: bool = True,
+    ):
         pass
-
 
 
 class LocalConnection(BrokerConnection):
@@ -48,15 +61,21 @@ class LocalConnection(BrokerConnection):
             self.subscription_id
 
     def __init__(self):
-        self._logger = logging.getLogger('Connection')
+        self._logger = logging.getLogger("Connection")
         self._logger.setLevel(logging.DEBUG)
         self._host: str = "127.0.0.1"
         self._port: int = 1883
         self._last_will: Optional[Tuple[str, Optional[str], int, bool]] = None
-        self._queued_messages = Queue() # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
-        self._queued_subscriptions = Queue() # type: Queue[LocalConnection.PendingSubscription]
+        self._queued_messages = (
+            Queue()
+        )  # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
+        self._queued_subscriptions = (
+            Queue()
+        )  # type: Queue[LocalConnection.PendingSubscription]
         self._connected: bool = False
-        self._client = MqttClient(CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5)
+        self._client = MqttClient(
+            CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5
+        )
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._client.connect(self._host, self._port)
@@ -75,7 +94,13 @@ class LocalConnection(BrokerConnection):
         self._next_subscription_id += 1
         return sub_id
 
-    def set_last_will(self, topic: str, payload: Optional[str]=None, qos: int=1, retain: bool=True):
+    def set_last_will(
+        self,
+        topic: str,
+        payload: Optional[str] = None,
+        qos: int = 1,
+        retain: bool = True,
+    ):
         self._last_will = (topic, payload, qos, retain)
         self._client.will_set(*self._last_will)
 
@@ -84,13 +109,13 @@ class LocalConnection(BrokerConnection):
 
     def _on_message(self, client, userdata, msg):
         if self._message_callback:
-            properties = msg.properties.__dict__ if hasattr(msg, 'properties') else {}
+            properties = msg.properties.__dict__ if hasattr(msg, "properties") else {}
             if "UserProperty" in properties:
                 properties["UserProperty"] = dict(properties["UserProperty"])
             self._message_callback(msg.topic, msg.payload.decode(), properties)
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
-        if reason_code == 0:  # Connection successful 
+        if reason_code == 0:  # Connection successful
             self._connected = True
             self._logger.info("Connected to %s:%d", self._host, self._port)
             while not self._queued_subscriptions.empty():
@@ -99,10 +124,14 @@ class LocalConnection(BrokerConnection):
                 except Empty:
                     break
                 else:
-                    self._logger.debug("Connected and subscribing to %s", pending_subscr.topic)
+                    self._logger.debug(
+                        "Connected and subscribing to %s", pending_subscr.topic
+                    )
                     sub_props = MqttProperties(PacketTypes.SUBSCRIBE)
                     sub_props.SubscriptionIdentifier = pending_subscr.subscription_id
-                    self._client.subscribe(pending_subscr.topic, qos=1, properties=sub_props)
+                    self._client.subscribe(
+                        pending_subscr.topic, qos=1, properties=sub_props
+                    )
             while not self._queued_messages.empty():
                 try:
                     msg = self._queued_messages.get_nowait()
@@ -114,17 +143,23 @@ class LocalConnection(BrokerConnection):
         else:
             self._logger.error("Connection failed with reason code %d", reason_code)
             self._connected = False
-        
-    
-    def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
-            correlation_id: Union[str, bytes, None] = None, response_topic: Optional[str] = None,
-            return_value: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
-        """ Publish a message to mqtt.
-        """
+
+    def publish(
+        self,
+        topic: str,
+        msg: str,
+        qos: int = 1,
+        retain: bool = False,
+        correlation_id: Union[str, bytes, None] = None,
+        response_topic: Optional[str] = None,
+        return_value: Optional[MethodResultCode] = None,
+        debug_info: Optional[str] = None,
+    ):
+        """Publish a message to mqtt."""
         properties = MqttProperties(PacketTypes.PUBLISH)
         properties.ContentType = "application/json"
         if isinstance(correlation_id, str):
-            properties.CorrelationData = correlation_id.encode('utf-8')
+            properties.CorrelationData = correlation_id.encode("utf-8")
         elif isinstance(correlation_id, bytes):
             properties.CorrelationData = correlation_id
         if response_topic is not None:
@@ -144,7 +179,7 @@ class LocalConnection(BrokerConnection):
             self._queued_messages.put((topic, msg, qos, retain, properties))
 
     def subscribe(self, topic: str) -> int:
-        """ Subscribes to a topic. If the connection is not established, the subscription is queued.
+        """Subscribes to a topic. If the connection is not established, the subscription is queued.
         Returns the subscription ID.
         """
         sub_id = self.get_next_subscription_id()
@@ -157,7 +192,6 @@ class LocalConnection(BrokerConnection):
             self._logger.debug("Pending subscription to %s", topic)
             self._queued_subscriptions.put(self.PendingSubscription(topic, sub_id))
         return sub_id
-    
+
     def is_topic_sub(self, topic: str, sub: str) -> bool:
         return topic_matches_sub(sub, topic)
-

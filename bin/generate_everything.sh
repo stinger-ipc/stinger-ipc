@@ -9,6 +9,8 @@ function generate_python() {
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
     uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    uv run mypy ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    uv run black ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
 }
 
 generate_python signal_only
