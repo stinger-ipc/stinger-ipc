@@ -13,6 +13,7 @@ YamlArg = dict[str, str|bool]
 YamlArgList = list[YamlArg]
 YamlIfaceEnum = dict[str, str|YamlArgList]
 YamlIfaceEnums = dict[str, YamlIfaceEnum]
+YamlIfaceProperty = dict[str, str|bool|YamlArgList]
 
 class Arg:
     def __init__(self, name: str, description: str|None = None):
@@ -24,6 +25,11 @@ class Arg:
 
     def set_description(self, description: str) -> Arg:
         self._description = description
+        return self
+
+    def try_set_description_from_spec(self, spec: dict[str, Any]) -> Arg:
+        if 'description' in spec and isinstance(spec['description'], str):
+            self._description = spec['description']
         return self
 
     @property
@@ -76,6 +82,7 @@ class Arg:
         if hasattr(ArgPrimitiveType, arg_spec["type"].upper()):
             arg = ArgPrimitive.new_arg_primitive_from_stinger(arg_spec)
             if opt := arg_spec.get('optional', False):
+                assert isinstance(opt, bool), "Optional field must be a boolean"
                 arg.optional = opt
             return arg
         else:
@@ -90,6 +97,7 @@ class Arg:
             arg = ArgEnum(arg_spec["name"], stinger_spec.enums[arg_spec['enumName']])
             if opt := arg_spec.get('optional', False):
                 arg.optional = opt
+            arg.try_set_description_from_spec(arg_spec)
             return arg
         
         if arg_spec["type"] == "struct":
@@ -100,6 +108,7 @@ class Arg:
             arg = ArgStruct(arg_spec["name"], stinger_spec.structs[arg_spec['structName']])
             if opt := arg_spec.get('optional', False):
                 arg.optional = opt
+            arg.try_set_description_from_spec(arg_spec)
             return arg
         raise RuntimeError(f"unknown arg type: {arg_spec['type']}")
 
@@ -243,17 +252,16 @@ class ArgPrimitive(Arg):
         return f"<ArgPrimitive name={self._name} type={ArgPrimitiveType.to_python_type(self.type)}>"
 
     @classmethod
-    def new_arg_primitive_from_stinger(cls, stinger: Dict[str, str]) -> ArgPrimitive:
-        if "type" not in stinger:
+    def new_arg_primitive_from_stinger(cls, arg_spec: dict[str, str|bool]) -> ArgPrimitive:
+        if "type" not in arg_spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
-        if "name" not in stinger:
+        if "name" not in arg_spec:
             raise InvalidStingerStructure("No 'name' in arg structure")
 
-        arg_primitive_type = ArgPrimitiveType.from_string(stinger["type"])
-        arg: ArgPrimitive = cls(name=stinger["name"], arg_type=arg_primitive_type)
+        arg_primitive_type = ArgPrimitiveType.from_string(arg_spec["type"])
+        arg: ArgPrimitive = cls(name=arg_spec["name"], arg_type=arg_primitive_type)
 
-        if "description" in stinger and isinstance(stinger["description"], str):
-            arg.set_description(stinger["description"])
+        arg.try_set_description_from_spec(arg_spec)
         return arg
 
 
@@ -288,6 +296,10 @@ class ArgStruct(Arg):
     def rust_local_type(self) -> str:
         return self._interface_struct.rust_local_type
 
+    @property
+    def markdown_type(self) -> str:
+        return f"[Struct {self._interface_struct.class_name}](#enum-{self._interface_struct.class_name})"
+
     def get_random_example_value(self, lang="python", seed:int=2) -> str|None:
         example_list: dict[str] = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
         if lang == 'c++':
@@ -305,10 +317,35 @@ class ArgStruct(Arg):
     def __repr__(self):
         return f"ArgStruct(name={self.name}, iface_struct={self._interface_struct})"
 
-class Signal(object):
-    def __init__(self, topic_creator: SignalTopicCreator, name: str):
-        self._topic_creator = topic_creator
+
+class InterfaceComponent:
+
+    def __init__(self, name: str):
         self._name = name
+        self._documentation: str|None = None
+
+    @property
+    def name(self) -> str:
+        return self._name
+    
+    @property
+    def documentation(self) -> str|None:
+        return self._documentation
+
+    def set_documentation(self, documentation: str) -> InterfaceComponent:
+        self._documentation = documentation
+        return self
+
+    def try_set_documentation_from_spec(self, spec: dict[str, Any]) -> InterfaceComponent:
+        if 'documentation' in spec and isinstance(spec['documentation'], str):
+            self._documentation = spec['documentation']
+        return self
+    
+
+class Signal(InterfaceComponent):
+    def __init__(self, topic_creator: SignalTopicCreator, name: str):
+        super().__init__(name)
+        self._topic_creator = topic_creator
         self._arg_list = []  # type: List[Arg]
 
     def add_arg(self, arg: Arg) -> Signal:
@@ -320,10 +357,6 @@ class Signal(object):
     @property
     def arg_list(self) -> list[Arg]:
         return self._arg_list
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def topic(self) -> str:
@@ -346,12 +379,15 @@ class Signal(object):
             new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
             signal.add_arg(new_arg)
 
+        signal.try_set_documentation_from_spec(signal_spec)
+
         return signal
 
-class Method(object):
+
+class Method(InterfaceComponent):
     def __init__(self, topic_creator: MethodTopicCreator, name: str):
+        super().__init__(name)
         self._topic_creator = topic_creator
-        self._name = name
         self._arg_list = []  # type: List[Arg]
         self._return_value: Arg|list[Arg]|None = None
 
@@ -457,10 +493,6 @@ class Method(object):
         raise RuntimeError(f"No random example for return value for {lang}")
 
     @property
-    def name(self) -> str:
-        return self._name
-
-    @property
     def topic(self) -> str:
         return self._topic_creator.method_topic(self.name)
 
@@ -494,13 +526,15 @@ class Method(object):
                 new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
                 method.add_return_value(new_arg)
 
+        method.try_set_documentation_from_spec(method_spec)
+
         return method
 
-class Property:
+class Property(InterfaceComponent):
 
     def __init__(self, topic_creator: PropertyTopicCreator, name: str):
+        super().__init__(name)
         self._topic_creator = topic_creator
-        self._name = name
         self._arg_list = []  # type: List[Arg]
         self._read_only = False
 
@@ -540,10 +574,6 @@ class Property:
         return self._arg_list
 
     @property
-    def name(self) -> str:
-        return self._name
-
-    @property
     def value_topic(self) -> str:
         return self._topic_creator.property_value_topic(self.name)
 
@@ -557,7 +587,7 @@ class Property:
 
     @classmethod
     def new_method_from_stinger(
-        cls, topic_creator: PropertyTopicCreator, name: str, prop_spec: Dict[str, str], stinger_spec: StingerSpec|None=None
+        cls, topic_creator: PropertyTopicCreator, name: str, prop_spec: YamlIfaceProperty, stinger_spec: StingerSpec|None=None
     ) -> "Property":
         """Alternative constructor from a Stinger method structure."""
         prop_obj = cls(topic_creator, name)
@@ -574,6 +604,8 @@ class Property:
 
         if r_o := prop_spec.get("readOnly", False):
             prop_obj._read_only = r_o
+
+        prop_obj.try_set_documentation_from_spec(prop_spec)
 
         return prop_obj
 

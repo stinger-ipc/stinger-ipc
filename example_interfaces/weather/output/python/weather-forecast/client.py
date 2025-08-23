@@ -140,16 +140,6 @@ class weather-forecastClient:
         """
         return self._property_daily_forecast
     
-    @daily_forecast.setter
-    def daily_forecast(self, value: stinger_types.DailyForecastProperty):
-        """ Serializes and publishes the 'daily_forecast' property.
-        """
-        if not isinstance(value, stinger_types.DailyForecastProperty):
-            raise ValueError("The 'daily_forecast' property must be a stinger_types.DailyForecastProperty")
-        serialized = value.model_dump_json(exclude_none=True)
-        self._logger.debug("Setting 'daily_forecast' property to %s", serialized)
-        self._conn.publish("weather-forecast/property/daily_forecast/set_value", serialized, qos=1)
-    
     def daily_forecast_changed(self, handler: DailyForecastPropertyUpdatedCallbackType, call_immediately: bool=False):
         """ Sets a callback to be called when the 'daily_forecast' property changes.
         Can be used as a decorator.
@@ -164,16 +154,6 @@ class weather-forecastClient:
         """ Property 'hourly_forecast' getter.
         """
         return self._property_hourly_forecast
-    
-    @hourly_forecast.setter
-    def hourly_forecast(self, value: stinger_types.HourlyForecastProperty):
-        """ Serializes and publishes the 'hourly_forecast' property.
-        """
-        if not isinstance(value, stinger_types.HourlyForecastProperty):
-            raise ValueError("The 'hourly_forecast' property must be a stinger_types.HourlyForecastProperty")
-        serialized = value.model_dump_json(exclude_none=True)
-        self._logger.debug("Setting 'hourly_forecast' property to %s", serialized)
-        self._conn.publish("weather-forecast/property/hourly_forecast/set_value", serialized, qos=1)
     
     def hourly_forecast_changed(self, handler: HourlyForecastPropertyUpdatedCallbackType, call_immediately: bool=False):
         """ Sets a callback to be called when the 'hourly_forecast' property changes.

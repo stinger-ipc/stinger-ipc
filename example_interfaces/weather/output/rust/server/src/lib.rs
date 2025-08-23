@@ -29,10 +29,6 @@ struct WeatherForecastServerSubscriptionIds {
     
     location_property_update: i32,
     
-    daily_forecast_property_update: i32,
-    
-    hourly_forecast_property_update: i32,
-    
     current_condition_refresh_interval_property_update: i32,
     
     hourly_forecast_refresh_interval_property_update: i32,
@@ -120,12 +116,6 @@ impl WeatherForecastServer {
         let subscription_id_location_property_update = connection.subscribe("weather-forecast/property/location/set_value", message_received_tx.clone()).await;
         let subscription_id_location_property_update = subscription_id_location_property_update.unwrap_or_else(|_| -1);
         
-        let subscription_id_daily_forecast_property_update = connection.subscribe("weather-forecast/property/daily_forecast/set_value", message_received_tx.clone()).await;
-        let subscription_id_daily_forecast_property_update = subscription_id_daily_forecast_property_update.unwrap_or_else(|_| -1);
-        
-        let subscription_id_hourly_forecast_property_update = connection.subscribe("weather-forecast/property/hourly_forecast/set_value", message_received_tx.clone()).await;
-        let subscription_id_hourly_forecast_property_update = subscription_id_hourly_forecast_property_update.unwrap_or_else(|_| -1);
-        
         let subscription_id_current_condition_refresh_interval_property_update = connection.subscribe("weather-forecast/property/current_condition_refresh_interval/set_value", message_received_tx.clone()).await;
         let subscription_id_current_condition_refresh_interval_property_update = subscription_id_current_condition_refresh_interval_property_update.unwrap_or_else(|_| -1);
         
@@ -151,10 +141,6 @@ impl WeatherForecastServer {
             
             
             location_property_update: subscription_id_location_property_update,
-            
-            daily_forecast_property_update: subscription_id_daily_forecast_property_update,
-            
-            hourly_forecast_property_update: subscription_id_hourly_forecast_property_update,
             
             current_condition_refresh_interval_property_update: subscription_id_current_condition_refresh_interval_property_update,
             
@@ -373,22 +359,6 @@ impl WeatherForecastServer {
         
     }
     
-    async fn update_daily_forecast_value(publisher: &mut MessagePublisher, topic: Arc<String>, data: Arc<Mutex<Option<connection::payloads::DailyForecastProperty>>>, msg: mqtt::Message)
-    {
-        let payload_str = msg.payload_str();
-        let new_data: DailyForecastProperty = serde_json::from_str(&payload_str).unwrap();
-        let mut locked_data = data.lock().unwrap();
-        *locked_data = Some(new_data.clone());
-        
-        let publisher2 = publisher.clone();
-        let topic2: String = topic.as_ref().clone();
-        let data2 = new_data;
-        
-        let _ = tokio::spawn(async move {
-            WeatherForecastServer::publish_daily_forecast_value(publisher2, topic2, data2).await;
-        });
-    }
-    
     pub async fn set_daily_forecast(&mut self, data: connection::payloads::DailyForecastProperty) {
         println!("Setting daily_forecast of type connection::payloads::DailyForecastProperty");
         let prop = self.properties.daily_forecast.clone();
@@ -409,22 +379,6 @@ impl WeatherForecastServer {
     {
         let _pub_result = publisher.publish_structure(topic, &data).await;
         
-    }
-    
-    async fn update_hourly_forecast_value(publisher: &mut MessagePublisher, topic: Arc<String>, data: Arc<Mutex<Option<connection::payloads::HourlyForecastProperty>>>, msg: mqtt::Message)
-    {
-        let payload_str = msg.payload_str();
-        let new_data: HourlyForecastProperty = serde_json::from_str(&payload_str).unwrap();
-        let mut locked_data = data.lock().unwrap();
-        *locked_data = Some(new_data.clone());
-        
-        let publisher2 = publisher.clone();
-        let topic2: String = topic.as_ref().clone();
-        let data2 = new_data;
-        
-        let _ = tokio::spawn(async move {
-            WeatherForecastServer::publish_hourly_forecast_value(publisher2, topic2, data2).await;
-        });
     }
     
     pub async fn set_hourly_forecast(&mut self, data: connection::payloads::HourlyForecastProperty) {
@@ -587,12 +541,6 @@ impl WeatherForecastServer {
                 }
                 else if msg.subscription_id == sub_ids.location_property_update {
                     WeatherForecastServer::update_location_value(&mut publisher, properties.location_topic.clone(), properties.location.clone(), msg.message).await;
-                }
-                else if msg.subscription_id == sub_ids.daily_forecast_property_update {
-                    WeatherForecastServer::update_daily_forecast_value(&mut publisher, properties.daily_forecast_topic.clone(), properties.daily_forecast.clone(), msg.message).await;
-                }
-                else if msg.subscription_id == sub_ids.hourly_forecast_property_update {
-                    WeatherForecastServer::update_hourly_forecast_value(&mut publisher, properties.hourly_forecast_topic.clone(), properties.hourly_forecast.clone(), msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.current_condition_refresh_interval_property_update {
                     WeatherForecastServer::update_current_condition_refresh_interval_value(&mut publisher, properties.current_condition_refresh_interval_topic.clone(), properties.current_condition_refresh_interval.clone(), msg.message).await;

@@ -3,6 +3,7 @@
 
 
 
+
 ## Signals
 
 Signals are messages from the server to clients.
@@ -13,16 +14,39 @@ Client <<- Server : Signal(Parameters)
 @enduml
 ```
 
-### current_time
+### Signal `current_time`
 
-_No documentation for this signal_
+Once in a while (at intervals decided by the provider) the current date
+and time will be published.  (Mostly for example purposes).
 
-#### Signal Parameters
 
-|Name           |Type      |Description|
+#### Signal Parameters for `current_time`
+
+| Name          | Type     |Description|
 |---------------|----------|-----------|
 |  current_time |  string  ||
 
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+```python
+@client.receive_current_time
+def on_current_time(current_time: str):
+    print(f"Got a 'current_time' signal: current_time={ current_time } ")
+```
+
+</details>
+
+<details>
+  <summary>Rust Server</summary>
+
+```rust
+server.emit_current_time("apples".to_string()).await;
+```
+
+</details>
 
 
 ## Methods
@@ -37,21 +61,15 @@ Client <<-- Server: Response(Parameters)
 ```
 
 
-### refresh_daily_forecast
+### Method `refresh_daily_forecast`
 
-_No documentation for this method_
+When called, this method will force the retrieval of the daily weather forecast from
+the NWS weather API.  
 
-#### Request Parameters
+When called, the `daily_forecast` API property will be republished with the latest data.
 
-There are no arguments for this request.
+This method has no arguments and provides no return values.
 
-#### Return Parameters
-
-There is no return value for this method call.
-
-### refresh_hourly_forecast
-
-_No documentation for this method_
 
 #### Request Parameters
 
@@ -61,9 +79,35 @@ There are no arguments for this request.
 
 There is no return value for this method call.
 
-### refresh_current_conditions
+### Method `refresh_hourly_forecast`
 
-_No documentation for this method_
+When called, this method will force the retrieval of the hourly weather forecast from
+the NWS weather API.  
+
+When called, the `hourly_forecast` API property will be republished with the latest data.
+
+This method has no arguments and provides no return values.
+
+
+#### Request Parameters
+
+There are no arguments for this request.
+
+#### Return Parameters
+
+There is no return value for this method call.
+
+### Method `refresh_current_conditions`
+
+When called, this method will force the retrieval of the latest weather conditions
+from the nearest weather station.  It also forces a re-calculation of the current
+temperature.
+
+When called, the `current_temperature` and `current_condition` API properties are
+republished with the latest value.
+
+This method has no arguments and provides no return values.
+
 
 #### Request Parameters
 
@@ -84,72 +128,97 @@ Client <<- Server: Property Updated
 @enduml
 ```
 
-### location
+### Property `location`
 
-_No documentation for this property_
+Weather will be retrieved for the provided location.
+
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
 |    latitude   |  number  ||
 |   longitude   |  number  ||
 
-### current_temperature
+### Property `current_temperature`
 
-_No documentation for this property_
+This is the current (estimated) temperature in degrees fahrenheit.  This values
+is regularly updated.  The value is extrapolated from the hourly forecast, but
+adjusted based on the latest conditions at the nearest weather station.
+
+
+This property is **read-only**.  It can only be modified by the server.
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
 | temperature_f |  number  ||
 
-### current_condition
+### Property `current_condition`
 
-_No documentation for this property_
+This is the current weather outside.  This comes from the hourly forecast and is
+updated about once per hour.
+
+
+This property is **read-only**.  It can only be modified by the server.
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
 |   condition   |[Enum WeatherCondition](#enum-WeatherCondition)||
 |  description  |  string  ||
 
-### daily_forecast
+### Property `daily_forecast`
 
-_No documentation for this property_
+This contains the weather forecast for each day of the next few days.  It is updated
+a couple of times a day.  The current day may not have the high or low temperature
+provided.  This is an example which shows only a few days.  The actual implementation
+will have a value for each day of the week.
 
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-|     monday    |          ||
-|    tuesday    |          ||
-|   wednesday   |          ||
 
-### hourly_forecast
-
-_No documentation for this property_
+This property is **read-only**.  It can only be modified by the server.
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|     hour_0    |          ||
-|     hour_1    |          ||
-|     hour_2    |          ||
-|     hour_3    |          ||
+|     monday    |[Struct ForecastForDay](#enum-ForecastForDay)|This is the forecast for Monday.|
+|    tuesday    |[Struct ForecastForDay](#enum-ForecastForDay)||
+|   wednesday   |[Struct ForecastForDay](#enum-ForecastForDay)||
 
-### current_condition_refresh_interval
+### Property `hourly_forecast`
 
-_No documentation for this property_
+This contains the weather forecast for each hour of the next 24 hours.  The data source
+us updated a couple of times per day, but this API property is updated every hour on the
+hour.
+
+
+This property is **read-only**.  It can only be modified by the server.
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     hour_0    |[Struct ForecastForHour](#enum-ForecastForHour)|This is the forecast for the current hour.|
+|     hour_1    |[Struct ForecastForHour](#enum-ForecastForHour)|This is the forecast for the next hour.|
+|     hour_2    |[Struct ForecastForHour](#enum-ForecastForHour)||
+|     hour_3    |[Struct ForecastForHour](#enum-ForecastForHour)||
+
+### Property `current_condition_refresh_interval`
+
+This is the maximum interval, in seconds, that the latest weather conditions at the nearest weather
+station are retrieved.
+
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
 |    seconds    | integer  ||
 
-### hourly_forecast_refresh_interval
+### Property `hourly_forecast_refresh_interval`
 
-_No documentation for this property_
+This is the maximum interval, in seconds, that the hourly forecast data is retrieved.
+
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|    seconds    | integer  ||
+|    seconds    | integer  |Interval duration in seconds.|
 
-### daily_forecast_refresh_interval
+### Property `daily_forecast_refresh_interval`
 
-_No documentation for this property_
+This is the maximum interval, in seconds, that the daily forecast data is retrieved.
+
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
@@ -177,22 +246,25 @@ Structures are a group of values and may be used as an argument in signals, meth
 
 ### Struct `ForecastForHour`
 
-<a name="Enum-ForecastForHour"></a>_No general description exists for this structure_
+<a name="Struct-ForecastForHour"></a>This structure contains the forecast for a single hour.
+
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|  temperature  |  number  ||
-|   starttime   |  string  ||
+|  temperature  |  number  |Forecasted temperature in degrees fahrenheit.|
+|   starttime   |  string  |Forecast is valid for the hour starting at this time.|
 |   condition   |[Enum WeatherCondition](#enum-WeatherCondition)||
 
 ### Struct `ForecastForDay`
 
-<a name="Enum-ForecastForDay"></a>_No general description exists for this structure_
+<a name="Struct-ForecastForDay"></a>This structure contains the forecast for a single day.  The high or low temperature
+may be missing for the current day.
+
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|high_temperature|  number  ||
-|low_temperature|  number  ||
+|high_temperature|  number  |High temperature for the day in degrees fahrenheit.|
+|low_temperature|  number  |Low temperature for the day in degrees fahrenheit.|
 |   condition   |[Enum WeatherCondition](#enum-WeatherCondition)||
 |   start_time  |  string  ||
 |    end_time   |  string  ||

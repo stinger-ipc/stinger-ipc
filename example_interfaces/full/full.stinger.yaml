@@ -36,9 +36,10 @@ structures:
 enums:
 
   dayOfTheWeek:
+    description: The days of the week.
     values:
       - name: Sunday
-        documentation: First day of the week.  The sabbath.
+        description: First day of the week.  The sabbath.
       - name: Monday
       - name: Tuesday
       - name: Wednesday

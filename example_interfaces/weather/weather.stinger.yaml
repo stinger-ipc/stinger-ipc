@@ -10,6 +10,8 @@ interface:
 enums:
 
   weather_condition:
+    documentation: |
+      This enum contains the possible weather conditions that can be reported.
     values:
       - name: rainy
       - name: sunny
@@ -24,18 +26,24 @@ structures:
     members:
       - name: temperature
         type: float
+        description: Forecasted temperature in degrees fahrenheit.
       - name: starttime
         type: string
+        description: Forecast is valid for the hour starting at this time.
       - name: condition
         type: enum
         enumName: weather_condition
+    description: |
+      This structure contains the forecast for a single hour.
 
   forecast_for_day:
     members:
       - name: high_temperature
         type: float
+        description: High temperature for the day in degrees fahrenheit.
       - name: low_temperature
         type: float
+        description: Low temperature for the day in degrees fahrenheit.
       - name: condition
         type: enum
         enumName: weather_condition
@@ -43,6 +51,9 @@ structures:
         type: string
       - name: end_time
         type: string
+    description: |
+      This structure contains the forecast for a single day.  The high or low temperature
+      may be missing for the current day.
 
 signals:
   current_time:
@@ -95,12 +106,14 @@ properties:
       - name: monday
         type: struct
         structName: forecast_for_day
+        description: This is the forecast for Monday.
       - name: tuesday
         type: struct
         structName: forecast_for_day
       - name: wednesday
         type: struct
         structName: forecast_for_day
+    readOnly: true
 
   hourly_forecast:
     documentation: |
@@ -111,15 +124,18 @@ properties:
       - name: hour_0
         type: struct
         structName: forecast_for_hour
+        description: This is the forecast for the current hour.
       - name: hour_1
         type: struct
         structName: forecast_for_hour
+        description: This is the forecast for the next hour.
       - name: hour_2
         type: struct
         structName: forecast_for_hour
       - name: hour_3
         type: struct
         structName: forecast_for_hour
+    readOnly: true
 
   current_condition_refresh_interval:
     documentation: |
@@ -135,6 +151,7 @@ properties:
     values:
       - name: seconds
         type: integer
+        description: Interval duration in seconds.
 
   daily_forecast_refresh_interval:
     documentation: |

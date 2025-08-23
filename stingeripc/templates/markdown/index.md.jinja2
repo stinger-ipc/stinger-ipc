@@ -1,7 +1,20 @@
 # _{{stinger.name}}_ API Overview 
 
 {{stinger.description}}
-
+{%macro argrow(arg) -%}
+|{{arg.name|center(15)}}|
+{%-if arg.arg_type.name.lower() == "enum" or arg.arg_type.name.lower() == "struct"%}{{arg.markdown_type|center(10)}}
+{%-else%}{{arg.json_type|center(10)}}
+{%-endif%}{%if arg.optional%} (optional){%endif%}|
+{{- arg.description or ''}}|
+{%- endmacro %}
+{%macro argtable(arglist) -%}
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+{%-for arg in arglist%}
+{{argrow(arg)}}
+{%- endfor %}
+{%- endmacro %}
 {%if stinger.signals | length > 0 %}
 ## Signals
 
@@ -13,19 +26,38 @@ Client <<- Server : Signal(Parameters)
 @enduml
 ```
 {%for sig_name, signal in stinger.signals.items()%}
-### {{sig_name}}
+### Signal `{{sig_name}}`
 
 {{signal.documentation or "_No documentation for this signal_"}}
 
-#### Signal Parameters
+#### Signal Parameters for `{{sig_name}}`
 
-|Name           |Type      |Description|
-|---------------|----------|-----------|
-{%-for arg in signal.arg_list%}
-|{{arg.name|center(15)}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}{%else%}{{arg.json_type|center(10)}}{%endif%}|{{arg.description or ''}}|{%endfor%}
+{{argtable(signal.arg_list)}}
 
-{%endfor%}
-{%endif%}
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+```python
+@client.receive_{{sig_name | snake_case }}
+def on_{{sig_name | snake_case }}({%for arg in signal.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    print(f"Got a '{{sig_name}}' signal: {%for arg in signal.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
+```
+
+</details>
+
+<details>
+  <summary>Rust Server</summary>
+
+```rust
+server.emit_{{sig_name|snake_case}}({%for arg in signal.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+```
+
+</details>
+
+{%endfor%}{#- end for each signal -#}
+{%endif%}{#- end if there are signals -#}
 
 {#- ------------------------------------------------------- -#}
 {%if stinger.methods | length > 0 %}
@@ -41,7 +73,7 @@ Client <<-- Server: Response(Parameters)
 ```
 
 {%for method_name, method in stinger.methods.items()%}
-### {{method_name}}
+### Method `{{method_name}}`
 
 {{method.documentation or "_No documentation for this method_"}}
 
@@ -49,18 +81,13 @@ Client <<-- Server: Response(Parameters)
 {%if method.arg_list | length == 0%}
 There are no arguments for this request.
 {%else-%}
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-{%-for arg in method.arg_list%}
-|{{arg.name|center(15)}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}{%else%}{{arg.json_type|center(10)}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}
+{{argtable(method.arg_list)}}
 {%endif%}{# number of args #}
 #### Return Parameters
 
 {%if method.return_value_type == "struct" %}
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-{%-for arg in method.return_value%}
-|{{arg.name|center(15)}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}{%else%}{{arg.json_type|center(10)}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}{%elif method.return_value_type is false -%}
+{{argtable(method.return_value)}}
+{%elif method.return_value_type is false -%}
 There is no return value for this method call.
 {%else-%}
 The return value type is `{{method.return_value.json_type}}`.
@@ -79,20 +106,13 @@ Client <<- Server: Property Updated
 @enduml
 ```
 {%for prop_name, prop in stinger.properties.items()%}
-### {{prop_name}}
+### Property `{{prop_name}}`
 
-{{prop.documentation or "_No documentation for this property_"}}
+{{prop.documentation or "_No documentation is available for this property_"}}{%if prop.read_only %}
 
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-{%-for arg in prop.arg_list%}
-|{{arg.name|center(15) -}}
-                |{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}
-                 {%-else%}{{arg.json_type|center(10)}}
-                 {%-endif%}
-                 {%-if arg.optional%} (optional){%endif -%}
-                           |{{arg.description or ''}}|
-{%-endfor%}{# iterate over arguments for table #}
+This property is **read-only**.  It can only be modified by the server.{%endif%}
+
+{{argtable(prop.arg_list)}}
 {%endfor%}{# for each property #}
 {%endif%}{#end condition that there are a number of properties#}
 {%if stinger.enums | length > 0%}## Enums
@@ -116,10 +136,7 @@ Structures are a group of values and may be used as an argument in signals, meth
 {%for istruct_name, istruct in stinger.structs.items() %}
 ### Struct `{{istruct.class_name }}`
 
-<a name="Enum-{{istruct.class_name}}"></a>{{istruct.description or "_No general description exists for this structure_"}}
+<a name="Struct-{{istruct.class_name}}"></a>{{istruct.description or "_No general description exists for this structure_"}}
 
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-{%-for arg in istruct.members%}
-|{{arg.name|center(15)}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}{%else%}{{arg.json_type|center(10)}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}
+{{argtable(istruct.members)}}
 {%endfor%}
