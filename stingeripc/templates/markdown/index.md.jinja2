@@ -19,10 +19,10 @@ Client <<- Server : Signal(Parameters)
 
 #### Signal Parameters
 
-|Name|Type|Description|
-|----|----|-----------|
+|Name           |Type      |Description|
+|---------------|----------|-----------|
 {%-for arg in signal.arg_list%}
-|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}|{{arg.description or ''}}|{%endfor%}
+|{{arg.name|center(15)}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}{%else%}{{arg.json_type|center(10)}}{%endif%}|{{arg.description or ''}}|{%endfor%}
 
 {%endfor%}
 {%endif%}
@@ -49,18 +49,18 @@ Client <<-- Server: Response(Parameters)
 {%if method.arg_list | length == 0%}
 There are no arguments for this request.
 {%else-%}
-|Name|Type|Description|
-|----|----|-----------|
+| Name          | Type     |Description|
+|---------------|----------|-----------|
 {%-for arg in method.arg_list%}
-|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}
+|{{arg.name|center(15)}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}{%else%}{{arg.json_type|center(10)}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}
 {%endif%}{# number of args #}
 #### Return Parameters
 
 {%if method.return_value_type == "struct" %}
-|Name|Type|Description|
-|----|----|-----------|
+| Name          | Type     |Description|
+|---------------|----------|-----------|
 {%-for arg in method.return_value%}
-|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}{%elif method.return_value_type is false -%}
+|{{arg.name|center(15)}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}{%else%}{{arg.json_type|center(10)}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}{%elif method.return_value_type is false -%}
 There is no return value for this method call.
 {%else-%}
 The return value type is `{{method.return_value.json_type}}`.
@@ -83,13 +83,15 @@ Client <<- Server: Property Updated
 
 {{prop.documentation or "_No documentation for this property_"}}
 
-|Name|Type|Description|
-|----|----|-----------|
+| Name          | Type     |Description|
+|---------------|----------|-----------|
 {%-for arg in prop.arg_list%}
-|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}
-              {%-else%}{{arg.json_type}}
-              {%-endif%}
-              {%-if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|
+|{{arg.name|center(15) -}}
+                |{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}
+                 {%-else%}{{arg.json_type|center(10)}}
+                 {%-endif%}
+                 {%-if arg.optional%} (optional){%endif -%}
+                           |{{arg.description or ''}}|
 {%-endfor%}{# iterate over arguments for table #}
 {%endfor%}{# for each property #}
 {%endif%}{#end condition that there are a number of properties#}
@@ -102,7 +104,9 @@ Client <<- Server: Property Updated
 <a name="Enum-{{ie.class_name}}"></a>{{ie.description or "_No description exists for this enumeration._"}}
 
 {%for value in ie.values -%}
-* {{value}} ({{loop.index}})
+* {{value}} ({{loop.index}}) 
+{%- if ie.value_descriptions and ie.value_descriptions|length >= loop.index %}
+  - {{ie.value_descriptions[loop.index0]}}{% endif %}
 {%endfor%}
 {%endfor%}
 {#- ------------------------------------------------------- #}
@@ -114,8 +118,8 @@ Structures are a group of values and may be used as an argument in signals, meth
 
 <a name="Enum-{{istruct.class_name}}"></a>{{istruct.description or "_No general description exists for this structure_"}}
 
-|Name|Type|Description|
-|----|----|-----------|
+| Name          | Type     |Description|
+|---------------|----------|-----------|
 {%-for arg in istruct.members%}
-|{{arg.name}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type}}{%else%}{{arg.json_type}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}
+|{{arg.name|center(15)}}|{%if arg.arg_type.name.lower() == "enum"%}{{arg.markdown_type|center(10)}}{%else%}{{arg.json_type|center(10)}}{%endif%}{%if arg.optional%} (optional){%endif%}|{{arg.description or ''}}|{%endfor%}
 {%endfor%}

@@ -10,13 +10,14 @@ interface:
 enums:
 
   weather_condition:
-    - name: rainy
-    - name: sunny
-    - name: partly_cloudy
-    - name: mostly_cloudy
-    - name: overcast
-    - name: windy
-    - name: snowy
+    values:
+      - name: rainy
+      - name: sunny
+      - name: partly_cloudy
+      - name: mostly_cloudy
+      - name: overcast
+      - name: windy
+      - name: snowy
 
 structures:
   forecast_for_hour:

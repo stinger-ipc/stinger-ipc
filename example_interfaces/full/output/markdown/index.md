@@ -19,10 +19,10 @@ _No documentation for this signal_
 
 #### Signal Parameters
 
-|Name|Type|Description|
-|----|----|-----------|
-|dayOfMonth|integer||
-|dayOfWeek|[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
+|Name           |Type      |Description|
+|---------------|----------|-----------|
+|   dayOfMonth  | integer  ||
+|   dayOfWeek   |[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
 
 
 
@@ -43,11 +43,11 @@ Client <<-- Server: Response(Parameters)
 _No documentation for this method_
 
 #### Request Parameters
-|Name|Type|Description|
-|----|----|-----------|
-|first|integer||
-|second|integer||
-|third|integer (optional)||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     first     | integer  ||
+|     second    | integer  ||
+|     third     | integer   (optional)||
 
 #### Return Parameters
 
@@ -58,18 +58,18 @@ The return value type is `integer`.
 _No documentation for this method_
 
 #### Request Parameters
-|Name|Type|Description|
-|----|----|-----------|
-|aString|string||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|    aString    |  string  ||
 
 #### Return Parameters
 
 
-|Name|Type|Description|
-|----|----|-----------|
-|label|string||
-|identifier|integer||
-|day|[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     label     |  string  ||
+|   identifier  | integer  ||
+|      day      |[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
 ## Properties
 
 Properties are values (or a set of values) held by the server.   They are re-published when the value changes. 
@@ -85,28 +85,28 @@ Client <<- Server: Property Updated
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|number|integer||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     number    | integer  ||
 
 ### favorite_foods
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|drink|string||
-|slices_of_pizza|integer||
-|breakfast|string (optional)||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     drink     |  string  ||
+|slices_of_pizza| integer  ||
+|   breakfast   |  string   (optional)||
 
 ### lunch_menu
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|monday|||
-|tuesday|||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     monday    |          ||
+|    tuesday    |          ||
 
 
 ## Enums
@@ -132,10 +132,10 @@ Structures are a group of values and may be used as an argument in signals, meth
 
 <a name="Enum-Lunch"></a>_No general description exists for this structure_
 
-|Name|Type|Description|
-|----|----|-----------|
-|drink|boolean||
-|sandwich|string||
-|crackers|number||
-|day|[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
-|order_number|integer (optional)||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     drink     | boolean  ||
+|    sandwich   |  string  ||
+|    crackers   |  number  ||
+|      day      |[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
+|  order_number | integer   (optional)||

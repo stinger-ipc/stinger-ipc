@@ -34,15 +34,17 @@ structures:
         optional: true
 
 enums:
+
   dayOfTheWeek:
-    - name: Sunday
-      documentation: First day of the week.  The sabbath.
-    - name: Monday
-    - name: Tuesday
-    - name: Wednesday
-    - name: Thursday
-    - name: Friday
-    - name: Saturday
+    values:
+      - name: Sunday
+        documentation: First day of the week.  The sabbath.
+      - name: Monday
+      - name: Tuesday
+      - name: Wednesday
+      - name: Thursday
+      - name: Friday
+      - name: Saturday
 
 signals:
   

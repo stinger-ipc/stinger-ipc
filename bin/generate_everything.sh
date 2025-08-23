@@ -8,7 +8,7 @@ echo "----------- Generating Python ----------------"
 function generate_python() {
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
-    uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stingeripc ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
 }
 
 generate_python signal_only
@@ -22,7 +22,7 @@ echo "----------- Generating C++ ----------------"
 function generate_cpp() {
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build
-    uv run ${BASE_DIR}/cpp_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stingeripc ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/
+    uv run ${BASE_DIR}/cpp_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/
     if [ $? -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
     fi
@@ -38,7 +38,7 @@ echo "----------- Generating Rust ----------------"
 function generate_rust() {
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
-    uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stingeripc ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
+    uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     if [ $? -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example client)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example ${IFACE_NAME}_server_example)
@@ -68,7 +68,7 @@ function generate_markdown() {
     IFACE_NAME=$1
 
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
-    uv run ${BASE_DIR}/markdown_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stingeripc ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
+    uv run ${BASE_DIR}/markdown_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
 }
 
 generate_markdown full

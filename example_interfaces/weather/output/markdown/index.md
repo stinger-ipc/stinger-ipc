@@ -19,9 +19,9 @@ _No documentation for this signal_
 
 #### Signal Parameters
 
-|Name|Type|Description|
-|----|----|-----------|
-|current_time|string||
+|Name           |Type      |Description|
+|---------------|----------|-----------|
+|  current_time |  string  ||
 
 
 
@@ -88,72 +88,72 @@ Client <<- Server: Property Updated
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|latitude|number||
-|longitude|number||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|    latitude   |  number  ||
+|   longitude   |  number  ||
 
 ### current_temperature
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|temperature_f|number||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+| temperature_f |  number  ||
 
 ### current_condition
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|condition|[Enum WeatherCondition](#enum-WeatherCondition)||
-|description|string||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|   condition   |[Enum WeatherCondition](#enum-WeatherCondition)||
+|  description  |  string  ||
 
 ### daily_forecast
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|monday|||
-|tuesday|||
-|wednesday|||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     monday    |          ||
+|    tuesday    |          ||
+|   wednesday   |          ||
 
 ### hourly_forecast
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|hour_0|||
-|hour_1|||
-|hour_2|||
-|hour_3|||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     hour_0    |          ||
+|     hour_1    |          ||
+|     hour_2    |          ||
+|     hour_3    |          ||
 
 ### current_condition_refresh_interval
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|seconds|integer||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|    seconds    | integer  ||
 
 ### hourly_forecast_refresh_interval
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|seconds|integer||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|    seconds    | integer  ||
 
 ### daily_forecast_refresh_interval
 
 _No documentation for this property_
 
-|Name|Type|Description|
-|----|----|-----------|
-|seconds|integer||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|    seconds    | integer  ||
 
 
 ## Enums
@@ -179,20 +179,20 @@ Structures are a group of values and may be used as an argument in signals, meth
 
 <a name="Enum-ForecastForHour"></a>_No general description exists for this structure_
 
-|Name|Type|Description|
-|----|----|-----------|
-|temperature|number||
-|starttime|string||
-|condition|[Enum WeatherCondition](#enum-WeatherCondition)||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|  temperature  |  number  ||
+|   starttime   |  string  ||
+|   condition   |[Enum WeatherCondition](#enum-WeatherCondition)||
 
 ### Struct `ForecastForDay`
 
 <a name="Enum-ForecastForDay"></a>_No general description exists for this structure_
 
-|Name|Type|Description|
-|----|----|-----------|
-|high_temperature|number||
-|low_temperature|number||
-|condition|[Enum WeatherCondition](#enum-WeatherCondition)||
-|start_time|string||
-|end_time|string||
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|high_temperature|  number  ||
+|low_temperature|  number  ||
+|   condition   |[Enum WeatherCondition](#enum-WeatherCondition)||
+|   start_time  |  string  ||
+|    end_time   |  string  ||

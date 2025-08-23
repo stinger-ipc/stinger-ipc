@@ -9,6 +9,10 @@ from .args import ArgType, ArgPrimitiveType
 from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
 
+YamlArg = dict[str, str|bool]
+YamlArgList = list[YamlArg]
+YamlIfaceEnum = dict[str, str|YamlArgList]
+YamlIfaceEnums = dict[str, YamlIfaceEnum]
 
 class Arg:
     def __init__(self, name: str, description: str|None = None):
@@ -580,11 +584,13 @@ class InterfaceEnum:
 
     def __init__(self, name: str):
         self._name = name
-        self._values: list[Any] = []
+        self._values: list[str] = []
+        self._value_descriptions: list[str] = []
         self._description: str|None = None
 
-    def add_value(self, value: str):
+    def add_value(self, value: str, description: str|None = None):
         self._values.append(value)
+        self._value_descriptions.append(description)
 
     @property
     def name(self):
@@ -627,14 +633,17 @@ class InterfaceEnum:
         return self._values
 
     @classmethod
-    def new_enum_from_stinger(cls, name, values: List[Dict[str, str]], description: str|None=None) -> InterfaceEnum:
+    def new_enum_from_stinger(cls, name, enum_spec: YamlIfaceEnum) -> InterfaceEnum:
         ie = cls(name)
-        ie._description = description
-        for enum_obj in values:
-            if "name" in enum_obj:
-                ie.add_value(enum_obj["name"])
+        for enum_obj in enum_spec.get('values', []):
+            assert isinstance(enum_obj, dict), f"Enum values must be a dicts."
+            if "name" in enum_obj and isinstance(enum_obj["name"], str):
+                ie.add_value(enum_obj["name"], enum_obj.get('description', None))
             else:
-                raise InvalidStingerStructure("InterfaceEnum item must have a name")
+                raise InvalidStingerStructure(f"InterfaceEnum '{name}' items must have string names.")
+        description = enum_spec.get('description', None)
+        if description is not None and isinstance(description, str):
+            ie._description = description
         return ie
 
 
@@ -780,7 +789,7 @@ class StingerSpec:
         self._title = interface['title'] if 'title' in interface else None
 
         self.signals: dict[str, Signal] = {}
-        self.properties: dict[str, Any] = {}
+        self.properties: dict[str, Property] = {}
         self.methods: dict[str, Method] = {}
         self.enums: dict[str, InterfaceEnum] = {}
         self.structs: dict[str, InterfaceStruct] = {}
