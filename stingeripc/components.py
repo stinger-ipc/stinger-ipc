@@ -73,11 +73,15 @@ class Arg:
         return self.rust_type
 
     @classmethod
-    def new_arg_from_stinger(cls, arg_spec: Dict[str, str], stinger_spec: StingerSpec|None=None) -> Arg:
+    def new_arg_from_stinger(cls, arg_spec: YamlArg, stinger_spec: StingerSpec|None=None) -> Arg:
         if "type" not in arg_spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in arg_spec:
             raise InvalidStingerStructure("No 'name' in arg structure")
+        if not isinstance(arg_spec['type'], str):
+            raise InvalidStingerStructure("'type' in arg structure must be a string")
+        if not isinstance(arg_spec['name'], str):
+            raise InvalidStingerStructure("'name' in arg structure must be a string")
 
         if hasattr(ArgPrimitiveType, arg_spec["type"].upper()):
             arg = ArgPrimitive.new_arg_primitive_from_stinger(arg_spec)
@@ -94,7 +98,7 @@ class Arg:
                 raise InvalidStingerStructure(f"Enum args need a 'enumName'")
             if arg_spec["enumName"] not in stinger_spec.enums:
                 raise InvalidStingerStructure(f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums")
-            arg = ArgEnum(arg_spec["name"], stinger_spec.enums[arg_spec['enumName']])
+            arg = ArgEnum(arg_spec["name"], stinger_spec.get_interface_enum(arg_spec['enumName']))
             if opt := arg_spec.get('optional', False):
                 arg.optional = opt
             arg.try_set_description_from_spec(arg_spec)
@@ -301,7 +305,7 @@ class ArgStruct(Arg):
         return f"[Struct {self._interface_struct.class_name}](#enum-{self._interface_struct.class_name})"
 
     def get_random_example_value(self, lang="python", seed:int=2) -> str|None:
-        example_list: dict[str] = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
+        example_list: dict[str, str] = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
         if lang == 'c++':
             return "{" + ", ".join(example_list.values()) + "}"
         elif lang == 'python':
@@ -617,7 +621,7 @@ class InterfaceEnum:
     def __init__(self, name: str):
         self._name = name
         self._values: list[str] = []
-        self._value_descriptions: list[str] = []
+        self._value_descriptions: list[str|None] = []
         self._description: str|None = None
 
     def add_value(self, value: str, description: str|None = None):
@@ -892,6 +896,11 @@ class StingerSpec:
 
     def uses_enums(self) -> bool:
         return bool(self.enums)
+
+    def get_interface_enum(self, name: str) -> InterfaceEnum:
+        if name in self.enums:
+            return self.enums[name]
+        raise InvalidStingerStructure(f"Enum '{name}' not found in stinger spec")
 
     @property
     def name(self):
