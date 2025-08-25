@@ -10,6 +10,7 @@ from .topic import (
     MethodTopicCreator,
     PropertyTopicCreator,
 )
+from .lang_symb import *
 from .args import ArgType, ArgPrimitiveType
 from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
@@ -202,9 +203,9 @@ class ArgEnum(Arg):
             retval = f"{self._enum.class_name}::{stringcase.constcase(value)}"
         elif lang == "rust":
             if self.optional:
-                retval = f"Some(connection::payloads::{self._enum.class_name}::{value})"
+                retval = f"Some(connection::payloads::{self._enum.class_name}::{stringmanip.upper_camel_case(value)})"
             else:
-                retval = f"connection::payloads::{self._enum.class_name}::{value}"
+                retval = f"connection::payloads::{self._enum.class_name}::{stringmanip.upper_camel_case(value)}"
         random.setstate(random_state)
         return retval
 
@@ -431,11 +432,17 @@ class Signal(InterfaceComponent):
 
 
 class Method(InterfaceComponent):
+
     def __init__(self, topic_creator: MethodTopicCreator, name: str):
         super().__init__(name)
+        self._python = PythonMethodSymbols(self)
         self._topic_creator = topic_creator
         self._arg_list = []  # type: List[Arg]
         self._return_value: Arg | list[Arg] | None = None
+
+    @property
+    def python(self) -> PythonMethodSymbols:
+        return self._python
 
     def add_arg(self, arg: Arg) -> Method:
         if arg.name in [a.name for a in self._arg_list]:
@@ -500,6 +507,8 @@ class Method(InterfaceComponent):
             return (
                 f"stinger_types.{stringmanip.upper_camel_case(self.return_value_name)}"
             )
+        else:
+            raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
 
     @property
     def return_value_python_local_type(self):
@@ -893,6 +902,8 @@ class StingerSpec:
         try:
             self._name: str = interface["name"]
             self._version: str = interface["version"]
+            self._python = PythonInterfaceSymbols(self)
+            self._rust = RustInterfaceSymbols(self)
         except KeyError as e:
             raise InvalidStingerStructure(
                 f"Missing interface property in {interface}: {e}"
@@ -987,6 +998,14 @@ class StingerSpec:
     @property
     def version(self):
         return self._version
+
+    @property
+    def python(self) -> PythonInterfaceSymbols:
+        return self._python
+
+    @property
+    def rust(self) -> RustInterfaceSymbols:
+        return self._rust
 
     @staticmethod
     def get_enum_module_name() -> str:

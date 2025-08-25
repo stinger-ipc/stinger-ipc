@@ -1,5 +1,5 @@
 from typing import Optional
-
+from jacobsjinjatoo import stringmanip
 
 class TopicCreatorBase:
     def __init__(self, root: Optional[str] = None):
@@ -20,7 +20,7 @@ class SignalTopicCreator(TopicCreatorBase):
         super().__init__(root)
 
     def signal_topic(self, signal_name: str) -> str:
-        return self.slash("signal", signal_name)
+        return self.slash("signal", stringmanip.lower_camel_case(signal_name))
 
 
 class MethodTopicCreator(TopicCreatorBase):
@@ -28,7 +28,7 @@ class MethodTopicCreator(TopicCreatorBase):
         super().__init__(root)
 
     def method_topic(self, method_name: str) -> str:
-        return self.slash("method", method_name)
+        return self.slash("method", stringmanip.lower_camel_case(method_name))
 
     def method_response_topic(self, method_name: str, client_id: str) -> str:
         method_topic = self.method_topic(method_name)
@@ -40,10 +40,10 @@ class PropertyTopicCreator(TopicCreatorBase):
         super().__init__(root)
 
     def property_value_topic(self, property_name: str) -> str:
-        return self.slash("property", property_name)
+        return self.slash("property", stringmanip.lower_camel_case(property_name), "value")
 
     def property_update_topic(self, property_name: str) -> str:
-        return self.slash("property", property_name, "set_value")
+        return self.slash("property", stringmanip.lower_camel_case(property_name), "setValue")
 
 
 class InterfaceTopicCreator(TopicCreatorBase):
@@ -51,7 +51,7 @@ class InterfaceTopicCreator(TopicCreatorBase):
 
     def __init__(self, interface_name: str, root: Optional[str] = None):
         super().__init__(root)
-        self._interface_name = interface_name
+        self._interface_name = stringmanip.lower_camel_case(interface_name)
 
     @property
     def _topic_prefix(self) -> str:

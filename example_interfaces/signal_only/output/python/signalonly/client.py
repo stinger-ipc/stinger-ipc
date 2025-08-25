@@ -30,9 +30,7 @@ class SignalOnlyClient:
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
 
-        self._signal_recv_callbacks_for_another_signal: list[
-            AnotherSignalSignalCallbackType
-        ] = []
+        self._signal_recv_callbacks_for_another_signal: list[AnotherSignalSignalCallbackType] = []
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """Call each callback in the callback dictionary with the provided args."""
@@ -40,9 +38,7 @@ class SignalOnlyClient:
             cb(**kwargs)
 
     @staticmethod
-    def _filter_for_args(
-        args: Dict[str, Any], allowed_args: List[str]
-    ) -> Dict[str, Any]:
+    def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
         """Given a dictionary, reduce the dictionary so that it only has keys in the allowed list."""
         filtered_args = {}
         for k, v in args.items():
@@ -56,14 +52,9 @@ class SignalOnlyClient:
         """
         self._logger.debug("Receiving message sent to %s", topic)
         # Handle 'anotherSignal' signal.
-        if self._conn.is_topic_sub(topic, "SignalOnly/signal/anotherSignal"):
-            if (
-                "ContentType" not in properties
-                or properties["ContentType"] != "application/json"
-            ):
-                self._logger.warning(
-                    "Received 'anotherSignal' signal with non-JSON content type"
-                )
+        if self._conn.is_topic_sub(topic, "signalOnly/signal/anotherSignal"):
+            if "ContentType" not in properties or properties["ContentType"] != "application/json":
+                self._logger.warning("Received 'anotherSignal' signal with non-JSON content type")
                 return
             allowed_args = [
                 "one",
@@ -75,15 +66,13 @@ class SignalOnlyClient:
             kwargs["two"] = bool(kwargs["two"])
             kwargs["three"] = str(kwargs["three"])
 
-            self._do_callbacks_for(
-                self._signal_recv_callbacks_for_another_signal, **kwargs
-            )
+            self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
 
     def receive_another_signal(self, handler: AnotherSignalSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_another_signal.append(handler)
         if len(self._signal_recv_callbacks_for_another_signal) == 1:
-            self._conn.subscribe("SignalOnly/signal/anotherSignal")
+            self._conn.subscribe("signalOnly/signal/anotherSignal")
         return handler
 
 
@@ -93,9 +82,7 @@ class SignalOnlyClientBuilder:
         """Creates a new SignalOnlyClientBuilder."""
         self._conn = broker
         self._logger = logging.getLogger("SignalOnlyClientBuilder")
-        self._signal_recv_callbacks_for_another_signal = (
-            []
-        )  # type: List[AnotherSignalSignalCallbackType]
+        self._signal_recv_callbacks_for_another_signal = []  # type: List[AnotherSignalSignalCallbackType]
 
     def receive_another_signal(self, handler):
         """Used as a decorator for methods which handle particular signals."""

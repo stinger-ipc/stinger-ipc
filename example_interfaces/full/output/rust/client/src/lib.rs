@@ -80,16 +80,16 @@ impl FullClient {
         let publisher = connection.get_publisher();
 
         // Subscribe to all the topics needed for method responses.
-        let topic_add_numbers_method_resp = format!("client/{}/Full/method/addNumbers/response", connection.client_id);
+        let topic_add_numbers_method_resp = format!("client/{}/full/method/addNumbers/response", connection.client_id);
         let subscription_id_add_numbers_method_resp = connection.subscribe(&topic_add_numbers_method_resp, message_received_tx.clone()).await;
         let subscription_id_add_numbers_method_resp = subscription_id_add_numbers_method_resp.unwrap_or_else(|_| -1);
-        let topic_do_something_method_resp = format!("client/{}/Full/method/doSomething/response", connection.client_id);
+        let topic_do_something_method_resp = format!("client/{}/full/method/doSomething/response", connection.client_id);
         let subscription_id_do_something_method_resp = connection.subscribe(&topic_do_something_method_resp, message_received_tx.clone()).await;
         let subscription_id_do_something_method_resp = subscription_id_do_something_method_resp.unwrap_or_else(|_| -1);
         
 
         // Subscribe to all the topics needed for signals.
-        let topic_today_is_signal = "Full/signal/todayIs";
+        let topic_today_is_signal = "full/signal/todayIs";
         let subscription_id_today_is_signal = connection.subscribe(&topic_today_is_signal, message_received_tx.clone()).await;
         let subscription_id_today_is_signal = subscription_id_today_is_signal.unwrap_or_else(|_| -1);
         
@@ -130,7 +130,7 @@ impl FullClient {
 
     /// The `addNumbers` method.
     /// Method arguments are packed into a AddNumbersRequestObject structure
-    /// and published to the `Full/method/addNumbers` MQTT topic.
+    /// and published to the `full/method/addNumbers` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn add_numbers(&mut self, first: i32, second: i32, third: Option<i32>)->Result<i32, MethodResultCode> {
@@ -145,8 +145,8 @@ impl FullClient {
             second: second,
             third: third,
         };
-        let response_topic = format!("client/{}/Full/method/addNumbers/response", self.client_id);
-        let _ = self.msg_publisher.publish_request_structure("Full/method/addNumbers".to_string(), &data, response_topic.as_str(), correlation_id).await;
+        let response_topic = format!("client/{}/full/method/addNumbers/response", self.client_id);
+        let _ = self.msg_publisher.publish_request_structure("full/method/addNumbers".to_string(), &data, response_topic.as_str(), correlation_id).await;
         let resp_obj = receiver.await.unwrap();
         Ok(resp_obj["sum"].as_i32().unwrap())
     }
@@ -176,7 +176,7 @@ impl FullClient {
     }
     /// The `doSomething` method.
     /// Method arguments are packed into a DoSomethingRequestObject structure
-    /// and published to the `Full/method/doSomething` MQTT topic.
+    /// and published to the `full/method/doSomething` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn do_something(&mut self, a_string: String)->Result<DoSomethingReturnValue, MethodResultCode> {
@@ -189,8 +189,8 @@ impl FullClient {
         let data = connection::payloads::DoSomethingRequestObject {
             aString: a_string,
         };
-        let response_topic = format!("client/{}/Full/method/doSomething/response", self.client_id);
-        let _ = self.msg_publisher.publish_request_structure("Full/method/doSomething".to_string(), &data, response_topic.as_str(), correlation_id).await;
+        let response_topic = format!("client/{}/full/method/doSomething/response", self.client_id);
+        let _ = self.msg_publisher.publish_request_structure("full/method/doSomething".to_string(), &data, response_topic.as_str(), correlation_id).await;
         let resp_obj = receiver.await.unwrap();
         Ok(DoSomethingReturnValue { 
             

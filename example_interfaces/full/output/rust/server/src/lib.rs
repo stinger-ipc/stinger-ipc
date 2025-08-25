@@ -82,7 +82,7 @@ impl FullServer {
         let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
         //let interface_info = String::from(r#"{"name": "Full", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}"#);
-        //connection.publish("Full/interface".to_string(), interface_info, 1).await;
+        //connection.publish("full/interface".to_string(), interface_info, 1).await;
 
         // Create a channel for messages to get from the Connection object to this FullClient object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -91,20 +91,20 @@ impl FullServer {
         let publisher = connection.get_publisher();
 
         // Create method handler struct
-        let subscription_id_add_numbers_method_req = connection.subscribe("Full/method/addNumbers", message_received_tx.clone()).await;
+        let subscription_id_add_numbers_method_req = connection.subscribe("full/method/addNumbers", message_received_tx.clone()).await;
         let subscription_id_add_numbers_method_req = subscription_id_add_numbers_method_req.unwrap_or_else(|_| -1);
-        let subscription_id_do_something_method_req = connection.subscribe("Full/method/doSomething", message_received_tx.clone()).await;
+        let subscription_id_do_something_method_req = connection.subscribe("full/method/doSomething", message_received_tx.clone()).await;
         let subscription_id_do_something_method_req = subscription_id_do_something_method_req.unwrap_or_else(|_| -1);
         
 
         
-        let subscription_id_favorite_number_property_update = connection.subscribe("Full/property/favorite_number/set_value", message_received_tx.clone()).await;
+        let subscription_id_favorite_number_property_update = connection.subscribe("full/property/favoriteNumber/setValue", message_received_tx.clone()).await;
         let subscription_id_favorite_number_property_update = subscription_id_favorite_number_property_update.unwrap_or_else(|_| -1);
         
-        let subscription_id_favorite_foods_property_update = connection.subscribe("Full/property/favorite_foods/set_value", message_received_tx.clone()).await;
+        let subscription_id_favorite_foods_property_update = connection.subscribe("full/property/favoriteFoods/setValue", message_received_tx.clone()).await;
         let subscription_id_favorite_foods_property_update = subscription_id_favorite_foods_property_update.unwrap_or_else(|_| -1);
         
-        let subscription_id_lunch_menu_property_update = connection.subscribe("Full/property/lunch_menu/set_value", message_received_tx.clone()).await;
+        let subscription_id_lunch_menu_property_update = connection.subscribe("full/property/lunchMenu/setValue", message_received_tx.clone()).await;
         let subscription_id_lunch_menu_property_update = subscription_id_lunch_menu_property_update.unwrap_or_else(|_| -1);
         
 
@@ -130,13 +130,13 @@ impl FullServer {
 
         
         let property_values = FullProperties {
-            favorite_number_topic: Arc::new(String::from("Full/property/favorite_number")),
+            favorite_number_topic: Arc::new(String::from("full/property/favoriteNumber/value")),
             
             favorite_number: Arc::new(Mutex::new(None)),
-            favorite_foods_topic: Arc::new(String::from("Full/property/favorite_foods")),
+            favorite_foods_topic: Arc::new(String::from("full/property/favoriteFoods/value")),
             favorite_foods: Arc::new(Mutex::new(None)),
             
-            lunch_menu_topic: Arc::new(String::from("Full/property/lunch_menu")),
+            lunch_menu_topic: Arc::new(String::from("full/property/lunchMenu/value")),
             lunch_menu: Arc::new(Mutex::new(None)),
             
         };
@@ -162,7 +162,7 @@ impl FullServer {
             dayOfWeek: day_of_week,
             
         };
-        self.msg_publisher.publish_structure("Full/signal/todayIs".to_string(), &data).await;
+        self.msg_publisher.publish_structure("full/signal/todayIs".to_string(), &data).await;
     }
     
 

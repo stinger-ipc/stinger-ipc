@@ -2,7 +2,7 @@ stingeripc:
   version: 0.0.7
 
 interface:
-  name: weather-forecast
+  name: weather
   version: 0.0.1
   title: NWS weather forecast
   summary: Current conditions, daily and hourly forecasts from the NWS API

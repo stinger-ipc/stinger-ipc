@@ -1,5 +1,5 @@
 use futures::{executor::block_on};
-use weather_forecast_client::weather-forecastClient;
+use weather_client::WeatherClient;
 use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
@@ -9,7 +9,7 @@ async fn main() {
     block_on(async {
         
         let mut connection = Connection::new_default_connection().await.expect("Failed to create connection");
-        let mut client = weather-forecastClient::new(&mut connection).await;
+        let mut client = WeatherClient::new(&mut connection).await;
 
         tokio::spawn(async move {
             println!("Making call to start connection loop");

@@ -1,5 +1,5 @@
 use futures::{executor::block_on};
-use {{stinger.name | snake_case}}_client::{{stinger.name}}Client;
+use {{stinger.name | snake_case}}_client::{{stinger.rust.client_struct_name}};
 use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
@@ -9,7 +9,7 @@ async fn main() {
     block_on(async {
         {%set broker = stinger.get_example_broker()%}
         let mut connection = Connection::new_{{broker.class_name|snake_case}}().await.expect("Failed to create connection");
-        let mut client = {{stinger.name}}Client::new(&mut connection).await;
+        let mut client = {{stinger.rust.client_struct_name}}::new(&mut connection).await;
 
         tokio::spawn(async move {
             println!("Making call to start connection loop");

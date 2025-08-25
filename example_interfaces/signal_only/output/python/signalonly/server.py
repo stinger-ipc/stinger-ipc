@@ -24,9 +24,7 @@ class SignalOnlyServer:
         self._logger.debug("Initializing SignalOnlyServer")
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
-        self._conn.set_last_will(
-            topic="SignalOnly/interface", payload=None, qos=1, retain=True
-        )
+        self._conn.set_last_will(topic="signalOnly/interface", payload=None, qos=1, retain=True)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
@@ -34,12 +32,7 @@ class SignalOnlyServer:
         pass
 
     def _publish_interface_info(self):
-        self._conn.publish(
-            "SignalOnly/interface",
-            """{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}""",
-            qos=1,
-            retain=True,
-        )
+        self._conn.publish("signalOnly/interface", """{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}""", qos=1, retain=True)
 
     def emit_anotherSignal(self, one: float, two: bool, three: str):
         """Server application code should call this method to emit the 'anotherSignal' signal."""
@@ -55,9 +48,7 @@ class SignalOnlyServer:
             "two": bool(two),
             "three": str(three),
         }
-        self._conn.publish(
-            "SignalOnly/signal/anotherSignal", json.dumps(payload), qos=1, retain=False
-        )
+        self._conn.publish("signalOnly/signal/anotherSignal", json.dumps(payload), qos=1, retain=False)
 
 
 class SignalOnlyServerBuilder:

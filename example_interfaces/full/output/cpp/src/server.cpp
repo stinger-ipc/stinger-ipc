@@ -24,9 +24,9 @@ FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker) : _broker(brok
         _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
     });
     
-    _broker->Subscribe("Full/method/addNumbers", 2);
+    _broker->Subscribe("full/method/addNumbers", 2);
     
-    _broker->Subscribe("Full/method/doSomething", 2);
+    _broker->Subscribe("full/method/doSomething", 2);
     
 }
 
@@ -37,9 +37,9 @@ void FullServer::_receiveMessage(
         const boost::optional<std::string> optResponseTopic)
 {
     
-    if (_broker->TopicMatchesSubscription(topic, "Full/method/addNumbers"))
+    if (_broker->TopicMatchesSubscription(topic, "full/method/addNumbers"))
     {
-        std::cout << "Message matched topic Full/method/addNumbers\n";
+        std::cout << "Message matched topic full/method/addNumbers\n";
         rapidjson::Document doc;
         try {
             if (_addNumbersHandler)
@@ -66,9 +66,9 @@ void FullServer::_receiveMessage(
         }
     }
     
-    if (_broker->TopicMatchesSubscription(topic, "Full/method/doSomething"))
+    if (_broker->TopicMatchesSubscription(topic, "full/method/doSomething"))
     {
-        std::cout << "Message matched topic Full/method/doSomething\n";
+        std::cout << "Message matched topic full/method/doSomething\n";
         rapidjson::Document doc;
         try {
             if (_doSomethingHandler)
@@ -112,20 +112,20 @@ boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optiona
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("Full/signal/todayIs", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
+    return _broker->Publish("full/signal/todayIs", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
 }
 
 
 
 void FullServer::registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func)
 {
-    std::cout << "Registered method to handle Full/method/addNumbers\n";
+    std::cout << "Registered method to handle full/method/addNumbers\n";
     _addNumbersHandler = func;
 }
 
 void FullServer::registerDoSomethingHandler(std::function<DoSomethingReturnValue(const std::string&)> func)
 {
-    std::cout << "Registered method to handle Full/method/doSomething\n";
+    std::cout << "Registered method to handle full/method/doSomething\n";
     _doSomethingHandler = func;
 }
 

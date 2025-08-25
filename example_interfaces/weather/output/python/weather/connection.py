@@ -43,37 +43,27 @@ class BrokerConnection(ABC):
         pass
 
     @abstractmethod
-    def set_last_will(
-        self,
-        topic: str,
-        payload: Optional[str] = None,
-        qos: int = 1,
-        retain: bool = True,
-    ):
+    def set_last_will(self, topic: str, payload: Optional[str] = None, qos: int = 1, retain: bool = True):
         pass
 
 
-class LocalConnection(BrokerConnection):
+class DefaultConnection(BrokerConnection):
 
     class PendingSubscription:
         def __init__(self, topic: str, subscription_id: int):
             self.topic = topic
             self.subscription_id
 
-    def __init__(self):
+    def __init__(self, host: str, port: int):
         self._logger = logging.getLogger("Connection")
         self._logger.setLevel(logging.DEBUG)
-        self._host: str = "127.0.0.1"
-        self._port: int = 1883
+        self._host: str = host
+        self._port: int = port
         self._last_will: Optional[Tuple[str, Optional[str], int, bool]] = None
-        self._queued_messages = (
-            Queue()
-        )  # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
-        self._queued_subscriptions = Queue()  # type: Queue[PendingSubscription]
+        self._queued_messages = Queue()  # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
+        self._queued_subscriptions = Queue()  # type: Queue[DefaultConnection.PendingSubscription]
         self._connected: bool = False
-        self._client = MqttClient(
-            CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5
-        )
+        self._client = MqttClient(CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5)
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._client.connect(self._host, self._port)
@@ -92,13 +82,7 @@ class LocalConnection(BrokerConnection):
         self._next_subscription_id += 1
         return sub_id
 
-    def set_last_will(
-        self,
-        topic: str,
-        payload: Optional[str] = None,
-        qos: int = 1,
-        retain: bool = True,
-    ):
+    def set_last_will(self, topic: str, payload: Optional[str] = None, qos: int = 1, retain: bool = True):
         self._last_will = (topic, payload, qos, retain)
         self._client.will_set(*self._last_will)
 
@@ -122,14 +106,10 @@ class LocalConnection(BrokerConnection):
                 except Empty:
                     break
                 else:
-                    self._logger.debug(
-                        "Connected and subscribing to %s", pending_subscr.topic
-                    )
+                    self._logger.debug("Connected and subscribing to %s", pending_subscr.topic)
                     sub_props = MqttProperties(PacketTypes.SUBSCRIBE)
                     sub_props.SubscriptionIdentifier = pending_subscr.subscription_id
-                    self._client.subscribe(
-                        pending_subscr.topic, qos=1, properties=sub_props
-                    )
+                    self._client.subscribe(pending_subscr.topic, qos=1, properties=sub_props)
             while not self._queued_messages.empty():
                 try:
                     msg = self._queued_messages.get_nowait()
@@ -153,6 +133,7 @@ class LocalConnection(BrokerConnection):
         return_value: Optional[MethodResultCode] = None,
         debug_info: Optional[str] = None,
     ):
+        """Publish a message to mqtt."""
         properties = MqttProperties(PacketTypes.PUBLISH)
         properties.ContentType = "application/json"
         if isinstance(correlation_id, str):
@@ -187,7 +168,7 @@ class LocalConnection(BrokerConnection):
             self._client.subscribe(topic, qos=1, properties=sub_props)
         else:
             self._logger.debug("Pending subscription to %s", topic)
-            self._queued_subscriptions.put(PendingSubscription(topic, sub_id))
+            self._queued_subscriptions.put(self.PendingSubscription(topic, sub_id))
         return sub_id
 
     def is_topic_sub(self, topic: str, sub: str) -> bool:

@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-This is the Server for the weather-forecast interface.
+This is the Server for the weather interface.
 */
 
 extern crate paho_mqtt as mqtt;
@@ -21,7 +21,7 @@ use serde_json;
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
-struct WeatherForecastServerSubscriptionIds {
+struct WeatherServerSubscriptionIds {
     refresh_daily_forecast_method_req: i32,
     refresh_hourly_forecast_method_req: i32,
     refresh_current_conditions_method_req: i32,
@@ -38,7 +38,7 @@ struct WeatherForecastServerSubscriptionIds {
 }
 
 #[derive(Clone)]
-struct WeatherForecastServerMethodHandlers {
+struct WeatherServerMethodHandlers {
     /// Pointer to a function to handle the refresh_daily_forecast method request.
     method_handler_for_refresh_daily_forecast: Arc<Mutex<Box<dyn Fn()->Result<(), MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the refresh_hourly_forecast method request.
@@ -49,7 +49,7 @@ struct WeatherForecastServerMethodHandlers {
 }
 
 #[derive(Clone)]
-struct WeatherForecastProperties {
+struct WeatherProperties {
     location_topic: Arc<String>,
     location: Arc<Mutex<Option<connection::payloads::LocationProperty>>>,current_temperature_topic: Arc<String>,
     current_temperature: Arc<Mutex<Option<f32>>>,
@@ -65,7 +65,7 @@ struct WeatherForecastProperties {
     
 }
 
-pub struct WeatherForecastServer {
+pub struct WeatherServer {
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
     msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
@@ -78,63 +78,63 @@ pub struct WeatherForecastServer {
     msg_publisher: MessagePublisher,
 
     /// Struct contains all the handlers for the various methods.
-    method_handlers: WeatherForecastServerMethodHandlers,
+    method_handlers: WeatherServerMethodHandlers,
     
     /// Struct contains all the properties.
-    properties: WeatherForecastProperties,
+    properties: WeatherProperties,
     
     /// Subscription IDs for all the subscriptions this makes.
-    subscription_ids: WeatherForecastServerSubscriptionIds,
+    subscription_ids: WeatherServerSubscriptionIds,
 
     /// Copy of MQTT Client ID
     client_id: String,
 }
 
-impl WeatherForecastServer {
+impl WeatherServer {
     pub async fn new(connection: &mut Connection) -> Self {
         let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
-        //let interface_info = String::from(r#"{"name": "weather-forecast", "summary": "Current conditions, daily and hourly forecasts from the NWS API", "title": "NWS weather forecast", "version": "0.0.1"}"#);
-        //connection.publish("weather-forecast/interface".to_string(), interface_info, 1).await;
+        //let interface_info = String::from(r#"{"name": "weather", "summary": "Current conditions, daily and hourly forecasts from the NWS API", "title": "NWS weather forecast", "version": "0.0.1"}"#);
+        //connection.publish("weather/interface".to_string(), interface_info, 1).await;
 
-        // Create a channel for messages to get from the Connection object to this WeatherForecastClient object.
+        // Create a channel for messages to get from the Connection object to this WeatherClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
         let publisher = connection.get_publisher();
 
         // Create method handler struct
-        let subscription_id_refresh_daily_forecast_method_req = connection.subscribe("weather-forecast/method/refresh_daily_forecast", message_received_tx.clone()).await;
+        let subscription_id_refresh_daily_forecast_method_req = connection.subscribe("weather/method/refreshDailyForecast", message_received_tx.clone()).await;
         let subscription_id_refresh_daily_forecast_method_req = subscription_id_refresh_daily_forecast_method_req.unwrap_or_else(|_| -1);
-        let subscription_id_refresh_hourly_forecast_method_req = connection.subscribe("weather-forecast/method/refresh_hourly_forecast", message_received_tx.clone()).await;
+        let subscription_id_refresh_hourly_forecast_method_req = connection.subscribe("weather/method/refreshHourlyForecast", message_received_tx.clone()).await;
         let subscription_id_refresh_hourly_forecast_method_req = subscription_id_refresh_hourly_forecast_method_req.unwrap_or_else(|_| -1);
-        let subscription_id_refresh_current_conditions_method_req = connection.subscribe("weather-forecast/method/refresh_current_conditions", message_received_tx.clone()).await;
+        let subscription_id_refresh_current_conditions_method_req = connection.subscribe("weather/method/refreshCurrentConditions", message_received_tx.clone()).await;
         let subscription_id_refresh_current_conditions_method_req = subscription_id_refresh_current_conditions_method_req.unwrap_or_else(|_| -1);
         
 
         
-        let subscription_id_location_property_update = connection.subscribe("weather-forecast/property/location/set_value", message_received_tx.clone()).await;
+        let subscription_id_location_property_update = connection.subscribe("weather/property/location/setValue", message_received_tx.clone()).await;
         let subscription_id_location_property_update = subscription_id_location_property_update.unwrap_or_else(|_| -1);
         
-        let subscription_id_current_condition_refresh_interval_property_update = connection.subscribe("weather-forecast/property/current_condition_refresh_interval/set_value", message_received_tx.clone()).await;
+        let subscription_id_current_condition_refresh_interval_property_update = connection.subscribe("weather/property/currentConditionRefreshInterval/setValue", message_received_tx.clone()).await;
         let subscription_id_current_condition_refresh_interval_property_update = subscription_id_current_condition_refresh_interval_property_update.unwrap_or_else(|_| -1);
         
-        let subscription_id_hourly_forecast_refresh_interval_property_update = connection.subscribe("weather-forecast/property/hourly_forecast_refresh_interval/set_value", message_received_tx.clone()).await;
+        let subscription_id_hourly_forecast_refresh_interval_property_update = connection.subscribe("weather/property/hourlyForecastRefreshInterval/setValue", message_received_tx.clone()).await;
         let subscription_id_hourly_forecast_refresh_interval_property_update = subscription_id_hourly_forecast_refresh_interval_property_update.unwrap_or_else(|_| -1);
         
-        let subscription_id_daily_forecast_refresh_interval_property_update = connection.subscribe("weather-forecast/property/daily_forecast_refresh_interval/set_value", message_received_tx.clone()).await;
+        let subscription_id_daily_forecast_refresh_interval_property_update = connection.subscribe("weather/property/dailyForecastRefreshInterval/setValue", message_received_tx.clone()).await;
         let subscription_id_daily_forecast_refresh_interval_property_update = subscription_id_daily_forecast_refresh_interval_property_update.unwrap_or_else(|_| -1);
         
 
         // Create structure for method handlers.
-        let method_handlers = WeatherForecastServerMethodHandlers {method_handler_for_refresh_daily_forecast: Arc::new(Mutex::new(Box::new( || { Err(MethodResultCode::ServerError) } ))),
+        let method_handlers = WeatherServerMethodHandlers {method_handler_for_refresh_daily_forecast: Arc::new(Mutex::new(Box::new( || { Err(MethodResultCode::ServerError) } ))),
             method_handler_for_refresh_hourly_forecast: Arc::new(Mutex::new(Box::new( || { Err(MethodResultCode::ServerError) } ))),
             method_handler_for_refresh_current_conditions: Arc::new(Mutex::new(Box::new( || { Err(MethodResultCode::ServerError) } ))),
             
         };
 
         // Create structure for subscription ids.
-        let sub_ids = WeatherForecastServerSubscriptionIds {
+        let sub_ids = WeatherServerSubscriptionIds {
             refresh_daily_forecast_method_req: subscription_id_refresh_daily_forecast_method_req,
             refresh_hourly_forecast_method_req: subscription_id_refresh_hourly_forecast_method_req,
             refresh_current_conditions_method_req: subscription_id_refresh_current_conditions_method_req,
@@ -151,35 +151,35 @@ impl WeatherForecastServer {
         };
 
         
-        let property_values = WeatherForecastProperties {
-            location_topic: Arc::new(String::from("weather-forecast/property/location")),
+        let property_values = WeatherProperties {
+            location_topic: Arc::new(String::from("weather/property/location/value")),
             location: Arc::new(Mutex::new(None)),
             
-            current_temperature_topic: Arc::new(String::from("weather-forecast/property/current_temperature")),
+            current_temperature_topic: Arc::new(String::from("weather/property/currentTemperature/value")),
             
             current_temperature: Arc::new(Mutex::new(None)),
-            current_condition_topic: Arc::new(String::from("weather-forecast/property/current_condition")),
+            current_condition_topic: Arc::new(String::from("weather/property/currentCondition/value")),
             current_condition: Arc::new(Mutex::new(None)),
             
-            daily_forecast_topic: Arc::new(String::from("weather-forecast/property/daily_forecast")),
+            daily_forecast_topic: Arc::new(String::from("weather/property/dailyForecast/value")),
             daily_forecast: Arc::new(Mutex::new(None)),
             
-            hourly_forecast_topic: Arc::new(String::from("weather-forecast/property/hourly_forecast")),
+            hourly_forecast_topic: Arc::new(String::from("weather/property/hourlyForecast/value")),
             hourly_forecast: Arc::new(Mutex::new(None)),
             
-            current_condition_refresh_interval_topic: Arc::new(String::from("weather-forecast/property/current_condition_refresh_interval")),
+            current_condition_refresh_interval_topic: Arc::new(String::from("weather/property/currentConditionRefreshInterval/value")),
             
             current_condition_refresh_interval: Arc::new(Mutex::new(None)),
-            hourly_forecast_refresh_interval_topic: Arc::new(String::from("weather-forecast/property/hourly_forecast_refresh_interval")),
+            hourly_forecast_refresh_interval_topic: Arc::new(String::from("weather/property/hourlyForecastRefreshInterval/value")),
             
             hourly_forecast_refresh_interval: Arc::new(Mutex::new(None)),
-            daily_forecast_refresh_interval_topic: Arc::new(String::from("weather-forecast/property/daily_forecast_refresh_interval")),
+            daily_forecast_refresh_interval_topic: Arc::new(String::from("weather/property/dailyForecastRefreshInterval/value")),
             
             daily_forecast_refresh_interval: Arc::new(Mutex::new(None)),
         };
         
 
-        WeatherForecastServer {
+        WeatherServer {
 
             msg_streamer_rx: Some(message_received_rx),
             msg_streamer_tx: message_received_tx,
@@ -197,7 +197,7 @@ impl WeatherForecastServer {
             current_time: current_time,
             
         };
-        self.msg_publisher.publish_structure("weather-forecast/signal/current_time".to_string(), &data).await;
+        self.msg_publisher.publish_structure("weather/signal/currentTime".to_string(), &data).await;
     }
     
 
@@ -213,7 +213,7 @@ impl WeatherForecastServer {
     
 
 
-    async fn handle_refresh_daily_forecast_request(publisher: &mut MessagePublisher, handlers: &mut WeatherForecastServerMethodHandlers, msg: mqtt::Message) {
+    async fn handle_refresh_daily_forecast_request(publisher: &mut MessagePublisher, handlers: &mut WeatherServerMethodHandlers, msg: mqtt::Message) {
         let props = msg.properties();
         let opt_corr_id_bin: Option<Vec<u8>> = props.get_binary(mqtt::PropertyCode::CorrelationData);
         let opt_resp_topic = props.get_string(mqtt::PropertyCode::ResponseTopic);
@@ -231,7 +231,7 @@ impl WeatherForecastServer {
             eprintln!("No response topic found in message properties.");
         }
     }
-    async fn handle_refresh_hourly_forecast_request(publisher: &mut MessagePublisher, handlers: &mut WeatherForecastServerMethodHandlers, msg: mqtt::Message) {
+    async fn handle_refresh_hourly_forecast_request(publisher: &mut MessagePublisher, handlers: &mut WeatherServerMethodHandlers, msg: mqtt::Message) {
         let props = msg.properties();
         let opt_corr_id_bin: Option<Vec<u8>> = props.get_binary(mqtt::PropertyCode::CorrelationData);
         let opt_resp_topic = props.get_string(mqtt::PropertyCode::ResponseTopic);
@@ -249,7 +249,7 @@ impl WeatherForecastServer {
             eprintln!("No response topic found in message properties.");
         }
     }
-    async fn handle_refresh_current_conditions_request(publisher: &mut MessagePublisher, handlers: &mut WeatherForecastServerMethodHandlers, msg: mqtt::Message) {
+    async fn handle_refresh_current_conditions_request(publisher: &mut MessagePublisher, handlers: &mut WeatherServerMethodHandlers, msg: mqtt::Message) {
         let props = msg.properties();
         let opt_corr_id_bin: Option<Vec<u8>> = props.get_binary(mqtt::PropertyCode::CorrelationData);
         let opt_resp_topic = props.get_string(mqtt::PropertyCode::ResponseTopic);
@@ -286,7 +286,7 @@ impl WeatherForecastServer {
         let data2 = new_data;
         
         let _ = tokio::spawn(async move {
-            WeatherForecastServer::publish_location_value(publisher2, topic2, data2).await;
+            WeatherServer::publish_location_value(publisher2, topic2, data2).await;
         });
     }
     
@@ -302,7 +302,7 @@ impl WeatherForecastServer {
         let topic2 = self.properties.location_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property location of type connection::payloads::LocationProperty to {}", topic2);
-            WeatherForecastServer::publish_location_value(publisher2, topic2, data).await;
+            WeatherServer::publish_location_value(publisher2, topic2, data).await;
         });
     }
     
@@ -327,7 +327,7 @@ impl WeatherForecastServer {
         let topic2 = self.properties.current_temperature_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property current_temperature of type f32 to {}", topic2);
-            WeatherForecastServer::publish_current_temperature_value(publisher2, topic2, data).await;
+            WeatherServer::publish_current_temperature_value(publisher2, topic2, data).await;
         });
     }
     
@@ -349,7 +349,7 @@ impl WeatherForecastServer {
         let topic2 = self.properties.current_condition_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property current_condition of type connection::payloads::CurrentConditionProperty to {}", topic2);
-            WeatherForecastServer::publish_current_condition_value(publisher2, topic2, data).await;
+            WeatherServer::publish_current_condition_value(publisher2, topic2, data).await;
         });
     }
     
@@ -371,7 +371,7 @@ impl WeatherForecastServer {
         let topic2 = self.properties.daily_forecast_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property daily_forecast of type connection::payloads::DailyForecastProperty to {}", topic2);
-            WeatherForecastServer::publish_daily_forecast_value(publisher2, topic2, data).await;
+            WeatherServer::publish_daily_forecast_value(publisher2, topic2, data).await;
         });
     }
     
@@ -393,7 +393,7 @@ impl WeatherForecastServer {
         let topic2 = self.properties.hourly_forecast_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property hourly_forecast of type connection::payloads::HourlyForecastProperty to {}", topic2);
-            WeatherForecastServer::publish_hourly_forecast_value(publisher2, topic2, data).await;
+            WeatherServer::publish_hourly_forecast_value(publisher2, topic2, data).await;
         });
     }
     
@@ -416,7 +416,7 @@ impl WeatherForecastServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
         let _ = tokio::spawn(async move {
-            WeatherForecastServer::publish_current_condition_refresh_interval_value(publisher2, topic2, data2).await;
+            WeatherServer::publish_current_condition_refresh_interval_value(publisher2, topic2, data2).await;
         });
     }
     
@@ -432,7 +432,7 @@ impl WeatherForecastServer {
         let topic2 = self.properties.current_condition_refresh_interval_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property current_condition_refresh_interval of type i32 to {}", topic2);
-            WeatherForecastServer::publish_current_condition_refresh_interval_value(publisher2, topic2, data).await;
+            WeatherServer::publish_current_condition_refresh_interval_value(publisher2, topic2, data).await;
         });
     }
     
@@ -455,7 +455,7 @@ impl WeatherForecastServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
         let _ = tokio::spawn(async move {
-            WeatherForecastServer::publish_hourly_forecast_refresh_interval_value(publisher2, topic2, data2).await;
+            WeatherServer::publish_hourly_forecast_refresh_interval_value(publisher2, topic2, data2).await;
         });
     }
     
@@ -471,7 +471,7 @@ impl WeatherForecastServer {
         let topic2 = self.properties.hourly_forecast_refresh_interval_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property hourly_forecast_refresh_interval of type i32 to {}", topic2);
-            WeatherForecastServer::publish_hourly_forecast_refresh_interval_value(publisher2, topic2, data).await;
+            WeatherServer::publish_hourly_forecast_refresh_interval_value(publisher2, topic2, data).await;
         });
     }
     
@@ -494,7 +494,7 @@ impl WeatherForecastServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
         let _ = tokio::spawn(async move {
-            WeatherForecastServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data2).await;
+            WeatherServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data2).await;
         });
     }
     
@@ -510,7 +510,7 @@ impl WeatherForecastServer {
         let topic2 = self.properties.daily_forecast_refresh_interval_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property daily_forecast_refresh_interval of type i32 to {}", topic2);
-            WeatherForecastServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data).await;
+            WeatherServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data).await;
         });
     }
     
@@ -531,25 +531,25 @@ impl WeatherForecastServer {
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 if msg.subscription_id == sub_ids.refresh_daily_forecast_method_req {
-                    WeatherForecastServer::handle_refresh_daily_forecast_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    WeatherServer::handle_refresh_daily_forecast_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.refresh_hourly_forecast_method_req {
-                    WeatherForecastServer::handle_refresh_hourly_forecast_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    WeatherServer::handle_refresh_hourly_forecast_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.refresh_current_conditions_method_req {
-                    WeatherForecastServer::handle_refresh_current_conditions_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    WeatherServer::handle_refresh_current_conditions_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.location_property_update {
-                    WeatherForecastServer::update_location_value(&mut publisher, properties.location_topic.clone(), properties.location.clone(), msg.message).await;
+                    WeatherServer::update_location_value(&mut publisher, properties.location_topic.clone(), properties.location.clone(), msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.current_condition_refresh_interval_property_update {
-                    WeatherForecastServer::update_current_condition_refresh_interval_value(&mut publisher, properties.current_condition_refresh_interval_topic.clone(), properties.current_condition_refresh_interval.clone(), msg.message).await;
+                    WeatherServer::update_current_condition_refresh_interval_value(&mut publisher, properties.current_condition_refresh_interval_topic.clone(), properties.current_condition_refresh_interval.clone(), msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.hourly_forecast_refresh_interval_property_update {
-                    WeatherForecastServer::update_hourly_forecast_refresh_interval_value(&mut publisher, properties.hourly_forecast_refresh_interval_topic.clone(), properties.hourly_forecast_refresh_interval.clone(), msg.message).await;
+                    WeatherServer::update_hourly_forecast_refresh_interval_value(&mut publisher, properties.hourly_forecast_refresh_interval_topic.clone(), properties.hourly_forecast_refresh_interval.clone(), msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.daily_forecast_refresh_interval_property_update {
-                    WeatherForecastServer::update_daily_forecast_refresh_interval_value(&mut publisher, properties.daily_forecast_refresh_interval_topic.clone(), properties.daily_forecast_refresh_interval.clone(), msg.message).await;
+                    WeatherServer::update_daily_forecast_refresh_interval_value(&mut publisher, properties.daily_forecast_refresh_interval_topic.clone(), properties.daily_forecast_refresh_interval.clone(), msg.message).await;
                 }
             }   
         });

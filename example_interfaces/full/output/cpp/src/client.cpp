@@ -26,16 +26,16 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker) : _broker(brok
     {
         _receiveMessage(topic, payload, optCorrelationId, optResultCode);
     });
-    _broker->Subscribe("Full/signal/todayIs", 1);
+    _broker->Subscribe("full/signal/todayIs", 1);
     
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/Full/method/addNumbers/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/full/method/addNumbers/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/Full/method/doSomething/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/full/method/doSomething/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
 }
@@ -46,7 +46,7 @@ void FullClient::_receiveMessage(
         const boost::optional<std::string> optCorrelationId, 
         const boost::optional<MethodResultCode> optResultCode)
 {
-    if (_broker->TopicMatchesSubscription(topic, "Full/signal/todayIs"))
+    if (_broker->TopicMatchesSubscription(topic, "full/signal/todayIs"))
     {
         //Log("Handling todayIs signal");
         rapidjson::Document doc;
@@ -102,12 +102,12 @@ void FullClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if (_broker->TopicMatchesSubscription(topic, "client/+/Full/method/addNumbers/response") && optCorrelationId)
+    if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/addNumbers/response") && optCorrelationId)
     {
         std::cout << "Matched topic for addNumbers response" << std::endl;
         _handleAddNumbersResponse(topic, payload, *optCorrelationId);
     }
-    else if (_broker->TopicMatchesSubscription(topic, "client/+/Full/method/doSomething/response") && optCorrelationId)
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/doSomething/response") && optCorrelationId)
     {
         std::cout << "Matched topic for doSomething response" << std::endl;
         _handleDoSomethingResponse(topic, payload, *optCorrelationId);
@@ -146,8 +146,8 @@ boost::future<int> FullClient::addNumbers(int first, int second, boost::optional
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/Full/method/addNumbers/response") % _broker->GetClientId();
-    _broker->Publish("Full/method/addNumbers", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
+    responseTopicStringStream << boost::format("client/%1%/full/method/addNumbers/response") % _broker->GetClientId();
+    _broker->Publish("full/method/addNumbers", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
 
     return _pendingAddNumbersMethodCalls[correlationId].get_future();
 }
@@ -206,8 +206,8 @@ boost::future<DoSomethingReturnValue> FullClient::doSomething(const std::string&
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/Full/method/doSomething/response") % _broker->GetClientId();
-    _broker->Publish("Full/method/doSomething", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
+    responseTopicStringStream << boost::format("client/%1%/full/method/doSomething/response") % _broker->GetClientId();
+    _broker->Publish("full/method/doSomething", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
 
     return _pendingDoSomethingMethodCalls[correlationId].get_future();
 }
