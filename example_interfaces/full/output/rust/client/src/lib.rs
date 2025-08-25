@@ -140,11 +140,13 @@ impl FullClient {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
             hashmap.insert(correlation_id.clone(), sender);
         }
+
         let data = connection::payloads::AddNumbersRequestObject {
             first: first,
             second: second,
             third: third,
         };
+
         let response_topic = format!("client/{}/full/method/addNumbers/response", self.client_id);
         let _ = self.msg_publisher.publish_request_structure("full/method/addNumbers".to_string(), &data, response_topic.as_str(), correlation_id).await;
         let resp_obj = receiver.await.unwrap();
@@ -186,13 +188,15 @@ impl FullClient {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
             hashmap.insert(correlation_id.clone(), sender);
         }
+
         let data = connection::payloads::DoSomethingRequestObject {
             aString: a_string,
         };
+
         let response_topic = format!("client/{}/full/method/doSomething/response", self.client_id);
         let _ = self.msg_publisher.publish_request_structure("full/method/doSomething".to_string(), &data, response_topic.as_str(), correlation_id).await;
         let resp_obj = receiver.await.unwrap();
-        Ok(DoSomethingReturnValue { 
+        Ok(DoSomethingReturnValue {
             
             label: resp_obj["label"].as_str().unwrap().to_string(),
         
@@ -202,6 +206,7 @@ impl FullClient {
             day: connection::payloads::DayOfTheWeek::from_u32(resp_obj["day"].as_u32().unwrap()).unwrap(),
             
         })
+        
     }
 
     /// Handler for responses to `doSomething` method calls.

@@ -7,16 +7,16 @@ BASE_DIR=$(dirname $0)
 
 function generate_python() {
     echo
-    echo "----------- Generating Python for {$IFACE_NAME} ----------------"
+    echo "----------- Generating Python for ${IFACE_NAME} ----------------"
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
-    uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
-    uv run mypy --install-types ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    uv run pythongen ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    #uv run mypy ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
     uv run black ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
 }
 
-#generate_python signal_only
-#generate_python full
+generate_python signal_only
+generate_python full
 generate_python weather
 
 # C++
@@ -33,8 +33,8 @@ function generate_cpp() {
     fi
 }
 
-#generate_cpp full
-#generate_cpp signal_only
+generate_cpp full
+generate_cpp signal_only
 
 # Rust
 
@@ -43,15 +43,15 @@ function generate_rust() {
     echo "----------- Generating Rust for ${IFACE_NAME}----------------"
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
-    uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
+    uv run rustgen ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     if [ $? -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example client)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example ${IFACE_NAME}_server_example)
     fi
 }
 
-#generate_rust signal_only
-#generate_rust full
+generate_rust signal_only
+generate_rust full
 generate_rust weather
 
 (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example pub_and_recv)
@@ -73,8 +73,8 @@ function generate_markdown() {
     IFACE_NAME=$1
 
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
-    uv run ${BASE_DIR}/markdown_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
+    uv run markdowngen ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
 }
 
-#generate_markdown full
+generate_markdown full
 generate_markdown weather

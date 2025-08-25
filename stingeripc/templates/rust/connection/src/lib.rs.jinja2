@@ -99,7 +99,7 @@ impl MessagePublisher {
             .payload(payload)
             .properties(pub_props)
             .qos(QOS_1)
-            .retain(True)
+            .retained(true)
             .finalize();
         self.publish(msg).await
     }

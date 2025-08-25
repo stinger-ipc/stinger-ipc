@@ -270,7 +270,7 @@ impl WeatherServer {
     
     async fn publish_location_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::LocationProperty)
     {
-        let _pub_result = publisher.publish_structure(topic, &data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &data).await;
         
     }
     
@@ -311,7 +311,7 @@ impl WeatherServer {
         let new_data = CurrentTemperatureProperty {
             temperature_f: data,
         };
-        let _pub_result = publisher.publish_structure(topic, &new_data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &new_data).await;
         
     }
     
@@ -333,7 +333,7 @@ impl WeatherServer {
     
     async fn publish_current_condition_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::CurrentConditionProperty)
     {
-        let _pub_result = publisher.publish_structure(topic, &data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &data).await;
         
     }
     
@@ -355,7 +355,7 @@ impl WeatherServer {
     
     async fn publish_daily_forecast_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::DailyForecastProperty)
     {
-        let _pub_result = publisher.publish_structure(topic, &data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &data).await;
         
     }
     
@@ -377,7 +377,7 @@ impl WeatherServer {
     
     async fn publish_hourly_forecast_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::HourlyForecastProperty)
     {
-        let _pub_result = publisher.publish_structure(topic, &data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &data).await;
         
     }
     
@@ -402,7 +402,7 @@ impl WeatherServer {
         let new_data = CurrentConditionRefreshIntervalProperty {
             seconds: data,
         };
-        let _pub_result = publisher.publish_structure(topic, &new_data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &new_data).await;
         
     }
     
@@ -441,7 +441,7 @@ impl WeatherServer {
         let new_data = HourlyForecastRefreshIntervalProperty {
             seconds: data,
         };
-        let _pub_result = publisher.publish_structure(topic, &new_data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &new_data).await;
         
     }
     
@@ -480,7 +480,7 @@ impl WeatherServer {
         let new_data = DailyForecastRefreshIntervalProperty {
             seconds: data,
         };
-        let _pub_result = publisher.publish_structure(topic, &new_data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &new_data).await;
         
     }
     

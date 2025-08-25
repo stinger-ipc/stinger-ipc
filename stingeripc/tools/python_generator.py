@@ -3,14 +3,11 @@ import sys
 import yaml
 import os.path
 
-libpath = os.path.normpath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")
-)
-sys.path.append(libpath)
+
 
 from stingeripc import StingerInterface
 
-if __name__ == "__main__":
+def main():
     inname = sys.argv[1]
     outdir = sys.argv[2]
     with open(inname, "r") as f:
@@ -20,7 +17,7 @@ if __name__ == "__main__":
     }
     t = jj2.CodeTemplator(output_dir=os.path.dirname(outdir))
     t.add_template_dir(
-        os.path.join(os.path.dirname(__file__), "../stingeripc", "templates", "python")
+        os.path.join(os.path.dirname(__file__), "../templates", "python")
     )
     for output_file in [
         "pyproject.toml",
@@ -36,8 +33,9 @@ if __name__ == "__main__":
         "__init__.py",
         "method_codes.py",
     ]:
-        print(f"CREATE {output_file}")
         t.render_template(f"{output_file}.jinja2", os.path.join(stinger.name.lower(), output_file), **params)
 
-    print(f"CREATE interface_types.py")
     t.render_template("interface_types.py.jinja2", os.path.join(stinger.name.lower(), f"{stinger.get_enum_module_name()}.py"), **params)
+
+if __name__ == "__main__":
+    main()

@@ -220,7 +220,7 @@ impl FullServer {
         let new_data = FavoriteNumberProperty {
             number: data,
         };
-        let _pub_result = publisher.publish_structure(topic, &new_data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &new_data).await;
         
     }
     
@@ -256,7 +256,7 @@ impl FullServer {
     
     async fn publish_favorite_foods_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::FavoriteFoodsProperty)
     {
-        let _pub_result = publisher.publish_structure(topic, &data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &data).await;
         
     }
     
@@ -294,7 +294,7 @@ impl FullServer {
     
     async fn publish_lunch_menu_value(mut publisher: MessagePublisher, topic: String, data: connection::payloads::LunchMenuProperty)
     {
-        let _pub_result = publisher.publish_structure(topic, &data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &data).await;
         
     }
     

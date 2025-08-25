@@ -1,6 +1,9 @@
 
 # Python
 __pycache__
+dist
+stinger_ipc.egg-info
+
 
 # Rust
 stingeripc/templates/rust/**/target

@@ -4,14 +4,9 @@ import yaml
 import os
 import shutil
 
-libpath = os.path.normpath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")
-)
-sys.path.append(libpath)
-
 from stingeripc import StingerInterface
 
-if __name__ == "__main__":
+def main():
     inname = sys.argv[1] # Path to the stinger file
     outdir = sys.argv[2] # Directory to which the files should be written
     with open(inname, "r") as f:
@@ -23,7 +18,7 @@ if __name__ == "__main__":
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
-    template_dir = os.path.join(os.path.dirname(__file__), "../stingeripc", "templates", "rust")
+    template_dir = os.path.join(os.path.dirname(__file__), "../templates", "rust")
 
     t = jj2.CodeTemplator(output_dir=os.path.dirname(outdir))
     t.add_template_dir(template_dir)
@@ -50,3 +45,6 @@ if __name__ == "__main__":
                 print(f"COPY:  {entry_local_path}")
 
     recursive_render_templates(".")
+
+if __name__ == "__main__":
+    main()

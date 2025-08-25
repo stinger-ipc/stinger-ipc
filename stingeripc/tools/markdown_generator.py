@@ -2,14 +2,9 @@ import os
 import sys
 from jacobsjinjatoo import templator as jj2
 
-libpath = os.path.normpath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")
-)
-sys.path.append(libpath)
-
 from stingeripc import StingerInterface
 
-if __name__ == "__main__":
+def main():
     inname = sys.argv[1]
     outdir = sys.argv[2]
     with open(inname, "r") as f:
@@ -19,11 +14,12 @@ if __name__ == "__main__":
     }
     t = jj2.CodeTemplator(output_dir=os.path.dirname(outdir))
     t.add_template_dir(
-        os.path.join(os.path.dirname(__file__), "../stingeripc", "templates", "markdown")
+        os.path.join(os.path.dirname(__file__), "../templates", "markdown")
     )
     for output_file in [
         "index.md",
     ]:
-        print(f"Generating {output_file}...")
         t.render_template(f"{output_file}.jinja2", output_file, **params)
 
+if __name__ == '__main__':
+    main()
