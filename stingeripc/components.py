@@ -856,7 +856,7 @@ class Broker:
 
     @property
     def class_name(self) -> str:
-        return f"{stringcase.pascalcase(self.name)}Connection"
+        return f"{stringmanip.upper_camel_case(self.name)}Connection"
 
     @property
     def hostname(self) -> str | None:
