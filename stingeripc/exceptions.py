@@ -1,3 +1,2 @@
-
 class InvalidStingerStructure(Exception):
     pass

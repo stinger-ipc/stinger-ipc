@@ -30,14 +30,14 @@ logging.basicConfig(level=logging.DEBUG)
 {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Callable[[{{prop.python_class}}], None]
 {%endfor%}
 
-class {{stinger.name}}Client:
+class {{stinger.python.client_class_name}}:
 
     def __init__(self, connection: BrokerConnection):
-        """ Constructor for a `{{stinger.name}}Client` object.
+        """ Constructor for a `{{stinger.python.client_class_name}}` object.
         """
-        self._logger = logging.getLogger('{{stinger.name}}Client')
+        self._logger = logging.getLogger('{{stinger.python.client_class_name}}')
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing {{stinger.name}}Client")
+        self._logger.debug("Initializing {{stinger.python.client_class_name}}")
         self._client_id = str(uuid4())
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
@@ -226,13 +226,13 @@ class {{stinger.name}}Client:
             fut.set_exception(Exception("No return value set"))
     {%endfor%}
 
-class {{stinger.name}}ClientBuilder:
+class {{stinger.python.client_class_name}}Builder:
 
     def __init__(self, broker: BrokerConnection):
-        """ Creates a new {{stinger.name}}ClientBuilder.
+        """ Creates a new {{stinger.python.client_class_name}}Builder.
         """
         self._conn = broker
-        self._logger = logging.getLogger('{{stinger.name}}ClientBuilder')
+        self._logger = logging.getLogger('{{stinger.python.client_class_name}}Builder')
         {%for sig_name in stinger.signals.keys()-%}
         self._signal_recv_callbacks_for_{{sig_name | snake_case}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
         {%endfor-%}
@@ -254,11 +254,11 @@ class {{stinger.name}}ClientBuilder:
         self._property_updated_callbacks_for_{{prop_name | snake_case}}.append(handler)
     {%endfor%}
 
-    def build(self) -> {{stinger.name}}Client:
-        """ Builds a new {{stinger.name}}Client.
+    def build(self) -> {{stinger.python.client_class_name}}:
+        """ Builds a new {{stinger.python.client_class_name}}.
         """
-        self._logger.debug("Building {{stinger.name}}Client")
-        client = {{stinger.name}}Client(self._conn)
+        self._logger.debug("Building {{stinger.python.client_class_name}}")
+        client = {{stinger.python.client_class_name}}(self._conn)
         {%for sig_name, sig in stinger.signals.items()%}
         for cb in self._signal_recv_callbacks_for_{{sig_name | snake_case }}:
             client.receive_{{sig_name | snake_case}}(cb)
@@ -275,7 +275,7 @@ if __name__ == '__main__':
 
     {%set broker = stinger.get_example_broker()%}from connection import {{broker.class_name}}
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
-    client_builder = {{stinger.name}}ClientBuilder(conn)
+    client_builder = {{stinger.python.client_class_name}}Builder(conn)
     {%for sig_name, sig in stinger.signals.items()%}
     @client_builder.receive_{{sig_name | snake_case }}
     def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):

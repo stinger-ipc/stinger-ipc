@@ -2,10 +2,10 @@
 DO NOT MODIFY THIS FILE .  It is automatically generated and changes will be over-written
 on the next generation.
 
-It contains enumerations used by the Example interface.
+It contains enumerations used by the Full interface.
 */
 use futures::{executor::block_on};
-use example_server::ExampleServer;
+use full_server::FullServer;
 use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
@@ -37,7 +37,7 @@ async fn main() {
     block_on(async {
         
         let mut connection = Connection::new_local_connection().await.unwrap();
-        let mut server = ExampleServer::new(&mut connection).await;
+        let mut server = FullServer::new(&mut connection).await;
 
         let loop_task = tokio::spawn(async move {
             println!("Making call to start connection loop");

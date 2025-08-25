@@ -63,7 +63,7 @@ impl SignalOnlyServer {
         let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
         //let interface_info = String::from(r#"{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}"#);
-        //connection.publish("SignalOnly/interface".to_string(), interface_info, 1).await;
+        //connection.publish("signalOnly/interface".to_string(), interface_info, 1).await;
 
         // Create a channel for messages to get from the Connection object to this SignalOnlyClient object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -109,7 +109,7 @@ impl SignalOnlyServer {
             three: three,
             
         };
-        self.msg_publisher.publish_structure("SignalOnly/signal/anotherSignal".to_string(), &data).await;
+        self.msg_publisher.publish_structure("signalOnly/signal/anotherSignal".to_string(), &data).await;
     }
     
 

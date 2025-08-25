@@ -24,5 +24,6 @@ if __name__ == "__main__":
     for output_file in [
         "index.md",
     ]:
+        print(f"Generating {output_file}...")
         t.render_template(f"{output_file}.jinja2", output_file, **params)
 

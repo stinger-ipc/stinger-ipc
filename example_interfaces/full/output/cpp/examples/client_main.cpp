@@ -7,8 +7,8 @@
 int main(int argc, char** argv) {
 
     
-    auto conn = std::make_shared<LocalConnection>("ExampleClient-demo");
-    ExampleClient client(conn);
+    auto conn = std::make_shared<LocalConnection>("FullClient-demo");
+    FullClient client(conn);
     client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek) {
         std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" << "None" <<  std::endl;
     });

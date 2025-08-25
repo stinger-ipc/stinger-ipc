@@ -17,6 +17,7 @@ from __future__ import annotations
 from enum import Enum
 from .exceptions import InvalidStingerStructure
 
+
 class ArgType(Enum):
     UNKNOWN = 0
     PRIMITIVE = 1
@@ -25,7 +26,7 @@ class ArgType(Enum):
 
 
 class ArgPrimitiveType(Enum):
-    """ This is not an Arg, rather it is an enumeration of different primitives that an ArgPrimitive can represent."""
+    """This is not an Arg, rather it is an enumeration of different primitives that an ArgPrimitive can represent."""
 
     BOOLEAN = 0
     INTEGER = 1
@@ -40,7 +41,7 @@ class ArgPrimitiveType(Enum):
             raise InvalidStingerStructure(f"No ArgType called '{arg_type}'")
 
     @classmethod
-    def to_python_type(cls, arg_type: ArgPrimitiveType, optional: bool=False) -> str:
+    def to_python_type(cls, arg_type: ArgPrimitiveType, optional: bool = False) -> str:
         if optional:
             return f"{cls.to_python_type(arg_type, optional=False)} | None"
         if arg_type == cls.BOOLEAN:
@@ -54,7 +55,7 @@ class ArgPrimitiveType(Enum):
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod
-    def to_rust_type(cls, arg_type: ArgPrimitiveType, optional:bool=False) -> str:
+    def to_rust_type(cls, arg_type: ArgPrimitiveType, optional: bool = False) -> str:
         if optional:
             return f"Option<{cls.to_rust_type(arg_type, optional=False)}>"
         if arg_type == cls.BOOLEAN:
@@ -80,7 +81,7 @@ class ArgPrimitiveType(Enum):
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod
-    def to_cpp_type(cls, arg_type: ArgPrimitiveType, optional: bool=False) -> str:
+    def to_cpp_type(cls, arg_type: ArgPrimitiveType, optional: bool = False) -> str:
         if arg_type == cls.BOOLEAN:
             if optional:
                 return "boost::optional<bool>"

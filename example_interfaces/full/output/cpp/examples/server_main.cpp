@@ -8,8 +8,8 @@
 int main(int argc, char** argv) {
 
     
-    auto conn = std::make_shared<LocalConnection>("ExampleServe-demo");
-    ExampleServer server(conn);
+    auto conn = std::make_shared<LocalConnection>("FullServe-demo");
+    FullServer server(conn);
     auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::MONDAY);
     todayIsFuture.wait();
     server.registerAddNumbersHandler([](int unused1, int unused2, boost::optional<int> unused3) -> int

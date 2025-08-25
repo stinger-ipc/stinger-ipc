@@ -90,6 +90,20 @@ impl MessagePublisher {
         self.publish(msg).await
     }
 
+    pub async fn publish_retained_structure<T: Serialize>(&mut self, topic: String, data: &T) -> Result<(), SendError<Message>> {
+        let payload = serde_json::to_string(data).unwrap().into_bytes();
+        let mut pub_props = mqtt::Properties::new();
+        let _ = pub_props.push_string(mqtt::PropertyCode::ContentType, "application/json");
+        let msg = mqtt::MessageBuilder::new()
+            .topic(topic)
+            .payload(payload)
+            .properties(pub_props)
+            .qos(QOS_1)
+            .retain(True)
+            .finalize();
+        self.publish(msg).await
+    }
+
     pub async fn publish_request_structure<T: Serialize>(&mut self, topic: String, data: &T, response_topic: &str, correlation_id: Uuid) -> Result<(), SendError<Message>> {
         println!("Publishing request structure to {} with responses going to {}", topic, response_topic);
         let uuid_vec: Vec<u8> = correlation_id.as_bytes().to_vec();

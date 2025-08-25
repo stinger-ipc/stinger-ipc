@@ -1,0 +1,25 @@
+[package]
+name = "weather_client"
+version = "0.0.1"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+connection = { path = "../connection" }
+futures = "0.3"
+json = "0.12.4"
+paho-mqtt = "0.13.3"
+num-derive = "0.4.2"
+num-traits = "0.2.19"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.142"
+
+[dependencies.uuid]
+version = "1.2.1"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]

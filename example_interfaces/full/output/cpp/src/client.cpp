@@ -17,36 +17,36 @@
 #include "ibrokerconnection.hpp"
 
 
-constexpr const char ExampleClient::NAME[];
-constexpr const char ExampleClient::INTERFACE_VERSION[];
+constexpr const char FullClient::NAME[];
+constexpr const char FullClient::INTERFACE_VERSION[];
 
-ExampleClient::ExampleClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
+FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
     _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> unusedRespTopic, const boost::optional<MethodResultCode> optResultCode)
     {
         _receiveMessage(topic, payload, optCorrelationId, optResultCode);
     });
-    _broker->Subscribe("Example/signal/todayIs", 1);
+    _broker->Subscribe("full/signal/todayIs", 1);
     
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/Example/method/addNumbers/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/full/method/addNumbers/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/Example/method/doSomething/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/full/method/doSomething/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
 }
 
-void ExampleClient::_receiveMessage(
+void FullClient::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
         const boost::optional<MethodResultCode> optResultCode)
 {
-    if (_broker->TopicMatchesSubscription(topic, "Example/signal/todayIs"))
+    if (_broker->TopicMatchesSubscription(topic, "full/signal/todayIs"))
     {
         //Log("Handling todayIs signal");
         rapidjson::Document doc;
@@ -102,24 +102,24 @@ void ExampleClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if (_broker->TopicMatchesSubscription(topic, "client/+/Example/method/addNumbers/response") && optCorrelationId)
+    if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/addNumbers/response") && optCorrelationId)
     {
         std::cout << "Matched topic for addNumbers response" << std::endl;
         _handleAddNumbersResponse(topic, payload, *optCorrelationId);
     }
-    else if (_broker->TopicMatchesSubscription(topic, "client/+/Example/method/doSomething/response") && optCorrelationId)
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/doSomething/response") && optCorrelationId)
     {
         std::cout << "Matched topic for doSomething response" << std::endl;
         _handleDoSomethingResponse(topic, payload, *optCorrelationId);
     }
 }
-void ExampleClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb)
+void FullClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb)
 {
     _todayIsCallback = cb;
 }
 
 
-boost::future<int> ExampleClient::addNumbers(int first, int second, boost::optional<int> third)
+boost::future<int> FullClient::addNumbers(int first, int second, boost::optional<int> third)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -146,13 +146,13 @@ boost::future<int> ExampleClient::addNumbers(int first, int second, boost::optio
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/Example/method/addNumbers/response") % _broker->GetClientId();
-    _broker->Publish("Example/method/addNumbers", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
+    responseTopicStringStream << boost::format("client/%1%/full/method/addNumbers/response") % _broker->GetClientId();
+    _broker->Publish("full/method/addNumbers", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
 
     return _pendingAddNumbersMethodCalls[correlationId].get_future();
 }
 
-void ExampleClient::_handleAddNumbersResponse(
+void FullClient::_handleAddNumbersResponse(
         const std::string& topic, 
         const std::string& payload, 
         const std::string &correlationId) 
@@ -183,7 +183,7 @@ void ExampleClient::_handleAddNumbersResponse(
     std::cout << "End of response handler for " << topic << std::endl;
 }
 
-boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::string& aString)
+boost::future<DoSomethingReturnValue> FullClient::doSomething(const std::string& aString)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -206,13 +206,13 @@ boost::future<DoSomethingReturnValue> ExampleClient::doSomething(const std::stri
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/Example/method/doSomething/response") % _broker->GetClientId();
-    _broker->Publish("Example/method/doSomething", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
+    responseTopicStringStream << boost::format("client/%1%/full/method/doSomething/response") % _broker->GetClientId();
+    _broker->Publish("full/method/doSomething", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
 
     return _pendingDoSomethingMethodCalls[correlationId].get_future();
 }
 
-void ExampleClient::_handleDoSomethingResponse(
+void FullClient::_handleDoSomethingResponse(
         const std::string& topic, 
         const std::string& payload, 
         const std::string &correlationId) 

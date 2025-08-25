@@ -192,9 +192,9 @@ impl {{stinger.name | UpperCamelCase}}Server {
         let new_data = {{prop_name | UpperCamelCase}}Property {
             {{prop.arg_list[0].name}}: data,
         };
-        let _pub_result = publisher.publish_structure(topic, &new_data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &new_data).await;
         {%else%}
-        let _pub_result = publisher.publish_structure(topic, &data).await;
+        let _pub_result = publisher.publish_retained_structure(topic, &data).await;
         {%endif%}
     }
     {%if not prop.read_only %}

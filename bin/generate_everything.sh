@@ -1,55 +1,80 @@
-#!/bin/sh
+#!/bin/bash
 
 BASE_DIR=$(dirname $0)
 
 # Python
-echo "----------- Generating Python ----------------"
-mkdir -p ${BASE_DIR}/../example_interfaces/signal_only/output/python/
-mkdir -p ${BASE_DIR}/../example_interfaces/full/output/python/
-mkdir -p ${BASE_DIR}/../example_interfaces/enum_only/output/python/
-uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/python/
-uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/python/
-uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/enum_only/enum_only.stingeripc ${BASE_DIR}/../example_interfaces/enum_only/output/python/
+
+
+function generate_python() {
+    echo
+    echo "----------- Generating Python for {$IFACE_NAME} ----------------"
+    IFACE_NAME=$1
+    mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    uv run ${BASE_DIR}/python_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    uv run mypy --install-types ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    uv run black ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+}
+
+#generate_python signal_only
+#generate_python full
+generate_python weather
 
 # C++
-echo "----------- Generating C++ ----------------"
-uv run ${BASE_DIR}/cpp_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/cpp/
-uv run ${BASE_DIR}/cpp_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/cpp/
-if [ $? -eq 0 ]; then
-    if [ ! -d "${BASE_DIR}/../example_interfaces/full/output/cpp/build" ]; then
-        mkdir ${BASE_DIR}/../example_interfaces/full/output/cpp/build
-    fi
-    (cd ${BASE_DIR}/../example_interfaces/full/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
 
-    if [ ! -d "${BASE_DIR}/../example_interfaces/signal_only/output/cpp/build" ]; then
-        mkdir ${BASE_DIR}/../example_interfaces/signal_only/output/cpp/build
+
+function generate_cpp() {
+    echo
+    echo "----------- Generating C++ for ${IFACE_NAME}----------------"
+    IFACE_NAME=$1
+    mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build
+    uv run ${BASE_DIR}/cpp_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/
+    if [ $? -eq 0 ]; then
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
     fi
-    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
-fi
+}
+
+#generate_cpp full
+#generate_cpp signal_only
 
 # Rust
-echo "----------- Generating Rust ----------------"
-#rm -rf ${BASE_DIR}/../example_interfaces/full/output/rust/ ${BASE_DIR}/../example_interfaces/signal_only/output/rust/
-uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/rust/
-uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/rust/
-if [ $? -eq 0 ]; then
-    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example client)
-    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example example_server_example)
-    (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example pub_and_recv)
-    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example client)
-    (cd ${BASE_DIR}/../example_interfaces/signal_only/output/rust/ && cargo build --example signal_only_server_example)
-fi
+
+function generate_rust() {
+    echo
+    echo "----------- Generating Rust for ${IFACE_NAME}----------------"
+    IFACE_NAME=$1
+    mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
+    uv run ${BASE_DIR}/rust_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
+    if [ $? -eq 0 ]; then
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example client)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example ${IFACE_NAME}_server_example)
+    fi
+}
+
+#generate_rust signal_only
+#generate_rust full
+generate_rust weather
+
+(cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example pub_and_recv)
 
 # AsyncAPI
-echo "----------- Creating AsyncAPI Spec ----------------"
-mkdir -p ${BASE_DIR}/../example_interfaces/enum_only/output/asyncapi/
-mkdir -p ${BASE_DIR}/../example_interfaces/full/output/asyncapi/
-mkdir -p ${BASE_DIR}/../example_interfaces/signal_only/output/asyncapi/
-uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/enum_only/enum_only.stingeripc ${BASE_DIR}/../example_interfaces/enum_only/output/asyncapi/
-uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/asyncapi/
-uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/asyncapi/
+#echo "----------- Creating AsyncAPI Spec ----------------"
+#mkdir -p ${BASE_DIR}/../example_interfaces/enum_only/output/asyncapi/
+#mkdir -p ${BASE_DIR}/../example_interfaces/full/output/asyncapi/
+#mkdir -p ${BASE_DIR}/../example_interfaces/signal_only/output/asyncapi/
+#uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/enum_only/enum_only.stingeripc ${BASE_DIR}/../example_interfaces/enum_only/output/asyncapi/
+#uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/full/full.stingeripc ${BASE_DIR}/../example_interfaces/full/output/asyncapi/
+#uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/asyncapi/
 
 # Markdown
-echo "----------- Creating Markdown Documents ----------------"
-mkdir -p ${BASE_DIR}/../example_interfaces/full/output/markdown/
-uv run ${BASE_DIR}/markdown_generator.py ${BASE_DIR}/../example_interfaces/full/example.stingeripc ${BASE_DIR}/../example_interfaces/full/output/markdown/
+
+function generate_markdown() {
+    echo
+    echo "----------- Creating Markdown Document for ${IFACE_NAME}----------------"
+    IFACE_NAME=$1
+
+    mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
+    uv run ${BASE_DIR}/markdown_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
+}
+
+#generate_markdown full
+generate_markdown weather

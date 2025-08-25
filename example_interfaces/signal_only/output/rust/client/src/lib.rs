@@ -75,7 +75,7 @@ impl SignalOnlyClient {
         
 
         // Subscribe to all the topics needed for signals.
-        let topic_another_signal_signal = "SignalOnly/signal/anotherSignal";
+        let topic_another_signal_signal = "signalOnly/signal/anotherSignal";
         let subscription_id_another_signal_signal = connection.subscribe(&topic_another_signal_signal, message_received_tx.clone()).await;
         let subscription_id_another_signal_signal = subscription_id_another_signal_signal.unwrap_or_else(|_| -1);
         

@@ -15,31 +15,31 @@
 #include "ibrokerconnection.hpp"
 
 
-constexpr const char ExampleServer::NAME[];
-constexpr const char ExampleServer::INTERFACE_VERSION[];
+constexpr const char FullServer::NAME[];
+constexpr const char FullServer::INTERFACE_VERSION[];
 
-ExampleServer::ExampleServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
+FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
     _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
     {
         _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
     });
     
-    _broker->Subscribe("Example/method/addNumbers", 2);
+    _broker->Subscribe("full/method/addNumbers", 2);
     
-    _broker->Subscribe("Example/method/doSomething", 2);
+    _broker->Subscribe("full/method/doSomething", 2);
     
 }
 
-void ExampleServer::_receiveMessage(
+void FullServer::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
         const boost::optional<std::string> optResponseTopic)
 {
     
-    if (_broker->TopicMatchesSubscription(topic, "Example/method/addNumbers"))
+    if (_broker->TopicMatchesSubscription(topic, "full/method/addNumbers"))
     {
-        std::cout << "Message matched topic Example/method/addNumbers\n";
+        std::cout << "Message matched topic full/method/addNumbers\n";
         rapidjson::Document doc;
         try {
             if (_addNumbersHandler)
@@ -66,9 +66,9 @@ void ExampleServer::_receiveMessage(
         }
     }
     
-    if (_broker->TopicMatchesSubscription(topic, "Example/method/doSomething"))
+    if (_broker->TopicMatchesSubscription(topic, "full/method/doSomething"))
     {
-        std::cout << "Message matched topic Example/method/doSomething\n";
+        std::cout << "Message matched topic full/method/doSomething\n";
         rapidjson::Document doc;
         try {
             if (_doSomethingHandler)
@@ -98,7 +98,7 @@ void ExampleServer::_receiveMessage(
 }
 
 
-boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek)
+boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek)
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -112,26 +112,26 @@ boost::future<bool> ExampleServer::emitTodayIsSignal(int dayOfMonth, boost::opti
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("Example/signal/todayIs", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
+    return _broker->Publish("full/signal/todayIs", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
 }
 
 
 
-void ExampleServer::registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func)
+void FullServer::registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func)
 {
-    std::cout << "Registered method to handle Example/method/addNumbers\n";
+    std::cout << "Registered method to handle full/method/addNumbers\n";
     _addNumbersHandler = func;
 }
 
-void ExampleServer::registerDoSomethingHandler(std::function<DoSomethingReturnValue(const std::string&)> func)
+void FullServer::registerDoSomethingHandler(std::function<DoSomethingReturnValue(const std::string&)> func)
 {
-    std::cout << "Registered method to handle Example/method/doSomething\n";
+    std::cout << "Registered method to handle full/method/doSomething\n";
     _doSomethingHandler = func;
 }
 
 
 
-void ExampleServer::_callAddNumbersHandler(
+void FullServer::_callAddNumbersHandler(
         const std::string& topic, 
         const rapidjson::Document& doc, 
         const boost::optional<std::string> optCorrelationId,
@@ -199,7 +199,7 @@ void ExampleServer::_callAddNumbersHandler(
     }
 }
 
-void ExampleServer::_callDoSomethingHandler(
+void FullServer::_callDoSomethingHandler(
         const std::string& topic, 
         const rapidjson::Document& doc, 
         const boost::optional<std::string> optCorrelationId,

@@ -1,5 +1,5 @@
 use futures::{executor::block_on};
-use example_client::ExampleClient;
+use full_client::FullClient;
 use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
@@ -9,7 +9,7 @@ async fn main() {
     block_on(async {
         
         let mut connection = Connection::new_local_connection().await.expect("Failed to create connection");
-        let mut client = ExampleClient::new(&mut connection).await;
+        let mut client = FullClient::new(&mut connection).await;
 
         tokio::spawn(async move {
             println!("Making call to start connection loop");

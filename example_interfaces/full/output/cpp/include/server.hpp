@@ -15,15 +15,15 @@
 #include "enums.hpp"
 #include "return_types.hpp"
 
-class ExampleServer {
+class FullServer {
 
 public:
-    static constexpr const char NAME[] = "Example";
+    static constexpr const char NAME[] = "Full";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
-    ExampleServer(std::shared_ptr<IBrokerConnection> broker);
+    FullServer(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual ~ExampleServer() = default;
+    virtual ~FullServer() = default;
 
     
     boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>);

@@ -5,17 +5,19 @@ import yamlloader
 from .components import StingerSpec, InvalidStingerStructure
 from .topic import InterfaceTopicCreator
 
-VERSION_SUPPORTED = "0.0.6"
+VERSION_SUPPORTED = "0.0.7"
 
 
 class StingerInterface(StingerSpec):
 
     def __init__(self, stinger: Dict[str, Any], topic_prefix: Optional[str] = None):
         itc = self._create_topic_creator(stinger)
-        super().__init__(itc, stinger['interface'])
+        super().__init__(itc, stinger["interface"])
 
     @staticmethod
-    def _create_topic_creator(stinger_spec: Dict[str, Any], topic_prefix: Optional[str] = None) -> InterfaceTopicCreator:
+    def _create_topic_creator(
+        stinger_spec: Dict[str, Any], topic_prefix: Optional[str] = None
+    ) -> InterfaceTopicCreator:
         if (
             "stingeripc" not in stinger_spec
             or "version" not in stinger_spec["stingeripc"]
@@ -28,7 +30,9 @@ class StingerInterface(StingerSpec):
             raise InvalidStingerStructure(
                 "Could not find interface name in Stinger Spec"
             )
-        itc = InterfaceTopicCreator(stinger_spec["interface"]["name"], root=topic_prefix)
+        itc = InterfaceTopicCreator(
+            stinger_spec["interface"]["name"], root=topic_prefix
+        )
         return itc
 
     @classmethod

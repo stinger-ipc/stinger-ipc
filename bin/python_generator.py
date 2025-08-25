@@ -36,6 +36,8 @@ if __name__ == "__main__":
         "__init__.py",
         "method_codes.py",
     ]:
+        print(f"CREATE {output_file}")
         t.render_template(f"{output_file}.jinja2", os.path.join(stinger.name.lower(), output_file), **params)
 
+    print(f"CREATE interface_types.py")
     t.render_template("interface_types.py.jinja2", os.path.join(stinger.name.lower(), f"{stinger.get_enum_module_name()}.py"), **params)

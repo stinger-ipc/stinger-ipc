@@ -26,7 +26,7 @@ SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : 
     {
         _receiveMessage(topic, payload, optCorrelationId, optResultCode);
     });
-    _broker->Subscribe("SignalOnly/signal/anotherSignal", 1);
+    _broker->Subscribe("signalOnly/signal/anotherSignal", 1);
     
 }
 
@@ -36,7 +36,7 @@ void SignalOnlyClient::_receiveMessage(
         const boost::optional<std::string> optCorrelationId, 
         const boost::optional<MethodResultCode> optResultCode)
 {
-    if (_broker->TopicMatchesSubscription(topic, "SignalOnly/signal/anotherSignal"))
+    if (_broker->TopicMatchesSubscription(topic, "signalOnly/signal/anotherSignal"))
     {
         //Log("Handling anotherSignal signal");
         rapidjson::Document doc;

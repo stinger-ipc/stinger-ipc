@@ -14,18 +14,18 @@
 #include "enums.hpp"
 #include "return_types.hpp"
 
-class ExampleClient {
+class FullClient {
 
 public:
     // This is the name of the API.
-    static constexpr const char NAME[] = "Example";
+    static constexpr const char NAME[] = "Full";
     // This is the version of the API contract.
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
     // Constructor taking a connection object.
-    ExampleClient(std::shared_ptr<IBrokerConnection> broker);
+    FullClient(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual ~ExampleClient() = default;
+    virtual ~FullClient() = default;
 
     
     // Register a callback for the `todayIs` signal.

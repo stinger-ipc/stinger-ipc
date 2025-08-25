@@ -14,14 +14,14 @@ from typing import Callable, Dict, Any, Optional, List
 from connection import BrokerConnection
 from method_codes import *
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
-{%macro method_type_annotation(method) %}Callable[[{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], {{method.return_value.python_type}}]{%endmacro%}
+{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_type}}]{%endmacro%}
 
-class {{stinger.name}}Server:
+class {{stinger.python.server_class_name}}:
 
     def __init__(self, connection: BrokerConnection):
-        self._logger = logging.getLogger('{{stinger.name}}Server')
+        self._logger = logging.getLogger('{{stinger.python.server_class_name}}')
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing {{stinger.name}}Server")
+        self._logger.debug("Initializing {{stinger.python.server_class_name}}")
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         self._conn.set_last_will(topic="{{stinger.interface_info.0}}", payload=None, qos=1, retain=True)
@@ -132,8 +132,7 @@ class {{stinger.name}}Server:
                         return_json = json.dumps({
                             "{{method.return_value_property_name}}": return_struct.model_dump_json()
                         })
-                        {%else%}
-                        // else
+                        {%else%}                        
                         return_json = return_struct.model_dump_json()
                         {%endif%}
                     {%-endif%}
@@ -150,9 +149,9 @@ class {{stinger.name}}Server:
     {%endfor%}
 
 
-class {{stinger.name}}ServerBuilder:
+class {{stinger.python.server_class_name}}Builder:
     """
-    This is a builder for the {{stinger.name}}Server.  It is used to create a server with the desired parameters.
+    This is a builder for the {{stinger.python.server_class_name}}.  It is used to create a server with the desired parameters.
     """
 
     def __init__(self, connection: BrokerConnection):
@@ -167,8 +166,8 @@ class {{stinger.name}}ServerBuilder:
         else:
             raise Exception("Method handler already set")
     {%endfor%}
-    def build(self) -> {{stinger.name}}Server:
-        new_server = {{stinger.name}}Server(self._conn)
+    def build(self) -> {{stinger.python.server_class_name}}:
+        new_server = {{stinger.python.server_class_name}}(self._conn)
         {%for method_name, method in stinger.methods.items()%}
         if self._{{method_name|snake_case}}_method_handler is not None:
             new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler)
@@ -186,11 +185,12 @@ if __name__ == '__main__':
     from connection import {{broker.class_name}}
 
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
-    server = {{stinger.name}}Server(conn)
+    server = {{stinger.python.server_class_name}}(conn)
 
     {%for method_name, method in stinger.methods.items()%}
-    @server.handle_{{method_name | snake_case}}
-    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value.python_type}}:
+    @server.handle_{{method_name | snake_case}} 
+    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_type}}:
+        """ This is an example handler for the '{{method_name}}' method.  """
         print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
         return {{method.get_return_value_random_example_value('python')}}
     {%endfor%}

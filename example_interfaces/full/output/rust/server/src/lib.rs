@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-This is the Server for the Example interface.
+This is the Server for the Full interface.
 */
 
 extern crate paho_mqtt as mqtt;
@@ -21,7 +21,7 @@ use serde_json;
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
-struct ExampleServerSubscriptionIds {
+struct FullServerSubscriptionIds {
     add_numbers_method_req: i32,
     do_something_method_req: i32,
     
@@ -35,7 +35,7 @@ struct ExampleServerSubscriptionIds {
 }
 
 #[derive(Clone)]
-struct ExampleServerMethodHandlers {
+struct FullServerMethodHandlers {
     /// Pointer to a function to handle the addNumbers method request.
     method_handler_for_add_numbers: Arc<Mutex<Box<dyn Fn(i32, i32, Option<i32>)->Result<i32, MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the doSomething method request.
@@ -44,7 +44,7 @@ struct ExampleServerMethodHandlers {
 }
 
 #[derive(Clone)]
-struct ExampleProperties {
+struct FullProperties {
     favorite_number_topic: Arc<String>,
     favorite_number: Arc<Mutex<Option<i32>>>,
     favorite_foods_topic: Arc<String>,
@@ -52,7 +52,7 @@ struct ExampleProperties {
     lunch_menu: Arc<Mutex<Option<connection::payloads::LunchMenuProperty>>>,
 }
 
-pub struct ExampleServer {
+pub struct FullServer {
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
     msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
@@ -65,57 +65,57 @@ pub struct ExampleServer {
     msg_publisher: MessagePublisher,
 
     /// Struct contains all the handlers for the various methods.
-    method_handlers: ExampleServerMethodHandlers,
+    method_handlers: FullServerMethodHandlers,
     
     /// Struct contains all the properties.
-    properties: ExampleProperties,
+    properties: FullProperties,
     
     /// Subscription IDs for all the subscriptions this makes.
-    subscription_ids: ExampleServerSubscriptionIds,
+    subscription_ids: FullServerSubscriptionIds,
 
     /// Copy of MQTT Client ID
     client_id: String,
 }
 
-impl ExampleServer {
+impl FullServer {
     pub async fn new(connection: &mut Connection) -> Self {
         let _ = connection.connect().await.expect("Could not connect to MQTT broker");
 
-        //let interface_info = String::from(r#"{"name": "Example", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}"#);
-        //connection.publish("Example/interface".to_string(), interface_info, 1).await;
+        //let interface_info = String::from(r#"{"name": "Full", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}"#);
+        //connection.publish("full/interface".to_string(), interface_info, 1).await;
 
-        // Create a channel for messages to get from the Connection object to this ExampleClient object.
+        // Create a channel for messages to get from the Connection object to this FullClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
         let publisher = connection.get_publisher();
 
         // Create method handler struct
-        let subscription_id_add_numbers_method_req = connection.subscribe("Example/method/addNumbers", message_received_tx.clone()).await;
+        let subscription_id_add_numbers_method_req = connection.subscribe("full/method/addNumbers", message_received_tx.clone()).await;
         let subscription_id_add_numbers_method_req = subscription_id_add_numbers_method_req.unwrap_or_else(|_| -1);
-        let subscription_id_do_something_method_req = connection.subscribe("Example/method/doSomething", message_received_tx.clone()).await;
+        let subscription_id_do_something_method_req = connection.subscribe("full/method/doSomething", message_received_tx.clone()).await;
         let subscription_id_do_something_method_req = subscription_id_do_something_method_req.unwrap_or_else(|_| -1);
         
 
         
-        let subscription_id_favorite_number_property_update = connection.subscribe("Example/property/favorite_number/set_value", message_received_tx.clone()).await;
+        let subscription_id_favorite_number_property_update = connection.subscribe("full/property/favoriteNumber/setValue", message_received_tx.clone()).await;
         let subscription_id_favorite_number_property_update = subscription_id_favorite_number_property_update.unwrap_or_else(|_| -1);
         
-        let subscription_id_favorite_foods_property_update = connection.subscribe("Example/property/favorite_foods/set_value", message_received_tx.clone()).await;
+        let subscription_id_favorite_foods_property_update = connection.subscribe("full/property/favoriteFoods/setValue", message_received_tx.clone()).await;
         let subscription_id_favorite_foods_property_update = subscription_id_favorite_foods_property_update.unwrap_or_else(|_| -1);
         
-        let subscription_id_lunch_menu_property_update = connection.subscribe("Example/property/lunch_menu/set_value", message_received_tx.clone()).await;
+        let subscription_id_lunch_menu_property_update = connection.subscribe("full/property/lunchMenu/setValue", message_received_tx.clone()).await;
         let subscription_id_lunch_menu_property_update = subscription_id_lunch_menu_property_update.unwrap_or_else(|_| -1);
         
 
         // Create structure for method handlers.
-        let method_handlers = ExampleServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2, _3| { Err(MethodResultCode::ServerError) } ))),
+        let method_handlers = FullServerMethodHandlers {method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new( |_1, _2, _3| { Err(MethodResultCode::ServerError) } ))),
             method_handler_for_do_something: Arc::new(Mutex::new(Box::new( |_1| { Err(MethodResultCode::ServerError) } ))),
             
         };
 
         // Create structure for subscription ids.
-        let sub_ids = ExampleServerSubscriptionIds {
+        let sub_ids = FullServerSubscriptionIds {
             add_numbers_method_req: subscription_id_add_numbers_method_req,
             do_something_method_req: subscription_id_do_something_method_req,
             
@@ -129,20 +129,20 @@ impl ExampleServer {
         };
 
         
-        let property_values = ExampleProperties {
-            favorite_number_topic: Arc::new(String::from("Example/property/favorite_number")),
+        let property_values = FullProperties {
+            favorite_number_topic: Arc::new(String::from("full/property/favoriteNumber/value")),
             
             favorite_number: Arc::new(Mutex::new(None)),
-            favorite_foods_topic: Arc::new(String::from("Example/property/favorite_foods")),
+            favorite_foods_topic: Arc::new(String::from("full/property/favoriteFoods/value")),
             favorite_foods: Arc::new(Mutex::new(None)),
             
-            lunch_menu_topic: Arc::new(String::from("Example/property/lunch_menu")),
+            lunch_menu_topic: Arc::new(String::from("full/property/lunchMenu/value")),
             lunch_menu: Arc::new(Mutex::new(None)),
             
         };
         
 
-        ExampleServer {
+        FullServer {
 
             msg_streamer_rx: Some(message_received_rx),
             msg_streamer_tx: message_received_tx,
@@ -162,7 +162,7 @@ impl ExampleServer {
             dayOfWeek: day_of_week,
             
         };
-        self.msg_publisher.publish_structure("Example/signal/todayIs".to_string(), &data).await;
+        self.msg_publisher.publish_structure("full/signal/todayIs".to_string(), &data).await;
     }
     
 
@@ -175,7 +175,7 @@ impl ExampleServer {
     
 
 
-    async fn handle_add_numbers_request(publisher: &mut MessagePublisher, handlers: &mut ExampleServerMethodHandlers, msg: mqtt::Message) {
+    async fn handle_add_numbers_request(publisher: &mut MessagePublisher, handlers: &mut FullServerMethodHandlers, msg: mqtt::Message) {
         let props = msg.properties();
         let opt_corr_id_bin: Option<Vec<u8>> = props.get_binary(mqtt::PropertyCode::CorrelationData);
         let opt_resp_topic = props.get_string(mqtt::PropertyCode::ResponseTopic);
@@ -196,7 +196,7 @@ impl ExampleServer {
             eprintln!("No response topic found in message properties.");
         }
     }
-    async fn handle_do_something_request(publisher: &mut MessagePublisher, handlers: &mut ExampleServerMethodHandlers, msg: mqtt::Message) {
+    async fn handle_do_something_request(publisher: &mut MessagePublisher, handlers: &mut FullServerMethodHandlers, msg: mqtt::Message) {
         let props = msg.properties();
         let opt_corr_id_bin: Option<Vec<u8>> = props.get_binary(mqtt::PropertyCode::CorrelationData);
         let opt_resp_topic = props.get_string(mqtt::PropertyCode::ResponseTopic);
@@ -234,7 +234,7 @@ impl ExampleServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.number;
         let _ = tokio::spawn(async move {
-            ExampleServer::publish_favorite_number_value(publisher2, topic2, data2).await;
+            FullServer::publish_favorite_number_value(publisher2, topic2, data2).await;
         });
     }
     
@@ -250,7 +250,7 @@ impl ExampleServer {
         let topic2 = self.properties.favorite_number_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property favorite_number of type i32 to {}", topic2);
-            ExampleServer::publish_favorite_number_value(publisher2, topic2, data).await;
+            FullServer::publish_favorite_number_value(publisher2, topic2, data).await;
         });
     }
     
@@ -272,7 +272,7 @@ impl ExampleServer {
         let data2 = new_data;
         
         let _ = tokio::spawn(async move {
-            ExampleServer::publish_favorite_foods_value(publisher2, topic2, data2).await;
+            FullServer::publish_favorite_foods_value(publisher2, topic2, data2).await;
         });
     }
     
@@ -288,7 +288,7 @@ impl ExampleServer {
         let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property favorite_foods of type connection::payloads::FavoriteFoodsProperty to {}", topic2);
-            ExampleServer::publish_favorite_foods_value(publisher2, topic2, data).await;
+            FullServer::publish_favorite_foods_value(publisher2, topic2, data).await;
         });
     }
     
@@ -310,7 +310,7 @@ impl ExampleServer {
         let data2 = new_data;
         
         let _ = tokio::spawn(async move {
-            ExampleServer::publish_lunch_menu_value(publisher2, topic2, data2).await;
+            FullServer::publish_lunch_menu_value(publisher2, topic2, data2).await;
         });
     }
     
@@ -326,7 +326,7 @@ impl ExampleServer {
         let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property lunch_menu of type connection::payloads::LunchMenuProperty to {}", topic2);
-            ExampleServer::publish_lunch_menu_value(publisher2, topic2, data).await;
+            FullServer::publish_lunch_menu_value(publisher2, topic2, data).await;
         });
     }
     
@@ -347,19 +347,19 @@ impl ExampleServer {
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 if msg.subscription_id == sub_ids.add_numbers_method_req {
-                    ExampleServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    FullServer::handle_add_numbers_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.do_something_method_req {
-                    ExampleServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
+                    FullServer::handle_do_something_request(&mut publisher, &mut method_handlers, msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.favorite_number_property_update {
-                    ExampleServer::update_favorite_number_value(&mut publisher, properties.favorite_number_topic.clone(), properties.favorite_number.clone(), msg.message).await;
+                    FullServer::update_favorite_number_value(&mut publisher, properties.favorite_number_topic.clone(), properties.favorite_number.clone(), msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.favorite_foods_property_update {
-                    ExampleServer::update_favorite_foods_value(&mut publisher, properties.favorite_foods_topic.clone(), properties.favorite_foods.clone(), msg.message).await;
+                    FullServer::update_favorite_foods_value(&mut publisher, properties.favorite_foods_topic.clone(), properties.favorite_foods.clone(), msg.message).await;
                 }
                 else if msg.subscription_id == sub_ids.lunch_menu_property_update {
-                    ExampleServer::update_lunch_menu_value(&mut publisher, properties.lunch_menu_topic.clone(), properties.lunch_menu.clone(), msg.message).await;
+                    FullServer::update_lunch_menu_value(&mut publisher, properties.lunch_menu_topic.clone(), properties.lunch_menu.clone(), msg.message).await;
                 }
             }   
         });

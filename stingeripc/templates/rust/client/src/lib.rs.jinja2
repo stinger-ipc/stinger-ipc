@@ -150,11 +150,13 @@ impl {{stinger.name | UpperCamelCase }}Client {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
             hashmap.insert(correlation_id.clone(), sender);
         }
+
         let data = connection::payloads::{{method_name | UpperCamelCase}}RequestObject {
             {%-for arg in method.arg_list%}
             {{arg.name}}: {{arg.name|snake_case}},
             {%-endfor%}
         };
+
         let response_topic = format!("{{method.response_topic('{}')}}", self.client_id);
         let _ = self.msg_publisher.publish_request_structure("{{method.topic}}".to_string(), &data, response_topic.as_str(), correlation_id).await;
         let resp_obj = receiver.await.unwrap();
@@ -164,7 +166,8 @@ impl {{stinger.name | UpperCamelCase }}Client {
         {%-elif method.return_value_type == 'enum'%}
         Ok({{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap())
         {%-elif method.return_value_type == 'struct'%}
-        Ok({{method.return_value_rust_type}} { {%for member in method.return_value -%}
+        Ok({{method.return_value_rust_type}} {
+        {%-for member in method.return_value -%}
             {%if member.arg_type.name.lower() == 'primitive'%}
             {%if member.rust_type == 'String'%}
             {{member.name|snake_case}}: resp_obj["{{member.name}}"].as_str().unwrap().to_string(),
@@ -175,7 +178,10 @@ impl {{stinger.name | UpperCamelCase }}Client {
             {{member.name|snake_case}}: {{member.rust_type}}::from_u32(resp_obj["{{member.name}}"].as_u32().unwrap()).unwrap(),
             {%endif%}
         {%endfor-%} })
-                    
+        {%elif method.return_value_type is false%}
+        Ok(())
+        {%else%}
+        TEMPLATE ERROR CASE NOT HANDLED
         {%-endif %}
     }
 
