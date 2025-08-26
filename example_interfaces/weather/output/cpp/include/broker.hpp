@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-It contains enumerations used by the Full interface.
+It contains enumerations used by the weather interface.
 */
 
 
@@ -120,13 +120,15 @@ private:
 
 /*! This class presents a connection to a MQTT broker.
  */
-class LocalConnection : public MqttConnection
+class DefaultConnection : public MqttConnection
 {
 public:
 
-    /*! Constructor for a LocalConnection.
+    /*! Constructor for a DefaultConnection.
+     * \param hostname IP address or hostname of the MQTT broker server.
+     * \param port Port where the MQTT broker is running (often 1883).
      */
-    LocalConnection(const std::string& clientId);
+    DefaultConnection(const std::string& host, int port, const std::string& clientId);
 
-    virtual ~LocalConnection() = default;
+    virtual ~DefaultConnection() = default;
 };

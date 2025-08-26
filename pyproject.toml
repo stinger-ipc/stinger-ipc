@@ -1,7 +1,7 @@
 [project]
 name = "stinger-ipc"
-version = "0.0.2"
-description = "Add your description here"
+version = "0.0.4"
+description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -33,7 +33,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["stingeripc"]
+packages = ["stingeripc", "stingeripc.tools"]
 
 [tool.setuptools.package-data]
 stingeripc = [

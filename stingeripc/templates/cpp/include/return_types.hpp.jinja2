@@ -1,7 +1,14 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+*/
+
 
 #pragma once
 #include <string>
-#include "enums.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
 
 {%for method_name, method in stinger.methods.items()%}
 {%-if method.return_value_type == 'struct'%}

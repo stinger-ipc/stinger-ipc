@@ -1,6 +1,79 @@
 # _{{stinger.name}}_ API Overview 
+{%-if stinger.summary %} 
+_{{stinger.summary}}_
+{%endif-%}
+{%if stinger.documentation%}
+{{stinger.documentation}}
 
-{{stinger.description}}
+## Connections
+
+A connection object is a wrapper around an MQTT client and provides specific functionality to support both clients and servers.
+Generally, you only need one connection object per daemon/program, as it can support multiple clients and servers.  
+
+### Connection code Examples
+
+<details>
+  <summary>Python</summary>
+
+```python{%set broker = stinger.get_example_broker()%}
+from connection import {{broker.class_name}}
+
+connection_object = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
+```
+
+The `connection_object` will be passed to client and server constructors.
+
+</details>
+
+<details>
+  <summary>C++</summary>
+
+```c++{%set broker = stinger.get_example_broker()%}
+#include "broker.hpp"
+
+auto connection_object = std::make_shared<{{broker.class_name}}>({%if broker.hostname is none%}"localhost", 1883, {%endif%}"{{stinger.name | UpperCamelCase}}");
+```
+
+The `connection_object` will be passed to client and server constructors.
+
+</details>
+
+## Server
+
+A server is a _provider_ of functionality.  It sends signals, handles method calls, and owns property values.
+
+### Server Code Examples
+
+<details>
+  <summary>Python Server</summary>
+
+```python{%set broker = stinger.get_example_broker()%}
+from {{stinger.python.package_name}}.client import {{stinger.cpp.server_class_name}}
+
+server = {{stinger.python.server_class_name}}(connection_object)
+```
+
+The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+```python{%set broker = stinger.get_example_broker()%}
+from connection import {{broker.class_name}}
+
+conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
+server = {{stinger.python.server_class_name}}(conn)
+```
+
+The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
+
+</details>
+
+## Client
+
+{%endif-%}
 {%macro argrow(arg) -%}
 |{{arg.name|center(15)}}|
 {%-if arg.arg_type.name.lower() == "enum" or arg.arg_type.name.lower() == "struct"%}{{arg.markdown_type|center(10)}}

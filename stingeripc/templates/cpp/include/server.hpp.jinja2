@@ -1,3 +1,10 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+*/
+
 
 #pragma once
 
@@ -12,18 +19,18 @@
 #include <rapidjson/document.h>
 
 #include "ibrokerconnection.hpp"
-#include "enums.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
 #include "return_types.hpp"
 
-class {{stinger.name | UpperCamelCase}}Server {
+class {{stinger.cpp.server_class_name}} {
 
 public:
     static constexpr const char NAME[] = "{{stinger.name}}";
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
-    {{stinger.name | UpperCamelCase}}Server(std::shared_ptr<IBrokerConnection> broker);
+    {{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual ~{{stinger.name | UpperCamelCase}}Server() = default;
+    virtual ~{{stinger.cpp.server_class_name}}() = default;
 
     {%for sig_name, sig in stinger.signals.items()%}
     boost::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%});

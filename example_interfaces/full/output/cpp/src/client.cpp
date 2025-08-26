@@ -127,8 +127,6 @@ boost::future<int> FullClient::addNumbers(int first, int second, boost::optional
 
     rapidjson::Document doc;
     doc.SetObject();
-
-    
     
     
     doc.AddMember("first",first, doc.GetAllocator());
@@ -174,6 +172,8 @@ void FullClient::_handleAddNumbersResponse(
     auto promiseItr = _pendingAddNumbersMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingAddNumbersMethodCalls.end())
     {
+        
+        // Response has a single value.
         rapidjson::Value::ConstMemberIterator sumItr = doc.FindMember("sum");
         int sum = sumItr->value.GetInt();
         
@@ -191,8 +191,6 @@ boost::future<DoSomethingReturnValue> FullClient::doSomething(const std::string&
 
     rapidjson::Document doc;
     doc.SetObject();
-
-    
     
     
     { // restrict scope
@@ -234,6 +232,7 @@ void FullClient::_handleDoSomethingResponse(
     auto promiseItr = _pendingDoSomethingMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingDoSomethingMethodCalls.end())
     {
+        // Response has multiple values.
         
         rapidjson::Value::ConstMemberIterator labelItr = doc.FindMember("label");
         const std::string& label = labelItr->value.GetString();

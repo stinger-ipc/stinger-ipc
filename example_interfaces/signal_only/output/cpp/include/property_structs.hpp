@@ -5,8 +5,3 @@ on the next generation.
 It contains enumerations used by the SignalOnly interface.
 */
 
-#pragma once
-#include <string>
-#include <boost/optional.hpp>
-#include "enums.hpp"
-

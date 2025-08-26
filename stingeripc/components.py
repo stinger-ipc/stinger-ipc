@@ -3,7 +3,7 @@ from enum import Enum
 import random
 import stringcase
 from abc import abstractmethod
-from typing import Dict, List, Optional, Any, Union
+from typing import Any
 from .topic import (
     SignalTopicCreator,
     InterfaceTopicCreator,
@@ -387,7 +387,7 @@ class Signal(InterfaceComponent):
     def __init__(self, topic_creator: SignalTopicCreator, name: str):
         super().__init__(name)
         self._topic_creator = topic_creator
-        self._arg_list = []  # type: List[Arg]
+        self._arg_list: list[Arg] = []
 
     def add_arg(self, arg: Arg) -> Signal:
         if arg.name in [a.name for a in self._arg_list]:
@@ -408,7 +408,7 @@ class Signal(InterfaceComponent):
         cls,
         topic_creator: SignalTopicCreator,
         name: str,
-        signal_spec: Dict[str, str],
+        signal_spec: dict[str, str],
         stinger_spec: StingerSpec | None = None,
     ) -> "Signal":
         """Alternative constructor from a Stinger signal structure."""
@@ -437,7 +437,7 @@ class Method(InterfaceComponent):
         super().__init__(name)
         self._python = PythonMethodSymbols(self)
         self._topic_creator = topic_creator
-        self._arg_list = []  # type: List[Arg]
+        self._arg_list: list[Arg] = []
         self._return_value: Arg | list[Arg] | None = None
 
     @property
@@ -482,7 +482,7 @@ class Method(InterfaceComponent):
     @property
     def return_value_cpp_class(self) -> str:
         if self._return_value is None:
-            return "null"
+            return "void"
         elif isinstance(self._return_value, Arg):
             return self._return_value.cpp_type
         elif isinstance(self._return_value, list):
@@ -572,7 +572,7 @@ class Method(InterfaceComponent):
         cls,
         topic_creator: MethodTopicCreator,
         name: str,
-        method_spec: Dict[str, str],
+        method_spec: dict[str, str],
         stinger_spec: StingerSpec | None = None,
     ) -> "Method":
         """Alternative constructor from a Stinger method structure."""
@@ -614,7 +614,7 @@ class Property(InterfaceComponent):
     def __init__(self, topic_creator: PropertyTopicCreator, name: str):
         super().__init__(name)
         self._topic_creator = topic_creator
-        self._arg_list = []  # type: List[Arg]
+        self._arg_list: list[Arg] = []
         self._read_only = False
 
     def add_arg(self, arg: Arg) -> Property:
@@ -829,7 +829,7 @@ class InterfaceStruct:
     def new_struct_from_stinger(
         cls,
         name,
-        spec: Dict[str, str | List[Dict[str, str]]],
+        spec: dict[str, str | list[dict[str, str]]],
         stinger_spec: StingerSpec,
     ) -> InterfaceStruct:
         istruct = cls(name)
@@ -884,7 +884,7 @@ class Broker:
         self._port = port
 
     @classmethod
-    def new_broker_from_stinger(cls, name: str, spec: Dict[str, Any]) -> Broker:
+    def new_broker_from_stinger(cls, name: str, spec: dict[str, Any]) -> Broker:
         new_broker = cls(name=name)
         if "host" in spec:
             new_broker.hostname = spec["host"]
@@ -897,13 +897,14 @@ class Broker:
 
 
 class StingerSpec:
-    def __init__(self, topic_creator: InterfaceTopicCreator, interface):
+    def __init__(self, topic_creator: InterfaceTopicCreator, interface: dict[str, Any]):
         self._topic_creator = topic_creator
         try:
             self._name: str = interface["name"]
             self._version: str = interface["version"]
             self._python = PythonInterfaceSymbols(self)
             self._rust = RustInterfaceSymbols(self)
+            self._cpp = CppInterfaceSymbols(self)
         except KeyError as e:
             raise InvalidStingerStructure(
                 f"Missing interface property in {interface}: {e}"
@@ -913,8 +914,9 @@ class StingerSpec:
                 f"Interface didn't appear to have a correct type"
             )
 
-        self._summary = interface["summary"] if "summary" in interface else None
-        self._title = interface["title"] if "title" in interface else None
+        self._summary = interface.get("summary")
+        self._title = interface.get("title")
+        self._documentation = interface.get("documentation")
 
         self.signals: dict[str, Signal] = {}
         self.properties: dict[str, Property] = {}
@@ -951,7 +953,7 @@ class StingerSpec:
         self._brokers[broker.name] = broker
 
     @property
-    def brokers(self) -> Dict[str, Broker]:
+    def brokers(self) -> dict[str, Broker]:
         if len(self._brokers) == 0:
             default_broker = Broker()
             return {default_broker.name: default_broker}
@@ -1007,6 +1009,10 @@ class StingerSpec:
     def rust(self) -> RustInterfaceSymbols:
         return self._rust
 
+    @property
+    def cpp(self) -> CppInterfaceSymbols:
+        return self._cpp
+
     @staticmethod
     def get_enum_module_name() -> str:
         return InterfaceEnum.get_module_name()
@@ -1017,7 +1023,7 @@ class StingerSpec:
 
     @classmethod
     def new_spec_from_stinger(
-        cls, topic_creator, stinger: Dict[str, Any]
+        cls, topic_creator, stinger: dict[str, Any]
     ) -> StingerSpec:
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")

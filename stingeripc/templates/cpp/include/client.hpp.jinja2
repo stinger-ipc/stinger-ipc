@@ -1,3 +1,10 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+*/
+
 
 #pragma once
 
@@ -11,10 +18,11 @@
 #include <boost/uuid/uuid.hpp>
 
 #include "ibrokerconnection.hpp"
-#include "enums.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
 #include "return_types.hpp"
+{%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
 
-class {{stinger.name | UpperCamelCase}}Client {
+class {{stinger.cpp.client_class_name}} {
 
 public:
     // This is the name of the API.
@@ -23,9 +31,9 @@ public:
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
     // Constructor taking a connection object.
-    {{stinger.name | UpperCamelCase}}Client(std::shared_ptr<IBrokerConnection> broker);
+    {{stinger.cpp.client_class_name}}(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual ~{{stinger.name | UpperCamelCase}}Client() = default;
+    virtual ~{{stinger.cpp.client_class_name}}() = default;
 
     {%for sig_name, sig in stinger.signals.items()%}
     // Register a callback for the `{{sig_name}}` signal.

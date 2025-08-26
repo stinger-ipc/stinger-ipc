@@ -6,6 +6,10 @@ class PythonSymbols:
         ...
 
     @property
+    def package_name(self):
+        return f"{stringmanip.lower_camel_case(self._iface.name).lower()}ipc"
+
+    @property
     def type_definition_module(self) -> str:
         return "stinger_types"
 
@@ -51,7 +55,11 @@ class PythonMethodSymbols(PythonSymbols):
     def return_value_class(self):
         return f"{self.type_definition_module}.{self.return_value_local_class}"
 
-class RustInterfaceSymbols(PythonSymbols):
+class RustSymbols:
+    def __init__(self):
+        pass
+
+class RustInterfaceSymbols(RustSymbols):
 
     def __init__(self, interface):
         super().__init__()
@@ -66,3 +74,29 @@ class RustInterfaceSymbols(PythonSymbols):
     def server_struct_name(self) -> str:
         """ Name of the struct for the interface server."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Server"
+
+class CppSymbols:
+    def __init__(self):
+        pass
+
+class CppInterfaceSymbols(CppSymbols):
+    
+    def __init__(self, interface):
+        super().__init__()
+        self._iface = interface
+
+    @property
+    def client_class_name(self) -> str:
+        return f"{stringmanip.upper_camel_case(self._iface.name)}Client"
+    
+    @property
+    def server_class_name(self) -> str:
+        return f"{stringmanip.upper_camel_case(self._iface.name)}Server"
+
+    @property
+    def enum_header_file(self) -> str:
+        return "enums.hpp"
+    
+    @property
+    def property_struct_header_file(self) -> str:
+        return "property_structs.hpp"

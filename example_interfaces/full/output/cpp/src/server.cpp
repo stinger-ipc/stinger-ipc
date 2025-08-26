@@ -185,12 +185,13 @@ void FullServer::_callAddNumbersHandler(
             responseJson.SetObject();
             
             
+            // Return type is a single value
+            
             // add the sum (a/n PRIMITIVE) to the json
             rapidjson::Value returnValueSum;
             returnValueSum.SetInt(ret);  
             responseJson.AddMember("sum", returnValueSum, responseJson.GetAllocator());
             
-
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
@@ -228,6 +229,7 @@ void FullServer::_callDoSomethingHandler(
             rapidjson::Document responseJson;
             responseJson.SetObject();
             
+            
             // Return type is a struct of values that need added to json
             
             // add the label (a/n PRIMITIVE) to the json
@@ -248,7 +250,6 @@ void FullServer::_callDoSomethingHandler(
             responseJson.AddMember("day", returnValueDay, responseJson.GetAllocator());
             
             
-
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);

@@ -1,7 +1,4 @@
-# _weather_ API Overview 
-
-
-
+# _weather_ API Overview
 
 
 ## Signals

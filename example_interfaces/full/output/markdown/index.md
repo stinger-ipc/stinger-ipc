@@ -1,7 +1,4 @@
-# _Full_ API Overview 
-
-
-
+# _Full_ API Overview
 
 
 ## Signals

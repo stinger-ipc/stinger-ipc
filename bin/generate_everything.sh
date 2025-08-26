@@ -35,6 +35,7 @@ function generate_cpp() {
 
 generate_cpp full
 generate_cpp signal_only
+generate_cpp weather
 
 # Rust
 

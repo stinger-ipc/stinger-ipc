@@ -42,6 +42,7 @@ if __name__ == "__main__":
     for f in os.listdir(headers_template_dir):
         header_code_path = os.path.join("include", f)
         if f.endswith(".jinja2"):
+            print(f"GENERATING HEADER: {f}")
             header_dest_path = header_code_path[:-len(".jinja2")]
             params['header_files'].append(header_dest_path)
             t.render_template(header_code_path, header_dest_path, **params)
@@ -50,6 +51,7 @@ if __name__ == "__main__":
     for f in os.listdir(src_template_dir):
         source_code_path = os.path.join("src", f)
         if f.endswith(".jinja2"):
+            print(f"GENERATING SOURCE: {f}")
             source_dest_path = source_code_path[:-len(".jinja2")]
             params['source_files'].append(source_dest_path)
             t.render_template(source_code_path, source_dest_path, **params)
@@ -58,8 +60,10 @@ if __name__ == "__main__":
     for f in os.listdir(example_template_dir):
         example_code_path = os.path.join("examples", f)
         if f.endswith(".jinja2"):
+            print(f"GENERATING EXAMPLE: {f}")
             example_dest_path = example_code_path[:-len(".jinja2")]
             t.render_template(example_code_path, example_dest_path, **params)
 
+    print(f"GENERATING CmakeLists")
     t.render_template("CMakeLists.txt.jinja2", "CMakeLists.txt", **params)
 

@@ -3,13 +3,13 @@
 
 #include "broker.hpp"
 #include "server.hpp"
-#include "enums.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
 
 int main(int argc, char** argv) {
 
     {%set broker = stinger.get_example_broker()%}
-    auto conn = std::make_shared<{{broker.class_name}}>({%if broker.hostname is none%}"localhost", 1883, {%endif%}"{{stinger.name | UpperCamelCase}}Serve-demo");
-    {{stinger.name | UpperCamelCase}}Server server(conn);
+    auto conn = std::make_shared<{{broker.class_name}}>({%if broker.hostname is none%}"localhost", 1883, {%endif%}"{{stinger.name | UpperCamelCase}}");
+    {{stinger.cpp.server_class_name}} server(conn);
 
     {%-for sig_name, sig in stinger.signals.items() %}
     auto {{sig_name}}Future = server.emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
@@ -22,9 +22,9 @@ int main(int argc, char** argv) {
     server.register{{method_name | UpperCamelCase}}Handler([]({%for arg in method.arg_list%}{{arg.cpp_type}} unused{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_cpp_class}}
     {
         std::cout << "Received call for {{method_name}}\n";
-        {%if method.return_value_type == 'struct'%}
+        {%-if method.return_value_type == 'struct'%}
         return {{method.return_value_name | UpperCamelCase}}{ {{method.get_return_value_random_example_value('c++')}} };
-        {%else%}
+        {%-elif method.return_value_type is not false %}
         return {{method.get_return_value_random_example_value('c++')}};
         {%-endif%}
     });

@@ -1,9 +1,7 @@
 from jacobsjinjatoo import templator as jj2
+from jacobsjinjatoo import stringmanip
 import sys
-import yaml
 import os.path
-
-
 
 from stingeripc import StingerInterface
 
@@ -24,7 +22,7 @@ def main():
     ]:
         t.render_template(f"{output_file}.jinja2", output_file, **params)
 
-    generated_src_dir = os.path.join(outdir, stinger.name.lower())
+    generated_src_dir = os.path.join(outdir, f"{stringmanip.lower_camel_case(stinger.name).lower()}ipc")
     os.makedirs(generated_src_dir, exist_ok=True)
     for output_file in [
         "server.py",

@@ -1,3 +1,10 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the Full interface.
+*/
+
 
 #pragma once
 
@@ -13,6 +20,7 @@
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
 #include "return_types.hpp"
+#include "property_structs.hpp"
 
 class FullClient {
 

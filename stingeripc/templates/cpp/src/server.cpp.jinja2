@@ -11,14 +11,14 @@
 #include <rapidjson/document.h>
 
 #include "server.hpp"
-#include "enums.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
 #include "ibrokerconnection.hpp"
 
 
-constexpr const char {{stinger.name | UpperCamelCase}}Server::NAME[];
-constexpr const char {{stinger.name | UpperCamelCase}}Server::INTERFACE_VERSION[];
+constexpr const char {{stinger.cpp.server_class_name}}::NAME[];
+constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
 
-{{stinger.name | UpperCamelCase}}Server::{{stinger.name | UpperCamelCase}}Server(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
+{{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
     _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
     {
         _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
@@ -28,7 +28,7 @@ constexpr const char {{stinger.name | UpperCamelCase}}Server::INTERFACE_VERSION[
     {%endfor%}
 }
 
-void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(
+void {{stinger.cpp.server_class_name}}::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
@@ -67,7 +67,7 @@ void {{stinger.name | UpperCamelCase}}Server::_receiveMessage(
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
-boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+boost::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -98,7 +98,7 @@ boost::future<bool> {{stinger.name | UpperCamelCase}}Server::emit{{sig_name | Up
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-void {{stinger.name | UpperCamelCase}}Server::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
+void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
 {
     std::cout << "Registered method to handle {{method.topic}}\n";
     _{{method_name | camelCase}}Handler = func;
@@ -106,7 +106,7 @@ void {{stinger.name | UpperCamelCase}}Server::register{{method_name | UpperCamel
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | UpperCamelCase}}Handler(
+void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Handler(
         const std::string& topic, 
         const rapidjson::Document& doc, 
         const boost::optional<std::string> optCorrelationId,
@@ -130,12 +130,13 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | UpperCamelCas
         }
         {%endfor%}
 
-        {{method.return_value_cpp_class}} ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+        {%if method.return_value_type is not false%}{{method.return_value_cpp_class}} ret = {%endif%}_{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
 
         if (optResponseTopic)
         {
             rapidjson::Document responseJson;
             responseJson.SetObject();
+            
             {%macro add_arg_to_json(arg, value) %}
             // add the {{arg.name}} (a/n {{arg.arg_type.name}}) to the json
             rapidjson::Value returnValue{{arg.name|UpperCamelCase}};
@@ -150,16 +151,15 @@ void {{stinger.name | UpperCamelCase}}Server::_call{{method_name | UpperCamelCas
             {%-endif%} {# value or enum#}
             responseJson.AddMember("{{arg.name}}", returnValue{{arg.name|UpperCamelCase}}, responseJson.GetAllocator());
             {%endmacro%}
-
             {%-if method.return_value_type == 'struct'%}
             // Return type is a struct of values that need added to json
             {%for member in method.return_value-%}
             {{add_arg_to_json(member, "ret."+member.name)}}
             {%endfor%}
-            {%-else%}
+            {%-elif method.return_value_type is not false%}
+            // Return type is a single value
             {{add_arg_to_json(method.return_value, "ret")}}
             {%-endif%}
-
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
