@@ -1,11 +1,11 @@
 [project]
 name = "stinger-ipc"
-version = "0.0.5"
+version = "0.0.6"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "jacobs-jinja-too>=0.1.0",
+    "jacobs-jinja-too>=0.2.3",
     "packaging>=25.0",
     "pydantic>=2.11.7",
     "pyyaml>=6.0.2",
@@ -45,3 +45,4 @@ stingeripc = [
 pythongen = "stingeripc.tools.python_generator:run"
 rustgen = "stingeripc.tools.rust_generator:main"
 markdowngen = "stingeripc.tools.markdown_generator:run"
+stinger = "stingeripc.tools.cli:run"

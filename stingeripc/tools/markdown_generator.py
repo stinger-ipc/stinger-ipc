@@ -22,7 +22,7 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
     for output_file in [
         "index.md",
     ]:
-        print(f"[bold red]GENERATING:[/bold red] {output_file}")
+        print(f"[bold red]GENERATING:[/bold red] {os.path.join(outdir, output_file)}")
         t.render_template(f"{output_file}.jinja2", output_file, **params)
 
 def run():

@@ -2,15 +2,14 @@
 
 BASE_DIR=$(dirname $0)
 
-# Python
-
+#### Python
 
 function generate_python() {
     echo
     echo "----------- Generating Python for ${IFACE_NAME} ----------------"
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
-    uv run pythongen ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    uv run stinger generate python ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
     #uv run mypy ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
     uv run black ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
 }
@@ -19,8 +18,7 @@ generate_python signal_only
 generate_python full
 generate_python weather
 
-# C++
-
+#### C++
 
 function generate_cpp() {
     echo
@@ -33,18 +31,18 @@ function generate_cpp() {
     fi
 }
 
-generate_cpp full
-generate_cpp signal_only
-generate_cpp weather
+#generate_cpp full
+#generate_cpp signal_only
+#generate_cpp weather
 
-# Rust
+#### Rust
 
 function generate_rust() {
     echo
     echo "----------- Generating Rust for ${IFACE_NAME}----------------"
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
-    uv run rustgen ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
+    uv run stinger generate rust ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     if [ $? -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example client)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example ${IFACE_NAME}_server_example)
@@ -66,7 +64,7 @@ generate_rust weather
 #uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/full/full.stingeripc ${BASE_DIR}/../example_interfaces/full/output/asyncapi/
 #uv run ${BASE_DIR}/asyncapi_generator.py ${BASE_DIR}/../example_interfaces/signal_only/signal_only.stingeripc ${BASE_DIR}/../example_interfaces/signal_only/output/asyncapi/
 
-# Markdown
+#### Markdown
 
 function generate_markdown() {
     echo
@@ -77,5 +75,5 @@ function generate_markdown() {
     uv run markdowngen ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
 }
 
-generate_markdown full
-generate_markdown weather
+#generate_markdown full
+#generate_markdown weather

@@ -23,7 +23,7 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
         "pyproject.toml",
     ]:
         print(f"[bold red]Generating:[/bold red] {output_file}")
-        t.render_template(f"{output_file}.jinja2", os.path.join(outdir, output_file), **params)
+        t.render_template(f"{output_file}.jinja2", output_file, **params)
 
     package_name = f"{stringmanip.lower_camel_case(stinger.name).lower()}ipc"
     generated_pkg_dir = os.path.join(outdir, package_name)
@@ -37,9 +37,9 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
         "method_codes.py",
     ]:
         print(f"[bold red]Generating:[/bold red] {output_file}")
-        t.render_template(f"{output_file}.jinja2", os.path.join(generated_pkg_dir, output_file), **params)
+        t.render_template(f"{output_file}.jinja2", output_file, **params)
 
-    t.render_template("interface_types.py.jinja2", os.path.join(generated_pkg_dir, f"{stinger.get_enum_module_name()}.py"), **params)
+    t.render_template("interface_types.py.jinja2", f"{stinger.get_enum_module_name()}.py", **params)
 
 def run():
     typer.run(main)
