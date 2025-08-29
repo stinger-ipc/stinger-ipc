@@ -37,7 +37,6 @@ def main(
 
     def recursive_render_templates(local_dir: str):
         local_dir = Path(local_dir)
-        print(f"Walking {local_dir}")
         cur_template_dir = template_dir / local_dir
         for entry in os.listdir(cur_template_dir):
             if entry == "target":
@@ -51,7 +50,7 @@ def main(
                 t.render_template(entry_local_path, destpath, **params)
             elif entry_full_path.is_dir():
                 new_dir = outdir / entry_local_path
-                print(f"MKDIR: {new_dir}")
+                print(f"MKDIR: {new_dir.resolve()}")
                 if not new_dir.exists():
                     new_dir.mkdir(parents=True)
                 recursive_render_templates(entry_local_path)

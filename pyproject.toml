@@ -5,7 +5,7 @@ description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "jacobs-jinja-too>=0.2.3",
+    "jacobs-jinja-too>=0.2.2",
     "packaging>=25.0",
     "pydantic>=2.11.7",
     "pyyaml>=6.0.2",
