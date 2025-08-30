@@ -1,23 +1,25 @@
 
 from jacobsjinjatoo import stringmanip
+import stringcase
 
 class PythonSymbols:
     def __init__(self):
         ...
 
     @property
-    def package_name(self):
-        return f"{stringmanip.lower_camel_case(self._iface.name).lower()}ipc"
-
-    @property
     def type_definition_module(self) -> str:
         return "stinger_types"
+
 
 class PythonInterfaceSymbols(PythonSymbols):
 
     def __init__(self, interface):
         super().__init__()
         self._iface = interface
+
+    @property
+    def package_name(self):
+        return f"{stringmanip.lower_camel_case(self._iface.name).lower()}ipc"
 
     @property
     def client_class_name(self) -> str:
@@ -64,6 +66,21 @@ class RustInterfaceSymbols(RustSymbols):
     def __init__(self, interface):
         super().__init__()
         self._iface = interface
+
+    @property
+    def client_package_name(self) -> str:
+        """ Name of the rust package for the interface client."""
+        return f"{stringcase.snakecase(self._iface.name)}_client"
+
+    @property
+    def server_package_name(self) -> str:
+        """ Name of the rust package for the interface server."""
+        return f"{stringcase.snakecase(self._iface.name)}_server"
+    
+    @property
+    def common_package_name(self) -> str:
+        """ Name of the rust package for the interface common types."""
+        return f"{stringcase.snakecase(self._iface.name)}_types"
 
     @property
     def client_struct_name(self) -> str:

@@ -4,10 +4,10 @@ version = "0.0.1"
 edition = "2024"
 
 [dependencies]
-connection = { path = "../connection" }
+signal_only_types = { path = "../payloads" }
 futures = "0.3"
 json = "0.12.4"
-paho-mqtt = "0.13.3"
+mqttier = { git = "https://github.com/stinger-ipc/mqttier.git" }
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 tokio = { version = "1", features = ["full"] }

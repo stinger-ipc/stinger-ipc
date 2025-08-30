@@ -1,13 +1,13 @@
 [package]
-name = "{{stinger.name | snake_case}}_server"
+name = "{{stinger.rust.server_package_name}}"
 version = "{{stinger.version}}"
 edition = "2024"
 
 [dependencies]
-connection = { path = "../connection" }
+{{stinger.rust.common_package_name}} = { path = "../payloads" }
 futures = "0.3"
 json = "0.12.4"
-paho-mqtt = "0.13.3"
+mqttier = { git = "https://github.com/stinger-ipc/mqttier.git" }
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 tokio = { version = "1", features = ["full"] }
@@ -15,5 +15,5 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 
 [[example]]
-name = "{{stinger.name | snake_case}}_server_example"
+name = "{{stinger.name | snake_case}}_server_demo"
 path = "examples/server.rs"

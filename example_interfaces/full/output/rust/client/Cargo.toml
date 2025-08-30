@@ -3,11 +3,9 @@ name = "full_client"
 version = "0.0.1"
 edition = "2024"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 mqttier = { git = "https://github.com/stinger-ipc/mqttier.git" }
-connection = { path = "../connection" }
+full_types = { path = "../payloads" }
 futures = "0.3"
 json = "0.12.4"
 paho-mqtt = "0.13.3"
