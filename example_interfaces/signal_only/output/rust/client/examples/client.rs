@@ -1,6 +1,6 @@
 use futures::{executor::block_on};
+use mqttier::MqttierClient;
 use signal_only_client::SignalOnlyClient;
-use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
 
@@ -8,16 +8,17 @@ use tokio::join;
 async fn main() {
     block_on(async {
         
-        let mut connection = Connection::new_default_connection().await.expect("Failed to create connection");
-        let mut client = SignalOnlyClient::new(&mut connection).await;
+        let mut mqttier_client = MqttierClient::new("localhost", 1883, Some("client_example".to_string())).unwrap();
+        let api_client = SignalOnlyClient::new(&mut mqttier_client).await;
 
+        let client_for_loop = api_client.clone();
         tokio::spawn(async move {
             println!("Making call to start connection loop");
-            let _conn_loop = connection.start_loop().await;
+            let _conn_loop = client_for_loop.run_loop().await;
         });
 
         
-        let mut sig_rx = client.get_another_signal_receiver();
+        let mut sig_rx = api_client.get_another_signal_receiver();
         println!("Got signal receiver for anotherSignal");
 
         sleep(Duration::from_secs(5)).await;
@@ -38,12 +39,10 @@ async fn main() {
         });
         
 
-        println!("Starting client receive loop");
-        let _client_loop = client.receive_loop().await;
 
         
 
-        join!(sig_rx_task);
+        let _ = join!(sig_rx_task);
     });
     // Ctrl-C to stop
 }

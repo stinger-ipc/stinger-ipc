@@ -8,7 +8,7 @@ It contains enumerations used by the Full interface.
 
 use std::fmt;
 use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::{FromPrimitive, ToPrimitive};
+use num_traits::FromPrimitive;
 
 use serde::{Serialize, Deserialize};
 
@@ -82,11 +82,13 @@ pub enum MethodResultCode {
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// Request Object for `addNumbers`
 pub struct AddNumbersRequestObject {
     pub first: i32,
     pub second: i32,
     pub third: Option<i32>,
 }
+
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AddNumbersReturnValue {
@@ -97,12 +99,15 @@ pub struct AddNumbersReturnValue {
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// Request Object for `doSomething`
 pub struct DoSomethingRequestObject {
     pub aString: String,
 }
 
+
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Return Object for `doSomething`
 pub struct DoSomethingReturnValue {
     pub label: String,
     pub identifier: i32,

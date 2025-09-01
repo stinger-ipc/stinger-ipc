@@ -8,7 +8,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 {%if stinger.enums | length > 0%}
 use std::fmt;
 use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::{FromPrimitive, ToPrimitive};
+use num_traits::FromPrimitive;
 {%endif%}
 use serde::{Serialize, Deserialize};
 
@@ -74,6 +74,7 @@ pub enum MethodResultCode { {%-for rc_i, rc_name in stinger.method_return_codes.
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// Request Object for `{{method_name}}`
 pub struct {{method_name | UpperCamelCase}}RequestObject {
     {%-for arg in method.arg_list%}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
@@ -83,9 +84,11 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
     {%endif-%}
     {%endfor%}
 }
-{%if method.return_value_type == 'struct'%}
+
+{%if method.return_value_type == 'struct' %}
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Return Object for `{{method_name}}`
 pub struct {{method.return_value_name | UpperCamelCase}} {
 {%-for arg in method.return_value %}
     pub {{arg.name}}: {{arg.rust_local_type}},
@@ -95,6 +98,11 @@ pub struct {{method.return_value_name | UpperCamelCase}} {
 #[derive(Debug, Clone, Serialize)]
 pub struct {{method.return_value_name | UpperCamelCase}} {
     pub {{method.return_value_property_name}}: {{method.return_value.rust_local_type}},
+}
+{%else%}
+#[derive(Debug, Clone, Serialize)]
+/// Empty (no parameters) return structure for the `{{method_name}}` method.
+pub struct {{method.return_value_name | UpperCamelCase}} {
 }
 {%endif-%}
 {%-endfor%}

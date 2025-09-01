@@ -203,9 +203,9 @@ class ArgEnum(Arg):
             retval = f"{self._enum.class_name}::{stringcase.constcase(value)}"
         elif lang == "rust":
             if self.optional:
-                retval = f"Some(connection::payloads::{self._enum.class_name}::{stringmanip.upper_camel_case(value)})"
+                retval = f"Some({self._enum.class_name}::{stringmanip.upper_camel_case(value)})"
             else:
-                retval = f"connection::payloads::{self._enum.class_name}::{stringmanip.upper_camel_case(value)}"
+                retval = f"{self._enum.class_name}::{stringmanip.upper_camel_case(value)}"
         random.setstate(random_state)
         return retval
 
@@ -646,7 +646,7 @@ class Property(InterfaceComponent):
         if len(self._arg_list) == 1:
             return self._arg_list[0].rust_type
         else:
-            return f"connection::payloads::{self.rust_local_type}"
+            return f"{self.rust_local_type}"
 
     @property
     def arg_list(self) -> list[Arg]:
@@ -740,7 +740,7 @@ class InterfaceEnum:
 
     @property
     def rust_type(self) -> str:
-        return f"connection::payloads::{self.rust_local_type}"
+        return f"{self.rust_local_type}"
 
     @property
     def cpp_type(self) -> str:
@@ -811,7 +811,7 @@ class InterfaceStruct:
 
     @property
     def rust_type(self) -> str:
-        return f"connection::payloads::{self.rust_local_type}"
+        return f"{self.rust_local_type}"
 
     @property
     def cpp_type(self) -> str:

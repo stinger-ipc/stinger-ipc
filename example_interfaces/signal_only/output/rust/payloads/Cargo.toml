@@ -19,3 +19,7 @@ features = [
     "fast-rng",          # Use a faster (but still sufficiently random) RNG
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ]
+
+[[example]]
+name = "signal_only_connection_demo"
+path = "examples/pub_and_recv.rs"

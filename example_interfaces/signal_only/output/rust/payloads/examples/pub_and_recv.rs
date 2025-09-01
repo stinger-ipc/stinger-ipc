@@ -1,5 +1,5 @@
 
-use connection::Connection;
+use mqttier::MqttierClient;
 use tokio::time::{sleep, Duration};
 use tokio::join;
 use tokio::sync::mpsc;
@@ -7,26 +7,26 @@ use tokio::sync::mpsc;
 #[tokio::main]
 async fn main() {
     
-    let mut connection = Connection::new_default_connection().await.expect("Failed to create connection");
+    println!("Starting pub and recv example");
+    let client = MqttierClient::new("localhost", 1883, None).unwrap();
     let (recv_chan_tx, mut recv_chan_rx) = mpsc::channel(32);
-    connection.connect().await.expect("Failed to connect to broker");
-    connection.subscribe("example/recv_topic", recv_chan_tx.clone()).await.expect("Failed to subscribe to topic");
-    let mut publisher = connection.get_publisher();
+    client.subscribe("example/recv_topic".to_string(), 1, recv_chan_tx.clone()).await.expect("Failed to subscribe to topic");
 
-    let loop_task = tokio::spawn(async move {
-        connection.start_loop().await;
-    });
+    println!("Starting MQTT client loop");
+    client.run_loop().await.unwrap();
 
+    let client2 = client.clone();
     let _pub_task = tokio::spawn(async move {
         let mut i = 0;
         loop {
             i = i + 1;
             sleep(Duration::from_secs(1)).await; // Simulate periodic publishing
-            publisher.publish_simple("example/pub_topic".to_string(), format!("Periodic message {}",i).to_string()).await.expect("Failed to publish periodic message");
+            let message = format!("Periodic message {}", i);
+            client2.publish_string("example/pub_topic".to_string(), message, 1, false, None).await.expect("Failed to publish periodic message");
         }
     });
 
-    let _receive_task = tokio::spawn(async move {
+    let receive_task = tokio::spawn(async move {
         loop {
             match recv_chan_rx.recv().await {
                 Some(message) => {
@@ -40,5 +40,5 @@ async fn main() {
         }
     });
     
-    let _result = join!(loop_task);
+    let _result = join!(receive_task);
 }

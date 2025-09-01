@@ -5,20 +5,20 @@ on the next generation.
 This is the Client for the {{stinger.name}} interface.
 */
 
-extern crate paho_mqtt as mqtt;
-use connection::{MessagePublisher, Connection, ReceivedMessage};
-
-use json::{JsonValue};
+use mqttier::{MqttierClient, ReceivedMessage};
+{%if stinger.methods|length > 0 -%}
 use std::collections::HashMap;
+use json::JsonValue;
 use uuid::Uuid;
+{%endif-%}
 use serde_json;
 
+
 #[allow(unused_imports)]
-use connection::payloads::{*, MethodResultCode};
+use {{stinger.rust.common_package_name}}::{MethodResultCode, *};
 
 use std::sync::{Arc, Mutex};
-use tokio::sync::{mpsc, broadcast, oneshot};
-use tokio::join;
+use tokio::sync::{broadcast, mpsc{%if stinger.methods|length > 0 -%}, oneshot{%endif-%}};
 use tokio::task::JoinError;
 
 /// This struct is used to store all the MQTTv5 subscription ids
@@ -26,16 +26,16 @@ use tokio::task::JoinError;
 #[derive(Clone, Debug)]
 struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
     {%for method_name, method in stinger.methods.items()-%}
-    {{method_name | snake_case}}_method_resp: i32,
-    {%-endfor%}
+    {{method_name | snake_case}}_method_resp: usize,
+    {%endfor%}
     {%for sig_name, sig in stinger.signals.items()-%}
-    {{sig_name | snake_case}}_signal: Option<i32>,
+    {{sig_name | snake_case}}_signal: Option<usize>,
     {%-endfor%}
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
 /// The rx side of the broadcast channels can be created from the tx side later.
-/// When {{stinger.name | UpperCamelCase }}Client gets a message and determines that it
+/// When {{stinger.rust.client_struct_name}} gets a message and determines that it
 /// is a signal, it will send the signal payload via the tx channel that is in this struct.
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase }}SignalChannels {
@@ -45,22 +45,22 @@ struct {{stinger.name | UpperCamelCase }}SignalChannels {
 }
 
 /// This is the struct for our API client.
-pub struct {{stinger.name | UpperCamelCase }}Client {
+#[derive(Clone)]
+pub struct {{stinger.rust.client_struct_name}} {
+    mqttier_client: MqttierClient,
     {%if stinger.methods | length > 0 %}/// Temporarily holds oneshot channels for responses to method calls.
-    pending_responses: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>>,
+    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
     {%endif%}
 
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
-    msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
+    msg_streamer_rx: Arc<Mutex<Option<mpsc::Receiver<ReceivedMessage>>>>,
 
     /// The Sender side of MQTT messages that are received from the broker.  This tx
     /// side is cloned for each subscription made.
+    #[allow(dead_code)]
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
 
-    {%if stinger.methods | length > 0 %}/// Through this MessagePublisher object, we can publish messages to MQTT.
-    msg_publisher: MessagePublisher,
-    {%endif%}
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: {{stinger.name | UpperCamelCase }}SubscriptionIds,
 
@@ -68,35 +68,32 @@ pub struct {{stinger.name | UpperCamelCase }}Client {
     signal_channels: {{stinger.name | UpperCamelCase }}SignalChannels,
     {%endif%}
     /// Copy of MQTT Client ID
-    client_id: String,
+    pub client_id: String,
 }
 
-impl {{stinger.name | UpperCamelCase }}Client {
+impl {{stinger.rust.client_struct_name}} {
 
-    /// Creates a new {{stinger.name | UpperCamelCase }}Client that uses elements from the provided Connection object.
-    pub async fn new(connection: &mut Connection) -> Self {
-        let _ = connection.connect().await.expect("Could not connect to MQTT broker");
+    /// Creates a new {{stinger.rust.client_struct_name}} that uses an MqttierClient.
+    pub async fn new(connection: &mut MqttierClient) -> Self {
 
-        // Create a channel for messages to get from the Connection object to this {{stinger.name | UpperCamelCase }}Client object.
+        // Create a channel for messages to get from the Connection object to this {{stinger.rust.client_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
-        {%if stinger.methods | length > 0 %}// Create the publisher object.
-        let publisher = connection.get_publisher();
-
-        // Subscribe to all the topics needed for method responses.
-        {%endif-%}
         {%for method_name, method in stinger.methods.items()-%}
         let topic_{{method_name | snake_case}}_method_resp = format!("{{method.response_topic('{}')}}", connection.client_id);
-        let subscription_id_{{method_name | snake_case}}_method_resp = connection.subscribe(&topic_{{method_name | snake_case}}_method_resp, message_received_tx.clone()).await;
-        let subscription_id_{{method_name | snake_case}}_method_resp = subscription_id_{{method_name | snake_case}}_method_resp.unwrap_or_else(|_| -1);
+        let subscription_id_{{method_name | snake_case}}_method_resp = connection.subscribe(topic_{{method_name | snake_case}}_method_resp, 2, message_received_tx.clone()).await;
+        let subscription_id_{{method_name | snake_case}}_method_resp = subscription_id_{{method_name | snake_case}}_method_resp.unwrap_or_else(|_| usize::MAX);
+        {%endfor%}
+        
+        {%for sig_name, sig in stinger.signals.items()-%}
         {%endfor%}
 
         // Subscribe to all the topics needed for signals.
         {%for signal_name, signal in stinger.signals.items()-%}
-        let topic_{{signal_name | snake_case}}_signal = "{{signal.topic}}";
-        let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(&topic_{{signal_name | snake_case}}_signal, message_received_tx.clone()).await;
-        let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| -1);
+        let topic_{{signal_name | snake_case}}_signal = "{{signal.topic}}".to_string();
+        let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(topic_{{signal_name | snake_case}}_signal, 2, message_received_tx.clone()).await;
+        let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| usize::MAX);
         {%endfor%}
 
         // Create structure for subscription ids.
@@ -116,12 +113,12 @@ impl {{stinger.name | UpperCamelCase }}Client {
             {%endfor%}
         };{%endif%}
 
-        // Create {{stinger.name | UpperCamelCase }}Client structure.
-        let inst = {{stinger.name | UpperCamelCase }}Client {
+        // Create {{stinger.rust.client_struct_name}} structure.
+        let inst = {{stinger.rust.client_struct_name}} {
+            mqttier_client: connection.clone(),
             {%if stinger.methods | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
-            msg_streamer_rx: Some(message_received_rx),
+            msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
-            {%if stinger.methods | length > 0 %}msg_publisher: publisher,{%endif%}
             subscription_ids: sub_ids,
             {%if stinger.signals | length > 0 %}signal_channels: signal_channels,{%endif%}
             client_id: connection.client_id.to_string(),
@@ -143,23 +140,24 @@ impl {{stinger.name | UpperCamelCase }}Client {
     /// and published to the `{{method.topic}}` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn {{method_name|snake_case}}(&mut self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodResultCode> {
+    pub async fn {{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodResultCode> {
         let correlation_id = Uuid::new_v4();
+        let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
             hashmap.insert(correlation_id.clone(), sender);
         }
 
-        let data = connection::payloads::{{method_name | UpperCamelCase}}RequestObject {
+        let data = {{method_name | UpperCamelCase}}RequestObject {
             {%-for arg in method.arg_list%}
             {{arg.name}}: {{arg.name|snake_case}},
             {%-endfor%}
         };
 
-        let response_topic = format!("{{method.response_topic('{}')}}", self.client_id);
-        let _ = self.msg_publisher.publish_request_structure("{{method.topic}}".to_string(), &data, response_topic.as_str(), correlation_id).await;
-        let resp_obj = receiver.await.unwrap();
+        let response_topic: String = format!("{{method.response_topic('{}')}}", self.client_id);
+        let _ = self.mqttier_client.publish_request("{{method.topic}}".to_string(), &data, response_topic, correlation_data).await;
+        let {%if method.return_value_type is false %}_{%endif%}resp_obj = receiver.await.unwrap();
         
         {%-if method.return_value_type == 'primitive' %}
         Ok(resp_obj["{{method.return_value_property_name}}"].as_{{method.return_value_rust_type}}().unwrap())
@@ -201,40 +199,49 @@ impl {{stinger.name | UpperCamelCase }}Client {
                     let oss: oneshot::Sender<JsonValue> = sender;
                     match oss.send(payload_object) {
                         Ok(_) => (),
-                        Err(_) => ()
+                        Err(_) => (),
                     }
-                },
-                None => ()
+                }
+                None => (),
             }
         }
     }
     {%endfor%}
 
     /// Starts the tasks that process messages received.
-    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+    pub async fn run_loop(&self) -> Result<(), JoinError> {
+        // Make sure the MqttierClient is connected and running.
+        let _ = self.mqttier_client.run_loop().await;
+
         {%if stinger.methods | length > 0%}// Clone the Arc pointer to the map.  This will be moved into the loop_task.
         let resp_map: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<JsonValue>>>> = self.pending_responses.clone();
         {%endif%}
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
-        let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
+        let mut message_receiver = {
+            let mut guard = self.msg_streamer_rx.lock().expect("Mutex was poisoned");
+            guard.take().expect("msg_streamer_rx should be Some")
+        };
 
         let sig_chans = self.signal_channels.clone();
         let sub_ids = self.subscription_ids.clone();
 
-        let loop_task = tokio::spawn(async move {
+        let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
-                let msg_props = msg.message.properties();
-                let opt_corr_id_bin: Option<Vec<u8>> = msg_props.get_binary(mqtt::PropertyCode::CorrelationData);
-                let corr_id: Option<Uuid> = opt_corr_id_bin.and_then(|b| Uuid::from_slice(&b).ok());
+                {% if stinger.methods|length > 0 %}
+                let opt_corr_data: Option<Vec<u8>> = msg.correlation_data.clone();
+                let opt_corr_id: Option<Uuid> = opt_corr_data.and_then(|b| Uuid::from_slice(b.as_slice()).ok());
+
+                let payload = String::from_utf8_lossy(&msg.payload).to_string();
                 {%-for method_name, method in stinger.methods.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method_resp {
-                    {{stinger.name | UpperCamelCase }}Client::handle_{{method_name|snake_case}}_response(resp_map.clone(), msg.message.payload_str().to_string(), corr_id);
+                    {{stinger.rust.client_struct_name}}::handle_{{method_name|snake_case}}_response(resp_map.clone(), payload, opt_corr_id);
                 }
                 {%-endfor%}
+                {%endif%}
                 {%-for signal_name, signal in stinger.signals.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{signal_name | snake_case}}_signal.unwrap_or_default() {
                     let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
-                    let pl: connection::payloads::{{signal_name | UpperCamelCase}}SignalPayload =  serde_json::from_str(&msg.message.payload_str()).expect("Failed to deserialize");
+                    let pl: {{signal_name | UpperCamelCase}}SignalPayload =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let _send_result = chan.send(pl);
                 }
                 {%endfor%}

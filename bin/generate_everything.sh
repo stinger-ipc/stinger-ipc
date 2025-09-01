@@ -44,8 +44,10 @@ function generate_rust() {
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     uv run stinger generate rust ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     if [ $? -eq 0 ]; then
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example client)
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo build --example ${IFACE_NAME}_server_example)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo update)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_client_demo)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_server_demo)
     fi
 }
 
@@ -53,7 +55,7 @@ generate_rust signal_only
 generate_rust full
 generate_rust weather
 
-(cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example pub_and_recv)
+(cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example full_connection_demo)
 
 # AsyncAPI
 #echo "----------- Creating AsyncAPI Spec ----------------"

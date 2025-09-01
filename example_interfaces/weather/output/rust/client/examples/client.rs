@@ -1,6 +1,6 @@
 use futures::{executor::block_on};
+use mqttier::MqttierClient;
 use weather_client::WeatherClient;
-use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
 
@@ -8,16 +8,17 @@ use tokio::join;
 async fn main() {
     block_on(async {
         
-        let mut connection = Connection::new_default_connection().await.expect("Failed to create connection");
-        let mut client = WeatherClient::new(&mut connection).await;
+        let mut mqttier_client = MqttierClient::new("localhost", 1883, Some("client_example".to_string())).unwrap();
+        let mut api_client = WeatherClient::new(&mut mqttier_client).await;
 
+        let client_for_loop = api_client.clone();
         tokio::spawn(async move {
             println!("Making call to start connection loop");
-            let _conn_loop = connection.start_loop().await;
+            let _conn_loop = client_for_loop.run_loop().await;
         });
 
         
-        let mut sig_rx = client.get_current_time_receiver();
+        let mut sig_rx = api_client.get_current_time_receiver();
         println!("Got signal receiver for current_time");
 
         sleep(Duration::from_secs(5)).await;
@@ -38,24 +39,22 @@ async fn main() {
         });
         
 
-        println!("Starting client receive loop");
-        let _client_loop = client.receive_loop().await;
 
         
         println!("Calling refresh_daily_forecast with example values...");
-        let result = client.refresh_daily_forecast().await.expect("Failed to call refresh_daily_forecast");
+        let result = api_client.refresh_daily_forecast().await.expect("Failed to call refresh_daily_forecast");
         println!("refresh_daily_forecast response: {:?}", result);
         
         println!("Calling refresh_hourly_forecast with example values...");
-        let result = client.refresh_hourly_forecast().await.expect("Failed to call refresh_hourly_forecast");
+        let result = api_client.refresh_hourly_forecast().await.expect("Failed to call refresh_hourly_forecast");
         println!("refresh_hourly_forecast response: {:?}", result);
         
         println!("Calling refresh_current_conditions with example values...");
-        let result = client.refresh_current_conditions().await.expect("Failed to call refresh_current_conditions");
+        let result = api_client.refresh_current_conditions().await.expect("Failed to call refresh_current_conditions");
         println!("refresh_current_conditions response: {:?}", result);
         
 
-        join!(sig_rx_task);
+        let _ = join!(sig_rx_task);
     });
     // Ctrl-C to stop
 }

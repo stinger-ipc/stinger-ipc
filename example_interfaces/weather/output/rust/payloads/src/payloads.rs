@@ -8,7 +8,7 @@ It contains enumerations used by the weather interface.
 
 use std::fmt;
 use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::{FromPrimitive, ToPrimitive};
+use num_traits::FromPrimitive;
 
 use serde::{Serialize, Deserialize};
 
@@ -90,21 +90,42 @@ pub enum MethodResultCode {
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// Request Object for `refresh_daily_forecast`
 pub struct RefreshDailyForecastRequestObject {
+}
+
+
+#[derive(Debug, Clone, Serialize)]
+/// Empty (no parameters) return structure for the `refresh_daily_forecast` method.
+pub struct RefreshDailyForecastReturnValue {
 }
 
 // Structures for `refresh_hourly_forecast` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// Request Object for `refresh_hourly_forecast`
 pub struct RefreshHourlyForecastRequestObject {
+}
+
+
+#[derive(Debug, Clone, Serialize)]
+/// Empty (no parameters) return structure for the `refresh_hourly_forecast` method.
+pub struct RefreshHourlyForecastReturnValue {
 }
 
 // Structures for `refresh_current_conditions` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// Request Object for `refresh_current_conditions`
 pub struct RefreshCurrentConditionsRequestObject {
+}
+
+
+#[derive(Debug, Clone, Serialize)]
+/// Empty (no parameters) return structure for the `refresh_current_conditions` method.
+pub struct RefreshCurrentConditionsReturnValue {
 }
 
 

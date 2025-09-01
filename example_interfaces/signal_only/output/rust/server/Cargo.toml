@@ -15,5 +15,5 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 
 [[example]]
-name = "signal_only_server_example"
+name = "signal_only_server_demo"
 path = "examples/server.rs"

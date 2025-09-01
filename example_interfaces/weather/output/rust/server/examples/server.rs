@@ -5,11 +5,13 @@ on the next generation.
 It contains enumerations used by the weather interface.
 */
 use futures::{executor::block_on};
+use mqttier::MqttierClient;
 use weather_server::WeatherServer;
-use connection::Connection;
 use tokio::time::{sleep, Duration};
 use tokio::join;
-use connection::payloads::{MethodResultCode, *};
+
+#[allow(unused_imports)]
+use weather_types::payloads::{MethodResultCode, *};
 
 
 fn refresh_daily_forecast_handler() -> Result<(), MethodResultCode> {
@@ -33,16 +35,16 @@ fn refresh_current_conditions_handler() -> Result<(), MethodResultCode> {
 async fn main() {
     block_on(async {
         
-        let mut connection = Connection::new_default_connection().await.unwrap();
+        let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
         let mut server = WeatherServer::new(&mut connection).await;
-
+        
         let loop_task = tokio::spawn(async move {
             println!("Making call to start connection loop");
-            let _conn_loop = connection.start_loop().await;
+            let _conn_loop = connection.run_loop().await;
         });
         
         println!("Setting initial value for property 'location'");
-        let new_value = connection::payloads::LocationProperty {
+        let new_value = LocationProperty {
                 latitude: 3.14,
                 longitude: 3.14,
         };
@@ -53,28 +55,28 @@ async fn main() {
         server.set_current_temperature(3.14).await;
         
         println!("Setting initial value for property 'current_condition'");
-        let new_value = connection::payloads::CurrentConditionProperty {
-                condition: connection::payloads::WeatherCondition::Sunny,
+        let new_value = CurrentConditionProperty {
+                condition: WeatherCondition::Sunny,
                 description: "apples".to_string(),
         };
         server.set_current_condition(new_value).await;
         
         
         println!("Setting initial value for property 'daily_forecast'");
-        let new_value = connection::payloads::DailyForecastProperty {
-                monday: connection::payloads::ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: connection::payloads::WeatherCondition::Sunny, start_time: "apples".to_string(), end_time: "apples".to_string()},
-                tuesday: connection::payloads::ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: connection::payloads::WeatherCondition::Sunny, start_time: "apples".to_string(), end_time: "apples".to_string()},
-                wednesday: connection::payloads::ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: connection::payloads::WeatherCondition::Sunny, start_time: "apples".to_string(), end_time: "apples".to_string()},
+        let new_value = DailyForecastProperty {
+                monday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Sunny, start_time: "apples".to_string(), end_time: "apples".to_string()},
+                tuesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Sunny, start_time: "apples".to_string(), end_time: "apples".to_string()},
+                wednesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Sunny, start_time: "apples".to_string(), end_time: "apples".to_string()},
         };
         server.set_daily_forecast(new_value).await;
         
         
         println!("Setting initial value for property 'hourly_forecast'");
-        let new_value = connection::payloads::HourlyForecastProperty {
-                hour_0: connection::payloads::ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: connection::payloads::WeatherCondition::Sunny},
-                hour_1: connection::payloads::ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: connection::payloads::WeatherCondition::Sunny},
-                hour_2: connection::payloads::ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: connection::payloads::WeatherCondition::Sunny},
-                hour_3: connection::payloads::ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: connection::payloads::WeatherCondition::Sunny},
+        let new_value = HourlyForecastProperty {
+                hour_0: ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: WeatherCondition::Sunny},
+                hour_1: ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: WeatherCondition::Sunny},
+                hour_2: ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: WeatherCondition::Sunny},
+                hour_3: ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: WeatherCondition::Sunny},
         };
         server.set_hourly_forecast(new_value).await;
         
@@ -102,7 +104,7 @@ async fn main() {
         
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'location'");
-        let new_value = connection::payloads::LocationProperty {
+        let new_value = LocationProperty {
                 latitude: 1.0,
                 longitude: 1.0,
         };
@@ -115,8 +117,8 @@ async fn main() {
         
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'current_condition'");
-        let new_value = connection::payloads::CurrentConditionProperty {
-                condition: connection::payloads::WeatherCondition::Sunny,
+        let new_value = CurrentConditionProperty {
+                condition: WeatherCondition::Sunny,
                 description: "Joe".to_string(),
         };
         server.set_current_condition(new_value).await;
@@ -124,21 +126,21 @@ async fn main() {
         
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'daily_forecast'");
-        let new_value = connection::payloads::DailyForecastProperty {
-                monday: connection::payloads::ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: connection::payloads::WeatherCondition::Sunny, start_time: "Joe".to_string(), end_time: "Joe".to_string()},
-                tuesday: connection::payloads::ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: connection::payloads::WeatherCondition::Sunny, start_time: "Joe".to_string(), end_time: "Joe".to_string()},
-                wednesday: connection::payloads::ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: connection::payloads::WeatherCondition::Sunny, start_time: "Joe".to_string(), end_time: "Joe".to_string()},
+        let new_value = DailyForecastProperty {
+                monday: ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: WeatherCondition::Sunny, start_time: "Joe".to_string(), end_time: "Joe".to_string()},
+                tuesday: ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: WeatherCondition::Sunny, start_time: "Joe".to_string(), end_time: "Joe".to_string()},
+                wednesday: ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: WeatherCondition::Sunny, start_time: "Joe".to_string(), end_time: "Joe".to_string()},
         };
         server.set_daily_forecast(new_value).await;
         
         
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'hourly_forecast'");
-        let new_value = connection::payloads::HourlyForecastProperty {
-                hour_0: connection::payloads::ForecastForHour {temperature: 1.0, starttime: "Joe".to_string(), condition: connection::payloads::WeatherCondition::Sunny},
-                hour_1: connection::payloads::ForecastForHour {temperature: 1.0, starttime: "Joe".to_string(), condition: connection::payloads::WeatherCondition::Sunny},
-                hour_2: connection::payloads::ForecastForHour {temperature: 1.0, starttime: "Joe".to_string(), condition: connection::payloads::WeatherCondition::Sunny},
-                hour_3: connection::payloads::ForecastForHour {temperature: 1.0, starttime: "Joe".to_string(), condition: connection::payloads::WeatherCondition::Sunny},
+        let new_value = HourlyForecastProperty {
+                hour_0: ForecastForHour {temperature: 1.0, starttime: "Joe".to_string(), condition: WeatherCondition::Sunny},
+                hour_1: ForecastForHour {temperature: 1.0, starttime: "Joe".to_string(), condition: WeatherCondition::Sunny},
+                hour_2: ForecastForHour {temperature: 1.0, starttime: "Joe".to_string(), condition: WeatherCondition::Sunny},
+                hour_3: ForecastForHour {temperature: 1.0, starttime: "Joe".to_string(), condition: WeatherCondition::Sunny},
         };
         server.set_hourly_forecast(new_value).await;
         
@@ -154,8 +156,8 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'daily_forecast_refresh_interval'");
         server.set_daily_forecast_refresh_interval(2022).await;
-        server.receive_loop().await;
-        join!(loop_task);
+        let _ = server.receive_loop().await;
+        let _ = join!(loop_task);
     });
     // Ctrl-C to stop
 }

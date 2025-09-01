@@ -1,6 +1,6 @@
 use futures::{executor::block_on};
-use {{stinger.name | snake_case}}_client::{{stinger.rust.client_struct_name}};
-use connection::Connection;
+use mqttier::MqttierClient;
+use {{stinger.rust.client_package_name}}::{{stinger.rust.client_struct_name}};
 use tokio::time::{sleep, Duration};
 use tokio::join;
 
@@ -8,16 +8,17 @@ use tokio::join;
 async fn main() {
     block_on(async {
         {%set broker = stinger.get_example_broker()%}
-        let mut connection = Connection::new_{{broker.class_name|snake_case}}().await.expect("Failed to create connection");
-        let mut client = {{stinger.rust.client_struct_name}}::new(&mut connection).await;
+        let mut mqttier_client = MqttierClient::new("localhost", 1883, Some("client_example".to_string())).unwrap();
+        let {%if stinger.methods|length > 0%}mut {%endif%}api_client = {{stinger.rust.client_struct_name}}::new(&mut mqttier_client).await;
 
+        let client_for_loop = api_client.clone();
         tokio::spawn(async move {
             println!("Making call to start connection loop");
-            let _conn_loop = connection.start_loop().await;
+            let _conn_loop = client_for_loop.run_loop().await;
         });
 
         {%for sig_name, sig in stinger.signals.items()%}
-        let mut sig_rx = client.get_{{sig_name|snake_case}}_receiver();
+        let mut sig_rx = api_client.get_{{sig_name|snake_case}}_receiver();
         println!("Got signal receiver for {{sig_name}}");
 
         sleep(Duration::from_secs(5)).await;
@@ -38,16 +39,14 @@ async fn main() {
         });
         {%endfor%}
 
-        println!("Starting client receive loop");
-        let _client_loop = client.receive_loop().await;
 
         {%for method_name, method in stinger.methods.items()%}
         println!("Calling {{method_name}} with example values...");
-        let result = client.{{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang='rust')}}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
+        let result = api_client.{{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang='rust')}}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
         println!("{{method_name}} response: {:?}", result);
         {%endfor%}
 
-        join!(sig_rx_task);
+        let _ = join!(sig_rx_task);
     });
     // Ctrl-C to stop
 }
