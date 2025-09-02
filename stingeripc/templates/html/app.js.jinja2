@@ -1,0 +1,117 @@
+const clientId = "{{stinger.name}}-web-" + new Date().getTime();
+
+const signalSubIdStart = 1;
+const propertySubIdStart = {{10 + stinger.signals|length}};
+
+function makeRequestProperties() {
+    const correlationData = Math.random().toString(16).substr(2, 8);
+    return {
+        "contentType": "application/json",
+        "correlationData": correlationData,
+        "responseTopic": responseTopic + correlationData
+    }
+}
+
+var app = angular.module("myApp", []);
+
+app.controller("myCtrl", function ($scope, $filter, $location) {
+
+    console.log("Running app");
+
+    var subscription_state = 0;
+
+    $scope.timePattern = new RegExp("^[0-2][0-9]:[0-5][0-9]$");
+    $scope.online = false;
+    $scope.data = {
+        "signals": [{%for _ in stinger.signals.keys()%} null{%if not loop.last%}, {%endif%}{%endfor%}],
+        "properties": [{%for _ in stinger.properties.keys()%} null{%if not loop.last%}, {%endif%}{%endfor%}],
+    }
+
+    $scope.console = {
+        showing: false,
+        requests: []
+    }
+
+    $scope.showoutput = false;
+    $scope.linuxoutput = '';
+
+    const brokerUrl = 'ws://' + location.hostname + ':' + location.port + '/ws'
+
+    const connectOptions = {
+        keepAlive: 60,
+        clientId: clientId,
+        protocolId: 'MQTT',
+        protocolVersion: 5,
+        clean: true
+    };
+
+    var client = mqtt.connect(brokerUrl, connectOptions);
+
+    client.on('close', function() {
+        console.log("Connection Lost");
+    });
+
+    function publish(name, topic, payload, qos) {
+        console.log(name + " Sending to " + topic);
+        console.log(payload);
+        let props = makeRequestProperties();
+        props 
+        $scope.console.requests.unshift({"name":name, "correlationData":props.correlationData, "topic": topic, "payload": payload, "response": null, "requestTime": Date.now()});
+        client.publish(topic, payload, { "qos": qos, retain: false, properties: props});
+        return props.correlationData;
+    }
+
+    client.on('message', function(topic, message, packet) {
+        console.log("Message Arrived: " + topic);
+
+        const subid = packet.properties.subscriptionIdentifier;
+
+        if (subid >= signalSubIdStart && subid < propertySubIdStart) {
+            const signal_index = subid - signalSubIdStart;
+            console.log("Signal index: " + signal_index);
+            $scope.data.signals[signal_index] = JSON.parse(message.toString());
+        } else if (subid >= propertySubIdStart && subid < propertySubIdStart + {{stinger.properties|length}}) {
+            const prop_index = subid - propertySubIdStart;
+            console.log("Property index: " + prop_index);
+            $scope.data.properties[prop_index] = JSON.parse(message.toString());
+        }
+
+        var obj;
+        if (message.toString().length == 0) {
+            obj = null;
+        } else {
+            obj = JSON.parse(message.toString());
+        }
+        console.log(obj);
+
+        $scope.$apply();
+    });
+
+    client.on('connect', function() {
+        console.log("Connected with ", client);
+        {%for signal_name, signal in stinger.signals.items() %}
+        const {{sig_name}}_sub_opts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": (signalSubIdStart + {{loop.index}})
+            }
+        };
+        client.subscribe("{{signal.topic}}", {{sig_name}}_sub_opts);
+        console.log("Subscribing to {{signal.topic}} with id {{loop.index}}");
+        {%endfor%}
+        {%for prop_name, prop in stinger.properties.items() %}
+        const {{prop_name}}_sub_opts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": (propertySubIdStart + {{loop.index}})
+            }
+        };
+        client.subscribe("{{prop.value_topic}}", {{prop_name}}_sub_opts);
+        console.log("Subscribing to {{prop.value_topic}} with id {{loop.index + stinger.signals|length}}");
+        {%endfor%}
+        subscription_state = 1;
+        $scope.$apply();
+    });
+
+ 
+});

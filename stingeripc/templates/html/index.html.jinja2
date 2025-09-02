@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Standalone Devices (Demo)</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body ng-app="myApp" ng-controller="myCtrl">
+    <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
+
+    <div id="console" ng-class="{ 'expanded' : (console.showing) }">
+      <div class="top" ng-click=" console.showing = !console.showing ">Request Console <span ng-show="console.showing && console.requests.length > 0" ng-click="console.requests = []"> - Clear</span>
+        <p class="expanded-toggle">{{ console.showing ? 'Hide' : 'Show' }}</p>
+      </div>
+      <div id="request-list">
+        <p ng-repeat="msg in console.requests" class="entry">
+          {% raw %}<strong>{{msg.name}}:</strong> <em>{{msg.topic}}</em> <span class="elapsedTime" ng-show="msg.responseTime">{{msg.responseTime - msg.requestTime}}ms</span><span class="elapsedTime" ng-show="msg.eventTime">{{msg.eventTime}}</span>{%endraw%}
+          <span class="outgoing" ng-show="msg.payload">{{msg.payload}}</span>
+          <span class="incoming" ng-show="msg.response">{{msg.response}}</span>
+          <span ng-repeat="result in msg.results" class="action-result">{{result}}</span>
+        </p>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="app2.js"></script>
+  </body>
+</html>
