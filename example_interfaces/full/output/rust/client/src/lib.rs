@@ -27,6 +27,10 @@ struct FullSubscriptionIds {
     do_something_method_resp: usize,
     
     today_is_signal: Option<usize>,
+    favorite_number_property_value: usize,
+    favorite_foods_property_value: usize,
+    lunch_menu_property_value: usize,
+    
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -38,6 +42,17 @@ struct FullSignalChannels {
     today_is_sender: broadcast::Sender<TodayIsSignalPayload>,
     
 }
+
+
+#[derive(Clone)]
+pub struct FullProperties {
+    
+    pub favorite_number: Arc<Mutex<Option<i32>>>,
+    
+    pub favorite_foods: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
+    pub lunch_menu: Arc<Mutex<Option<LunchMenuProperty>>>,
+}
+
 
 /// This is the struct for our API client.
 #[derive(Clone)]
@@ -55,10 +70,12 @@ pub struct FullClient {
     /// side is cloned for each subscription made.
     #[allow(dead_code)]
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
-
+    
+    /// Struct contains all the properties.
+    pub properties: FullProperties,
+    
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: FullSubscriptionIds,
-
     /// Holds the channels used for sending signals to the application.
     signal_channels: FullSignalChannels,
     
@@ -82,8 +99,6 @@ impl FullClient {
         let subscription_id_do_something_method_resp = connection.subscribe(topic_do_something_method_resp, 2, message_received_tx.clone()).await;
         let subscription_id_do_something_method_resp = subscription_id_do_something_method_resp.unwrap_or_else(|_| usize::MAX);
         
-        
-        
 
         // Subscribe to all the topics needed for signals.
         let topic_today_is_signal = "full/signal/todayIs".to_string();
@@ -91,11 +106,39 @@ impl FullClient {
         let subscription_id_today_is_signal = subscription_id_today_is_signal.unwrap_or_else(|_| usize::MAX);
         
 
+        // Subscribe to all the topics needed for properties.
+        
+        let topic_favorite_number_property_value = "full/property/favoriteNumber/value".to_string();
+        let subscription_id_favorite_number_property_value = connection.subscribe(topic_favorite_number_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_favorite_number_property_value = subscription_id_favorite_number_property_value.unwrap_or_else(|_| usize::MAX);
+        
+        let topic_favorite_foods_property_value = "full/property/favoriteFoods/value".to_string();
+        let subscription_id_favorite_foods_property_value = connection.subscribe(topic_favorite_foods_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_favorite_foods_property_value = subscription_id_favorite_foods_property_value.unwrap_or_else(|_| usize::MAX);
+        
+        let topic_lunch_menu_property_value = "full/property/lunchMenu/value".to_string();
+        let subscription_id_lunch_menu_property_value = connection.subscribe(topic_lunch_menu_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_lunch_menu_property_value = subscription_id_lunch_menu_property_value.unwrap_or_else(|_| usize::MAX);
+        
+
+        
+        let property_values = FullProperties {
+            
+            favorite_number: Arc::new(Mutex::new(None)),
+            favorite_foods: Arc::new(Mutex::new(None)),
+            
+            lunch_menu: Arc::new(Mutex::new(None)),
+            
+        };
+        
         // Create structure for subscription ids.
         let sub_ids = FullSubscriptionIds {
             add_numbers_method_resp: subscription_id_add_numbers_method_resp,
             do_something_method_resp: subscription_id_do_something_method_resp,
             today_is_signal: Some(subscription_id_today_is_signal),
+            favorite_number_property_value: subscription_id_favorite_number_property_value,
+            favorite_foods_property_value: subscription_id_favorite_foods_property_value,
+            lunch_menu_property_value: subscription_id_lunch_menu_property_value,
             
         };
 
@@ -111,6 +154,9 @@ impl FullClient {
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
+            
+            properties: property_values,
+            
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
             client_id: connection.client_id.to_string(),
@@ -249,7 +295,8 @@ impl FullClient {
 
         let sig_chans = self.signal_channels.clone();
         let sub_ids = self.subscription_ids.clone();
-
+        let props = self.properties.clone();
+        
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 
@@ -268,6 +315,24 @@ impl FullClient {
                     let chan = sig_chans.today_is_sender.clone();
                     let pl: TodayIsSignalPayload =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let _send_result = chan.send(pl);
+                }
+                
+                if msg.subscription_id == sub_ids.favorite_number_property_value {
+                    let pl: i32 =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.favorite_number.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
+                }
+                
+                else if msg.subscription_id == sub_ids.favorite_foods_property_value {
+                    let pl: FavoriteFoodsProperty =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.favorite_foods.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
+                }
+                
+                else if msg.subscription_id == sub_ids.lunch_menu_property_value {
+                    let pl: LunchMenuProperty =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.lunch_menu.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
                 }
                 
             }   

@@ -28,6 +28,15 @@ struct WeatherSubscriptionIds {
     refresh_current_conditions_method_resp: usize,
     
     current_time_signal: Option<usize>,
+    location_property_value: usize,
+    current_temperature_property_value: usize,
+    current_condition_property_value: usize,
+    daily_forecast_property_value: usize,
+    hourly_forecast_property_value: usize,
+    current_condition_refresh_interval_property_value: usize,
+    hourly_forecast_refresh_interval_property_value: usize,
+    daily_forecast_refresh_interval_property_value: usize,
+    
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -39,6 +48,25 @@ struct WeatherSignalChannels {
     current_time_sender: broadcast::Sender<CurrentTimeSignalPayload>,
     
 }
+
+
+#[derive(Clone)]
+pub struct WeatherProperties {
+    
+    pub location: Arc<Mutex<Option<LocationProperty>>>,
+    pub current_temperature: Arc<Mutex<Option<f32>>>,
+    
+    pub current_condition: Arc<Mutex<Option<CurrentConditionProperty>>>,
+    pub daily_forecast: Arc<Mutex<Option<DailyForecastProperty>>>,
+    pub hourly_forecast: Arc<Mutex<Option<HourlyForecastProperty>>>,
+    pub current_condition_refresh_interval: Arc<Mutex<Option<i32>>>,
+    
+    pub hourly_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
+    
+    pub daily_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
+    
+}
+
 
 /// This is the struct for our API client.
 #[derive(Clone)]
@@ -56,10 +84,12 @@ pub struct WeatherClient {
     /// side is cloned for each subscription made.
     #[allow(dead_code)]
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
-
+    
+    /// Struct contains all the properties.
+    pub properties: WeatherProperties,
+    
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: WeatherSubscriptionIds,
-
     /// Holds the channels used for sending signals to the application.
     signal_channels: WeatherSignalChannels,
     
@@ -86,8 +116,6 @@ impl WeatherClient {
         let subscription_id_refresh_current_conditions_method_resp = connection.subscribe(topic_refresh_current_conditions_method_resp, 2, message_received_tx.clone()).await;
         let subscription_id_refresh_current_conditions_method_resp = subscription_id_refresh_current_conditions_method_resp.unwrap_or_else(|_| usize::MAX);
         
-        
-        
 
         // Subscribe to all the topics needed for signals.
         let topic_current_time_signal = "weather/signal/currentTime".to_string();
@@ -95,12 +123,75 @@ impl WeatherClient {
         let subscription_id_current_time_signal = subscription_id_current_time_signal.unwrap_or_else(|_| usize::MAX);
         
 
+        // Subscribe to all the topics needed for properties.
+        
+        let topic_location_property_value = "weather/property/location/value".to_string();
+        let subscription_id_location_property_value = connection.subscribe(topic_location_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_location_property_value = subscription_id_location_property_value.unwrap_or_else(|_| usize::MAX);
+        
+        let topic_current_temperature_property_value = "weather/property/currentTemperature/value".to_string();
+        let subscription_id_current_temperature_property_value = connection.subscribe(topic_current_temperature_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_current_temperature_property_value = subscription_id_current_temperature_property_value.unwrap_or_else(|_| usize::MAX);
+        
+        let topic_current_condition_property_value = "weather/property/currentCondition/value".to_string();
+        let subscription_id_current_condition_property_value = connection.subscribe(topic_current_condition_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_current_condition_property_value = subscription_id_current_condition_property_value.unwrap_or_else(|_| usize::MAX);
+        
+        let topic_daily_forecast_property_value = "weather/property/dailyForecast/value".to_string();
+        let subscription_id_daily_forecast_property_value = connection.subscribe(topic_daily_forecast_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_daily_forecast_property_value = subscription_id_daily_forecast_property_value.unwrap_or_else(|_| usize::MAX);
+        
+        let topic_hourly_forecast_property_value = "weather/property/hourlyForecast/value".to_string();
+        let subscription_id_hourly_forecast_property_value = connection.subscribe(topic_hourly_forecast_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_hourly_forecast_property_value = subscription_id_hourly_forecast_property_value.unwrap_or_else(|_| usize::MAX);
+        
+        let topic_current_condition_refresh_interval_property_value = "weather/property/currentConditionRefreshInterval/value".to_string();
+        let subscription_id_current_condition_refresh_interval_property_value = connection.subscribe(topic_current_condition_refresh_interval_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_current_condition_refresh_interval_property_value = subscription_id_current_condition_refresh_interval_property_value.unwrap_or_else(|_| usize::MAX);
+        
+        let topic_hourly_forecast_refresh_interval_property_value = "weather/property/hourlyForecastRefreshInterval/value".to_string();
+        let subscription_id_hourly_forecast_refresh_interval_property_value = connection.subscribe(topic_hourly_forecast_refresh_interval_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_hourly_forecast_refresh_interval_property_value = subscription_id_hourly_forecast_refresh_interval_property_value.unwrap_or_else(|_| usize::MAX);
+        
+        let topic_daily_forecast_refresh_interval_property_value = "weather/property/dailyForecastRefreshInterval/value".to_string();
+        let subscription_id_daily_forecast_refresh_interval_property_value = connection.subscribe(topic_daily_forecast_refresh_interval_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_daily_forecast_refresh_interval_property_value = subscription_id_daily_forecast_refresh_interval_property_value.unwrap_or_else(|_| usize::MAX);
+        
+
+        
+        let property_values = WeatherProperties {
+            location: Arc::new(Mutex::new(None)),
+            
+            
+            current_temperature: Arc::new(Mutex::new(None)),
+            current_condition: Arc::new(Mutex::new(None)),
+            
+            daily_forecast: Arc::new(Mutex::new(None)),
+            
+            hourly_forecast: Arc::new(Mutex::new(None)),
+            
+            
+            current_condition_refresh_interval: Arc::new(Mutex::new(None)),
+            
+            hourly_forecast_refresh_interval: Arc::new(Mutex::new(None)),
+            
+            daily_forecast_refresh_interval: Arc::new(Mutex::new(None)),
+        };
+        
         // Create structure for subscription ids.
         let sub_ids = WeatherSubscriptionIds {
             refresh_daily_forecast_method_resp: subscription_id_refresh_daily_forecast_method_resp,
             refresh_hourly_forecast_method_resp: subscription_id_refresh_hourly_forecast_method_resp,
             refresh_current_conditions_method_resp: subscription_id_refresh_current_conditions_method_resp,
             current_time_signal: Some(subscription_id_current_time_signal),
+            location_property_value: subscription_id_location_property_value,
+            current_temperature_property_value: subscription_id_current_temperature_property_value,
+            current_condition_property_value: subscription_id_current_condition_property_value,
+            daily_forecast_property_value: subscription_id_daily_forecast_property_value,
+            hourly_forecast_property_value: subscription_id_hourly_forecast_property_value,
+            current_condition_refresh_interval_property_value: subscription_id_current_condition_refresh_interval_property_value,
+            hourly_forecast_refresh_interval_property_value: subscription_id_hourly_forecast_refresh_interval_property_value,
+            daily_forecast_refresh_interval_property_value: subscription_id_daily_forecast_refresh_interval_property_value,
             
         };
 
@@ -116,6 +207,9 @@ impl WeatherClient {
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
+            
+            properties: property_values,
+            
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
             client_id: connection.client_id.to_string(),
@@ -289,7 +383,8 @@ impl WeatherClient {
 
         let sig_chans = self.signal_channels.clone();
         let sub_ids = self.subscription_ids.clone();
-
+        let props = self.properties.clone();
+        
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 
@@ -311,6 +406,54 @@ impl WeatherClient {
                     let chan = sig_chans.current_time_sender.clone();
                     let pl: CurrentTimeSignalPayload =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let _send_result = chan.send(pl);
+                }
+                
+                if msg.subscription_id == sub_ids.location_property_value {
+                    let pl: LocationProperty =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.location.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
+                }
+                
+                else if msg.subscription_id == sub_ids.current_temperature_property_value {
+                    let pl: f32 =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.current_temperature.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
+                }
+                
+                else if msg.subscription_id == sub_ids.current_condition_property_value {
+                    let pl: CurrentConditionProperty =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.current_condition.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
+                }
+                
+                else if msg.subscription_id == sub_ids.daily_forecast_property_value {
+                    let pl: DailyForecastProperty =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.daily_forecast.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
+                }
+                
+                else if msg.subscription_id == sub_ids.hourly_forecast_property_value {
+                    let pl: HourlyForecastProperty =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.hourly_forecast.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
+                }
+                
+                else if msg.subscription_id == sub_ids.current_condition_refresh_interval_property_value {
+                    let pl: i32 =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.current_condition_refresh_interval.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
+                }
+                
+                else if msg.subscription_id == sub_ids.hourly_forecast_refresh_interval_property_value {
+                    let pl: i32 =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.hourly_forecast_refresh_interval.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
+                }
+                
+                else if msg.subscription_id == sub_ids.daily_forecast_refresh_interval_property_value {
+                    let pl: i32 =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.daily_forecast_refresh_interval.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
                 }
                 
             }   

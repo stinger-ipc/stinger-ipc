@@ -22,6 +22,7 @@ use tokio::task::JoinError;
 struct SignalOnlySubscriptionIds {
     
     another_signal_signal: Option<usize>,
+    
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -33,6 +34,8 @@ struct SignalOnlySignalChannels {
     another_signal_sender: broadcast::Sender<AnotherSignalSignalPayload>,
     
 }
+
+
 
 /// This is the struct for our API client.
 #[derive(Clone)]
@@ -48,10 +51,9 @@ pub struct SignalOnlyClient {
     /// side is cloned for each subscription made.
     #[allow(dead_code)]
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
-
+    
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: SignalOnlySubscriptionIds,
-
     /// Holds the channels used for sending signals to the application.
     signal_channels: SignalOnlySignalChannels,
     
@@ -69,8 +71,6 @@ impl SignalOnlyClient {
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
         
-        
-        
 
         // Subscribe to all the topics needed for signals.
         let topic_another_signal_signal = "signalOnly/signal/anotherSignal".to_string();
@@ -78,6 +78,10 @@ impl SignalOnlyClient {
         let subscription_id_another_signal_signal = subscription_id_another_signal_signal.unwrap_or_else(|_| usize::MAX);
         
 
+        // Subscribe to all the topics needed for properties.
+        
+
+        
         // Create structure for subscription ids.
         let sub_ids = SignalOnlySubscriptionIds {
             another_signal_signal: Some(subscription_id_another_signal_signal),
@@ -96,6 +100,7 @@ impl SignalOnlyClient {
             
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
+            
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
             client_id: connection.client_id.to_string(),
@@ -126,7 +131,6 @@ impl SignalOnlyClient {
 
         let sig_chans = self.signal_channels.clone();
         let sub_ids = self.subscription_ids.clone();
-
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 

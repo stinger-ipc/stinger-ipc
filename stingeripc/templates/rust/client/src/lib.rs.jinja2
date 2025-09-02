@@ -31,6 +31,9 @@ struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
     {%for sig_name, sig in stinger.signals.items()-%}
     {{sig_name | snake_case}}_signal: Option<usize>,
     {%-endfor%}
+    {%for prop_name, prop in stinger.properties.items()-%}
+    {{prop_name | snake_case}}_property_value: usize,
+    {%endfor%}
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -43,6 +46,19 @@ struct {{stinger.name | UpperCamelCase }}SignalChannels {
     {{sig_name|snake_case}}_sender: broadcast::Sender<{%if sig.arg_list | length == 0 %}{{sig.arg_list[0]}}{% else %}{{sig_name | UpperCamelCase}}SignalPayload{% endif %}>,
     {%endfor%}
 }
+
+{%if stinger.properties | length > 0%}
+#[derive(Clone)]
+pub struct {{stinger.name | UpperCamelCase}}Properties {
+    {%for prop_name, prop in stinger.properties.items()-%}
+    {%-if prop.arg_list | length > 1%}
+    pub {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.rust_type}}>>>,
+    {%-else%}
+    pub {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.arg_list[0].rust_type}}>>>,
+    {%endif%}
+    {%-endfor%}
+}
+{%endif%}
 
 /// This is the struct for our API client.
 #[derive(Clone)]
@@ -60,11 +76,15 @@ pub struct {{stinger.rust.client_struct_name}} {
     /// side is cloned for each subscription made.
     #[allow(dead_code)]
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
-
+    {%if stinger.properties|length > 0%}
+    /// Struct contains all the properties.
+    pub properties: {{stinger.name | UpperCamelCase}}Properties,
+    {%endif%}
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: {{stinger.name | UpperCamelCase }}SubscriptionIds,
 
-    {%if stinger.signals | length > 0 %}/// Holds the channels used for sending signals to the application.
+    {%-if stinger.signals | length > 0 %}
+    /// Holds the channels used for sending signals to the application.
     signal_channels: {{stinger.name | UpperCamelCase }}SignalChannels,
     {%endif%}
     /// Copy of MQTT Client ID
@@ -85,9 +105,6 @@ impl {{stinger.rust.client_struct_name}} {
         let subscription_id_{{method_name | snake_case}}_method_resp = connection.subscribe(topic_{{method_name | snake_case}}_method_resp, 2, message_received_tx.clone()).await;
         let subscription_id_{{method_name | snake_case}}_method_resp = subscription_id_{{method_name | snake_case}}_method_resp.unwrap_or_else(|_| usize::MAX);
         {%endfor%}
-        
-        {%for sig_name, sig in stinger.signals.items()-%}
-        {%endfor%}
 
         // Subscribe to all the topics needed for signals.
         {%for signal_name, signal in stinger.signals.items()-%}
@@ -96,6 +113,24 @@ impl {{stinger.rust.client_struct_name}} {
         let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| usize::MAX);
         {%endfor%}
 
+        // Subscribe to all the topics needed for properties.
+        {% for prop_name, prop in stinger.properties.items() %}
+        let topic_{{prop_name | snake_case}}_property_value = "{{prop.value_topic}}".to_string();
+        let subscription_id_{{prop_name | snake_case}}_property_value = connection.subscribe(topic_{{prop_name | snake_case}}_property_value, 1, message_received_tx.clone()).await;
+        let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or_else(|_| usize::MAX);
+        {% endfor %}
+
+        {%if stinger.properties|length > 0%}
+        let property_values = {{stinger.name | UpperCamelCase}}Properties {
+        {%-for prop_name, prop in stinger.properties.items()%}
+            {%if prop.arg_list | length > 1 -%}
+            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
+            {%else%}
+            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
+            {%-endif%}
+        {%-endfor%}
+        };
+        {%endif%}
         // Create structure for subscription ids.
         let sub_ids = {{stinger.name | UpperCamelCase }}SubscriptionIds {
             {%for method_name, method in stinger.methods.items()-%}
@@ -103,6 +138,9 @@ impl {{stinger.rust.client_struct_name}} {
             {%endfor%}
             {%-for sig_name, sig in stinger.signals.items()-%}
             {{sig_name | snake_case}}_signal: Some(subscription_id_{{sig_name | snake_case}}_signal),
+            {%endfor%}
+            {%-for prop_name, prop in stinger.properties.items()-%}
+            {{prop_name | snake_case}}_property_value: subscription_id_{{prop_name | snake_case}}_property_value,
             {%endfor%}
         };
 
@@ -119,6 +157,9 @@ impl {{stinger.rust.client_struct_name}} {
             {%if stinger.methods | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
+            {%if stinger.properties|length > 0 %}
+            properties: property_values,
+            {%endif%}
             subscription_ids: sub_ids,
             {%if stinger.signals | length > 0 %}signal_channels: signal_channels,{%endif%}
             client_id: connection.client_id.to_string(),
@@ -224,7 +265,9 @@ impl {{stinger.rust.client_struct_name}} {
 
         let sig_chans = self.signal_channels.clone();
         let sub_ids = self.subscription_ids.clone();
-
+        {%-if stinger.properties|length > 0%}
+        let props = self.properties.clone();
+        {%endif%}
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 {% if stinger.methods|length > 0 %}
@@ -243,6 +286,13 @@ impl {{stinger.rust.client_struct_name}} {
                     let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
                     let pl: {{signal_name | UpperCamelCase}}SignalPayload =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let _send_result = chan.send(pl);
+                }
+                {%endfor%}
+                {%-for prop_name, prop in stinger.properties.items()%}
+                {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
+                    let pl: {{prop.rust_type}} =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let mut guard = props.{{prop_name | snake_case}}.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl);
                 }
                 {%endfor%}
             }   
