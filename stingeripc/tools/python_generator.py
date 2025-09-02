@@ -9,25 +9,27 @@ from pathlib import Path
 
 def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir_okay=False, readable=True)], outdir: Annotated[Path, typer.Argument(file_okay=False, dir_okay=True, writable=True, readable=True)]):
 
-    print(f"[bold green]Reading:[/bold green] {inname}")
+    print(f"[bold]Reading:[/bold] {inname}")
     with open(inname, "r") as f:
         stinger = StingerInterface.from_yaml(f)
     params = {
         "stinger": stinger,
     }
-    t = jj2.CodeTemplator(output_dir=os.path.dirname(outdir))
+    output_dir = Path(outdir).resolve()
+    print(f"[bold]Output directory:[/bold] {output_dir}")
+    t = jj2.CodeTemplator(output_dir=output_dir)
     t.add_template_dir(
         os.path.join(os.path.dirname(__file__), "../templates", "python")
     )
     for output_file in [
         "pyproject.toml",
     ]:
-        print(f"[bold red]Generating:[/bold red] {output_file}")
+        print(f"[bold green]Generating:[/bold green] {output_file}")
         t.render_template(f"{output_file}.jinja2", output_file, **params)
 
     package_name = f"{stringmanip.lower_camel_case(stinger.name).lower()}ipc"
     generated_pkg_dir = os.path.join(outdir, package_name)
-    print(f"[bold red]Making Directory:[/bold red] {generated_pkg_dir}")
+    print(f"[bold]Making Directory:[/bold] {generated_pkg_dir}")
     os.makedirs(generated_pkg_dir, exist_ok=True)
     for output_file in [
         "server.py",
@@ -36,8 +38,8 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
         "__init__.py",
         "method_codes.py",
     ]:
-        print(f"[bold red]Generating:[/bold red] {output_file}")
-        t.render_template(f"{output_file}.jinja2", output_file, **params)
+        print(f"[bold green]Generating:[/bold green] {output_file}")
+        output = t.render_template(f"{output_file}.jinja2", output_file, **params)
 
     t.render_template("interface_types.py.jinja2", f"{stinger.get_enum_module_name()}.py", **params)
 

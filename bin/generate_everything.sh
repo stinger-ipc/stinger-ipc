@@ -31,9 +31,9 @@ function generate_cpp() {
     fi
 }
 
-#generate_cpp full
-#generate_cpp signal_only
-#generate_cpp weather
+generate_cpp full
+generate_cpp signal_only
+generate_cpp weather
 
 #### Rust
 
@@ -77,5 +77,5 @@ function generate_markdown() {
     uv run markdowngen ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
 }
 
-#generate_markdown full
-#generate_markdown weather
+generate_markdown full
+generate_markdown weather

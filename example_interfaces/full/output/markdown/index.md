@@ -39,7 +39,7 @@ def on_today_is(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
   <summary>Rust Server</summary>
 
 ```rust
-server.emit_today_is(42, Some(connection::payloads::DayOfTheWeek::Monday)).await;
+server.emit_today_is(42, Some(DayOfTheWeek::Monday)).await;
 ```
 
 </details>

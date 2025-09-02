@@ -2,11 +2,7 @@ from jacobsjinjatoo import templator as jj2
 import sys
 import yaml
 import os
-
-libpath = os.path.normpath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")
-)
-sys.path.append(libpath)
+from pathlib import Path
 
 from stingeripc import StingerInterface
 
@@ -35,7 +31,8 @@ if __name__ == "__main__":
 
     template_dir = os.path.join(os.path.dirname(__file__), "../stingeripc", "templates", "cpp")
 
-    t = jj2.CodeTemplator(output_dir=os.path.dirname(outdir))
+    output_dir = Path(outdir).resolve()
+    t = jj2.CodeTemplator(output_dir=output_dir)
     t.add_template_dir(template_dir)
 
     headers_template_dir = os.path.join(template_dir, "include")
