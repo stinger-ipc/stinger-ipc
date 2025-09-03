@@ -17,7 +17,7 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
     }
     output_dir = Path(outdir).resolve()
     print(f"[bold green]Output directory:[/bold green] {output_dir}")
-    t = jj2.CodeTemplator(output_dir=output_dir)
+    t = jj2.MarkdownTemplator(output_dir=output_dir)
     t.add_template_dir(
         os.path.join(os.path.dirname(__file__), "../templates", "markdown")
     )

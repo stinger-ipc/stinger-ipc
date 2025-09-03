@@ -52,7 +52,7 @@ class DefaultConnection(BrokerConnection):
     class PendingSubscription:
         def __init__(self, topic: str, subscription_id: int):
             self.topic = topic
-            self.subscription_id
+            self.subscription_id = subscription_id
 
     def __init__(self, host: str, port: int):
         self._logger = logging.getLogger("Connection")
@@ -90,6 +90,7 @@ class DefaultConnection(BrokerConnection):
         self._message_callback = callback
 
     def _on_message(self, client, userdata, msg):
+        self._logger.debug("Got a message to %s", msg.topic)
         if self._message_callback:
             properties = msg.properties.__dict__ if hasattr(msg, "properties") else {}
             if "UserProperty" in properties:

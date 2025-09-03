@@ -199,6 +199,7 @@ impl {{stinger.rust.server_struct_name}} {
         let new_data = {{prop_name | UpperCamelCase}}Property {
             {{prop.arg_list[0].name}}: data,
         };
+        println!("Publishing to topic {}", topic);
         let _pub_result = publisher.publish_state(topic, &new_data, 1).await;
         {%else%}
         let _pub_result = publisher.publish_state(topic, &data, 1).await;

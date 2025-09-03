@@ -227,6 +227,7 @@ impl FullServer {
         let new_data = FavoriteNumberProperty {
             number: data,
         };
+        println!("Publishing to topic {}", topic);
         let _pub_result = publisher.publish_state(topic, &new_data, 1).await;
         
     }

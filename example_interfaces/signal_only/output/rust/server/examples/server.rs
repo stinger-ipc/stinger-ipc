@@ -17,6 +17,10 @@ use signal_only_types::payloads::{MethodResultCode, *};
 
 #[tokio::main]
 async fn main() {
+    env_logger::Builder::from_default_env()
+    .target(env_logger::Target::Stdout)
+    .init();
+
     block_on(async {
         
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();

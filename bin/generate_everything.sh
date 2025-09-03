@@ -74,7 +74,7 @@ function generate_markdown() {
     IFACE_NAME=$1
 
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
-    uv run markdowngen ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
+    uv run stinger generate markdown ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
 }
 
 generate_markdown full

@@ -315,6 +315,7 @@ impl WeatherServer {
         let new_data = CurrentTemperatureProperty {
             temperature_f: data,
         };
+        println!("Publishing to topic {}", topic);
         let _pub_result = publisher.publish_state(topic, &new_data, 1).await;
         
     }
@@ -406,6 +407,7 @@ impl WeatherServer {
         let new_data = CurrentConditionRefreshIntervalProperty {
             seconds: data,
         };
+        println!("Publishing to topic {}", topic);
         let _pub_result = publisher.publish_state(topic, &new_data, 1).await;
         
     }
@@ -445,6 +447,7 @@ impl WeatherServer {
         let new_data = HourlyForecastRefreshIntervalProperty {
             seconds: data,
         };
+        println!("Publishing to topic {}", topic);
         let _pub_result = publisher.publish_state(topic, &new_data, 1).await;
         
     }
@@ -484,6 +487,7 @@ impl WeatherServer {
         let new_data = DailyForecastRefreshIntervalProperty {
             seconds: data,
         };
+        println!("Publishing to topic {}", topic);
         let _pub_result = publisher.publish_state(topic, &new_data, 1).await;
         
     }

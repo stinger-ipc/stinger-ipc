@@ -52,7 +52,7 @@ class DefaultConnection(BrokerConnection):
     class PendingSubscription:
         def __init__(self, topic: str, subscription_id: int):
             self.topic = topic
-            self.subscription_id
+            self.subscription_id = subscription_id
 
     def __init__(self, host: str, port: int):
         self._logger = logging.getLogger("Connection")

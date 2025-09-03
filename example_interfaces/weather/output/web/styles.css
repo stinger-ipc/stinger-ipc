@@ -1,0 +1,186 @@
+
+@charset "UTF-8";
+@import url("https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700");
+
+body {
+    font-family: "Open Sans", sans-serif;
+}
+
+.clickable:hover {
+    text-decoration: underline;
+    color: blue;
+}
+
+
+.modeoption {
+    margin: 5px;
+}
+
+.pending {
+    color: #aaa;
+    animation: color-transition 1s ease-in-out infinite alternate;
+}
+  
+@keyframes color-transition {
+    from {
+        color: #aaa;
+    }
+    to {
+        color: #eee;
+    }
+}
+
+.actioning {
+    animation: shadow-transition 1s ease-in-out infinite alternate;
+}
+
+@keyframes shadow-transition {
+    from {
+        text-shadow: 0px 0px 10px #aaaaaa15;
+    }
+    to {
+        text-shadow: 0px 0px 10px #eee;
+    }
+}
+
+.infobox-background {
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.infobox-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    top: 10%;
+    z-index: 2;
+    position: fixed;
+    overflow-y: scroll;
+    max-height: 80%;
+}
+
+.infobox-close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.infobox-close:hover, .infobox-close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.infobox-device-refresh {
+    float: right;
+    font-size: 28px;
+}
+
+#offline {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    font-size: 48px;
+    color: white;
+}
+
+#refresh-buttons {
+    position: fixed;
+    right: 10px;
+    z-index: 1;
+}
+
+#refresh-buttons p {
+    margin-top: 0;
+}
+
+#console {
+    border: 1px solid black;
+    background-color:rgba(179, 179, 179, 0.54);
+    bottom: 0;
+    left: 0;
+    width: 40%;
+    height: 1.5em;
+    position: fixed;
+}
+
+#console.expanded {
+    height: 40%;
+}
+
+#console .top {
+    background-color: rgba(43, 43, 43, 0.397);
+    top: 0;
+    width: 100%;
+    position: absolute;
+    height: 1.5em;
+}
+
+#console .top .expanded-toggle {
+    display: block;
+    right: 1em;
+    top: -.7em;
+    position:absolute;
+}
+
+#request-list {
+    margin-top: 2em;
+}
+
+#request-list .entry {
+    border-bottom: 1px black dashed;
+}
+
+#request-list .entry em {
+    font-size: 6pt;
+    overflow-wrap: anywhere;
+    display: block;
+    opacity: 0.8;
+}
+
+#request-list .entry .elapsedTime {
+    float: right;
+    position: relative;
+    top: -2.2em;
+    right: 1em;
+    font-size: 10pt;
+    color: rgba(49, 49, 102, 0.795);
+}
+
+#request-list .entry .outgoing, #request-list .entry .incoming,  #request-list .entry .action-result {
+    font-family: 'Andale Mono', 'Courier New', Courier, monospace;
+    font-size: 9pt;
+    overflow-wrap: anywhere;
+    display: block;
+}
+
+#request-list .entry .outgoing::before {
+    content: "➡";
+}
+
+#request-list .entry .incoming::before {
+    content: "⬅";
+}
+
+#request-list .entry .action-result::before {
+    content: "✪";
+}
+
+.sched-table tr td, .sched-table tr th {
+    border: 1px solid #aaa;
+}
+
+td input.ng-invalid.ng-dirty {
+    background-color: rgb(255, 152, 152);
+}

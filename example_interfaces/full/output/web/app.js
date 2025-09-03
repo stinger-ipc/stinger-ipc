@@ -1,7 +1,7 @@
-const clientId = "{{stinger.name}}-web-" + new Date().getTime();
+const clientId = "Full-web-" + new Date().getTime();
 
 const signalSubIdStart = 1;
-const propertySubIdStart = {{10 + stinger.signals|length}};
+const propertySubIdStart = 11;
 
 function makeRequestProperties() {
     const correlationData = Math.random().toString(16).substr(2, 8);
@@ -22,14 +22,14 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     $scope.timePattern = new RegExp("^[0-2][0-9]:[0-5][0-9]$");
     $scope.online = false;
-    $scope.signals = { {%-for sig_name, signal in stinger.signals.items() %}
-        "{{sig_name | lowerCamelCase}}": {
+    $scope.signals = {
+        "todayIs": {
             "subscription_id": null,
-            "name": "{{sig_name}}",
+            "name": "todayIs",
             "received": [],
-            "mqtt_topic": "{{signal.topic}}"
-        }{%if not loop.last%},{%endif%}
-    {%endfor-%} };
+            "mqtt_topic": "full/signal/todayIs"
+        }
+    };
 
     $scope.properties = {
 
@@ -78,7 +78,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             const signal_index = subid - signalSubIdStart;
             console.log("Signal index: " + signal_index);
             $scope.data.signals[signal_index] = JSON.parse(message.toString());
-        } else if (subid >= propertySubIdStart && subid < propertySubIdStart + {{stinger.properties|length}}) {
+        } else if (subid >= propertySubIdStart && subid < propertySubIdStart + 3) {
             const prop_index = subid - propertySubIdStart;
             console.log("Property index: " + prop_index);
             $scope.data.properties[prop_index] = JSON.parse(message.toString());
@@ -97,26 +97,44 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     client.on('connect', function() {
         console.log("Connected with ", client);
-        {%for signal_name, signal in stinger.signals.items() %}
-        const {{sig_name}}_sub_opts = {
+        
+        const _sub_opts = {
             "qos": 1,
             "properties": {
-                "subscriptionIdentifier": (signalSubIdStart + {{loop.index}})
+                "subscriptionIdentifier": (signalSubIdStart + 1)
             }
         };
-        client.subscribe("{{signal.topic}}", {{sig_name}}_sub_opts);
-        console.log("Subscribing to {{signal.topic}} with id {{loop.index}}");
-        {%endfor%}
-        {%for prop_name, prop in stinger.properties.items() %}
-        const {{prop_name}}_sub_opts = {
+        client.subscribe("full/signal/todayIs", _sub_opts);
+        console.log("Subscribing to full/signal/todayIs with id 1");
+        
+        
+        const favorite_number_sub_opts = {
             "qos": 1,
             "properties": {
-                "subscriptionIdentifier": (propertySubIdStart + {{loop.index}})
+                "subscriptionIdentifier": (propertySubIdStart + 1)
             }
         };
-        client.subscribe("{{prop.value_topic}}", {{prop_name}}_sub_opts);
-        console.log("Subscribing to {{prop.value_topic}} with id {{loop.index + stinger.signals|length}}");
-        {%endfor%}
+        client.subscribe("full/property/favoriteNumber/value", favorite_number_sub_opts);
+        console.log("Subscribing to full/property/favoriteNumber/value with id 2");
+        
+        const favorite_foods_sub_opts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": (propertySubIdStart + 2)
+            }
+        };
+        client.subscribe("full/property/favoriteFoods/value", favorite_foods_sub_opts);
+        console.log("Subscribing to full/property/favoriteFoods/value with id 3");
+        
+        const lunch_menu_sub_opts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": (propertySubIdStart + 3)
+            }
+        };
+        client.subscribe("full/property/lunchMenu/value", lunch_menu_sub_opts);
+        console.log("Subscribing to full/property/lunchMenu/value with id 4");
+        
         subscription_state = 1;
         $scope.$apply();
     });

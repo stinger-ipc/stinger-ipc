@@ -33,6 +33,10 @@ fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|
 
 #[tokio::main]
 async fn main() {
+    env_logger::Builder::from_default_env()
+    .target(env_logger::Target::Stdout)
+    .init();
+
     block_on(async {
         {%set broker = stinger.get_example_broker()%}
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();

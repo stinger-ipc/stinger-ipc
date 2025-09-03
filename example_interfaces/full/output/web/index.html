@@ -9,18 +9,14 @@
   </head>
   <body ng-app="myApp" ng-controller="myCtrl">
     <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
-    {%for sig_name, sig in stinger.signals.items() %}
-    <div class="signal-box" id="signal-box-{{ sig_name }}">
-        <h3 class="signal-title">{{ sig_name }}</h3>
-        <div class="signal-doc">{%if sig.documentation %}
-{%markdown%}
-{{ sig.documentation }}
-{%endmarkdown%}
-        {%endif%}</div>
-        <div class="last-signal-value" ng-show="signals['{{sig_name|lowerCamelCase}}']"></div>
+    
+    <div class="signal-box" id="signal-box-todayIs">
+        <h3 class="signal-title">todayIs</h3>
+        <div class="signal-doc"></div>
+        <div class="last-signal-value" ng-show="signals['todayIs']"></div>
     </div>
-    {%endfor%}
-    {%raw%}
+    
+    
     <div id="console" ng-class="{ 'expanded' : (console.showing) }">
       <div class="top" ng-click=" console.showing = !console.showing ">Request Console <span ng-show="console.showing && console.requests.length > 0" ng-click="console.requests = []"> - Clear</span>
         <p class="expanded-toggle">{{ console.showing ? 'Hide' : 'Show' }}</p>
@@ -34,7 +30,7 @@
         </p>
       </div>
     </div>
-    {%endraw%}
+    
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js"></script>
     <script src="https://unpkg.com/mqtt@5.14.0/dist/mqtt.min.js"></script>
