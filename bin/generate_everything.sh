@@ -79,3 +79,17 @@ function generate_markdown() {
 
 generate_markdown full
 generate_markdown weather
+
+#### HTML/JS/CSS
+
+function generate_web() {
+    echo
+    echo "----------- Creating Webpage Interface for ${IFACE_NAME}----------------"
+    IFACE_NAME=$1
+
+    mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/web/
+    uv run stinger generate web ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/web/
+}
+
+generate_web full
+generate_web weather

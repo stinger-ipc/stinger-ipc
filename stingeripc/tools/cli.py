@@ -1,8 +1,12 @@
 
-import sys
+import os
+from rich import print
 from pathlib import Path
 import typer
 from typing_extensions import Annotated
+from jacobsjinjatoo import templator as jj2
+
+from stingeripc.interface import StingerInterface
 
 from . import markdown_generator
 from . import python_generator
@@ -25,8 +29,8 @@ def generate(
     OUTPUT_DIR is the directory that will receive generated files
     """
     lang = language.lower()
-    if lang not in ("rust", "python", "markdown"):
-        raise typer.BadParameter("language must be one of: rust, python, markdown")
+    if lang not in ("rust", "python", "markdown", "web"):
+        raise typer.BadParameter("language must be one of: rust, python, markdown, web")
 
     if lang == "python":
         # python_generator.main expects Path arguments via typer
@@ -34,10 +38,28 @@ def generate(
     elif lang == "markdown":
         # markdown_generator.main expects Path arguments via typer
         markdown_generator.main(input_file, output_dir)
+    elif lang == "web":
+        wt = jj2.WebTemplator(output_dir=output_dir)
+        ct = jj2.CodeTemplator(output_dir=output_dir)
+        wt.add_template_dir(
+            os.path.join(os.path.dirname(__file__), "../templates", "html")
+        )
+        ct.add_template_dir(
+            os.path.join(os.path.dirname(__file__), "../templates", "html")
+        )
+        with open(input_file, "r") as f:
+            stinger = StingerInterface.from_yaml(f)
+        for output_file in [
+            "app.js",
+            "styles.css",
+        ]:
+            ct.render_template(f"{output_file}.jinja2", output_file, stinger=stinger)
+        wt.render_template("index.html.jinja2", "index.html", stinger=stinger)
     else:  # rust
         rust_generator.main(input_file, output_dir)
+    
 
-    typer.echo(f"Generation for '{lang}' completed.")
+    print(f"Generation for '{lang}' completed.")
 
 @app.command()
 def hello():

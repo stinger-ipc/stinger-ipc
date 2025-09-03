@@ -9,6 +9,13 @@
   </head>
   <body ng-app="myApp" ng-controller="myCtrl">
     <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
+    {%for sig_name, sig in stinger.signals.items() %}
+    <div class="signal-box" id="signal-box-{{ sig_name }}">
+        <h3 class="signal-title">{{ sig_name }}</h3>
+        <p class="signal-doc">{{ sig.documentation }}</p>
+        <div class="last-signal-value" ng-show="signals[{{loop.index}}]"></div>
+    </div>
+    {%endfor%}
 
     <div id="console" ng-class="{ 'expanded' : (console.showing) }">
       <div class="top" ng-click=" console.showing = !console.showing ">Request Console <span ng-show="console.showing && console.requests.length > 0" ng-click="console.requests = []"> - Clear</span>
