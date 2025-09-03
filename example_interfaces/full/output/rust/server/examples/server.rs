@@ -8,7 +8,6 @@ use futures::{executor::block_on};
 use mqttier::MqttierClient;
 use full_server::FullServer;
 use tokio::time::{sleep, Duration};
-use tokio::join;
 
 #[allow(unused_imports)]
 use full_types::payloads::{MethodResultCode, *};
@@ -41,10 +40,6 @@ async fn main() {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
         let mut server = FullServer::new(&mut connection).await;
         
-        let loop_task = tokio::spawn(async move {
-            println!("Making call to start connection loop");
-            let _conn_loop = connection.run_loop().await;
-        });
         
         println!("Setting initial value for property 'favorite_number'");
         server.set_favorite_number(42).await;
@@ -98,8 +93,7 @@ async fn main() {
         };
         server.set_lunch_menu(new_value).await;
         
-        let _ = server.receive_loop().await;
-        let _ = join!(loop_task);
+        let _server_loop_task = server.receive_loop().await;
     });
     // Ctrl-C to stop
 }

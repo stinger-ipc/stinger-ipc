@@ -8,7 +8,6 @@ use futures::{executor::block_on};
 use mqttier::MqttierClient;
 use {{stinger.rust.server_package_name}}::{{stinger.rust.server_struct_name}};
 use tokio::time::{sleep, Duration};
-use tokio::join;
 
 #[allow(unused_imports)]
 use {{stinger.rust.common_package_name}}::payloads::{MethodResultCode, *};
@@ -39,10 +38,6 @@ async fn main() {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
         let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection).await;
         
-        let loop_task = tokio::spawn(async move {
-            println!("Making call to start connection loop");
-            let _conn_loop = connection.run_loop().await;
-        });
         {%for prop_name, prop in stinger.properties.items()%}
         println!("Setting initial value for property '{{prop_name}}'");
         {%-if prop.arg_list | length == 1 %}
@@ -78,8 +73,7 @@ async fn main() {
         server.set_{{prop_name | snake_case}}(new_value).await;
         {%endif%}
         {%endfor%}{# property initialization -#}
-        let _ = server.receive_loop().await;
-        let _ = join!(loop_task);
+        let _server_loop_task = server.receive_loop().await;
     });
     // Ctrl-C to stop
 }

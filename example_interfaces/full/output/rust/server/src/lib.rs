@@ -17,7 +17,6 @@ use tokio::sync::mpsc;
 use tokio::task::JoinError;
 
 
-
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
@@ -358,7 +357,7 @@ impl FullServer {
         let properties = self.properties.clone();
         
 
-        let _loop_task = tokio::spawn(async move {
+        let loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 if msg.subscription_id == sub_ids.add_numbers_method_req {
                     FullServer::handle_add_numbers_request(publisher.clone(), &mut method_handlers, msg).await;
@@ -375,11 +374,13 @@ impl FullServer {
                 else if msg.subscription_id == sub_ids.lunch_menu_property_update {
                     FullServer::update_lunch_menu_value(publisher.clone(), properties.lunch_menu_topic.clone(), properties.lunch_menu.clone(), msg).await;
                 }
-            }   
+            }
+            println!("No more messages from message_receiver channel");
         });
+        let _ = tokio::join!(loop_task);
          
         
-        println!("Started client receive task");
+        println!("Server receive loop completed [error?]");
         Ok(())
     }
 

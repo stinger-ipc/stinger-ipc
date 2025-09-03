@@ -28,7 +28,7 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
         t.render_template(f"{output_file}.jinja2", output_file, **params)
 
     package_name = f"{stringmanip.lower_camel_case(stinger.name).lower()}ipc"
-    generated_pkg_dir = os.path.join(outdir, package_name)
+    generated_pkg_dir = output_dir / package_name
     print(f"[bold]Making Directory:[/bold] {generated_pkg_dir}")
     os.makedirs(generated_pkg_dir, exist_ok=True)
     for output_file in [
@@ -38,10 +38,11 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
         "__init__.py",
         "method_codes.py",
     ]:
-        print(f"[bold green]Generating:[/bold green] {output_file}")
-        output = t.render_template(f"{output_file}.jinja2", output_file, **params)
+        of = generated_pkg_dir / output_file
+        print(f"[bold green]Generating:[/bold green] {of}")
+        output = t.render_template(f"{output_file}.jinja2", of, **params)
 
-    t.render_template("interface_types.py.jinja2", f"{stinger.get_enum_module_name()}.py", **params)
+    t.render_template("interface_types.py.jinja2", f"{generated_pkg_dir}/{stinger.get_enum_module_name()}.py", **params)
 
 def run():
     typer.run(main)

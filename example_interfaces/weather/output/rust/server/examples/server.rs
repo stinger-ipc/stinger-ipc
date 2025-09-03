@@ -8,7 +8,6 @@ use futures::{executor::block_on};
 use mqttier::MqttierClient;
 use weather_server::WeatherServer;
 use tokio::time::{sleep, Duration};
-use tokio::join;
 
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
@@ -38,10 +37,6 @@ async fn main() {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
         let mut server = WeatherServer::new(&mut connection).await;
         
-        let loop_task = tokio::spawn(async move {
-            println!("Making call to start connection loop");
-            let _conn_loop = connection.run_loop().await;
-        });
         
         println!("Setting initial value for property 'location'");
         let new_value = LocationProperty {
@@ -156,8 +151,7 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'daily_forecast_refresh_interval'");
         server.set_daily_forecast_refresh_interval(2022).await;
-        let _ = server.receive_loop().await;
-        let _ = join!(loop_task);
+        let _server_loop_task = server.receive_loop().await;
     });
     // Ctrl-C to stop
 }

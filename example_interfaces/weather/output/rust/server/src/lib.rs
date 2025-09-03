@@ -17,7 +17,6 @@ use tokio::sync::mpsc;
 use tokio::task::JoinError;
 
 
-
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
@@ -539,7 +538,7 @@ impl WeatherServer {
         let properties = self.properties.clone();
         
 
-        let _loop_task = tokio::spawn(async move {
+        let loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 if msg.subscription_id == sub_ids.refresh_daily_forecast_method_req {
                     WeatherServer::handle_refresh_daily_forecast_request(publisher.clone(), &mut method_handlers, msg).await;
@@ -562,11 +561,13 @@ impl WeatherServer {
                 else if msg.subscription_id == sub_ids.daily_forecast_refresh_interval_property_update {
                     WeatherServer::update_daily_forecast_refresh_interval_value(publisher.clone(), properties.daily_forecast_refresh_interval_topic.clone(), properties.daily_forecast_refresh_interval.clone(), msg).await;
                 }
-            }   
+            }
+            println!("No more messages from message_receiver channel");
         });
+        let _ = tokio::join!(loop_task);
          
         
-        println!("Started client receive task");
+        println!("Server receive loop completed [error?]");
         Ok(())
     }
 

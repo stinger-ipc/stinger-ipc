@@ -14,7 +14,6 @@ use tokio::task::JoinError;
 
 
 
-
 pub struct SignalOnlyServer {
     mqttier_client: MqttierClient,
     
@@ -69,7 +68,7 @@ impl SignalOnlyServer {
 
          
         
-        println!("Started client receive task");
+        println!("Server receive loop completed [error?]");
         Ok(())
     }
 

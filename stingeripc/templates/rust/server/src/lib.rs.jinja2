@@ -16,7 +16,6 @@ use tokio::sync::mpsc;
 {%endif%}
 use tokio::task::JoinError;
 
-
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -271,7 +270,7 @@ impl {{stinger.rust.server_struct_name}} {
         let properties = self.properties.clone();
         {%endif%}
 
-        let _loop_task = tokio::spawn(async move {
+        let loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 {%-for method_name, method in stinger.methods.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method_req {
@@ -283,11 +282,13 @@ impl {{stinger.rust.server_struct_name}} {
                     {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), msg).await;
                 }
                 {%-endif%}{%endfor%}{# properties #}
-            }   
+            }
+            println!("No more messages from message_receiver channel");
         });
+        let _ = tokio::join!(loop_task);
         {%endif%} {# any methods or properties #}
         
-        println!("Started client receive task");
+        println!("Server receive loop completed [error?]");
         Ok(())
     }
 
