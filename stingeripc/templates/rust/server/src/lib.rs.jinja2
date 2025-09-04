@@ -50,13 +50,13 @@ struct {{stinger.name | UpperCamelCase}}Properties {
 }
 {%endif%}
 {%endif%}{# any methods or properties #}
-
+#[derive(Clone)]
 pub struct {{stinger.rust.server_struct_name}} {
     mqttier_client: MqttierClient,
     {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
-    msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
+    msg_streamer_rx: Arc<Mutex<Option<mpsc::Receiver<ReceivedMessage>>>>,
 
     /// The Sender side of MQTT messages that are received from the broker.  This tx
     /// side is cloned for each subscription made.
@@ -133,7 +133,7 @@ impl {{stinger.rust.server_struct_name}} {
         {{stinger.rust.server_struct_name}} {
             mqttier_client: connection.clone(),
             {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
-            msg_streamer_rx: Some(message_received_rx),
+            msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,{%if stinger.methods | length > 0 %}
             method_handlers: method_handlers,{%endif%}{%if stinger.properties | length > 0 %}
             properties: property_values,{%endif%}
@@ -255,7 +255,9 @@ impl {{stinger.rust.server_struct_name}} {
 
         {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
-        let mut message_receiver = self.msg_streamer_rx.take().expect("msg_streamer_rx should be Some");
+        let mut message_receiver = {
+            self.msg_streamer_rx.lock().unwrap().take().expect("msg_streamer_rx should be Some")
+        };
 
         {%if stinger.methods|length > 0 -%}
         let mut method_handlers = self.method_handlers.clone();

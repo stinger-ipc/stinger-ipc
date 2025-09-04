@@ -12,6 +12,7 @@ use signal_only_types::payloads::{MethodResultCode, *};
 
 use tokio::task::JoinError;
 
+#[derive(Clone)]
 pub struct SignalOnlyServer {
     mqttier_client: MqttierClient,
 

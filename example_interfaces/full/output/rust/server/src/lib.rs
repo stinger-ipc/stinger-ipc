@@ -50,12 +50,13 @@ struct FullProperties {
     lunch_menu: Arc<Mutex<Option<LunchMenuProperty>>>,
 }
 
+#[derive(Clone)]
 pub struct FullServer {
     mqttier_client: MqttierClient,
 
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
-    msg_streamer_rx: Option<mpsc::Receiver<ReceivedMessage>>,
+    msg_streamer_rx: Arc<Mutex<Option<mpsc::Receiver<ReceivedMessage>>>>,
 
     /// The Sender side of MQTT messages that are received from the broker.  This tx
     /// side is cloned for each subscription made.
@@ -168,7 +169,7 @@ impl FullServer {
         FullServer {
             mqttier_client: connection.clone(),
 
-            msg_streamer_rx: Some(message_received_rx),
+            msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
             method_handlers: method_handlers,
             properties: property_values,
@@ -408,10 +409,13 @@ impl FullServer {
         let _ = self.mqttier_client.run_loop().await;
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
-        let mut message_receiver = self
-            .msg_streamer_rx
-            .take()
-            .expect("msg_streamer_rx should be Some");
+        let mut message_receiver = {
+            self.msg_streamer_rx
+                .lock()
+                .unwrap()
+                .take()
+                .expect("msg_streamer_rx should be Some")
+        };
 
         let mut method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
