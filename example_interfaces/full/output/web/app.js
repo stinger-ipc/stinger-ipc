@@ -32,7 +32,26 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     };
 
     $scope.properties = {
-
+        "favoriteNumber": {
+            "subscription_id": null,
+            "name": "favorite_number",
+            "received": null,
+            "mqtt_topic": "full/property/favoriteNumber/value"
+        },
+    
+        "favoriteFoods": {
+            "subscription_id": null,
+            "name": "favorite_foods",
+            "received": null,
+            "mqtt_topic": "full/property/favoriteFoods/value"
+        },
+    
+        "lunchMenu": {
+            "subscription_id": null,
+            "name": "lunch_menu",
+            "received": null,
+            "mqtt_topic": "full/property/lunchMenu/value"
+        }
     };
 
     $scope.console = {
@@ -74,14 +93,19 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
         const subid = packet.properties.subscriptionIdentifier;
 
-        if (subid >= signalSubIdStart && subid < propertySubIdStart) {
-            const signal_index = subid - signalSubIdStart;
-            console.log("Signal index: " + signal_index);
-            $scope.data.signals[signal_index] = JSON.parse(message.toString());
-        } else if (subid >= propertySubIdStart && subid < propertySubIdStart + 3) {
-            const prop_index = subid - propertySubIdStart;
-            console.log("Property index: " + prop_index);
-            $scope.data.properties[prop_index] = JSON.parse(message.toString());
+        for (const key in $scope.signals) {
+            if (!$scope.signals.hasOwnProperty(key)) continue;
+            const sig = $scope.signals[key];
+            if (sig.subscription_id == subid) {
+                sig.received.push(obj);
+            }
+        }
+        for (const key in $scope.properties) {
+            if (!$scope.properties.hasOwnProperty(key)) continue;
+            const prop = $scope.properties[key];
+            if (prop.subscription_id == subid) {
+                prop.received = obj;
+            }
         }
 
         var obj;
@@ -96,44 +120,53 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     });
 
     client.on('connect', function() {
+        var subscription_count = 10;
         console.log("Connected with ", client);
         
         const _sub_opts = {
             "qos": 1,
             "properties": {
-                "subscriptionIdentifier": (signalSubIdStart + 1)
+                "subscriptionIdentifier": subscription_count
             }
         };
+        $scope.signals[""].subscription_id = subscription_count;
         client.subscribe("full/signal/todayIs", _sub_opts);
-        console.log("Subscribing to full/signal/todayIs with id 1");
+        console.log("Subscribing to full/signal/todayIs with id ", subscription_count);
+        subscription_count++;
         
         
         const favorite_number_sub_opts = {
             "qos": 1,
             "properties": {
-                "subscriptionIdentifier": (propertySubIdStart + 1)
+                "subscriptionIdentifier": subscription_count
             }
         };
+        $scope.properties["favoriteNumber"].subscription_id = subscription_count;
         client.subscribe("full/property/favoriteNumber/value", favorite_number_sub_opts);
-        console.log("Subscribing to full/property/favoriteNumber/value with id 2");
+        console.log("Subscribing to full/property/favoriteNumber/value with id ", subscription_count);
+        subscription_count++;
         
         const favorite_foods_sub_opts = {
             "qos": 1,
             "properties": {
-                "subscriptionIdentifier": (propertySubIdStart + 2)
+                "subscriptionIdentifier": subscription_count
             }
         };
+        $scope.properties["favoriteFoods"].subscription_id = subscription_count;
         client.subscribe("full/property/favoriteFoods/value", favorite_foods_sub_opts);
-        console.log("Subscribing to full/property/favoriteFoods/value with id 3");
+        console.log("Subscribing to full/property/favoriteFoods/value with id ", subscription_count);
+        subscription_count++;
         
         const lunch_menu_sub_opts = {
             "qos": 1,
             "properties": {
-                "subscriptionIdentifier": (propertySubIdStart + 3)
+                "subscriptionIdentifier": subscription_count
             }
         };
+        $scope.properties["lunchMenu"].subscription_id = subscription_count;
         client.subscribe("full/property/lunchMenu/value", lunch_menu_sub_opts);
-        console.log("Subscribing to full/property/lunchMenu/value with id 4");
+        console.log("Subscribing to full/property/lunchMenu/value with id ", subscription_count);
+        subscription_count++;
         
         subscription_state = 1;
         $scope.$apply();

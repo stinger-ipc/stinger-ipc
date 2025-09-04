@@ -15,3 +15,4 @@ Cargo.lock
 example_interfaces/*/output/cpp/build/*
 
 .vscode/
+build/
