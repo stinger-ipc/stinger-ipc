@@ -1,14 +1,14 @@
-use futures::{executor::block_on};
-use mqttier::MqttierClient;
 use full_client::FullClient;
-use tokio::time::{sleep, Duration};
+use futures::executor::block_on;
+use mqttier::MqttierClient;
 use tokio::join;
+use tokio::time::{Duration, sleep};
 
 #[tokio::main]
 async fn main() {
     block_on(async {
-        
-        let mut mqttier_client = MqttierClient::new("localhost", 1883, Some("client_example".to_string())).unwrap();
+        let mut mqttier_client =
+            MqttierClient::new("localhost", 1883, Some("client_example".to_string())).unwrap();
         let mut api_client = FullClient::new(&mut mqttier_client).await;
 
         let client_for_loop = api_client.clone();
@@ -17,7 +17,6 @@ async fn main() {
             let _conn_loop = client_for_loop.run_loop().await;
         });
 
-        
         let mut sig_rx = api_client.get_today_is_receiver();
         println!("Got signal receiver for todayIs");
 
@@ -29,7 +28,7 @@ async fn main() {
                 match sig_rx.recv().await {
                     Ok(payload) => {
                         println!("Received todayIs signal with payload: {:?}", payload);
-                    },
+                    }
                     Err(e) => {
                         eprintln!("Error receiving todayIs signal: {:?}", e);
                         break;
@@ -37,18 +36,20 @@ async fn main() {
                 }
             }
         });
-        
 
-
-        
         println!("Calling addNumbers with example values...");
-        let result = api_client.add_numbers(42, 42, Some(42)).await.expect("Failed to call addNumbers");
+        let result = api_client
+            .add_numbers(42, 42, Some(42))
+            .await
+            .expect("Failed to call addNumbers");
         println!("addNumbers response: {:?}", result);
-        
+
         println!("Calling doSomething with example values...");
-        let result = api_client.do_something("apples".to_string()).await.expect("Failed to call doSomething");
+        let result = api_client
+            .do_something("apples".to_string())
+            .await
+            .expect("Failed to call doSomething");
         println!("doSomething response: {:?}", result);
-        
 
         let _ = join!(sig_rx_task);
     });

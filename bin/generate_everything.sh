@@ -45,6 +45,7 @@ function generate_rust() {
     uv run stinger generate rust ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     if [ $? -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo update)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo fmt)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_client_demo)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_server_demo)

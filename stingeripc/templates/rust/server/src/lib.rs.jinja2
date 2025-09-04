@@ -151,7 +151,7 @@ impl {{stinger.rust.server_struct_name}} {
             {{arg.name}}: {{arg.name|snake_case}},
             {%endfor%}
         };
-        let _ = self.mqttier_client.publish_state("{{sig.topic}}".to_string(), &data, 1).await;
+        let _ = self.mqttier_client.publish_structure("{{sig.topic}}".to_string(), &data).await;
     }
     {%endfor%}
 

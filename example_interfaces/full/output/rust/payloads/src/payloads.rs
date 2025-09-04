@@ -5,13 +5,11 @@ on the next generation.
 It contains enumerations used by the Full interface.
 */
 
-
-use std::fmt;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
+use std::fmt;
 
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 #[repr(u32)]
 #[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize)]
@@ -23,7 +21,7 @@ pub enum DayOfTheWeek {
     Wednesday = 4,
     Thursday = 5,
     Friday = 6,
-    Saturday = 7
+    Saturday = 7,
 }
 
 #[allow(dead_code)]
@@ -47,11 +45,9 @@ impl From<u32> for DayOfTheWeek {
 
 impl fmt::Display for DayOfTheWeek {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-       write!(f, "{:?}", self)
+        write!(f, "{:?}", self)
     }
 }
-
-
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -60,7 +56,7 @@ pub struct Lunch {
     pub sandwich: String,
     pub crackers: f32,
     pub day: DayOfTheWeek,
-    
+
     pub order_number: Option<i32>,
 }
 
@@ -77,7 +73,6 @@ pub enum MethodResultCode {
     NotImplemented = 7,
 }
 
-
 // Structures for `addNumbers` method
 
 #[allow(dead_code, non_snake_case)]
@@ -88,7 +83,6 @@ pub struct AddNumbersRequestObject {
     pub second: i32,
     pub third: Option<i32>,
 }
-
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AddNumbersReturnValue {
@@ -104,7 +98,6 @@ pub struct DoSomethingRequestObject {
     pub aString: String,
 }
 
-
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `doSomething`
@@ -114,24 +107,19 @@ pub struct DoSomethingReturnValue {
     pub day: DayOfTheWeek,
 }
 
-
 // Structures for `todayIs` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TodayIsSignalPayload {
     pub dayOfMonth: i32,
     pub dayOfWeek: Option<DayOfTheWeek>,
-    
 }
-
-
 
 // `favorite_number` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FavoriteNumberProperty {
     pub number: i32,
-    
 }
 
 // `favorite_foods` property structure.
@@ -141,7 +129,6 @@ pub struct FavoriteFoodsProperty {
     pub drink: String,
     pub slices_of_pizza: i32,
     pub breakfast: Option<String>,
-    
 }
 
 // `lunch_menu` property structure.
@@ -150,5 +137,4 @@ pub struct FavoriteFoodsProperty {
 pub struct LunchMenuProperty {
     pub monday: Lunch,
     pub tuesday: Lunch,
-    
 }

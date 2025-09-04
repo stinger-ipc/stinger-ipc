@@ -5,12 +5,7 @@ on the next generation.
 It contains enumerations used by the SignalOnly interface.
 */
 
-
-use serde::{Serialize, Deserialize};
-
-
-
-
+use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -25,18 +20,13 @@ pub enum MethodResultCode {
     NotImplemented = 7,
 }
 
-
-
 // Structures for `anotherSignal` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnotherSignalSignalPayload {
     pub one: f32,
-    
+
     pub two: bool,
-    
+
     pub three: String,
-    
 }
-
-
