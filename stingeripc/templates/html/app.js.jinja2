@@ -3,12 +3,12 @@ const clientId = "{{stinger.name}}-web-" + new Date().getTime();
 const signalSubIdStart = 1;
 const propertySubIdStart = {{10 + stinger.signals|length}};
 
-function makeRequestProperties() {
+function makeRequestProperties(response_topic) {
     const correlationData = Math.random().toString(16).substr(2, 8);
     return {
         "contentType": "application/json",
         "correlationData": correlationData,
-        "responseTopic": responseTopic + correlationData
+        "responseTopic": response_topic
     }
 }
 
@@ -94,7 +94,14 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         client.publish(topic, payload, { "qos": qos, retain: false, properties: props});
         return props.correlationData;
     }
-
+    {%for method_name, method in stinger.methods.items() %}{%if not method.read_only %}
+    $scope.{{method_name | lowerCamelCase}}MethodCall = function(form) {
+        var prop = $scope.methods["{{method_name | lowerCamelCase}}"];
+        const publish_properties = makeRequestProperties(prop.response_topic);
+        prop.pending_correlation_id = publish_properties.correlationData;
+        
+    };
+    {%endif%}{%endfor%}
     client.on('message', function(topic, message, packet) {
         console.log("Message Arrived: " + topic);
 
@@ -142,18 +149,22 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         console.log("Subscribing to {{signal.topic}} with id ", subscription_count);
         subscription_count++;
         {%endfor%}
-        {%for prop_name, prop in stinger.properties.items() %}
-        const {{prop_name}}_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["{{prop_name | lowerCamelCase}}"].subscription_id = subscription_count;
-        client.subscribe("{{prop.value_topic}}", {{prop_name}}_sub_opts);
-        console.log("Subscribing to {{prop.value_topic}} with id ", subscription_count);
-        subscription_count++;
-        {%endfor%}
+
+        for (const key in $scope.properties) {
+            if (!$scope.properties.hasOwnProperty(key)) continue;
+            const prop = $scope.properties[key];
+            var sub_id = subscription_count++;
+            const prop_sub_opts = {
+                "qos": 1,
+                "properties": {
+                    "subscriptionIdentifier": sub_id
+                }
+            };
+            prop.subscription_id = sub_id;
+            client.subscribe(prop.mqtt_topic, prop_sub_opts);
+            console.log("Subscribing to " + prop.mqtt_topic + " with id ", sub_id);
+        }
+
         subscription_state = 1;
         $scope.$apply();
     });

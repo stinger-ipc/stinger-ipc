@@ -46,7 +46,7 @@
         {%endif%}
         </div>
         <div class="method-form-box">
-            <form ng-submit="callMethod('{{ method_name }}')">
+            <form ng-submit="{{method_name}}MethodCall()">
                 {%for arg in method.arg_list %}
                 <div class="method-arg">
                     <label for="{{ method_name |snake_case}}-arg-{{ arg.name }}">{{ arg.name }} ({{ arg.type }})</label>

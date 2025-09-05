@@ -3,12 +3,12 @@ const clientId = "weather-web-" + new Date().getTime();
 const signalSubIdStart = 1;
 const propertySubIdStart = 11;
 
-function makeRequestProperties() {
+function makeRequestProperties(response_topic) {
     const correlationData = Math.random().toString(16).substr(2, 8);
     return {
         "contentType": "application/json",
         "correlationData": correlationData,
-        "responseTopic": responseTopic + correlationData
+        "responseTopic": response_topic
     }
 }
 
@@ -156,7 +156,28 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         client.publish(topic, payload, { "qos": qos, retain: false, properties: props});
         return props.correlationData;
     }
-
+    
+    $scope.refreshDailyForecastMethodCall = function(form) {
+        var prop = $scope.methods["refreshDailyForecast"];
+        const publish_properties = makeRequestProperties(prop.response_topic);
+        prop.pending_correlation_id = publish_properties.correlationData;
+        
+    };
+    
+    $scope.refreshHourlyForecastMethodCall = function(form) {
+        var prop = $scope.methods["refreshHourlyForecast"];
+        const publish_properties = makeRequestProperties(prop.response_topic);
+        prop.pending_correlation_id = publish_properties.correlationData;
+        
+    };
+    
+    $scope.refreshCurrentConditionsMethodCall = function(form) {
+        var prop = $scope.methods["refreshCurrentConditions"];
+        const publish_properties = makeRequestProperties(prop.response_topic);
+        prop.pending_correlation_id = publish_properties.correlationData;
+        
+    };
+    
     client.on('message', function(topic, message, packet) {
         console.log("Message Arrived: " + topic);
 
@@ -204,95 +225,22 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         console.log("Subscribing to weather/signal/currentTime with id ", subscription_count);
         subscription_count++;
         
-        
-        const location_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["location"].subscription_id = subscription_count;
-        client.subscribe("weather/property/location/value", location_sub_opts);
-        console.log("Subscribing to weather/property/location/value with id ", subscription_count);
-        subscription_count++;
-        
-        const current_temperature_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["currentTemperature"].subscription_id = subscription_count;
-        client.subscribe("weather/property/currentTemperature/value", current_temperature_sub_opts);
-        console.log("Subscribing to weather/property/currentTemperature/value with id ", subscription_count);
-        subscription_count++;
-        
-        const current_condition_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["currentCondition"].subscription_id = subscription_count;
-        client.subscribe("weather/property/currentCondition/value", current_condition_sub_opts);
-        console.log("Subscribing to weather/property/currentCondition/value with id ", subscription_count);
-        subscription_count++;
-        
-        const daily_forecast_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["dailyForecast"].subscription_id = subscription_count;
-        client.subscribe("weather/property/dailyForecast/value", daily_forecast_sub_opts);
-        console.log("Subscribing to weather/property/dailyForecast/value with id ", subscription_count);
-        subscription_count++;
-        
-        const hourly_forecast_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["hourlyForecast"].subscription_id = subscription_count;
-        client.subscribe("weather/property/hourlyForecast/value", hourly_forecast_sub_opts);
-        console.log("Subscribing to weather/property/hourlyForecast/value with id ", subscription_count);
-        subscription_count++;
-        
-        const current_condition_refresh_interval_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["currentConditionRefreshInterval"].subscription_id = subscription_count;
-        client.subscribe("weather/property/currentConditionRefreshInterval/value", current_condition_refresh_interval_sub_opts);
-        console.log("Subscribing to weather/property/currentConditionRefreshInterval/value with id ", subscription_count);
-        subscription_count++;
-        
-        const hourly_forecast_refresh_interval_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["hourlyForecastRefreshInterval"].subscription_id = subscription_count;
-        client.subscribe("weather/property/hourlyForecastRefreshInterval/value", hourly_forecast_refresh_interval_sub_opts);
-        console.log("Subscribing to weather/property/hourlyForecastRefreshInterval/value with id ", subscription_count);
-        subscription_count++;
-        
-        const daily_forecast_refresh_interval_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["dailyForecastRefreshInterval"].subscription_id = subscription_count;
-        client.subscribe("weather/property/dailyForecastRefreshInterval/value", daily_forecast_refresh_interval_sub_opts);
-        console.log("Subscribing to weather/property/dailyForecastRefreshInterval/value with id ", subscription_count);
-        subscription_count++;
-        
+
+        for (const key in $scope.properties) {
+            if (!$scope.properties.hasOwnProperty(key)) continue;
+            const prop = $scope.properties[key];
+            var sub_id = subscription_count++;
+            const prop_sub_opts = {
+                "qos": 1,
+                "properties": {
+                    "subscriptionIdentifier": sub_id
+                }
+            };
+            prop.subscription_id = sub_id;
+            client.subscribe(prop.mqtt_topic, prop_sub_opts);
+            console.log("Subscribing to " + prop.mqtt_topic + " with id ", sub_id);
+        }
+
         subscription_state = 1;
         $scope.$apply();
     });

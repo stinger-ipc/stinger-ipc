@@ -3,12 +3,12 @@ const clientId = "Full-web-" + new Date().getTime();
 const signalSubIdStart = 1;
 const propertySubIdStart = 11;
 
-function makeRequestProperties() {
+function makeRequestProperties(response_topic) {
     const correlationData = Math.random().toString(16).substr(2, 8);
     return {
         "contentType": "application/json",
         "correlationData": correlationData,
-        "responseTopic": responseTopic + correlationData
+        "responseTopic": response_topic
     }
 }
 
@@ -131,7 +131,21 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         client.publish(topic, payload, { "qos": qos, retain: false, properties: props});
         return props.correlationData;
     }
-
+    
+    $scope.addNumbersMethodCall = function(form) {
+        var prop = $scope.methods["addNumbers"];
+        const publish_properties = makeRequestProperties(prop.response_topic);
+        prop.pending_correlation_id = publish_properties.correlationData;
+        
+    };
+    
+    $scope.doSomethingMethodCall = function(form) {
+        var prop = $scope.methods["doSomething"];
+        const publish_properties = makeRequestProperties(prop.response_topic);
+        prop.pending_correlation_id = publish_properties.correlationData;
+        
+    };
+    
     client.on('message', function(topic, message, packet) {
         console.log("Message Arrived: " + topic);
 
@@ -179,40 +193,22 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         console.log("Subscribing to full/signal/todayIs with id ", subscription_count);
         subscription_count++;
         
-        
-        const favorite_number_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["favoriteNumber"].subscription_id = subscription_count;
-        client.subscribe("full/property/favoriteNumber/value", favorite_number_sub_opts);
-        console.log("Subscribing to full/property/favoriteNumber/value with id ", subscription_count);
-        subscription_count++;
-        
-        const favorite_foods_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["favoriteFoods"].subscription_id = subscription_count;
-        client.subscribe("full/property/favoriteFoods/value", favorite_foods_sub_opts);
-        console.log("Subscribing to full/property/favoriteFoods/value with id ", subscription_count);
-        subscription_count++;
-        
-        const lunch_menu_sub_opts = {
-            "qos": 1,
-            "properties": {
-                "subscriptionIdentifier": subscription_count
-            }
-        };
-        $scope.properties["lunchMenu"].subscription_id = subscription_count;
-        client.subscribe("full/property/lunchMenu/value", lunch_menu_sub_opts);
-        console.log("Subscribing to full/property/lunchMenu/value with id ", subscription_count);
-        subscription_count++;
-        
+
+        for (const key in $scope.properties) {
+            if (!$scope.properties.hasOwnProperty(key)) continue;
+            const prop = $scope.properties[key];
+            var sub_id = subscription_count++;
+            const prop_sub_opts = {
+                "qos": 1,
+                "properties": {
+                    "subscriptionIdentifier": sub_id
+                }
+            };
+            prop.subscription_id = sub_id;
+            client.subscribe(prop.mqtt_topic, prop_sub_opts);
+            console.log("Subscribing to " + prop.mqtt_topic + " with id ", sub_id);
+        }
+
         subscription_state = 1;
         $scope.$apply();
     });
