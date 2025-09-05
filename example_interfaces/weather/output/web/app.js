@@ -179,9 +179,19 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     };
     
     client.on('message', function(topic, message, packet) {
-        console.log("Message Arrived: " + topic);
-
+        
         const subid = packet.properties.subscriptionIdentifier;
+
+        console.log("Message Arrived: " + topic + " (" + subid + ")");
+        console.log($scope.properties);
+
+        var obj;
+        if (message.toString().length == 0) {
+            obj = null;
+        } else {
+            obj = JSON.parse(message.toString());
+        }
+        console.log(obj);
 
         for (const key in $scope.signals) {
             if (!$scope.signals.hasOwnProperty(key)) continue;
@@ -196,21 +206,16 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             const prop = $scope.properties[key];
             if (prop.subscription_id == subid) {
                 prop.received = obj;
+                console.log("Set property received object to ", prop.received);
             }
         }
-
-        var obj;
-        if (message.toString().length == 0) {
-            obj = null;
-        } else {
-            obj = JSON.parse(message.toString());
-        }
-        console.log(obj);
 
         $scope.$apply();
     });
 
     client.on('connect', function() {
+        $scope.online = true;
+
         var subscription_count = 10;
         console.log("Connected with ", client);
         
@@ -222,13 +227,12 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
         $scope.signals["currentTime"].subscription_id = subscription_count;
         client.subscribe("weather/signal/currentTime", current_time_sub_opts);
-        console.log("Subscribing to weather/signal/currentTime with id ", subscription_count);
+        console.log("Subscribing to signal weather/signal/currentTime with id ", subscription_count);
         subscription_count++;
         
 
         for (const key in $scope.properties) {
             if (!$scope.properties.hasOwnProperty(key)) continue;
-            const prop = $scope.properties[key];
             var sub_id = subscription_count++;
             const prop_sub_opts = {
                 "qos": 1,
@@ -236,9 +240,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "subscriptionIdentifier": sub_id
                 }
             };
-            prop.subscription_id = sub_id;
-            client.subscribe(prop.mqtt_topic, prop_sub_opts);
-            console.log("Subscribing to " + prop.mqtt_topic + " with id ", sub_id);
+            $scope.properties[key].subscription_id = sub_id;
+            client.subscribe($scope.properties[key].mqtt_topic, prop_sub_opts);
+            console.log("Subscribing to property " + $scope.properties[key].mqtt_topic + " with id " + $scope.properties[key].subscription_id);
         }
 
         subscription_state = 1;

@@ -262,8 +262,9 @@ impl {{stinger.rust.client_struct_name}} {
             let mut guard = self.msg_streamer_rx.lock().expect("Mutex was poisoned");
             guard.take().expect("msg_streamer_rx should be Some")
         };
-
+        {%if stinger.signals | length > 0 %}
         let sig_chans = self.signal_channels.clone();
+        {%endif%}
         let sub_ids = self.subscription_ids.clone();
         {%-if stinger.properties|length > 0%}
         let props = self.properties.clone();

@@ -76,5 +76,9 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "ostream": "cpp"
-  }
+  },
+  "cSpell.words": [
+    "Mqttier",
+    "serde"
+  ]
 }

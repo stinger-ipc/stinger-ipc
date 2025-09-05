@@ -9,9 +9,9 @@ use mqttier::{MqttierClient, ReceivedMessage};
 
 #[allow(unused_imports)]
 use full_types::payloads::{MethodResultCode, *};
+use std::sync::{Arc, Mutex};
 
 use serde_json;
-use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 
 use tokio::task::JoinError;
@@ -30,14 +30,49 @@ struct FullServerSubscriptionIds {
     lunch_menu_property_update: usize,
 }
 
-#[derive(Clone)]
-struct FullServerMethodHandlers {
+struct FullServerMethodHandlers<T> {
     /// Pointer to a function to handle the addNumbers method request.
-    method_handler_for_add_numbers:
-        Arc<Mutex<Box<dyn Fn(i32, i32, Option<i32>) -> Result<i32, MethodResultCode> + Send>>>,
+    method_handler_for_add_numbers: Arc<
+        Mutex<
+            Box<
+                dyn Fn(
+                        i32,
+                        i32,
+                        Option<i32>,
+                        Arc<Mutex<Option<T>>>,
+                    ) -> Result<i32, MethodResultCode>
+                    + Send,
+            >,
+        >,
+    >,
     /// Pointer to a function to handle the doSomething method request.
-    method_handler_for_do_something:
-        Arc<Mutex<Box<dyn Fn(String) -> Result<DoSomethingReturnValue, MethodResultCode> + Send>>>,
+    method_handler_for_do_something: Arc<
+        Mutex<
+            Box<
+                dyn Fn(
+                        String,
+                        Arc<Mutex<Option<T>>>,
+                    ) -> Result<DoSomethingReturnValue, MethodResultCode>
+                    + Send,
+            >,
+        >,
+    >,
+}
+
+impl<T> Clone for WeatherForecastsServerMethodHandlers<T> {
+    fn clone(&self) -> Self {
+        WeatherForecastsServerMethodHandlers {
+            method_handler_for_refresh_daily_forecast: self
+                .method_handler_for_refresh_daily_forecast
+                .clone(),
+            method_handler_for_refresh_hourly_forecast: self
+                .method_handler_for_refresh_hourly_forecast
+                .clone(),
+            method_handler_for_refresh_current_conditions: self
+                .method_handler_for_refresh_current_conditions
+                .clone(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -51,7 +86,10 @@ struct FullProperties {
 }
 
 #[derive(Clone)]
-pub struct FullServer {
+pub struct FullServer<T>
+where
+    T: Send + Clone + 'static,
+{
     mqttier_client: MqttierClient,
 
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
@@ -64,7 +102,7 @@ pub struct FullServer {
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
 
     /// Struct contains all the handlers for the various methods.
-    method_handlers: FullServerMethodHandlers,
+    method_handlers: FullServerMethodHandlers<T>,
 
     /// Struct contains all the properties.
     properties: FullProperties,
@@ -77,7 +115,7 @@ pub struct FullServer {
     pub client_id: String,
 }
 
-impl FullServer {
+impl<T: Send + Sync + Clone + 'static> FullServer<T> {
     pub async fn new(connection: &mut MqttierClient) -> Self {
         // Create a channel for messages to get from the MqttierClient object to this FullServer object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -135,12 +173,12 @@ impl FullServer {
 
         // Create structure for method handlers.
         let method_handlers = FullServerMethodHandlers {
-            method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new(|_1, _2, _3| {
-                Err(MethodResultCode::ServerError)
-            }))),
-            method_handler_for_do_something: Arc::new(Mutex::new(Box::new(|_1| {
-                Err(MethodResultCode::ServerError)
-            }))),
+            method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new(
+                |_1, _2, _3, _state: Arc<Mutex<Option<T>>>| Err(MethodResultCode::ServerError),
+            ))),
+            method_handler_for_do_something: Arc::new(Mutex::new(Box::new(
+                |_1, _state: Arc<Mutex<Option<T>>>| Err(MethodResultCode::ServerError),
+            ))),
         };
 
         // Create structure for subscription ids.
@@ -195,23 +233,38 @@ impl FullServer {
     /// Sets the function to be called when a request for the addNumbers method is received.
     pub fn set_method_handler_for_add_numbers(
         &mut self,
-        cb: impl Fn(i32, i32, Option<i32>) -> Result<i32, MethodResultCode> + 'static + Send,
+        cb: impl Fn(i32, i32, Option<i32>, T) -> Result<i32, MethodResultCode> + 'static + Send,
     ) {
-        self.method_handlers.method_handler_for_add_numbers = Arc::new(Mutex::new(Box::new(cb)));
+        self.method_handlers.method_handler_for_add_numbers =
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<Option<T>>>| {
+                if let Some(state_value) = state.lock().unwrap().as_ref() {
+                    cb(state_value.clone())
+                } else {
+                    Err(MethodResultCode::ServerError)
+                }
+            })));
     }
     /// Sets the function to be called when a request for the doSomething method is received.
     pub fn set_method_handler_for_do_something(
         &mut self,
-        cb: impl Fn(String) -> Result<DoSomethingReturnValue, MethodResultCode> + 'static + Send,
+        cb: impl Fn(String, T) -> Result<DoSomethingReturnValue, MethodResultCode> + 'static + Send,
     ) {
-        self.method_handlers.method_handler_for_do_something = Arc::new(Mutex::new(Box::new(cb)));
+        self.method_handlers.method_handler_for_do_something =
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<Option<T>>>| {
+                if let Some(state_value) = state.lock().unwrap().as_ref() {
+                    cb(state_value.clone())
+                } else {
+                    Err(MethodResultCode::ServerError)
+                }
+            })));
     }
 
     /// Handles a request message for the addNumbers method.
     async fn handle_add_numbers_request(
         publisher: MqttierClient,
-        handlers: &mut FullServerMethodHandlers,
+        handlers: &mut FullServerMethodHandlers<T>,
         msg: ReceivedMessage,
+        state: Arc<Mutex<Option<T>>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -219,18 +272,30 @@ impl FullServer {
         let payload = serde_json::from_slice::<AddNumbersRequestObject>(&payload_vec).unwrap();
 
         // call the method handler
-        let rv: i32 = {
+        let rv: Result<i32, MethodResultCode> = {
             let func_guard = handlers.method_handler_for_add_numbers.lock().unwrap();
-            (*func_guard)(payload.first, payload.second, payload.third).unwrap()
+            (*func_guard)(payload.first, payload.second, payload.third, state)
         };
-        let rv = AddNumbersReturnValue { sum: rv };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            publisher
-                .publish_response(resp_topic, &rv, corr_data)
-                .await
-                .expect("Failed to publish response structure");
+            match rv {
+                Ok(retval) => {
+                    let retval = AddNumbersReturnValue { sum: retval };
+
+                    publisher
+                        .publish_response(resp_topic, &retval, corr_data)
+                        .await
+                        .expect("Failed to publish response structure");
+                }
+                Err(err) => {
+                    eprintln!(
+                        "Error occurred while handling {}: {:?}",
+                        stringify!(addNumbers),
+                        err
+                    );
+                }
+            }
         } else {
             eprintln!("No response topic found in message properties.");
         }
@@ -238,8 +303,9 @@ impl FullServer {
     /// Handles a request message for the doSomething method.
     async fn handle_do_something_request(
         publisher: MqttierClient,
-        handlers: &mut FullServerMethodHandlers,
+        handlers: &mut FullServerMethodHandlers<T>,
         msg: ReceivedMessage,
+        state: Arc<Mutex<Option<T>>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -247,17 +313,28 @@ impl FullServer {
         let payload = serde_json::from_slice::<DoSomethingRequestObject>(&payload_vec).unwrap();
 
         // call the method handler
-        let rv: DoSomethingReturnValue = {
+        let rv: Result<DoSomethingReturnValue, MethodResultCode> = {
             let func_guard = handlers.method_handler_for_do_something.lock().unwrap();
-            (*func_guard)(payload.aString).unwrap()
+            (*func_guard)(payload.aString, state)
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            publisher
-                .publish_response(resp_topic, &rv, corr_data)
-                .await
-                .expect("Failed to publish response structure");
+            match rv {
+                Ok(retval) => {
+                    publisher
+                        .publish_response(resp_topic, &retval, corr_data)
+                        .await
+                        .expect("Failed to publish response structure");
+                }
+                Err(err) => {
+                    eprintln!(
+                        "Error occurred while handling {}: {:?}",
+                        stringify!(doSomething),
+                        err
+                    );
+                }
+            }
         } else {
             eprintln!("No response topic found in message properties.");
         }
@@ -274,6 +351,7 @@ impl FullServer {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
+        _state: Arc<Mutex<Option<T>>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: FavoriteNumberProperty = serde_json::from_str(&payload_str).unwrap();
@@ -283,7 +361,7 @@ impl FullServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.number;
         let _ = tokio::spawn(async move {
-            FullServer::publish_favorite_number_value(publisher2, topic2, data2).await;
+            FullServer::<T>::publish_favorite_number_value(publisher2, topic2, data2).await;
         });
     }
 
@@ -302,7 +380,7 @@ impl FullServer {
                 "Will publish property favorite_number of type i32 to {}",
                 topic2
             );
-            FullServer::publish_favorite_number_value(publisher2, topic2, data).await;
+            FullServer::<T>::publish_favorite_number_value(publisher2, topic2, data).await;
         });
     }
 
@@ -319,6 +397,7 @@ impl FullServer {
         topic: Arc<String>,
         data: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
         msg: ReceivedMessage,
+        _state: Arc<Mutex<Option<T>>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: FavoriteFoodsProperty = serde_json::from_str(&payload_str).unwrap();
@@ -330,7 +409,7 @@ impl FullServer {
         let data2 = new_data;
 
         let _ = tokio::spawn(async move {
-            FullServer::publish_favorite_foods_value(publisher2, topic2, data2).await;
+            FullServer::<T>::publish_favorite_foods_value(publisher2, topic2, data2).await;
         });
     }
 
@@ -349,7 +428,7 @@ impl FullServer {
                 "Will publish property favorite_foods of type FavoriteFoodsProperty to {}",
                 topic2
             );
-            FullServer::publish_favorite_foods_value(publisher2, topic2, data).await;
+            FullServer::<T>::publish_favorite_foods_value(publisher2, topic2, data).await;
         });
     }
 
@@ -366,6 +445,7 @@ impl FullServer {
         topic: Arc<String>,
         data: Arc<Mutex<Option<LunchMenuProperty>>>,
         msg: ReceivedMessage,
+        _state: Arc<Mutex<Option<T>>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: LunchMenuProperty = serde_json::from_str(&payload_str).unwrap();
@@ -377,7 +457,7 @@ impl FullServer {
         let data2 = new_data;
 
         let _ = tokio::spawn(async move {
-            FullServer::publish_lunch_menu_value(publisher2, topic2, data2).await;
+            FullServer::<T>::publish_lunch_menu_value(publisher2, topic2, data2).await;
         });
     }
 
@@ -396,7 +476,7 @@ impl FullServer {
                 "Will publish property lunch_menu of type LunchMenuProperty to {}",
                 topic2
             );
-            FullServer::publish_lunch_menu_value(publisher2, topic2, data).await;
+            FullServer::<T>::publish_lunch_menu_value(publisher2, topic2, data).await;
         });
     }
 
@@ -404,7 +484,7 @@ impl FullServer {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+    pub async fn receive_loop(&mut self, state: Arc<Mutex<Option<T>>>) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
@@ -430,6 +510,7 @@ impl FullServer {
                         publisher.clone(),
                         &mut method_handlers,
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.do_something_method_req {
@@ -437,6 +518,7 @@ impl FullServer {
                         publisher.clone(),
                         &mut method_handlers,
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.favorite_number_property_update {
@@ -445,6 +527,7 @@ impl FullServer {
                         properties.favorite_number_topic.clone(),
                         properties.favorite_number.clone(),
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.favorite_foods_property_update {
@@ -453,6 +536,7 @@ impl FullServer {
                         properties.favorite_foods_topic.clone(),
                         properties.favorite_foods.clone(),
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.lunch_menu_property_update {
@@ -461,6 +545,7 @@ impl FullServer {
                         properties.lunch_menu_topic.clone(),
                         properties.lunch_menu.clone(),
                         msg,
+                        state.clone(),
                     )
                     .await;
                 }

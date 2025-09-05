@@ -10,36 +10,51 @@
   <body ng-app="myApp" ng-controller="myCtrl">
     <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
 
+    <div class="interface-box">
+      <h1>{{stinger.name}}</h1>
+      <p>{{stinger.description}}</p>
+    </div>
+
     {%for sig_name, sig in stinger.signals.items() %}
-    <div class="signal-box" id="signal-box-{{ sig_name }}">
-        <h3 class="signal-title">{{ sig_name }}</h3>
-        <div class="signal-doc">{%if sig.documentation %}
+    <div class="component-box signal-box" id="signal-box-{{ sig_name }}">
+        <h3 class="component-title signal-title">Signal: {{ sig_name }}</h3>
+        <div class="component-doc signal-doc">{%if sig.documentation %}
 {%markdown%}
 {{ sig.documentation }}
 {%endmarkdown%}
         {%endif%}
         </div>
-        <div class="last-signal-value" ng-show="signals['{{sig_name|lowerCamelCase}}'].received"></div>
+        <div class="last-signal-value" ng-bind="signals['{{sig_name|lowerCamelCase}}'].received"></div>
     </div>
     {%endfor%}{# end signals loop #}
 
     {%for prop_name, prop in stinger.properties.items() %}
-    <div class="prop-box" id="prop-box-{{ prop_name }}">
-        <h3 class="prop-title">{{ prop_name }}</h3>
-        <div class="prop-doc">{%if prop.documentation %}
+    <div class="component-box prop-box" id="prop-box-{{ prop_name }}">
+        <h3 class="component-title prop-title">Property: {{ prop_name }}</h3>
+        <div class="component-doc prop-doc">{%if prop.documentation %}
 {%markdown%}
 {{ prop.documentation }}
 {%endmarkdown%}
         {%endif%}
         </div>
-        <div class="last-signal-value" ng-show="properties['{{prop_name|lowerCamelCase}}'].received"></div>
+        <div class="last-received property-value">
+          {%for arg in prop.arg_list %}
+            <div class="arg prop-arg">
+                <label for="{{ prop_name |snake_case}}-arg-{{ arg.name }}">{{ arg.name }}</label>
+                <input {%if prop.read_only%}disabled {%endif%}type="text" id="{{ prop_name |snake_case}}-arg-{{ arg.name }}" ng-model="properties['{{ prop_name|lowerCamelCase }}'].received['{{ arg.name }}']" />
+            </div>
+          {%endfor%}
+        </div>
+        {%if not prop.read_only %}
+        <input type="button" value="Update" ng-click="updateProperty('{{ prop_name | lowerCamelCase }}')" />
+        {%endif%}
     </div>
     {%endfor%} {# end properties loop #}
 
     {%for method_name, method in stinger.methods.items() %}
-    <div class="method-box" id="method-box-{{ method_name }}">
-        <h3 class="method-title">{{ method_name }}</h3>
-        <div class="method-doc">{%if method.documentation %}
+    <div class="component-box method-box" id="method-box-{{ method_name }}">
+        <h3 class="component-title method-title">Method: {{ method_name }}</h3>
+        <div class="component-doc method-doc">{%if method.documentation %}
 {%markdown%}
 {{ method.documentation }}
 {%endmarkdown%}

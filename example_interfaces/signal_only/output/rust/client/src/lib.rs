@@ -113,6 +113,7 @@ impl SignalOnlyClient {
         };
 
         let sig_chans = self.signal_channels.clone();
+
         let sub_ids = self.subscription_ids.clone();
         let _loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {

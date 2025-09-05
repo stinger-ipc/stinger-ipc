@@ -344,6 +344,7 @@ impl FullClient {
         };
 
         let sig_chans = self.signal_channels.clone();
+
         let sub_ids = self.subscription_ids.clone();
         let props = self.properties.clone();
 

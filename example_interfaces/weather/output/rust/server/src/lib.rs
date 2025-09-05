@@ -7,11 +7,11 @@ This is the Server for the weather interface.
 
 use mqttier::{MqttierClient, ReceivedMessage};
 
+use std::sync::{Arc, Mutex};
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
 
 use serde_json;
-use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 
 use tokio::task::JoinError;
@@ -33,17 +33,32 @@ struct WeatherServerSubscriptionIds {
     daily_forecast_refresh_interval_property_update: usize,
 }
 
-#[derive(Clone)]
-struct WeatherServerMethodHandlers {
+struct WeatherServerMethodHandlers<T> {
     /// Pointer to a function to handle the refresh_daily_forecast method request.
     method_handler_for_refresh_daily_forecast:
-        Arc<Mutex<Box<dyn Fn() -> Result<(), MethodResultCode> + Send>>>,
+        Arc<Mutex<Box<dyn Fn(Arc<Mutex<Option<T>>>) -> Result<(), MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the refresh_hourly_forecast method request.
     method_handler_for_refresh_hourly_forecast:
-        Arc<Mutex<Box<dyn Fn() -> Result<(), MethodResultCode> + Send>>>,
+        Arc<Mutex<Box<dyn Fn(Arc<Mutex<Option<T>>>) -> Result<(), MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the refresh_current_conditions method request.
     method_handler_for_refresh_current_conditions:
-        Arc<Mutex<Box<dyn Fn() -> Result<(), MethodResultCode> + Send>>>,
+        Arc<Mutex<Box<dyn Fn(Arc<Mutex<Option<T>>>) -> Result<(), MethodResultCode> + Send>>>,
+}
+
+impl<T> Clone for WeatherForecastsServerMethodHandlers<T> {
+    fn clone(&self) -> Self {
+        WeatherForecastsServerMethodHandlers {
+            method_handler_for_refresh_daily_forecast: self
+                .method_handler_for_refresh_daily_forecast
+                .clone(),
+            method_handler_for_refresh_hourly_forecast: self
+                .method_handler_for_refresh_hourly_forecast
+                .clone(),
+            method_handler_for_refresh_current_conditions: self
+                .method_handler_for_refresh_current_conditions
+                .clone(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -67,7 +82,10 @@ struct WeatherProperties {
 }
 
 #[derive(Clone)]
-pub struct WeatherServer {
+pub struct WeatherServer<T>
+where
+    T: Send + Clone + 'static,
+{
     mqttier_client: MqttierClient,
 
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
@@ -80,7 +98,7 @@ pub struct WeatherServer {
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
 
     /// Struct contains all the handlers for the various methods.
-    method_handlers: WeatherServerMethodHandlers,
+    method_handlers: WeatherServerMethodHandlers<T>,
 
     /// Struct contains all the properties.
     properties: WeatherProperties,
@@ -93,7 +111,7 @@ pub struct WeatherServer {
     pub client_id: String,
 }
 
-impl WeatherServer {
+impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
     pub async fn new(connection: &mut MqttierClient) -> Self {
         // Create a channel for messages to get from the MqttierClient object to this WeatherServer object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -173,15 +191,15 @@ impl WeatherServer {
 
         // Create structure for method handlers.
         let method_handlers = WeatherServerMethodHandlers {
-            method_handler_for_refresh_daily_forecast: Arc::new(Mutex::new(Box::new(|| {
-                Err(MethodResultCode::ServerError)
-            }))),
-            method_handler_for_refresh_hourly_forecast: Arc::new(Mutex::new(Box::new(|| {
-                Err(MethodResultCode::ServerError)
-            }))),
-            method_handler_for_refresh_current_conditions: Arc::new(Mutex::new(Box::new(|| {
-                Err(MethodResultCode::ServerError)
-            }))),
+            method_handler_for_refresh_daily_forecast: Arc::new(Mutex::new(Box::new(
+                |_state: Arc<Mutex<Option<T>>>| Err(MethodResultCode::ServerError),
+            ))),
+            method_handler_for_refresh_hourly_forecast: Arc::new(Mutex::new(Box::new(
+                |_state: Arc<Mutex<Option<T>>>| Err(MethodResultCode::ServerError),
+            ))),
+            method_handler_for_refresh_current_conditions: Arc::new(Mutex::new(Box::new(
+                |_state: Arc<Mutex<Option<T>>>| Err(MethodResultCode::ServerError),
+            ))),
         };
 
         // Create structure for subscription ids.
@@ -267,52 +285,87 @@ impl WeatherServer {
     /// Sets the function to be called when a request for the refresh_daily_forecast method is received.
     pub fn set_method_handler_for_refresh_daily_forecast(
         &mut self,
-        cb: impl Fn() -> Result<(), MethodResultCode> + 'static + Send,
+        cb: impl Fn(T) -> Result<(), MethodResultCode> + 'static + Send,
     ) {
         self.method_handlers
-            .method_handler_for_refresh_daily_forecast = Arc::new(Mutex::new(Box::new(cb)));
+            .method_handler_for_refresh_daily_forecast =
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<Option<T>>>| {
+                if let Some(state_value) = state.lock().unwrap().as_ref() {
+                    cb(state_value.clone())
+                } else {
+                    Err(MethodResultCode::ServerError)
+                }
+            })));
     }
     /// Sets the function to be called when a request for the refresh_hourly_forecast method is received.
     pub fn set_method_handler_for_refresh_hourly_forecast(
         &mut self,
-        cb: impl Fn() -> Result<(), MethodResultCode> + 'static + Send,
+        cb: impl Fn(T) -> Result<(), MethodResultCode> + 'static + Send,
     ) {
         self.method_handlers
-            .method_handler_for_refresh_hourly_forecast = Arc::new(Mutex::new(Box::new(cb)));
+            .method_handler_for_refresh_hourly_forecast =
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<Option<T>>>| {
+                if let Some(state_value) = state.lock().unwrap().as_ref() {
+                    cb(state_value.clone())
+                } else {
+                    Err(MethodResultCode::ServerError)
+                }
+            })));
     }
     /// Sets the function to be called when a request for the refresh_current_conditions method is received.
     pub fn set_method_handler_for_refresh_current_conditions(
         &mut self,
-        cb: impl Fn() -> Result<(), MethodResultCode> + 'static + Send,
+        cb: impl Fn(T) -> Result<(), MethodResultCode> + 'static + Send,
     ) {
         self.method_handlers
-            .method_handler_for_refresh_current_conditions = Arc::new(Mutex::new(Box::new(cb)));
+            .method_handler_for_refresh_current_conditions =
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<Option<T>>>| {
+                if let Some(state_value) = state.lock().unwrap().as_ref() {
+                    cb(state_value.clone())
+                } else {
+                    Err(MethodResultCode::ServerError)
+                }
+            })));
     }
 
     /// Handles a request message for the refresh_daily_forecast method.
     async fn handle_refresh_daily_forecast_request(
         publisher: MqttierClient,
-        handlers: &mut WeatherServerMethodHandlers,
+        handlers: &mut WeatherServerMethodHandlers<T>,
         msg: ReceivedMessage,
+        state: Arc<Mutex<Option<T>>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
 
         // call the method handler
-        let rv: () = {
+        let rv: Result<(), MethodResultCode> = {
             let func_guard = handlers
                 .method_handler_for_refresh_daily_forecast
                 .lock()
                 .unwrap();
-            (*func_guard)().unwrap()
+            (*func_guard)(state)
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            publisher
-                .publish_response(resp_topic, &rv, corr_data)
-                .await
-                .expect("Failed to publish response structure");
+            match rv {
+                Ok(_) => {
+                    let retval = RefreshDailyForecastReturnValue {};
+
+                    publisher
+                        .publish_response(resp_topic, &retval, corr_data)
+                        .await
+                        .expect("Failed to publish response structure");
+                }
+                Err(err) => {
+                    eprintln!(
+                        "Error occurred while handling {}: {:?}",
+                        stringify!(refresh_daily_forecast),
+                        err
+                    );
+                }
+            }
         } else {
             eprintln!("No response topic found in message properties.");
         }
@@ -320,27 +373,41 @@ impl WeatherServer {
     /// Handles a request message for the refresh_hourly_forecast method.
     async fn handle_refresh_hourly_forecast_request(
         publisher: MqttierClient,
-        handlers: &mut WeatherServerMethodHandlers,
+        handlers: &mut WeatherServerMethodHandlers<T>,
         msg: ReceivedMessage,
+        state: Arc<Mutex<Option<T>>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
 
         // call the method handler
-        let rv: () = {
+        let rv: Result<(), MethodResultCode> = {
             let func_guard = handlers
                 .method_handler_for_refresh_hourly_forecast
                 .lock()
                 .unwrap();
-            (*func_guard)().unwrap()
+            (*func_guard)(state)
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            publisher
-                .publish_response(resp_topic, &rv, corr_data)
-                .await
-                .expect("Failed to publish response structure");
+            match rv {
+                Ok(_) => {
+                    let retval = RefreshHourlyForecastReturnValue {};
+
+                    publisher
+                        .publish_response(resp_topic, &retval, corr_data)
+                        .await
+                        .expect("Failed to publish response structure");
+                }
+                Err(err) => {
+                    eprintln!(
+                        "Error occurred while handling {}: {:?}",
+                        stringify!(refresh_hourly_forecast),
+                        err
+                    );
+                }
+            }
         } else {
             eprintln!("No response topic found in message properties.");
         }
@@ -348,27 +415,41 @@ impl WeatherServer {
     /// Handles a request message for the refresh_current_conditions method.
     async fn handle_refresh_current_conditions_request(
         publisher: MqttierClient,
-        handlers: &mut WeatherServerMethodHandlers,
+        handlers: &mut WeatherServerMethodHandlers<T>,
         msg: ReceivedMessage,
+        state: Arc<Mutex<Option<T>>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
 
         // call the method handler
-        let rv: () = {
+        let rv: Result<(), MethodResultCode> = {
             let func_guard = handlers
                 .method_handler_for_refresh_current_conditions
                 .lock()
                 .unwrap();
-            (*func_guard)().unwrap()
+            (*func_guard)(state)
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            publisher
-                .publish_response(resp_topic, &rv, corr_data)
-                .await
-                .expect("Failed to publish response structure");
+            match rv {
+                Ok(_) => {
+                    let retval = RefreshCurrentConditionsReturnValue {};
+
+                    publisher
+                        .publish_response(resp_topic, &retval, corr_data)
+                        .await
+                        .expect("Failed to publish response structure");
+                }
+                Err(err) => {
+                    eprintln!(
+                        "Error occurred while handling {}: {:?}",
+                        stringify!(refresh_current_conditions),
+                        err
+                    );
+                }
+            }
         } else {
             eprintln!("No response topic found in message properties.");
         }
@@ -387,6 +468,7 @@ impl WeatherServer {
         topic: Arc<String>,
         data: Arc<Mutex<Option<LocationProperty>>>,
         msg: ReceivedMessage,
+        _state: Arc<Mutex<Option<T>>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: LocationProperty = serde_json::from_str(&payload_str).unwrap();
@@ -398,7 +480,7 @@ impl WeatherServer {
         let data2 = new_data;
 
         let _ = tokio::spawn(async move {
-            WeatherServer::publish_location_value(publisher2, topic2, data2).await;
+            WeatherServer::<T>::publish_location_value(publisher2, topic2, data2).await;
         });
     }
 
@@ -417,7 +499,7 @@ impl WeatherServer {
                 "Will publish property location of type LocationProperty to {}",
                 topic2
             );
-            WeatherServer::publish_location_value(publisher2, topic2, data).await;
+            WeatherServer::<T>::publish_location_value(publisher2, topic2, data).await;
         });
     }
 
@@ -444,7 +526,7 @@ impl WeatherServer {
                 "Will publish property current_temperature of type f32 to {}",
                 topic2
             );
-            WeatherServer::publish_current_temperature_value(publisher2, topic2, data).await;
+            WeatherServer::<T>::publish_current_temperature_value(publisher2, topic2, data).await;
         });
     }
 
@@ -471,7 +553,7 @@ impl WeatherServer {
                 "Will publish property current_condition of type CurrentConditionProperty to {}",
                 topic2
             );
-            WeatherServer::publish_current_condition_value(publisher2, topic2, data).await;
+            WeatherServer::<T>::publish_current_condition_value(publisher2, topic2, data).await;
         });
     }
 
@@ -498,7 +580,7 @@ impl WeatherServer {
                 "Will publish property daily_forecast of type DailyForecastProperty to {}",
                 topic2
             );
-            WeatherServer::publish_daily_forecast_value(publisher2, topic2, data).await;
+            WeatherServer::<T>::publish_daily_forecast_value(publisher2, topic2, data).await;
         });
     }
 
@@ -525,7 +607,7 @@ impl WeatherServer {
                 "Will publish property hourly_forecast of type HourlyForecastProperty to {}",
                 topic2
             );
-            WeatherServer::publish_hourly_forecast_value(publisher2, topic2, data).await;
+            WeatherServer::<T>::publish_hourly_forecast_value(publisher2, topic2, data).await;
         });
     }
 
@@ -544,6 +626,7 @@ impl WeatherServer {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
+        _state: Arc<Mutex<Option<T>>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: CurrentConditionRefreshIntervalProperty =
@@ -554,7 +637,7 @@ impl WeatherServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
         let _ = tokio::spawn(async move {
-            WeatherServer::publish_current_condition_refresh_interval_value(
+            WeatherServer::<T>::publish_current_condition_refresh_interval_value(
                 publisher2, topic2, data2,
             )
             .await;
@@ -580,7 +663,7 @@ impl WeatherServer {
                 "Will publish property current_condition_refresh_interval of type i32 to {}",
                 topic2
             );
-            WeatherServer::publish_current_condition_refresh_interval_value(
+            WeatherServer::<T>::publish_current_condition_refresh_interval_value(
                 publisher2, topic2, data,
             )
             .await;
@@ -602,6 +685,7 @@ impl WeatherServer {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
+        _state: Arc<Mutex<Option<T>>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: HourlyForecastRefreshIntervalProperty =
@@ -612,7 +696,7 @@ impl WeatherServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
         let _ = tokio::spawn(async move {
-            WeatherServer::publish_hourly_forecast_refresh_interval_value(
+            WeatherServer::<T>::publish_hourly_forecast_refresh_interval_value(
                 publisher2, topic2, data2,
             )
             .await;
@@ -638,8 +722,10 @@ impl WeatherServer {
                 "Will publish property hourly_forecast_refresh_interval of type i32 to {}",
                 topic2
             );
-            WeatherServer::publish_hourly_forecast_refresh_interval_value(publisher2, topic2, data)
-                .await;
+            WeatherServer::<T>::publish_hourly_forecast_refresh_interval_value(
+                publisher2, topic2, data,
+            )
+            .await;
         });
     }
 
@@ -658,6 +744,7 @@ impl WeatherServer {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
+        _state: Arc<Mutex<Option<T>>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: DailyForecastRefreshIntervalProperty =
@@ -668,8 +755,10 @@ impl WeatherServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
         let _ = tokio::spawn(async move {
-            WeatherServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data2)
-                .await;
+            WeatherServer::<T>::publish_daily_forecast_refresh_interval_value(
+                publisher2, topic2, data2,
+            )
+            .await;
         });
     }
 
@@ -692,8 +781,10 @@ impl WeatherServer {
                 "Will publish property daily_forecast_refresh_interval of type i32 to {}",
                 topic2
             );
-            WeatherServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data)
-                .await;
+            WeatherServer::<T>::publish_daily_forecast_refresh_interval_value(
+                publisher2, topic2, data,
+            )
+            .await;
         });
     }
 
@@ -701,7 +792,7 @@ impl WeatherServer {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+    pub async fn receive_loop(&mut self, state: Arc<Mutex<Option<T>>>) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
@@ -727,6 +818,7 @@ impl WeatherServer {
                         publisher.clone(),
                         &mut method_handlers,
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.refresh_hourly_forecast_method_req {
@@ -734,6 +826,7 @@ impl WeatherServer {
                         publisher.clone(),
                         &mut method_handlers,
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.refresh_current_conditions_method_req {
@@ -741,6 +834,7 @@ impl WeatherServer {
                         publisher.clone(),
                         &mut method_handlers,
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.location_property_update {
@@ -749,6 +843,7 @@ impl WeatherServer {
                         properties.location_topic.clone(),
                         properties.location.clone(),
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id
@@ -759,6 +854,7 @@ impl WeatherServer {
                         properties.current_condition_refresh_interval_topic.clone(),
                         properties.current_condition_refresh_interval.clone(),
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id
@@ -769,6 +865,7 @@ impl WeatherServer {
                         properties.hourly_forecast_refresh_interval_topic.clone(),
                         properties.hourly_forecast_refresh_interval.clone(),
                         msg,
+                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id
@@ -779,6 +876,7 @@ impl WeatherServer {
                         properties.daily_forecast_refresh_interval_topic.clone(),
                         properties.daily_forecast_refresh_interval.clone(),
                         msg,
+                        state.clone(),
                     )
                     .await;
                 }

@@ -10,44 +10,94 @@
   <body ng-app="myApp" ng-controller="myCtrl">
     <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
 
+    <div class="interface-box">
+      <h1>Full</h1>
+      <p></p>
+    </div>
+
     
-    <div class="signal-box" id="signal-box-todayIs">
-        <h3 class="signal-title">todayIs</h3>
-        <div class="signal-doc">
+    <div class="component-box signal-box" id="signal-box-todayIs">
+        <h3 class="component-title signal-title">Signal: todayIs</h3>
+        <div class="component-doc signal-doc">
         </div>
-        <div class="last-signal-value" ng-show="signals['todayIs'].received"></div>
+        <div class="last-signal-value" ng-bind="signals['todayIs'].received"></div>
     </div>
     
 
     
-    <div class="prop-box" id="prop-box-favorite_number">
-        <h3 class="prop-title">favorite_number</h3>
-        <div class="prop-doc">
+    <div class="component-box prop-box" id="prop-box-favorite_number">
+        <h3 class="component-title prop-title">Property: favorite_number</h3>
+        <div class="component-doc prop-doc">
 <p>My favorite number</p>
         
         </div>
-        <div class="last-signal-value" ng-show="properties['favoriteNumber'].received"></div>
+        <div class="last-received property-value">
+          
+            <div class="arg prop-arg">
+                <label for="favorite_number-arg-number">number</label>
+                <input type="text" id="favorite_number-arg-number" ng-model="properties['favoriteNumber'].received['number']" />
+            </div>
+          
+        </div>
+        
+        <input type="button" value="Update" ng-click="updateProperty('favoriteNumber')" />
+        
     </div>
     
-    <div class="prop-box" id="prop-box-favorite_foods">
-        <h3 class="prop-title">favorite_foods</h3>
-        <div class="prop-doc">
+    <div class="component-box prop-box" id="prop-box-favorite_foods">
+        <h3 class="component-title prop-title">Property: favorite_foods</h3>
+        <div class="component-doc prop-doc">
         </div>
-        <div class="last-signal-value" ng-show="properties['favoriteFoods'].received"></div>
+        <div class="last-received property-value">
+          
+            <div class="arg prop-arg">
+                <label for="favorite_foods-arg-drink">drink</label>
+                <input type="text" id="favorite_foods-arg-drink" ng-model="properties['favoriteFoods'].received['drink']" />
+            </div>
+          
+            <div class="arg prop-arg">
+                <label for="favorite_foods-arg-slices_of_pizza">slices_of_pizza</label>
+                <input type="text" id="favorite_foods-arg-slices_of_pizza" ng-model="properties['favoriteFoods'].received['slices_of_pizza']" />
+            </div>
+          
+            <div class="arg prop-arg">
+                <label for="favorite_foods-arg-breakfast">breakfast</label>
+                <input type="text" id="favorite_foods-arg-breakfast" ng-model="properties['favoriteFoods'].received['breakfast']" />
+            </div>
+          
+        </div>
+        
+        <input type="button" value="Update" ng-click="updateProperty('favoriteFoods')" />
+        
     </div>
     
-    <div class="prop-box" id="prop-box-lunch_menu">
-        <h3 class="prop-title">lunch_menu</h3>
-        <div class="prop-doc">
+    <div class="component-box prop-box" id="prop-box-lunch_menu">
+        <h3 class="component-title prop-title">Property: lunch_menu</h3>
+        <div class="component-doc prop-doc">
         </div>
-        <div class="last-signal-value" ng-show="properties['lunchMenu'].received"></div>
+        <div class="last-received property-value">
+          
+            <div class="arg prop-arg">
+                <label for="lunch_menu-arg-monday">monday</label>
+                <input type="text" id="lunch_menu-arg-monday" ng-model="properties['lunchMenu'].received['monday']" />
+            </div>
+          
+            <div class="arg prop-arg">
+                <label for="lunch_menu-arg-tuesday">tuesday</label>
+                <input type="text" id="lunch_menu-arg-tuesday" ng-model="properties['lunchMenu'].received['tuesday']" />
+            </div>
+          
+        </div>
+        
+        <input type="button" value="Update" ng-click="updateProperty('lunchMenu')" />
+        
     </div>
      
 
     
-    <div class="method-box" id="method-box-addNumbers">
-        <h3 class="method-title">addNumbers</h3>
-        <div class="method-doc">
+    <div class="component-box method-box" id="method-box-addNumbers">
+        <h3 class="component-title method-title">Method: addNumbers</h3>
+        <div class="component-doc method-doc">
         </div>
         <div class="method-form-box">
             <form ng-submit="addNumbersMethodCall()">
@@ -73,9 +123,9 @@
         <div class="last-method-response" ng-bind="methods['addNumbers'].received"></div>
     </div>
     
-    <div class="method-box" id="method-box-doSomething">
-        <h3 class="method-title">doSomething</h3>
-        <div class="method-doc">
+    <div class="component-box method-box" id="method-box-doSomething">
+        <h3 class="component-title method-title">Method: doSomething</h3>
+        <div class="component-doc method-doc">
         </div>
         <div class="method-form-box">
             <form ng-submit="doSomethingMethodCall()">

@@ -9,9 +9,9 @@ use mqttier::{MqttierClient{%if stinger.methods|length > 0 or stinger.properties
 
 #[allow(unused_imports)]
 use {{stinger.rust.common_package_name}}::payloads::{*, MethodResultCode};
+use std::sync::{Arc, Mutex};
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
 use serde_json;
-use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 {%endif%}
 use tokio::task::JoinError;
@@ -29,13 +29,25 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
     {%endif%}{%endfor%}
 }
 {%if stinger.methods|length > 0 %}
-#[derive(Clone)]
-struct {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
+
+struct {{stinger.name | UpperCamelCase }}ServerMethodHandlers<T> {
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    method_handler_for_{{method_name|snake_case}}: Arc<Mutex<Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodResultCode> + Send>>>,
+    method_handler_for_{{method_name|snake_case}}: Arc<Mutex<Box<dyn Fn({%for arg in method.arg_list%}{{arg.rust_type}}, {%endfor%}Arc<Mutex<Option<T>>>)->Result<{{method.return_value_rust_type}}, MethodResultCode> + Send>>>,
     {%endfor%}
-}{%endif%}{# method handlers struct #}
+}
+
+impl<T> Clone for WeatherForecastsServerMethodHandlers<T> {
+    fn clone(&self) -> Self {
+        WeatherForecastsServerMethodHandlers {
+            method_handler_for_refresh_daily_forecast: self.method_handler_for_refresh_daily_forecast.clone(),
+            method_handler_for_refresh_hourly_forecast: self.method_handler_for_refresh_hourly_forecast.clone(),
+            method_handler_for_refresh_current_conditions: self.method_handler_for_refresh_current_conditions.clone(),
+        }
+    }
+}
+
+{%endif%}{# method handlers struct #}
 {%if stinger.properties | length > 0%}
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase}}Properties {
@@ -51,7 +63,8 @@ struct {{stinger.name | UpperCamelCase}}Properties {
 {%endif%}
 {%endif%}{# any methods or properties #}
 #[derive(Clone)]
-pub struct {{stinger.rust.server_struct_name}} {
+pub struct {{stinger.rust.server_struct_name}}<T>
+where T: Send + Clone + 'static {
     mqttier_client: MqttierClient,
     {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
@@ -65,7 +78,7 @@ pub struct {{stinger.rust.server_struct_name}} {
     {%endif%}
     {%if stinger.methods|length > 0 %}
     /// Struct contains all the handlers for the various methods.
-    method_handlers: {{stinger.name | UpperCamelCase }}ServerMethodHandlers,{%endif%}
+    method_handlers: {{stinger.name | UpperCamelCase }}ServerMethodHandlers<T>,{%endif%}
     {%if stinger.properties|length > 0%}
     /// Struct contains all the properties.
     properties: {{stinger.name | UpperCamelCase}}Properties,
@@ -80,7 +93,7 @@ pub struct {{stinger.rust.server_struct_name}} {
     pub client_id: String,
 }
 
-impl {{stinger.rust.server_struct_name}} {
+impl<T: Send + Sync + Clone + 'static> {{stinger.rust.server_struct_name}}<T> {
     pub async fn new(connection: &mut MqttierClient) -> Self {
         {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
         // Create a channel for messages to get from the MqttierClient object to this {{stinger.rust.server_struct_name}} object.
@@ -100,8 +113,8 @@ impl {{stinger.rust.server_struct_name}} {
         {%if stinger.methods | length > 0 %}
         // Create structure for method handlers.
         let method_handlers = {{stinger.name | UpperCamelCase }}ServerMethodHandlers {
-            {%-for method_name, method in stinger.methods.items()-%}
-            method_handler_for_{{method_name|snake_case}}: Arc::new(Mutex::new(Box::new( |{%for arg in method.arg_list-%}_{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}| { Err(MethodResultCode::ServerError) } ))),
+            {%for method_name, method in stinger.methods.items()-%}
+            method_handler_for_{{method_name|snake_case}}: Arc::new(Mutex::new(Box::new( |{%for arg in method.arg_list-%}_{{loop.index}}, {%endfor%}_state: Arc<Mutex<Option<T>>>| { Err(MethodResultCode::ServerError) } ))),
             {%endfor%}
         };
         {%endif%}{# method handlers #}
@@ -157,35 +170,49 @@ impl {{stinger.rust.server_struct_name}} {
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Sets the function to be called when a request for the {{method_name}} method is received.
-    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl Fn({%for arg in method.arg_list%}{{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodResultCode> + 'static + Send) {
-        self.method_handlers.method_handler_for_{{method_name|snake_case}} = Arc::new(Mutex::new(Box::new(cb)));
+    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl Fn({%for arg in method.arg_list%}{{arg.rust_type}}, {%endfor%}T)->Result<{{method.return_value_rust_type}}, MethodResultCode> + 'static + Send) {
+        self.method_handlers.method_handler_for_{{method_name|snake_case}} = Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<Option<T>>>| {
+            if let Some(state_value) = state.lock().unwrap().as_ref() {
+                cb(state_value.clone())
+            } else {
+                Err(MethodResultCode::ServerError)
+            }
+        })));
     }
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Handles a request message for the {{method_name}} method.
-    async fn handle_{{method_name|snake_case}}_request(publisher: MqttierClient, handlers: &mut {{stinger.name | UpperCamelCase }}ServerMethodHandlers, msg: ReceivedMessage) {
+    async fn handle_{{method_name|snake_case}}_request(publisher: MqttierClient, handlers: &mut {{stinger.name | UpperCamelCase }}ServerMethodHandlers<T>, msg: ReceivedMessage, state: Arc<Mutex<Option<T>>>) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
-        {%if method.return_value_type != false -%}
+        {%if method.arg_list | length > 0 -%}
         let payload_vec = msg.payload;
         let payload = serde_json::from_slice::<{{method_name | UpperCamelCase}}RequestObject>(&payload_vec).unwrap();
-        {%endif%}
+        {%endif%}{# has arg_list #} 
         // call the method handler
-        let rv: {{method.return_value_rust_type}} = {
+        let rv: Result<{{method.return_value_rust_type}}, MethodResultCode> = {
             let func_guard = handlers.method_handler_for_{{method_name|snake_case}}.lock().unwrap();
-            (*func_guard)({%for arg in method.arg_list%}payload.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}).unwrap()
+            (*func_guard)({%for arg in method.arg_list%}payload.{{arg.name}}, {%endfor%}state)
         };
-
-        {%-if method.return_value_type == "primitive" -%}
-        let rv = {{method_name | UpperCamelCase}}ReturnValue {
-            {{method.return_value_property_name}}: rv,
-        };
-        {%endif%}
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            publisher.publish_response(resp_topic, &rv, corr_data).await.expect("Failed to publish response structure");
+            match rv {
+                Ok({%if method.return_value_type is false %}_{%else%}retval{%endif%}) => {
+                    {%-if method.return_value_type == "primitive" %}
+                    let retval = {{method_name | UpperCamelCase}}ReturnValue {
+                        {{method.return_value_property_name}}: retval,
+                    };
+                    {%elif method.return_value_type is false %}
+                    let retval = {{method_name | UpperCamelCase}}ReturnValue {};
+                    {%endif%}
+                    publisher.publish_response(resp_topic, &retval, corr_data).await.expect("Failed to publish response structure");
+                }
+                Err(err) => {
+                    eprintln!("Error occurred while handling {}: {:?}", stringify!({{method_name}}), err);
+                }
+            }
         } else {
             eprintln!("No response topic found in message properties.");
         }
@@ -206,7 +233,7 @@ impl {{stinger.rust.server_struct_name}} {
         {%endif%}
     }
     {%if not prop.read_only %}
-    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, msg: ReceivedMessage)
+    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, msg: ReceivedMessage, _state: Arc<Mutex<Option<T>>>)
     {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(&payload_str).unwrap();
@@ -224,7 +251,7 @@ impl {{stinger.rust.server_struct_name}} {
         let data2 = new_data;
         {%endif%}
         let _ = tokio::spawn(async move {
-            {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data2).await;
+            {{stinger.rust.server_struct_name}}::<T>::publish_{{prop_name}}_value(publisher2, topic2, data2).await;
         });
     }
     {%endif%}{# not read only property #}
@@ -240,7 +267,7 @@ impl {{stinger.rust.server_struct_name}} {
         let topic2 = self.properties.{{prop_name}}_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
             println!("Will publish property {{prop_name}} of type {{prop.rust_type}} to {}", topic2);
-            {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data).await;
+            {{stinger.rust.server_struct_name}}::<T>::publish_{{prop_name}}_value(publisher2, topic2, data).await;
         });
     }
     {%endfor%}
@@ -249,7 +276,7 @@ impl {{stinger.rust.server_struct_name}} {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+    pub async fn receive_loop(&mut self, state: Arc<Mutex<Option<T>>>) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
@@ -277,12 +304,12 @@ impl {{stinger.rust.server_struct_name}} {
             while let Some(msg) = message_receiver.recv().await {
                 {%-for method_name, method in stinger.methods.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method_req {
-                    {{stinger.rust.server_struct_name}}::handle_{{method_name|snake_case}}_request(publisher.clone(), &mut method_handlers, msg).await;
+                    {{stinger.rust.server_struct_name}}::handle_{{method_name|snake_case}}_request(publisher.clone(), &mut method_handlers, msg, state.clone()).await;
                 }
                 {%-endfor%}{# methods #}
                 {%-for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
                 {%if not loop.first or (stinger.methods | length > 0) %}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_update {
-                    {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), msg).await;
+                    {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), msg, state.clone()).await;
                 }
                 {%-endif%}{%endfor%}{# properties #}
             }
