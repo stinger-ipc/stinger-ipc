@@ -26,7 +26,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "todayIs": {
             "subscription_id": null,
             "name": "todayIs",
-            "received": [],
+            "received": null,
+            "received_time": null,
             "mqtt_topic": "full/signal/todayIs"
         }
     };
@@ -51,6 +52,49 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "lunch_menu",
             "received": null,
             "mqtt_topic": "full/property/lunchMenu/value"
+        }
+    };
+
+    $scope.methods = {
+        "addNumbers": {
+            "subscription_id": null,
+            "name": "addNumbers",
+            "mqtt_topic": "full/method/addNumbers",
+            "response_topic": "client/"+clientId+"/full/method/addNumbers/response",
+            "pending_correlation_id": null,
+            "args": {
+                "first": {
+                    "type": "ArgPrimitiveType.INTEGER",
+                    "value": null
+                },
+            
+                "second": {
+                    "type": "ArgPrimitiveType.INTEGER",
+                    "value": null
+                },
+            
+                "third": {
+                    "type": "ArgPrimitiveType.INTEGER",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
+        },
+        "doSomething": {
+            "subscription_id": null,
+            "name": "doSomething",
+            "mqtt_topic": "full/method/doSomething",
+            "response_topic": "client/"+clientId+"/full/method/doSomething/response",
+            "pending_correlation_id": null,
+            "args": {
+                "aString": {
+                    "type": "ArgPrimitiveType.STRING",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
         }
     };
 
@@ -97,7 +141,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             if (!$scope.signals.hasOwnProperty(key)) continue;
             const sig = $scope.signals[key];
             if (sig.subscription_id == subid) {
-                sig.received.push(obj);
+                sig.received = obj;
+                sig.received_time = new Date();
             }
         }
         for (const key in $scope.properties) {
@@ -123,14 +168,14 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         var subscription_count = 10;
         console.log("Connected with ", client);
         
-        const _sub_opts = {
+        const today_is_sub_opts = {
             "qos": 1,
             "properties": {
                 "subscriptionIdentifier": subscription_count
             }
         };
-        $scope.signals[""].subscription_id = subscription_count;
-        client.subscribe("full/signal/todayIs", _sub_opts);
+        $scope.signals["todayIs"].subscription_id = subscription_count;
+        client.subscribe("full/signal/todayIs", today_is_sub_opts);
         console.log("Subscribing to full/signal/todayIs with id ", subscription_count);
         subscription_count++;
         

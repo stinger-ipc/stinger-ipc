@@ -26,7 +26,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "{{sig_name | lowerCamelCase}}": {
             "subscription_id": null,
             "name": "{{sig_name}}",
-            "received": [],
+            "received": null,
+            "received_time": null,
             "mqtt_topic": "{{signal.topic}}"
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
@@ -39,6 +40,26 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "mqtt_topic": "{{prop.value_topic}}"
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
+
+    $scope.methods = {
+        {%-for method_name, method in stinger.methods.items() %}
+        "{{method_name | lowerCamelCase}}": {
+            "subscription_id": null,
+            "name": "{{method_name}}",
+            "mqtt_topic": "{{method.topic}}",
+            "response_topic": "{{method.response_topic('"+clientId+"')}}",
+            "pending_correlation_id": null,
+            "args": { {%-for arg in method.arg_list %}
+                "{{arg.name}}": {
+                    "type": "{{arg.type}}",
+                    "value": null
+                }{%if not loop.last%},{%endif%}
+            {%endfor-%} },
+            "received": null,
+            "received_time": null
+        }{%if not loop.last%},{%endif%}
+        {%-endfor%}
+    };
 
     $scope.console = {
         showing: false,
@@ -83,7 +104,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             if (!$scope.signals.hasOwnProperty(key)) continue;
             const sig = $scope.signals[key];
             if (sig.subscription_id == subid) {
-                sig.received.push(obj);
+                sig.received = obj;
+                sig.received_time = new Date();
             }
         }
         for (const key in $scope.properties) {
@@ -109,14 +131,14 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         var subscription_count = 10;
         console.log("Connected with ", client);
         {%for signal_name, signal in stinger.signals.items() %}
-        const {{sig_name}}_sub_opts = {
+        const {{signal_name|snake_case}}_sub_opts = {
             "qos": 1,
             "properties": {
                 "subscriptionIdentifier": subscription_count
             }
         };
-        $scope.signals["{{sig_name | lowerCamelCase}}"].subscription_id = subscription_count;
-        client.subscribe("{{signal.topic}}", {{sig_name}}_sub_opts);
+        $scope.signals["{{signal_name | lowerCamelCase}}"].subscription_id = subscription_count;
+        client.subscribe("{{signal.topic}}", {{signal_name|snake_case}}_sub_opts);
         console.log("Subscribing to {{signal.topic}} with id ", subscription_count);
         subscription_count++;
         {%endfor%}

@@ -9,16 +9,160 @@
   </head>
   <body ng-app="myApp" ng-controller="myCtrl">
     <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
+
     
     <div class="signal-box" id="signal-box-current_time">
         <h3 class="signal-title">current_time</h3>
         <div class="signal-doc">
 <p>Once in a while (at intervals decided by the provider) the current date
 and time will be published.  (Mostly for example purposes).</p>
+        
         </div>
-        <div class="last-signal-value" ng-show="signals['currentTime']"></div>
+        <div class="last-signal-value" ng-show="signals['currentTime'].received"></div>
     </div>
     
+
+    
+    <div class="prop-box" id="prop-box-location">
+        <h3 class="prop-title">location</h3>
+        <div class="prop-doc">
+<p>Weather will be retrieved for the provided location.</p>
+        
+        </div>
+        <div class="last-signal-value" ng-show="properties['location'].received"></div>
+    </div>
+    
+    <div class="prop-box" id="prop-box-current_temperature">
+        <h3 class="prop-title">current_temperature</h3>
+        <div class="prop-doc">
+<p>This is the current (estimated) temperature in degrees fahrenheit.  This values
+is regularly updated.  The value is extrapolated from the hourly forecast, but
+adjusted based on the latest conditions at the nearest weather station.</p>
+        
+        </div>
+        <div class="last-signal-value" ng-show="properties['currentTemperature'].received"></div>
+    </div>
+    
+    <div class="prop-box" id="prop-box-current_condition">
+        <h3 class="prop-title">current_condition</h3>
+        <div class="prop-doc">
+<p>This is the current weather outside.  This comes from the hourly forecast and is
+updated about once per hour.</p>
+        
+        </div>
+        <div class="last-signal-value" ng-show="properties['currentCondition'].received"></div>
+    </div>
+    
+    <div class="prop-box" id="prop-box-daily_forecast">
+        <h3 class="prop-title">daily_forecast</h3>
+        <div class="prop-doc">
+<p>This contains the weather forecast for each day of the next few days.  It is updated
+a couple of times a day.  The current day may not have the high or low temperature
+provided.  This is an example which shows only a few days.  The actual implementation
+will have a value for each day of the week.</p>
+        
+        </div>
+        <div class="last-signal-value" ng-show="properties['dailyForecast'].received"></div>
+    </div>
+    
+    <div class="prop-box" id="prop-box-hourly_forecast">
+        <h3 class="prop-title">hourly_forecast</h3>
+        <div class="prop-doc">
+<p>This contains the weather forecast for each hour of the next 24 hours.  The data source
+us updated a couple of times per day, but this API property is updated every hour on the
+hour.</p>
+        
+        </div>
+        <div class="last-signal-value" ng-show="properties['hourlyForecast'].received"></div>
+    </div>
+    
+    <div class="prop-box" id="prop-box-current_condition_refresh_interval">
+        <h3 class="prop-title">current_condition_refresh_interval</h3>
+        <div class="prop-doc">
+<p>This is the maximum interval, in seconds, that the latest weather conditions at the nearest weather
+station are retrieved.</p>
+        
+        </div>
+        <div class="last-signal-value" ng-show="properties['currentConditionRefreshInterval'].received"></div>
+    </div>
+    
+    <div class="prop-box" id="prop-box-hourly_forecast_refresh_interval">
+        <h3 class="prop-title">hourly_forecast_refresh_interval</h3>
+        <div class="prop-doc">
+<p>This is the maximum interval, in seconds, that the hourly forecast data is retrieved.</p>
+        
+        </div>
+        <div class="last-signal-value" ng-show="properties['hourlyForecastRefreshInterval'].received"></div>
+    </div>
+    
+    <div class="prop-box" id="prop-box-daily_forecast_refresh_interval">
+        <h3 class="prop-title">daily_forecast_refresh_interval</h3>
+        <div class="prop-doc">
+<p>This is the maximum interval, in seconds, that the daily forecast data is retrieved.</p>
+        
+        </div>
+        <div class="last-signal-value" ng-show="properties['dailyForecastRefreshInterval'].received"></div>
+    </div>
+     
+
+    
+    <div class="method-box" id="method-box-refresh_daily_forecast">
+        <h3 class="method-title">refresh_daily_forecast</h3>
+        <div class="method-doc">
+<p>When called, this method will force the retrieval of the daily weather forecast from
+the NWS weather API.  </p>
+<p>When called, the <code>daily_forecast</code> API property will be republished with the latest data.</p>
+<p>This method has no arguments and provides no return values.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod('refresh_daily_forecast')">
+                
+                <button type="submit">Call refresh_daily_forecast</button>
+            </form>
+        </div>
+        <div class="last-method-response" ng-bind="methods['refresh_daily_forecast'].received"></div>
+    </div>
+    
+    <div class="method-box" id="method-box-refresh_hourly_forecast">
+        <h3 class="method-title">refresh_hourly_forecast</h3>
+        <div class="method-doc">
+<p>When called, this method will force the retrieval of the hourly weather forecast from
+the NWS weather API.  </p>
+<p>When called, the <code>hourly_forecast</code> API property will be republished with the latest data.</p>
+<p>This method has no arguments and provides no return values.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod('refresh_hourly_forecast')">
+                
+                <button type="submit">Call refresh_hourly_forecast</button>
+            </form>
+        </div>
+        <div class="last-method-response" ng-bind="methods['refresh_hourly_forecast'].received"></div>
+    </div>
+    
+    <div class="method-box" id="method-box-refresh_current_conditions">
+        <h3 class="method-title">refresh_current_conditions</h3>
+        <div class="method-doc">
+<p>When called, this method will force the retrieval of the latest weather conditions
+from the nearest weather station.  It also forces a re-calculation of the current
+temperature.</p>
+<p>When called, the <code>current_temperature</code> and <code>current_condition</code> API properties are
+republished with the latest value.</p>
+<p>This method has no arguments and provides no return values.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod('refresh_current_conditions')">
+                
+                <button type="submit">Call refresh_current_conditions</button>
+            </form>
+        </div>
+        <div class="last-method-response" ng-bind="methods['refresh_current_conditions'].received"></div>
+    </div>
+     
+
     
     <div id="console" ng-class="{ 'expanded' : (console.showing) }">
       <div class="top" ng-click=" console.showing = !console.showing ">Request Console <span ng-show="console.showing && console.requests.length > 0" ng-click="console.requests = []"> - Clear</span>

@@ -26,7 +26,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "currentTime": {
             "subscription_id": null,
             "name": "current_time",
-            "received": [],
+            "received": null,
+            "received_time": null,
             "mqtt_topic": "weather/signal/currentTime"
         }
     };
@@ -89,6 +90,39 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         }
     };
 
+    $scope.methods = {
+        "refreshDailyForecast": {
+            "subscription_id": null,
+            "name": "refresh_daily_forecast",
+            "mqtt_topic": "weather/method/refreshDailyForecast",
+            "response_topic": "client/"+clientId+"/weather/method/refreshDailyForecast/response",
+            "pending_correlation_id": null,
+            "args": {},
+            "received": null,
+            "received_time": null
+        },
+        "refreshHourlyForecast": {
+            "subscription_id": null,
+            "name": "refresh_hourly_forecast",
+            "mqtt_topic": "weather/method/refreshHourlyForecast",
+            "response_topic": "client/"+clientId+"/weather/method/refreshHourlyForecast/response",
+            "pending_correlation_id": null,
+            "args": {},
+            "received": null,
+            "received_time": null
+        },
+        "refreshCurrentConditions": {
+            "subscription_id": null,
+            "name": "refresh_current_conditions",
+            "mqtt_topic": "weather/method/refreshCurrentConditions",
+            "response_topic": "client/"+clientId+"/weather/method/refreshCurrentConditions/response",
+            "pending_correlation_id": null,
+            "args": {},
+            "received": null,
+            "received_time": null
+        }
+    };
+
     $scope.console = {
         showing: false,
         requests: []
@@ -132,7 +166,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             if (!$scope.signals.hasOwnProperty(key)) continue;
             const sig = $scope.signals[key];
             if (sig.subscription_id == subid) {
-                sig.received.push(obj);
+                sig.received = obj;
+                sig.received_time = new Date();
             }
         }
         for (const key in $scope.properties) {
@@ -158,14 +193,14 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         var subscription_count = 10;
         console.log("Connected with ", client);
         
-        const _sub_opts = {
+        const current_time_sub_opts = {
             "qos": 1,
             "properties": {
                 "subscriptionIdentifier": subscription_count
             }
         };
-        $scope.signals[""].subscription_id = subscription_count;
-        client.subscribe("weather/signal/currentTime", _sub_opts);
+        $scope.signals["currentTime"].subscription_id = subscription_count;
+        client.subscribe("weather/signal/currentTime", current_time_sub_opts);
         console.log("Subscribing to weather/signal/currentTime with id ", subscription_count);
         subscription_count++;
         

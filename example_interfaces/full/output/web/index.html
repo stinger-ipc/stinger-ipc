@@ -9,13 +9,89 @@
   </head>
   <body ng-app="myApp" ng-controller="myCtrl">
     <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
+
     
     <div class="signal-box" id="signal-box-todayIs">
         <h3 class="signal-title">todayIs</h3>
-        <div class="signal-doc"></div>
-        <div class="last-signal-value" ng-show="signals['todayIs']"></div>
+        <div class="signal-doc">
+        </div>
+        <div class="last-signal-value" ng-show="signals['todayIs'].received"></div>
     </div>
     
+
+    
+    <div class="prop-box" id="prop-box-favorite_number">
+        <h3 class="prop-title">favorite_number</h3>
+        <div class="prop-doc">
+<p>My favorite number</p>
+        
+        </div>
+        <div class="last-signal-value" ng-show="properties['favoriteNumber'].received"></div>
+    </div>
+    
+    <div class="prop-box" id="prop-box-favorite_foods">
+        <h3 class="prop-title">favorite_foods</h3>
+        <div class="prop-doc">
+        </div>
+        <div class="last-signal-value" ng-show="properties['favoriteFoods'].received"></div>
+    </div>
+    
+    <div class="prop-box" id="prop-box-lunch_menu">
+        <h3 class="prop-title">lunch_menu</h3>
+        <div class="prop-doc">
+        </div>
+        <div class="last-signal-value" ng-show="properties['lunchMenu'].received"></div>
+    </div>
+     
+
+    
+    <div class="method-box" id="method-box-addNumbers">
+        <h3 class="method-title">addNumbers</h3>
+        <div class="method-doc">
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod('addNumbers')">
+                
+                <div class="method-arg">
+                    <label for="add_numbers-arg-first">first (ArgPrimitiveType.INTEGER)</label>
+                    <input type="text" id="add_numbers-arg-first" ng-model="methods['addNumbers'].args['first']" />
+                </div>
+                
+                <div class="method-arg">
+                    <label for="add_numbers-arg-second">second (ArgPrimitiveType.INTEGER)</label>
+                    <input type="text" id="add_numbers-arg-second" ng-model="methods['addNumbers'].args['second']" />
+                </div>
+                
+                <div class="method-arg">
+                    <label for="add_numbers-arg-third">third (ArgPrimitiveType.INTEGER)</label>
+                    <input type="text" id="add_numbers-arg-third" ng-model="methods['addNumbers'].args['third']" />
+                </div>
+                
+                <button type="submit">Call addNumbers</button>
+            </form>
+        </div>
+        <div class="last-method-response" ng-bind="methods['addNumbers'].received"></div>
+    </div>
+    
+    <div class="method-box" id="method-box-doSomething">
+        <h3 class="method-title">doSomething</h3>
+        <div class="method-doc">
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod('doSomething')">
+                
+                <div class="method-arg">
+                    <label for="do_something-arg-aString">aString (ArgPrimitiveType.STRING)</label>
+                    <input type="text" id="do_something-arg-aString" ng-model="methods['doSomething'].args['aString']" />
+                </div>
+                
+                <button type="submit">Call doSomething</button>
+            </form>
+        </div>
+        <div class="last-method-response" ng-bind="methods['doSomething'].received"></div>
+    </div>
+     
+
     
     <div id="console" ng-class="{ 'expanded' : (console.showing) }">
       <div class="top" ng-click=" console.showing = !console.showing ">Request Console <span ng-show="console.showing && console.requests.length > 0" ng-click="console.requests = []"> - Clear</span>
