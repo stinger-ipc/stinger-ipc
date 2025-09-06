@@ -36,24 +36,26 @@ struct WeatherServerSubscriptionIds {
 struct WeatherServerMethodHandlers<T> {
     /// Pointer to a function to handle the refresh_daily_forecast method request.
     method_handler_for_refresh_daily_forecast:
-        Arc<Mutex<Box<dyn Fn(Arc<Mutex<Option<T>>>) -> Result<(), MethodResultCode> + Send>>>,
+        Arc<Mutex<Box<dyn Fn(Arc<Mutex<T>>) -> Result<(), MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the refresh_hourly_forecast method request.
     method_handler_for_refresh_hourly_forecast:
-        Arc<Mutex<Box<dyn Fn(Arc<Mutex<Option<T>>>) -> Result<(), MethodResultCode> + Send>>>,
+        Arc<Mutex<Box<dyn Fn(Arc<Mutex<T>>) -> Result<(), MethodResultCode> + Send>>>,
     /// Pointer to a function to handle the refresh_current_conditions method request.
     method_handler_for_refresh_current_conditions:
-        Arc<Mutex<Box<dyn Fn(Arc<Mutex<Option<T>>>) -> Result<(), MethodResultCode> + Send>>>,
+        Arc<Mutex<Box<dyn Fn(Arc<Mutex<T>>) -> Result<(), MethodResultCode> + Send>>>,
 }
 
-impl<T> Clone for WeatherForecastsServerMethodHandlers<T> {
+impl<T> Clone for WeatherServerMethodHandlers<T> {
     fn clone(&self) -> Self {
-        WeatherForecastsServerMethodHandlers {
+        WeatherServerMethodHandlers {
             method_handler_for_refresh_daily_forecast: self
                 .method_handler_for_refresh_daily_forecast
                 .clone(),
+
             method_handler_for_refresh_hourly_forecast: self
                 .method_handler_for_refresh_hourly_forecast
                 .clone(),
+
             method_handler_for_refresh_current_conditions: self
                 .method_handler_for_refresh_current_conditions
                 .clone(),
@@ -192,13 +194,13 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         // Create structure for method handlers.
         let method_handlers = WeatherServerMethodHandlers {
             method_handler_for_refresh_daily_forecast: Arc::new(Mutex::new(Box::new(
-                |_state: Arc<Mutex<Option<T>>>| Err(MethodResultCode::ServerError),
+                |_state: Arc<Mutex<T>>| Err(MethodResultCode::ServerError),
             ))),
             method_handler_for_refresh_hourly_forecast: Arc::new(Mutex::new(Box::new(
-                |_state: Arc<Mutex<Option<T>>>| Err(MethodResultCode::ServerError),
+                |_state: Arc<Mutex<T>>| Err(MethodResultCode::ServerError),
             ))),
             method_handler_for_refresh_current_conditions: Arc::new(Mutex::new(Box::new(
-                |_state: Arc<Mutex<Option<T>>>| Err(MethodResultCode::ServerError),
+                |_state: Arc<Mutex<T>>| Err(MethodResultCode::ServerError),
             ))),
         };
 
@@ -289,7 +291,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
     ) {
         self.method_handlers
             .method_handler_for_refresh_daily_forecast =
-            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<Option<T>>>| {
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| {
                 if let Some(state_value) = state.lock().unwrap().as_ref() {
                     cb(state_value.clone())
                 } else {
@@ -304,7 +306,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
     ) {
         self.method_handlers
             .method_handler_for_refresh_hourly_forecast =
-            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<Option<T>>>| {
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| {
                 if let Some(state_value) = state.lock().unwrap().as_ref() {
                     cb(state_value.clone())
                 } else {
@@ -319,7 +321,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
     ) {
         self.method_handlers
             .method_handler_for_refresh_current_conditions =
-            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<Option<T>>>| {
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| {
                 if let Some(state_value) = state.lock().unwrap().as_ref() {
                     cb(state_value.clone())
                 } else {
@@ -333,7 +335,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         publisher: MqttierClient,
         handlers: &mut WeatherServerMethodHandlers<T>,
         msg: ReceivedMessage,
-        state: Arc<Mutex<Option<T>>>,
+        state: Arc<Mutex<T>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -375,7 +377,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         publisher: MqttierClient,
         handlers: &mut WeatherServerMethodHandlers<T>,
         msg: ReceivedMessage,
-        state: Arc<Mutex<Option<T>>>,
+        state: Arc<Mutex<T>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -417,7 +419,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         publisher: MqttierClient,
         handlers: &mut WeatherServerMethodHandlers<T>,
         msg: ReceivedMessage,
-        state: Arc<Mutex<Option<T>>>,
+        state: Arc<Mutex<T>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -468,7 +470,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<LocationProperty>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<Option<T>>>,
+        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: LocationProperty = serde_json::from_str(&payload_str).unwrap();
@@ -626,7 +628,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<Option<T>>>,
+        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: CurrentConditionRefreshIntervalProperty =
@@ -685,7 +687,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<Option<T>>>,
+        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: HourlyForecastRefreshIntervalProperty =
@@ -744,7 +746,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<Option<T>>>,
+        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: DailyForecastRefreshIntervalProperty =
@@ -792,7 +794,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self, state: Arc<Mutex<Option<T>>>) -> Result<(), JoinError> {
+    pub async fn receive_loop(&mut self, state: Arc<Mutex<T>>) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 

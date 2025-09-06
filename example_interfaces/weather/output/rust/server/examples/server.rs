@@ -9,20 +9,21 @@ use mqttier::MqttierClient;
 use tokio::time::{Duration, sleep};
 use weather_server::WeatherServer;
 
+use std::sync::{Arc, Mutex};
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
 
-fn refresh_daily_forecast_handler() -> Result<(), MethodResultCode> {
+fn refresh_daily_forecast_handler(state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
     println!("Handling refresh_daily_forecast");
     Ok(())
 }
 
-fn refresh_hourly_forecast_handler() -> Result<(), MethodResultCode> {
+fn refresh_hourly_forecast_handler(state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
     println!("Handling refresh_hourly_forecast");
     Ok(())
 }
 
-fn refresh_current_conditions_handler() -> Result<(), MethodResultCode> {
+fn refresh_current_conditions_handler(state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
     println!("Handling refresh_current_conditions");
     Ok(())
 }
@@ -35,7 +36,8 @@ async fn main() {
 
     block_on(async {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
-        let mut server = WeatherServer::new(&mut connection).await;
+        let mut server = WeatherServer::<Arc<Mutex<i32>>>::new(&mut connection).await;
+        let state: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
 
         println!("Setting initial value for property 'location'");
         let new_value = LocationProperty {
@@ -209,7 +211,7 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'daily_forecast_refresh_interval'");
         server.set_daily_forecast_refresh_interval(2022).await;
-        let _server_loop_task = server.receive_loop().await;
+        let _server_loop_task = server.receive_loop(state).await;
     });
     // Ctrl-C to stop
 }

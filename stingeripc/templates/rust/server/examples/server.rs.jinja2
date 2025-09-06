@@ -8,12 +8,13 @@ use futures::{executor::block_on};
 use mqttier::MqttierClient;
 use {{stinger.rust.server_package_name}}::{{stinger.rust.server_struct_name}};
 use tokio::time::{sleep, Duration};
-
+{%if stinger.methods|length > 0%}
+use std::sync::{Arc, Mutex};{%endif%}
 #[allow(unused_imports)]
 use {{stinger.rust.common_package_name}}::payloads::{MethodResultCode, *};
 
 {%for method_name, method in stinger.methods.items()%}
-fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
+fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}, {%endfor%}state: Arc<Mutex<i32>>) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
     println!("Handling {{method_name}}");
     {%-if method.return_value_type == 'struct'%}
     let rv = {{method.return_value_rust_type}} {
@@ -40,8 +41,8 @@ async fn main() {
     block_on(async {
         {%set broker = stinger.get_example_broker()%}
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
-        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection).await;
-        
+        let mut server = {{stinger.rust.server_struct_name}}{%if stinger.methods|length > 0%}::<Arc<Mutex<i32>>>{%endif%}::new(&mut connection).await;
+        {%if stinger.methods|length > 0%}let state: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));{%endif%}
         {%for prop_name, prop in stinger.properties.items()%}
         println!("Setting initial value for property '{{prop_name}}'");
         {%-if prop.arg_list | length == 1 %}
@@ -77,7 +78,7 @@ async fn main() {
         server.set_{{prop_name | snake_case}}(new_value).await;
         {%endif%}
         {%endfor%}{# property initialization -#}
-        let _server_loop_task = server.receive_loop().await;
+        let _server_loop_task = server.receive_loop({%if stinger.methods|length > 0%}state{%endif%}).await;
     });
     // Ctrl-C to stop
 }

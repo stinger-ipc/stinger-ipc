@@ -11,17 +11,22 @@ use tokio::time::{Duration, sleep};
 
 #[allow(unused_imports)]
 use full_types::payloads::{MethodResultCode, *};
+use std::sync::{Arc, Mutex};
 
 fn add_numbers_handler(
     _first: i32,
     _second: i32,
     _third: Option<i32>,
+    state: Arc<Mutex<i32>>,
 ) -> Result<i32, MethodResultCode> {
     println!("Handling addNumbers");
     Ok(42)
 }
 
-fn do_something_handler(_a_string: String) -> Result<DoSomethingReturnValue, MethodResultCode> {
+fn do_something_handler(
+    _a_string: String,
+    state: Arc<Mutex<i32>>,
+) -> Result<DoSomethingReturnValue, MethodResultCode> {
     println!("Handling doSomething");
     let rv = DoSomethingReturnValue {
         label: "apples".to_string(),
@@ -39,7 +44,8 @@ async fn main() {
 
     block_on(async {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
-        let mut server = FullServer::new(&mut connection).await;
+        let mut server = FullServer::<Arc<Mutex<i32>>>::new(&mut connection).await;
+        let state: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
 
         println!("Setting initial value for property 'favorite_number'");
         server.set_favorite_number(42).await;
@@ -112,7 +118,7 @@ async fn main() {
         };
         server.set_lunch_menu(new_value).await;
 
-        let _server_loop_task = server.receive_loop().await;
+        let _server_loop_task = server.receive_loop(state).await;
     });
     // Ctrl-C to stop
 }

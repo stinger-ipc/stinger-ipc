@@ -14,10 +14,7 @@ use std::sync::{Arc, Mutex};
 use tokio::task::JoinError;
 
 #[derive(Clone)]
-pub struct SignalOnlyServer<T>
-where
-    T: Send + Clone + 'static,
-{
+pub struct SignalOnlyServer {
     mqttier_client: MqttierClient,
 
     /// Copy of MQTT Client ID
@@ -25,7 +22,7 @@ where
     pub client_id: String,
 }
 
-impl<T: Send + Sync + Clone + 'static> SignalOnlyServer<T> {
+impl SignalOnlyServer {
     pub async fn new(connection: &mut MqttierClient) -> Self {
         SignalOnlyServer {
             mqttier_client: connection.clone(),
@@ -53,7 +50,7 @@ impl<T: Send + Sync + Clone + 'static> SignalOnlyServer<T> {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self, state: Arc<Mutex<Option<T>>>) -> Result<(), JoinError> {
+    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
