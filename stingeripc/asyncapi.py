@@ -571,6 +571,9 @@ class StingerToAsyncApi:
                     add_arg(arg_spec)
                     resp_msg_schema.add_value_dependency(arg_spec.name, "result", 0)
             elif method_spec.return_value is not None:
+                assert isinstance(
+                    method_spec.return_value, Arg
+                ), "Method return value must be a primitive or enum"
                 add_arg(method_spec.return_value)
                 resp_msg_schema.add_value_dependency(
                     method_spec.return_value_name, "result", 0

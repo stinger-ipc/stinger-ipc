@@ -35,7 +35,7 @@ def main(
     t = jj2.CodeTemplator(output_dir=outdir)
     t.add_template_dir(template_dir)
 
-    def recursive_render_templates(local_dir: str):
+    def recursive_render_templates(local_dir: str|Path):
         local_dir = Path(local_dir)
         cur_template_dir = template_dir / local_dir
         for entry in os.listdir(cur_template_dir):

@@ -79,6 +79,10 @@ class Arg:
     def rust_local_type(self) -> str:
         return self.rust_type
 
+    @property
+    def cpp_type(self) -> str:
+        return stringmanip.upper_camel_case(self.name)
+
     @classmethod
     def new_arg_from_stinger(
         cls, arg_spec: YamlArg, stinger_spec: StingerSpec | None = None
@@ -107,32 +111,40 @@ class Arg:
         if arg_spec["type"] == "enum":
             if "enumName" not in arg_spec:
                 raise InvalidStingerStructure(f"Enum args need a 'enumName'")
+            if not isinstance(arg_spec["enumName"], str):
+                raise InvalidStingerStructure("'enumName' in arg structure must be a string")
             if arg_spec["enumName"] not in stinger_spec.enums:
                 raise InvalidStingerStructure(
                     f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums"
                 )
-            arg = ArgEnum(
+            enum_arg = ArgEnum(
                 arg_spec["name"], stinger_spec.get_interface_enum(arg_spec["enumName"])
             )
             if opt := arg_spec.get("optional", False):
-                arg.optional = opt
-            arg.try_set_description_from_spec(arg_spec)
-            return arg
+                if not isinstance(opt, bool):
+                    raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
+                enum_arg.optional = opt
+            enum_arg.try_set_description_from_spec(arg_spec)
+            return enum_arg
 
         if arg_spec["type"] == "struct":
             if "structName" not in arg_spec:
                 raise InvalidStingerStructure("Struct args need a 'structName'")
+            if not isinstance(arg_spec["structName"], str):
+                raise InvalidStingerStructure("'structName' in arg structure must be a string")
             if arg_spec["structName"] not in stinger_spec.structs:
                 raise InvalidStingerStructure(
                     f"Struct arg '{arg_spec["structName"]}' was not found in the list of stinger spec structs"
                 )
-            arg = ArgStruct(
+            st_arg = ArgStruct(
                 arg_spec["name"], stinger_spec.structs[arg_spec["structName"]]
             )
             if opt := arg_spec.get("optional", False):
-                arg.optional = opt
-            arg.try_set_description_from_spec(arg_spec)
-            return arg
+                if not isinstance(opt, bool):
+                    raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
+                st_arg.optional = opt
+            st_arg.try_set_description_from_spec(arg_spec)
+            return st_arg
         raise RuntimeError(f"unknown arg type: {arg_spec['type']}")
 
     @abstractmethod
@@ -288,6 +300,10 @@ class ArgPrimitive(Arg):
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in arg_spec:
             raise InvalidStingerStructure("No 'name' in arg structure")
+        if not isinstance(arg_spec["type"], str):
+            raise InvalidStingerStructure("'type' in arg structure must be a string")
+        if not isinstance(arg_spec["name"], str):
+            raise InvalidStingerStructure("'name' in arg structure must be a string")
 
         arg_primitive_type = ArgPrimitiveType.from_string(arg_spec["type"])
         arg: ArgPrimitive = cls(name=arg_spec["name"], arg_type=arg_primitive_type)
@@ -688,6 +704,8 @@ class Property(InterfaceComponent):
             prop_obj.add_arg(new_arg)
 
         if r_o := prop_spec.get("readOnly", False):
+            if not isinstance(r_o, bool):
+                raise InvalidStingerStructure("'readOnly' in property structure must be a boolean")
             prop_obj._read_only = r_o
 
         prop_obj.try_set_documentation_from_spec(prop_spec)
@@ -756,7 +774,12 @@ class InterfaceEnum:
         for enum_obj in enum_spec.get("values", []):
             assert isinstance(enum_obj, dict), f"Enum values must be a dicts."
             if "name" in enum_obj and isinstance(enum_obj["name"], str):
-                ie.add_value(enum_obj["name"], enum_obj.get("description", None))
+                value_description = enum_obj.get("description", None)
+                if value_description is not None and not isinstance(value_description, str):
+                    raise InvalidStingerStructure(
+                        f"InterfaceEnum '{name}' item descriptions must be strings."
+                    )
+                ie.add_value(enum_obj["name"], description=value_description)
             else:
                 raise InvalidStingerStructure(
                     f"InterfaceEnum '{name}' items must have string names."
@@ -834,9 +857,14 @@ class InterfaceStruct:
     ) -> InterfaceStruct:
         istruct = cls(name)
         for memb in spec.get("members", []):
+            if not isinstance(memb, dict):
+                raise InvalidStingerStructure("Struct members must be dicts")
             arg = Arg.new_arg_from_stinger(memb, stinger_spec=stinger_spec)
             istruct.add_member(arg)
-        istruct._description = spec.get("description", None)
+        description = spec.get("description", None)
+        if description is not None and not isinstance(description, str):
+            raise InvalidStingerStructure("Struct description must be a string")
+        istruct._description = description
         return istruct
 
     def __str__(self) -> str:
