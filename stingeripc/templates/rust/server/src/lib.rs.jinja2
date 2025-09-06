@@ -9,7 +9,9 @@ use mqttier::{MqttierClient{%if stinger.methods|length > 0 or stinger.properties
 
 #[allow(unused_imports)]
 use {{stinger.rust.common_package_name}}::payloads::{*, MethodResultCode};
+{%if stinger.methods|length > 0 %}
 use std::sync::{Arc, Mutex};
+{%endif%}
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
 use serde_json;
 use tokio::sync::mpsc;
@@ -159,7 +161,7 @@ impl{%if stinger.methods|length > 0%}<T: Send + Sync + Clone + 'static> {{stinge
     pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
-            {{arg.name}}: {{arg.name|snake_case}},
+        {{arg.name}}: {{arg.name|snake_case}},
             {%endfor%}
         };
         let _ = self.mqttier_client.publish_structure("{{sig.topic}}".to_string(), &data).await;
@@ -168,13 +170,9 @@ impl{%if stinger.methods|length > 0%}<T: Send + Sync + Clone + 'static> {{stinge
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Sets the function to be called when a request for the {{method_name}} method is received.
-    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl Fn({%for arg in method.arg_list%}{{arg.rust_type}}, {%endfor%}T)->Result<{{method.return_value_rust_type}}, MethodResultCode> + 'static + Send) {
-        self.method_handlers.method_handler_for_{{method_name|snake_case}} = Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| {
-            if let Some(state_value) = state.lock().unwrap().as_ref() {
-                cb(state_value.clone())
-            } else {
-                Err(MethodResultCode::ServerError)
-            }
+    pub fn set_method_handler_for_{{method_name|snake_case}}(&mut self, cb: impl Fn({%for arg in method.arg_list%}{{arg.rust_type}}, {%endfor%}Arc<Mutex<T>>)->Result<{{method.return_value_rust_type}}, MethodResultCode> + 'static + Send) {
+        self.method_handlers.method_handler_for_{{method_name|snake_case}} = Arc::new(Mutex::new(Box::new(move |{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}, {%endfor%}state: Arc<Mutex<T>>| {
+            cb({%for arg in method.arg_list%}{{arg.name|snake_case}}, {%endfor%}state)
         })));
     }
     {%endfor%}

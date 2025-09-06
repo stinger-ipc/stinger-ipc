@@ -17,7 +17,7 @@ fn add_numbers_handler(
     _first: i32,
     _second: i32,
     _third: Option<i32>,
-    state: Arc<Mutex<i32>>,
+    _state: Arc<Mutex<i32>>,
 ) -> Result<i32, MethodResultCode> {
     println!("Handling addNumbers");
     Ok(42)
@@ -25,7 +25,7 @@ fn add_numbers_handler(
 
 fn do_something_handler(
     _a_string: String,
-    state: Arc<Mutex<i32>>,
+    _state: Arc<Mutex<i32>>,
 ) -> Result<DoSomethingReturnValue, MethodResultCode> {
     println!("Handling doSomething");
     let rv = DoSomethingReturnValue {
@@ -44,7 +44,7 @@ async fn main() {
 
     block_on(async {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
-        let mut server = FullServer::<Arc<Mutex<i32>>>::new(&mut connection).await;
+        let mut server = FullServer::<i32>::new(&mut connection).await;
         let state: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
 
         println!("Setting initial value for property 'favorite_number'");

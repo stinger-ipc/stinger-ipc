@@ -7,9 +7,10 @@ This is the Server for the weather interface.
 
 use mqttier::{MqttierClient, ReceivedMessage};
 
-use std::sync::{Arc, Mutex};
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
+
+use std::sync::{Arc, Mutex};
 
 use serde_json;
 use tokio::sync::mpsc;
@@ -287,47 +288,29 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
     /// Sets the function to be called when a request for the refresh_daily_forecast method is received.
     pub fn set_method_handler_for_refresh_daily_forecast(
         &mut self,
-        cb: impl Fn(T) -> Result<(), MethodResultCode> + 'static + Send,
+        cb: impl Fn(Arc<Mutex<T>>) -> Result<(), MethodResultCode> + 'static + Send,
     ) {
         self.method_handlers
             .method_handler_for_refresh_daily_forecast =
-            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| {
-                if let Some(state_value) = state.lock().unwrap().as_ref() {
-                    cb(state_value.clone())
-                } else {
-                    Err(MethodResultCode::ServerError)
-                }
-            })));
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| cb(state))));
     }
     /// Sets the function to be called when a request for the refresh_hourly_forecast method is received.
     pub fn set_method_handler_for_refresh_hourly_forecast(
         &mut self,
-        cb: impl Fn(T) -> Result<(), MethodResultCode> + 'static + Send,
+        cb: impl Fn(Arc<Mutex<T>>) -> Result<(), MethodResultCode> + 'static + Send,
     ) {
         self.method_handlers
             .method_handler_for_refresh_hourly_forecast =
-            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| {
-                if let Some(state_value) = state.lock().unwrap().as_ref() {
-                    cb(state_value.clone())
-                } else {
-                    Err(MethodResultCode::ServerError)
-                }
-            })));
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| cb(state))));
     }
     /// Sets the function to be called when a request for the refresh_current_conditions method is received.
     pub fn set_method_handler_for_refresh_current_conditions(
         &mut self,
-        cb: impl Fn(T) -> Result<(), MethodResultCode> + 'static + Send,
+        cb: impl Fn(Arc<Mutex<T>>) -> Result<(), MethodResultCode> + 'static + Send,
     ) {
         self.method_handlers
             .method_handler_for_refresh_current_conditions =
-            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| {
-                if let Some(state_value) = state.lock().unwrap().as_ref() {
-                    cb(state_value.clone())
-                } else {
-                    Err(MethodResultCode::ServerError)
-                }
-            })));
+            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| cb(state))));
     }
 
     /// Handles a request message for the refresh_daily_forecast method.

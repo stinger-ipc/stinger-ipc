@@ -9,7 +9,6 @@ use mqttier::MqttierClient;
 
 #[allow(unused_imports)]
 use signal_only_types::payloads::{MethodResultCode, *};
-use std::sync::{Arc, Mutex};
 
 use tokio::task::JoinError;
 

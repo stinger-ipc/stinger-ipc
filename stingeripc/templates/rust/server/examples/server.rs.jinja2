@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};{%endif%}
 use {{stinger.rust.common_package_name}}::payloads::{MethodResultCode, *};
 
 {%for method_name, method in stinger.methods.items()%}
-fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}, {%endfor%}state: Arc<Mutex<i32>>) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
+fn {{method_name|snake_case}}_handler({%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}, {%endfor%}_state: Arc<Mutex<i32>>) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
     println!("Handling {{method_name}}");
     {%-if method.return_value_type == 'struct'%}
     let rv = {{method.return_value_rust_type}} {
@@ -41,7 +41,7 @@ async fn main() {
     block_on(async {
         {%set broker = stinger.get_example_broker()%}
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
-        let mut server = {{stinger.rust.server_struct_name}}{%if stinger.methods|length > 0%}::<Arc<Mutex<i32>>>{%endif%}::new(&mut connection).await;
+        let mut server = {{stinger.rust.server_struct_name}}{%if stinger.methods|length > 0%}::<i32>{%endif%}::new(&mut connection).await;
         {%if stinger.methods|length > 0%}let state: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));{%endif%}
         {%for prop_name, prop in stinger.properties.items()%}
         println!("Setting initial value for property '{{prop_name}}'");

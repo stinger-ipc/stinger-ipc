@@ -9,6 +9,7 @@ use mqttier::{MqttierClient, ReceivedMessage};
 
 #[allow(unused_imports)]
 use full_types::payloads::{MethodResultCode, *};
+
 use std::sync::{Arc, Mutex};
 
 use serde_json;
@@ -219,30 +220,26 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
     /// Sets the function to be called when a request for the addNumbers method is received.
     pub fn set_method_handler_for_add_numbers(
         &mut self,
-        cb: impl Fn(i32, i32, Option<i32>, T) -> Result<i32, MethodResultCode> + 'static + Send,
+        cb: impl Fn(i32, i32, Option<i32>, Arc<Mutex<T>>) -> Result<i32, MethodResultCode>
+        + 'static
+        + Send,
     ) {
-        self.method_handlers.method_handler_for_add_numbers =
-            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| {
-                if let Some(state_value) = state.lock().unwrap().as_ref() {
-                    cb(state_value.clone())
-                } else {
-                    Err(MethodResultCode::ServerError)
-                }
-            })));
+        self.method_handlers.method_handler_for_add_numbers = Arc::new(Mutex::new(Box::new(
+            move |first: i32, second: i32, third: Option<i32>, state: Arc<Mutex<T>>| {
+                cb(first, second, third, state)
+            },
+        )));
     }
     /// Sets the function to be called when a request for the doSomething method is received.
     pub fn set_method_handler_for_do_something(
         &mut self,
-        cb: impl Fn(String, T) -> Result<DoSomethingReturnValue, MethodResultCode> + 'static + Send,
+        cb: impl Fn(String, Arc<Mutex<T>>) -> Result<DoSomethingReturnValue, MethodResultCode>
+        + 'static
+        + Send,
     ) {
-        self.method_handlers.method_handler_for_do_something =
-            Arc::new(Mutex::new(Box::new(move |state: Arc<Mutex<T>>| {
-                if let Some(state_value) = state.lock().unwrap().as_ref() {
-                    cb(state_value.clone())
-                } else {
-                    Err(MethodResultCode::ServerError)
-                }
-            })));
+        self.method_handlers.method_handler_for_do_something = Arc::new(Mutex::new(Box::new(
+            move |a_string: String, state: Arc<Mutex<T>>| cb(a_string, state),
+        )));
     }
 
     /// Handles a request message for the addNumbers method.

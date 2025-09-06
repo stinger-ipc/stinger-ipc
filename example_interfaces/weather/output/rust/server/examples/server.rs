@@ -13,17 +13,17 @@ use std::sync::{Arc, Mutex};
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
 
-fn refresh_daily_forecast_handler(state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
+fn refresh_daily_forecast_handler(_state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
     println!("Handling refresh_daily_forecast");
     Ok(())
 }
 
-fn refresh_hourly_forecast_handler(state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
+fn refresh_hourly_forecast_handler(_state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
     println!("Handling refresh_hourly_forecast");
     Ok(())
 }
 
-fn refresh_current_conditions_handler(state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
+fn refresh_current_conditions_handler(_state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
     println!("Handling refresh_current_conditions");
     Ok(())
 }
@@ -36,7 +36,7 @@ async fn main() {
 
     block_on(async {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
-        let mut server = WeatherServer::<Arc<Mutex<i32>>>::new(&mut connection).await;
+        let mut server = WeatherServer::<i32>::new(&mut connection).await;
         let state: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
 
         println!("Setting initial value for property 'location'");
