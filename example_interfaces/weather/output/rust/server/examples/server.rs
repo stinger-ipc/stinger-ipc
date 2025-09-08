@@ -10,22 +10,27 @@ use tokio::time::{Duration, sleep};
 use weather_server::WeatherServer;
 
 use std::sync::{Arc, Mutex};
+pub use weather_server::handler::WeatherMethodHandlers;
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
 
-fn refresh_daily_forecast_handler(_state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
-    println!("Handling refresh_daily_forecast");
-    Ok(())
-}
+struct WeatherMethodImpl;
 
-fn refresh_hourly_forecast_handler(_state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
-    println!("Handling refresh_hourly_forecast");
-    Ok(())
-}
+impl WeatherMethodHandlers for WeatherMethodImpl {
+    fn handle_refresh_daily_forecast(&self) -> Result<(), MethodResultCode> {
+        println!("Handling refresh_daily_forecast");
+        Ok(())
+    }
 
-fn refresh_current_conditions_handler(_state: Arc<Mutex<i32>>) -> Result<(), MethodResultCode> {
-    println!("Handling refresh_current_conditions");
-    Ok(())
+    fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodResultCode> {
+        println!("Handling refresh_hourly_forecast");
+        Ok(())
+    }
+
+    fn handle_refresh_current_conditions(&self) -> Result<(), MethodResultCode> {
+        println!("Handling refresh_current_conditions");
+        Ok(())
+    }
 }
 
 #[tokio::main]
@@ -36,8 +41,9 @@ async fn main() {
 
     block_on(async {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
-        let mut server = WeatherServer::<i32>::new(&mut connection).await;
-        let state: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
+
+        let handlers = Arc::new(Mutex::new(Box::new(WeatherMethodImpl)));
+        let mut server = WeatherServer::new(&mut connection, handlers).await;
 
         println!("Setting initial value for property 'location'");
         let new_value = LocationProperty {
@@ -115,13 +121,6 @@ async fn main() {
 
         println!("Setting initial value for property 'daily_forecast_refresh_interval'");
         server.set_daily_forecast_refresh_interval(42).await;
-
-        server.set_method_handler_for_refresh_daily_forecast(refresh_daily_forecast_handler);
-
-        server.set_method_handler_for_refresh_hourly_forecast(refresh_hourly_forecast_handler);
-
-        server
-            .set_method_handler_for_refresh_current_conditions(refresh_current_conditions_handler);
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'current_time'");
@@ -211,7 +210,7 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'daily_forecast_refresh_interval'");
         server.set_daily_forecast_refresh_interval(2022).await;
-        let _server_loop_task = server.receive_loop(state).await;
+        let _server_loop_task = server.receive_loop().await;
     });
     // Ctrl-C to stop
 }

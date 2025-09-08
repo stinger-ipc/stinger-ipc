@@ -10,6 +10,8 @@ use mqttier::{MqttierClient, ReceivedMessage};
 #[allow(unused_imports)]
 use full_types::payloads::{MethodResultCode, *};
 
+pub mod handler;
+pub use handler::FullMethodHandlers;
 use std::sync::{Arc, Mutex};
 
 use serde_json;
@@ -31,55 +33,21 @@ struct FullServerSubscriptionIds {
     lunch_menu_property_update: usize,
 }
 
-struct FullServerMethodHandlers<T> {
-    /// Pointer to a function to handle the addNumbers method request.
-    method_handler_for_add_numbers: Arc<
-        Mutex<
-            Box<
-                dyn Fn(i32, i32, Option<i32>, Arc<Mutex<T>>) -> Result<i32, MethodResultCode>
-                    + Send,
-            >,
-        >,
-    >,
-    /// Pointer to a function to handle the doSomething method request.
-    method_handler_for_do_something: Arc<
-        Mutex<
-            Box<
-                dyn Fn(String, Arc<Mutex<T>>) -> Result<DoSomethingReturnValue, MethodResultCode>
-                    + Send,
-            >,
-        >,
-    >,
-}
-
-impl<T> Clone for FullServerMethodHandlers<T> {
-    fn clone(&self) -> Self {
-        FullServerMethodHandlers {
-            method_handler_for_add_numbers: self.method_handler_for_add_numbers.clone(),
-
-            method_handler_for_do_something: self.method_handler_for_do_something.clone(),
-        }
-    }
-}
-
 #[derive(Clone)]
 struct FullProperties {
     favorite_number_topic: Arc<String>,
     favorite_number: Arc<Mutex<Option<i32>>>,
-    favorite_number_tx_channel: watch::Sender<i32>,
+    favorite_number_tx_channel: watch::Sender<Option<i32>>,
     favorite_foods_topic: Arc<String>,
     favorite_foods: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
-    favorite_foods_tx_channel: watch::Sender<FavoriteFoodsProperty>,
+    favorite_foods_tx_channel: watch::Sender<Option<FavoriteFoodsProperty>>,
     lunch_menu_topic: Arc<String>,
     lunch_menu: Arc<Mutex<Option<LunchMenuProperty>>>,
-    lunch_menu_tx_channel: watch::Sender<LunchMenuProperty>,
+    lunch_menu_tx_channel: watch::Sender<Option<LunchMenuProperty>>,
 }
 
 #[derive(Clone)]
-pub struct FullServer<T>
-where
-    T: Send + Clone + 'static,
-{
+pub struct FullServer {
     mqttier_client: MqttierClient,
 
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
@@ -91,8 +59,8 @@ where
     #[allow(dead_code)]
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
 
-    /// Struct contains all the handlers for the various methods.
-    method_handlers: FullServerMethodHandlers<T>,
+    /// Struct contains all the method handlers.
+    method_handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>>,
 
     /// Struct contains all the properties.
     properties: FullProperties,
@@ -105,8 +73,11 @@ where
     pub client_id: String,
 }
 
-impl<T: Send + Sync + Clone + 'static> FullServer<T> {
-    pub async fn new(connection: &mut MqttierClient) -> Self {
+impl FullServer {
+    pub async fn new(
+        connection: &mut MqttierClient,
+        method_handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>>,
+    ) -> Self {
         // Create a channel for messages to get from the MqttierClient object to this FullServer object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = mpsc::channel::<ReceivedMessage>(64);
@@ -161,16 +132,6 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
         let subscription_id_lunch_menu_property_update =
             subscription_id_lunch_menu_property_update.unwrap_or_else(|_| usize::MAX);
 
-        // Create structure for method handlers.
-        let method_handlers = FullServerMethodHandlers {
-            method_handler_for_add_numbers: Arc::new(Mutex::new(Box::new(
-                |_1, _2, _3, _state: Arc<Mutex<T>>| Err(MethodResultCode::ServerError),
-            ))),
-            method_handler_for_do_something: Arc::new(Mutex::new(Box::new(
-                |_1, _state: Arc<Mutex<T>>| Err(MethodResultCode::ServerError),
-            ))),
-        };
-
         // Create structure for subscription ids.
         let sub_ids = FullServerSubscriptionIds {
             add_numbers_method_req: subscription_id_add_numbers_method_req,
@@ -187,15 +148,15 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
             favorite_number_topic: Arc::new(String::from("full/property/favoriteNumber/value")),
 
             favorite_number: Arc::new(Mutex::new(None)),
-            favorite_number_tx_channel: watch::channel().0,
+            favorite_number_tx_channel: watch::channel(None).0,
             favorite_foods_topic: Arc::new(String::from("full/property/favoriteFoods/value")),
 
             favorite_foods: Arc::new(Mutex::new(None)),
-            favorite_foods_tx_channel: watch::channel().0,
+            favorite_foods_tx_channel: watch::channel(None).0,
             lunch_menu_topic: Arc::new(String::from("full/property/lunchMenu/value")),
 
             lunch_menu: Arc::new(Mutex::new(None)),
-            lunch_menu_tx_channel: watch::channel().0,
+            lunch_menu_tx_channel: watch::channel(None).0,
         };
 
         FullServer {
@@ -224,37 +185,11 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
             .await;
     }
 
-    /// Sets the function to be called when a request for the addNumbers method is received.
-    pub fn set_method_handler_for_add_numbers(
-        &mut self,
-        cb: impl Fn(i32, i32, Option<i32>, Arc<Mutex<T>>) -> Result<i32, MethodResultCode>
-        + 'static
-        + Send,
-    ) {
-        self.method_handlers.method_handler_for_add_numbers = Arc::new(Mutex::new(Box::new(
-            move |first: i32, second: i32, third: Option<i32>, state: Arc<Mutex<T>>| {
-                cb(first, second, third, state)
-            },
-        )));
-    }
-    /// Sets the function to be called when a request for the doSomething method is received.
-    pub fn set_method_handler_for_do_something(
-        &mut self,
-        cb: impl Fn(String, Arc<Mutex<T>>) -> Result<DoSomethingReturnValue, MethodResultCode>
-        + 'static
-        + Send,
-    ) {
-        self.method_handlers.method_handler_for_do_something = Arc::new(Mutex::new(Box::new(
-            move |a_string: String, state: Arc<Mutex<T>>| cb(a_string, state),
-        )));
-    }
-
     /// Handles a request message for the addNumbers method.
     async fn handle_add_numbers_request(
         publisher: MqttierClient,
-        handlers: &mut FullServerMethodHandlers<T>,
+        handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>>,
         msg: ReceivedMessage,
-        state: Arc<Mutex<T>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -263,8 +198,8 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
 
         // call the method handler
         let rv: Result<i32, MethodResultCode> = {
-            let func_guard = handlers.method_handler_for_add_numbers.lock().unwrap();
-            (*func_guard)(payload.first, payload.second, payload.third, state)
+            let handler_guard = handlers.lock().unwrap();
+            (*handler_guard).handle_add_numbers(payload.first, payload.second, payload.third)
         };
 
         if let Some(resp_topic) = opt_resp_topic {
@@ -293,9 +228,8 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
     /// Handles a request message for the doSomething method.
     async fn handle_do_something_request(
         publisher: MqttierClient,
-        handlers: &mut FullServerMethodHandlers<T>,
+        handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>>,
         msg: ReceivedMessage,
-        state: Arc<Mutex<T>>,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -304,8 +238,8 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
 
         // call the method handler
         let rv: Result<DoSomethingReturnValue, MethodResultCode> = {
-            let func_guard = handlers.method_handler_for_do_something.lock().unwrap();
-            (*func_guard)(payload.aString, state)
+            let handler_guard = handlers.lock().unwrap();
+            (*handler_guard).handle_do_something(payload.aString)
         };
 
         if let Some(resp_topic) = opt_resp_topic {
@@ -369,7 +303,7 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
                 "Will publish property favorite_number of type i32 to {}",
                 topic2
             );
-            FullServer::<T>::publish_favorite_number_value(publisher2, topic2, data).await;
+            FullServer::publish_favorite_number_value(publisher2, topic2, data).await;
         });
     }
 
@@ -416,7 +350,7 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
                 "Will publish property favorite_foods of type FavoriteFoodsProperty to {}",
                 topic2
             );
-            FullServer::<T>::publish_favorite_foods_value(publisher2, topic2, data).await;
+            FullServer::publish_favorite_foods_value(publisher2, topic2, data).await;
         });
     }
 
@@ -463,7 +397,7 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
                 "Will publish property lunch_menu of type LunchMenuProperty to {}",
                 topic2
             );
-            FullServer::<T>::publish_lunch_menu_value(publisher2, topic2, data).await;
+            FullServer::publish_lunch_menu_value(publisher2, topic2, data).await;
         });
     }
 
@@ -471,7 +405,7 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self, state: Arc<Mutex<T>>) -> Result<(), JoinError> {
+    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
@@ -484,7 +418,7 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
                 .expect("msg_streamer_rx should be Some")
         };
 
-        let mut method_handlers = self.method_handlers.clone();
+        let method_handlers = self.method_handlers.clone();
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqttier_client.clone();
 
@@ -495,17 +429,15 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
                 if msg.subscription_id == sub_ids.add_numbers_method_req {
                     FullServer::handle_add_numbers_request(
                         publisher.clone(),
-                        &mut method_handlers,
+                        method_handlers.clone(),
                         msg,
-                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.do_something_method_req {
                     FullServer::handle_do_something_request(
                         publisher.clone(),
-                        &mut method_handlers,
+                        method_handlers.clone(),
                         msg,
-                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.favorite_number_property_update {

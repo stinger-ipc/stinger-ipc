@@ -20,6 +20,7 @@ async fn main() {
 
     block_on(async {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
+
         let mut server = SignalOnlyServer::new(&mut connection).await;
 
         sleep(Duration::from_secs(1)).await;

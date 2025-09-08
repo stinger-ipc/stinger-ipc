@@ -9,31 +9,36 @@ use futures::executor::block_on;
 use mqttier::MqttierClient;
 use tokio::time::{Duration, sleep};
 
+pub use full_server::handler::FullMethodHandlers;
 #[allow(unused_imports)]
 use full_types::payloads::{MethodResultCode, *};
 use std::sync::{Arc, Mutex};
 
-fn add_numbers_handler(
-    _first: i32,
-    _second: i32,
-    _third: Option<i32>,
-    _state: Arc<Mutex<i32>>,
-) -> Result<i32, MethodResultCode> {
-    println!("Handling addNumbers");
-    Ok(42)
-}
+struct FullMethodImpl;
 
-fn do_something_handler(
-    _a_string: String,
-    _state: Arc<Mutex<i32>>,
-) -> Result<DoSomethingReturnValue, MethodResultCode> {
-    println!("Handling doSomething");
-    let rv = DoSomethingReturnValue {
-        label: "apples".to_string(),
-        identifier: 42,
-        day: DayOfTheWeek::Monday,
-    };
-    Ok(rv)
+impl FullMethodHandlers for FullMethodImpl {
+    fn handle_add_numbers(
+        &self,
+        _first: i32,
+        _second: i32,
+        _third: Option<i32>,
+    ) -> Result<i32, MethodResultCode> {
+        println!("Handling addNumbers");
+        Ok(42)
+    }
+
+    fn handle_do_something(
+        &self,
+        _a_string: String,
+    ) -> Result<DoSomethingReturnValue, MethodResultCode> {
+        println!("Handling doSomething");
+        let rv = DoSomethingReturnValue {
+            label: "apples".to_string(),
+            identifier: 42,
+            day: DayOfTheWeek::Monday,
+        };
+        Ok(rv)
+    }
 }
 
 #[tokio::main]
@@ -44,8 +49,9 @@ async fn main() {
 
     block_on(async {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
-        let mut server = FullServer::<i32>::new(&mut connection).await;
-        let state: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));
+
+        let handlers = Arc::new(Mutex::new(Box::new(FullMethodImpl)));
+        let mut server = FullServer::new(&mut connection, handlers).await;
 
         println!("Setting initial value for property 'favorite_number'");
         server.set_favorite_number(42).await;
@@ -76,10 +82,6 @@ async fn main() {
             },
         };
         server.set_lunch_menu(new_value).await;
-
-        server.set_method_handler_for_add_numbers(add_numbers_handler);
-
-        server.set_method_handler_for_do_something(do_something_handler);
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'todayIs'");
@@ -118,7 +120,7 @@ async fn main() {
         };
         server.set_lunch_menu(new_value).await;
 
-        let _server_loop_task = server.receive_loop(state).await;
+        let _server_loop_task = server.receive_loop().await;
     });
     // Ctrl-C to stop
 }
