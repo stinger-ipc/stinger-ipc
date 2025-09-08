@@ -51,7 +51,7 @@ async fn main() {
         {%set broker = stinger.get_example_broker()%}
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
         {%if stinger.methods|length > 0%}
-        let handlers = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl)));
+        let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl)));
         let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, handlers).await;
         {%else%}
         let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection).await;

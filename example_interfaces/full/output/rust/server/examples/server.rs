@@ -50,7 +50,8 @@ async fn main() {
     block_on(async {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
 
-        let handlers = Arc::new(Mutex::new(Box::new(FullMethodImpl)));
+        let handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>> =
+            Arc::new(Mutex::new(Box::new(FullMethodImpl)));
         let mut server = FullServer::new(&mut connection, handlers).await;
 
         println!("Setting initial value for property 'favorite_number'");
