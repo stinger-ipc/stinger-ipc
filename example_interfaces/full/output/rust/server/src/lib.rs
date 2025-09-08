@@ -13,7 +13,7 @@ use full_types::payloads::{MethodResultCode, *};
 use std::sync::{Arc, Mutex};
 
 use serde_json;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, watch};
 
 use tokio::task::JoinError;
 
@@ -66,10 +66,13 @@ impl<T> Clone for FullServerMethodHandlers<T> {
 struct FullProperties {
     favorite_number_topic: Arc<String>,
     favorite_number: Arc<Mutex<Option<i32>>>,
+    favorite_number_tx_channel: watch::Sender<i32>,
     favorite_foods_topic: Arc<String>,
     favorite_foods: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
+    favorite_foods_tx_channel: watch::Sender<FavoriteFoodsProperty>,
     lunch_menu_topic: Arc<String>,
     lunch_menu: Arc<Mutex<Option<LunchMenuProperty>>>,
+    lunch_menu_tx_channel: watch::Sender<LunchMenuProperty>,
 }
 
 #[derive(Clone)]
@@ -184,11 +187,15 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
             favorite_number_topic: Arc::new(String::from("full/property/favoriteNumber/value")),
 
             favorite_number: Arc::new(Mutex::new(None)),
+            favorite_number_tx_channel: watch::channel().0,
             favorite_foods_topic: Arc::new(String::from("full/property/favoriteFoods/value")),
-            favorite_foods: Arc::new(Mutex::new(None)),
 
+            favorite_foods: Arc::new(Mutex::new(None)),
+            favorite_foods_tx_channel: watch::channel().0,
             lunch_menu_topic: Arc::new(String::from("full/property/lunchMenu/value")),
+
             lunch_menu: Arc::new(Mutex::new(None)),
+            lunch_menu_tx_channel: watch::channel().0,
         };
 
         FullServer {
@@ -334,7 +341,6 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: FavoriteNumberProperty = serde_json::from_str(&payload_str).unwrap();
@@ -344,7 +350,7 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.number;
         let _ = tokio::spawn(async move {
-            FullServer::<T>::publish_favorite_number_value(publisher2, topic2, data2).await;
+            FullServer::publish_favorite_number_value(publisher2, topic2, data2).await;
         });
     }
 
@@ -380,7 +386,6 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: FavoriteFoodsProperty = serde_json::from_str(&payload_str).unwrap();
@@ -392,7 +397,7 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
         let data2 = new_data;
 
         let _ = tokio::spawn(async move {
-            FullServer::<T>::publish_favorite_foods_value(publisher2, topic2, data2).await;
+            FullServer::publish_favorite_foods_value(publisher2, topic2, data2).await;
         });
     }
 
@@ -428,7 +433,6 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<LunchMenuProperty>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: LunchMenuProperty = serde_json::from_str(&payload_str).unwrap();
@@ -440,7 +444,7 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
         let data2 = new_data;
 
         let _ = tokio::spawn(async move {
-            FullServer::<T>::publish_lunch_menu_value(publisher2, topic2, data2).await;
+            FullServer::publish_lunch_menu_value(publisher2, topic2, data2).await;
         });
     }
 
@@ -510,7 +514,6 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
                         properties.favorite_number_topic.clone(),
                         properties.favorite_number.clone(),
                         msg,
-                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.favorite_foods_property_update {
@@ -519,7 +522,6 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
                         properties.favorite_foods_topic.clone(),
                         properties.favorite_foods.clone(),
                         msg,
-                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id == sub_ids.lunch_menu_property_update {
@@ -528,7 +530,6 @@ impl<T: Send + Sync + Clone + 'static> FullServer<T> {
                         properties.lunch_menu_topic.clone(),
                         properties.lunch_menu.clone(),
                         msg,
-                        state.clone(),
                     )
                     .await;
                 }

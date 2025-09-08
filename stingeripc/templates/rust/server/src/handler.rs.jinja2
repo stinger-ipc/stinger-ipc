@@ -1,0 +1,17 @@
+
+{%for method_name, method in stinger.methods.items()-%}
+{%if method.return_value_type == "struct" -%}
+use payloads.{{method.return_value_rust_type}};
+{%endif%}
+{%endfor%}
+
+/// Method handlers for the {{stinger.rust.server_struct_name}} server.
+/// This trait must be implemented by the user of the server to handle incoming method requests.
+pub trait {{stinger.name | UpperCamelCase }}ServerMethodHandler: Send + Sync {
+
+    {%for method_name, method in stinger.methods.items()-%}
+    /// Pointer to a function to handle the {{method_name}} method request.
+    handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode>;
+    
+    {%endfor%}
+}

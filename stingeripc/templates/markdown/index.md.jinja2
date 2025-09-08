@@ -4,6 +4,9 @@ _{{stinger.summary}}_
 {%endif-%}
 {%if stinger.documentation%}
 {{stinger.documentation}}
+{%endif%}
+
+[[_TOC_]]
 
 ## Connections
 
@@ -55,25 +58,33 @@ server = {{stinger.python.server_class_name}}(connection_object)
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 
+A full example can be viewed by looking at the `if __name__ == "__main__":` section of the generated `{{stinger.python.package_name}}.server.py` module.
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+
+A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
+
 </details>
 
 <details>
   <summary>C++ Server</summary>
 
-```python{%set broker = stinger.get_example_broker()%}
-from connection import {{broker.class_name}}
+```c++
 
-conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
-server = {{stinger.python.server_class_name}}(conn)
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
+
+A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
 
 </details>
 
 ## Client
 
-{%endif-%}
 {%macro argrow(arg) -%}
 |{{arg.name|center(15)}}|
 {%-if arg.arg_type.name.lower() == "enum" or arg.arg_type.name.lower() == "struct"%}{{arg.markdown_type|center(10)}}
@@ -91,7 +102,7 @@ The `server` object provides methods for emitting signals and updating propertie
 {%if stinger.signals | length > 0 %}
 ## Signals
 
-Signals are messages from the server to clients.
+Signals are messages from a server to clients.
 
 ```plantuml
 @startuml
@@ -112,6 +123,8 @@ Client <<- Server : Signal(Parameters)
 <details>
   <summary>Python Client</summary>
 
+The `{{sig_name}}` signal can be subscribed to by using the client's `receive_{{sig_name | snake_case }}` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
+
 ```python
 @client.receive_{{sig_name | snake_case }}
 def on_{{sig_name | snake_case }}({%for arg in signal.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
@@ -121,10 +134,62 @@ def on_{{sig_name | snake_case }}({%for arg in signal.arg_list%}{{arg.name}}: {{
 </details>
 
 <details>
+  <summary>Python Server</summary>
+
+A server can emit a `{{sig_name}}` signal simply by calling the server's `emit_{{sig_name | snake_case}}` method.
+
+```python
+server.emit_{{sig_name | snake_case}}({%for arg in signal.arg_list%}{{arg.get_random_example_value(lang="python")}}{%if not loop.last%}, {%endif%}{%endfor%})
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
+
+Since receiving a message through the channel blocks, it may be best to put this into a separate async task.
+
+```rust
+let mut {{sig_name|snake_case}}_signal_rx = client.get_{{sig_name|snake_case}}_receiver();
+print("Got a '{{sig_name}}' signal: {:?}", {{sig_name|snake_case}}_signal_rx.recv().await);
+```
+
+</details>
+
+<details>
   <summary>Rust Server</summary>
+
+A server can emit a `{{sig_name}}` signal simply by calling the server's `emit_{{sig_name | snake_case}}` method.
 
 ```rust
 server.emit_{{sig_name|snake_case}}({%for arg in signal.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+```
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A client can register a callback function to be called when a `{{sig_name}}` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
+
+```cpp
+client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in signal.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+    std::cout << {%for arg in signal.arg_list%}"{{arg.name}}=" << {%-if arg.optional%} "None"{%else%}{%if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]{%else%}{{arg.name}}{%endif%}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
+});
+```
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+A `{{sig_name}}` signal can be emitted by calling the server's `emit{{sig_name | UpperCamelCase}}Signal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
+
+```cpp
+auto {{sig_name|lowerCamelCase}}Future = server.emit{{sig_name | UpperCamelCase}}Signal({%for arg in signal.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+{{sig_name|lowerCamelCase}}Future.wait(); // Optional, to block until signal is sent.
 ```
 
 </details>

@@ -1,9 +1,90 @@
 # _weather_ API Overview
 
+[[_TOC_]]
+
+## Connections
+
+A connection object is a wrapper around an MQTT client and provides specific functionality to support both clients and servers.
+Generally, you only need one connection object per daemon/program, as it can support multiple clients and servers.  
+
+### Connection code Examples
+
+<details>
+  <summary>Python</summary>
+
+```python
+from connection import DefaultConnection
+
+connection_object = DefaultConnection('localhost', 1883)
+```
+
+The `connection_object` will be passed to client and server constructors.
+
+</details>
+
+<details>
+  <summary>C++</summary>
+
+```c++
+#include "broker.hpp"
+
+auto connection_object = std::make_shared<DefaultConnection>("localhost", 1883, "Weather");
+```
+
+The `connection_object` will be passed to client and server constructors.
+
+</details>
+
+## Server
+
+A server is a _provider_ of functionality.  It sends signals, handles method calls, and owns property values.
+
+### Server Code Examples
+
+<details>
+  <summary>Python Server</summary>
+
+```python
+from weatheripc.client import WeatherServer
+
+server = WeatherServer(connection_object)
+```
+
+The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
+
+A full example can be viewed by looking at the `if __name__ == "__main__":` section of the generated `weatheripc.server.py` module.
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+
+A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+```c++
+
+```
+
+The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
+
+A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
+
+</details>
+
+## Client
+
+
+
 
 ## Signals
 
-Signals are messages from the server to clients.
+Signals are messages from a server to clients.
 
 ```plantuml
 @startuml
@@ -28,6 +109,8 @@ and time will be published.  (Mostly for example purposes).
 <details>
   <summary>Python Client</summary>
 
+The `current_time` signal can be subscribed to by using the client's `receive_current_time` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
+
 ```python
 @client.receive_current_time
 def on_current_time(current_time: str):
@@ -37,10 +120,62 @@ def on_current_time(current_time: str):
 </details>
 
 <details>
+  <summary>Python Server</summary>
+
+A server can emit a `current_time` signal simply by calling the server's `emit_current_time` method.
+
+```python
+server.emit_current_time("apples")
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
+
+Since receiving a message through the channel blocks, it may be best to put this into a separate async task.
+
+```rust
+let mut current_time_signal_rx = client.get_current_time_receiver();
+print("Got a 'current_time' signal: {:?}", current_time_signal_rx.recv().await);
+```
+
+</details>
+
+<details>
   <summary>Rust Server</summary>
+
+A server can emit a `current_time` signal simply by calling the server's `emit_current_time` method.
 
 ```rust
 server.emit_current_time("apples".to_string()).await;
+```
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A client can register a callback function to be called when a `current_time` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
+
+```cpp
+client.registerCurrentTimeCallback([](const std::string& current_time) {
+    std::cout << "current_time=" <<current_time <<  std::endl;
+});
+```
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+A `current_time` signal can be emitted by calling the server's `emitCurrentTimeSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
+
+```cpp
+auto currentTimeFuture = server.emitCurrentTimeSignal("apples");
+currentTimeFuture.wait(); // Optional, to block until signal is sent.
 ```
 
 </details>

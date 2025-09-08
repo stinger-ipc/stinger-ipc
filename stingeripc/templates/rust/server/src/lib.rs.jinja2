@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 {%endif%}
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
 use serde_json;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc{%if stinger.properties|length > 0 %}, watch{%endif%}};
 {%endif%}
 use tokio::task::JoinError;
 
@@ -55,8 +55,10 @@ struct {{stinger.name | UpperCamelCase}}Properties {
     {{prop_name | snake_case}}_topic: Arc<String>,
     {%-if prop.arg_list | length > 1%}
     {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.rust_type}}>>>,
+    {{prop_name | snake_case}}_tx_channel: watch::Sender<{{prop.rust_type}}>,
     {%-else%}
     {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.arg_list[0].rust_type}}>>>,
+    {{prop_name | snake_case}}_tx_channel: watch::Sender<{{prop.arg_list[0].rust_type}}>,
     {%endif%}
     {%-endfor%}
 }
@@ -134,11 +136,10 @@ impl{%if stinger.methods|length > 0%}<T: Send + Sync + Clone + 'static> {{stinge
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
             {{prop_name | snake_case}}_topic: Arc::new(String::from("{{prop.value_topic}}")),
-            {%if prop.arg_list | length > 1 -%}
+
             {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
-            {%else%}
-            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
-            {%-endif%}
+            {{prop_name | snake_case}}_tx_channel: watch::channel().0,
+
         {%-endfor%}
         };
         {%endif%}
@@ -229,7 +230,7 @@ impl{%if stinger.methods|length > 0%}<T: Send + Sync + Clone + 'static> {{stinge
         {%endif%}
     }
     {%if not prop.read_only %}
-    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, msg: ReceivedMessage, _state: Arc<Mutex<T>>)
+    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, msg: ReceivedMessage)
     {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(&payload_str).unwrap();
@@ -247,7 +248,7 @@ impl{%if stinger.methods|length > 0%}<T: Send + Sync + Clone + 'static> {{stinge
         let data2 = new_data;
         {%endif%}
         let _ = tokio::spawn(async move {
-            {{stinger.rust.server_struct_name}}::<T>::publish_{{prop_name}}_value(publisher2, topic2, data2).await;
+            {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data2).await;
         });
     }
     {%endif%}{# not read only property #}
@@ -305,7 +306,7 @@ impl{%if stinger.methods|length > 0%}<T: Send + Sync + Clone + 'static> {{stinge
                 {%-endfor%}{# methods #}
                 {%-for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
                 {%if not loop.first or (stinger.methods | length > 0) %}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_update {
-                    {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), msg, state.clone()).await;
+                    {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), msg).await;
                 }
                 {%-endif%}{%endfor%}{# properties #}
             }

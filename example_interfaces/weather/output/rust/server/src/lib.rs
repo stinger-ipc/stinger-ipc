@@ -13,7 +13,7 @@ use weather_types::payloads::{MethodResultCode, *};
 use std::sync::{Arc, Mutex};
 
 use serde_json;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, watch};
 
 use tokio::task::JoinError;
 
@@ -68,20 +68,28 @@ impl<T> Clone for WeatherServerMethodHandlers<T> {
 struct WeatherProperties {
     location_topic: Arc<String>,
     location: Arc<Mutex<Option<LocationProperty>>>,
+    location_tx_channel: watch::Sender<LocationProperty>,
     current_temperature_topic: Arc<String>,
     current_temperature: Arc<Mutex<Option<f32>>>,
+    current_temperature_tx_channel: watch::Sender<f32>,
     current_condition_topic: Arc<String>,
     current_condition: Arc<Mutex<Option<CurrentConditionProperty>>>,
+    current_condition_tx_channel: watch::Sender<CurrentConditionProperty>,
     daily_forecast_topic: Arc<String>,
     daily_forecast: Arc<Mutex<Option<DailyForecastProperty>>>,
+    daily_forecast_tx_channel: watch::Sender<DailyForecastProperty>,
     hourly_forecast_topic: Arc<String>,
     hourly_forecast: Arc<Mutex<Option<HourlyForecastProperty>>>,
+    hourly_forecast_tx_channel: watch::Sender<HourlyForecastProperty>,
     current_condition_refresh_interval_topic: Arc<String>,
     current_condition_refresh_interval: Arc<Mutex<Option<i32>>>,
+    current_condition_refresh_interval_tx_channel: watch::Sender<i32>,
     hourly_forecast_refresh_interval_topic: Arc<String>,
     hourly_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
+    hourly_forecast_refresh_interval_tx_channel: watch::Sender<i32>,
     daily_forecast_refresh_interval_topic: Arc<String>,
     daily_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
+    daily_forecast_refresh_interval_tx_channel: watch::Sender<i32>,
 }
 
 #[derive(Clone)]
@@ -226,39 +234,47 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
 
         let property_values = WeatherProperties {
             location_topic: Arc::new(String::from("weather/property/location/value")),
-            location: Arc::new(Mutex::new(None)),
 
+            location: Arc::new(Mutex::new(None)),
+            location_tx_channel: watch::channel().0,
             current_temperature_topic: Arc::new(String::from(
                 "weather/property/currentTemperature/value",
             )),
 
             current_temperature: Arc::new(Mutex::new(None)),
+            current_temperature_tx_channel: watch::channel().0,
             current_condition_topic: Arc::new(String::from(
                 "weather/property/currentCondition/value",
             )),
+
             current_condition: Arc::new(Mutex::new(None)),
-
+            current_condition_tx_channel: watch::channel().0,
             daily_forecast_topic: Arc::new(String::from("weather/property/dailyForecast/value")),
+
             daily_forecast: Arc::new(Mutex::new(None)),
-
+            daily_forecast_tx_channel: watch::channel().0,
             hourly_forecast_topic: Arc::new(String::from("weather/property/hourlyForecast/value")),
-            hourly_forecast: Arc::new(Mutex::new(None)),
 
+            hourly_forecast: Arc::new(Mutex::new(None)),
+            hourly_forecast_tx_channel: watch::channel().0,
             current_condition_refresh_interval_topic: Arc::new(String::from(
                 "weather/property/currentConditionRefreshInterval/value",
             )),
 
             current_condition_refresh_interval: Arc::new(Mutex::new(None)),
+            current_condition_refresh_interval_tx_channel: watch::channel().0,
             hourly_forecast_refresh_interval_topic: Arc::new(String::from(
                 "weather/property/hourlyForecastRefreshInterval/value",
             )),
 
             hourly_forecast_refresh_interval: Arc::new(Mutex::new(None)),
+            hourly_forecast_refresh_interval_tx_channel: watch::channel().0,
             daily_forecast_refresh_interval_topic: Arc::new(String::from(
                 "weather/property/dailyForecastRefreshInterval/value",
             )),
 
             daily_forecast_refresh_interval: Arc::new(Mutex::new(None)),
+            daily_forecast_refresh_interval_tx_channel: watch::channel().0,
         };
 
         WeatherServer {
@@ -453,7 +469,6 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<LocationProperty>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: LocationProperty = serde_json::from_str(&payload_str).unwrap();
@@ -465,7 +480,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         let data2 = new_data;
 
         let _ = tokio::spawn(async move {
-            WeatherServer::<T>::publish_location_value(publisher2, topic2, data2).await;
+            WeatherServer::publish_location_value(publisher2, topic2, data2).await;
         });
     }
 
@@ -611,7 +626,6 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: CurrentConditionRefreshIntervalProperty =
@@ -622,7 +636,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
         let _ = tokio::spawn(async move {
-            WeatherServer::<T>::publish_current_condition_refresh_interval_value(
+            WeatherServer::publish_current_condition_refresh_interval_value(
                 publisher2, topic2, data2,
             )
             .await;
@@ -670,7 +684,6 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: HourlyForecastRefreshIntervalProperty =
@@ -681,7 +694,7 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
         let _ = tokio::spawn(async move {
-            WeatherServer::<T>::publish_hourly_forecast_refresh_interval_value(
+            WeatherServer::publish_hourly_forecast_refresh_interval_value(
                 publisher2, topic2, data2,
             )
             .await;
@@ -729,7 +742,6 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
         msg: ReceivedMessage,
-        _state: Arc<Mutex<T>>,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: DailyForecastRefreshIntervalProperty =
@@ -740,10 +752,8 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
         let _ = tokio::spawn(async move {
-            WeatherServer::<T>::publish_daily_forecast_refresh_interval_value(
-                publisher2, topic2, data2,
-            )
-            .await;
+            WeatherServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data2)
+                .await;
         });
     }
 
@@ -828,7 +838,6 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
                         properties.location_topic.clone(),
                         properties.location.clone(),
                         msg,
-                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id
@@ -839,7 +848,6 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
                         properties.current_condition_refresh_interval_topic.clone(),
                         properties.current_condition_refresh_interval.clone(),
                         msg,
-                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id
@@ -850,7 +858,6 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
                         properties.hourly_forecast_refresh_interval_topic.clone(),
                         properties.hourly_forecast_refresh_interval.clone(),
                         msg,
-                        state.clone(),
                     )
                     .await;
                 } else if msg.subscription_id
@@ -861,7 +868,6 @@ impl<T: Send + Sync + Clone + 'static> WeatherServer<T> {
                         properties.daily_forecast_refresh_interval_topic.clone(),
                         properties.daily_forecast_refresh_interval.clone(),
                         msg,
-                        state.clone(),
                     )
                     .await;
                 }

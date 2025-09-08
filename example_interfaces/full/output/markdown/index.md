@@ -1,9 +1,90 @@
 # _Full_ API Overview
 
+[[_TOC_]]
+
+## Connections
+
+A connection object is a wrapper around an MQTT client and provides specific functionality to support both clients and servers.
+Generally, you only need one connection object per daemon/program, as it can support multiple clients and servers.  
+
+### Connection code Examples
+
+<details>
+  <summary>Python</summary>
+
+```python
+from connection import LocalConnection
+
+connection_object = LocalConnection()
+```
+
+The `connection_object` will be passed to client and server constructors.
+
+</details>
+
+<details>
+  <summary>C++</summary>
+
+```c++
+#include "broker.hpp"
+
+auto connection_object = std::make_shared<LocalConnection>("Full");
+```
+
+The `connection_object` will be passed to client and server constructors.
+
+</details>
+
+## Server
+
+A server is a _provider_ of functionality.  It sends signals, handles method calls, and owns property values.
+
+### Server Code Examples
+
+<details>
+  <summary>Python Server</summary>
+
+```python
+from fullipc.client import FullServer
+
+server = FullServer(connection_object)
+```
+
+The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
+
+A full example can be viewed by looking at the `if __name__ == "__main__":` section of the generated `fullipc.server.py` module.
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+
+A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+```c++
+
+```
+
+The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
+
+A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
+
+</details>
+
+## Client
+
+
+
 
 ## Signals
 
-Signals are messages from the server to clients.
+Signals are messages from a server to clients.
 
 ```plantuml
 @startuml
@@ -27,6 +108,8 @@ _No documentation for this signal_
 <details>
   <summary>Python Client</summary>
 
+The `todayIs` signal can be subscribed to by using the client's `receive_today_is` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
+
 ```python
 @client.receive_today_is
 def on_today_is(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
@@ -36,10 +119,62 @@ def on_today_is(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
 </details>
 
 <details>
+  <summary>Python Server</summary>
+
+A server can emit a `todayIs` signal simply by calling the server's `emit_today_is` method.
+
+```python
+server.emit_today_is(42, stinger_types.DayOfTheWeek.MONDAY)
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
+
+Since receiving a message through the channel blocks, it may be best to put this into a separate async task.
+
+```rust
+let mut today_is_signal_rx = client.get_today_is_receiver();
+print("Got a 'todayIs' signal: {:?}", today_is_signal_rx.recv().await);
+```
+
+</details>
+
+<details>
   <summary>Rust Server</summary>
+
+A server can emit a `todayIs` signal simply by calling the server's `emit_today_is` method.
 
 ```rust
 server.emit_today_is(42, Some(DayOfTheWeek::Monday)).await;
+```
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A client can register a callback function to be called when a `todayIs` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
+
+```cpp
+client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek) {
+    std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" << "None" <<  std::endl;
+});
+```
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+A `todayIs` signal can be emitted by calling the server's `emitTodayIsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
+
+```cpp
+auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::MONDAY);
+todayIsFuture.wait(); // Optional, to block until signal is sent.
 ```
 
 </details>
