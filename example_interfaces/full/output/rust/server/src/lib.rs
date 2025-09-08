@@ -274,6 +274,7 @@ impl FullServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
+        watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -283,9 +284,15 @@ impl FullServer {
         let publisher2 = publisher.clone();
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.number;
+        let data_to_send_to_watchers = data2.clone();
+        let _ = watch_sender.send(Some(data_to_send_to_watchers));
         let _ = tokio::spawn(async move {
             FullServer::publish_favorite_number_value(publisher2, topic2, data2).await;
         });
+    }
+
+    pub async fn watch_favorite_number(&self) -> watch::Receiver<Option<i32>> {
+        self.properties.favorite_number_tx_channel.subscribe()
     }
 
     pub async fn set_favorite_number(&mut self, data: i32) {
@@ -295,6 +302,12 @@ impl FullServer {
             let mut locked_data = prop.lock().unwrap();
             *locked_data = Some(data.clone());
         }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .favorite_number_tx_channel
+            .send(Some(data_to_send_to_watchers));
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.favorite_number_topic.as_ref().clone();
@@ -319,6 +332,7 @@ impl FullServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         data: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
+        watch_sender: watch::Sender<Option<FavoriteFoodsProperty>>,
         msg: ReceivedMessage,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -330,9 +344,15 @@ impl FullServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data;
 
+        let data_to_send_to_watchers = data2.clone();
+        let _ = watch_sender.send(Some(data_to_send_to_watchers));
         let _ = tokio::spawn(async move {
             FullServer::publish_favorite_foods_value(publisher2, topic2, data2).await;
         });
+    }
+
+    pub async fn watch_favorite_foods(&self) -> watch::Receiver<Option<FavoriteFoodsProperty>> {
+        self.properties.favorite_foods_tx_channel.subscribe()
     }
 
     pub async fn set_favorite_foods(&mut self, data: FavoriteFoodsProperty) {
@@ -342,6 +362,12 @@ impl FullServer {
             let mut locked_data = prop.lock().unwrap();
             *locked_data = Some(data.clone());
         }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .favorite_foods_tx_channel
+            .send(Some(data_to_send_to_watchers));
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
@@ -366,6 +392,7 @@ impl FullServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         data: Arc<Mutex<Option<LunchMenuProperty>>>,
+        watch_sender: watch::Sender<Option<LunchMenuProperty>>,
         msg: ReceivedMessage,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -377,9 +404,15 @@ impl FullServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data;
 
+        let data_to_send_to_watchers = data2.clone();
+        let _ = watch_sender.send(Some(data_to_send_to_watchers));
         let _ = tokio::spawn(async move {
             FullServer::publish_lunch_menu_value(publisher2, topic2, data2).await;
         });
+    }
+
+    pub async fn watch_lunch_menu(&self) -> watch::Receiver<Option<LunchMenuProperty>> {
+        self.properties.lunch_menu_tx_channel.subscribe()
     }
 
     pub async fn set_lunch_menu(&mut self, data: LunchMenuProperty) {
@@ -389,6 +422,12 @@ impl FullServer {
             let mut locked_data = prop.lock().unwrap();
             *locked_data = Some(data.clone());
         }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .lunch_menu_tx_channel
+            .send(Some(data_to_send_to_watchers));
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
@@ -445,6 +484,7 @@ impl FullServer {
                         publisher.clone(),
                         properties.favorite_number_topic.clone(),
                         properties.favorite_number.clone(),
+                        properties.favorite_number_tx_channel.clone(),
                         msg,
                     )
                     .await;
@@ -453,6 +493,7 @@ impl FullServer {
                         publisher.clone(),
                         properties.favorite_foods_topic.clone(),
                         properties.favorite_foods.clone(),
+                        properties.favorite_foods_tx_channel.clone(),
                         msg,
                     )
                     .await;
@@ -461,6 +502,7 @@ impl FullServer {
                         publisher.clone(),
                         properties.lunch_menu_topic.clone(),
                         properties.lunch_menu.clone(),
+                        properties.lunch_menu_tx_channel.clone(),
                         msg,
                     )
                     .await;

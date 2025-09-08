@@ -387,6 +387,7 @@ impl WeatherServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         data: Arc<Mutex<Option<LocationProperty>>>,
+        watch_sender: watch::Sender<Option<LocationProperty>>,
         msg: ReceivedMessage,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -398,9 +399,15 @@ impl WeatherServer {
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data;
 
+        let data_to_send_to_watchers = data2.clone();
+        let _ = watch_sender.send(Some(data_to_send_to_watchers));
         let _ = tokio::spawn(async move {
             WeatherServer::publish_location_value(publisher2, topic2, data2).await;
         });
+    }
+
+    pub async fn watch_location(&self) -> watch::Receiver<Option<LocationProperty>> {
+        self.properties.location_tx_channel.subscribe()
     }
 
     pub async fn set_location(&mut self, data: LocationProperty) {
@@ -410,6 +417,12 @@ impl WeatherServer {
             let mut locked_data = prop.lock().unwrap();
             *locked_data = Some(data.clone());
         }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .location_tx_channel
+            .send(Some(data_to_send_to_watchers));
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.location_topic.as_ref().clone();
@@ -438,6 +451,12 @@ impl WeatherServer {
             *locked_data = Some(data.clone());
         }
 
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .current_temperature_tx_channel
+            .send(Some(data_to_send_to_watchers));
+
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.current_temperature_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
@@ -464,6 +483,12 @@ impl WeatherServer {
             let mut locked_data = prop.lock().unwrap();
             *locked_data = Some(data.clone());
         }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .current_condition_tx_channel
+            .send(Some(data_to_send_to_watchers));
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.current_condition_topic.as_ref().clone();
@@ -492,6 +517,12 @@ impl WeatherServer {
             *locked_data = Some(data.clone());
         }
 
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .daily_forecast_tx_channel
+            .send(Some(data_to_send_to_watchers));
+
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.daily_forecast_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
@@ -519,6 +550,12 @@ impl WeatherServer {
             *locked_data = Some(data.clone());
         }
 
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .hourly_forecast_tx_channel
+            .send(Some(data_to_send_to_watchers));
+
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.hourly_forecast_topic.as_ref().clone();
         let _ = tokio::spawn(async move {
@@ -544,6 +581,7 @@ impl WeatherServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
+        watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -554,12 +592,20 @@ impl WeatherServer {
         let publisher2 = publisher.clone();
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
+        let data_to_send_to_watchers = data2.clone();
+        let _ = watch_sender.send(Some(data_to_send_to_watchers));
         let _ = tokio::spawn(async move {
             WeatherServer::publish_current_condition_refresh_interval_value(
                 publisher2, topic2, data2,
             )
             .await;
         });
+    }
+
+    pub async fn watch_current_condition_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+        self.properties
+            .current_condition_refresh_interval_tx_channel
+            .subscribe()
     }
 
     pub async fn set_current_condition_refresh_interval(&mut self, data: i32) {
@@ -569,6 +615,12 @@ impl WeatherServer {
             let mut locked_data = prop.lock().unwrap();
             *locked_data = Some(data.clone());
         }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .current_condition_refresh_interval_tx_channel
+            .send(Some(data_to_send_to_watchers));
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self
@@ -602,6 +654,7 @@ impl WeatherServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
+        watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -612,12 +665,20 @@ impl WeatherServer {
         let publisher2 = publisher.clone();
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
+        let data_to_send_to_watchers = data2.clone();
+        let _ = watch_sender.send(Some(data_to_send_to_watchers));
         let _ = tokio::spawn(async move {
             WeatherServer::publish_hourly_forecast_refresh_interval_value(
                 publisher2, topic2, data2,
             )
             .await;
         });
+    }
+
+    pub async fn watch_hourly_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+        self.properties
+            .hourly_forecast_refresh_interval_tx_channel
+            .subscribe()
     }
 
     pub async fn set_hourly_forecast_refresh_interval(&mut self, data: i32) {
@@ -627,6 +688,12 @@ impl WeatherServer {
             let mut locked_data = prop.lock().unwrap();
             *locked_data = Some(data.clone());
         }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .hourly_forecast_refresh_interval_tx_channel
+            .send(Some(data_to_send_to_watchers));
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self
@@ -658,6 +725,7 @@ impl WeatherServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         data: Arc<Mutex<Option<i32>>>,
+        watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -668,10 +736,18 @@ impl WeatherServer {
         let publisher2 = publisher.clone();
         let topic2: String = topic.as_ref().clone();
         let data2 = new_data.seconds;
+        let data_to_send_to_watchers = data2.clone();
+        let _ = watch_sender.send(Some(data_to_send_to_watchers));
         let _ = tokio::spawn(async move {
             WeatherServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data2)
                 .await;
         });
+    }
+
+    pub async fn watch_daily_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+        self.properties
+            .daily_forecast_refresh_interval_tx_channel
+            .subscribe()
     }
 
     pub async fn set_daily_forecast_refresh_interval(&mut self, data: i32) {
@@ -681,6 +757,12 @@ impl WeatherServer {
             let mut locked_data = prop.lock().unwrap();
             *locked_data = Some(data.clone());
         }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .daily_forecast_refresh_interval_tx_channel
+            .send(Some(data_to_send_to_watchers));
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self
@@ -749,6 +831,7 @@ impl WeatherServer {
                         publisher.clone(),
                         properties.location_topic.clone(),
                         properties.location.clone(),
+                        properties.location_tx_channel.clone(),
                         msg,
                     )
                     .await;
@@ -759,6 +842,9 @@ impl WeatherServer {
                         publisher.clone(),
                         properties.current_condition_refresh_interval_topic.clone(),
                         properties.current_condition_refresh_interval.clone(),
+                        properties
+                            .current_condition_refresh_interval_tx_channel
+                            .clone(),
                         msg,
                     )
                     .await;
@@ -769,6 +855,9 @@ impl WeatherServer {
                         publisher.clone(),
                         properties.hourly_forecast_refresh_interval_topic.clone(),
                         properties.hourly_forecast_refresh_interval.clone(),
+                        properties
+                            .hourly_forecast_refresh_interval_tx_channel
+                            .clone(),
                         msg,
                     )
                     .await;
@@ -779,6 +868,9 @@ impl WeatherServer {
                         publisher.clone(),
                         properties.daily_forecast_refresh_interval_topic.clone(),
                         properties.daily_forecast_refresh_interval.clone(),
+                        properties
+                            .daily_forecast_refresh_interval_tx_channel
+                            .clone(),
                         msg,
                     )
                     .await;

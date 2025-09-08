@@ -78,7 +78,11 @@
     "ostream": "cpp"
   },
   "cSpell.words": [
+    "elif",
+    "mpsc",
     "Mqttier",
-    "serde"
+    "retval",
+    "serde",
+    "usize"
   ]
 }

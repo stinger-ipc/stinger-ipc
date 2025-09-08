@@ -201,7 +201,7 @@ impl {{stinger.rust.server_struct_name}} {
         {%endif%}
     }
     {%if not prop.read_only %}
-    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, msg: ReceivedMessage)
+    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, watch_sender: watch::Sender<Option<{{prop.rust_type}}>>, msg: ReceivedMessage)
     {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         let new_data: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(&payload_str).unwrap();
@@ -218,10 +218,17 @@ impl {{stinger.rust.server_struct_name}} {
         {%-else%}
         let data2 = new_data;
         {%endif%}
+        let data_to_send_to_watchers = data2.clone();
+        let _ = watch_sender.send(Some(data_to_send_to_watchers));
         let _ = tokio::spawn(async move {
             {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data2).await;
         });
     }
+
+    pub async fn watch_{{prop_name}}(&self) -> watch::Receiver<Option<{{prop.rust_type}}>> {
+        self.properties.{{prop_name}}_tx_channel.subscribe()
+    }
+    
     {%endif%}{# not read only property #}
     pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) {
         println!("Setting {{prop_name}} of type {{prop.rust_type}}");
@@ -230,6 +237,9 @@ impl {{stinger.rust.server_struct_name}} {
             let mut locked_data = prop.lock().unwrap();
             *locked_data = Some(data.clone());
         }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self.properties.{{prop_name}}_tx_channel.send(Some(data_to_send_to_watchers));
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.{{prop_name}}_topic.as_ref().clone();
@@ -277,7 +287,7 @@ impl {{stinger.rust.server_struct_name}} {
                 {%-endfor%}{# methods #}
                 {%-for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
                 {%if not loop.first or (stinger.methods | length > 0) %}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_update {
-                    {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), msg).await;
+                    {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), properties.{{prop_name | snake_case}}_tx_channel.clone(), msg).await;
                 }
                 {%-endif%}{%endfor%}{# properties #}
             }
