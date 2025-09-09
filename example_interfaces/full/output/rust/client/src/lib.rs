@@ -339,16 +339,43 @@ impl FullClient {
         self.properties.favorite_number_tx_channel.subscribe()
     }
 
+    pub fn set_favorite_number(&mut self, value: i32) -> Result<(), MethodResultCode> {
+        let data = value;
+        let _publish_result = self
+            .mqttier_client
+            .publish_structure("full/property/favoriteNumber/setValue".to_string(), &data);
+        Ok(())
+    }
+
     /// Watch for changes to the `favorite_foods` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_favorite_foods(&self) -> watch::Receiver<Option<FavoriteFoodsProperty>> {
         self.properties.favorite_foods_tx_channel.subscribe()
     }
 
+    pub fn set_favorite_foods(
+        &mut self,
+        value: FavoriteFoodsProperty,
+    ) -> Result<(), MethodResultCode> {
+        let data = value;
+        let _publish_result = self
+            .mqttier_client
+            .publish_structure("full/property/favoriteFoods/setValue".to_string(), &data);
+        Ok(())
+    }
+
     /// Watch for changes to the `lunch_menu` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_lunch_menu(&self) -> watch::Receiver<Option<LunchMenuProperty>> {
         self.properties.lunch_menu_tx_channel.subscribe()
+    }
+
+    pub fn set_lunch_menu(&mut self, value: LunchMenuProperty) -> Result<(), MethodResultCode> {
+        let data = value;
+        let _publish_result = self
+            .mqttier_client
+            .publish_structure("full/property/lunchMenu/setValue".to_string(), &data);
+        Ok(())
     }
 
     /// Starts the tasks that process messages received.

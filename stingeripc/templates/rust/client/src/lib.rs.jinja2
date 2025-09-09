@@ -256,6 +256,13 @@ impl {{stinger.rust.client_struct_name}} {
     pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>> {
         self.properties.{{prop_name | snake_case}}_tx_channel.subscribe()
     }
+    {%if not prop.read_only %}
+    pub fn set_{{prop_name | snake_case}}(&mut self, value: {%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}) -> Result<(), MethodResultCode> {
+        let data = {%if prop.arg_list | length > 1 %}value{% else %}value{% endif %};
+        let _publish_result = self.mqttier_client.publish_structure("{{prop.update_topic}}".to_string(), &data);
+        Ok(())
+    }
+    {%endif%}
     {%endfor%}
 
     /// Starts the tasks that process messages received.

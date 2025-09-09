@@ -505,6 +505,14 @@ impl WeatherClient {
         self.properties.location_tx_channel.subscribe()
     }
 
+    pub fn set_location(&mut self, value: LocationProperty) -> Result<(), MethodResultCode> {
+        let data = value;
+        let _publish_result = self
+            .mqttier_client
+            .publish_structure("weather/property/location/setValue".to_string(), &data);
+        Ok(())
+    }
+
     /// Watch for changes to the `current_temperature` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_current_temperature(&self) -> watch::Receiver<Option<f32>> {
@@ -537,6 +545,18 @@ impl WeatherClient {
             .subscribe()
     }
 
+    pub fn set_current_condition_refresh_interval(
+        &mut self,
+        value: i32,
+    ) -> Result<(), MethodResultCode> {
+        let data = value;
+        let _publish_result = self.mqttier_client.publish_structure(
+            "weather/property/currentConditionRefreshInterval/setValue".to_string(),
+            &data,
+        );
+        Ok(())
+    }
+
     /// Watch for changes to the `hourly_forecast_refresh_interval` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_hourly_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
@@ -545,12 +565,36 @@ impl WeatherClient {
             .subscribe()
     }
 
+    pub fn set_hourly_forecast_refresh_interval(
+        &mut self,
+        value: i32,
+    ) -> Result<(), MethodResultCode> {
+        let data = value;
+        let _publish_result = self.mqttier_client.publish_structure(
+            "weather/property/hourlyForecastRefreshInterval/setValue".to_string(),
+            &data,
+        );
+        Ok(())
+    }
+
     /// Watch for changes to the `daily_forecast_refresh_interval` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_daily_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
         self.properties
             .daily_forecast_refresh_interval_tx_channel
             .subscribe()
+    }
+
+    pub fn set_daily_forecast_refresh_interval(
+        &mut self,
+        value: i32,
+    ) -> Result<(), MethodResultCode> {
+        let data = value;
+        let _publish_result = self.mqttier_client.publish_structure(
+            "weather/property/dailyForecastRefreshInterval/setValue".to_string(),
+            &data,
+        );
+        Ok(())
     }
 
     /// Starts the tasks that process messages received.
