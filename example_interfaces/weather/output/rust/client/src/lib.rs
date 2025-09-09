@@ -15,7 +15,7 @@ use uuid::Uuid;
 use weather_types::{MethodResultCode, *};
 
 use std::sync::{Arc, Mutex};
-use tokio::sync::{broadcast, mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc, oneshot, watch};
 use tokio::task::JoinError;
 
 /// This struct is used to store all the MQTTv5 subscription ids
@@ -49,16 +49,25 @@ struct WeatherSignalChannels {
 #[derive(Clone)]
 pub struct WeatherProperties {
     pub location: Arc<Mutex<Option<LocationProperty>>>,
+    location_tx_channel: watch::Sender<Option<LocationProperty>>,
     pub current_temperature: Arc<Mutex<Option<f32>>>,
 
+    current_temperature_tx_channel: watch::Sender<Option<f32>>,
     pub current_condition: Arc<Mutex<Option<CurrentConditionProperty>>>,
+    current_condition_tx_channel: watch::Sender<Option<CurrentConditionProperty>>,
     pub daily_forecast: Arc<Mutex<Option<DailyForecastProperty>>>,
+    daily_forecast_tx_channel: watch::Sender<Option<DailyForecastProperty>>,
     pub hourly_forecast: Arc<Mutex<Option<HourlyForecastProperty>>>,
+    hourly_forecast_tx_channel: watch::Sender<Option<HourlyForecastProperty>>,
     pub current_condition_refresh_interval: Arc<Mutex<Option<i32>>>,
 
+    current_condition_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
     pub hourly_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
 
+    hourly_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
     pub daily_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
+
+    daily_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
 }
 
 /// This is the struct for our API client.
@@ -246,19 +255,25 @@ impl WeatherClient {
 
         let property_values = WeatherProperties {
             location: Arc::new(Mutex::new(None)),
+            location_tx_channel: watch::channel(None).0,
 
             current_temperature: Arc::new(Mutex::new(None)),
+            current_temperature_tx_channel: watch::channel(None).0,
             current_condition: Arc::new(Mutex::new(None)),
-
+            current_condition_tx_channel: watch::channel(None).0,
             daily_forecast: Arc::new(Mutex::new(None)),
-
+            daily_forecast_tx_channel: watch::channel(None).0,
             hourly_forecast: Arc::new(Mutex::new(None)),
+            hourly_forecast_tx_channel: watch::channel(None).0,
 
             current_condition_refresh_interval: Arc::new(Mutex::new(None)),
+            current_condition_refresh_interval_tx_channel: watch::channel(None).0,
 
             hourly_forecast_refresh_interval: Arc::new(Mutex::new(None)),
+            hourly_forecast_refresh_interval_tx_channel: watch::channel(None).0,
 
             daily_forecast_refresh_interval: Arc::new(Mutex::new(None)),
+            daily_forecast_refresh_interval_tx_channel: watch::channel(None).0,
         };
 
         // Create structure for subscription ids.
@@ -484,6 +499,60 @@ impl WeatherClient {
         }
     }
 
+    /// Watch for changes to the `location` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_location(&self) -> watch::Receiver<Option<LocationProperty>> {
+        self.properties.location_tx_channel.subscribe()
+    }
+
+    /// Watch for changes to the `current_temperature` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_current_temperature(&self) -> watch::Receiver<Option<f32>> {
+        self.properties.current_temperature_tx_channel.subscribe()
+    }
+
+    /// Watch for changes to the `current_condition` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_current_condition(&self) -> watch::Receiver<Option<CurrentConditionProperty>> {
+        self.properties.current_condition_tx_channel.subscribe()
+    }
+
+    /// Watch for changes to the `daily_forecast` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_daily_forecast(&self) -> watch::Receiver<Option<DailyForecastProperty>> {
+        self.properties.daily_forecast_tx_channel.subscribe()
+    }
+
+    /// Watch for changes to the `hourly_forecast` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_hourly_forecast(&self) -> watch::Receiver<Option<HourlyForecastProperty>> {
+        self.properties.hourly_forecast_tx_channel.subscribe()
+    }
+
+    /// Watch for changes to the `current_condition_refresh_interval` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_current_condition_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+        self.properties
+            .current_condition_refresh_interval_tx_channel
+            .subscribe()
+    }
+
+    /// Watch for changes to the `hourly_forecast_refresh_interval` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_hourly_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+        self.properties
+            .hourly_forecast_refresh_interval_tx_channel
+            .subscribe()
+    }
+
+    /// Watch for changes to the `daily_forecast_refresh_interval` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_daily_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+        self.properties
+            .daily_forecast_refresh_interval_tx_channel
+            .subscribe()
+    }
+
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&self) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
@@ -542,7 +611,9 @@ impl WeatherClient {
                     let pl: LocationProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let mut guard = props.location.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.location_tx_channel.send(Some(pl));
                 } else if msg.subscription_id == sub_ids.current_temperature_property_value {
                     let pl: f32 =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
@@ -550,22 +621,30 @@ impl WeatherClient {
                         .current_temperature
                         .lock()
                         .expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.current_temperature_tx_channel.send(Some(pl));
                 } else if msg.subscription_id == sub_ids.current_condition_property_value {
                     let pl: CurrentConditionProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let mut guard = props.current_condition.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.current_condition_tx_channel.send(Some(pl));
                 } else if msg.subscription_id == sub_ids.daily_forecast_property_value {
                     let pl: DailyForecastProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let mut guard = props.daily_forecast.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.daily_forecast_tx_channel.send(Some(pl));
                 } else if msg.subscription_id == sub_ids.hourly_forecast_property_value {
                     let pl: HourlyForecastProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let mut guard = props.hourly_forecast.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.hourly_forecast_tx_channel.send(Some(pl));
                 } else if msg.subscription_id
                     == sub_ids.current_condition_refresh_interval_property_value
                 {
@@ -575,7 +654,11 @@ impl WeatherClient {
                         .current_condition_refresh_interval
                         .lock()
                         .expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props
+                        .current_condition_refresh_interval_tx_channel
+                        .send(Some(pl));
                 } else if msg.subscription_id
                     == sub_ids.hourly_forecast_refresh_interval_property_value
                 {
@@ -585,7 +668,11 @@ impl WeatherClient {
                         .hourly_forecast_refresh_interval
                         .lock()
                         .expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props
+                        .hourly_forecast_refresh_interval_tx_channel
+                        .send(Some(pl));
                 } else if msg.subscription_id
                     == sub_ids.daily_forecast_refresh_interval_property_value
                 {
@@ -595,7 +682,11 @@ impl WeatherClient {
                         .daily_forecast_refresh_interval
                         .lock()
                         .expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props
+                        .daily_forecast_refresh_interval_tx_channel
+                        .send(Some(pl));
                 }
             }
         });

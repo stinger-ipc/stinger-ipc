@@ -15,7 +15,7 @@ use uuid::Uuid;
 use full_types::{MethodResultCode, *};
 
 use std::sync::{Arc, Mutex};
-use tokio::sync::{broadcast, mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc, oneshot, watch};
 use tokio::task::JoinError;
 
 /// This struct is used to store all the MQTTv5 subscription ids
@@ -44,8 +44,11 @@ struct FullSignalChannels {
 pub struct FullProperties {
     pub favorite_number: Arc<Mutex<Option<i32>>>,
 
+    favorite_number_tx_channel: watch::Sender<Option<i32>>,
     pub favorite_foods: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
+    favorite_foods_tx_channel: watch::Sender<Option<FavoriteFoodsProperty>>,
     pub lunch_menu: Arc<Mutex<Option<LunchMenuProperty>>>,
+    lunch_menu_tx_channel: watch::Sender<Option<LunchMenuProperty>>,
 }
 
 /// This is the struct for our API client.
@@ -155,9 +158,11 @@ impl FullClient {
 
         let property_values = FullProperties {
             favorite_number: Arc::new(Mutex::new(None)),
+            favorite_number_tx_channel: watch::channel(None).0,
             favorite_foods: Arc::new(Mutex::new(None)),
-
+            favorite_foods_tx_channel: watch::channel(None).0,
             lunch_menu: Arc::new(Mutex::new(None)),
+            lunch_menu_tx_channel: watch::channel(None).0,
         };
 
         // Create structure for subscription ids.
@@ -328,6 +333,24 @@ impl FullClient {
         }
     }
 
+    /// Watch for changes to the `favorite_number` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_favorite_number(&self) -> watch::Receiver<Option<i32>> {
+        self.properties.favorite_number_tx_channel.subscribe()
+    }
+
+    /// Watch for changes to the `favorite_foods` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_favorite_foods(&self) -> watch::Receiver<Option<FavoriteFoodsProperty>> {
+        self.properties.favorite_foods_tx_channel.subscribe()
+    }
+
+    /// Watch for changes to the `lunch_menu` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_lunch_menu(&self) -> watch::Receiver<Option<LunchMenuProperty>> {
+        self.properties.lunch_menu_tx_channel.subscribe()
+    }
+
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&self) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
@@ -376,17 +399,23 @@ impl FullClient {
                     let pl: i32 =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let mut guard = props.favorite_number.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.favorite_number_tx_channel.send(Some(pl));
                 } else if msg.subscription_id == sub_ids.favorite_foods_property_value {
                     let pl: FavoriteFoodsProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let mut guard = props.favorite_foods.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.favorite_foods_tx_channel.send(Some(pl));
                 } else if msg.subscription_id == sub_ids.lunch_menu_property_value {
                     let pl: LunchMenuProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let mut guard = props.lunch_menu.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.lunch_menu_tx_channel.send(Some(pl));
                 }
             }
         });

@@ -18,7 +18,7 @@ use serde_json;
 use {{stinger.rust.common_package_name}}::{MethodResultCode, *};
 
 use std::sync::{Arc, Mutex};
-use tokio::sync::{broadcast, mpsc{%if stinger.methods|length > 0 -%}, oneshot{%endif-%}};
+use tokio::sync::{broadcast, mpsc{%if stinger.methods|length > 0 -%}, oneshot{%endif-%}{%if stinger.properties|length > 0 -%}, watch{%endif-%}};
 use tokio::task::JoinError;
 
 /// This struct is used to store all the MQTTv5 subscription ids
@@ -56,6 +56,7 @@ pub struct {{stinger.name | UpperCamelCase}}Properties {
     {%-else%}
     pub {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.arg_list[0].rust_type}}>>>,
     {%endif%}
+    {{prop_name | snake_case}}_tx_channel: watch::Sender<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>>,
     {%-endfor%}
 }
 {%endif%}
@@ -125,9 +126,10 @@ impl {{stinger.rust.client_struct_name}} {
         {%-for prop_name, prop in stinger.properties.items()%}
             {%if prop.arg_list | length > 1 -%}
             {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
-            {%else%}
+            {%-else%}
             {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
-            {%-endif%}
+            {%-endif-%}
+            {{prop_name | snake_case}}_tx_channel: watch::channel(None).0,
         {%-endfor%}
         };
         {%endif%}
@@ -248,6 +250,13 @@ impl {{stinger.rust.client_struct_name}} {
         }
     }
     {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    /// Watch for changes to the `{{prop_name}}` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>> {
+        self.properties.{{prop_name | snake_case}}_tx_channel.subscribe()
+    }
+    {%endfor%}
 
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&self) -> Result<(), JoinError> {
@@ -293,7 +302,9 @@ impl {{stinger.rust.client_struct_name}} {
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
                     let pl: {{prop.rust_type}} =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let mut guard = props.{{prop_name | snake_case}}.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl);
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl));
                 }
                 {%endfor%}
             }   
