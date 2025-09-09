@@ -11,4 +11,6 @@ pub trait WeatherMethodHandlers: Send + Sync {
 
     /// Pointer to a function to handle the refresh_current_conditions method request.
     fn handle_refresh_current_conditions(&self) -> Result<(), MethodResultCode>;
+
+    fn as_any(&self) -> &dyn Any;
 }

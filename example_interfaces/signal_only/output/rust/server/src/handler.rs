@@ -7,4 +7,6 @@ use signal_only_types::payloads::MethodResultCode;
 pub trait SignalOnlyMethodHandlers: Send + Sync {
 
     
+
+    fn as_any(&self) -> &dyn Any;
 }

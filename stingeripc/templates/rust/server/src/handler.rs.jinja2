@@ -15,4 +15,6 @@ pub trait {{stinger.name | UpperCamelCase }}MethodHandlers: Send + Sync {
     fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode>;
     
     {%endfor%}
+
+    fn as_any(&self) -> &dyn Any;
 }

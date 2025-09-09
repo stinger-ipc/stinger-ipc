@@ -18,4 +18,6 @@ pub trait FullMethodHandlers: Send + Sync {
         &self,
         a_string: String,
     ) -> Result<DoSomethingReturnValue, MethodResultCode>;
+
+    fn as_any(&self) -> &dyn Any;
 }
