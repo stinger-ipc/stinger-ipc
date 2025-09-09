@@ -29,6 +29,19 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
+  <summary>Rust</summary>
+
+```rust
+use mqttier::MqttierClient;
+
+MqttierClient::new("localhost", 1883, Some("mqtt_client_id".to_string())).expect("Failed to create MQTT client");
+```
+
+The `connection_object` will be passed to client and server constructors.
+
+</details>
+
+<details>
   <summary>C++</summary>
 
 ```c++{%set broker = stinger.get_example_broker()%}
@@ -62,13 +75,7 @@ A full example can be viewed by looking at the `if __name__ == "__main__":` sect
 
 </details>
 
-<details>
-  <summary>C++ Client</summary>
 
-
-A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
-
-</details>
 
 <details>
   <summary>C++ Server</summary>
@@ -84,6 +91,26 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 </details>
 
 ## Client
+
+A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
+
+<details>
+  <summary>Rust</summary>
+
+```rust
+let {%if stinger.methods|length > 0%}mut {%endif%}api_client = {{stinger.rust.client_struct_name}}::new(&mut connection).await;
+```
+
+A full example can be viewed by looking at the generated `client/examples/client.rs` file.
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A full example can be viewed by looking at the generated `examples/client_main.cpp` file.
+
+</details>
 
 {%macro argrow(arg) -%}
 |{{arg.name|center(15)}}|
@@ -230,6 +257,55 @@ There is no return value for this method call.
 {%else-%}
 The return value type is `{{method.return_value.json_type}}`.
 {%endif-%}
+
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `{{method_name}}` method can be called by calling the clients's `{{method_name|snake_case}}` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to '{{method_name|snake_case}}' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `{{method_name}}` method by using the `@server.handle_{{method_name|snake_case}}` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_{{method_name | snake_case}} 
+def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_type}}:
+    """ This is an example handler for the '{{method_name}}' method.  """
+    print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
+    return {{method.get_return_value_random_example_value('python')}}
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `{{stinger.rust.client_struct_name}}` provides an implementation for the `{{method_name}}` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.{{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang='rust')}}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
+println!("{{method_name}} response: {:?}", result);
+```
+
+</details>
+
 {%endfor-%}
 {%endif%}
 {#- ------------------------------------------------------- #}

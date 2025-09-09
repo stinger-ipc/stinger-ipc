@@ -23,6 +23,19 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
+  <summary>Rust</summary>
+
+```rust
+use mqttier::MqttierClient;
+
+MqttierClient::new("localhost", 1883, Some("mqtt_client_id".to_string())).expect("Failed to create MQTT client");
+```
+
+The `connection_object` will be passed to client and server constructors.
+
+</details>
+
+<details>
   <summary>C++</summary>
 
 ```c++
@@ -56,13 +69,7 @@ A full example can be viewed by looking at the `if __name__ == "__main__":` sect
 
 </details>
 
-<details>
-  <summary>C++ Client</summary>
 
-
-A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
-
-</details>
 
 <details>
   <summary>C++ Server</summary>
@@ -78,6 +85,26 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 </details>
 
 ## Client
+
+A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
+
+<details>
+  <summary>Rust</summary>
+
+```rust
+let mut api_client = FullClient::new(&mut connection).await;
+```
+
+A full example can be viewed by looking at the generated `client/examples/client.rs` file.
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A full example can be viewed by looking at the generated `examples/client_main.cpp` file.
+
+</details>
 
 
 
@@ -206,6 +233,54 @@ _No documentation for this method_
 #### Return Parameters
 
 The return value type is `integer`.
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `addNumbers` method can be called by calling the clients's `add_numbers` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.add_numbers(first=42, second=42, third=42)
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'add_numbers' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `addNumbers` method by using the `@server.handle_add_numbers` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_add_numbers 
+def add_numbers(first: int, second: int, third: int | None) -> int:
+    """ This is an example handler for the 'addNumbers' method.  """
+    print(f"Running add_numbers'({first}, {second}, {third})'")
+    return 42
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `FullClient` provides an implementation for the `addNumbers` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.add_numbers(42, 42, Some(42)).await.expect("Failed to call addNumbers");
+println!("addNumbers response: {:?}", result);
+```
+
+</details>
+
 
 ### Method `doSomething`
 
@@ -224,6 +299,54 @@ _No documentation for this method_
 |     label     |  string  ||
 |   identifier  | integer  ||
 |      day      |[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `doSomething` method can be called by calling the clients's `do_something` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.do_something(aString="apples")
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'do_something' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `doSomething` method by using the `@server.handle_do_something` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_do_something 
+def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
+    """ This is an example handler for the 'doSomething' method.  """
+    print(f"Running do_something'({aString})'")
+    return ['"apples"', 42, 'stinger_types.DayOfTheWeek.MONDAY']
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `FullClient` provides an implementation for the `doSomething` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.do_something("apples".to_string()).await.expect("Failed to call doSomething");
+println!("doSomething response: {:?}", result);
+```
+
+</details>
+
 
 ## Properties
 

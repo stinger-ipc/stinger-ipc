@@ -23,6 +23,19 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
+  <summary>Rust</summary>
+
+```rust
+use mqttier::MqttierClient;
+
+MqttierClient::new("localhost", 1883, Some("mqtt_client_id".to_string())).expect("Failed to create MQTT client");
+```
+
+The `connection_object` will be passed to client and server constructors.
+
+</details>
+
+<details>
   <summary>C++</summary>
 
 ```c++
@@ -56,13 +69,7 @@ A full example can be viewed by looking at the `if __name__ == "__main__":` sect
 
 </details>
 
-<details>
-  <summary>C++ Client</summary>
 
-
-A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
-
-</details>
 
 <details>
   <summary>C++ Server</summary>
@@ -78,6 +85,26 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 </details>
 
 ## Client
+
+A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
+
+<details>
+  <summary>Rust</summary>
+
+```rust
+let mut api_client = WeatherClient::new(&mut connection).await;
+```
+
+A full example can be viewed by looking at the generated `client/examples/client.rs` file.
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A full example can be viewed by looking at the generated `examples/client_main.cpp` file.
+
+</details>
 
 
 
@@ -210,6 +237,54 @@ There are no arguments for this request.
 #### Return Parameters
 
 There is no return value for this method call.
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `refresh_daily_forecast` method can be called by calling the clients's `refresh_daily_forecast` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.refresh_daily_forecast()
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'refresh_daily_forecast' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `refresh_daily_forecast` method by using the `@server.handle_refresh_daily_forecast` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_refresh_daily_forecast 
+def refresh_daily_forecast() -> None:
+    """ This is an example handler for the 'refresh_daily_forecast' method.  """
+    print(f"Running refresh_daily_forecast'()'")
+    return None
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `WeatherClient` provides an implementation for the `refresh_daily_forecast` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.refresh_daily_forecast().await.expect("Failed to call refresh_daily_forecast");
+println!("refresh_daily_forecast response: {:?}", result);
+```
+
+</details>
+
 
 ### Method `refresh_hourly_forecast`
 
@@ -228,6 +303,54 @@ There are no arguments for this request.
 #### Return Parameters
 
 There is no return value for this method call.
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `refresh_hourly_forecast` method can be called by calling the clients's `refresh_hourly_forecast` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.refresh_hourly_forecast()
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'refresh_hourly_forecast' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `refresh_hourly_forecast` method by using the `@server.handle_refresh_hourly_forecast` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_refresh_hourly_forecast 
+def refresh_hourly_forecast() -> None:
+    """ This is an example handler for the 'refresh_hourly_forecast' method.  """
+    print(f"Running refresh_hourly_forecast'()'")
+    return None
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `WeatherClient` provides an implementation for the `refresh_hourly_forecast` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.refresh_hourly_forecast().await.expect("Failed to call refresh_hourly_forecast");
+println!("refresh_hourly_forecast response: {:?}", result);
+```
+
+</details>
+
 
 ### Method `refresh_current_conditions`
 
@@ -248,6 +371,54 @@ There are no arguments for this request.
 #### Return Parameters
 
 There is no return value for this method call.
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `refresh_current_conditions` method can be called by calling the clients's `refresh_current_conditions` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.refresh_current_conditions()
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'refresh_current_conditions' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `refresh_current_conditions` method by using the `@server.handle_refresh_current_conditions` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_refresh_current_conditions 
+def refresh_current_conditions() -> None:
+    """ This is an example handler for the 'refresh_current_conditions' method.  """
+    print(f"Running refresh_current_conditions'()'")
+    return None
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `WeatherClient` provides an implementation for the `refresh_current_conditions` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.refresh_current_conditions().await.expect("Failed to call refresh_current_conditions");
+println!("refresh_current_conditions response: {:?}", result);
+```
+
+</details>
+
 
 ## Properties
 
