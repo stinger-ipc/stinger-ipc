@@ -1,4 +1,4 @@
-
+use std::any::Any;
 use {{stinger.rust.common_package_name}}::payloads::MethodResultCode;
 {%for method_name, method in stinger.methods.items()-%}
 {%if method.return_value_type == "struct" -%}

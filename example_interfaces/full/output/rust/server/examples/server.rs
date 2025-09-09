@@ -4,19 +4,34 @@ on the next generation.
 
 It contains enumerations used by the Full interface.
 */
-use full_server::FullServer;
+use full_server::{FullMethodHandlers, FullServer};
 use futures::executor::block_on;
 use mqttier::MqttierClient;
+use std::any::Any;
 use tokio::time::{Duration, sleep};
 
-pub use full_server::handler::FullMethodHandlers;
+//use full_server::handler::FullMethodHandlers;
+//use full_server::init::Initializable;
 #[allow(unused_imports)]
 use full_types::payloads::{MethodResultCode, *};
 use std::sync::{Arc, Mutex};
 
-struct FullMethodImpl;
+struct FullMethodImpl {
+    server: Option<FullServer>,
+}
+
+impl FullMethodImpl {
+    fn new() -> Self {
+        Self { server: None }
+    }
+}
 
 impl FullMethodHandlers for FullMethodImpl {
+    fn initialize(&mut self, server: FullServer) -> Result<(), MethodResultCode> {
+        self.server = Some(server.clone());
+        Ok(())
+    }
+
     fn handle_add_numbers(
         &self,
         _first: i32,
@@ -39,6 +54,10 @@ impl FullMethodHandlers for FullMethodImpl {
         };
         Ok(rv)
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 #[tokio::main]
@@ -51,8 +70,8 @@ async fn main() {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
 
         let handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>> =
-            Arc::new(Mutex::new(Box::new(FullMethodImpl)));
-        let mut server = FullServer::new(&mut connection, handlers).await;
+            Arc::new(Mutex::new(Box::new(FullMethodImpl::new())));
+        let mut server = FullServer::new(&mut connection, handlers.clone()).await;
 
         println!("Setting initial value for property 'favorite_number'");
         server.set_favorite_number(42).await;
@@ -121,7 +140,7 @@ async fn main() {
         };
         server.set_lunch_menu(new_value).await;
 
-        let _server_loop_task = server.receive_loop().await;
+        let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop
 }

@@ -11,10 +11,11 @@ use mqttier::{MqttierClient{%if stinger.methods|length > 0 or stinger.properties
 
 #[allow(unused_imports)]
 use {{stinger.rust.common_package_name}}::payloads::{*, MethodResultCode};
-
+use std::any::Any;
 {%if stinger.methods|length > 0 %}
-pub mod handler;
-pub use handler::{{stinger.name | UpperCamelCase }}MethodHandlers;
+//pub mod handler;
+//pub mod init;
+//pub use handler::{{stinger.name | UpperCamelCase }}MethodHandlers;
 use std::sync::{Arc, Mutex};
 {%endif%}
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
@@ -228,7 +229,7 @@ impl {{stinger.rust.server_struct_name}} {
     pub async fn watch_{{prop_name}}(&self) -> watch::Receiver<Option<{{prop.rust_type}}>> {
         self.properties.{{prop_name}}_tx_channel.subscribe()
     }
-    
+
     {%endif%}{# not read only property #}
     pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) {
         println!("Setting {{prop_name}} of type {{prop.rust_type}}");
@@ -254,7 +255,7 @@ impl {{stinger.rust.server_struct_name}} {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+    pub async fn run_loop(&mut self) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
@@ -266,6 +267,7 @@ impl {{stinger.rust.server_struct_name}} {
 
         {%if stinger.methods|length > 0 -%}
         let method_handlers = self.method_handlers.clone();
+        self.method_handlers.lock().unwrap().initialize(self.clone()).expect("Failed to initialize method handlers");
         {%endif-%}
 
         let sub_ids = self.subscription_ids.clone();
@@ -301,3 +303,17 @@ impl {{stinger.rust.server_struct_name}} {
     }
 
 }
+{%if stinger.methods|length > 0 %}
+pub trait {{stinger.name | UpperCamelCase }}MethodHandlers: Send + Sync {
+
+    fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodResultCode>;
+
+    {%for method_name, method in stinger.methods.items()-%}
+    /// Pointer to a function to handle the {{method_name}} method request.
+    fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode>;
+    
+    {%endfor%}
+
+    fn as_any(&self) -> &dyn Any;
+}
+{%endif%}{# methods #}

@@ -6,17 +6,32 @@ It contains enumerations used by the weather interface.
 */
 use futures::executor::block_on;
 use mqttier::MqttierClient;
+use std::any::Any;
 use tokio::time::{Duration, sleep};
-use weather_server::WeatherServer;
+use weather_server::{WeatherMethodHandlers, WeatherServer};
 
+//use weather_server::handler::WeatherMethodHandlers;
+//use weather_server::init::Initializable;
 use std::sync::{Arc, Mutex};
-pub use weather_server::handler::WeatherMethodHandlers;
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
 
-struct WeatherMethodImpl;
+struct WeatherMethodImpl {
+    server: Option<WeatherServer>,
+}
+
+impl WeatherMethodImpl {
+    fn new() -> Self {
+        Self { server: None }
+    }
+}
 
 impl WeatherMethodHandlers for WeatherMethodImpl {
+    fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodResultCode> {
+        self.server = Some(server.clone());
+        Ok(())
+    }
+
     fn handle_refresh_daily_forecast(&self) -> Result<(), MethodResultCode> {
         println!("Handling refresh_daily_forecast");
         Ok(())
@@ -31,6 +46,10 @@ impl WeatherMethodHandlers for WeatherMethodImpl {
         println!("Handling refresh_current_conditions");
         Ok(())
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 #[tokio::main]
@@ -43,8 +62,8 @@ async fn main() {
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
 
         let handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers>>> =
-            Arc::new(Mutex::new(Box::new(WeatherMethodImpl)));
-        let mut server = WeatherServer::new(&mut connection, handlers).await;
+            Arc::new(Mutex::new(Box::new(WeatherMethodImpl::new())));
+        let mut server = WeatherServer::new(&mut connection, handlers.clone()).await;
 
         println!("Setting initial value for property 'location'");
         let new_value = LocationProperty {
@@ -211,7 +230,7 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'daily_forecast_refresh_interval'");
         server.set_daily_forecast_refresh_interval(2022).await;
-        let _server_loop_task = server.receive_loop().await;
+        let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop
 }

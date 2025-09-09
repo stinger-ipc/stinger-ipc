@@ -4,20 +4,37 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 */
+use std::any::Any;
 use futures::{executor::block_on};
 use mqttier::MqttierClient;
-use {{stinger.rust.server_package_name}}::{{stinger.rust.server_struct_name}};
+use {{stinger.rust.server_package_name}}::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
 use tokio::time::{sleep, Duration};
 {%if stinger.methods|length > 0%}
-pub use {{stinger.rust.server_package_name}}::handler::{{stinger.name | UpperCamelCase }}MethodHandlers;
+//use {{stinger.rust.server_package_name}}::handler::{{stinger.name | UpperCamelCase }}MethodHandlers;
+//use {{stinger.rust.server_package_name}}::init::Initializable;
 use std::sync::{Arc, Mutex};{%endif%}
 #[allow(unused_imports)]
 use {{stinger.rust.common_package_name}}::payloads::{MethodResultCode, *};
 
 {%if stinger.methods|length > 0%}
-struct {{stinger.name | UpperCamelCase }}MethodImpl;
+struct {{stinger.name | UpperCamelCase }}MethodImpl {
+    server: Option<{{stinger.rust.server_struct_name}}>,
+}
+
+impl {{stinger.name | UpperCamelCase }}MethodImpl {
+    fn new() -> Self {
+        Self {
+            server: None,
+        }
+    }
+}
 
 impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | UpperCamelCase }}MethodImpl {
+
+    fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodResultCode> {
+        self.server = Some(server.clone());
+        Ok(())
+    }
 
     {%for method_name, method in stinger.methods.items()%}
     fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
@@ -36,7 +53,13 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | Upper
         {%-endif%}
     }
     {%endfor%}
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
+
+
 {%endif%}
 
 
@@ -51,8 +74,8 @@ async fn main() {
         {%set broker = stinger.get_example_broker()%}
         let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
         {%if stinger.methods|length > 0%}
-        let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl)));
-        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, handlers).await;
+        let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
+        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, handlers.clone()).await;
         {%else%}
         let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection).await;
         {%endif%}
@@ -90,7 +113,7 @@ async fn main() {
         server.set_{{prop_name | snake_case}}(new_value).await;
         {%endif%}
         {%endfor%}{# property initialization -#}
-        let _server_loop_task = server.receive_loop().await;
+        let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop
 }

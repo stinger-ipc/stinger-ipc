@@ -7,11 +7,13 @@ This is the Server for the weather interface.
 
 use mqttier::{MqttierClient, ReceivedMessage};
 
+use std::any::Any;
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
 
-pub mod handler;
-pub use handler::WeatherMethodHandlers;
+//pub mod handler;
+//pub mod init;
+//pub use handler::WeatherMethodHandlers;
 use std::sync::{Arc, Mutex};
 
 use serde_json;
@@ -784,7 +786,7 @@ impl WeatherServer {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+    pub async fn run_loop(&mut self) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
@@ -798,6 +800,11 @@ impl WeatherServer {
         };
 
         let method_handlers = self.method_handlers.clone();
+        self.method_handlers
+            .lock()
+            .unwrap()
+            .initialize(self.clone())
+            .expect("Failed to initialize method handlers");
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqttier_client.clone();
 
@@ -883,4 +890,19 @@ impl WeatherServer {
         println!("Server receive loop completed [error?]");
         Ok(())
     }
+}
+
+pub trait WeatherMethodHandlers: Send + Sync {
+    fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodResultCode>;
+
+    /// Pointer to a function to handle the refresh_daily_forecast method request.
+    fn handle_refresh_daily_forecast(&self) -> Result<(), MethodResultCode>;
+
+    /// Pointer to a function to handle the refresh_hourly_forecast method request.
+    fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodResultCode>;
+
+    /// Pointer to a function to handle the refresh_current_conditions method request.
+    fn handle_refresh_current_conditions(&self) -> Result<(), MethodResultCode>;
+
+    fn as_any(&self) -> &dyn Any;
 }

@@ -9,9 +9,11 @@ use mqttier::{MqttierClient, ReceivedMessage};
 
 #[allow(unused_imports)]
 use full_types::payloads::{MethodResultCode, *};
+use std::any::Any;
 
-pub mod handler;
-pub use handler::FullMethodHandlers;
+//pub mod handler;
+//pub mod init;
+//pub use handler::FullMethodHandlers;
 use std::sync::{Arc, Mutex};
 
 use serde_json;
@@ -444,7 +446,7 @@ impl FullServer {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+    pub async fn run_loop(&mut self) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
@@ -458,6 +460,11 @@ impl FullServer {
         };
 
         let method_handlers = self.method_handlers.clone();
+        self.method_handlers
+            .lock()
+            .unwrap()
+            .initialize(self.clone())
+            .expect("Failed to initialize method handlers");
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqttier_client.clone();
 
@@ -515,4 +522,24 @@ impl FullServer {
         println!("Server receive loop completed [error?]");
         Ok(())
     }
+}
+
+pub trait FullMethodHandlers: Send + Sync {
+    fn initialize(&mut self, server: FullServer) -> Result<(), MethodResultCode>;
+
+    /// Pointer to a function to handle the addNumbers method request.
+    fn handle_add_numbers(
+        &self,
+        first: i32,
+        second: i32,
+        third: Option<i32>,
+    ) -> Result<i32, MethodResultCode>;
+
+    /// Pointer to a function to handle the doSomething method request.
+    fn handle_do_something(
+        &self,
+        a_string: String,
+    ) -> Result<DoSomethingReturnValue, MethodResultCode>;
+
+    fn as_any(&self) -> &dyn Any;
 }

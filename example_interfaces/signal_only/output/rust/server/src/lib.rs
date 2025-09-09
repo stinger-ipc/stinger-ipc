@@ -9,6 +9,7 @@ use mqttier::MqttierClient;
 
 #[allow(unused_imports)]
 use signal_only_types::payloads::{MethodResultCode, *};
+use std::any::Any;
 
 use tokio::task::JoinError;
 
@@ -49,7 +50,7 @@ impl SignalOnlyServer {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn receive_loop(&mut self) -> Result<(), JoinError> {
+    pub async fn run_loop(&mut self) -> Result<(), JoinError> {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 

@@ -7,6 +7,7 @@ It contains enumerations used by the SignalOnly interface.
 use futures::executor::block_on;
 use mqttier::MqttierClient;
 use signal_only_server::SignalOnlyServer;
+use std::any::Any;
 use tokio::time::{Duration, sleep};
 
 #[allow(unused_imports)]
@@ -29,7 +30,7 @@ async fn main() {
             .emit_another_signal(3.14, true, "apples".to_string())
             .await;
 
-        let _server_loop_task = server.receive_loop().await;
+        let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop
 }
