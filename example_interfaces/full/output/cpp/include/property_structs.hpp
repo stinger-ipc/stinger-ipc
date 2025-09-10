@@ -6,8 +6,29 @@ It contains enumerations used by the Full interface.
 */
 
 
-// Property<name=favorite_number values=[number]>
+#pragma once
+#include <string>
+#include "enums.hpp"
+#include "structs.hpp"
 
-// Property<name=favorite_foods values=[drink, slices_of_pizza, breakfast]>
 
-// Property<name=lunch_menu values=[monday, tuesday]>
+struct FavoriteNumberProperty {
+    int number;
+    
+};
+
+struct FavoriteFoodsProperty {
+    std::string drink;
+    
+    int slices_of_pizza;
+    
+    std::string breakfast;
+    
+};
+
+struct LunchMenuProperty {
+    Lunch monday;
+    
+    Lunch tuesday;
+    
+};

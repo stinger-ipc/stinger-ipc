@@ -5,6 +5,20 @@ on the next generation.
 It contains enumerations used by the {{stinger.name}} interface.
 */
 
-{%for prop_name, prop in stinger.properties.items() %}
-// {{prop}}
+
+#pragma once
+#include <string>
+#include "{{stinger.cpp.enum_header_file}}"
+#include "structs.hpp"
+
+{%for prop_name, prop in stinger.properties.items()%}
+struct {{prop.name | UpperCamelCase}}Property {
+{%-for arg in prop.arg_list %}
+    {%if arg.arg_type.name.lower() == "struct"-%}
+    {{arg.cpp_type}} {{arg.name}};
+    {%-else-%}
+    {{arg.cpp_temp_type}} {{arg.name}};
+    {%endif%}
+{%-endfor%}
+};
 {%endfor%}

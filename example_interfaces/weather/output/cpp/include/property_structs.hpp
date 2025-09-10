@@ -6,18 +6,62 @@ It contains enumerations used by the weather interface.
 */
 
 
-// Property<name=location values=[latitude, longitude]>
+#pragma once
+#include <string>
+#include "enums.hpp"
+#include "structs.hpp"
 
-// Property<name=current_temperature values=[temperature_f]>
 
-// Property<name=current_condition values=[condition, description]>
+struct LocationProperty {
+    double latitude;
+    
+    double longitude;
+    
+};
 
-// Property<name=daily_forecast values=[monday, tuesday, wednesday]>
+struct CurrentTemperatureProperty {
+    double temperature_f;
+    
+};
 
-// Property<name=hourly_forecast values=[hour_0, hour_1, hour_2, hour_3]>
+struct CurrentConditionProperty {
+    WeatherCondition condition;
+    
+    std::string description;
+    
+};
 
-// Property<name=current_condition_refresh_interval values=[seconds]>
+struct DailyForecastProperty {
+    ForecastForDay monday;
+    
+    ForecastForDay tuesday;
+    
+    ForecastForDay wednesday;
+    
+};
 
-// Property<name=hourly_forecast_refresh_interval values=[seconds]>
+struct HourlyForecastProperty {
+    ForecastForHour hour_0;
+    
+    ForecastForHour hour_1;
+    
+    ForecastForHour hour_2;
+    
+    ForecastForHour hour_3;
+    
+};
 
-// Property<name=daily_forecast_refresh_interval values=[seconds]>
+struct CurrentConditionRefreshIntervalProperty {
+    int seconds;
+    
+};
+
+struct HourlyForecastRefreshIntervalProperty {
+    int seconds;
+    
+};
+
+struct DailyForecastRefreshIntervalProperty {
+    int seconds;
+    
+};

@@ -5,3 +5,9 @@ on the next generation.
 It contains enumerations used by the SignalOnly interface.
 */
 
+
+#pragma once
+#include <string>
+#include "enums.hpp"
+#include "structs.hpp"
+

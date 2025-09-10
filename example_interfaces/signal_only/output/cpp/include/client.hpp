@@ -16,7 +16,7 @@ It contains enumerations used by the SignalOnly interface.
 #include <mutex>
 #include <rapidjson/document.h>
 #include <boost/uuid/uuid.hpp>
-
+#include <boost/atomic.hpp>
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
 #include "return_types.hpp"
@@ -39,6 +39,8 @@ public:
     // Register a callback for the `anotherSignal` signal.
     // The provided method will be called whenever a `anotherSignal` is received.
     void registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb);
+    
+
     
 
     

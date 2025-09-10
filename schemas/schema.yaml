@@ -4,7 +4,7 @@ description: |
   This schema is used to validate StingerIPC stinger files.
 type: object
 
-parameters:
+properties:
 
   stingeripc:
     type: object
@@ -67,25 +67,34 @@ parameters:
   enums:
     type: object
     additionalProperties:
-      type: array
-      items:
-        type: object
-        properties:
-          name:
-            type: string
-          description:
-            type: string
-        required: [name]
+      type: object
+      properties:
+        values:
+          type: array
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+            required:
+              - name
+        documentation:
+          $ref: "#/$defs/documentation"
+        required:
+          - values
 
   structures:
     type: object
     additionalProperties:
       type: object
       properties:
-        values:
+        members:
           $ref: "#/$defs/payload"
+        documentation:
+          $ref: "#/$defs/documentation"
       required:
-        - values
+        - members
 
   signals:
     type: object
@@ -115,59 +124,88 @@ $defs:
     type: array
     uniqueItems: true
     items:
-      type: object
-      required:
-        - "type"
-        - "name"
-      properties:
-        name:
-          type: string
-        description:
-          type: string
-      oneOf:
-        - properties:
-            type:
-              type: string
-              const: "float"
-            initialValue:
-              type: float
-        - properties:
-            type:
-              type: string
-              const: "string"
-            initialValue:
-              type: string
-        - properties:
-            type:
-              type: string
-              const: "integer"
-            initialValue:
-              type: integer
-        - properties:
-            type:
-              type: string
-              const: "boolean"
-            initialValue:
-              type: boolean
-        - properties:
-            type: 
-              type: string
-              const: "enum"
-            enumName:
-              type: string
-            initialValue:
-              type: string
-          required: ["enumName"]
-        - properties:
-            type: 
-              type: string
-              const: "struct"
-            structName:
-              type: string
-            initialValue:
-              type: object
-          required: ["enumName"]
-            
+      $ref: "#/$defs/arg"
+
+  genericArg:
+    type: object
+    required:
+      - "type"
+      - "name"
+    properties:
+      name:
+        type: string
+      optional:
+        type: boolean
+        default: false
+      description:
+        type: string
+      schema:
+        type: object
+        description: A JSON schema which further constrains the value.
+
+  primitiveArg:
+    properties:
+      type:
+        type: string
+        enum:
+          - float
+          - string
+          - integer
+          - boolean
+          - date
+          - time
+          - datetime
+          - duration
+          - binary
+
+  enumArg:
+    properties:
+      type:
+        type: string
+        const: "enum"
+      enumName:
+        type: string
+    required:
+      - enumName
+
+  structArg:
+    properties:
+      type:
+        type: string
+        const: "struct"
+      structName:
+        type: string
+    required:
+      - structName
+
+  listArg:
+    properties:
+      type:
+        type: string
+        const: "list"
+      itemType:
+        oneOf:
+          - $ref: "#/$defs/primitiveArg"
+          - $ref: "#/$defs/enumArg"
+          - $ref: "#/$defs/structArg"
+    required:
+      - itemType
+
+  arg:
+    oneOf:
+      - allOf:
+        - $ref: "#/$defs/genericArg"
+        - $ref: "#/$defs/primitiveArg"
+      - allOf:
+        - $ref: "#/$defs/genericArg"
+        - $ref: "#/$defs/enumArg"
+      - allOf:
+        - $ref: "#/$defs/genericArg"
+        - $ref: "#/$defs/structArg"
+      - allOf:
+        - $ref: "#/$defs/genericArg"
+        - $ref: "#/$defs/listArg"
+
   signal:
     type: object
     properties:
@@ -181,14 +219,14 @@ $defs:
     properties:
       documentation:
         $ref: "#/$defs/documentation"
-      payload:
-        allOf:
-          - $ref: "#/$defs/payload"
-          - items:
-              required: ["initialValue"]
+      values:
+        $ref: "#/$defs/payload"
+      readOnly:
+        type: boolean
+        default: false
     required:
-      - payload
-  
+      - values
+
   method:
     type: object
     properties:

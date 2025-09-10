@@ -16,7 +16,7 @@ It contains enumerations used by the weather interface.
 #include <mutex>
 #include <rapidjson/document.h>
 #include <boost/uuid/uuid.hpp>
-
+#include <boost/atomic.hpp>
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
 #include "return_types.hpp"
@@ -53,6 +53,32 @@ public:
     // Calls the `refresh_current_conditions` method.
     // Returns a future.  When that future resolves, it will have the returned value.
     boost::future<void> refreshCurrentConditions();
+    
+
+    
+    // Gets the current value of the `location` property.
+    boost::atomic<struct LocationProperty> location;
+    
+    // Gets the current value of the `current_temperature` property.
+    boost::atomic<struct CurrentTemperatureProperty> currentTemperature;
+    
+    // Gets the current value of the `current_condition` property.
+    boost::atomic<struct CurrentConditionProperty> currentCondition;
+    
+    // Gets the current value of the `daily_forecast` property.
+    boost::atomic<struct DailyForecastProperty> dailyForecast;
+    
+    // Gets the current value of the `hourly_forecast` property.
+    boost::atomic<struct HourlyForecastProperty> hourlyForecast;
+    
+    // Gets the current value of the `current_condition_refresh_interval` property.
+    boost::atomic<struct CurrentConditionRefreshIntervalProperty> currentConditionRefreshInterval;
+    
+    // Gets the current value of the `hourly_forecast_refresh_interval` property.
+    boost::atomic<struct HourlyForecastRefreshIntervalProperty> hourlyForecastRefreshInterval;
+    
+    // Gets the current value of the `daily_forecast_refresh_interval` property.
+    boost::atomic<struct DailyForecastRefreshIntervalProperty> dailyForecastRefreshInterval;
     
 private: 
     std::shared_ptr<IBrokerConnection> _broker;

@@ -16,7 +16,7 @@ It contains enumerations used by the Full interface.
 #include <mutex>
 #include <rapidjson/document.h>
 #include <boost/uuid/uuid.hpp>
-
+#include <boost/atomic.hpp>
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
 #include "return_types.hpp"
@@ -49,6 +49,17 @@ public:
     // Calls the `doSomething` method.
     // Returns a future.  When that future resolves, it will have the returned value.
     boost::future<DoSomethingReturnValue> doSomething(const std::string& aString);
+    
+
+    
+    // Gets the current value of the `favorite_number` property.
+    boost::atomic<struct FavoriteNumberProperty> favoriteNumber;
+    
+    // Gets the current value of the `favorite_foods` property.
+    boost::atomic<struct FavoriteFoodsProperty> favoriteFoods;
+    
+    // Gets the current value of the `lunch_menu` property.
+    boost::atomic<struct LunchMenuProperty> lunchMenu;
     
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
