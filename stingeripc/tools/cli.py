@@ -1,11 +1,14 @@
 
 import os
+from wsgiref.validate import validator
 from rich import print
 from pathlib import Path
 import typer
 from typing_extensions import Annotated
 from jacobsjinjatoo import templator as jj2
-
+from jacobsjsonschema.draft7 import Validator
+import yaml
+import yamlloader
 from stingeripc.interface import StingerInterface
 
 from . import markdown_generator
@@ -60,6 +63,23 @@ def generate(
     
 
     print(f"Generation for '{lang}' completed.")
+
+@app.command()
+def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)]):
+    """Validate a Stinger interface YAML file.
+
+    INPUT_FILE is the .stinger.yaml file
+    """
+    schema_file = Path(__file__).parent.parent / "schema" / "schema.yaml"
+    schema_obj = yaml.load(schema_file.open("r"), Loader=yamlloader.ordereddict.Loader)
+    validator = Validator(schema_obj, lazy_error_reporting=False)
+
+    input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
+    if result := validator.validate(input_obj):
+        print("Validated: ", result)
+    else:
+        for error in validator.get_errors():
+            print(error)
 
 @app.command()
 def hello():
