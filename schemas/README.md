@@ -7,16 +7,49 @@ Stinger files are YAML files that describe interfaces for inter-process communic
 Stinger files should be named with the `.stinger.yaml` extension to indicate their purpose and format.
 For example: `example_interface.stinger.yaml`
 
-## Types
+## Arguments
 
- * integer
- * boolean
- * string
- * float
- * struct (see below)
- * enum (see below)
- * list (coming soon)
+Structures, signals, methods, properties all take a list of arguments, though they might call the list different things:
 
+Structures: `members`
+Signals: `payload`
+Methods: Have both `arguments` and `returnValues`
+Properties: `values`
+
+All arguments have required `name` and `type` fields.  See below for valid `type` values.
+
+All arguments can have an optional `description` field which takes a string.  All arguments can have an optional `optional` field which takes a boolean; by default, arguments are not optional.
+
+Structs and enums must have respective`structName` and `enumName` fields, where the value is the name of a struct or enum as defined in the stinger file.
+
+Coming soon: Arguments can have a `schema` field consisting of JSON Schema.  The value of the argument is **runtime** evaluated against the schema.  The schema can restrict values.  For example, minimum and maximum on numbers, or a regex pattern on a string.
+
+Example:
+
+```yaml
+- name: nick
+  type: string
+  optional: true
+  description: A person's nick name
+- name: age
+  type: integer
+  description: A person's age in years.
+- name: address
+  type: struct
+  structName: addressFields
+```
+
+## Argument Types
+
+* integer
+* float
+* boolean
+* string
+* datetime (coming soon)
+* duration (coming soon)
+* struct (see below)
+* enum (see below)
+* list (coming soon)
 
 ## Structure
 
@@ -39,10 +72,12 @@ interface:
   version: 0.0.1
   title: Example Interface
   summary: An example Stinger interface
+  documentation: |
+    Markdown *documentation* can be provided.  It will be used in documentation and code generations.
 
 enums: {}
 
-structs: {}
+structures: {}
 
 signals: {}
 
@@ -88,11 +123,19 @@ structures:
 
 ## Signals
 
+Signals are messages from a server to clients.
+
+```plantuml
+@startuml
+Client <<- Server : Signal(Parameters)
+@enduml
+```
+
 ```yaml
 signals:
   PositionUpdated:
     documentation: Signal emitted when the position is updated
-    args:
+    payload:
       - name: position
         type: struct
         structName: Point
@@ -103,6 +146,17 @@ signals:
 ```
 
 ## Methods
+
+Methods are requests from a client to a server and the server provides a response back to the client:
+
+```plantuml
+@startuml
+Client ->> Server : Request(Parameters)
+Client <<-- Server: Response(Parameters)
+@enduml
+```
+
+Both `arguments` and `returnValues` are arrays which can have multiple elements.
 
 ```yaml
 methods:
@@ -121,6 +175,25 @@ methods:
 
 ## Properties
 
+Properties are values (or a set of values) held by the server.   They are re-published when the value changes. 
+
+```plantuml
+@startuml
+Server -> Server : Set_Property(value)
+Client <<- Server: Property_Updated(value)
+@enduml
+```
+
+If the property is not read only, the client may also request an update to a property.
+
+```plantuml
+@startuml
+Client ->> Server : Request_Property_Update(value)
+Server -> Server  : Set_property(value)
+Client <<- Server : Property_Updated(value)
+@enduml
+```
+
 ```yaml
 properties:
   position:
@@ -137,7 +210,12 @@ properties:
 ```
 
 ## Validation
+
 Stinger files can be validated against a schema to ensure they conform to the expected structure and types. 
+
+Install `uv` ([install instructions](https://docs.astral.sh/uv/getting-started/installation/)) to use the uvx tool.
+
+One line to validate your stinger file against the schema:
 
 ```bash
 uvx stinger validate path/to/your_file.stinger.yaml
