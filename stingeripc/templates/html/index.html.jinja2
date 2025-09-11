@@ -1,12 +1,40 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Standalone Devices (Demo)</title>
+    <title>{{stinger.name}} Web Interface</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
+  {%macro arglist(name, arg_list, ngmodel, ngprop, read_only) -%}
+  <table class="arglist">>
+  {%for arg in arg_list %}
+      <tr>
+        <td>{{ arg.name }}</td>
+        <td>
+        {%if arg.arg_type|lower == "argtype.primitive"%}
+          <input {%if read_only%}disabled {%endif%}type="text" id="{{ name |snake_case}}-arg-{{ arg.name }}" ng-model="{{ngmodel}}['{{name|lowerCamelCase}}'].{{ngprop}}['{{ arg.name }}']" />
+          {%elif arg.arg_type|lower == "argtype.enum"%}
+          <select {%if read_only%}disabled {%endif%}id="{{ name |snake_case}}-arg-{{ arg.name }}" ng-model="{{ngmodel}}['{{name|lowerCamelCase}}'].{{ngprop}}['{{ arg.name }}']">
+            {%for enum_value in arg.enum.values %}
+            <option value="{{ loop.index }}">{{ enum_value }}</option>
+            {%endfor%}
+          </select>
+          {%elif arg.arg_type|lower == "argtype.list"%}
+          <input {%if read_only%}disabled {%endif%}type="text" id="{{ name |snake_case}}-arg-{{ arg.name }}" ng-model="{{ngmodel}}['{{name|lowerCamelCase}}'].{{ngprop}}['{{ arg.name }}']" placeholder="Comma-separated values" />
+          {%elif arg.arg_type|lower == "argtype.struct"%}
+          <div class="struct-arg">
+            {{ arglist(arg.name, arg.members, "ngmodel + ['" + name|lowerCamelCase + "'].received", "", read_only) }}
+          </div>
+          {%else%}
+          <input {%if read_only%}disabled {%endif%}type="text" id="{{ name |snake_case}}-arg-{{ arg.name }}" ng-model="{{ngmodel}}['{{name|lowerCamelCase}}'].{{ngprop}}['{{ arg.name }}']" placeholder="(unknown type)" />
+          {%endif%} 
+      </td>
+    </tr>
+  {%endfor%}
+  </table>
+  {%- endmacro %}
   <body ng-app="myApp" ng-controller="myCtrl">
     <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
 
@@ -24,7 +52,9 @@
 {%endmarkdown%}
         {%endif%}
         </div>
-        <div class="last-signal-value" ng-bind="signals['{{sig_name|lowerCamelCase}}'].received"></div>
+        <div class="last-received signal-value">
+        {{ arglist(sig_name, sig.arg_list, 'signals', 'received', true) }}
+        </div>
     </div>
     {%endfor%}{# end signals loop #}
 
@@ -38,12 +68,7 @@
         {%endif%}
         </div>
         <div class="last-received property-value">
-          {%for arg in prop.arg_list %}
-            <div class="arg prop-arg">
-                <label for="{{ prop_name |snake_case}}-arg-{{ arg.name }}">{{ arg.name }}</label>
-                <input {%if prop.read_only%}disabled {%endif%}type="text" id="{{ prop_name |snake_case}}-arg-{{ arg.name }}" ng-model="properties['{{ prop_name|lowerCamelCase }}'].received['{{ arg.name }}']" />
-            </div>
-          {%endfor%}
+          {{ arglist(prop_name, prop.arg_list, 'properties', 'received', prop.read_only) }}
         </div>
         {%if not prop.read_only %}
         <input type="button" value="Update" ng-click="updateProperty('{{ prop_name | lowerCamelCase }}')" />
@@ -62,16 +87,13 @@
         </div>
         <div class="method-form-box">
             <form ng-submit="{{method_name}}MethodCall()">
-                {%for arg in method.arg_list %}
-                <div class="method-arg">
-                    <label for="{{ method_name |snake_case}}-arg-{{ arg.name }}">{{ arg.name }} ({{ arg.type }})</label>
-                    <input type="text" id="{{ method_name |snake_case}}-arg-{{ arg.name }}" ng-model="methods['{{ method_name|lowerCamelCase }}'].args['{{ arg.name }}']" />
-                </div>
-                {%endfor%}
+                {{ arglist(method_name, method.arg_list, 'methods', 'args', false) }}
                 <button type="submit">Call {{ method_name }}</button>
             </form>
         </div>
-        <div class="last-method-response" ng-bind="methods['{{ method_name }}'].received"></div>
+        <div class="last-received method-response" ng-bind="methods['{{ method_name }}'].received">
+        {{ arglist(method_name, method.return_values, 'methods', 'received', true) }}
+        </div>
     </div>
     {%endfor%} {# end methods loop #}
 

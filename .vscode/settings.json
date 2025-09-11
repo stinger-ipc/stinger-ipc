@@ -78,7 +78,10 @@
     "ostream": "cpp"
   },
   "cSpell.words": [
+    "arglist",
     "elif",
+    "endmacro",
+    "endmarkdown",
     "mpsc",
     "Mqttier",
     "retval",

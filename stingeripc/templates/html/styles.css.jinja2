@@ -225,4 +225,42 @@ td input.ng-invalid.ng-dirty {
     font-weight: 500;
     color: #2d4a6a;
 }
+
+.last-received, table.arglist {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+}
+.last-received .arg {
+    display: table-row;
+}
+.last-received .arg label,
+.last-received .arg input {
+    display: table-cell;
+    vertical-align: middle;
+    padding: 8px 10px;
+}
+.last-received .arg label {
+    width: 150px;
+    padding-left: 0;
+    color: #2d4a6a;
+    font-weight: 600;
+}
+.last-received .arg input {
+    width: 70%;
+    border: none; /* remove input cell borders */
+    background: transparent;
+    padding-right: 0;
+}
+/* show border between rows only */
+.last-received .arg:not(:last-child) {
+    border-bottom: 1px solid #d6dbe8;
+}
+
+/* make disabled inputs slightly muted but still readable */
+.last-received .arg input[disabled] {
+    background: transparent;
+    color: #4f4f4fff;
+}
+
 {%endraw%}

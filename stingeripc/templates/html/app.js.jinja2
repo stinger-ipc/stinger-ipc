@@ -36,7 +36,12 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "{{prop_name | lowerCamelCase}}": {
             "subscription_id": null,
             "name": "{{prop_name}}",
-            "received": null,
+            "received": { {%for arg in prop.arg_list %}
+                "{{arg.name}}": {
+                    "type": "{{arg.type}}",
+                    "value": null
+                }{%if not loop.last%},{%endif%}
+            {%endfor%} },
             "mqtt_topic": "{{prop.value_topic}}"
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
