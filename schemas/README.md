@@ -7,6 +7,17 @@ Stinger files are YAML files that describe interfaces for inter-process communic
 Stinger files should be named with the `.stinger.yaml` extension to indicate their purpose and format.
 For example: `example_interface.stinger.yaml`
 
+## Types
+
+ * integer
+ * boolean
+ * string
+ * float
+ * struct (see below)
+ * enum (see below)
+ * list (coming soon)
+
+
 ## Structure
 
 A Stinger file typically contains the following:
