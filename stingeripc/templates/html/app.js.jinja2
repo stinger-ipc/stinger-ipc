@@ -22,8 +22,19 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     $scope.timePattern = new RegExp("^[0-2][0-9]:[0-5][0-9]$");
     $scope.online = false;
+
+    $scope.enums = {
+        {%-for enum_name, enum in stinger.enums.items() %}
+        // {{enum}}
+        "{{enum_name | snake_case}}": [
+            {%-for e in enum.values %}
+            {"name": "{{e}}", "id": {{loop.index}} }{%if not loop.last%},{%endif%}
+            {%endfor-%}
+        ]{%if not loop.last%},{%endif%}
+    {%endfor-%} };
+
     $scope.signals = { {%-for sig_name, signal in stinger.signals.items() %}
-        "{{sig_name | lowerCamelCase}}": {
+        "{{sig_name | snake_case}}": {
             "subscription_id": null,
             "name": "{{sig_name}}",
             "received": null,
@@ -33,14 +44,13 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     {%endfor-%} };
 
     $scope.properties = { {%-for prop_name, prop in stinger.properties.items() %}
-        "{{prop_name | lowerCamelCase}}": {
+        "{{prop_name | snake_case}}": {
             "subscription_id": null,
             "name": "{{prop_name}}",
             "received": { {%for arg in prop.arg_list %}
-                "{{arg.name}}": {
-                    "type": "{{arg.type}}",
-                    "value": null
-                }{%if not loop.last%},{%endif%}
+                "{{arg.name|snake_case}}": {%if arg.type == "argtype.primitive"%}{%else%}{ {%for member in arg.members %}
+                    "{{member.name|snake_case}}": "{{member.value}}"{%if not loop.last%},{%endif%}
+                {%endfor%} }{%endif%}{%if not loop.last%},{%endif%}
             {%endfor%} },
             "mqtt_topic": "{{prop.value_topic}}"
         }{%if not loop.last%},{%endif%}
@@ -48,14 +58,14 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     $scope.methods = {
         {%-for method_name, method in stinger.methods.items() %}
-        "{{method_name | lowerCamelCase}}": {
+        "{{method_name | snake_case}}": {
             "subscription_id": null,
             "name": "{{method_name}}",
             "mqtt_topic": "{{method.topic}}",
             "response_topic": "{{method.response_topic('"+clientId+"')}}",
             "pending_correlation_id": null,
             "args": { {%-for arg in method.arg_list %}
-                "{{arg.name}}": {
+                "{{arg.name|snake_case}}": {
                     "type": "{{arg.type}}",
                     "value": null
                 }{%if not loop.last%},{%endif%}

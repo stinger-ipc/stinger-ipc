@@ -451,7 +451,7 @@ wheels = [
 
 [[package]]
 name = "stinger-ipc"
-version = "0.0.21.dev23"
+version = "0.0.21.dev66"
 source = { editable = "." }
 dependencies = [
     { name = "jacobs-jinja-too" },
