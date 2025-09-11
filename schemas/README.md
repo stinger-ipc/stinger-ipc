@@ -22,8 +22,6 @@ All arguments can have an optional `description` field which takes a string.  Al
 
 Structs and enums must have respective`structName` and `enumName` fields, where the value is the name of a struct or enum as defined in the stinger file.
 
-Coming soon: Arguments can have a `schema` field consisting of JSON Schema.  The value of the argument is **runtime** evaluated against the schema.  The schema can restrict values.  For example, minimum and maximum on numbers, or a regex pattern on a string.
-
 Example:
 
 ```yaml
@@ -39,7 +37,7 @@ Example:
   structName: addressFields
 ```
 
-## Argument Types
+### Argument Types
 
 * integer
 * float
@@ -50,6 +48,20 @@ Example:
 * struct (see below)
 * enum (see below)
 * list (coming soon)
+
+### Coming Soon: JSON Schema
+
+Coming soon: Arguments can have a `schema` field consisting of JSON Schema.  The value of the argument is **runtime** evaluated against the schema.  The schema can restrict values.  For example, minimum and maximum on numbers, or a regex pattern on a string.
+
+Example of an integer where, at runtime, the value is enforced to be between 1 and 12.
+
+```yaml
+- name: month
+  type: integer
+  schema:
+    minimum: 1
+    maximum: 12
+```
 
 ## Structure
 
@@ -207,6 +219,38 @@ properties:
         type: enum
         enumName: Color
         description: The color associated with the position.
+```
+
+### Coming Soon: Default Values
+
+At some point, we'd like properties to start off with a default value, though I'm uncertain whether those should be statically defined in the stinger file, loaded from a config file at runtime, or both.
+
+## Coming Soon: Stabilization
+
+You'll have the ability in a stinger file to specify which IPC components should be stable for external consumption.  Right now, stinger won't do much with components marked as stable, except to attach the version number to messages as an MQTTv5 user property.  However, in the future, it could create the following to support stabilization:
+
+* ACL lists
+* Protocol buffers
+* Export mappings
+
+Here is example of a signal marked as stable.  Each argument in the list is marked with an ID (for stabilizing protocol buffers).  Additionally, a `stable` field is provided on the signal.  It should include a `version` field which is a [semantic version](https://semver.org) for that component.  (Version should be at least 1.0.0 to be considered stable).  Additionally, a `consumers` field should be provided with is a list of who can consume the component.  This can be used to dictate whether the component is to be bridged to another broker, or ACL'ed for a client ID (those tools are not part of stinger).
+
+```yaml
+signals:
+  circle_created:
+    payload:
+      - name: color
+        type: enum
+        enumName: color
+        id: 1
+      - name: diameter
+        type: float
+        id: 2
+    stable:
+      version: 1.0.0
+      consumers:
+        - cloud
+        - automation
 ```
 
 ## Validation
