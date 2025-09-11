@@ -28,7 +28,5 @@ struct FavoriteFoodsProperty {
 
 struct LunchMenuProperty {
     Lunch monday;
-    
     Lunch tuesday;
-    
 };

@@ -33,22 +33,15 @@ struct CurrentConditionProperty {
 
 struct DailyForecastProperty {
     ForecastForDay monday;
-    
     ForecastForDay tuesday;
-    
     ForecastForDay wednesday;
-    
 };
 
 struct HourlyForecastProperty {
     ForecastForHour hour_0;
-    
     ForecastForHour hour_1;
-    
     ForecastForHour hour_2;
-    
     ForecastForHour hour_3;
-    
 };
 
 struct CurrentConditionRefreshIntervalProperty {

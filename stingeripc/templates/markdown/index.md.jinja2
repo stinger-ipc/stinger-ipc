@@ -339,8 +339,8 @@ This property is **read-only**.  It can only be modified by the server.{%endif%}
 
 {%for value in ie.values -%}
 * {{value}} ({{loop.index}}) 
-{%- if ie.value_descriptions and ie.value_descriptions|length >= loop.index %}
-  - {{ie.value_descriptions[loop.index0]}}{% endif %}
+{%- if ie.value_description(loop.index) %}
+  - {{ie.value_description(loop.index)}}{% endif %}
 {%endfor%}
 {%endfor%}
 {#- ------------------------------------------------------- #}

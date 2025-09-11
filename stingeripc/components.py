@@ -767,6 +767,11 @@ class InterfaceEnum:
     @property
     def values(self):
         return self._values
+    
+    def value_description(self, index: int) -> str | None:
+        if index < 0 or index >= len(self._value_descriptions):
+            return None
+        return self._value_descriptions[index]
 
     @classmethod
     def new_enum_from_stinger(cls, name, enum_spec: YamlIfaceEnum) -> InterfaceEnum:

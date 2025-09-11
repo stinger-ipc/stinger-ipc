@@ -22,8 +22,28 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     $scope.timePattern = new RegExp("^[0-2][0-9]:[0-5][0-9]$");
     $scope.online = false;
+
+    $scope.enums = {
+        // <stingeripc.components.InterfaceEnum object at 0x75ff25b1b8f0>
+        "weather_condition": [
+            {"name": "rainy", "id": 1 },
+            
+            {"name": "sunny", "id": 2 },
+            
+            {"name": "partly_cloudy", "id": 3 },
+            
+            {"name": "mostly_cloudy", "id": 4 },
+            
+            {"name": "overcast", "id": 5 },
+            
+            {"name": "windy", "id": 6 },
+            
+            {"name": "snowy", "id": 7 }
+            ]
+    };
+
     $scope.signals = {
-        "currentTime": {
+        "current_time": {
             "subscription_id": null,
             "name": "current_time",
             "received": null,
@@ -36,62 +56,146 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "location": {
             "subscription_id": null,
             "name": "location",
-            "received": null,
+            "received": { 
+                "latitude": {  },
+            
+                "longitude": {  }
+             },
             "mqtt_topic": "weather/property/location/value"
         },
     
-        "currentTemperature": {
+        "current_temperature": {
             "subscription_id": null,
             "name": "current_temperature",
-            "received": null,
+            "received": { 
+                "temperature_f": {  }
+             },
             "mqtt_topic": "weather/property/currentTemperature/value"
         },
     
-        "currentCondition": {
+        "current_condition": {
             "subscription_id": null,
             "name": "current_condition",
-            "received": null,
+            "received": { 
+                "condition": {  },
+            
+                "description": {  }
+             },
             "mqtt_topic": "weather/property/currentCondition/value"
         },
     
-        "dailyForecast": {
+        "daily_forecast": {
             "subscription_id": null,
             "name": "daily_forecast",
-            "received": null,
+            "received": { 
+                "monday": { 
+                    "high_temperature": "",
+                
+                    "low_temperature": "",
+                
+                    "condition": "",
+                
+                    "start_time": "",
+                
+                    "end_time": ""
+                 },
+            
+                "tuesday": { 
+                    "high_temperature": "",
+                
+                    "low_temperature": "",
+                
+                    "condition": "",
+                
+                    "start_time": "",
+                
+                    "end_time": ""
+                 },
+            
+                "wednesday": { 
+                    "high_temperature": "",
+                
+                    "low_temperature": "",
+                
+                    "condition": "",
+                
+                    "start_time": "",
+                
+                    "end_time": ""
+                 }
+             },
             "mqtt_topic": "weather/property/dailyForecast/value"
         },
     
-        "hourlyForecast": {
+        "hourly_forecast": {
             "subscription_id": null,
             "name": "hourly_forecast",
-            "received": null,
+            "received": { 
+                "hour_0": { 
+                    "temperature": "",
+                
+                    "starttime": "",
+                
+                    "condition": ""
+                 },
+            
+                "hour_1": { 
+                    "temperature": "",
+                
+                    "starttime": "",
+                
+                    "condition": ""
+                 },
+            
+                "hour_2": { 
+                    "temperature": "",
+                
+                    "starttime": "",
+                
+                    "condition": ""
+                 },
+            
+                "hour_3": { 
+                    "temperature": "",
+                
+                    "starttime": "",
+                
+                    "condition": ""
+                 }
+             },
             "mqtt_topic": "weather/property/hourlyForecast/value"
         },
     
-        "currentConditionRefreshInterval": {
+        "current_condition_refresh_interval": {
             "subscription_id": null,
             "name": "current_condition_refresh_interval",
-            "received": null,
+            "received": { 
+                "seconds": {  }
+             },
             "mqtt_topic": "weather/property/currentConditionRefreshInterval/value"
         },
     
-        "hourlyForecastRefreshInterval": {
+        "hourly_forecast_refresh_interval": {
             "subscription_id": null,
             "name": "hourly_forecast_refresh_interval",
-            "received": null,
+            "received": { 
+                "seconds": {  }
+             },
             "mqtt_topic": "weather/property/hourlyForecastRefreshInterval/value"
         },
     
-        "dailyForecastRefreshInterval": {
+        "daily_forecast_refresh_interval": {
             "subscription_id": null,
             "name": "daily_forecast_refresh_interval",
-            "received": null,
+            "received": { 
+                "seconds": {  }
+             },
             "mqtt_topic": "weather/property/dailyForecastRefreshInterval/value"
         }
     };
 
     $scope.methods = {
-        "refreshDailyForecast": {
+        "refresh_daily_forecast": {
             "subscription_id": null,
             "name": "refresh_daily_forecast",
             "mqtt_topic": "weather/method/refreshDailyForecast",
@@ -101,7 +205,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "refreshHourlyForecast": {
+        "refresh_hourly_forecast": {
             "subscription_id": null,
             "name": "refresh_hourly_forecast",
             "mqtt_topic": "weather/method/refreshHourlyForecast",
@@ -111,7 +215,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "refreshCurrentConditions": {
+        "refresh_current_conditions": {
             "subscription_id": null,
             "name": "refresh_current_conditions",
             "mqtt_topic": "weather/method/refreshCurrentConditions",

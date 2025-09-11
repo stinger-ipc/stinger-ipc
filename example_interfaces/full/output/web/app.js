@@ -22,8 +22,28 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     $scope.timePattern = new RegExp("^[0-2][0-9]:[0-5][0-9]$");
     $scope.online = false;
+
+    $scope.enums = {
+        // <stingeripc.components.InterfaceEnum object at 0x7fab96fb56a0>
+        "day_of_the_week": [
+            {"name": "Sunday", "id": 1 },
+            
+            {"name": "Monday", "id": 2 },
+            
+            {"name": "Tuesday", "id": 3 },
+            
+            {"name": "Wednesday", "id": 4 },
+            
+            {"name": "Thursday", "id": 5 },
+            
+            {"name": "Friday", "id": 6 },
+            
+            {"name": "Saturday", "id": 7 }
+            ]
+    };
+
     $scope.signals = {
-        "todayIs": {
+        "today_is": {
             "subscription_id": null,
             "name": "todayIs",
             "received": null,
@@ -33,30 +53,62 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     };
 
     $scope.properties = {
-        "favoriteNumber": {
+        "favorite_number": {
             "subscription_id": null,
             "name": "favorite_number",
-            "received": null,
+            "received": { 
+                "number": {  }
+             },
             "mqtt_topic": "full/property/favoriteNumber/value"
         },
     
-        "favoriteFoods": {
+        "favorite_foods": {
             "subscription_id": null,
             "name": "favorite_foods",
-            "received": null,
+            "received": { 
+                "drink": {  },
+            
+                "slices_of_pizza": {  },
+            
+                "breakfast": {  }
+             },
             "mqtt_topic": "full/property/favoriteFoods/value"
         },
     
-        "lunchMenu": {
+        "lunch_menu": {
             "subscription_id": null,
             "name": "lunch_menu",
-            "received": null,
+            "received": { 
+                "monday": { 
+                    "drink": "",
+                
+                    "sandwich": "",
+                
+                    "crackers": "",
+                
+                    "day": "",
+                
+                    "order_number": ""
+                 },
+            
+                "tuesday": { 
+                    "drink": "",
+                
+                    "sandwich": "",
+                
+                    "crackers": "",
+                
+                    "day": "",
+                
+                    "order_number": ""
+                 }
+             },
             "mqtt_topic": "full/property/lunchMenu/value"
         }
     };
 
     $scope.methods = {
-        "addNumbers": {
+        "add_numbers": {
             "subscription_id": null,
             "name": "addNumbers",
             "mqtt_topic": "full/method/addNumbers",
@@ -81,14 +133,14 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "doSomething": {
+        "do_something": {
             "subscription_id": null,
             "name": "doSomething",
             "mqtt_topic": "full/method/doSomething",
             "response_topic": "client/"+clientId+"/full/method/doSomething/response",
             "pending_correlation_id": null,
             "args": {
-                "aString": {
+                "a_string": {
                     "type": "ArgPrimitiveType.STRING",
                     "value": null
                 }

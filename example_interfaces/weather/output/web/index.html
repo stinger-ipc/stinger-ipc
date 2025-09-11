@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Standalone Devices (Demo)</title>
+    <title>weather Web Interface</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
+  
   <body ng-app="myApp" ng-controller="myCtrl">
     <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
 
@@ -23,7 +24,21 @@
 and time will be published.  (Mostly for example purposes).</p>
         
         </div>
-        <div class="last-signal-value" ng-bind="signals['currentTime'].received"></div>
+        <div class="last-received signal-value">
+        
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">current_time</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="signals.current_time.received.current_time" />
+         
+      </td>
+    </tr>
+  
+  </table>
+        </div>
     </div>
     
 
@@ -36,16 +51,27 @@ and time will be published.  (Mostly for example purposes).</p>
         </div>
         <div class="last-received property-value">
           
-            <div class="arg prop-arg">
-                <label for="location-arg-latitude">latitude</label>
-                <input type="text" id="location-arg-latitude" ng-model="properties['location'].received['latitude']" />
-            </div>
-          
-            <div class="arg prop-arg">
-                <label for="location-arg-longitude">longitude</label>
-                <input type="text" id="location-arg-longitude" ng-model="properties['location'].received['longitude']" />
-            </div>
-          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">latitude</td>
+      <td class="argvalue">
+        
+        <input type="text" ng-model="properties.location.received.latitude" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">longitude</td>
+      <td class="argvalue">
+        
+        <input type="text" ng-model="properties.location.received.longitude" />
+         
+      </td>
+    </tr>
+  
+  </table>
         </div>
         
         <input type="button" value="Update" ng-click="updateProperty('location')" />
@@ -62,11 +88,18 @@ adjusted based on the latest conditions at the nearest weather station.</p>
         </div>
         <div class="last-received property-value">
           
-            <div class="arg prop-arg">
-                <label for="current_temperature-arg-temperature_f">temperature_f</label>
-                <input disabled type="text" id="current_temperature-arg-temperature_f" ng-model="properties['currentTemperature'].received['temperature_f']" />
-            </div>
-          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">temperature_f</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.current_temperature.received.temperature_f" />
+         
+      </td>
+    </tr>
+  
+  </table>
         </div>
         
     </div>
@@ -80,16 +113,29 @@ updated about once per hour.</p>
         </div>
         <div class="last-received property-value">
           
-            <div class="arg prop-arg">
-                <label for="current_condition-arg-condition">condition</label>
-                <input disabled type="text" id="current_condition-arg-condition" ng-model="properties['currentCondition'].received['condition']" />
-            </div>
-          
-            <div class="arg prop-arg">
-                <label for="current_condition-arg-description">description</label>
-                <input disabled type="text" id="current_condition-arg-description" ng-model="properties['currentCondition'].received['description']" />
-            </div>
-          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">condition</td>
+      <td class="argvalue">
+        
+        <span ng-bind="properties.current_condition.received.condition"></span>
+        <select disabled ng-model="properties.current_condition.received.condition" ng-options="n.id as n.name for n in enums.weather_condition track by n.id">
+        </select>
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">description</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.current_condition.received.description" />
+         
+      </td>
+    </tr>
+  
+  </table>
         </div>
         
     </div>
@@ -105,21 +151,195 @@ will have a value for each day of the week.</p>
         </div>
         <div class="last-received property-value">
           
-            <div class="arg prop-arg">
-                <label for="daily_forecast-arg-monday">monday</label>
-                <input disabled type="text" id="daily_forecast-arg-monday" ng-model="properties['dailyForecast'].received['monday']" />
-            </div>
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">monday</td>
+      <td class="argvalue">
+        
+        <div class="struct-arg">
           
-            <div class="arg prop-arg">
-                <label for="daily_forecast-arg-tuesday">tuesday</label>
-                <input disabled type="text" id="daily_forecast-arg-tuesday" ng-model="properties['dailyForecast'].received['tuesday']" />
-            </div>
           
-            <div class="arg prop-arg">
-                <label for="daily_forecast-arg-wednesday">wednesday</label>
-                <input disabled type="text" id="daily_forecast-arg-wednesday" ng-model="properties['dailyForecast'].received['wednesday']" />
-            </div>
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">high_temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.monday.high_temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">low_temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.monday.low_temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">condition</td>
+      <td class="argvalue">
+        
+        <span ng-bind="properties.daily_forecast.received.monday.condition"></span>
+        <select disabled ng-model="properties.daily_forecast.received.monday.condition" ng-options="n.id as n.name for n in enums.weather_condition track by n.id">
+        </select>
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">start_time</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.monday.start_time" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">end_time</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.monday.end_time" />
+         
+      </td>
+    </tr>
+  
+  </table>
+        </div>
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">tuesday</td>
+      <td class="argvalue">
+        
+        <div class="struct-arg">
           
+          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">high_temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.tuesday.high_temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">low_temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.tuesday.low_temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">condition</td>
+      <td class="argvalue">
+        
+        <span ng-bind="properties.daily_forecast.received.tuesday.condition"></span>
+        <select disabled ng-model="properties.daily_forecast.received.tuesday.condition" ng-options="n.id as n.name for n in enums.weather_condition track by n.id">
+        </select>
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">start_time</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.tuesday.start_time" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">end_time</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.tuesday.end_time" />
+         
+      </td>
+    </tr>
+  
+  </table>
+        </div>
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">wednesday</td>
+      <td class="argvalue">
+        
+        <div class="struct-arg">
+          
+          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">high_temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.wednesday.high_temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">low_temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.wednesday.low_temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">condition</td>
+      <td class="argvalue">
+        
+        <span ng-bind="properties.daily_forecast.received.wednesday.condition"></span>
+        <select disabled ng-model="properties.daily_forecast.received.wednesday.condition" ng-options="n.id as n.name for n in enums.weather_condition track by n.id">
+        </select>
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">start_time</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.wednesday.start_time" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">end_time</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.daily_forecast.received.wednesday.end_time" />
+         
+      </td>
+    </tr>
+  
+  </table>
+        </div>
+         
+      </td>
+    </tr>
+  
+  </table>
         </div>
         
     </div>
@@ -134,26 +354,185 @@ hour.</p>
         </div>
         <div class="last-received property-value">
           
-            <div class="arg prop-arg">
-                <label for="hourly_forecast-arg-hour_0">hour_0</label>
-                <input disabled type="text" id="hourly_forecast-arg-hour_0" ng-model="properties['hourlyForecast'].received['hour_0']" />
-            </div>
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">hour_0</td>
+      <td class="argvalue">
+        
+        <div class="struct-arg">
           
-            <div class="arg prop-arg">
-                <label for="hourly_forecast-arg-hour_1">hour_1</label>
-                <input disabled type="text" id="hourly_forecast-arg-hour_1" ng-model="properties['hourlyForecast'].received['hour_1']" />
-            </div>
           
-            <div class="arg prop-arg">
-                <label for="hourly_forecast-arg-hour_2">hour_2</label>
-                <input disabled type="text" id="hourly_forecast-arg-hour_2" ng-model="properties['hourlyForecast'].received['hour_2']" />
-            </div>
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.hourly_forecast.received.hour_0.temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">starttime</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.hourly_forecast.received.hour_0.starttime" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">condition</td>
+      <td class="argvalue">
+        
+        <span ng-bind="properties.hourly_forecast.received.hour_0.condition"></span>
+        <select disabled ng-model="properties.hourly_forecast.received.hour_0.condition" ng-options="n.id as n.name for n in enums.weather_condition track by n.id">
+        </select>
+         
+      </td>
+    </tr>
+  
+  </table>
+        </div>
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">hour_1</td>
+      <td class="argvalue">
+        
+        <div class="struct-arg">
           
-            <div class="arg prop-arg">
-                <label for="hourly_forecast-arg-hour_3">hour_3</label>
-                <input disabled type="text" id="hourly_forecast-arg-hour_3" ng-model="properties['hourlyForecast'].received['hour_3']" />
-            </div>
           
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.hourly_forecast.received.hour_1.temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">starttime</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.hourly_forecast.received.hour_1.starttime" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">condition</td>
+      <td class="argvalue">
+        
+        <span ng-bind="properties.hourly_forecast.received.hour_1.condition"></span>
+        <select disabled ng-model="properties.hourly_forecast.received.hour_1.condition" ng-options="n.id as n.name for n in enums.weather_condition track by n.id">
+        </select>
+         
+      </td>
+    </tr>
+  
+  </table>
+        </div>
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">hour_2</td>
+      <td class="argvalue">
+        
+        <div class="struct-arg">
+          
+          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.hourly_forecast.received.hour_2.temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">starttime</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.hourly_forecast.received.hour_2.starttime" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">condition</td>
+      <td class="argvalue">
+        
+        <span ng-bind="properties.hourly_forecast.received.hour_2.condition"></span>
+        <select disabled ng-model="properties.hourly_forecast.received.hour_2.condition" ng-options="n.id as n.name for n in enums.weather_condition track by n.id">
+        </select>
+         
+      </td>
+    </tr>
+  
+  </table>
+        </div>
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">hour_3</td>
+      <td class="argvalue">
+        
+        <div class="struct-arg">
+          
+          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">temperature</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.hourly_forecast.received.hour_3.temperature" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">starttime</td>
+      <td class="argvalue">
+        
+        <input disabled type="text" ng-model="properties.hourly_forecast.received.hour_3.starttime" />
+         
+      </td>
+    </tr>
+  
+    <tr class="argrow">
+      <td class="argname">condition</td>
+      <td class="argvalue">
+        
+        <span ng-bind="properties.hourly_forecast.received.hour_3.condition"></span>
+        <select disabled ng-model="properties.hourly_forecast.received.hour_3.condition" ng-options="n.id as n.name for n in enums.weather_condition track by n.id">
+        </select>
+         
+      </td>
+    </tr>
+  
+  </table>
+        </div>
+         
+      </td>
+    </tr>
+  
+  </table>
         </div>
         
     </div>
@@ -167,11 +546,18 @@ station are retrieved.</p>
         </div>
         <div class="last-received property-value">
           
-            <div class="arg prop-arg">
-                <label for="current_condition_refresh_interval-arg-seconds">seconds</label>
-                <input type="text" id="current_condition_refresh_interval-arg-seconds" ng-model="properties['currentConditionRefreshInterval'].received['seconds']" />
-            </div>
-          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">seconds</td>
+      <td class="argvalue">
+        
+        <input type="text" ng-model="properties.current_condition_refresh_interval.received.seconds" />
+         
+      </td>
+    </tr>
+  
+  </table>
         </div>
         
         <input type="button" value="Update" ng-click="updateProperty('currentConditionRefreshInterval')" />
@@ -186,11 +572,18 @@ station are retrieved.</p>
         </div>
         <div class="last-received property-value">
           
-            <div class="arg prop-arg">
-                <label for="hourly_forecast_refresh_interval-arg-seconds">seconds</label>
-                <input type="text" id="hourly_forecast_refresh_interval-arg-seconds" ng-model="properties['hourlyForecastRefreshInterval'].received['seconds']" />
-            </div>
-          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">seconds</td>
+      <td class="argvalue">
+        
+        <input type="text" ng-model="properties.hourly_forecast_refresh_interval.received.seconds" />
+         
+      </td>
+    </tr>
+  
+  </table>
         </div>
         
         <input type="button" value="Update" ng-click="updateProperty('hourlyForecastRefreshInterval')" />
@@ -205,11 +598,18 @@ station are retrieved.</p>
         </div>
         <div class="last-received property-value">
           
-            <div class="arg prop-arg">
-                <label for="daily_forecast_refresh_interval-arg-seconds">seconds</label>
-                <input type="text" id="daily_forecast_refresh_interval-arg-seconds" ng-model="properties['dailyForecastRefreshInterval'].received['seconds']" />
-            </div>
-          
+  <table class="arglist">
+  
+    <tr class="argrow">
+      <td class="argname">seconds</td>
+      <td class="argvalue">
+        
+        <input type="text" ng-model="properties.daily_forecast_refresh_interval.received.seconds" />
+         
+      </td>
+    </tr>
+  
+  </table>
         </div>
         
         <input type="button" value="Update" ng-click="updateProperty('dailyForecastRefreshInterval')" />
@@ -230,10 +630,18 @@ the NWS weather API.  </p>
         <div class="method-form-box">
             <form ng-submit="refresh_daily_forecastMethodCall()">
                 
+  <table class="arglist">
+  
+  </table>
                 <button type="submit">Call refresh_daily_forecast</button>
             </form>
         </div>
-        <div class="last-method-response" ng-bind="methods['refresh_daily_forecast'].received"></div>
+        <div class="last-received method-response" ng-bind="methods['refresh_daily_forecast'].received">
+        
+  <table class="arglist">
+  
+  </table>
+        </div>
     </div>
     
     <div class="component-box method-box" id="method-box-refresh_hourly_forecast">
@@ -248,10 +656,18 @@ the NWS weather API.  </p>
         <div class="method-form-box">
             <form ng-submit="refresh_hourly_forecastMethodCall()">
                 
+  <table class="arglist">
+  
+  </table>
                 <button type="submit">Call refresh_hourly_forecast</button>
             </form>
         </div>
-        <div class="last-method-response" ng-bind="methods['refresh_hourly_forecast'].received"></div>
+        <div class="last-received method-response" ng-bind="methods['refresh_hourly_forecast'].received">
+        
+  <table class="arglist">
+  
+  </table>
+        </div>
     </div>
     
     <div class="component-box method-box" id="method-box-refresh_current_conditions">
@@ -268,10 +684,18 @@ republished with the latest value.</p>
         <div class="method-form-box">
             <form ng-submit="refresh_current_conditionsMethodCall()">
                 
+  <table class="arglist">
+  
+  </table>
                 <button type="submit">Call refresh_current_conditions</button>
             </form>
         </div>
-        <div class="last-method-response" ng-bind="methods['refresh_current_conditions'].received"></div>
+        <div class="last-received method-response" ng-bind="methods['refresh_current_conditions'].received">
+        
+  <table class="arglist">
+  
+  </table>
+        </div>
     </div>
      
 

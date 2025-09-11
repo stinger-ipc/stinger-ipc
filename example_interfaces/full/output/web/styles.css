@@ -225,3 +225,24 @@ td input.ng-invalid.ng-dirty {
     font-weight: 500;
     color: #2d4a6a;
 }
+
+table.arglist {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+}
+tr.argrow {
+    display: table-row;
+}
+td.argname {
+    display: table-cell;
+    vertical-align: top;
+    padding: 8px 10px;
+    width: 150px;
+    font-weight: 600;
+}
+
+tr.argrow:not(:last-child) {
+    border-bottom: 1px solid #d6dbe8;
+}
+
