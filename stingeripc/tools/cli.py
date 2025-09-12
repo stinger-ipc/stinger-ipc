@@ -1,5 +1,6 @@
 
 import os
+import sys
 from wsgiref.validate import validator
 from rich import print
 from pathlib import Path
@@ -80,6 +81,8 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
     else:
         for error in validator.get_errors():
             print(error)
+        sys.exit(1)
+    sys.exit(0)
 
 @app.command()
 def hello():

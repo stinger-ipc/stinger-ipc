@@ -187,7 +187,7 @@ methods:
 
 ## Properties
 
-Properties are values (or a set of values) held by the server.   They are re-published when the value changes. 
+Properties are values (or a set of values) held by the server.   They are re-published when the value changes.  Properties have a list of 1+ values.  The entire list of values is treated as a singular property; updating only one value of a property is not supported.
 
 ```plantuml
 @startuml
@@ -220,6 +220,23 @@ properties:
         enumName: Color
         description: The color associated with the position.
 ```
+
+### Read Only Properties
+
+A property can be marked as "read only" which means that clients may not request updates to the property.  This is useful for when a server wants to share a persistent value with clients, such as a particular state.
+
+```yaml
+properties:
+  network_state:
+    documentation: Describes if the network is connected
+    values:
+      - name: state
+        type: enum
+        enumName: networkStates
+    readOnly: true
+```
+
+The default value for the `readOnly` field is `false`. 
 
 ### Coming Soon: Default Values
 
