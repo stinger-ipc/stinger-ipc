@@ -234,16 +234,89 @@ table.arglist {
 tr.argrow {
     display: table-row;
 }
-td.argname {
+td.arg-name-cell {
     display: table-cell;
     vertical-align: top;
     padding: 8px 10px;
     width: 150px;
+}
+
+.arg-name {
     font-weight: 600;
+}
+
+.arg-description {
+    font-size: 0.6em;
+    font-style: italic;
+    color: #817d83ff;
+    margin-top: 2px;
 }
 
 tr.argrow:not(:last-child) {
     border-bottom: 1px solid #d6dbe8;
 }
+
+/* Publish button styling */
+.publish-button {
+    appearance: none;
+    background: linear-gradient(135deg, #3a6ea5 0%, #427bb8 100%);
+    color: #fff;
+    border: 1px solid #2f5c89;
+    border-radius: 6px;
+    padding: 6px 14px 7px 14px;
+    font-size: 0.85em;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(38, 62, 92, 0.18), 0 1px 0 rgba(255,255,255,0.25) inset;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+    transition: background .18s ease, box-shadow .18s ease, transform .08s ease;
+    position: relative;
+}
+.publish-button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #427bb8 0%, #4c89c9 100%);
+    box-shadow: 0 3px 7px rgba(38, 62, 92, 0.28), 0 1px 0 rgba(255,255,255,0.3) inset;
+}
+.publish-button:active:not(:disabled) {
+    background: #2f5c89;
+    transform: translateY(1px) scale(0.985);
+    box-shadow: 0 2px 4px rgba(38, 62, 92, 0.25) inset;
+}
+.publish-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.85), 0 0 0 5px rgba(58,110,165,0.55), 0 2px 4px rgba(38, 62, 92, 0.25);
+}
+.publish-button:disabled {
+    background: #b5c8da;
+    border-color: #9ab1c7;
+    color: #eef3f8;
+    cursor: not-allowed;
+    box-shadow: none;
+    text-shadow: none;
+    opacity: 0.85;
+}
+/* Subtle loading / pending state */
+.publish-button.pending {
+    position: relative;
+    color: #eef6ff;
+    animation: pulse-bright 1.1s ease-in-out infinite;
+}
+@keyframes pulse-bright {
+    0% { box-shadow: 0 0 0 0 rgba(66,123,184,0.55); }
+    70% { box-shadow: 0 0 0 6px rgba(66,123,184,0); }
+    100% { box-shadow: 0 0 0 0 rgba(66,123,184,0); }
+}
+/* Optional subtle variant for destructive actions (not requested but available) */
+.publish-button.danger {
+    background: linear-gradient(135deg, #b83f3f 0%, #c64d4d 100%);
+    border-color: #933131;
+}
+.publish-button.danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #c64d4d 0%, #d85b5b 100%);
+}
+.publish-button.danger:active:not(:disabled) {
+    background: #933131;
+}
+
 
 {%endraw%}

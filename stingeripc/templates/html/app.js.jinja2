@@ -1,14 +1,14 @@
 const clientId = "{{stinger.name}}-web-" + new Date().getTime();
 
-const signalSubIdStart = 1;
-const propertySubIdStart = {{10 + stinger.signals|length}};
+const responseTopic = "client/" + clientId + "/responses";
+var responseSubscriptionId = null;
 
-function makeRequestProperties(response_topic) {
+function makeRequestProperties() {
     const correlationData = Math.random().toString(16).substr(2, 8);
     return {
         "contentType": "application/json",
         "correlationData": correlationData,
-        "responseTopic": response_topic
+        "responseTopic": responseTopic
     }
 }
 
@@ -52,14 +52,14 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "{{member.name|snake_case}}": "{{member.value}}"{%if not loop.last%},{%endif%}
                 {%endfor%} }{%endif%}{%if not loop.last%},{%endif%}
             {%endfor%} },
-            "mqtt_topic": "{{prop.value_topic}}"
+            "mqtt_topic": "{{prop.value_topic}}"{%if not prop.read_only %},
+            "update_topic": "{{prop.update_topic}}"{%endif%}
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
 
     $scope.methods = {
         {%-for method_name, method in stinger.methods.items() %}
         "{{method_name | snake_case}}": {
-            "subscription_id": null,
             "name": "{{method_name}}",
             "mqtt_topic": "{{method.topic}}",
             "response_topic": "{{method.response_topic('"+clientId+"')}}",
@@ -104,19 +104,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         console.log(name + " Sending to " + topic);
         console.log(payload);
         let props = makeRequestProperties();
-        props 
         $scope.console.requests.unshift({"name":name, "correlationData":props.correlationData, "topic": topic, "payload": payload, "response": null, "requestTime": Date.now()});
         client.publish(topic, payload, { "qos": qos, retain: false, properties: props});
         return props.correlationData;
     }
-    {%for method_name, method in stinger.methods.items() %}{%if not method.read_only %}
-    $scope.{{method_name | lowerCamelCase}}MethodCall = function(form) {
-        var prop = $scope.methods["{{method_name | lowerCamelCase}}"];
-        const publish_properties = makeRequestProperties(prop.response_topic);
-        prop.pending_correlation_id = publish_properties.correlationData;
-        
-    };
-    {%endif%}{%endfor%}
+
     client.on('message', function(topic, message, packet) {
         
         const subid = packet.properties.subscriptionIdentifier;
@@ -148,6 +140,23 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 console.log("Set property received object to ", prop.received);
             }
         }
+        for (const key in $scope.methods) {
+            if (!$scope.methods.hasOwnProperty(key)) continue;
+            const method = $scope.methods[key];
+            if (responseSubscriptionId == subid) {
+                if (packet.properties.correlationData && method.pending_correlation_id == packet.properties.correlationData) {
+                    method.received = obj;
+                    method.received_time = new Date();
+                    for (let i=0; i<$scope.console.requests.length; i++) {
+                        const req = $scope.console.requests[i];
+                        if (req.correlationData == packet.properties.correlationData) {
+                            req.response = obj;
+                            req.responseTime = Date.now();
+                        }
+                    }
+                }
+            }
+        }
 
         $scope.$apply();
     });
@@ -157,6 +166,17 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
         var subscription_count = 10;
         console.log("Connected with ", client);
+
+        var responseSubscriptionId = subscription_count++;
+        const responseSubOpts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": responseSubscriptionId
+            }
+        };
+        client.subscribe(responseTopic, responseSubOpts);
+        console.log("Subscribing to response topic " + responseTopic + " with id " + responseSubscriptionId);
+        
         {%for signal_name, signal in stinger.signals.items() %}
         const {{signal_name|snake_case}}_sub_opts = {
             "qos": 1,
@@ -188,5 +208,19 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         $scope.$apply();
     });
 
+    $scope.updateProperty = function(prop) {
+        const payload = JSON.stringify(prop.received);
+        publish("Property Update", prop.update_topic, payload, 1);
+    };
  
+    $scope.callMethod = function(method) {
+        const payload = {};
+        for (const key in method.args) {
+            if (!method.args.hasOwnProperty(key)) continue;
+            payload[key] = method.args[key].value;
+        }
+        const payload_str = JSON.stringify(payload);
+        console.log("Method Call", method.mqtt_topic, payload_str, 1);
+        method.pending_correlation_id = publish("Method Call", method.mqtt_topic, payload_str, 1);
+    };
 });

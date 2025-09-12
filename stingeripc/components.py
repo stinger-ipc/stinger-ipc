@@ -981,6 +981,18 @@ class StingerSpec:
         }
         return (self._topic_creator.interface_info_topic(), info)
 
+    @property
+    def summary(self) -> str:
+        return self._summary or ""
+    
+    @property
+    def title(self) -> str:
+        return self._title or self._name or ""
+    
+    @property
+    def documentation(self) -> str:
+        return self._documentation or ""
+
     def add_broker(self, broker: Broker):
         assert broker is not None
         self._brokers[broker.name] = broker
