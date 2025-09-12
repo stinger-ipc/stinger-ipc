@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Full Web Interface</title>
+    <title>Fully Featured Example Interface Web Interface</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet" />
@@ -12,10 +12,13 @@
     <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
 
     <div class="interface-box">
-      <h1>Full</h1>
-      <p></p>
+      <h1>Fully Featured Example Interface</h1>
+      <p id="interface-summary"><i>Example StingerAPI interface which demonstrates most features.</i></p>
+      <p id="interface-doc">
+      
+      </p>
     </div>
-
+    <!------------- SIGNALS ------------->
     
     <div class="component-box signal-box" id="signal-box-todayIs">
         <h3 class="component-title signal-title">Signal: todayIs</h3>
@@ -23,33 +26,39 @@
         </div>
         <div class="last-received signal-value">
         
-  <table class="arglist">
-  
-    <tr class="argrow">
-      <td class="argname">dayOfMonth</td>
-      <td class="argvalue">
-        
-        <input disabled type="text" ng-model="signals.today_is.received.dayOfMonth" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">dayOfWeek</td>
-      <td class="argvalue">
-        
-        <span ng-bind="signals.today_is.received.dayOfWeek"></span>
-        <select disabled ng-model="signals.today_is.received.dayOfWeek" ng-options="n.id as n.name for n in enums.day_of_the_week track by n.id">
-        </select>
-         
-      </td>
-    </tr>
-  
-  </table>
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">dayOfMonth</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.today_is.received.dayOfMonth" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">dayOfWeek</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.today_is.received.dayOfWeek" ng-options="n.id as n.name for n in enums.day_of_the_week">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
         </div>
     </div>
     
 
+    <!------------- PROPERTIES ------------->
     
     <div class="component-box prop-box" id="prop-box-favorite_number">
         <h3 class="component-title prop-title">Property: favorite_number</h3>
@@ -59,21 +68,24 @@
         </div>
         <div class="last-received property-value">
           
-  <table class="arglist">
-  
-    <tr class="argrow">
-      <td class="argname">number</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.favorite_number.received.number" />
-         
-      </td>
-    </tr>
-  
-  </table>
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">number</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.favorite_number.received.number" />
+                 
+              </td>
+            </tr>
+          
+          </table>
         </div>
         
-        <input type="button" value="Update" ng-click="updateProperty('favoriteNumber')" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.favorite_number)" />
         
     </div>
     
@@ -83,39 +95,48 @@
         </div>
         <div class="last-received property-value">
           
-  <table class="arglist">
-  
-    <tr class="argrow">
-      <td class="argname">drink</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.favorite_foods.received.drink" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">slices_of_pizza</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.favorite_foods.received.slices_of_pizza" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">breakfast</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.favorite_foods.received.breakfast" />
-         
-      </td>
-    </tr>
-  
-  </table>
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">drink</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.favorite_foods.received.drink" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">slices_of_pizza</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.favorite_foods.received.slices_of_pizza" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">breakfast</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.favorite_foods.received.breakfast" />
+                 
+              </td>
+            </tr>
+          
+          </table>
         </div>
         
-        <input type="button" value="Update" ng-click="updateProperty('favoriteFoods')" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.favorite_foods)" />
         
     </div>
     
@@ -125,186 +146,230 @@
         </div>
         <div class="last-received property-value">
           
-  <table class="arglist">
-  
-    <tr class="argrow">
-      <td class="argname">monday</td>
-      <td class="argvalue">
-        
-        <div class="struct-arg">
+          <table class="arglist">
           
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">monday</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
           
-  <table class="arglist">
-  
-    <tr class="argrow">
-      <td class="argname">drink</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.lunch_menu.received.monday.drink" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">sandwich</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.lunch_menu.received.monday.sandwich" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">crackers</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.lunch_menu.received.monday.crackers" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">day</td>
-      <td class="argvalue">
-        
-        <span ng-bind="properties.lunch_menu.received.monday.day"></span>
-        <select ng-model="properties.lunch_menu.received.monday.day" ng-options="n.id as n.name for n in enums.day_of_the_week track by n.id">
-        </select>
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">order_number</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.lunch_menu.received.monday.order_number" />
-         
-      </td>
-    </tr>
-  
-  </table>
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">drink</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.monday.drink" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">sandwich</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.monday.sandwich" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">crackers</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.monday.crackers" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">day</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.lunch_menu.received.monday.day" ng-options="n.id as n.name for n in enums.day_of_the_week">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">order_number</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.monday.order_number" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">tuesday</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">drink</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.tuesday.drink" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">sandwich</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.tuesday.sandwich" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">crackers</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.tuesday.crackers" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">day</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.lunch_menu.received.tuesday.day" ng-options="n.id as n.name for n in enums.day_of_the_week">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">order_number</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.tuesday.order_number" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
         </div>
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">tuesday</td>
-      <td class="argvalue">
         
-        <div class="struct-arg">
-          
-          
-  <table class="arglist">
-  
-    <tr class="argrow">
-      <td class="argname">drink</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.lunch_menu.received.tuesday.drink" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">sandwich</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.lunch_menu.received.tuesday.sandwich" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">crackers</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.lunch_menu.received.tuesday.crackers" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">day</td>
-      <td class="argvalue">
-        
-        <span ng-bind="properties.lunch_menu.received.tuesday.day"></span>
-        <select ng-model="properties.lunch_menu.received.tuesday.day" ng-options="n.id as n.name for n in enums.day_of_the_week track by n.id">
-        </select>
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">order_number</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="properties.lunch_menu.received.tuesday.order_number" />
-         
-      </td>
-    </tr>
-  
-  </table>
-        </div>
-         
-      </td>
-    </tr>
-  
-  </table>
-        </div>
-        
-        <input type="button" value="Update" ng-click="updateProperty('lunchMenu')" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.lunch_menu)" />
         
     </div>
      
 
+    <!------------- METHODS ------------->
     
     <div class="component-box method-box" id="method-box-addNumbers">
         <h3 class="component-title method-title">Method: addNumbers</h3>
         <div class="component-doc method-doc">
         </div>
         <div class="method-form-box">
-            <form ng-submit="addNumbersMethodCall()">
+            <form ng-submit="callMethod(methods.add_numbers)">
                 
-  <table class="arglist">
-  
-    <tr class="argrow">
-      <td class="argname">first</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="methods.add_numbers.args.first" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">second</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="methods.add_numbers.args.second" />
-         
-      </td>
-    </tr>
-  
-    <tr class="argrow">
-      <td class="argname">third</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="methods.add_numbers.args.third" />
-         
-      </td>
-    </tr>
-  
-  </table>
-                <button type="submit">Call addNumbers</button>
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.add_numbers.args.first" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.add_numbers.args.second" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">third</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.add_numbers.args.third" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call addNumbers</button>
             </form>
         </div>
         <div class="last-received method-response" ng-bind="methods['addNumbers'].received">
         
-  <table class="arglist">
-  
-  </table>
+          <table class="arglist">
+          
+          </table>
         </div>
     </div>
     
@@ -313,28 +378,31 @@
         <div class="component-doc method-doc">
         </div>
         <div class="method-form-box">
-            <form ng-submit="doSomethingMethodCall()">
+            <form ng-submit="callMethod(methods.do_something)">
                 
-  <table class="arglist">
-  
-    <tr class="argrow">
-      <td class="argname">aString</td>
-      <td class="argvalue">
-        
-        <input type="text" ng-model="methods.do_something.args.aString" />
-         
-      </td>
-    </tr>
-  
-  </table>
-                <button type="submit">Call doSomething</button>
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">aString</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.do_something.args.aString" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call doSomething</button>
             </form>
         </div>
         <div class="last-received method-response" ng-bind="methods['doSomething'].received">
         
-  <table class="arglist">
-  
-  </table>
+          <table class="arglist">
+          
+          </table>
         </div>
     </div>
      

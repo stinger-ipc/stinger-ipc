@@ -1,4 +1,6 @@
-# _weather_ API Overview
+# _NWS weather forecast_ API Overview 
+_Current conditions, daily and hourly forecasts from the NWS API_
+
 
 [[_TOC_]]
 

@@ -33,7 +33,10 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         {
             auto sub = thisClient->_subscriptions.front();
             cout << "Subscribing to " << sub._topic << endl;
-            mosquitto_subscribe(mosq, NULL, sub._topic.c_str(), sub._qos);
+            mosquitto_property *propList = NULL;
+            mosquitto_property_add_int16(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, sub.subscriptionId);
+            int rc = mosquitto_subscribe_v5(_mosq, NULL, sub.topic.c_str(), sub.qos, propList);
+            mosquitto_property_free_all(&propList);
             thisClient->_subscriptions.pop();
         }
         while(!thisClient->_msgQueue.empty())
@@ -42,6 +45,7 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
             cout << "Sending message to " << msg._topic << endl;
             int mid;
             mosquitto_property *propList = NULL;
+            mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
             if (msg._optCorrelationId)
             {
                 mosquitto_property_add_string(&propList, MQTT_PROP_CORRELATION_DATA, msg._optCorrelationId->c_str());
@@ -193,13 +197,17 @@ boost::future<bool> MqttConnection::Publish(
     throw std::runtime_error("Unhandled rc");
 }
 
-void MqttConnection::Subscribe(const std::string& topic, int qos)
+int MqttConnection::Subscribe(const std::string& topic, int qos)
 {
+    int subscriptionId = _nextSubscriptionId++;
     std::cout << "Subscribing to " << topic << endl;
-    int rc = mosquitto_subscribe(_mosq, NULL, topic.c_str(), qos);
+    mosquitto_property *propList = NULL;
+    mosquitto_property_add_int16(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, subscriptionId);
+    int rc = mosquitto_subscribe_v5(_mosq, NULL, topic.c_str(), qos, propList);
+    mosquitto_property_free_all(&propList);
     if (rc == MOSQ_ERR_NO_CONN)
     {
-        MqttConnection::MqttSubscription sub(topic, qos);
+        MqttConnection::MqttSubscription sub(topic, qos, subscriptionId);
         boost::mutex::scoped_lock lock(_mutex);
         _subscriptions.push(sub);
     }

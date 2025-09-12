@@ -1,4 +1,6 @@
-# _Full_ API Overview
+# _Fully Featured Example Interface_ API Overview 
+_Example StingerAPI interface which demonstrates most features._
+
 
 [[_TOC_]]
 

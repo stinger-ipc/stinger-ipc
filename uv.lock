@@ -67,16 +67,16 @@ wheels = [
 
 [[package]]
 name = "jacobs-jinja-too"
-version = "0.2.4"
+version = "0.2.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja-markdown" },
     { name = "jinja2" },
     { name = "stringcase" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/49/70/1559cb07e491ab0d86caaf80c6bc66e25b9ce7ab90d239a7788233992988/jacobs_jinja_too-0.2.4.tar.gz", hash = "sha256:6356736aa5a6fdb91793df52c72ed3832413aa271fd540c48c1bcd0e086028f8", size = 11809, upload-time = "2025-09-03T16:08:43.885Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/56/15a2e0ce8c9ff71d370735de033ec8b9c156f06ff0cf15ba2945c20c49e7/jacobs_jinja_too-0.2.5.tar.gz", hash = "sha256:72edce140a428e43c626040cfbff149ead95e3f1356f833fe014cdc1206f7cf4", size = 12243, upload-time = "2025-09-12T19:47:54.814Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f4/e4/b814af35de4fbde6f7cf865b45b2b38e347026bb03729694347a609557a5/jacobs_jinja_too-0.2.4-py3-none-any.whl", hash = "sha256:e2b092f5a1e1ed198282540b6f624bc1a29433d0f65246e054bd1355314a0285", size = 12502, upload-time = "2025-09-03T16:08:42.783Z" },
+    { url = "https://files.pythonhosted.org/packages/86/3c/aac92765e877018250bd4ff5f27036a06ffc2490d797d00ee749c1799865/jacobs_jinja_too-0.2.5-py3-none-any.whl", hash = "sha256:90f8163d199f3b9b5a7038a7e8c1615b4070e622dc0fcb1e7553c72c06eb3d7e", size = 12999, upload-time = "2025-09-12T19:47:53.394Z" },
 ]
 
 [[package]]
@@ -451,7 +451,7 @@ wheels = [
 
 [[package]]
 name = "stinger-ipc"
-version = "0.0.23"
+version = "0.0.23.dev52"
 source = { editable = "." }
 dependencies = [
     { name = "jacobs-jinja-too" },
@@ -478,7 +478,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "jacobs-jinja-too", specifier = ">=0.2.4" },
+    { name = "jacobs-jinja-too", specifier = ">=0.2.5" },
     { name = "jacobs-json-schema", specifier = ">=0.4.2" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "pydantic", specifier = ">=2.11.7" },

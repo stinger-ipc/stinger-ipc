@@ -1,0 +1,10 @@
+{% import "partials/deserialize.jinja2"  as deser %}
+#include "structs.hpp"
+
+
+{%for istruct_name, istruct in stinger.structs.items() %}
+{{istruct_name | UpperCamelCase }} {{istruct_name | UpperCamelCase }}::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    {{deser.deserialize(istruct_name, istruct.members, 'jsonObj')}}
+};
+{%endfor%}

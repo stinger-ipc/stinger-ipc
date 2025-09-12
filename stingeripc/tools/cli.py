@@ -15,7 +15,7 @@ from stingeripc.interface import StingerInterface
 from . import markdown_generator
 from . import python_generator
 from . import rust_generator
-
+from . import cpp_generator
 
 app = typer.Typer(help="stinger-ipc generator CLI")
 
@@ -28,13 +28,13 @@ def generate(
 ):
     """Generate code for a Stinger interface.
 
-    LANGUAGE must be one of: rust, python, markdown
+    LANGUAGE must be one of: rust, python, markdown, cpp, web
     INPUT_FILE is the .stinger.yaml file
     OUTPUT_DIR is the directory that will receive generated files
     """
     lang = language.lower()
-    if lang not in ("rust", "python", "markdown", "web"):
-        raise typer.BadParameter("language must be one of: rust, python, markdown, web")
+    if lang not in ("rust", "python", "markdown", "cpp", "web"):
+        raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web")
 
     if lang == "python":
         # python_generator.main expects Path arguments via typer
@@ -59,9 +59,12 @@ def generate(
         ]:
             ct.render_template(f"{output_file}.jinja2", output_file, stinger=stinger)
         wt.render_template("index.html.jinja2", "index.html", stinger=stinger)
-    else:  # rust
+    elif lang == "cpp":
+        cpp_generator.main(input_file, output_dir)
+    elif lang == "rust":
         rust_generator.main(input_file, output_dir)
-    
+    else:
+        raise RuntimeError("Unreachable code reached")
 
     print(f"Generation for '{lang}' completed.")
 

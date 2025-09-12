@@ -16,10 +16,13 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include <mutex>
 #include <rapidjson/document.h>
 #include <boost/uuid/uuid.hpp>
-#include <boost/atomic.hpp>
+#include <boost/optional.hpp>
 #include "ibrokerconnection.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include "return_types.hpp"
+
+{%macro prop_value_type(prop) -%}{%if prop.arg_list|length > 1%}struct {%endif%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
+
 {%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
 
 class {{stinger.cpp.client_class_name}} {
@@ -34,33 +37,88 @@ public:
     {{stinger.cpp.client_class_name}}(std::shared_ptr<IBrokerConnection> broker);
 
     virtual ~{{stinger.cpp.client_class_name}}() = default;
-
+    {%if stinger.signals|length > 0 -%}
+    // ------------------ SIGNALS --------------------
     {%for sig_name, sig in stinger.signals.items()%}
     // Register a callback for the `{{sig_name}}` signal.
     // The provided method will be called whenever a `{{sig_name}}` is received.
     void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
     {%endfor%}
-
+    {%endif%}
+    {%if stinger.methods|length > 0 -%}
+    // ------------------- METHODS --------------------
     {%for method_name, method in stinger.methods.items()%}
     // Calls the `{{method_name}}` method.
     // Returns a future.  When that future resolves, it will have the returned value.
     boost::future<{{method.return_value_cpp_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
-
+    {%endif%}
+    {%if stinger.properties|length > 0 -%}
+    // ---------------- PROPERTIES ------------------
     {%for prop_name, prop in stinger.properties.items()%}
-    // Gets the current value of the `{{prop_name}}` property.
-    boost::atomic<struct {{prop.name | UpperCamelCase}}Property> {{prop_name | lowerCamelCase}};
+    // ---{{prop_name}} Property---
+
+    // Gets the latest value of the `{{prop_name}}` property, if one has been received.
+    // If no value has been received yet, an empty optional is returned.
+    boost::optional<{{prop_value_type(prop)}}> get{{prop_name | UpperCamelCase}}Property() const;
+
+    // Add a callback that will be called whenever the `{{prop_name}}` property is updated.
+    // The provided method will be called whenever a new value for the `{{prop_name}}` property is received.
+    void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void(const {{prop_value_type(prop)}}&)>& cb);
     {%endfor%}
-private: 
+    {%endif%}
+private:
+
     std::shared_ptr<IBrokerConnection> _broker;
-    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<MethodResultCode> optResultCode);
-    {%-for method_name, method in stinger.methods.items()%}
-    std::map<boost::uuids::uuid, boost::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
-    {%-endfor%}
+    void _receiveMessage(
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<MethodResultCode> optResultCode, 
+            const boost::optional<int> optSubscriptionId,
+            const boost::optional<int> optPropertyVersion);
+    {%if stinger.signals|length > 0 -%}
+    // ------------------ SIGNALS --------------------
+
     {%for sig_name, sig in stinger.signals.items()%}
-    std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{sig_name | camelCase}}Callback;
+    // List of callbacks to be called whenever the `{{sig_name}}` signal is received.
+    std::vector<std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> _{{sig_name | lowerCamelCase}}SignalCallbacks;
+    std::mutex _{{sig_name | lowerCamelCase}}SignalCallbacksMutex;
+
+    // MQTT Subscription ID for `{{sig_name}}` signal receptions.
+    int _{{sig_name | lowerCamelCase}}SignalSubscriptionId;
     {%endfor%}
+    {%endif%}
+    {%if stinger.methods|length > 0 -%}
+    // ------------------- METHODS --------------------
+
     {%-for method_name, method in stinger.methods.items()%}
+    // Holds promises for pending `{{sig_name}}` method calls.
+    std::map<boost::uuids::uuid, boost::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+
     void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);
     {%-endfor%}
+    {%endif%}
+    {%if stinger.properties|length > 0 -%}
+    // ---------------- PROPERTIES ------------------
+    {%for prop_name, prop in stinger.properties.items()%}
+
+    // ---{{prop_name}} Property---
+
+    // Last received value{%if prop.arg_list|length > 1%}s{%endif%} for the `{{prop_name}}` property.
+    boost::optional<{{prop_value_type(prop)}}> _{{prop_name | lowerCamelCase}}Property;
+    int _last{{prop_name | UpperCamelCase}}PropertyVersion = -1;
+    std::mutex _{{prop_name | lowerCamelCase}}PropertyMutex;
+   
+    // MQTT Subscription ID for `{{prop_name}}` property updates.
+    int _{{prop_name | lowerCamelCase}}PropertySubscriptionId;
+
+    // Method for parsing a JSON payload that updates the `{{prop_name}}` property.
+    void _receive{{prop_name | UpperCamelCase}}PropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+    // Callbacks registered for changes to the `{{prop_name}}` property.
+    std::vector<std::function<void(const {{prop_value_type(prop)}}&)>> _{{prop_name | lowerCamelCase}}PropertyCallbacks;
+    std::mutex _{{prop_name | lowerCamelCase}}PropertyCallbacksMutex;
+    {%endfor%}
+    {%endif%}
 };

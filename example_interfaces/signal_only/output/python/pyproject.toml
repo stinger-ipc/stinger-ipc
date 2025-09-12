@@ -1,7 +1,7 @@
 [project]
 name = "SignalOnly"
 version = "0.0.1"
-description = ""
+description = "SignalOnly"
 requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.11.7",

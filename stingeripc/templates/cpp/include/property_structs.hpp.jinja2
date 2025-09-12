@@ -12,13 +12,35 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include "structs.hpp"
 
 {%for prop_name, prop in stinger.properties.items()%}
+{%- if prop.arg_list| length > 1 %}
+{%-if prop.documentation %}/**
+{{prop.documentation |commentblock(' * ')}}
+ */{%endif%}
 struct {{prop.name | UpperCamelCase}}Property {
+    static {{prop.name | UpperCamelCase}}Property FromRapidJsonObject(const rapidjson::Value& jsonObj);
 {%-for arg in prop.arg_list %}
     {%if arg.arg_type.name.lower() == "struct"-%}
-    {{arg.cpp_type}} {{arg.name}};
+    {{arg.cpp_type}} {{arg.name}};{%if arg.description %}  ///< {{arg.description}}{%endif%}
     {%-else-%}
-    {{arg.cpp_temp_type}} {{arg.name}};
-    {%endif%}
-{%-endfor%}
+    {{arg.cpp_temp_type}} {{arg.name }};{%if arg.description %}  ///< {{arg.description}}{%endif%}
+    {%-endif-%}
+{%endfor-%}
+{# end for arg #}
 };
+{%elif prop.arg_list| length == 1 %}
+{% set arg = prop.arg_list[0] %}
+{%if prop.documentation %}/**
+ * The `{{prop.name}}` property contains a single field:
+{%-if arg.arg_type.name.lower() == "struct"%}
+ *   {{arg.cpp_type}} {{arg.name}};{%if arg.description %}  ///< {{arg.description}}{%endif%}
+{%-else%}
+ *   {{arg.cpp_temp_type}} {{arg.name }};{%if arg.description %}  ///< {{arg.description}}{%endif%}
+{%-endif%}
+ *
+ * Because there is only one field, no outer-structure is needed. 
+ *
+{{prop.documentation |commentblock(' * ')}}
+ */{%endif%}
+typedef {%if arg.arg_type.name.lower() == "struct"%}{{arg.cpp_type}}{%else%}{{arg.cpp_temp_type}}{%endif%} {{prop.name | UpperCamelCase}}Property;
+{%endif%}
 {%endfor%}

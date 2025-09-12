@@ -25,7 +25,7 @@ function generate_cpp() {
     echo "----------- Generating C++ for ${IFACE_NAME}----------------"
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build
-    uv run ${BASE_DIR}/cpp_generator.py ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/
+    uv run stinger generate cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/
     if [ $? -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
     fi

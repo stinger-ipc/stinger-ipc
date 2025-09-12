@@ -1,4 +1,4 @@
-
+{% import "partials/deserialize.jinja2" as deser %}
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -16,7 +16,6 @@
 #include "{{stinger.cpp.enum_header_file}}"
 #include "ibrokerconnection.hpp"
 
-
 constexpr const char {{stinger.cpp.client_class_name}}::NAME[];
 constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
 
@@ -28,7 +27,7 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     });
 
     {%-for sig_name, sig in stinger.signals.items() %}
-    _broker->Subscribe("{{sig.topic}}", 1);
+    _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe("{{sig.topic}}", 2);
     {%endfor%}
     {%-for method_name, method in stinger.methods.items() %}
     { // Restrict scope
@@ -37,16 +36,22 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     {%-endfor%}
+
+    {%-for prop_name, prop in stinger.properties.items() %}
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe("{{prop.update_topic}}", 1);
+    {%endfor%}
 }
 
 void {{stinger.cpp.client_class_name}}::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<MethodResultCode> optResultCode)
+        const boost::optional<MethodResultCode> optResultCode,
+        const boost::optional<int> optSubscriptionId,
+        const boost::optional<int> optPropertyVersion)
 {
     {%-for sig_name, sig in stinger.signals.items() %}
-    if (_broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
+    if ((optSubscriptionId && (*optSubscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
     {
         //Log("Handling {{sig_name}} signal");
         rapidjson::Document doc;
@@ -82,7 +87,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
                     {%endif%}
                     }
                 }
-                {%endfor%}
+                {%endfor%}{# for signal args #}
 
                 _{{sig_name | camelCase}}Callback({%for arg in sig.arg_list%}temp{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
             }
@@ -94,21 +99,29 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    {%-endfor%}
+    {%-endfor%}{# for signals #}
+
     {%-for method_name, method in stinger.methods.items() %}
     {%if not loop.first%}else {%endif%}if (_broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && optCorrelationId)
     {
         std::cout << "Matched topic for {{method_name}} response" << std::endl;
         _handle{{method_name|UpperCamelCase}}Response(topic, payload, *optCorrelationId);
     }
-    {%-endfor%}
+    {%-endfor%}{# for methods #}
+
+    {%-for prop_name, prop in stinger.properties.items() %}
+    {%if not loop.first%}else {%endif%}if ((optSubscriptionId && (*optSubscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId)) || topic == "{{prop.update_topic}}")
+    {
+        _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    {%-endfor%}{# for properties #}
 }
 
 
 {%-for sig_name, sig in stinger.signals.items() %}
 void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb)
 {
-    _{{sig_name | camelCase}}Callback = cb;
+    _{{sig_name | lowerCamelCase}}SignalCallbacks.push_back(cb);
 }
 {%-endfor%}
 
@@ -204,4 +217,32 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
 
     std::cout << "End of response handler for " << topic << std::endl;
 }
-{%endfor%}
+{%endfor%}{# end for each method #}
+{%for prop_name, prop in stinger.properties.items()%}
+void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse {{prop_name}} property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received {{prop_name}} payload is not an object");
+    }
+    {{prop.name | UpperCamelCase}}Property tempValue;
+    {{deser.deserialize('tempValue', prop.arg_list, 'doc')}}
+
+    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+    _{{prop_name | lowerCamelCase}}Property = tempValue;
+    _last{{prop_name | UpperCamelCase}}PropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
+    {
+        cb(*_{{prop_name | lowerCamelCase}}Property);
+    }
+}
+{% endfor %} {# for properties #}

@@ -1,14 +1,14 @@
 const clientId = "Full-web-" + new Date().getTime();
 
-const signalSubIdStart = 1;
-const propertySubIdStart = 11;
+const responseTopic = "client/" + clientId + "/responses";
+var responseSubscriptionId = null;
 
-function makeRequestProperties(response_topic) {
+function makeRequestProperties() {
     const correlationData = Math.random().toString(16).substr(2, 8);
     return {
         "contentType": "application/json",
         "correlationData": correlationData,
-        "responseTopic": response_topic
+        "responseTopic": responseTopic
     }
 }
 
@@ -24,7 +24,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     $scope.online = false;
 
     $scope.enums = {
-        // <stingeripc.components.InterfaceEnum object at 0x7fab96fb56a0>
+        // <stingeripc.components.InterfaceEnum object at 0x72018fb43d10>
         "day_of_the_week": [
             {"name": "Sunday", "id": 1 },
             
@@ -59,7 +59,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "number": {  }
              },
-            "mqtt_topic": "full/property/favoriteNumber/value"
+            "mqtt_topic": "full/property/favoriteNumber/value",
+            "update_topic": "full/property/favoriteNumber/setValue"
         },
     
         "favorite_foods": {
@@ -72,7 +73,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "breakfast": {  }
              },
-            "mqtt_topic": "full/property/favoriteFoods/value"
+            "mqtt_topic": "full/property/favoriteFoods/value",
+            "update_topic": "full/property/favoriteFoods/setValue"
         },
     
         "lunch_menu": {
@@ -103,13 +105,13 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "order_number": ""
                  }
              },
-            "mqtt_topic": "full/property/lunchMenu/value"
+            "mqtt_topic": "full/property/lunchMenu/value",
+            "update_topic": "full/property/lunchMenu/setValue"
         }
     };
 
     $scope.methods = {
         "add_numbers": {
-            "subscription_id": null,
             "name": "addNumbers",
             "mqtt_topic": "full/method/addNumbers",
             "response_topic": "client/"+clientId+"/full/method/addNumbers/response",
@@ -134,7 +136,6 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received_time": null
         },
         "do_something": {
-            "subscription_id": null,
             "name": "doSomething",
             "mqtt_topic": "full/method/doSomething",
             "response_topic": "client/"+clientId+"/full/method/doSomething/response",
@@ -178,26 +179,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         console.log(name + " Sending to " + topic);
         console.log(payload);
         let props = makeRequestProperties();
-        props 
         $scope.console.requests.unshift({"name":name, "correlationData":props.correlationData, "topic": topic, "payload": payload, "response": null, "requestTime": Date.now()});
         client.publish(topic, payload, { "qos": qos, retain: false, properties: props});
         return props.correlationData;
     }
-    
-    $scope.addNumbersMethodCall = function(form) {
-        var prop = $scope.methods["addNumbers"];
-        const publish_properties = makeRequestProperties(prop.response_topic);
-        prop.pending_correlation_id = publish_properties.correlationData;
-        
-    };
-    
-    $scope.doSomethingMethodCall = function(form) {
-        var prop = $scope.methods["doSomething"];
-        const publish_properties = makeRequestProperties(prop.response_topic);
-        prop.pending_correlation_id = publish_properties.correlationData;
-        
-    };
-    
+
     client.on('message', function(topic, message, packet) {
         
         const subid = packet.properties.subscriptionIdentifier;
@@ -229,6 +215,23 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 console.log("Set property received object to ", prop.received);
             }
         }
+        for (const key in $scope.methods) {
+            if (!$scope.methods.hasOwnProperty(key)) continue;
+            const method = $scope.methods[key];
+            if (responseSubscriptionId == subid) {
+                if (packet.properties.correlationData && method.pending_correlation_id == packet.properties.correlationData) {
+                    method.received = obj;
+                    method.received_time = new Date();
+                    for (let i=0; i<$scope.console.requests.length; i++) {
+                        const req = $scope.console.requests[i];
+                        if (req.correlationData == packet.properties.correlationData) {
+                            req.response = obj;
+                            req.responseTime = Date.now();
+                        }
+                    }
+                }
+            }
+        }
 
         $scope.$apply();
     });
@@ -238,6 +241,17 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
         var subscription_count = 10;
         console.log("Connected with ", client);
+
+        var responseSubscriptionId = subscription_count++;
+        const responseSubOpts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": responseSubscriptionId
+            }
+        };
+        client.subscribe(responseTopic, responseSubOpts);
+        console.log("Subscribing to response topic " + responseTopic + " with id " + responseSubscriptionId);
+        
         
         const today_is_sub_opts = {
             "qos": 1,
@@ -269,5 +283,19 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         $scope.$apply();
     });
 
+    $scope.updateProperty = function(prop) {
+        const payload = JSON.stringify(prop.received);
+        publish("Property Update", prop.update_topic, payload, 1);
+    };
  
+    $scope.callMethod = function(method) {
+        const payload = {};
+        for (const key in method.args) {
+            if (!method.args.hasOwnProperty(key)) continue;
+            payload[key] = method.args[key].value;
+        }
+        const payload_str = JSON.stringify(payload);
+        console.log("Method Call", method.mqtt_topic, payload_str, 1);
+        method.pending_correlation_id = publish("Method Call", method.mqtt_topic, payload_str, 1);
+    };
 });

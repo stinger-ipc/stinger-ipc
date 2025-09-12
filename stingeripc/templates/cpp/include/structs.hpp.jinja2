@@ -12,6 +12,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 
 {%for istruct_name, istruct in stinger.structs.items() %}
 struct {{istruct_name | UpperCamelCase }} {
+    {{istruct_name | UpperCamelCase }} FromRapidJsonObject(const rapidjson::Value& jsonObj);
     {%-for value in istruct.members %}
     {{value.cpp_temp_type}} {{value.name}};
     {%-endfor%}

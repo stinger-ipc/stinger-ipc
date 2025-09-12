@@ -1,11 +1,11 @@
 [project]
 name = "stinger-ipc"
-version = "0.0.23"
+version = "0.0.23.dev52"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "jacobs-jinja-too>=0.2.4",
+    "jacobs-jinja-too>=0.2.5",
     "jacobs-json-schema>=0.4.2",
     "packaging>=25.0",
     "pydantic>=2.11.7",
