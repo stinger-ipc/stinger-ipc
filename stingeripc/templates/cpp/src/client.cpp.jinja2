@@ -21,9 +21,16 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
 
 {{stinger.cpp.client_class_name}}::{{stinger.cpp.client_class_name}}(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> unusedRespTopic, const boost::optional<MethodResultCode> optResultCode)
+    _broker->AddMessageCallback([this](
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<std::string> unusedRespTopic, 
+            const boost::optional<MethodResultCode> optResultCode,
+            const boost::optional<int> optSubscriptionId,
+            const boost::optional<int> optPropertyVersion)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResultCode);
+        _receiveMessage(topic, payload, optCorrelationId, optResultCode, optSubscriptionId, optPropertyVersion);
     });
 
     {%-for sig_name, sig in stinger.signals.items() %}
@@ -56,7 +63,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
         //Log("Handling {{sig_name}} signal");
         rapidjson::Document doc;
         try {
-            if (_{{sig_name | camelCase}}Callback)
+            if (_{{sig_name | camelCase}}SignalCallbacks.size() > 0)
             {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
@@ -88,8 +95,10 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
                     }
                 }
                 {%endfor%}{# for signal args #}
-
-                _{{sig_name | camelCase}}Callback({%for arg in sig.arg_list%}temp{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+                for (const auto& cb : _{{sig_name | lowerCamelCase}}SignalCallbacks)
+                {
+                    cb({%for arg in sig.arg_list%}temp{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+                }
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -233,7 +242,7 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
         throw std::runtime_error("Received {{prop_name}} payload is not an object");
     }
     {{prop.name | UpperCamelCase}}Property tempValue;
-    {{deser.deserialize('tempValue', prop.arg_list, 'doc')}}
+    {{deser.deserialize('tempValue', prop.arg_list, 'doc') | indent(4)}}
 
     std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
     _{{prop_name | lowerCamelCase}}Property = tempValue;

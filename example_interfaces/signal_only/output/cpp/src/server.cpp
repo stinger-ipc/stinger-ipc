@@ -19,9 +19,16 @@ constexpr const char SignalOnlyServer::NAME[];
 constexpr const char SignalOnlyServer::INTERFACE_VERSION[];
 
 SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
+    _broker->AddMessageCallback([this](
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<std::string> optResponseTopic, 
+            const boost::optional<MethodResultCode> unusedRc,
+            const boost::optional<int> optSubscriptionId, 
+            const boost::optional<int> optPropertyVersion)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
+        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic, optSubscriptionId, optPropertyVersion);
     });
     
 }
@@ -30,7 +37,9 @@ void SignalOnlyServer::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<std::string> optResponseTopic)
+        const boost::optional<std::string> optResponseTopic,
+        const boost::optional<int> optSubscriptionId,
+        const boost::optional<int> optPropertyVersion)
 {
     
 }

@@ -1,42 +1,42 @@
 {%macro deserialize_value(target, arg)%}
-{%if arg.arg_type.name.lower() == 'primitive'%}
+{%-if arg.arg_type.name.lower() == 'primitive'%}
 {{target}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
-{%elif arg.arg_type.name.lower() == 'enum'%}
+{%-elif arg.arg_type.name.lower() == 'enum'%}
 {{target}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
-{%elif arg.arg_type.name.lower() == 'struct'%}
+{%-elif arg.arg_type.name.lower() == 'struct'%}
 {{target}} = {{arg.cpp_type}}::FromRapidJsonObject(itr->value);
 {%endif%}
 {%endmacro%}
 
 
-{%macro deserialize(target, arglist, json_obj)%}
-{%if arglist|length == 1%}
-{%set arg = arglist[0]%}
-rapidjson::Value::ConstMemberIterator itr = json_obj.FindMember("{{arg.name}}");
-if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+{%-macro deserialize(target, arglist, json_obj)%}
+{%-if arglist|length == 1%}
+{%-set arg = arglist[0]%}
+rapidjson::Value::ConstMemberIterator itr = {{json_obj}}.FindMember("{{arg.name}}");
+if (itr != {{json_obj}}.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
     {{deserialize_value(target, arg)}}
 } else {
 {%-if arg.optional%}
     {{target}} = boost::none;
-{%else%}
+{%-else%}
     throw std::runtime_error("Received payload doesn't have required value/type");
-{%endif%}
+{%-endif%}
 }
-{%elif arglist|length > 1%}
-{%for arg in arglist%}
-{%set arg_target %}{{target}}.{{arg.name}}{%endset%}
+{%-elif arglist|length > 1%}
+{%-for arg in arglist%}
+{%-set arg_target %}{{target}}.{{arg.name}}{%endset%}
 { // Scoping
-    rapidjson::Value::ConstMemberIterator itr = json_obj.FindMember("{{arg.name}}");
-    if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
-        {{deserialize_value(arg_target, arg)}}
+    rapidjson::Value::ConstMemberIterator itr = {{json_obj}}.FindMember("{{arg.name}}");
+    if (itr != {{json_obj}}.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+        {{deserialize_value(arg_target, arg) | indent(8)}}
     } else {
     {%-if arg.optional%}
         {{arg_target}} = boost::none;
-    {%else%}
+    {%-else%}
         throw std::runtime_error("Received payload doesn't have required value/type");
     {%endif%}
     }
 }
-{%endfor%}
-{%endif%}
-{%endmacro%}
+{%-endfor%}
+{%-endif%}
+{%-endmacro%}

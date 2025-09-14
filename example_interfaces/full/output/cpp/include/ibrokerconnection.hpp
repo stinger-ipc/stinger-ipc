@@ -38,12 +38,20 @@ public:
     /*! Subscribe to a topic.
      * Implementation should queue up subscriptions when not connected.
      */
-    virtual void Subscribe(const std::string& topic, int qos) = 0;
+    virtual int Subscribe(const std::string& topic, int qos) = 0;
 
     /*! Provide a callback to be called on an incoming message.
      * Implementation should accept this at any time, even when not connected.
      */
-    virtual void AddMessageCallback(const std::function<void(const std::string&, const std::string&, const boost::optional<std::string>, const boost::optional<std::string>, const boost::optional<MethodResultCode>)>& cb) = 0;
+    virtual void AddMessageCallback(const std::function<void
+            (const std::string&, 
+            const std::string&, 
+            const boost::optional<std::string>, 
+            const boost::optional<std::string>, 
+            const boost::optional<MethodResultCode>,
+            const boost::optional<int>,
+            const boost::optional<int>
+        )>& cb) = 0;
 
     /*! Utility for matching topics.
      * This probably should be a wrapper around `mosquitto_topic_matches_sub` or similar

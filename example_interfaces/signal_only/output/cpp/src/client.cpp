@@ -16,17 +16,23 @@
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
 
-
 constexpr const char SignalOnlyClient::NAME[];
 constexpr const char SignalOnlyClient::INTERFACE_VERSION[];
 
 SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> unusedRespTopic, const boost::optional<MethodResultCode> optResultCode)
+    _broker->AddMessageCallback([this](
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<std::string> unusedRespTopic, 
+            const boost::optional<MethodResultCode> optResultCode,
+            const boost::optional<int> optSubscriptionId,
+            const boost::optional<int> optPropertyVersion)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResultCode);
+        _receiveMessage(topic, payload, optCorrelationId, optResultCode, optSubscriptionId, optPropertyVersion);
     });
-    _broker->Subscribe("signalOnly/signal/anotherSignal", 1);
+    _anotherSignalSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/anotherSignal", 2);
     
 }
 
@@ -34,14 +40,16 @@ void SignalOnlyClient::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<MethodResultCode> optResultCode)
+        const boost::optional<MethodResultCode> optResultCode,
+        const boost::optional<int> optSubscriptionId,
+        const boost::optional<int> optPropertyVersion)
 {
-    if (_broker->TopicMatchesSubscription(topic, "signalOnly/signal/anotherSignal"))
+    if ((optSubscriptionId && (*optSubscriptionId == _anotherSignalSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/anotherSignal"))
     {
         //Log("Handling anotherSignal signal");
         rapidjson::Document doc;
         try {
-            if (_anotherSignalCallback)
+            if (_anotherSignalSignalCallbacks.size() > 0)
             {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
@@ -94,8 +102,10 @@ void SignalOnlyClient::_receiveMessage(
                     }
                 }
                 
-
-                _anotherSignalCallback(tempone, temptwo, tempthree);
+                for (const auto& cb : _anotherSignalSignalCallbacks)
+                {
+                    cb(tempone, temptwo, tempthree);
+                }
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -108,6 +118,8 @@ void SignalOnlyClient::_receiveMessage(
 }
 void SignalOnlyClient::registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb)
 {
-    _anotherSignalCallback = cb;
+    _anotherSignalSignalCallbacks.push_back(cb);
 }
 
+
+ 

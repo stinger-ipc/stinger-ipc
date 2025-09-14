@@ -32,8 +32,11 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         while(!thisClient->_subscriptions.empty())
         {
             auto sub = thisClient->_subscriptions.front();
-            cout << "Subscribing to " << sub._topic << endl;
-            mosquitto_subscribe(mosq, NULL, sub._topic.c_str(), sub._qos);
+            cout << "Subscribing to " << sub.topic << endl;
+            mosquitto_property *propList = NULL;
+            mosquitto_property_add_int16(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, sub.subscriptionId);
+            int rc = mosquitto_subscribe_v5(mosq, NULL, sub.topic.c_str(), sub.qos, 0, propList);
+            mosquitto_property_free_all(&propList);
             thisClient->_subscriptions.pop();
         }
         while(!thisClient->_msgQueue.empty())
@@ -42,6 +45,7 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
             cout << "Sending message to " << msg._topic << endl;
             int mid;
             mosquitto_property *propList = NULL;
+            mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
             if (msg._optCorrelationId)
             {
                 mosquitto_property_add_string(&propList, MQTT_PROP_CORRELATION_DATA, msg._optCorrelationId->c_str());
@@ -66,6 +70,8 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         boost::optional<std::string> optCorrelationId;
         boost::optional<std::string> optResponseTopic;
         boost::optional<MethodResultCode> optResultCode;
+        boost::optional<int> optSubscriptionId = boost::none;
+        boost::optional<int> optPropertyVersion = boost::none;
         const mosquitto_property *prop;
         for (prop = props; prop != NULL; prop = mosquitto_property_next(prop))
         {
@@ -98,15 +104,28 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
                         int returnValueInt = boost::lexical_cast<int>(value);
                         optResultCode = static_cast<MethodResultCode>(returnValueInt);
                     }
+                    else if (strcmp(name, "PropertyVersion") == 0)
+                    {
+                        int propertyVersionInt = boost::lexical_cast<int>(value);
+                        optPropertyVersion = propertyVersionInt;
+                    }
                     free(name);
                     free(value);
+                }
+            }
+            else if (mosquitto_property_identifier(prop) == MQTT_PROP_SUBSCRIPTION_IDENTIFIER)
+            {
+                uint32_t subscriptionId;
+                if (mosquitto_property_read_int32(prop, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, &subscriptionId, false))
+                {
+                    optSubscriptionId = static_cast<int>(subscriptionId);
                 }
             }
         }
         for (auto& cb : thisClient->_messageCallbacks)
         {
             cout << "Calling callback" << endl;
-            cb(topic, payload, optCorrelationId, optResponseTopic, optResultCode);
+            cb(topic, payload, optCorrelationId, optResponseTopic, optResultCode, optSubscriptionId, optPropertyVersion);
         }
     });
 
@@ -193,13 +212,16 @@ boost::future<bool> MqttConnection::Publish(
     throw std::runtime_error("Unhandled rc");
 }
 
-void MqttConnection::Subscribe(const std::string& topic, int qos)
+int MqttConnection::Subscribe(const std::string& topic, int qos)
 {
-    std::cout << "Subscribing to " << topic << endl;
-    int rc = mosquitto_subscribe(_mosq, NULL, topic.c_str(), qos);
+    int subscriptionId = _nextSubscriptionId++;
+    mosquitto_property *propList = NULL;
+    mosquitto_property_add_int16(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, subscriptionId);
+    int rc = mosquitto_subscribe_v5(_mosq, NULL, topic.c_str(), qos, 0, propList);
+    mosquitto_property_free_all(&propList);
     if (rc == MOSQ_ERR_NO_CONN)
     {
-        MqttConnection::MqttSubscription sub(topic, qos);
+        MqttConnection::MqttSubscription sub(topic, qos, subscriptionId);
         boost::mutex::scoped_lock lock(_mutex);
         _subscriptions.push(sub);
     }
@@ -207,10 +229,19 @@ void MqttConnection::Subscribe(const std::string& topic, int qos)
     {
         std::cout << "Subscribed to " << topic << std::endl;
     }
+    return subscriptionId;
 }
 
 void MqttConnection::AddMessageCallback(
-        const std::function<void(const std::string&, const std::string&, const boost::optional<std::string>, const boost::optional<std::string>, const boost::optional<MethodResultCode>)>& cb)
+        const std::function<void(
+                const std::string&, 
+                const std::string&, 
+                const boost::optional<std::string>, 
+                const boost::optional<std::string>, 
+                const boost::optional<MethodResultCode>,
+                const boost::optional<int>,
+                const boost::optional<int>
+        )>& cb)
 {
     boost::mutex::scoped_lock lock(_mutex);
     _messageCallbacks.push_back(cb);

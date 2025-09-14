@@ -32,10 +32,10 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         while(!thisClient->_subscriptions.empty())
         {
             auto sub = thisClient->_subscriptions.front();
-            cout << "Subscribing to " << sub._topic << endl;
+            cout << "Subscribing to " << sub.topic << endl;
             mosquitto_property *propList = NULL;
             mosquitto_property_add_int16(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, sub.subscriptionId);
-            int rc = mosquitto_subscribe_v5(_mosq, NULL, sub.topic.c_str(), sub.qos, propList);
+            int rc = mosquitto_subscribe_v5(mosq, NULL, sub.topic.c_str(), sub.qos, 0, propList);
             mosquitto_property_free_all(&propList);
             thisClient->_subscriptions.pop();
         }
@@ -70,6 +70,8 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         boost::optional<std::string> optCorrelationId;
         boost::optional<std::string> optResponseTopic;
         boost::optional<MethodResultCode> optResultCode;
+        boost::optional<int> optSubscriptionId = boost::none;
+        boost::optional<int> optPropertyVersion = boost::none;
         const mosquitto_property *prop;
         for (prop = props; prop != NULL; prop = mosquitto_property_next(prop))
         {
@@ -102,15 +104,28 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
                         int returnValueInt = boost::lexical_cast<int>(value);
                         optResultCode = static_cast<MethodResultCode>(returnValueInt);
                     }
+                    else if (strcmp(name, "PropertyVersion") == 0)
+                    {
+                        int propertyVersionInt = boost::lexical_cast<int>(value);
+                        optPropertyVersion = propertyVersionInt;
+                    }
                     free(name);
                     free(value);
+                }
+            }
+            else if (mosquitto_property_identifier(prop) == MQTT_PROP_SUBSCRIPTION_IDENTIFIER)
+            {
+                uint32_t subscriptionId;
+                if (mosquitto_property_read_int32(prop, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, &subscriptionId, false))
+                {
+                    optSubscriptionId = static_cast<int>(subscriptionId);
                 }
             }
         }
         for (auto& cb : thisClient->_messageCallbacks)
         {
             cout << "Calling callback" << endl;
-            cb(topic, payload, optCorrelationId, optResponseTopic, optResultCode);
+            cb(topic, payload, optCorrelationId, optResponseTopic, optResultCode, optSubscriptionId, optPropertyVersion);
         }
     });
 
@@ -200,10 +215,9 @@ boost::future<bool> MqttConnection::Publish(
 int MqttConnection::Subscribe(const std::string& topic, int qos)
 {
     int subscriptionId = _nextSubscriptionId++;
-    std::cout << "Subscribing to " << topic << endl;
     mosquitto_property *propList = NULL;
     mosquitto_property_add_int16(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, subscriptionId);
-    int rc = mosquitto_subscribe_v5(_mosq, NULL, topic.c_str(), qos, propList);
+    int rc = mosquitto_subscribe_v5(_mosq, NULL, topic.c_str(), qos, 0, propList);
     mosquitto_property_free_all(&propList);
     if (rc == MOSQ_ERR_NO_CONN)
     {
@@ -215,10 +229,19 @@ int MqttConnection::Subscribe(const std::string& topic, int qos)
     {
         std::cout << "Subscribed to " << topic << std::endl;
     }
+    return subscriptionId;
 }
 
 void MqttConnection::AddMessageCallback(
-        const std::function<void(const std::string&, const std::string&, const boost::optional<std::string>, const boost::optional<std::string>, const boost::optional<MethodResultCode>)>& cb)
+        const std::function<void(
+                const std::string&, 
+                const std::string&, 
+                const boost::optional<std::string>, 
+                const boost::optional<std::string>, 
+                const boost::optional<MethodResultCode>,
+                const boost::optional<int>,
+                const boost::optional<int>
+        )>& cb)
 {
     boost::mutex::scoped_lock lock(_mutex);
     _messageCallbacks.push_back(cb);

@@ -19,9 +19,16 @@ constexpr const char FullServer::NAME[];
 constexpr const char FullServer::INTERFACE_VERSION[];
 
 FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
+    _broker->AddMessageCallback([this](
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<std::string> optResponseTopic, 
+            const boost::optional<MethodResultCode> unusedRc,
+            const boost::optional<int> optSubscriptionId, 
+            const boost::optional<int> optPropertyVersion)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
+        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic, optSubscriptionId, optPropertyVersion);
     });
     
     _broker->Subscribe("full/method/addNumbers", 2);
@@ -34,7 +41,9 @@ void FullServer::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<std::string> optResponseTopic)
+        const boost::optional<std::string> optResponseTopic,
+        const boost::optional<int> optSubscriptionId,
+        const boost::optional<int> optPropertyVersion)
 {
     
     if (_broker->TopicMatchesSubscription(topic, "full/method/addNumbers"))

@@ -16,10 +16,13 @@ It contains enumerations used by the SignalOnly interface.
 #include <mutex>
 #include <rapidjson/document.h>
 #include <boost/uuid/uuid.hpp>
-#include <boost/atomic.hpp>
+#include <boost/optional.hpp>
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
 #include "return_types.hpp"
+
+
+
 
 
 class SignalOnlyClient {
@@ -34,20 +37,36 @@ public:
     SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker);
 
     virtual ~SignalOnlyClient() = default;
-
+    // ------------------ SIGNALS --------------------
     
     // Register a callback for the `anotherSignal` signal.
     // The provided method will be called whenever a `anotherSignal` is received.
     void registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb);
     
-
     
-
     
-private: 
+    
+private:
+
     std::shared_ptr<IBrokerConnection> _broker;
-    void _receiveMessage(const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<MethodResultCode> optResultCode);
+    void _receiveMessage(
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<MethodResultCode> optResultCode, 
+            const boost::optional<int> optSubscriptionId,
+            const boost::optional<int> optPropertyVersion);
+    // ------------------ SIGNALS --------------------
+
     
-    std::function<void(double, bool, const std::string&)> _anotherSignalCallback;
+    // List of callbacks to be called whenever the `anotherSignal` signal is received.
+    std::vector<std::function<void(double, bool, const std::string&)>> _anotherSignalSignalCallbacks;
+    std::mutex _anotherSignalSignalCallbacksMutex;
+
+    // MQTT Subscription ID for `anotherSignal` signal receptions.
+    int _anotherSignalSignalSubscriptionId;
+    
+    
+    
     
 };

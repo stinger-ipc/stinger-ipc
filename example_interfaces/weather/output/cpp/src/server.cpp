@@ -19,9 +19,16 @@ constexpr const char WeatherServer::NAME[];
 constexpr const char WeatherServer::INTERFACE_VERSION[];
 
 WeatherServer::WeatherServer(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
+    _broker->AddMessageCallback([this](
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<std::string> optResponseTopic, 
+            const boost::optional<MethodResultCode> unusedRc,
+            const boost::optional<int> optSubscriptionId, 
+            const boost::optional<int> optPropertyVersion)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
+        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic, optSubscriptionId, optPropertyVersion);
     });
     
     _broker->Subscribe("weather/method/refreshDailyForecast", 2);
@@ -36,7 +43,9 @@ void WeatherServer::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<std::string> optResponseTopic)
+        const boost::optional<std::string> optResponseTopic,
+        const boost::optional<int> optSubscriptionId,
+        const boost::optional<int> optPropertyVersion)
 {
     
     if (_broker->TopicMatchesSubscription(topic, "weather/method/refreshDailyForecast"))

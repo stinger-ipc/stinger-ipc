@@ -8,10 +8,12 @@ It contains enumerations used by the Full interface.
 #pragma once
 #include <string>
 #include <boost/optional.hpp>
+#include <rapidjson/document.h>
 #include "enums.hpp"
 
 
 struct Lunch {
+    static Lunch FromRapidJsonObject(const rapidjson::Value& jsonObj);
     bool drink;
     std::string sandwich;
     double crackers;

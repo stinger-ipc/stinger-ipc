@@ -5,6 +5,9 @@
 {%for istruct_name, istruct in stinger.structs.items() %}
 {{istruct_name | UpperCamelCase }} {{istruct_name | UpperCamelCase }}::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
-    {{deser.deserialize(istruct_name, istruct.members, 'jsonObj')}}
+    {{istruct_name | UpperCamelCase }} {{istruct_name | lowerCamelCase }};
+    {{deser.deserialize(istruct_name|lowerCamelCase, istruct.members, 'jsonObj') | indent(4)}}
+
+    return {{istruct_name | lowerCamelCase}};
 };
 {%endfor%}

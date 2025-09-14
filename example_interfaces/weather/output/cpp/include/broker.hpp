@@ -58,14 +58,23 @@ public:
     /*! Subscribe to a topic.
      * \param topic the subscription topic.
      * \param qos an MQTT quality of service value between 0 and 2 inclusive.
+     * \return the MQTT subscription ID.
      */
-    virtual void Subscribe(const std::string& topic, int qos);
+    virtual int Subscribe(const std::string& topic, int qos);
 
     /*! Add a function that is called on the receipt of a message.
      * Many callbacks can be added, and each will be called in the order in which the callbacks were added.
      * \param cb the callback function.
      */
-    virtual void AddMessageCallback(const std::function<void(const std::string&, const std::string&, const boost::optional<std::string>, const boost::optional<std::string>, const boost::optional<MethodResultCode>)>& cb);
+    virtual void AddMessageCallback(const std::function<void(
+            const std::string&, 
+            const std::string&, 
+            const boost::optional<std::string>,
+            const boost::optional<std::string>, 
+            const boost::optional<MethodResultCode>,
+            const boost::optional<int>,
+            const boost::optional<int>
+        )>& cb);
 
     /*! Determines if a topic string matches a subscription topic.
      * \param topic a topic to match against a subscription.
@@ -99,20 +108,29 @@ private:
 
     struct MqttSubscription
     {
-        MqttSubscription(const std::string& topic, int qos) : _topic(topic), _qos(qos) {}
+        MqttSubscription(const std::string& topic, int qos, int subscriptionId) : topic(topic), qos(qos), subscriptionId(subscriptionId) {}
         ~MqttSubscription() = default;
-        std::string _topic;
-        int _qos;
-        int subscription_id;
+        std::string topic;
+        int qos;
+        int subscriptionId;
     };
 
     mosquitto *_mosq;
     std::string _host;
     int _port;
     std::string _clientId;
+    int _nextSubscriptionId = 1;
     std::queue<MqttSubscription> _subscriptions;
     boost::mutex _mutex;
-    std::vector<std::function<void(const std::string&, const std::string&, const boost::optional<std::string>, const boost::optional<std::string>, const boost::optional<MethodResultCode>)>> _messageCallbacks;
+    std::vector<std::function<void(
+            const std::string&, 
+            const std::string&, 
+            const boost::optional<std::string>, 
+            const boost::optional<std::string>, 
+            const boost::optional<MethodResultCode>,
+            const boost::optional<int>,
+            const boost::optional<int>
+    )>> _messageCallbacks;
     std::queue<MqttMessage> _msgQueue;
     std::map<int, std::shared_ptr<boost::promise<bool>>> _sendMessages;
 };

@@ -12,21 +12,30 @@ It contains enumerations used by the Full interface.
 #include "structs.hpp"
 
 
-struct FavoriteNumberProperty {
-    int number;
-    
-};
+
+/**
+ * The `favorite_number` property contains a single field:
+ *   int number;
+ *
+ * Because there is only one field, no outer-structure is needed. 
+ *
+ * My favorite number
+ * 
+ */
+typedef int FavoriteNumberProperty;
+
 
 struct FavoriteFoodsProperty {
+    static FavoriteFoodsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     std::string drink;
-    
     int slices_of_pizza;
-    
-    std::string breakfast;
-    
+    boost::optional<std::string> breakfast;
 };
 
+
 struct LunchMenuProperty {
+    static LunchMenuProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     Lunch monday;
     Lunch tuesday;
 };
+

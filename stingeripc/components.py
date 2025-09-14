@@ -252,6 +252,8 @@ class ArgPrimitive(Arg):
     @property
     def cpp_temp_type(self) -> str:
         if self._arg_type == ArgPrimitiveType.STRING:
+            if self.optional:
+                return "boost::optional<std::string>"
             return "std::string"
         else:
             return self.cpp_type
@@ -348,6 +350,10 @@ class ArgStruct(Arg):
     @property
     def markdown_type(self) -> str:
         return f"[Struct {self._interface_struct.class_name}](#enum-{self._interface_struct.class_name})"
+
+    @property
+    def cpp_rapidjson_type(self) -> str:
+        return "Object"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         example_list: dict[str, str] = {

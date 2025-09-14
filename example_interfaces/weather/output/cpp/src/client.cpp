@@ -16,17 +16,23 @@
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
 
-
 constexpr const char WeatherClient::NAME[];
 constexpr const char WeatherClient::INTERFACE_VERSION[];
 
 WeatherClient::WeatherClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> unusedRespTopic, const boost::optional<MethodResultCode> optResultCode)
+    _broker->AddMessageCallback([this](
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<std::string> unusedRespTopic, 
+            const boost::optional<MethodResultCode> optResultCode,
+            const boost::optional<int> optSubscriptionId,
+            const boost::optional<int> optPropertyVersion)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResultCode);
+        _receiveMessage(topic, payload, optCorrelationId, optResultCode, optSubscriptionId, optPropertyVersion);
     });
-    _broker->Subscribe("weather/signal/currentTime", 1);
+    _currentTimeSignalSubscriptionId = _broker->Subscribe("weather/signal/currentTime", 2);
     
     { // Restrict scope
         std::stringstream responseTopicStringStream;
@@ -43,20 +49,38 @@ WeatherClient::WeatherClient(std::shared_ptr<IBrokerConnection> broker) : _broke
         responseTopicStringStream << boost::format("client/%1%/weather/method/refreshCurrentConditions/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
+    _locationPropertySubscriptionId = _broker->Subscribe("weather/property/location/setValue", 1);
+    
+    _currentTemperaturePropertySubscriptionId = _broker->Subscribe("weather/property/currentTemperature/setValue", 1);
+    
+    _currentConditionPropertySubscriptionId = _broker->Subscribe("weather/property/currentCondition/setValue", 1);
+    
+    _dailyForecastPropertySubscriptionId = _broker->Subscribe("weather/property/dailyForecast/setValue", 1);
+    
+    _hourlyForecastPropertySubscriptionId = _broker->Subscribe("weather/property/hourlyForecast/setValue", 1);
+    
+    _currentConditionRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/property/currentConditionRefreshInterval/setValue", 1);
+    
+    _hourlyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/property/hourlyForecastRefreshInterval/setValue", 1);
+    
+    _dailyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/property/dailyForecastRefreshInterval/setValue", 1);
+    
 }
 
 void WeatherClient::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<MethodResultCode> optResultCode)
+        const boost::optional<MethodResultCode> optResultCode,
+        const boost::optional<int> optSubscriptionId,
+        const boost::optional<int> optPropertyVersion)
 {
-    if (_broker->TopicMatchesSubscription(topic, "weather/signal/currentTime"))
+    if ((optSubscriptionId && (*optSubscriptionId == _currentTimeSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "weather/signal/currentTime"))
     {
         //Log("Handling current_time signal");
         rapidjson::Document doc;
         try {
-            if (_currentTimeCallback)
+            if (_currentTimeSignalCallbacks.size() > 0)
             {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
@@ -83,8 +107,10 @@ void WeatherClient::_receiveMessage(
                     }
                 }
                 
-
-                _currentTimeCallback(tempcurrent_time);
+                for (const auto& cb : _currentTimeSignalCallbacks)
+                {
+                    cb(tempcurrent_time);
+                }
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -109,10 +135,42 @@ void WeatherClient::_receiveMessage(
         std::cout << "Matched topic for refresh_current_conditions response" << std::endl;
         _handleRefreshCurrentConditionsResponse(topic, payload, *optCorrelationId);
     }
+    if ((optSubscriptionId && (*optSubscriptionId == _locationPropertySubscriptionId)) || topic == "weather/property/location/setValue")
+    {
+        _receiveLocationPropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    else if ((optSubscriptionId && (*optSubscriptionId == _currentTemperaturePropertySubscriptionId)) || topic == "weather/property/currentTemperature/setValue")
+    {
+        _receiveCurrentTemperaturePropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    else if ((optSubscriptionId && (*optSubscriptionId == _currentConditionPropertySubscriptionId)) || topic == "weather/property/currentCondition/setValue")
+    {
+        _receiveCurrentConditionPropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    else if ((optSubscriptionId && (*optSubscriptionId == _dailyForecastPropertySubscriptionId)) || topic == "weather/property/dailyForecast/setValue")
+    {
+        _receiveDailyForecastPropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    else if ((optSubscriptionId && (*optSubscriptionId == _hourlyForecastPropertySubscriptionId)) || topic == "weather/property/hourlyForecast/setValue")
+    {
+        _receiveHourlyForecastPropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    else if ((optSubscriptionId && (*optSubscriptionId == _currentConditionRefreshIntervalPropertySubscriptionId)) || topic == "weather/property/currentConditionRefreshInterval/setValue")
+    {
+        _receiveCurrentConditionRefreshIntervalPropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    else if ((optSubscriptionId && (*optSubscriptionId == _hourlyForecastRefreshIntervalPropertySubscriptionId)) || topic == "weather/property/hourlyForecastRefreshInterval/setValue")
+    {
+        _receiveHourlyForecastRefreshIntervalPropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    else if ((optSubscriptionId && (*optSubscriptionId == _dailyForecastRefreshIntervalPropertySubscriptionId)) || topic == "weather/property/dailyForecastRefreshInterval/setValue")
+    {
+        _receiveDailyForecastRefreshIntervalPropertyUpdate(topic, payload, optPropertyVersion);
+    }
 }
 void WeatherClient::registerCurrentTimeCallback(const std::function<void(const std::string&)>& cb)
 {
-    _currentTimeCallback = cb;
+    _currentTimeSignalCallbacks.push_back(cb);
 }
 
 
@@ -262,3 +320,381 @@ void WeatherClient::_handleRefreshCurrentConditionsResponse(
 
     std::cout << "End of response handler for " << topic << std::endl;
 }
+
+
+void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse location property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received location payload is not an object");
+    }
+    LocationProperty tempValue;
+    
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("latitude");
+        if (itr != doc.MemberEnd() && itr->value.IsDouble()) {
+            
+            tempValue.latitude = itr->value.GetDouble();
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("longitude");
+        if (itr != doc.MemberEnd() && itr->value.IsDouble()) {
+            
+            tempValue.longitude = itr->value.GetDouble();
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(_locationPropertyMutex);
+    _locationProperty = tempValue;
+    _lastLocationPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _locationPropertyCallbacks)
+    {
+        cb(*_locationProperty);
+    }
+}
+
+void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse current_temperature property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received current_temperature payload is not an object");
+    }
+    CurrentTemperatureProperty tempValue;
+    
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("temperature_f");
+    if (itr != doc.MemberEnd() && itr->value.IsDouble()) {
+        
+    tempValue = itr->value.GetDouble();
+
+    } else {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
+    _currentTemperatureProperty = tempValue;
+    _lastCurrentTemperaturePropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _currentTemperaturePropertyCallbacks)
+    {
+        cb(*_currentTemperatureProperty);
+    }
+}
+
+void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse current_condition property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received current_condition payload is not an object");
+    }
+    CurrentConditionProperty tempValue;
+    
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("condition");
+        if (itr != doc.MemberEnd() && itr->value.IsInt()) {
+            
+            tempValue.condition = static_cast<WeatherCondition>(itr->value.GetInt());
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("description");
+        if (itr != doc.MemberEnd() && itr->value.IsString()) {
+            
+            tempValue.description = itr->value.GetString();
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
+    _currentConditionProperty = tempValue;
+    _lastCurrentConditionPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _currentConditionPropertyCallbacks)
+    {
+        cb(*_currentConditionProperty);
+    }
+}
+
+void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse daily_forecast property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received daily_forecast payload is not an object");
+    }
+    DailyForecastProperty tempValue;
+    
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("monday");
+        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
+            
+            tempValue.monday = ForecastForDay::FromRapidJsonObject(itr->value);
+
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("tuesday");
+        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
+            
+            tempValue.tuesday = ForecastForDay::FromRapidJsonObject(itr->value);
+
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("wednesday");
+        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
+            
+            tempValue.wednesday = ForecastForDay::FromRapidJsonObject(itr->value);
+
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
+    _dailyForecastProperty = tempValue;
+    _lastDailyForecastPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _dailyForecastPropertyCallbacks)
+    {
+        cb(*_dailyForecastProperty);
+    }
+}
+
+void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse hourly_forecast property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received hourly_forecast payload is not an object");
+    }
+    HourlyForecastProperty tempValue;
+    
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_0");
+        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
+            
+            tempValue.hour_0 = ForecastForHour::FromRapidJsonObject(itr->value);
+
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_1");
+        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
+            
+            tempValue.hour_1 = ForecastForHour::FromRapidJsonObject(itr->value);
+
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_2");
+        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
+            
+            tempValue.hour_2 = ForecastForHour::FromRapidJsonObject(itr->value);
+
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_3");
+        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
+            
+            tempValue.hour_3 = ForecastForHour::FromRapidJsonObject(itr->value);
+
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
+    _hourlyForecastProperty = tempValue;
+    _lastHourlyForecastPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _hourlyForecastPropertyCallbacks)
+    {
+        cb(*_hourlyForecastProperty);
+    }
+}
+
+void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse current_condition_refresh_interval property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received current_condition_refresh_interval payload is not an object");
+    }
+    CurrentConditionRefreshIntervalProperty tempValue;
+    
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
+    if (itr != doc.MemberEnd() && itr->value.IsInt()) {
+        
+    tempValue = itr->value.GetInt();
+
+    } else {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
+    _currentConditionRefreshIntervalProperty = tempValue;
+    _lastCurrentConditionRefreshIntervalPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _currentConditionRefreshIntervalPropertyCallbacks)
+    {
+        cb(*_currentConditionRefreshIntervalProperty);
+    }
+}
+
+void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse hourly_forecast_refresh_interval property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received hourly_forecast_refresh_interval payload is not an object");
+    }
+    HourlyForecastRefreshIntervalProperty tempValue;
+    
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
+    if (itr != doc.MemberEnd() && itr->value.IsInt()) {
+        
+    tempValue = itr->value.GetInt();
+
+    } else {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
+    _hourlyForecastRefreshIntervalProperty = tempValue;
+    _lastHourlyForecastRefreshIntervalPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _hourlyForecastRefreshIntervalPropertyCallbacks)
+    {
+        cb(*_hourlyForecastRefreshIntervalProperty);
+    }
+}
+
+void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse daily_forecast_refresh_interval property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received daily_forecast_refresh_interval payload is not an object");
+    }
+    DailyForecastRefreshIntervalProperty tempValue;
+    
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
+    if (itr != doc.MemberEnd() && itr->value.IsInt()) {
+        
+    tempValue = itr->value.GetInt();
+
+    } else {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
+    _dailyForecastRefreshIntervalProperty = tempValue;
+    _lastDailyForecastRefreshIntervalPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _dailyForecastRefreshIntervalPropertyCallbacks)
+    {
+        cb(*_dailyForecastRefreshIntervalProperty);
+    }
+}
+ 

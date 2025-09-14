@@ -8,5 +8,6 @@ It contains enumerations used by the SignalOnly interface.
 #pragma once
 #include <string>
 #include <boost/optional.hpp>
+#include <rapidjson/document.h>
 #include "enums.hpp"
 

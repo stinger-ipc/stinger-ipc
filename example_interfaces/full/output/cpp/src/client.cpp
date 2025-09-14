@@ -16,17 +16,23 @@
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
 
-
 constexpr const char FullClient::NAME[];
 constexpr const char FullClient::INTERFACE_VERSION[];
 
 FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
 {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> unusedRespTopic, const boost::optional<MethodResultCode> optResultCode)
+    _broker->AddMessageCallback([this](
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<std::string> unusedRespTopic, 
+            const boost::optional<MethodResultCode> optResultCode,
+            const boost::optional<int> optSubscriptionId,
+            const boost::optional<int> optPropertyVersion)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResultCode);
+        _receiveMessage(topic, payload, optCorrelationId, optResultCode, optSubscriptionId, optPropertyVersion);
     });
-    _broker->Subscribe("full/signal/todayIs", 1);
+    _todayIsSignalSubscriptionId = _broker->Subscribe("full/signal/todayIs", 2);
     
     { // Restrict scope
         std::stringstream responseTopicStringStream;
@@ -38,20 +44,28 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker) : _broker(brok
         responseTopicStringStream << boost::format("client/%1%/full/method/doSomething/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
+    _favoriteNumberPropertySubscriptionId = _broker->Subscribe("full/property/favoriteNumber/setValue", 1);
+    
+    _favoriteFoodsPropertySubscriptionId = _broker->Subscribe("full/property/favoriteFoods/setValue", 1);
+    
+    _lunchMenuPropertySubscriptionId = _broker->Subscribe("full/property/lunchMenu/setValue", 1);
+    
 }
 
 void FullClient::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<MethodResultCode> optResultCode)
+        const boost::optional<MethodResultCode> optResultCode,
+        const boost::optional<int> optSubscriptionId,
+        const boost::optional<int> optPropertyVersion)
 {
-    if (_broker->TopicMatchesSubscription(topic, "full/signal/todayIs"))
+    if ((optSubscriptionId && (*optSubscriptionId == _todayIsSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "full/signal/todayIs"))
     {
         //Log("Handling todayIs signal");
         rapidjson::Document doc;
         try {
-            if (_todayIsCallback)
+            if (_todayIsSignalCallbacks.size() > 0)
             {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
@@ -91,8 +105,10 @@ void FullClient::_receiveMessage(
                     }
                 }
                 
-
-                _todayIsCallback(tempdayOfMonth, tempdayOfWeek);
+                for (const auto& cb : _todayIsSignalCallbacks)
+                {
+                    cb(tempdayOfMonth, tempdayOfWeek);
+                }
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -112,10 +128,22 @@ void FullClient::_receiveMessage(
         std::cout << "Matched topic for doSomething response" << std::endl;
         _handleDoSomethingResponse(topic, payload, *optCorrelationId);
     }
+    if ((optSubscriptionId && (*optSubscriptionId == _favoriteNumberPropertySubscriptionId)) || topic == "full/property/favoriteNumber/setValue")
+    {
+        _receiveFavoriteNumberPropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    else if ((optSubscriptionId && (*optSubscriptionId == _favoriteFoodsPropertySubscriptionId)) || topic == "full/property/favoriteFoods/setValue")
+    {
+        _receiveFavoriteFoodsPropertyUpdate(topic, payload, optPropertyVersion);
+    }
+    else if ((optSubscriptionId && (*optSubscriptionId == _lunchMenuPropertySubscriptionId)) || topic == "full/property/lunchMenu/setValue")
+    {
+        _receiveLunchMenuPropertyUpdate(topic, payload, optPropertyVersion);
+    }
 }
 void FullClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb)
 {
-    _todayIsCallback = cb;
+    _todayIsSignalCallbacks.push_back(cb);
 }
 
 
@@ -254,3 +282,150 @@ void FullClient::_handleDoSomethingResponse(
 
     std::cout << "End of response handler for " << topic << std::endl;
 }
+
+
+void FullClient::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse favorite_number property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received favorite_number payload is not an object");
+    }
+    FavoriteNumberProperty tempValue;
+    
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("number");
+    if (itr != doc.MemberEnd() && itr->value.IsInt()) {
+        
+    tempValue = itr->value.GetInt();
+
+    } else {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    std::lock_guard<std::mutex> lock(_favoriteNumberPropertyMutex);
+    _favoriteNumberProperty = tempValue;
+    _lastFavoriteNumberPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _favoriteNumberPropertyCallbacks)
+    {
+        cb(*_favoriteNumberProperty);
+    }
+}
+
+void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse favorite_foods property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received favorite_foods payload is not an object");
+    }
+    FavoriteFoodsProperty tempValue;
+    
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("drink");
+        if (itr != doc.MemberEnd() && itr->value.IsString()) {
+            
+            tempValue.drink = itr->value.GetString();
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("slices_of_pizza");
+        if (itr != doc.MemberEnd() && itr->value.IsInt()) {
+            
+            tempValue.slices_of_pizza = itr->value.GetInt();
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("breakfast");
+        if (itr != doc.MemberEnd() && itr->value.IsString()) {
+            
+            tempValue.breakfast = itr->value.GetString();
+
+        } else {
+            tempValue.breakfast = boost::none;
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
+    _favoriteFoodsProperty = tempValue;
+    _lastFavoriteFoodsPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _favoriteFoodsPropertyCallbacks)
+    {
+        cb(*_favoriteFoodsProperty);
+    }
+}
+
+void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse lunch_menu property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received lunch_menu payload is not an object");
+    }
+    LunchMenuProperty tempValue;
+    
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("monday");
+        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
+            
+            tempValue.monday = Lunch::FromRapidJsonObject(itr->value);
+
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("tuesday");
+        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
+            
+            tempValue.tuesday = Lunch::FromRapidJsonObject(itr->value);
+
+
+        } else {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
+    _lunchMenuProperty = tempValue;
+    _lastLunchMenuPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+
+    // Notify all registered callbacks.
+    for (const auto& cb : _lunchMenuPropertyCallbacks)
+    {
+        cb(*_lunchMenuProperty);
+    }
+}
+ 

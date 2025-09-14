@@ -19,9 +19,16 @@ constexpr const char {{stinger.cpp.server_class_name}}::NAME[];
 constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
 
 {{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](const std::string& topic, const std::string& payload, const boost::optional<std::string> optCorrelationId, const boost::optional<std::string> optResponseTopic, const boost::optional<MethodResultCode> unusedRc)
+    _broker->AddMessageCallback([this](
+            const std::string& topic, 
+            const std::string& payload, 
+            const boost::optional<std::string> optCorrelationId, 
+            const boost::optional<std::string> optResponseTopic, 
+            const boost::optional<MethodResultCode> unusedRc,
+            const boost::optional<int> optSubscriptionId, 
+            const boost::optional<int> optPropertyVersion)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic);
+        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic, optSubscriptionId, optPropertyVersion);
     });
     {%for method in stinger.methods.values()%}
     _broker->Subscribe("{{method.topic}}", 2);
@@ -32,7 +39,9 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<std::string> optResponseTopic)
+        const boost::optional<std::string> optResponseTopic,
+        const boost::optional<int> optSubscriptionId,
+        const boost::optional<int> optPropertyVersion)
 {
     {%for method_name, method in stinger.methods.items()%}
     if (_broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
