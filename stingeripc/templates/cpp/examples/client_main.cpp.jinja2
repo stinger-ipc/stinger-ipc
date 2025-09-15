@@ -1,3 +1,4 @@
+{% import 'partials/args.jinja2' as ar %}
 
 #include <iostream>
 #include <boost/chrono/chrono.hpp>
@@ -15,6 +16,23 @@ int main(int argc, char** argv) {
         std::cout << {%for arg in sig.arg_list%}"{{arg.name}}=" << {%-if arg.optional%} "None"{%else%}{%if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]{%else%}{{arg.name}}{%endif%}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
     });
     {%-endfor%}
+
+    {%- for prop_name, prop in stinger.properties.items() %}
+    client.register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.methodParams(prop.arg_list)}}) {
+        std::cout << "Received update for {{prop_name}} property: " << {# #}
+                        {%-for arg in prop.arg_list-%}
+                        "{{arg.name}}=" << {%if arg.optional%} "None"{%else%}
+                            {%-if arg.arg_type.name.lower() == 'enum'%}
+                                {{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]
+                            {%elif arg.arg_type.name.lower() == 'struct'-%}
+                                "[{{arg.cpp_type}} object]"
+                            {%-else%}{{arg.name}}{%endif%}
+                            {%-endif%} <<
+                         {%-if not loop.last %} " | " << {%endif%}
+                        {%-endfor-%} 
+                        std::endl;
+    });
+    {%endfor%}
 
     {%-for method_name, method in stinger.methods.items() %}
     std::cout << "Calling {{method_name}}" << std::endl;

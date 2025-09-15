@@ -369,12 +369,15 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
         _lastLocationPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _locationPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue.latitude, tempValue.longitude);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_locationPropertyCallbacksMutex);
+        for (const auto& cb : _locationPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue.latitude, tempValue.longitude);
+            
+        }
     }
 }
 
@@ -412,6 +415,7 @@ boost::future<bool> WeatherClient::updateLocationProperty(double latitude, doubl
 
 }
 
+
 void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
@@ -442,12 +446,15 @@ void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
         _lastCurrentTemperaturePropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _currentTemperaturePropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentTemperaturePropertyCallbacksMutex);
+        for (const auto& cb : _currentTemperaturePropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue);
+            
+        }
     }
 }
 
@@ -463,23 +470,6 @@ void WeatherClient::registerCurrentTemperaturePropertyCallback(const std::functi
     _currentTemperaturePropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> WeatherClient::updateCurrentTemperatureProperty(double temperature_f) const
-{
-
-    rapidjson::Document doc;
-    doc.SetObject();
-    
-    
-    doc.AddMember("temperature_f", temperature_f, doc.GetAllocator());
-
-    
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish("weather/property/currentTemperature/setValue", buf.GetString(), 1, false, mqttProps);
-
-}
 
 void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
@@ -525,12 +515,15 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
         _lastCurrentConditionPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _currentConditionPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue.condition, tempValue.description);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentConditionPropertyCallbacksMutex);
+        for (const auto& cb : _currentConditionPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue.condition, tempValue.description);
+            
+        }
     }
 }
 
@@ -546,30 +539,6 @@ void WeatherClient::registerCurrentConditionPropertyCallback(const std::function
     _currentConditionPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> WeatherClient::updateCurrentConditionProperty(WeatherCondition condition, const std::string& description) const
-{
-
-    rapidjson::Document doc;
-    doc.SetObject();
-    
-    
-    doc.AddMember("condition", static_cast<int>(condition), doc.GetAllocator());
-    
-    
-    { // restrict scope
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString(description.c_str(), description.size(), doc.GetAllocator());
-        doc.AddMember("description", tempStringValue, doc.GetAllocator());
-    }
-
-    
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish("weather/property/currentCondition/setValue", buf.GetString(), 1, false, mqttProps);
-
-}
 
 void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
@@ -629,12 +598,15 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
         _lastDailyForecastPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _dailyForecastPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue.monday, tempValue.tuesday, tempValue.wednesday);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_dailyForecastPropertyCallbacksMutex);
+        for (const auto& cb : _dailyForecastPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue.monday, tempValue.tuesday, tempValue.wednesday);
+            
+        }
     }
 }
 
@@ -650,25 +622,6 @@ void WeatherClient::registerDailyForecastPropertyCallback(const std::function<vo
     _dailyForecastPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> WeatherClient::updateDailyForecastProperty(ForecastForDay monday, ForecastForDay tuesday, ForecastForDay wednesday) const
-{
-
-    rapidjson::Document doc;
-    doc.SetObject();
-    
-    
-    
-    
-    
-    
-    
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish("weather/property/dailyForecast/setValue", buf.GetString(), 1, false, mqttProps);
-
-}
 
 void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
@@ -740,12 +693,15 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         _lastHourlyForecastPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _hourlyForecastPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue.hour_0, tempValue.hour_1, tempValue.hour_2, tempValue.hour_3);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_hourlyForecastPropertyCallbacksMutex);
+        for (const auto& cb : _hourlyForecastPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue.hour_0, tempValue.hour_1, tempValue.hour_2, tempValue.hour_3);
+            
+        }
     }
 }
 
@@ -761,27 +717,6 @@ void WeatherClient::registerHourlyForecastPropertyCallback(const std::function<v
     _hourlyForecastPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> WeatherClient::updateHourlyForecastProperty(ForecastForHour hour_0, ForecastForHour hour_1, ForecastForHour hour_2, ForecastForHour hour_3) const
-{
-
-    rapidjson::Document doc;
-    doc.SetObject();
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish("weather/property/hourlyForecast/setValue", buf.GetString(), 1, false, mqttProps);
-
-}
 
 void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
@@ -813,12 +748,15 @@ void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const 
         _lastCurrentConditionRefreshIntervalPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _currentConditionRefreshIntervalPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyCallbacksMutex);
+        for (const auto& cb : _currentConditionRefreshIntervalPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue);
+            
+        }
     }
 }
 
@@ -852,6 +790,7 @@ boost::future<bool> WeatherClient::updateCurrentConditionRefreshIntervalProperty
 
 }
 
+
 void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
@@ -882,12 +821,15 @@ void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const st
         _lastHourlyForecastRefreshIntervalPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _hourlyForecastRefreshIntervalPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyCallbacksMutex);
+        for (const auto& cb : _hourlyForecastRefreshIntervalPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue);
+            
+        }
     }
 }
 
@@ -921,6 +863,7 @@ boost::future<bool> WeatherClient::updateHourlyForecastRefreshIntervalProperty(i
 
 }
 
+
 void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
@@ -951,12 +894,15 @@ void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std
         _lastDailyForecastRefreshIntervalPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _dailyForecastRefreshIntervalPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyCallbacksMutex);
+        for (const auto& cb : _dailyForecastRefreshIntervalPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue);
+            
+        }
     }
 }
 
@@ -989,4 +935,5 @@ boost::future<bool> WeatherClient::updateDailyForecastRefreshIntervalProperty(in
     return _broker->Publish("weather/property/dailyForecastRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
 
 }
+
  

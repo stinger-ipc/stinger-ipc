@@ -65,20 +65,22 @@ public:
     // Add a callback that will be called whenever the `{{prop_name}}` property is updated.
     // The provided method will be called whenever a new value for the `{{prop_name}}` property is received.
     void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.declarationParams(prop.arg_list)}})>& cb);
-
+    {% if not prop.read_only %}
     boost::future<bool> update{{prop_name | UpperCamelCase}}Property({{ar.declarationParams(prop.arg_list)}}) const;
+    {%endif%}
     {%endfor%}
     {%endif%}
 private:
-
+    // Pointer to the broker connection.
     std::shared_ptr<IBrokerConnection> _broker;
+
+    // Internal method for receiving messages from the broker.
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 
             const MqttProperties& mqttProps);
-    {%if stinger.signals|length > 0 -%}
+    {%if stinger.signals|length > 0 %}
     // ------------------ SIGNALS --------------------
-
     {%for sig_name, sig in stinger.signals.items()%}
     // List of callbacks to be called whenever the `{{sig_name}}` signal is received.
     std::vector<std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> _{{sig_name | lowerCamelCase}}SignalCallbacks;
@@ -92,9 +94,10 @@ private:
     // ------------------- METHODS --------------------
 
     {%-for method_name, method in stinger.methods.items()%}
-    // Holds promises for pending `{{sig_name}}` method calls.
+    // Holds promises for pending `{{method_name}}` method calls.
     std::map<boost::uuids::uuid, boost::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
 
+    // This is called internally to process responses to `{{method_name}}` method calls.
     void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const std::string& correlationId);
     {%-endfor%}
     {%endif%}
@@ -106,7 +109,11 @@ private:
 
     // Last received value{%if prop.arg_list|length > 1%}s{%endif%} for the `{{prop_name}}` property.
     boost::optional<{{prop_value_type(prop)}}> _{{prop_name | lowerCamelCase}}Property;
+
+    // This is the property version of the last received `{{prop_name}}` property update.
     int _last{{prop_name | UpperCamelCase}}PropertyVersion = -1;
+
+    // Mutex for protecting access to the `{{prop_name}}` property and its version.
     mutable std::mutex _{{prop_name | lowerCamelCase}}PropertyMutex;
    
     // MQTT Subscription ID for `{{prop_name}}` property updates.

@@ -1,4 +1,5 @@
 
+
 #include <iostream>
 #include <boost/chrono/chrono.hpp>
 #include "broker.hpp"
@@ -12,6 +13,18 @@ int main(int argc, char** argv) {
     client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek) {
         std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" << "None" <<  std::endl;
     });
+    client.registerFavoriteNumberPropertyCallback([](int number) {
+        std::cout << "Received update for favorite_number property: " << "number=" << number <<std::endl;
+    });
+    
+    client.registerFavoriteFoodsPropertyCallback([](const std::string& drink, int slices_of_pizza, boost::optional<std::string> breakfast) {
+        std::cout << "Received update for favorite_foods property: " << "drink=" << drink << " | " << "slices_of_pizza=" << slices_of_pizza << " | " << "breakfast=" <<  "None" <<std::endl;
+    });
+    
+    client.registerLunchMenuPropertyCallback([](Lunch monday, Lunch tuesday) {
+        std::cout << "Received update for lunch_menu property: " << "monday=" << "[Lunch object]" << " | " << "tuesday=" << "[Lunch object]" <<std::endl;
+    });
+    
     std::cout << "Calling addNumbers" << std::endl;
     auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
     auto addNumbersStatus = addNumbersResultFuture.wait_for(boost::chrono::seconds(5));

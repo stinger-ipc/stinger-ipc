@@ -235,14 +235,17 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
         _last{{prop_name | UpperCamelCase}}PropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        {%if prop.arg_list | length > 1 %}
-        cb({%for arg in prop.arg_list %}tempValue.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
-        {%else %}
-        cb(tempValue);
-        {%endif %}
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
+        for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            {%if prop.arg_list | length > 1 %}
+            cb({%for arg in prop.arg_list %}tempValue.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+            {%else %}
+            cb(tempValue);
+            {%endif %}
+        }
     }
 }
 
@@ -257,7 +260,7 @@ void {{stinger.cpp.client_class_name}}::register{{prop_name | UpperCamelCase}}Pr
     std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
     _{{prop_name | lowerCamelCase}}PropertyCallbacks.push_back(cb);
 }
-
+{% if not prop.read_only %}
 boost::future<bool> {{stinger.cpp.client_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
 {
 
@@ -273,4 +276,5 @@ boost::future<bool> {{stinger.cpp.client_class_name}}::update{{prop_name | Upper
     return _broker->Publish("{{prop.update_topic}}", buf.GetString(), 1, false, mqttProps);
 
 }
+{%endif%}
 {% endfor %} {# for properties #}

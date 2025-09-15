@@ -66,8 +66,9 @@ public:
     // Add a callback that will be called whenever the `favorite_number` property is updated.
     // The provided method will be called whenever a new value for the `favorite_number` property is received.
     void registerFavoriteNumberPropertyCallback(const std::function<void(int)>& cb);
-
+    
     boost::future<bool> updateFavoriteNumberProperty(int) const;
+    
     
     // ---favorite_foods Property---
 
@@ -78,8 +79,9 @@ public:
     // Add a callback that will be called whenever the `favorite_foods` property is updated.
     // The provided method will be called whenever a new value for the `favorite_foods` property is received.
     void registerFavoriteFoodsPropertyCallback(const std::function<void(const std::string&, int, boost::optional<std::string>)>& cb);
-
+    
     boost::future<bool> updateFavoriteFoodsProperty(const std::string&, int, boost::optional<std::string>) const;
+    
     
     // ---lunch_menu Property---
 
@@ -90,19 +92,22 @@ public:
     // Add a callback that will be called whenever the `lunch_menu` property is updated.
     // The provided method will be called whenever a new value for the `lunch_menu` property is received.
     void registerLunchMenuPropertyCallback(const std::function<void(Lunch, Lunch)>& cb);
-
+    
     boost::future<bool> updateLunchMenuProperty(Lunch, Lunch) const;
     
     
+    
 private:
-
+    // Pointer to the broker connection.
     std::shared_ptr<IBrokerConnection> _broker;
+
+    // Internal method for receiving messages from the broker.
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 
             const MqttProperties& mqttProps);
+    
     // ------------------ SIGNALS --------------------
-
     
     // List of callbacks to be called whenever the `todayIs` signal is received.
     std::vector<std::function<void(int, boost::optional<DayOfTheWeek>)>> _todayIsSignalCallbacks;
@@ -113,13 +118,15 @@ private:
     
     
     // ------------------- METHODS --------------------
-    // Holds promises for pending `` method calls.
+    // Holds promises for pending `addNumbers` method calls.
     std::map<boost::uuids::uuid, boost::promise<int>> _pendingAddNumbersMethodCalls;
 
+    // This is called internally to process responses to `addNumbers` method calls.
     void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
-    // Holds promises for pending `` method calls.
+    // Holds promises for pending `doSomething` method calls.
     std::map<boost::uuids::uuid, boost::promise<DoSomethingReturnValue>> _pendingDoSomethingMethodCalls;
 
+    // This is called internally to process responses to `doSomething` method calls.
     void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
     
     // ---------------- PROPERTIES ------------------
@@ -129,7 +136,11 @@ private:
 
     // Last received value for the `favorite_number` property.
     boost::optional<FavoriteNumberProperty> _favoriteNumberProperty;
+
+    // This is the property version of the last received `favorite_number` property update.
     int _lastFavoriteNumberPropertyVersion = -1;
+
+    // Mutex for protecting access to the `favorite_number` property and its version.
     mutable std::mutex _favoriteNumberPropertyMutex;
    
     // MQTT Subscription ID for `favorite_number` property updates.
@@ -147,7 +158,11 @@ private:
 
     // Last received values for the `favorite_foods` property.
     boost::optional<struct FavoriteFoodsProperty> _favoriteFoodsProperty;
+
+    // This is the property version of the last received `favorite_foods` property update.
     int _lastFavoriteFoodsPropertyVersion = -1;
+
+    // Mutex for protecting access to the `favorite_foods` property and its version.
     mutable std::mutex _favoriteFoodsPropertyMutex;
    
     // MQTT Subscription ID for `favorite_foods` property updates.
@@ -165,7 +180,11 @@ private:
 
     // Last received values for the `lunch_menu` property.
     boost::optional<struct LunchMenuProperty> _lunchMenuProperty;
+
+    // This is the property version of the last received `lunch_menu` property update.
     int _lastLunchMenuPropertyVersion = -1;
+
+    // Mutex for protecting access to the `lunch_menu` property and its version.
     mutable std::mutex _lunchMenuPropertyMutex;
    
     // MQTT Subscription ID for `lunch_menu` property updates.

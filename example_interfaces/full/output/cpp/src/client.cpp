@@ -317,12 +317,15 @@ void FullClient::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, 
         _lastFavoriteNumberPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _favoriteNumberPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteNumberPropertyCallbacksMutex);
+        for (const auto& cb : _favoriteNumberPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue);
+            
+        }
     }
 }
 
@@ -355,6 +358,7 @@ boost::future<bool> FullClient::updateFavoriteNumberProperty(int number) const
     return _broker->Publish("full/property/favoriteNumber/setValue", buf.GetString(), 1, false, mqttProps);
 
 }
+
 
 void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
@@ -410,12 +414,15 @@ void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, c
         _lastFavoriteFoodsPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _favoriteFoodsPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue.drink, tempValue.slices_of_pizza, tempValue.breakfast);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyCallbacksMutex);
+        for (const auto& cb : _favoriteFoodsPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue.drink, tempValue.slices_of_pizza, tempValue.breakfast);
+            
+        }
     }
 }
 
@@ -465,6 +472,7 @@ boost::future<bool> FullClient::updateFavoriteFoodsProperty(const std::string& d
 
 }
 
+
 void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
@@ -511,12 +519,15 @@ void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
         _lastLunchMenuPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
     }
     // Notify all registered callbacks.
-    for (const auto& cb : _lunchMenuPropertyCallbacks)
-    {
-        // Don't need a mutex since we're using tempValue.
-        
-        cb(tempValue.monday, tempValue.tuesday);
-        
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_lunchMenuPropertyCallbacksMutex);
+        for (const auto& cb : _lunchMenuPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            
+            cb(tempValue.monday, tempValue.tuesday);
+            
+        }
     }
 }
 
@@ -549,4 +560,5 @@ boost::future<bool> FullClient::updateLunchMenuProperty(Lunch monday, Lunch tues
     return _broker->Publish("full/property/lunchMenu/setValue", buf.GetString(), 1, false, mqttProps);
 
 }
+
  

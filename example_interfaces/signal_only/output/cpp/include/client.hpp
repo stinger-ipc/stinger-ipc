@@ -47,14 +47,16 @@ public:
     
     
 private:
-
+    // Pointer to the broker connection.
     std::shared_ptr<IBrokerConnection> _broker;
+
+    // Internal method for receiving messages from the broker.
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 
             const MqttProperties& mqttProps);
+    
     // ------------------ SIGNALS --------------------
-
     
     // List of callbacks to be called whenever the `anotherSignal` signal is received.
     std::vector<std::function<void(double, bool, const std::string&)>> _anotherSignalSignalCallbacks;

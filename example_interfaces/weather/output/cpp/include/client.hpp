@@ -70,8 +70,9 @@ public:
     // Add a callback that will be called whenever the `location` property is updated.
     // The provided method will be called whenever a new value for the `location` property is received.
     void registerLocationPropertyCallback(const std::function<void(double, double)>& cb);
-
+    
     boost::future<bool> updateLocationProperty(double, double) const;
+    
     
     // ---current_temperature Property---
 
@@ -82,8 +83,7 @@ public:
     // Add a callback that will be called whenever the `current_temperature` property is updated.
     // The provided method will be called whenever a new value for the `current_temperature` property is received.
     void registerCurrentTemperaturePropertyCallback(const std::function<void(double)>& cb);
-
-    boost::future<bool> updateCurrentTemperatureProperty(double) const;
+    
     
     // ---current_condition Property---
 
@@ -94,8 +94,7 @@ public:
     // Add a callback that will be called whenever the `current_condition` property is updated.
     // The provided method will be called whenever a new value for the `current_condition` property is received.
     void registerCurrentConditionPropertyCallback(const std::function<void(WeatherCondition, const std::string&)>& cb);
-
-    boost::future<bool> updateCurrentConditionProperty(WeatherCondition, const std::string&) const;
+    
     
     // ---daily_forecast Property---
 
@@ -106,8 +105,7 @@ public:
     // Add a callback that will be called whenever the `daily_forecast` property is updated.
     // The provided method will be called whenever a new value for the `daily_forecast` property is received.
     void registerDailyForecastPropertyCallback(const std::function<void(ForecastForDay, ForecastForDay, ForecastForDay)>& cb);
-
-    boost::future<bool> updateDailyForecastProperty(ForecastForDay, ForecastForDay, ForecastForDay) const;
+    
     
     // ---hourly_forecast Property---
 
@@ -118,8 +116,7 @@ public:
     // Add a callback that will be called whenever the `hourly_forecast` property is updated.
     // The provided method will be called whenever a new value for the `hourly_forecast` property is received.
     void registerHourlyForecastPropertyCallback(const std::function<void(ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour)>& cb);
-
-    boost::future<bool> updateHourlyForecastProperty(ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour) const;
+    
     
     // ---current_condition_refresh_interval Property---
 
@@ -130,8 +127,9 @@ public:
     // Add a callback that will be called whenever the `current_condition_refresh_interval` property is updated.
     // The provided method will be called whenever a new value for the `current_condition_refresh_interval` property is received.
     void registerCurrentConditionRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
-
+    
     boost::future<bool> updateCurrentConditionRefreshIntervalProperty(int) const;
+    
     
     // ---hourly_forecast_refresh_interval Property---
 
@@ -142,8 +140,9 @@ public:
     // Add a callback that will be called whenever the `hourly_forecast_refresh_interval` property is updated.
     // The provided method will be called whenever a new value for the `hourly_forecast_refresh_interval` property is received.
     void registerHourlyForecastRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
-
+    
     boost::future<bool> updateHourlyForecastRefreshIntervalProperty(int) const;
+    
     
     // ---daily_forecast_refresh_interval Property---
 
@@ -154,19 +153,22 @@ public:
     // Add a callback that will be called whenever the `daily_forecast_refresh_interval` property is updated.
     // The provided method will be called whenever a new value for the `daily_forecast_refresh_interval` property is received.
     void registerDailyForecastRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
-
+    
     boost::future<bool> updateDailyForecastRefreshIntervalProperty(int) const;
     
     
+    
 private:
-
+    // Pointer to the broker connection.
     std::shared_ptr<IBrokerConnection> _broker;
+
+    // Internal method for receiving messages from the broker.
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 
             const MqttProperties& mqttProps);
+    
     // ------------------ SIGNALS --------------------
-
     
     // List of callbacks to be called whenever the `current_time` signal is received.
     std::vector<std::function<void(const std::string&)>> _currentTimeSignalCallbacks;
@@ -177,17 +179,20 @@ private:
     
     
     // ------------------- METHODS --------------------
-    // Holds promises for pending `` method calls.
+    // Holds promises for pending `refresh_daily_forecast` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshDailyForecastMethodCalls;
 
+    // This is called internally to process responses to `refresh_daily_forecast` method calls.
     void _handleRefreshDailyForecastResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
-    // Holds promises for pending `` method calls.
+    // Holds promises for pending `refresh_hourly_forecast` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshHourlyForecastMethodCalls;
 
+    // This is called internally to process responses to `refresh_hourly_forecast` method calls.
     void _handleRefreshHourlyForecastResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
-    // Holds promises for pending `` method calls.
+    // Holds promises for pending `refresh_current_conditions` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshCurrentConditionsMethodCalls;
 
+    // This is called internally to process responses to `refresh_current_conditions` method calls.
     void _handleRefreshCurrentConditionsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
     
     // ---------------- PROPERTIES ------------------
@@ -197,7 +202,11 @@ private:
 
     // Last received values for the `location` property.
     boost::optional<struct LocationProperty> _locationProperty;
+
+    // This is the property version of the last received `location` property update.
     int _lastLocationPropertyVersion = -1;
+
+    // Mutex for protecting access to the `location` property and its version.
     mutable std::mutex _locationPropertyMutex;
    
     // MQTT Subscription ID for `location` property updates.
@@ -215,7 +224,11 @@ private:
 
     // Last received value for the `current_temperature` property.
     boost::optional<CurrentTemperatureProperty> _currentTemperatureProperty;
+
+    // This is the property version of the last received `current_temperature` property update.
     int _lastCurrentTemperaturePropertyVersion = -1;
+
+    // Mutex for protecting access to the `current_temperature` property and its version.
     mutable std::mutex _currentTemperaturePropertyMutex;
    
     // MQTT Subscription ID for `current_temperature` property updates.
@@ -233,7 +246,11 @@ private:
 
     // Last received values for the `current_condition` property.
     boost::optional<struct CurrentConditionProperty> _currentConditionProperty;
+
+    // This is the property version of the last received `current_condition` property update.
     int _lastCurrentConditionPropertyVersion = -1;
+
+    // Mutex for protecting access to the `current_condition` property and its version.
     mutable std::mutex _currentConditionPropertyMutex;
    
     // MQTT Subscription ID for `current_condition` property updates.
@@ -251,7 +268,11 @@ private:
 
     // Last received values for the `daily_forecast` property.
     boost::optional<struct DailyForecastProperty> _dailyForecastProperty;
+
+    // This is the property version of the last received `daily_forecast` property update.
     int _lastDailyForecastPropertyVersion = -1;
+
+    // Mutex for protecting access to the `daily_forecast` property and its version.
     mutable std::mutex _dailyForecastPropertyMutex;
    
     // MQTT Subscription ID for `daily_forecast` property updates.
@@ -269,7 +290,11 @@ private:
 
     // Last received values for the `hourly_forecast` property.
     boost::optional<struct HourlyForecastProperty> _hourlyForecastProperty;
+
+    // This is the property version of the last received `hourly_forecast` property update.
     int _lastHourlyForecastPropertyVersion = -1;
+
+    // Mutex for protecting access to the `hourly_forecast` property and its version.
     mutable std::mutex _hourlyForecastPropertyMutex;
    
     // MQTT Subscription ID for `hourly_forecast` property updates.
@@ -287,7 +312,11 @@ private:
 
     // Last received value for the `current_condition_refresh_interval` property.
     boost::optional<CurrentConditionRefreshIntervalProperty> _currentConditionRefreshIntervalProperty;
+
+    // This is the property version of the last received `current_condition_refresh_interval` property update.
     int _lastCurrentConditionRefreshIntervalPropertyVersion = -1;
+
+    // Mutex for protecting access to the `current_condition_refresh_interval` property and its version.
     mutable std::mutex _currentConditionRefreshIntervalPropertyMutex;
    
     // MQTT Subscription ID for `current_condition_refresh_interval` property updates.
@@ -305,7 +334,11 @@ private:
 
     // Last received value for the `hourly_forecast_refresh_interval` property.
     boost::optional<HourlyForecastRefreshIntervalProperty> _hourlyForecastRefreshIntervalProperty;
+
+    // This is the property version of the last received `hourly_forecast_refresh_interval` property update.
     int _lastHourlyForecastRefreshIntervalPropertyVersion = -1;
+
+    // Mutex for protecting access to the `hourly_forecast_refresh_interval` property and its version.
     mutable std::mutex _hourlyForecastRefreshIntervalPropertyMutex;
    
     // MQTT Subscription ID for `hourly_forecast_refresh_interval` property updates.
@@ -323,7 +356,11 @@ private:
 
     // Last received value for the `daily_forecast_refresh_interval` property.
     boost::optional<DailyForecastRefreshIntervalProperty> _dailyForecastRefreshIntervalProperty;
+
+    // This is the property version of the last received `daily_forecast_refresh_interval` property update.
     int _lastDailyForecastRefreshIntervalPropertyVersion = -1;
+
+    // Mutex for protecting access to the `daily_forecast_refresh_interval` property and its version.
     mutable std::mutex _dailyForecastRefreshIntervalPropertyMutex;
    
     // MQTT Subscription ID for `daily_forecast_refresh_interval` property updates.
