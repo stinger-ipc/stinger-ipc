@@ -67,11 +67,7 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
         cout << "Fowarding message (" << mmsg->topic << ") to " << thisClient->_messageCallbacks.size() << " callbacks" << endl;
         std::string topic(mmsg->topic);
         std::string payload(static_cast<char*>(mmsg->payload), mmsg->payloadlen);
-        boost::optional<std::string> optCorrelationId;
-        boost::optional<std::string> optResponseTopic;
-        boost::optional<MethodResultCode> optResultCode;
-        boost::optional<int> optSubscriptionId = boost::none;
-        boost::optional<int> optPropertyVersion = boost::none;
+        MqttProperties mqttProps;
         const mosquitto_property *prop;
         for (prop = props; prop != NULL; prop = mosquitto_property_next(prop))
         {
@@ -81,7 +77,8 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
                 uint16_t correlation_data_len;
                 if (mosquitto_property_read_binary(prop, MQTT_PROP_CORRELATION_DATA, &correlation_data, &correlation_data_len, false))
                 {
-                    optCorrelationId = std::string(static_cast<char*>(correlation_data), correlation_data_len);
+                    mqttProps.correlationId = std::string(static_cast<char*>(correlation_data), correlation_data_len);
+                    free(correlation_data);
                 }
             }
             else if (mosquitto_property_identifier(prop) == MQTT_PROP_RESPONSE_TOPIC)
@@ -89,7 +86,7 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
                 char *responseTopic = NULL;
                 if (mosquitto_property_read_string(prop, MQTT_PROP_RESPONSE_TOPIC, &responseTopic, false))
                 {
-                    optResponseTopic = std::string(responseTopic);
+                    mqttProps.responseTopic = std::string(responseTopic);
                     free(responseTopic);
                 }
             }
@@ -102,12 +99,12 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
                     if (strcmp(name, "ReturnValue") == 0)
                     {
                         int returnValueInt = boost::lexical_cast<int>(value);
-                        optResultCode = static_cast<MethodResultCode>(returnValueInt);
+                        mqttProps.resultCode = static_cast<MethodResultCode>(returnValueInt);
                     }
                     else if (strcmp(name, "PropertyVersion") == 0)
                     {
                         int propertyVersionInt = boost::lexical_cast<int>(value);
-                        optPropertyVersion = propertyVersionInt;
+                        mqttProps.propertyVersion = propertyVersionInt;
                     }
                     free(name);
                     free(value);
@@ -118,14 +115,14 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
                 uint32_t subscriptionId;
                 if (mosquitto_property_read_int32(prop, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, &subscriptionId, false))
                 {
-                    optSubscriptionId = static_cast<int>(subscriptionId);
+                    mqttProps.subscriptionId = static_cast<int>(subscriptionId);
                 }
             }
         }
         for (auto& cb : thisClient->_messageCallbacks)
         {
             cout << "Calling callback" << endl;
-            cb(topic, payload, optCorrelationId, optResponseTopic, optResultCode, optSubscriptionId, optPropertyVersion);
+            cb(topic, payload, mqttProps);
         }
     });
 
@@ -165,24 +162,22 @@ boost::future<bool> MqttConnection::Publish(
         const std::string& payload, 
         unsigned qos, 
         bool retain, 
-        boost::optional<std::string> optCorrelationId, 
-        boost::optional<std::string> optResponseTopic,
-        boost::optional<MethodResultCode> optResultCode)
+        const MqttProperties& mqttProps)
 {
     int mid;
     mosquitto_property *propList = NULL;
     mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
-    if (optCorrelationId)
+    if (mqttProps.correlationId)
     {
-        mosquitto_property_add_binary(&propList, MQTT_PROP_CORRELATION_DATA, (void*)optCorrelationId->c_str(), optCorrelationId->size());
+        mosquitto_property_add_binary(&propList, MQTT_PROP_CORRELATION_DATA, (void*)mqttProps.correlationId->c_str(), mqttProps.correlationId->size());
     }
-    if (optResponseTopic)
+    if (mqttProps.responseTopic)
     {
-        mosquitto_property_add_string(&propList, MQTT_PROP_RESPONSE_TOPIC, optResponseTopic->c_str());
+        mosquitto_property_add_string(&propList, MQTT_PROP_RESPONSE_TOPIC, mqttProps.responseTopic->c_str());
     }
-    if (optResultCode)
+    if (mqttProps.resultCode)
     {
-        std::string resultCodeStr = std::to_string(static_cast<int>(*optResultCode));
+        std::string resultCodeStr = std::to_string(static_cast<int>(*mqttProps.resultCode));
         mosquitto_property_add_string_pair(&propList, MQTT_PROP_USER_PROPERTY, "ReturnValue", resultCodeStr.c_str());
     }
     int rc = mosquitto_publish_v5(_mosq, &mid, topic.c_str(), payload.size(), payload.c_str(), qos, retain, propList);
@@ -190,7 +185,7 @@ boost::future<bool> MqttConnection::Publish(
     if (rc == MOSQ_ERR_NO_CONN)
     {
         std::cout << "Delayed published queued to: " << topic << std::endl;
-        MqttConnection::MqttMessage msg(topic, payload, qos, retain, optCorrelationId, optResponseTopic);
+        MqttConnection::MqttMessage msg(topic, payload, qos, retain, mqttProps.correlationId, mqttProps.responseTopic);
         auto future = msg.getFuture();
         boost::mutex::scoped_lock lock(_mutex);
         _msgQueue.push(std::move(msg));
@@ -236,11 +231,7 @@ void MqttConnection::AddMessageCallback(
         const std::function<void(
                 const std::string&, 
                 const std::string&, 
-                const boost::optional<std::string>, 
-                const boost::optional<std::string>, 
-                const boost::optional<MethodResultCode>,
-                const boost::optional<int>,
-                const boost::optional<int>
+                const MqttProperties&
         )>& cb)
 {
     boost::mutex::scoped_lock lock(_mutex);

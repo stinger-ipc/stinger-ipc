@@ -1,4 +1,6 @@
 
+{% import "partials/serialize.jinja2" as ser %}
+
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -22,13 +24,9 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
     _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<std::string> optResponseTopic, 
-            const boost::optional<MethodResultCode> unusedRc,
-            const boost::optional<int> optSubscriptionId, 
-            const boost::optional<int> optPropertyVersion)
+            const MqttProperties& mqttProps)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic, optSubscriptionId, optPropertyVersion);
+        _receiveMessage(topic, payload, mqttProps);
     });
     {%for method in stinger.methods.values()%}
     _broker->Subscribe("{{method.topic}}", 2);
@@ -38,10 +36,7 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
 void {{stinger.cpp.server_class_name}}::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
-        const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<std::string> optResponseTopic,
-        const boost::optional<int> optSubscriptionId,
-        const boost::optional<int> optPropertyVersion)
+        const MqttProperties& mqttProps)
 {
     {%for method_name, method in stinger.methods.items()%}
     if (_broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
@@ -62,7 +57,7 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                _call{{method_name | UpperCamelCase}}Handler(topic, doc, optCorrelationId, optResponseTopic);
+                _call{{method_name | UpperCamelCase}}Handler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -80,29 +75,14 @@ boost::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCam
 {
     rapidjson::Document doc;
     doc.SetObject();
-    {%macro addToDoc(arg)%}
-    {%-if arg.optional%}if ({{arg.name}}){%endif%}
-    {%-if arg.arg_type.name.lower() == 'primitive'%}
-    {%-if arg.type.name.lower() == 'string'%}
-    { // restrict scope
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString({{arg.name}}{%-if arg.optional%}->{%else%}.{%endif%}c_str(), {{arg.name}}.size(), doc.GetAllocator());
-        doc.AddMember("{{arg.name}}", tempStringValue, doc.GetAllocator());
-    }
-    {%-else%}
-    doc.AddMember("{{arg.name}}", {%-if arg.optional%}*{%endif%}{{arg.name}}, doc.GetAllocator());
-    {%-endif%}
-    {%-elif arg.arg_type.name.lower() == 'enum'%}
-    doc.AddMember("{{arg.name}}", static_cast<int>({%-if arg.optional%}*{%endif%}{{arg.name}}), doc.GetAllocator());
-    {%-endif-%}
-    {%-endmacro%}
     {%-for arg in sig.arg_list%}
-    {{addToDoc(arg)}}
-    {%endfor%}
+    {{ser.addToValue('doc', arg, 'doc.GetAllocator()') | indent}}
+    {%-endfor%}
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
+    MqttProperties mqttProps;
+    return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false, mqttProps);
 }
 {%endfor%}
 
@@ -172,7 +152,10 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
+            MqttProperties mqttProps;
+            mqttProps.correlationId = optCorrelationId;
+            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
 }

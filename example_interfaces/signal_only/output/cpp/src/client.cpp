@@ -1,4 +1,8 @@
 
+
+
+
+
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -24,27 +28,19 @@ SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : 
     _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<std::string> unusedRespTopic, 
-            const boost::optional<MethodResultCode> optResultCode,
-            const boost::optional<int> optSubscriptionId,
-            const boost::optional<int> optPropertyVersion)
+            const MqttProperties& mqttProps)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResultCode, optSubscriptionId, optPropertyVersion);
+        _receiveMessage(topic, payload, mqttProps);
     });
     _anotherSignalSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/anotherSignal", 2);
-    
 }
 
 void SignalOnlyClient::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
-        const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<MethodResultCode> optResultCode,
-        const boost::optional<int> optSubscriptionId,
-        const boost::optional<int> optPropertyVersion)
+        const MqttProperties& mqttProps)
 {
-    if ((optSubscriptionId && (*optSubscriptionId == _anotherSignalSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/anotherSignal"))
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _anotherSignalSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/anotherSignal"))
     {
         //Log("Handling anotherSignal signal");
         rapidjson::Document doc;

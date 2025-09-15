@@ -48,10 +48,8 @@ private:
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<std::string> optResponseTopic,
-            const boost::optional<int> optSubscriptionId, 
-            const boost::optional<int> optPropertyVersion);
+            const MqttProperties& mqttProps
+    );
 
     
     void _callRefreshDailyForecastHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;

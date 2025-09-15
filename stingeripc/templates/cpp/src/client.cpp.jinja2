@@ -1,4 +1,8 @@
 {% import "partials/deserialize.jinja2" as deser %}
+{% import "partials/serialize.jinja2" as ser %}
+{% import "partials/args.jinja2" as ar %}
+{%macro prop_value_type(prop) -%}{%if prop.arg_list|length > 1%}struct {%endif%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
+
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -24,18 +28,14 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<std::string> unusedRespTopic, 
-            const boost::optional<MethodResultCode> optResultCode,
-            const boost::optional<int> optSubscriptionId,
-            const boost::optional<int> optPropertyVersion)
+            const MqttProperties& mqttProps)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResultCode, optSubscriptionId, optPropertyVersion);
+        _receiveMessage(topic, payload, mqttProps);
     });
 
     {%-for sig_name, sig in stinger.signals.items() %}
     _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe("{{sig.topic}}", 2);
-    {%endfor%}
+    {%-endfor%}
     {%-for method_name, method in stinger.methods.items() %}
     { // Restrict scope
         std::stringstream responseTopicStringStream;
@@ -46,19 +46,16 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
 
     {%-for prop_name, prop in stinger.properties.items() %}
     _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe("{{prop.update_topic}}", 1);
-    {%endfor%}
+    {%-endfor%}
 }
 
 void {{stinger.cpp.client_class_name}}::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
-        const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<MethodResultCode> optResultCode,
-        const boost::optional<int> optSubscriptionId,
-        const boost::optional<int> optPropertyVersion)
+        const MqttProperties& mqttProps)
 {
     {%-for sig_name, sig in stinger.signals.items() %}
-    if ((optSubscriptionId && (*optSubscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
     {
         //Log("Handling {{sig_name}} signal");
         rapidjson::Document doc;
@@ -111,17 +108,17 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
     {%-endfor%}{# for signals #}
 
     {%-for method_name, method in stinger.methods.items() %}
-    {%if not loop.first%}else {%endif%}if (_broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && optCorrelationId)
+    {%if not loop.first%}else {%endif%}if (_broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && mqttProps.correlationId)
     {
         std::cout << "Matched topic for {{method_name}} response" << std::endl;
-        _handle{{method_name|UpperCamelCase}}Response(topic, payload, *optCorrelationId);
+        _handle{{method_name|UpperCamelCase}}Response(topic, payload, *mqttProps.correlationId);
     }
     {%-endfor%}{# for methods #}
 
     {%-for prop_name, prop in stinger.properties.items() %}
-    {%if not loop.first%}else {%endif%}if ((optSubscriptionId && (*optSubscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId)) || topic == "{{prop.update_topic}}")
+    {%if not loop.first%}else {%endif%}if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId)) || topic == "{{prop.update_topic}}")
     {
-        _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, optPropertyVersion);
+        _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
     {%-endfor%}{# for properties #}
 }
@@ -144,31 +141,19 @@ boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name
     rapidjson::Document doc;
     doc.SetObject();
 
-    {%-macro addToDoc(arg)%}
-    {%-if arg.arg_type.name.lower() == 'primitive'%}
-    {%-if arg.optional %}if ({{arg.name}}) {%endif-%}
-    {%-if arg.type.name.lower() == 'string'%}
-    { // restrict scope
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString({{arg.name}}{%-if arg.optional %}->{%else%}.{%endif-%}c_str(), {{arg.name}}.size(), doc.GetAllocator());
-        doc.AddMember("{{arg.name}}", tempStringValue, doc.GetAllocator());
-    }
-    {%-else%}
-    doc.AddMember("{{arg.name}}", {%-if arg.optional %}*{%endif-%}{{arg.name}}, doc.GetAllocator());
-    {%-endif%}
-    {%elif arg.arg_type.name.lower() == 'enum'%}
-    doc.AddMember("{{arg.name}}", static_cast<int>({{arg.name}}), doc.GetAllocator());
-    {%-endif-%}
-    {%endmacro%}
     {%for arg in method.arg_list%}
-    {{addToDoc(arg)}}
+    {{ser.addToValue('doc', arg, 'doc.GetAllocator()') | indent(4)}}
     {%endfor%}
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
     responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
-    _broker->Publish("{{method.topic}}", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
+    MqttProperties mqttProps;
+    mqttProps.correlationId = correlationIdStr;
+    mqttProps.responseTopic = responseTopicStringStream.str();
+    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    _broker->Publish("{{method.topic}}", buf.GetString(), 2, false, mqttProps);
 
     return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
 }
@@ -244,14 +229,48 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     {{prop.name | UpperCamelCase}}Property tempValue;
     {{deser.deserialize('tempValue', prop.arg_list, 'doc') | indent(4)}}
 
-    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
-    _{{prop_name | lowerCamelCase}}Property = tempValue;
-    _last{{prop_name | UpperCamelCase}}PropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
-
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+        _{{prop_name | lowerCamelCase}}Property = tempValue;
+        _last{{prop_name | UpperCamelCase}}PropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+    }
     // Notify all registered callbacks.
     for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
     {
-        cb(*_{{prop_name | lowerCamelCase}}Property);
+        // Don't need a mutex since we're using tempValue.
+        {%if prop.arg_list | length > 1 %}
+        cb({%for arg in prop.arg_list %}tempValue.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+        {%else %}
+        cb(tempValue);
+        {%endif %}
     }
+}
+
+boost::optional<{{prop_value_type(prop)}}> {{stinger.cpp.client_class_name}}::get{{prop_name | UpperCamelCase}}Property() const
+{
+    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+    return _{{prop_name | lowerCamelCase}}Property;
+}
+
+void {{stinger.cpp.client_class_name}}::register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.methodParams(prop.arg_list)}})>& cb)
+{
+    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
+    _{{prop_name | lowerCamelCase}}PropertyCallbacks.push_back(cb);
+}
+
+boost::future<bool> {{stinger.cpp.client_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
+{
+
+    rapidjson::Document doc;
+    doc.SetObject();
+    {%for item in prop.arg_list %}
+    {{ser.addToValue('doc', item, 'doc.GetAllocator()') | indent(4)}}
+    {%endfor %}
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("{{prop.update_topic}}", buf.GetString(), 1, false, mqttProps);
+
 }
 {% endfor %} {# for properties #}

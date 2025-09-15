@@ -27,14 +27,30 @@ enum class MethodResultCode
     NOT_IMPLEMENTED = 7
 };
 
+struct MqttProperties
+{
+    MqttProperties()
+        : correlationId(boost::none),
+            responseTopic(boost::none),
+            resultCode(boost::none),
+            subscriptionId(boost::none),
+            propertyVersion(boost::none)
+    {}
+    boost::optional<std::string> correlationId;
+    boost::optional<std::string> responseTopic;
+    boost::optional<MethodResultCode> resultCode;
+    boost::optional<int> subscriptionId;
+    boost::optional<int> propertyVersion;
+};
+
 class IBrokerConnection
 {
 public:
     /*! Publish to a topic.
      * Implementations should queue up messages when not connected.
      */
-    virtual boost::future<bool> Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic, boost::optional<MethodResultCode> optResultCode) = 0;
-    
+    virtual boost::future<bool> Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain, const MqttProperties& mqttProps) = 0;
+
     /*! Subscribe to a topic.
      * Implementation should queue up subscriptions when not connected.
      */
@@ -46,11 +62,7 @@ public:
     virtual void AddMessageCallback(const std::function<void
             (const std::string&, 
             const std::string&, 
-            const boost::optional<std::string>, 
-            const boost::optional<std::string>, 
-            const boost::optional<MethodResultCode>,
-            const boost::optional<int>,
-            const boost::optional<int>
+            const MqttProperties&
         )>& cb) = 0;
 
     /*! Utility for matching topics.

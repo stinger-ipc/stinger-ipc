@@ -8,6 +8,7 @@ It contains enumerations used by the weather interface.
 
 #pragma once
 #include <string>
+#include <rapidjson/document.h>
 #include "enums.hpp"
 #include "structs.hpp"
 
@@ -17,6 +18,7 @@ It contains enumerations used by the weather interface.
  */
 struct LocationProperty {
     static LocationProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
     double latitude;
     double longitude;
 };
@@ -43,6 +45,7 @@ typedef double CurrentTemperatureProperty;
  */
 struct CurrentConditionProperty {
     static CurrentConditionProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
     WeatherCondition condition;
     std::string description;
 };
@@ -56,6 +59,7 @@ struct CurrentConditionProperty {
  */
 struct DailyForecastProperty {
     static DailyForecastProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
     ForecastForDay monday;  ///< This is the forecast for Monday.
     ForecastForDay tuesday;
     ForecastForDay wednesday;
@@ -69,6 +73,7 @@ struct DailyForecastProperty {
  */
 struct HourlyForecastProperty {
     static HourlyForecastProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
     ForecastForHour hour_0;  ///< This is the forecast for the current hour.
     ForecastForHour hour_1;  ///< This is the forecast for the next hour.
     ForecastForHour hour_2;

@@ -42,10 +42,8 @@ private:
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<std::string> optResponseTopic,
-            const boost::optional<int> optSubscriptionId, 
-            const boost::optional<int> optPropertyVersion);
+            const MqttProperties& mqttProps
+    );
 
     
 

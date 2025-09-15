@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 */
-
+{% import 'partials/args.jinja2' as ar %}
 
 #pragma once
 
@@ -64,7 +64,9 @@ public:
 
     // Add a callback that will be called whenever the `{{prop_name}}` property is updated.
     // The provided method will be called whenever a new value for the `{{prop_name}}` property is received.
-    void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void(const {{prop_value_type(prop)}}&)>& cb);
+    void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.declarationParams(prop.arg_list)}})>& cb);
+
+    boost::future<bool> update{{prop_name | UpperCamelCase}}Property({{ar.declarationParams(prop.arg_list)}}) const;
     {%endfor%}
     {%endif%}
 private:
@@ -73,10 +75,7 @@ private:
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<MethodResultCode> optResultCode, 
-            const boost::optional<int> optSubscriptionId,
-            const boost::optional<int> optPropertyVersion);
+            const MqttProperties& mqttProps);
     {%if stinger.signals|length > 0 -%}
     // ------------------ SIGNALS --------------------
 
@@ -96,7 +95,7 @@ private:
     // Holds promises for pending `{{sig_name}}` method calls.
     std::map<boost::uuids::uuid, boost::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
 
-    void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);
+    void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const std::string& correlationId);
     {%-endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}
@@ -108,7 +107,7 @@ private:
     // Last received value{%if prop.arg_list|length > 1%}s{%endif%} for the `{{prop_name}}` property.
     boost::optional<{{prop_value_type(prop)}}> _{{prop_name | lowerCamelCase}}Property;
     int _last{{prop_name | UpperCamelCase}}PropertyVersion = -1;
-    std::mutex _{{prop_name | lowerCamelCase}}PropertyMutex;
+    mutable std::mutex _{{prop_name | lowerCamelCase}}PropertyMutex;
    
     // MQTT Subscription ID for `{{prop_name}}` property updates.
     int _{{prop_name | lowerCamelCase}}PropertySubscriptionId;
@@ -117,7 +116,7 @@ private:
     void _receive{{prop_name | UpperCamelCase}}PropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `{{prop_name}}` property.
-    std::vector<std::function<void(const {{prop_value_type(prop)}}&)>> _{{prop_name | lowerCamelCase}}PropertyCallbacks;
+    std::vector<std::function<void({{ar.declarationParams(prop.arg_list)}})>> _{{prop_name | lowerCamelCase}}PropertyCallbacks;
     std::mutex _{{prop_name | lowerCamelCase}}PropertyCallbacksMutex;
     {%endfor%}
     {%endif%}

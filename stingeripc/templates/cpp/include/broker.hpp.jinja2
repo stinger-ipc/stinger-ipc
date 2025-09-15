@@ -51,9 +51,7 @@ public:
             const std::string& payload, 
             unsigned qos, 
             bool retain, 
-            boost::optional<std::string> optCorrelationId, 
-            boost::optional<std::string> optResponseTopic,
-            boost::optional<MethodResultCode> optResultCode);
+            const MqttProperties& properties);
 
     /*! Subscribe to a topic.
      * \param topic the subscription topic.
@@ -69,11 +67,7 @@ public:
     virtual void AddMessageCallback(const std::function<void(
             const std::string&, 
             const std::string&, 
-            const boost::optional<std::string>,
-            const boost::optional<std::string>, 
-            const boost::optional<MethodResultCode>,
-            const boost::optional<int>,
-            const boost::optional<int>
+            const MqttProperties&
         )>& cb);
 
     /*! Determines if a topic string matches a subscription topic.
@@ -125,11 +119,7 @@ private:
     std::vector<std::function<void(
             const std::string&, 
             const std::string&, 
-            const boost::optional<std::string>, 
-            const boost::optional<std::string>, 
-            const boost::optional<MethodResultCode>,
-            const boost::optional<int>,
-            const boost::optional<int>
+            const MqttProperties&
     )>> _messageCallbacks;
     std::queue<MqttMessage> _msgQueue;
     std::map<int, std::shared_ptr<boost::promise<bool>>> _sendMessages;

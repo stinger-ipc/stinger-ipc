@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(include)
  
-set(SOURCE_FILES src/broker.cpp src/client.cpp src/server.cpp src/structs.cpp )
+set(SOURCE_FILES src/broker.cpp src/client.cpp src/property_structs.cpp src/server.cpp src/structs.cpp )
 
 add_library(lib-SignalOnly ${SOURCE_FILES})
 

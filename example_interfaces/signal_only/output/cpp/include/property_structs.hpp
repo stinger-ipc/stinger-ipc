@@ -8,6 +8,7 @@ It contains enumerations used by the SignalOnly interface.
 
 #pragma once
 #include <string>
+#include <rapidjson/document.h>
 #include "enums.hpp"
 #include "structs.hpp"
 

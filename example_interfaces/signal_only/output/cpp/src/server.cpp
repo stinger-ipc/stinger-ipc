@@ -1,4 +1,6 @@
 
+
+
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -22,13 +24,9 @@ SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker) : 
     _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<std::string> optResponseTopic, 
-            const boost::optional<MethodResultCode> unusedRc,
-            const boost::optional<int> optSubscriptionId, 
-            const boost::optional<int> optPropertyVersion)
+            const MqttProperties& mqttProps)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic, optSubscriptionId, optPropertyVersion);
+        _receiveMessage(topic, payload, mqttProps);
     });
     
 }
@@ -36,10 +34,7 @@ SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker) : 
 void SignalOnlyServer::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
-        const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<std::string> optResponseTopic,
-        const boost::optional<int> optSubscriptionId,
-        const boost::optional<int> optPropertyVersion)
+        const MqttProperties& mqttProps)
 {
     
 }
@@ -50,23 +45,23 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
     rapidjson::Document doc;
     doc.SetObject();
     
+    doc.AddMember("one", one, doc.GetAllocator());
+
     
-    doc.AddMember("one",one, doc.GetAllocator());
-    
-    
-    doc.AddMember("two",two, doc.GetAllocator());
-    
+    doc.AddMember("two", two, doc.GetAllocator());
+
     
     { // restrict scope
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(three.c_str(), three.size(), doc.GetAllocator());
         doc.AddMember("three", tempStringValue, doc.GetAllocator());
     }
-    
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("signalOnly/signal/anotherSignal", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
+    MqttProperties mqttProps;
+    return _broker->Publish("signalOnly/signal/anotherSignal", buf.GetString(), 1, false, mqttProps);
 }
 
 

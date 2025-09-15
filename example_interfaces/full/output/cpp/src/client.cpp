@@ -1,4 +1,8 @@
 
+
+
+
+
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -24,16 +28,11 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker) : _broker(brok
     _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<std::string> unusedRespTopic, 
-            const boost::optional<MethodResultCode> optResultCode,
-            const boost::optional<int> optSubscriptionId,
-            const boost::optional<int> optPropertyVersion)
+            const MqttProperties& mqttProps)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResultCode, optSubscriptionId, optPropertyVersion);
+        _receiveMessage(topic, payload, mqttProps);
     });
     _todayIsSignalSubscriptionId = _broker->Subscribe("full/signal/todayIs", 2);
-    
     { // Restrict scope
         std::stringstream responseTopicStringStream;
         responseTopicStringStream << boost::format("client/%1%/full/method/addNumbers/response") % _broker->GetClientId();
@@ -45,22 +44,16 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker) : _broker(brok
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     _favoriteNumberPropertySubscriptionId = _broker->Subscribe("full/property/favoriteNumber/setValue", 1);
-    
     _favoriteFoodsPropertySubscriptionId = _broker->Subscribe("full/property/favoriteFoods/setValue", 1);
-    
     _lunchMenuPropertySubscriptionId = _broker->Subscribe("full/property/lunchMenu/setValue", 1);
-    
 }
 
 void FullClient::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
-        const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<MethodResultCode> optResultCode,
-        const boost::optional<int> optSubscriptionId,
-        const boost::optional<int> optPropertyVersion)
+        const MqttProperties& mqttProps)
 {
-    if ((optSubscriptionId && (*optSubscriptionId == _todayIsSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "full/signal/todayIs"))
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _todayIsSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "full/signal/todayIs"))
     {
         //Log("Handling todayIs signal");
         rapidjson::Document doc;
@@ -118,27 +111,27 @@ void FullClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/addNumbers/response") && optCorrelationId)
+    if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/addNumbers/response") && mqttProps.correlationId)
     {
         std::cout << "Matched topic for addNumbers response" << std::endl;
-        _handleAddNumbersResponse(topic, payload, *optCorrelationId);
+        _handleAddNumbersResponse(topic, payload, *mqttProps.correlationId);
     }
-    else if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/doSomething/response") && optCorrelationId)
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/doSomething/response") && mqttProps.correlationId)
     {
         std::cout << "Matched topic for doSomething response" << std::endl;
-        _handleDoSomethingResponse(topic, payload, *optCorrelationId);
+        _handleDoSomethingResponse(topic, payload, *mqttProps.correlationId);
     }
-    if ((optSubscriptionId && (*optSubscriptionId == _favoriteNumberPropertySubscriptionId)) || topic == "full/property/favoriteNumber/setValue")
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _favoriteNumberPropertySubscriptionId)) || topic == "full/property/favoriteNumber/setValue")
     {
-        _receiveFavoriteNumberPropertyUpdate(topic, payload, optPropertyVersion);
+        _receiveFavoriteNumberPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((optSubscriptionId && (*optSubscriptionId == _favoriteFoodsPropertySubscriptionId)) || topic == "full/property/favoriteFoods/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _favoriteFoodsPropertySubscriptionId)) || topic == "full/property/favoriteFoods/setValue")
     {
-        _receiveFavoriteFoodsPropertyUpdate(topic, payload, optPropertyVersion);
+        _receiveFavoriteFoodsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((optSubscriptionId && (*optSubscriptionId == _lunchMenuPropertySubscriptionId)) || topic == "full/property/lunchMenu/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _lunchMenuPropertySubscriptionId)) || topic == "full/property/lunchMenu/setValue")
     {
-        _receiveLunchMenuPropertyUpdate(topic, payload, optPropertyVersion);
+        _receiveLunchMenuPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 }
 void FullClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb)
@@ -155,25 +148,30 @@ boost::future<int> FullClient::addNumbers(int first, int second, boost::optional
 
     rapidjson::Document doc;
     doc.SetObject();
+
     
     
-    doc.AddMember("first",first, doc.GetAllocator());
+    doc.AddMember("first", first, doc.GetAllocator());
+
     
     
-    
-    doc.AddMember("second",second, doc.GetAllocator());
-    
+    doc.AddMember("second", second, doc.GetAllocator());
+
     
     if (third) 
-    doc.AddMember("third",*third, doc.GetAllocator());
-    
+    doc.AddMember("third", *third, doc.GetAllocator());
+
     
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
     responseTopicStringStream << boost::format("client/%1%/full/method/addNumbers/response") % _broker->GetClientId();
-    _broker->Publish("full/method/addNumbers", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
+    MqttProperties mqttProps;
+    mqttProps.correlationId = correlationIdStr;
+    mqttProps.responseTopic = responseTopicStringStream.str();
+    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    _broker->Publish("full/method/addNumbers", buf.GetString(), 2, false, mqttProps);
 
     return _pendingAddNumbersMethodCalls[correlationId].get_future();
 }
@@ -219,6 +217,7 @@ boost::future<DoSomethingReturnValue> FullClient::doSomething(const std::string&
 
     rapidjson::Document doc;
     doc.SetObject();
+
     
     
     { // restrict scope
@@ -226,14 +225,18 @@ boost::future<DoSomethingReturnValue> FullClient::doSomething(const std::string&
         tempStringValue.SetString(aString.c_str(), aString.size(), doc.GetAllocator());
         doc.AddMember("aString", tempStringValue, doc.GetAllocator());
     }
-    
+
     
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
     responseTopicStringStream << boost::format("client/%1%/full/method/doSomething/response") % _broker->GetClientId();
-    _broker->Publish("full/method/doSomething", buf.GetString(), 2, false, correlationIdStr, responseTopicStringStream.str(), MethodResultCode::SUCCESS);
+    MqttProperties mqttProps;
+    mqttProps.correlationId = correlationIdStr;
+    mqttProps.responseTopic = responseTopicStringStream.str();
+    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    _broker->Publish("full/method/doSomething", buf.GetString(), 2, false, mqttProps);
 
     return _pendingDoSomethingMethodCalls[correlationId].get_future();
 }
@@ -308,15 +311,49 @@ void FullClient::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, 
         throw std::runtime_error("Received payload doesn't have required value/type");
     }
 
-    std::lock_guard<std::mutex> lock(_favoriteNumberPropertyMutex);
-    _favoriteNumberProperty = tempValue;
-    _lastFavoriteNumberPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
-
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteNumberPropertyMutex);
+        _favoriteNumberProperty = tempValue;
+        _lastFavoriteNumberPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+    }
     // Notify all registered callbacks.
     for (const auto& cb : _favoriteNumberPropertyCallbacks)
     {
-        cb(*_favoriteNumberProperty);
+        // Don't need a mutex since we're using tempValue.
+        
+        cb(tempValue);
+        
     }
+}
+
+boost::optional<FavoriteNumberProperty> FullClient::getFavoriteNumberProperty() const
+{
+    std::lock_guard<std::mutex> lock(_favoriteNumberPropertyMutex);
+    return _favoriteNumberProperty;
+}
+
+void FullClient::registerFavoriteNumberPropertyCallback(const std::function<void(int number)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_favoriteNumberPropertyCallbacksMutex);
+    _favoriteNumberPropertyCallbacks.push_back(cb);
+}
+
+boost::future<bool> FullClient::updateFavoriteNumberProperty(int number) const
+{
+
+    rapidjson::Document doc;
+    doc.SetObject();
+    
+    
+    doc.AddMember("number", number, doc.GetAllocator());
+
+    
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("full/property/favoriteNumber/setValue", buf.GetString(), 1, false, mqttProps);
+
 }
 
 void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
@@ -367,15 +404,65 @@ void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, c
         }
     }
 
-    std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
-    _favoriteFoodsProperty = tempValue;
-    _lastFavoriteFoodsPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
-
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
+        _favoriteFoodsProperty = tempValue;
+        _lastFavoriteFoodsPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+    }
     // Notify all registered callbacks.
     for (const auto& cb : _favoriteFoodsPropertyCallbacks)
     {
-        cb(*_favoriteFoodsProperty);
+        // Don't need a mutex since we're using tempValue.
+        
+        cb(tempValue.drink, tempValue.slices_of_pizza, tempValue.breakfast);
+        
     }
+}
+
+boost::optional<struct FavoriteFoodsProperty> FullClient::getFavoriteFoodsProperty() const
+{
+    std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
+    return _favoriteFoodsProperty;
+}
+
+void FullClient::registerFavoriteFoodsPropertyCallback(const std::function<void(const std::string& drink, int slices_of_pizza, boost::optional<std::string> breakfast)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyCallbacksMutex);
+    _favoriteFoodsPropertyCallbacks.push_back(cb);
+}
+
+boost::future<bool> FullClient::updateFavoriteFoodsProperty(const std::string& drink, int slices_of_pizza, boost::optional<std::string> breakfast) const
+{
+
+    rapidjson::Document doc;
+    doc.SetObject();
+    
+    
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(drink.c_str(), drink.size(), doc.GetAllocator());
+        doc.AddMember("drink", tempStringValue, doc.GetAllocator());
+    }
+
+    
+    
+    doc.AddMember("slices_of_pizza", slices_of_pizza, doc.GetAllocator());
+
+    
+    if (breakfast) 
+    { 
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(breakfast->c_str(), breakfast->size(), doc.GetAllocator());
+        doc.AddMember("breakfast", tempStringValue, doc.GetAllocator());
+    }
+
+    
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("full/property/favoriteFoods/setValue", buf.GetString(), 1, false, mqttProps);
+
 }
 
 void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
@@ -418,14 +505,48 @@ void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
         }
     }
 
-    std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
-    _lunchMenuProperty = tempValue;
-    _lastLunchMenuPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
-
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
+        _lunchMenuProperty = tempValue;
+        _lastLunchMenuPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+    }
     // Notify all registered callbacks.
     for (const auto& cb : _lunchMenuPropertyCallbacks)
     {
-        cb(*_lunchMenuProperty);
+        // Don't need a mutex since we're using tempValue.
+        
+        cb(tempValue.monday, tempValue.tuesday);
+        
     }
+}
+
+boost::optional<struct LunchMenuProperty> FullClient::getLunchMenuProperty() const
+{
+    std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
+    return _lunchMenuProperty;
+}
+
+void FullClient::registerLunchMenuPropertyCallback(const std::function<void(Lunch monday, Lunch tuesday)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_lunchMenuPropertyCallbacksMutex);
+    _lunchMenuPropertyCallbacks.push_back(cb);
+}
+
+boost::future<bool> FullClient::updateLunchMenuProperty(Lunch monday, Lunch tuesday) const
+{
+
+    rapidjson::Document doc;
+    doc.SetObject();
+    
+    
+    
+    
+    
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("full/property/lunchMenu/setValue", buf.GetString(), 1, false, mqttProps);
+
 }
  

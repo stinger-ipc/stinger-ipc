@@ -1,4 +1,6 @@
 
+
+
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -22,13 +24,9 @@ FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker) : _broker(brok
     _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<std::string> optResponseTopic, 
-            const boost::optional<MethodResultCode> unusedRc,
-            const boost::optional<int> optSubscriptionId, 
-            const boost::optional<int> optPropertyVersion)
+            const MqttProperties& mqttProps)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic, optSubscriptionId, optPropertyVersion);
+        _receiveMessage(topic, payload, mqttProps);
     });
     
     _broker->Subscribe("full/method/addNumbers", 2);
@@ -40,10 +38,7 @@ FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker) : _broker(brok
 void FullServer::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
-        const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<std::string> optResponseTopic,
-        const boost::optional<int> optSubscriptionId,
-        const boost::optional<int> optPropertyVersion)
+        const MqttProperties& mqttProps)
 {
     
     if (_broker->TopicMatchesSubscription(topic, "full/method/addNumbers"))
@@ -64,7 +59,7 @@ void FullServer::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                _callAddNumbersHandler(topic, doc, optCorrelationId, optResponseTopic);
+                _callAddNumbersHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -93,7 +88,7 @@ void FullServer::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                _callDoSomethingHandler(topic, doc, optCorrelationId, optResponseTopic);
+                _callDoSomethingHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -112,16 +107,15 @@ boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optiona
     rapidjson::Document doc;
     doc.SetObject();
     
+    doc.AddMember("dayOfMonth", dayOfMonth, doc.GetAllocator());
+
     
-    doc.AddMember("dayOfMonth",dayOfMonth, doc.GetAllocator());
-    
-    if (dayOfWeek)
     doc.AddMember("dayOfWeek", static_cast<int>(*dayOfWeek), doc.GetAllocator());
-    
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("full/signal/todayIs", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
+    MqttProperties mqttProps;
+    return _broker->Publish("full/signal/todayIs", buf.GetString(), 1, false, mqttProps);
 }
 
 
@@ -204,7 +198,10 @@ void FullServer::_callAddNumbersHandler(
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
+            MqttProperties mqttProps;
+            mqttProps.correlationId = optCorrelationId;
+            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
 }
@@ -262,7 +259,10 @@ void FullServer::_callDoSomethingHandler(
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
+            MqttProperties mqttProps;
+            mqttProps.correlationId = optCorrelationId;
+            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
 }

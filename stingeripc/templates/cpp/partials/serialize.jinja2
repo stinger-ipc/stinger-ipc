@@ -1,0 +1,18 @@
+
+
+{%-macro addToValue(value, arg, allocator)%}
+{%-if arg.arg_type.name.lower() == 'primitive'%}
+{%-if arg.optional %}if ({{arg.name}}) {%endif-%}
+{%-if arg.type.name.lower() == 'string'%}
+{ {%if not arg.optional %}// restrict scope{%endif%}
+    rapidjson::Value tempStringValue;
+    tempStringValue.SetString({{arg.name}}{%-if arg.optional %}->{%else%}.{%endif-%}c_str(), {{arg.name}}{%-if arg.optional %}->{%else%}.{%endif%}size(), {{allocator}});
+    {{value}}.AddMember("{{arg.name}}", tempStringValue, {{allocator}});
+}
+{%-else%}
+{{value}}.AddMember("{{arg.name}}", {%if arg.optional %}*{%endif-%}{{arg.name}}, {{allocator}});
+{%-endif%}
+{%elif arg.arg_type.name.lower() == 'enum'%}
+{{value}}.AddMember("{{arg.name}}", static_cast<int>({%if arg.optional %}*{%endif-%}{{arg.name}}), {{allocator}});
+{%-endif-%}
+{%endmacro%}

@@ -1,4 +1,6 @@
 
+
+
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -22,13 +24,9 @@ WeatherServer::WeatherServer(std::shared_ptr<IBrokerConnection> broker) : _broke
     _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<std::string> optResponseTopic, 
-            const boost::optional<MethodResultCode> unusedRc,
-            const boost::optional<int> optSubscriptionId, 
-            const boost::optional<int> optPropertyVersion)
+            const MqttProperties& mqttProps)
     {
-        _receiveMessage(topic, payload, optCorrelationId, optResponseTopic, optSubscriptionId, optPropertyVersion);
+        _receiveMessage(topic, payload, mqttProps);
     });
     
     _broker->Subscribe("weather/method/refreshDailyForecast", 2);
@@ -42,10 +40,7 @@ WeatherServer::WeatherServer(std::shared_ptr<IBrokerConnection> broker) : _broke
 void WeatherServer::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
-        const boost::optional<std::string> optCorrelationId, 
-        const boost::optional<std::string> optResponseTopic,
-        const boost::optional<int> optSubscriptionId,
-        const boost::optional<int> optPropertyVersion)
+        const MqttProperties& mqttProps)
 {
     
     if (_broker->TopicMatchesSubscription(topic, "weather/method/refreshDailyForecast"))
@@ -66,7 +61,7 @@ void WeatherServer::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                _callRefreshDailyForecastHandler(topic, doc, optCorrelationId, optResponseTopic);
+                _callRefreshDailyForecastHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -95,7 +90,7 @@ void WeatherServer::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                _callRefreshHourlyForecastHandler(topic, doc, optCorrelationId, optResponseTopic);
+                _callRefreshHourlyForecastHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -124,7 +119,7 @@ void WeatherServer::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                _callRefreshCurrentConditionsHandler(topic, doc, optCorrelationId, optResponseTopic);
+                _callRefreshCurrentConditionsHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
         catch (const boost::bad_lexical_cast&)
@@ -143,17 +138,17 @@ boost::future<bool> WeatherServer::emitCurrentTimeSignal(const std::string& curr
     rapidjson::Document doc;
     doc.SetObject();
     
-    
     { // restrict scope
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(current_time.c_str(), current_time.size(), doc.GetAllocator());
         doc.AddMember("current_time", tempStringValue, doc.GetAllocator());
     }
-    
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    return _broker->Publish("weather/signal/currentTime", buf.GetString(), 1, false, boost::none, boost::none, boost::none);
+    MqttProperties mqttProps;
+    return _broker->Publish("weather/signal/currentTime", buf.GetString(), 1, false, mqttProps);
 }
 
 
@@ -199,7 +194,10 @@ void WeatherServer::_callRefreshDailyForecastHandler(
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
+            MqttProperties mqttProps;
+            mqttProps.correlationId = optCorrelationId;
+            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
 }
@@ -225,7 +223,10 @@ void WeatherServer::_callRefreshHourlyForecastHandler(
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
+            MqttProperties mqttProps;
+            mqttProps.correlationId = optCorrelationId;
+            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
 }
@@ -251,7 +252,10 @@ void WeatherServer::_callRefreshCurrentConditionsHandler(
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
             responseJson.Accept(writer);
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, optCorrelationId, boost::none, MethodResultCode::SUCCESS);
+            MqttProperties mqttProps;
+            mqttProps.correlationId = optCorrelationId;
+            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
 }

@@ -65,7 +65,9 @@ public:
 
     // Add a callback that will be called whenever the `favorite_number` property is updated.
     // The provided method will be called whenever a new value for the `favorite_number` property is received.
-    void registerFavoriteNumberPropertyCallback(const std::function<void(const FavoriteNumberProperty&)>& cb);
+    void registerFavoriteNumberPropertyCallback(const std::function<void(int)>& cb);
+
+    boost::future<bool> updateFavoriteNumberProperty(int) const;
     
     // ---favorite_foods Property---
 
@@ -75,7 +77,9 @@ public:
 
     // Add a callback that will be called whenever the `favorite_foods` property is updated.
     // The provided method will be called whenever a new value for the `favorite_foods` property is received.
-    void registerFavoriteFoodsPropertyCallback(const std::function<void(const struct FavoriteFoodsProperty&)>& cb);
+    void registerFavoriteFoodsPropertyCallback(const std::function<void(const std::string&, int, boost::optional<std::string>)>& cb);
+
+    boost::future<bool> updateFavoriteFoodsProperty(const std::string&, int, boost::optional<std::string>) const;
     
     // ---lunch_menu Property---
 
@@ -85,7 +89,9 @@ public:
 
     // Add a callback that will be called whenever the `lunch_menu` property is updated.
     // The provided method will be called whenever a new value for the `lunch_menu` property is received.
-    void registerLunchMenuPropertyCallback(const std::function<void(const struct LunchMenuProperty&)>& cb);
+    void registerLunchMenuPropertyCallback(const std::function<void(Lunch, Lunch)>& cb);
+
+    boost::future<bool> updateLunchMenuProperty(Lunch, Lunch) const;
     
     
 private:
@@ -94,10 +100,7 @@ private:
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 
-            const boost::optional<std::string> optCorrelationId, 
-            const boost::optional<MethodResultCode> optResultCode, 
-            const boost::optional<int> optSubscriptionId,
-            const boost::optional<int> optPropertyVersion);
+            const MqttProperties& mqttProps);
     // ------------------ SIGNALS --------------------
 
     
@@ -113,11 +116,11 @@ private:
     // Holds promises for pending `` method calls.
     std::map<boost::uuids::uuid, boost::promise<int>> _pendingAddNumbersMethodCalls;
 
-    void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);
+    void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
     // Holds promises for pending `` method calls.
     std::map<boost::uuids::uuid, boost::promise<DoSomethingReturnValue>> _pendingDoSomethingMethodCalls;
 
-    void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const std::string& optCorrelationId);
+    void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
     
     // ---------------- PROPERTIES ------------------
     
@@ -127,7 +130,7 @@ private:
     // Last received value for the `favorite_number` property.
     boost::optional<FavoriteNumberProperty> _favoriteNumberProperty;
     int _lastFavoriteNumberPropertyVersion = -1;
-    std::mutex _favoriteNumberPropertyMutex;
+    mutable std::mutex _favoriteNumberPropertyMutex;
    
     // MQTT Subscription ID for `favorite_number` property updates.
     int _favoriteNumberPropertySubscriptionId;
@@ -136,7 +139,7 @@ private:
     void _receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `favorite_number` property.
-    std::vector<std::function<void(const FavoriteNumberProperty&)>> _favoriteNumberPropertyCallbacks;
+    std::vector<std::function<void(int)>> _favoriteNumberPropertyCallbacks;
     std::mutex _favoriteNumberPropertyCallbacksMutex;
     
 
@@ -145,7 +148,7 @@ private:
     // Last received values for the `favorite_foods` property.
     boost::optional<struct FavoriteFoodsProperty> _favoriteFoodsProperty;
     int _lastFavoriteFoodsPropertyVersion = -1;
-    std::mutex _favoriteFoodsPropertyMutex;
+    mutable std::mutex _favoriteFoodsPropertyMutex;
    
     // MQTT Subscription ID for `favorite_foods` property updates.
     int _favoriteFoodsPropertySubscriptionId;
@@ -154,7 +157,7 @@ private:
     void _receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `favorite_foods` property.
-    std::vector<std::function<void(const struct FavoriteFoodsProperty&)>> _favoriteFoodsPropertyCallbacks;
+    std::vector<std::function<void(const std::string&, int, boost::optional<std::string>)>> _favoriteFoodsPropertyCallbacks;
     std::mutex _favoriteFoodsPropertyCallbacksMutex;
     
 
@@ -163,7 +166,7 @@ private:
     // Last received values for the `lunch_menu` property.
     boost::optional<struct LunchMenuProperty> _lunchMenuProperty;
     int _lastLunchMenuPropertyVersion = -1;
-    std::mutex _lunchMenuPropertyMutex;
+    mutable std::mutex _lunchMenuPropertyMutex;
    
     // MQTT Subscription ID for `lunch_menu` property updates.
     int _lunchMenuPropertySubscriptionId;
@@ -172,7 +175,7 @@ private:
     void _receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `lunch_menu` property.
-    std::vector<std::function<void(const struct LunchMenuProperty&)>> _lunchMenuPropertyCallbacks;
+    std::vector<std::function<void(Lunch, Lunch)>> _lunchMenuPropertyCallbacks;
     std::mutex _lunchMenuPropertyCallbacksMutex;
     
     
