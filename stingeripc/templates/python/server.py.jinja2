@@ -7,14 +7,30 @@ This is the Server for the {{stinger.name}} interface.
 
 import json
 import logging
-
+import threading
+from dataclasses import dataclass, field
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable, Dict, Any, Optional, List
+from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import BrokerConnection
 from method_codes import *
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
 {%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_type}}]{%endmacro%}
+
+T = TypeVar('T')
+
+@dataclass
+class PropertyControls(Generic[T]):
+    value: T | None = None
+    mutex = threading.Lock()
+    version: int = -1
+    subscription_id: int | None = None
+    callbacks: List[Callable[[T], None]] = field(default_factory=list)
+
+@dataclass
+class MethodControls:
+    subscription_id: int | None = None
+    callback: Optional[Callable] = None
 
 class {{stinger.python.server_class_name}}:
 
@@ -25,18 +41,15 @@ class {{stinger.python.server_class_name}}:
         self._conn = connection
         self._conn.set_message_callback(self._receive_message)
         self._conn.set_last_will(topic="{{stinger.interface_info.0}}", payload=None, qos=1, retain=True)
-        {%for prop_name, prop_spec in stinger.properties.items()-%}
-        self._property_{{prop_name}} = None
-        self._conn.subscribe("{{prop_spec.update_topic}}")
-        self.changed_value_callback_for_{{pprop_name}} = None
-        self._publish_interface_info()
+        {%for prop_name, prop in stinger.properties.items()%}
+        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}, {%for arg in prop.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}] = PropertyControls()
+        self._property_{{prop_name|snake_case}}.subscription_id = self._conn.subscribe("{{prop.update_topic}}")
         {%endfor-%}
-        {%-for method in stinger.methods.values()%}
-        self._conn.subscribe("{{method.topic}}")
-        {%endfor-%}
-        {%for method_name, method in stinger.methods.items()-%}
-        self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
+        {%-for method_name, method in stinger.methods.items()%}
+        self._method_{{method_name|snake_case}} = MethodControls()
+        self._method_{{method_name|snake_case}}.subscription_id = self._conn.subscribe("{{method.topic}}")
         {%endfor%}
+        self._publish_interface_info()
     
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ This is the callback that is called whenever any message is received on a subscribed topic.
@@ -44,7 +57,7 @@ class {{stinger.python.server_class_name}}:
         self._logger.debug("Received message to %s", topic)
         {%if stinger.methods | length > 0 -%}
         {%for method_name, method in stinger.methods.items()-%}
-        {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{method.topic}}"):
+        {%if not loop.first%}el{%endif%}if (properties.get('SubscriptionId', -1) == self._method_{{method_name|snake_case}}.subscription_id) or self._conn.is_topic_sub(topic, "{{method.topic}}"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
@@ -52,7 +65,25 @@ class {{stinger.python.server_class_name}}:
             else:
                 self._process_{{method_name | snake_case}}_call(topic, payload_obj, properties)
         {%endfor%}
-        {%-else%}pass{%-endif%}
+        {%-endif%}
+        {%for prop_name, prop in stinger.properties.items()%}
+        {%if not loop.first%}el{%endif%}if (properties.get('SubscriptionId', -1) == self._property_{{prop_name|snake_case}}.subscription_id) or self._conn.is_topic_sub(topic, "{{prop.update_topic}}"):
+            {%if prop.arg_list | length > 1 -%}
+            prop_value = {{prop.python_class}}.model_validate_json(payload)
+            {%else-%}
+            payload_obj = json.loads(payload)
+            prop_value = {{prop.arg_list[0].python_class}}(payload_obj["{{prop.arg_list[0].name}}"])
+            {%endif-%}
+            with self._property_{{prop_name|snake_case}}.mutex:
+                self._property_{{prop_name|snake_case}}.value = prop_value
+                self._property_{{prop_name|snake_case}}.version += 1
+            for callback in self._property_{{prop_name|snake_case}}.callbacks:
+                {%-if prop.arg_list | length > 1%}
+                    callback({%for arg in prop.arg_list %}prop_value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
+                {%-else%}
+                callback(prop_value)
+                {%-endif%}
+        {%endfor%}
 
     def _publish_interface_info(self):
         self._conn.publish("{{stinger.interface_info.0}}", '''{{stinger.interface_info.1 | tojson}}''', qos=1, retain=True)
@@ -78,8 +109,8 @@ class {{stinger.python.server_class_name}}:
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
         """ This is a decorator to decorate a method that will handle the '{{method_name}}' method calls.
         """
-        if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
-            self._{{method_name|snake_case}}_method_handler = handler
+        if self._method_{{method_name|snake_case}}.callback is None and handler is not None:
+            self._method_{{method_name|snake_case}}.callback = handler
         else:
             raise Exception("Method handler already set")
 
@@ -90,7 +121,7 @@ class {{stinger.python.server_class_name}}:
         correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
         response_topic = properties.get('ResponseTopic') # type: Optional[str]
         self._logger.info("Correlation Data %s", correlation_id)
-        if self._{{method_name|snake_case}}_method_handler is not None:
+        if self._method_{{method_name|snake_case}}.callback is not None:
             method_args = [] # type: List[Any]
             {%for arg in method.arg_list -%}
             if "{{arg.name}}" in payload:
@@ -114,7 +145,7 @@ class {{stinger.python.server_class_name}}:
                 return_json = ""
                 debug_msg = None # type: Optional[str]
                 try:
-                    return_struct = self._{{method_name|snake_case}}_method_handler(*method_args)
+                    return_struct = self._method_{{method_name|snake_case}}.callback(*method_args)
                     self._logger.debug("Return value is %s", return_struct)
                     {%if method.return_value is false%}
                         return_json = "{}"
@@ -147,7 +178,65 @@ class {{stinger.python.server_class_name}}:
                 self._conn.publish(response_topic, return_json, qos=1, retain=False, 
                     correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
     {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    @property
+    def {{prop_name | snake_case}}(self) -> {{prop.python_class}}|None:
+        """ This property returns the last received value for the '{{prop_name}}' property.
+        """
+        with self._property_{{prop_name|snake_case}}_mutex:
+            return self._property_{{prop_name|snake_case}}
 
+    @{{prop_name | snake_case}}.setter
+    def {{prop_name | snake_case}}(self, {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}: {{prop.python_class}}):
+        """ This property sets (publishes) a new value for the '{{prop_name}}' property.
+        """
+        if not isinstance({%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}, {{prop.python_class}}):
+            raise ValueError(f"The value must be {{prop.python_class}}.")
+
+        {%if prop.arg_list | length > 1%}
+        payload = value.model_dump_json()
+        {%else%}
+        payload = json.dumps({ "{{prop.arg_list[0].name}}": {{prop.arg_list[0].name|snake_case}} })
+        {%endif%}
+
+        if {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%} != self._property_{{prop_name|snake_case}}.value:
+            with self._property_{{prop_name|snake_case}}.mutex:
+                self._property_{{prop_name|snake_case}}.value = {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}
+                self._property_{{prop_name|snake_case}}.version += 1
+            self._conn.publish("{{prop.update_topic}}", payload, qos=1, retain=True)
+            for callback in self._property_{{prop_name|snake_case}}.callbacks:
+                {%-if prop.arg_list | length > 1%}
+                    callback({%for arg in prop.arg_list %}value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
+                {%-else%}
+                callback({{prop.arg_list[0].name|snake_case}})
+                {%-endif%}
+
+    def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        """ This method sets (publishes) a new value for the '{{prop_name}}' property.
+        """
+        {%-for arg in prop.arg_list%}
+        if not isinstance({{arg.name|snake_case}}, {{arg.python_class}}){%if arg.optional%} and {{arg.name|snake_case}} is not None{%endif%}:
+            raise ValueError(f"The '{{arg.name|snake_case}}' value must be {{arg.python_type}}.")
+        {%-endfor%}
+
+        {%if prop.arg_list | length > 1%}
+        obj = stinger_types.{{prop.python_local_type}}({%for arg in prop.arg_list%}
+            {{arg.name}}={{arg.name|snake_case}},
+            {%endfor%}
+        )
+        {%else%}
+        obj = {{prop.arg_list[0].name | snake_case}}
+        {%endif%}
+
+        # Use the property.setter to do that actual work.
+        self.{{prop_name|snake_case}} = obj
+
+    def on_{{prop_name | snake_case}}_updates(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+        """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
+        """
+        if handler is not None:
+            self._property_{{prop_name|snake_case}}.callbacks.append(handler)
+    {%endfor%}
 
 class {{stinger.python.server_class_name}}Builder:
     """
@@ -159,6 +248,9 @@ class {{stinger.python.server_class_name}}Builder:
         {%for method_name, method in stinger.methods.items()%}
         self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
         {%-endfor%}
+        {%for prop_name, property in stinger.properties.items()%}
+        self._{{prop_name|snake_case}}_property_callbacks: List[Callable[[{%for arg in property.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]] = []
+        {%-endfor%}
     {%for method_name, method in stinger.methods.items()%}
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
         if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
@@ -166,12 +258,22 @@ class {{stinger.python.server_class_name}}Builder:
         else:
             raise Exception("Method handler already set")
     {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    def on_{{prop_name | snake_case}}_updates(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+        """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
+        """
+        self._{{prop_name|snake_case}}_property_callbacks.append(handler)
+    {%endfor%}
     def build(self) -> {{stinger.python.server_class_name}}:
         new_server = {{stinger.python.server_class_name}}(self._conn)
         {%for method_name, method in stinger.methods.items()%}
         if self._{{method_name|snake_case}}_method_handler is not None:
             new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler)
         {%-endfor%}
+        {%for prop_name, prop in stinger.properties.items()%}
+        for callback in self._{{prop_name|snake_case}}_property_callbacks:
+            new_server.on_{{prop_name|snake_case}}_updates(callback)
+        {%endfor%}
         return new_server
 
 if __name__ == '__main__':
@@ -187,12 +289,30 @@ if __name__ == '__main__':
     conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
     server = {{stinger.python.server_class_name}}(conn)
 
+    {%for prop_name, prop in stinger.properties.items()-%}
+    {%if prop.arg_list | length > 1%}
+    server.{{prop_name | snake_case}} = {{prop.python_class}}(
+        {%for arg in prop.arg_list%}
+        {{arg.name}}={{arg.get_random_example_value()}},
+        {%endfor%}
+    )
+    {%else%}
+    server.{{prop_name | snake_case}} = {{prop.arg_list[0].get_random_example_value()}}
+    {%endif%}
+    {%endfor%}
+
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}} 
     def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_type}}:
         """ This is an example handler for the '{{method_name}}' method.  """
         print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
         return {{method.get_return_value_random_example_value('python')}}
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    @server.on_{{prop_name | snake_case}}_updates
+    def on_{{prop_name | snake_case}}_update({%for arg in prop.arg_list %}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        print(f"Received update for '{{prop_name}}' property: {%for arg in prop.arg_list %}{ {{arg.name}}= }{%if not loop.last%}, {%endif%}{%endfor%}")
     {%endfor%}
 
     print("Ctrl-C will stop the program.")

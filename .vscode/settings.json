@@ -79,10 +79,12 @@
   },
   "cSpell.words": [
     "arglist",
+    "dataclass",
     "deser",
     "elif",
     "endmacro",
     "endmarkdown",
+    "isinstance",
     "mpsc",
     "Mqttier",
     "retval",

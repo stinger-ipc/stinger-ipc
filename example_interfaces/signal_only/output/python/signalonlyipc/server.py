@@ -7,13 +7,33 @@ This is the Server for the SignalOnly interface.
 
 import json
 import logging
+import threading
+from dataclasses import dataclass, field
 
 logging.basicConfig(level=logging.DEBUG)
 
-from typing import Callable, Dict, Any, Optional, List
+from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import BrokerConnection
 from method_codes import *
 import interface_types as stinger_types
+
+
+T = TypeVar("T")
+
+
+@dataclass
+class PropertyControls(Generic[T]):
+    value: T | None = None
+    mutex = threading.Lock()
+    version: int = -1
+    subscription_id: int | None = None
+    callbacks: List[Callable[[T], None]] = field(default_factory=list)
+
+
+@dataclass
+class MethodControls:
+    subscription_id: int | None = None
+    callback: Optional[Callable] = None
 
 
 class SignalOnlyServer:
@@ -26,10 +46,11 @@ class SignalOnlyServer:
         self._conn.set_message_callback(self._receive_message)
         self._conn.set_last_will(topic="signalOnly/interface", payload=None, qos=1, retain=True)
 
+        self._publish_interface_info()
+
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
         self._logger.debug("Received message to %s", topic)
-        pass
 
     def _publish_interface_info(self):
         self._conn.publish("signalOnly/interface", """{"name": "SignalOnly", "summary": "", "title": "SignalOnly", "version": "0.0.1"}""", qos=1, retain=True)
