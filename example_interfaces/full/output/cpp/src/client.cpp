@@ -182,6 +182,7 @@ void FullClient::_handleAddNumbersResponse(
         const std::string &correlationId) 
 {
     std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+    
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
     if (!ok)
@@ -189,11 +190,10 @@ void FullClient::_handleAddNumbersResponse(
         //Log("Could not JSON parse addNumbers signal payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
-
     if (!doc.IsObject()) {
         throw std::runtime_error("Received payload is not an object");
     }
-
+    
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingAddNumbersMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingAddNumbersMethodCalls.end())
@@ -247,6 +247,7 @@ void FullClient::_handleDoSomethingResponse(
         const std::string &correlationId) 
 {
     std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+    
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
     if (!ok)
@@ -254,11 +255,10 @@ void FullClient::_handleDoSomethingResponse(
         //Log("Could not JSON parse doSomething signal payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
-
     if (!doc.IsObject()) {
         throw std::runtime_error("Received payload is not an object");
     }
-
+    
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingDoSomethingMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingDoSomethingMethodCalls.end())

@@ -164,6 +164,7 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         const std::string &correlationId) 
 {
     std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+    {%if method.return_value_type is not false%}
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
     if (!ok)
@@ -171,11 +172,10 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         //Log("Could not JSON parse {{method_name}} signal payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
-
     if (!doc.IsObject()) {
         throw std::runtime_error("Received payload is not an object");
     }
-
+    {%endif%}
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationIdUuid);
     if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())

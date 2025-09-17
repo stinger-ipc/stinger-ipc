@@ -192,18 +192,7 @@ void WeatherClient::_handleRefreshDailyForecastResponse(
         const std::string &correlationId) 
 {
     std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
-    rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
-        //Log("Could not JSON parse refresh_daily_forecast signal payload.");
-        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-    }
-
-    if (!doc.IsObject()) {
-        throw std::runtime_error("Received payload is not an object");
-    }
-
+    
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingRefreshDailyForecastMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshDailyForecastMethodCalls.end())
@@ -246,18 +235,7 @@ void WeatherClient::_handleRefreshHourlyForecastResponse(
         const std::string &correlationId) 
 {
     std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
-    rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
-        //Log("Could not JSON parse refresh_hourly_forecast signal payload.");
-        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-    }
-
-    if (!doc.IsObject()) {
-        throw std::runtime_error("Received payload is not an object");
-    }
-
+    
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingRefreshHourlyForecastMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshHourlyForecastMethodCalls.end())
@@ -300,18 +278,7 @@ void WeatherClient::_handleRefreshCurrentConditionsResponse(
         const std::string &correlationId) 
 {
     std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
-    rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
-        //Log("Could not JSON parse refresh_current_conditions signal payload.");
-        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-    }
-
-    if (!doc.IsObject()) {
-        throw std::runtime_error("Received payload is not an object");
-    }
-
+    
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingRefreshCurrentConditionsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshCurrentConditionsMethodCalls.end())
