@@ -266,7 +266,7 @@ impl {{stinger.rust.server_struct_name}} {
 
         {%if stinger.methods|length > 0 -%}
         let method_handlers = self.method_handlers.clone();
-        self.method_handlers.lock().await.initialize(self.clone()).await;
+        let _ = self.method_handlers.lock().await.initialize(self.clone()).await;
         {%endif-%}
 
         let sub_ids = self.subscription_ids.clone();

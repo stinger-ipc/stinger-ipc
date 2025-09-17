@@ -1,6 +1,8 @@
 use futures::executor::block_on;
 use mqttier::MqttierClient;
 use signal_only_client::SignalOnlyClient;
+#[allow(unused_imports)]
+use signal_only_types::{MethodResultCode, *};
 use tokio::join;
 use tokio::time::{Duration, sleep};
 

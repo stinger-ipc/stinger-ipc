@@ -3,6 +3,8 @@ use mqttier::MqttierClient;
 use tokio::join;
 use tokio::time::{Duration, sleep};
 use weather_client::WeatherClient;
+#[allow(unused_imports)]
+use weather_types::{MethodResultCode, *};
 
 #[tokio::main]
 async fn main() {
@@ -37,6 +39,51 @@ async fn main() {
             }
         });
 
+        let client_for_prop_change = api_client.clone();
+        let _prop_change_rx_task = tokio::spawn(async move {
+            let mut location_change_rx = client_for_prop_change.watch_location();
+            let mut current_temperature_change_rx =
+                client_for_prop_change.watch_current_temperature();
+            let mut current_condition_change_rx = client_for_prop_change.watch_current_condition();
+            let mut daily_forecast_change_rx = client_for_prop_change.watch_daily_forecast();
+            let mut hourly_forecast_change_rx = client_for_prop_change.watch_hourly_forecast();
+            let mut current_condition_refresh_interval_change_rx =
+                client_for_prop_change.watch_current_condition_refresh_interval();
+            let mut hourly_forecast_refresh_interval_change_rx =
+                client_for_prop_change.watch_hourly_forecast_refresh_interval();
+            let mut daily_forecast_refresh_interval_change_rx =
+                client_for_prop_change.watch_daily_forecast_refresh_interval();
+
+            loop {
+                tokio::select! {
+                    _ = location_change_rx.changed() => {
+                        println!("Property 'location' changed to: {:?}", *location_change_rx.borrow());
+                    }
+                    _ = current_temperature_change_rx.changed() => {
+                        println!("Property 'current_temperature' changed to: {:?}", *current_temperature_change_rx.borrow());
+                    }
+                    _ = current_condition_change_rx.changed() => {
+                        println!("Property 'current_condition' changed to: {:?}", *current_condition_change_rx.borrow());
+                    }
+                    _ = daily_forecast_change_rx.changed() => {
+                        println!("Property 'daily_forecast' changed to: {:?}", *daily_forecast_change_rx.borrow());
+                    }
+                    _ = hourly_forecast_change_rx.changed() => {
+                        println!("Property 'hourly_forecast' changed to: {:?}", *hourly_forecast_change_rx.borrow());
+                    }
+                    _ = current_condition_refresh_interval_change_rx.changed() => {
+                        println!("Property 'current_condition_refresh_interval' changed to: {:?}", *current_condition_refresh_interval_change_rx.borrow());
+                    }
+                    _ = hourly_forecast_refresh_interval_change_rx.changed() => {
+                        println!("Property 'hourly_forecast_refresh_interval' changed to: {:?}", *hourly_forecast_refresh_interval_change_rx.borrow());
+                    }
+                    _ = daily_forecast_refresh_interval_change_rx.changed() => {
+                        println!("Property 'daily_forecast_refresh_interval' changed to: {:?}", *daily_forecast_refresh_interval_change_rx.borrow());
+                    }
+                }
+            }
+        });
+
         println!("Calling refresh_daily_forecast with example values...");
         let result = api_client
             .refresh_daily_forecast()
@@ -57,6 +104,18 @@ async fn main() {
             .await
             .expect("Failed to call refresh_current_conditions");
         println!("refresh_current_conditions response: {:?}", result);
+
+        let location_new_value = LocationProperty {
+            latitude: 3.14,
+            longitude: 3.14,
+        };
+        let _ = api_client.set_location(location_new_value);
+
+        let _ = api_client.set_current_condition_refresh_interval(42);
+
+        let _ = api_client.set_hourly_forecast_refresh_interval(42);
+
+        let _ = api_client.set_daily_forecast_refresh_interval(42);
 
         let _ = join!(sig_rx_task);
     });

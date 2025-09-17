@@ -3,6 +3,8 @@ use mqttier::MqttierClient;
 use {{stinger.rust.client_package_name}}::{{stinger.rust.client_struct_name}};
 use tokio::time::{sleep, Duration};
 use tokio::join;
+#[allow(unused_imports)]
+use {{stinger.rust.common_package_name}}::{MethodResultCode, *};
 
 #[tokio::main]
 async fn main() {
@@ -38,13 +40,41 @@ async fn main() {
             }
         });
         {%endfor%}
+        {%if stinger.properties|length > 0  %}
+        let client_for_prop_change = api_client.clone();
+        let _prop_change_rx_task = tokio::spawn(async move {
+            {%for prop_name, prop in stinger.properties.items()-%}
+            let mut {{prop_name|snake_case}}_change_rx = client_for_prop_change.watch_{{prop_name|snake_case}}();
+            {%endfor%}
 
+            loop {
+                tokio::select! { {%-for prop_name, prop in stinger.properties.items()%}
+                    _ = {{prop_name|snake_case}}_change_rx.changed() => {
+                        println!("Property '{{prop_name}}' changed to: {:?}", *{{prop_name|snake_case}}_change_rx.borrow());
+                    }{%endfor%}
+                }
+            }
+        });
+        {%endif%}
 
         {%for method_name, method in stinger.methods.items()%}
         println!("Calling {{method_name}} with example values...");
         let result = api_client.{{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang='rust')}}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
         println!("{{method_name}} response: {:?}", result);
         {%endfor%}
+
+        {%for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
+        {%if prop.arg_list|length == 1 %}
+        let _ = api_client.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}});
+        {%else%}
+        let {{prop_name|snake_case}}_new_value = {{prop.rust_type}} {
+            {%-for arg in prop.arg_list %}
+                {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
+            {%-endfor%}
+        };
+        let _ = api_client.set_{{prop_name | snake_case}}({{prop_name|snake_case}}_new_value);
+        {%endif%}
+        {%endif%}{%endfor%}
 
         let _ = join!(sig_rx_task);
     });

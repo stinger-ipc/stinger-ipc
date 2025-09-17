@@ -461,7 +461,8 @@ impl FullServer {
         };
 
         let method_handlers = self.method_handlers.clone();
-        self.method_handlers
+        let _ = self
+            .method_handlers
             .lock()
             .await
             .initialize(self.clone())

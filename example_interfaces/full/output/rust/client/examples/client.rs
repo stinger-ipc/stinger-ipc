@@ -1,4 +1,6 @@
 use full_client::FullClient;
+#[allow(unused_imports)]
+use full_types::{MethodResultCode, *};
 use futures::executor::block_on;
 use mqttier::MqttierClient;
 use tokio::join;
@@ -37,6 +39,27 @@ async fn main() {
             }
         });
 
+        let client_for_prop_change = api_client.clone();
+        let _prop_change_rx_task = tokio::spawn(async move {
+            let mut favorite_number_change_rx = client_for_prop_change.watch_favorite_number();
+            let mut favorite_foods_change_rx = client_for_prop_change.watch_favorite_foods();
+            let mut lunch_menu_change_rx = client_for_prop_change.watch_lunch_menu();
+
+            loop {
+                tokio::select! {
+                    _ = favorite_number_change_rx.changed() => {
+                        println!("Property 'favorite_number' changed to: {:?}", *favorite_number_change_rx.borrow());
+                    }
+                    _ = favorite_foods_change_rx.changed() => {
+                        println!("Property 'favorite_foods' changed to: {:?}", *favorite_foods_change_rx.borrow());
+                    }
+                    _ = lunch_menu_change_rx.changed() => {
+                        println!("Property 'lunch_menu' changed to: {:?}", *lunch_menu_change_rx.borrow());
+                    }
+                }
+            }
+        });
+
         println!("Calling addNumbers with example values...");
         let result = api_client
             .add_numbers(42, 42, Some(42))
@@ -50,6 +73,33 @@ async fn main() {
             .await
             .expect("Failed to call doSomething");
         println!("doSomething response: {:?}", result);
+
+        let _ = api_client.set_favorite_number(42);
+
+        let favorite_foods_new_value = FavoriteFoodsProperty {
+            drink: "apples".to_string(),
+            slices_of_pizza: 42,
+            breakfast: Some("apples".to_string()),
+        };
+        let _ = api_client.set_favorite_foods(favorite_foods_new_value);
+
+        let lunch_menu_new_value = LunchMenuProperty {
+            monday: Lunch {
+                drink: true,
+                sandwich: "apples".to_string(),
+                crackers: 3.14,
+                day: DayOfTheWeek::Monday,
+                order_number: Some(42),
+            },
+            tuesday: Lunch {
+                drink: true,
+                sandwich: "apples".to_string(),
+                crackers: 3.14,
+                day: DayOfTheWeek::Monday,
+                order_number: Some(42),
+            },
+        };
+        let _ = api_client.set_lunch_menu(lunch_menu_new_value);
 
         let _ = join!(sig_rx_task);
     });
