@@ -11,10 +11,9 @@ use std::any::Any;
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
 
-//pub mod handler;
-//pub mod init;
-//pub use handler::WeatherMethodHandlers;
+use async_trait::async_trait;
 use std::sync::{Arc, Mutex};
+use tokio::sync::Mutex as AsyncMutex;
 
 use serde_json;
 use tokio::sync::{mpsc, watch};
@@ -80,7 +79,7 @@ pub struct WeatherServer {
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
 
     /// Struct contains all the method handlers.
-    method_handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers>>>,
+    method_handlers: Arc<AsyncMutex<Box<dyn WeatherMethodHandlers>>>,
 
     /// Struct contains all the properties.
     properties: WeatherProperties,
@@ -96,7 +95,7 @@ pub struct WeatherServer {
 impl WeatherServer {
     pub async fn new(
         connection: &mut MqttierClient,
-        method_handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers>>>,
+        method_handlers: Arc<AsyncMutex<Box<dyn WeatherMethodHandlers>>>,
     ) -> Self {
         // Create a channel for messages to get from the MqttierClient object to this WeatherServer object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -265,7 +264,7 @@ impl WeatherServer {
     /// Handles a request message for the refresh_daily_forecast method.
     async fn handle_refresh_daily_forecast_request(
         publisher: MqttierClient,
-        handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers>>>,
+        handlers: Arc<AsyncMutex<Box<dyn WeatherMethodHandlers>>>,
         msg: ReceivedMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -273,8 +272,8 @@ impl WeatherServer {
 
         // call the method handler
         let rv: Result<(), MethodResultCode> = {
-            let handler_guard = handlers.lock().unwrap();
-            (*handler_guard).handle_refresh_daily_forecast()
+            let handler_guard = handlers.lock().await;
+            handler_guard.handle_refresh_daily_forecast().await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
@@ -303,7 +302,7 @@ impl WeatherServer {
     /// Handles a request message for the refresh_hourly_forecast method.
     async fn handle_refresh_hourly_forecast_request(
         publisher: MqttierClient,
-        handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers>>>,
+        handlers: Arc<AsyncMutex<Box<dyn WeatherMethodHandlers>>>,
         msg: ReceivedMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -311,8 +310,8 @@ impl WeatherServer {
 
         // call the method handler
         let rv: Result<(), MethodResultCode> = {
-            let handler_guard = handlers.lock().unwrap();
-            (*handler_guard).handle_refresh_hourly_forecast()
+            let handler_guard = handlers.lock().await;
+            handler_guard.handle_refresh_hourly_forecast().await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
@@ -341,7 +340,7 @@ impl WeatherServer {
     /// Handles a request message for the refresh_current_conditions method.
     async fn handle_refresh_current_conditions_request(
         publisher: MqttierClient,
-        handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers>>>,
+        handlers: Arc<AsyncMutex<Box<dyn WeatherMethodHandlers>>>,
         msg: ReceivedMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -349,8 +348,8 @@ impl WeatherServer {
 
         // call the method handler
         let rv: Result<(), MethodResultCode> = {
-            let handler_guard = handlers.lock().unwrap();
-            (*handler_guard).handle_refresh_current_conditions()
+            let handler_guard = handlers.lock().await;
+            handler_guard.handle_refresh_current_conditions().await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
@@ -802,9 +801,9 @@ impl WeatherServer {
         let method_handlers = self.method_handlers.clone();
         self.method_handlers
             .lock()
-            .unwrap()
+            .await
             .initialize(self.clone())
-            .expect("Failed to initialize method handlers");
+            .await;
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqttier_client.clone();
 
@@ -892,17 +891,18 @@ impl WeatherServer {
     }
 }
 
+#[async_trait]
 pub trait WeatherMethodHandlers: Send + Sync {
-    fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodResultCode>;
+    async fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodResultCode>;
 
     /// Pointer to a function to handle the refresh_daily_forecast method request.
-    fn handle_refresh_daily_forecast(&self) -> Result<(), MethodResultCode>;
+    async fn handle_refresh_daily_forecast(&self) -> Result<(), MethodResultCode>;
 
     /// Pointer to a function to handle the refresh_hourly_forecast method request.
-    fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodResultCode>;
+    async fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodResultCode>;
 
     /// Pointer to a function to handle the refresh_current_conditions method request.
-    fn handle_refresh_current_conditions(&self) -> Result<(), MethodResultCode>;
+    async fn handle_refresh_current_conditions(&self) -> Result<(), MethodResultCode>;
 
     fn as_any(&self) -> &dyn Any;
 }

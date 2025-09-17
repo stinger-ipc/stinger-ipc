@@ -11,10 +11,9 @@ use mqttier::{MqttierClient, ReceivedMessage};
 use full_types::payloads::{MethodResultCode, *};
 use std::any::Any;
 
-//pub mod handler;
-//pub mod init;
-//pub use handler::FullMethodHandlers;
+use async_trait::async_trait;
 use std::sync::{Arc, Mutex};
+use tokio::sync::Mutex as AsyncMutex;
 
 use serde_json;
 use tokio::sync::{mpsc, watch};
@@ -62,7 +61,7 @@ pub struct FullServer {
     msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
 
     /// Struct contains all the method handlers.
-    method_handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>>,
+    method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
 
     /// Struct contains all the properties.
     properties: FullProperties,
@@ -78,7 +77,7 @@ pub struct FullServer {
 impl FullServer {
     pub async fn new(
         connection: &mut MqttierClient,
-        method_handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>>,
+        method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
     ) -> Self {
         // Create a channel for messages to get from the MqttierClient object to this FullServer object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -190,7 +189,7 @@ impl FullServer {
     /// Handles a request message for the addNumbers method.
     async fn handle_add_numbers_request(
         publisher: MqttierClient,
-        handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>>,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
         msg: ReceivedMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -200,8 +199,10 @@ impl FullServer {
 
         // call the method handler
         let rv: Result<i32, MethodResultCode> = {
-            let handler_guard = handlers.lock().unwrap();
-            (*handler_guard).handle_add_numbers(payload.first, payload.second, payload.third)
+            let handler_guard = handlers.lock().await;
+            handler_guard
+                .handle_add_numbers(payload.first, payload.second, payload.third)
+                .await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
@@ -230,7 +231,7 @@ impl FullServer {
     /// Handles a request message for the doSomething method.
     async fn handle_do_something_request(
         publisher: MqttierClient,
-        handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>>,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
         msg: ReceivedMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -240,8 +241,8 @@ impl FullServer {
 
         // call the method handler
         let rv: Result<DoSomethingReturnValue, MethodResultCode> = {
-            let handler_guard = handlers.lock().unwrap();
-            (*handler_guard).handle_do_something(payload.aString)
+            let handler_guard = handlers.lock().await;
+            handler_guard.handle_do_something(payload.aString).await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
@@ -462,9 +463,9 @@ impl FullServer {
         let method_handlers = self.method_handlers.clone();
         self.method_handlers
             .lock()
-            .unwrap()
+            .await
             .initialize(self.clone())
-            .expect("Failed to initialize method handlers");
+            .await;
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqttier_client.clone();
 
@@ -524,11 +525,12 @@ impl FullServer {
     }
 }
 
+#[async_trait]
 pub trait FullMethodHandlers: Send + Sync {
-    fn initialize(&mut self, server: FullServer) -> Result<(), MethodResultCode>;
+    async fn initialize(&mut self, server: FullServer) -> Result<(), MethodResultCode>;
 
     /// Pointer to a function to handle the addNumbers method request.
-    fn handle_add_numbers(
+    async fn handle_add_numbers(
         &self,
         first: i32,
         second: i32,
@@ -536,7 +538,7 @@ pub trait FullMethodHandlers: Send + Sync {
     ) -> Result<i32, MethodResultCode>;
 
     /// Pointer to a function to handle the doSomething method request.
-    fn handle_do_something(
+    async fn handle_do_something(
         &self,
         a_string: String,
     ) -> Result<DoSomethingReturnValue, MethodResultCode>;

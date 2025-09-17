@@ -10,9 +10,10 @@ use std::any::Any;
 use tokio::time::{Duration, sleep};
 use weather_server::{WeatherMethodHandlers, WeatherServer};
 
-//use weather_server::handler::WeatherMethodHandlers;
-//use weather_server::init::Initializable;
-use std::sync::{Arc, Mutex};
+use async_trait::async_trait;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
 #[allow(unused_imports)]
 use weather_types::payloads::{MethodResultCode, *};
 
@@ -26,23 +27,24 @@ impl WeatherMethodImpl {
     }
 }
 
+#[async_trait]
 impl WeatherMethodHandlers for WeatherMethodImpl {
-    fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodResultCode> {
+    async fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodResultCode> {
         self.server = Some(server.clone());
         Ok(())
     }
 
-    fn handle_refresh_daily_forecast(&self) -> Result<(), MethodResultCode> {
+    async fn handle_refresh_daily_forecast(&self) -> Result<(), MethodResultCode> {
         println!("Handling refresh_daily_forecast");
         Ok(())
     }
 
-    fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodResultCode> {
+    async fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodResultCode> {
         println!("Handling refresh_hourly_forecast");
         Ok(())
     }
 
-    fn handle_refresh_current_conditions(&self) -> Result<(), MethodResultCode> {
+    async fn handle_refresh_current_conditions(&self) -> Result<(), MethodResultCode> {
         println!("Handling refresh_current_conditions");
         Ok(())
     }

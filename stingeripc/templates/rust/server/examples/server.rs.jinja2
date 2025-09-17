@@ -10,9 +10,10 @@ use mqttier::MqttierClient;
 use {{stinger.rust.server_package_name}}::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
 use tokio::time::{sleep, Duration};
 {%if stinger.methods|length > 0%}
-//use {{stinger.rust.server_package_name}}::handler::{{stinger.name | UpperCamelCase }}MethodHandlers;
-//use {{stinger.rust.server_package_name}}::init::Initializable;
-use std::sync::{Arc, Mutex};{%endif%}
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use async_trait::async_trait;
+{%endif%}
 #[allow(unused_imports)]
 use {{stinger.rust.common_package_name}}::payloads::{MethodResultCode, *};
 
@@ -29,15 +30,16 @@ impl {{stinger.name | UpperCamelCase }}MethodImpl {
     }
 }
 
+#[async_trait]
 impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | UpperCamelCase }}MethodImpl {
 
-    fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodResultCode> {
+    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodResultCode> {
         self.server = Some(server.clone());
         Ok(())
     }
 
     {%for method_name, method in stinger.methods.items()%}
-    fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
+    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
         println!("Handling {{method_name}}");
         {%-if method.return_value_type == 'struct'%}
         let rv = {{method.return_value_rust_type}} {
@@ -58,11 +60,7 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | Upper
         self
     }
 }
-
-
 {%endif%}
-
-
 
 #[tokio::main]
 async fn main() {

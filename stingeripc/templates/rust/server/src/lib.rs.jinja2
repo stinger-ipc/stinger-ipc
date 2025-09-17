@@ -13,9 +13,8 @@ use mqttier::{MqttierClient{%if stinger.methods|length > 0 or stinger.properties
 use {{stinger.rust.common_package_name}}::payloads::{*, MethodResultCode};
 use std::any::Any;
 {%if stinger.methods|length > 0 %}
-//pub mod handler;
-//pub mod init;
-//pub use handler::{{stinger.name | UpperCamelCase }}MethodHandlers;
+use async_trait::async_trait;
+use tokio::sync::Mutex as AsyncMutex;
 use std::sync::{Arc, Mutex};
 {%endif%}
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
@@ -68,7 +67,7 @@ pub struct {{stinger.rust.server_struct_name}} {
     {%endif%}
     {%if stinger.methods|length > 0 %}
     /// Struct contains all the method handlers.
-    method_handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>>,
+    method_handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>>,
     {%endif%}
     {%if stinger.properties|length > 0%}
     /// Struct contains all the properties.
@@ -85,7 +84,7 @@ pub struct {{stinger.rust.server_struct_name}} {
 }
 
 impl {{stinger.rust.server_struct_name}} {
-    pub async fn new(connection: &mut MqttierClient{%if stinger.methods|length > 0%}, method_handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> {%endif%}) -> Self {
+    pub async fn new(connection: &mut MqttierClient{%if stinger.methods|length > 0%}, method_handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> {%endif%}) -> Self {
         {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
         // Create a channel for messages to get from the MqttierClient object to this {{stinger.rust.server_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -152,7 +151,7 @@ impl {{stinger.rust.server_struct_name}} {
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Handles a request message for the {{method_name}} method.
-    async fn handle_{{method_name|snake_case}}_request(publisher: MqttierClient, handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>>, msg: ReceivedMessage) {
+    async fn handle_{{method_name|snake_case}}_request(publisher: MqttierClient, handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>>, msg: ReceivedMessage) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
         {%if method.arg_list | length > 0 -%}
@@ -161,8 +160,8 @@ impl {{stinger.rust.server_struct_name}} {
         {%endif%}{# has arg_list #} 
         // call the method handler
         let rv: Result<{{method.return_value_rust_type}}, MethodResultCode> = {
-            let handler_guard = handlers.lock().unwrap();
-            (*handler_guard).handle_{{method_name|snake_case}}({%for arg in method.arg_list%}payload.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+            let handler_guard = handlers.lock().await;
+            handler_guard.handle_{{method_name|snake_case}}({%for arg in method.arg_list%}payload.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}).await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
@@ -267,7 +266,7 @@ impl {{stinger.rust.server_struct_name}} {
 
         {%if stinger.methods|length > 0 -%}
         let method_handlers = self.method_handlers.clone();
-        self.method_handlers.lock().unwrap().initialize(self.clone()).expect("Failed to initialize method handlers");
+        self.method_handlers.lock().await.initialize(self.clone()).await;
         {%endif-%}
 
         let sub_ids = self.subscription_ids.clone();
@@ -304,13 +303,14 @@ impl {{stinger.rust.server_struct_name}} {
 
 }
 {%if stinger.methods|length > 0 %}
+#[async_trait]
 pub trait {{stinger.name | UpperCamelCase }}MethodHandlers: Send + Sync {
 
-    fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodResultCode>;
+    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodResultCode>;
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode>;
+    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode>;
     
     {%endfor%}
 

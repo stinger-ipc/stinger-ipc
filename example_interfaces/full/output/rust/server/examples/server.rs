@@ -10,11 +10,12 @@ use mqttier::MqttierClient;
 use std::any::Any;
 use tokio::time::{Duration, sleep};
 
-//use full_server::handler::FullMethodHandlers;
-//use full_server::init::Initializable;
+use async_trait::async_trait;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
 #[allow(unused_imports)]
 use full_types::payloads::{MethodResultCode, *};
-use std::sync::{Arc, Mutex};
 
 struct FullMethodImpl {
     server: Option<FullServer>,
@@ -26,13 +27,14 @@ impl FullMethodImpl {
     }
 }
 
+#[async_trait]
 impl FullMethodHandlers for FullMethodImpl {
-    fn initialize(&mut self, server: FullServer) -> Result<(), MethodResultCode> {
+    async fn initialize(&mut self, server: FullServer) -> Result<(), MethodResultCode> {
         self.server = Some(server.clone());
         Ok(())
     }
 
-    fn handle_add_numbers(
+    async fn handle_add_numbers(
         &self,
         _first: i32,
         _second: i32,
@@ -42,7 +44,7 @@ impl FullMethodHandlers for FullMethodImpl {
         Ok(42)
     }
 
-    fn handle_do_something(
+    async fn handle_do_something(
         &self,
         _a_string: String,
     ) -> Result<DoSomethingReturnValue, MethodResultCode> {
