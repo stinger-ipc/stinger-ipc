@@ -24,7 +24,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     $scope.online = false;
 
     $scope.enums = {
-        // <stingeripc.components.InterfaceEnum object at 0x73ba57f438f0>
+        // <stingeripc.components.InterfaceEnum object at 0x722ceb9f47a0>
         "day_of_the_week": [
             {"name": "Sunday", "id": 1 },
             

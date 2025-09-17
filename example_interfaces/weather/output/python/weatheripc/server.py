@@ -331,7 +331,7 @@ class WeatherServer:
             with self._property_location.mutex:
                 self._property_location.value = value
                 self._property_location.version += 1
-            self._conn.publish("weather/property/location/setValue", payload, qos=1, retain=True)
+            self._conn.publish("weather/property/location/value", payload, qos=1, retain=True)
             for callback in self._property_location.callbacks:
                 callback(value.latitude, value.longitude)
 
@@ -373,7 +373,7 @@ class WeatherServer:
             with self._property_current_temperature.mutex:
                 self._property_current_temperature.value = temperature_f
                 self._property_current_temperature.version += 1
-            self._conn.publish("weather/property/currentTemperature/setValue", payload, qos=1, retain=True)
+            self._conn.publish("weather/property/currentTemperature/value", payload, qos=1, retain=True)
             for callback in self._property_current_temperature.callbacks:
                 callback(temperature_f)
 
@@ -410,7 +410,7 @@ class WeatherServer:
             with self._property_current_condition.mutex:
                 self._property_current_condition.value = value
                 self._property_current_condition.version += 1
-            self._conn.publish("weather/property/currentCondition/setValue", payload, qos=1, retain=True)
+            self._conn.publish("weather/property/currentCondition/value", payload, qos=1, retain=True)
             for callback in self._property_current_condition.callbacks:
                 callback(value.condition, value.description)
 
@@ -452,7 +452,7 @@ class WeatherServer:
             with self._property_daily_forecast.mutex:
                 self._property_daily_forecast.value = value
                 self._property_daily_forecast.version += 1
-            self._conn.publish("weather/property/dailyForecast/setValue", payload, qos=1, retain=True)
+            self._conn.publish("weather/property/dailyForecast/value", payload, qos=1, retain=True)
             for callback in self._property_daily_forecast.callbacks:
                 callback(value.monday, value.tuesday, value.wednesday)
 
@@ -497,7 +497,7 @@ class WeatherServer:
             with self._property_hourly_forecast.mutex:
                 self._property_hourly_forecast.value = value
                 self._property_hourly_forecast.version += 1
-            self._conn.publish("weather/property/hourlyForecast/setValue", payload, qos=1, retain=True)
+            self._conn.publish("weather/property/hourlyForecast/value", payload, qos=1, retain=True)
             for callback in self._property_hourly_forecast.callbacks:
                 callback(value.hour_0, value.hour_1, value.hour_2, value.hour_3)
 
@@ -545,7 +545,7 @@ class WeatherServer:
             with self._property_current_condition_refresh_interval.mutex:
                 self._property_current_condition_refresh_interval.value = seconds
                 self._property_current_condition_refresh_interval.version += 1
-            self._conn.publish("weather/property/currentConditionRefreshInterval/setValue", payload, qos=1, retain=True)
+            self._conn.publish("weather/property/currentConditionRefreshInterval/value", payload, qos=1, retain=True)
             for callback in self._property_current_condition_refresh_interval.callbacks:
                 callback(seconds)
 
@@ -582,7 +582,7 @@ class WeatherServer:
             with self._property_hourly_forecast_refresh_interval.mutex:
                 self._property_hourly_forecast_refresh_interval.value = seconds
                 self._property_hourly_forecast_refresh_interval.version += 1
-            self._conn.publish("weather/property/hourlyForecastRefreshInterval/setValue", payload, qos=1, retain=True)
+            self._conn.publish("weather/property/hourlyForecastRefreshInterval/value", payload, qos=1, retain=True)
             for callback in self._property_hourly_forecast_refresh_interval.callbacks:
                 callback(seconds)
 
@@ -619,7 +619,7 @@ class WeatherServer:
             with self._property_daily_forecast_refresh_interval.mutex:
                 self._property_daily_forecast_refresh_interval.value = seconds
                 self._property_daily_forecast_refresh_interval.version += 1
-            self._conn.publish("weather/property/dailyForecastRefreshInterval/setValue", payload, qos=1, retain=True)
+            self._conn.publish("weather/property/dailyForecastRefreshInterval/value", payload, qos=1, retain=True)
             for callback in self._property_daily_forecast_refresh_interval.callbacks:
                 callback(seconds)
 

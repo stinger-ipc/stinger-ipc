@@ -43,9 +43,9 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker) : _broker(brok
         responseTopicStringStream << boost::format("client/%1%/full/method/doSomething/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
-    _favoriteNumberPropertySubscriptionId = _broker->Subscribe("full/property/favoriteNumber/setValue", 1);
-    _favoriteFoodsPropertySubscriptionId = _broker->Subscribe("full/property/favoriteFoods/setValue", 1);
-    _lunchMenuPropertySubscriptionId = _broker->Subscribe("full/property/lunchMenu/setValue", 1);
+    _favoriteNumberPropertySubscriptionId = _broker->Subscribe("full/property/favoriteNumber/value", 1);
+    _favoriteFoodsPropertySubscriptionId = _broker->Subscribe("full/property/favoriteFoods/value", 1);
+    _lunchMenuPropertySubscriptionId = _broker->Subscribe("full/property/lunchMenu/value", 1);
 }
 
 void FullClient::_receiveMessage(
@@ -121,15 +121,15 @@ void FullClient::_receiveMessage(
         std::cout << "Matched topic for doSomething response" << std::endl;
         _handleDoSomethingResponse(topic, payload, *mqttProps.correlationId);
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _favoriteNumberPropertySubscriptionId)) || topic == "full/property/favoriteNumber/setValue")
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _favoriteNumberPropertySubscriptionId)) || topic == "full/property/favoriteNumber/value")
     {
         _receiveFavoriteNumberPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _favoriteFoodsPropertySubscriptionId)) || topic == "full/property/favoriteFoods/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _favoriteFoodsPropertySubscriptionId)) || topic == "full/property/favoriteFoods/value")
     {
         _receiveFavoriteFoodsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _lunchMenuPropertySubscriptionId)) || topic == "full/property/lunchMenu/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _lunchMenuPropertySubscriptionId)) || topic == "full/property/lunchMenu/value")
     {
         _receiveLunchMenuPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }

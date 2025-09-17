@@ -48,14 +48,14 @@ WeatherClient::WeatherClient(std::shared_ptr<IBrokerConnection> broker) : _broke
         responseTopicStringStream << boost::format("client/%1%/weather/method/refreshCurrentConditions/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
-    _locationPropertySubscriptionId = _broker->Subscribe("weather/property/location/setValue", 1);
-    _currentTemperaturePropertySubscriptionId = _broker->Subscribe("weather/property/currentTemperature/setValue", 1);
-    _currentConditionPropertySubscriptionId = _broker->Subscribe("weather/property/currentCondition/setValue", 1);
-    _dailyForecastPropertySubscriptionId = _broker->Subscribe("weather/property/dailyForecast/setValue", 1);
-    _hourlyForecastPropertySubscriptionId = _broker->Subscribe("weather/property/hourlyForecast/setValue", 1);
-    _currentConditionRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/property/currentConditionRefreshInterval/setValue", 1);
-    _hourlyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/property/hourlyForecastRefreshInterval/setValue", 1);
-    _dailyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/property/dailyForecastRefreshInterval/setValue", 1);
+    _locationPropertySubscriptionId = _broker->Subscribe("weather/property/location/value", 1);
+    _currentTemperaturePropertySubscriptionId = _broker->Subscribe("weather/property/currentTemperature/value", 1);
+    _currentConditionPropertySubscriptionId = _broker->Subscribe("weather/property/currentCondition/value", 1);
+    _dailyForecastPropertySubscriptionId = _broker->Subscribe("weather/property/dailyForecast/value", 1);
+    _hourlyForecastPropertySubscriptionId = _broker->Subscribe("weather/property/hourlyForecast/value", 1);
+    _currentConditionRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/property/currentConditionRefreshInterval/value", 1);
+    _hourlyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/property/hourlyForecastRefreshInterval/value", 1);
+    _dailyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/property/dailyForecastRefreshInterval/value", 1);
 }
 
 void WeatherClient::_receiveMessage(
@@ -123,35 +123,35 @@ void WeatherClient::_receiveMessage(
         std::cout << "Matched topic for refresh_current_conditions response" << std::endl;
         _handleRefreshCurrentConditionsResponse(topic, payload, *mqttProps.correlationId);
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _locationPropertySubscriptionId)) || topic == "weather/property/location/setValue")
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _locationPropertySubscriptionId)) || topic == "weather/property/location/value")
     {
         _receiveLocationPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentTemperaturePropertySubscriptionId)) || topic == "weather/property/currentTemperature/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentTemperaturePropertySubscriptionId)) || topic == "weather/property/currentTemperature/value")
     {
         _receiveCurrentTemperaturePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentConditionPropertySubscriptionId)) || topic == "weather/property/currentCondition/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentConditionPropertySubscriptionId)) || topic == "weather/property/currentCondition/value")
     {
         _receiveCurrentConditionPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _dailyForecastPropertySubscriptionId)) || topic == "weather/property/dailyForecast/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _dailyForecastPropertySubscriptionId)) || topic == "weather/property/dailyForecast/value")
     {
         _receiveDailyForecastPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _hourlyForecastPropertySubscriptionId)) || topic == "weather/property/hourlyForecast/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _hourlyForecastPropertySubscriptionId)) || topic == "weather/property/hourlyForecast/value")
     {
         _receiveHourlyForecastPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentConditionRefreshIntervalPropertySubscriptionId)) || topic == "weather/property/currentConditionRefreshInterval/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentConditionRefreshIntervalPropertySubscriptionId)) || topic == "weather/property/currentConditionRefreshInterval/value")
     {
         _receiveCurrentConditionRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _hourlyForecastRefreshIntervalPropertySubscriptionId)) || topic == "weather/property/hourlyForecastRefreshInterval/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _hourlyForecastRefreshIntervalPropertySubscriptionId)) || topic == "weather/property/hourlyForecastRefreshInterval/value")
     {
         _receiveHourlyForecastRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _dailyForecastRefreshIntervalPropertySubscriptionId)) || topic == "weather/property/dailyForecastRefreshInterval/setValue")
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _dailyForecastRefreshIntervalPropertySubscriptionId)) || topic == "weather/property/dailyForecastRefreshInterval/value")
     {
         _receiveDailyForecastRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }

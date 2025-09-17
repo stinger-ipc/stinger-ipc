@@ -266,7 +266,7 @@ class FullServer:
             with self._property_favorite_number.mutex:
                 self._property_favorite_number.value = number
                 self._property_favorite_number.version += 1
-            self._conn.publish("full/property/favoriteNumber/setValue", payload, qos=1, retain=True)
+            self._conn.publish("full/property/favoriteNumber/value", payload, qos=1, retain=True)
             for callback in self._property_favorite_number.callbacks:
                 callback(number)
 
@@ -303,7 +303,7 @@ class FullServer:
             with self._property_favorite_foods.mutex:
                 self._property_favorite_foods.value = value
                 self._property_favorite_foods.version += 1
-            self._conn.publish("full/property/favoriteFoods/setValue", payload, qos=1, retain=True)
+            self._conn.publish("full/property/favoriteFoods/value", payload, qos=1, retain=True)
             for callback in self._property_favorite_foods.callbacks:
                 callback(value.drink, value.slices_of_pizza, value.breakfast)
 
@@ -348,7 +348,7 @@ class FullServer:
             with self._property_lunch_menu.mutex:
                 self._property_lunch_menu.value = value
                 self._property_lunch_menu.version += 1
-            self._conn.publish("full/property/lunchMenu/setValue", payload, qos=1, retain=True)
+            self._conn.publish("full/property/lunchMenu/value", payload, qos=1, retain=True)
             for callback in self._property_lunch_menu.callbacks:
                 callback(value.monday, value.tuesday)
 

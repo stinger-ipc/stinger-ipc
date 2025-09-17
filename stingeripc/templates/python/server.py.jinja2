@@ -203,7 +203,7 @@ class {{stinger.python.server_class_name}}:
             with self._property_{{prop_name|snake_case}}.mutex:
                 self._property_{{prop_name|snake_case}}.value = {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}
                 self._property_{{prop_name|snake_case}}.version += 1
-            self._conn.publish("{{prop.update_topic}}", payload, qos=1, retain=True)
+            self._conn.publish("{{prop.value_topic}}", payload, qos=1, retain=True)
             for callback in self._property_{{prop_name|snake_case}}.callbacks:
                 {%-if prop.arg_list | length > 1%}
                     callback({%for arg in prop.arg_list %}value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})

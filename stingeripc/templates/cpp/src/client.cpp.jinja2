@@ -45,7 +45,7 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     {%-endfor%}
 
     {%-for prop_name, prop in stinger.properties.items() %}
-    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe("{{prop.update_topic}}", 1);
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe("{{prop.value_topic}}", 1);
     {%-endfor%}
 }
 
@@ -116,7 +116,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
     {%-endfor%}{# for methods #}
 
     {%-for prop_name, prop in stinger.properties.items() %}
-    {%if not loop.first%}else {%endif%}if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId)) || topic == "{{prop.update_topic}}")
+    {%if not loop.first%}else {%endif%}if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId)) || topic == "{{prop.value_topic}}")
     {
         _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
