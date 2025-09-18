@@ -1,6 +1,7 @@
 
 {% import "partials/serialize.jinja2" as ser %}
-
+{% import "partials/properties.jinja2" as pr %}
+{% import "partials/args.jinja2" as ar %}
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -29,7 +30,10 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
         _receiveMessage(topic, payload, mqttProps);
     });
     {%for method in stinger.methods.values()%}
-    _broker->Subscribe("{{method.topic}}", 2);
+    _{{method.name | camelCase}}MethodSubscriptionId = _broker->Subscribe("{{method.topic}}", 2);
+    {%-endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe("{{prop.update_topic}}", 1);
     {%endfor%}
 }
 
@@ -38,8 +42,9 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(
         const std::string& payload, 
         const MqttProperties& mqttProps)
 {
+    int subscriptionId = mqttProps.subscriptionId.value_or(-1);
     {%for method_name, method in stinger.methods.items()%}
-    if (_broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | camelCase}}MethodSubscriptionId) || _broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
     {
         std::cout << "Message matched topic {{method.topic}}\n";
         rapidjson::Document doc;
@@ -66,6 +71,13 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(
             // so we are dropping the message completely. 
             // TODO: Log this failure
         }
+    }
+    {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    {%if not loop.first%}else {%endif%}if (subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId || _broker->TopicMatchesSubscription(topic, "{{prop.update_topic}}"))
+    {
+        std::cout << "Message matched topic {{prop.update_topic}}\n";
+        _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
     {%endfor%}
 }
@@ -158,5 +170,25 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
             _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
+}
+{%endfor%}
+
+{%for prop_name, prop in stinger.properties.items()%}
+{{pr.get_property_definition(stinger.cpp.server_class_name, prop_name, prop)}}
+
+{{pr.callback_registration_definition(stinger.cpp.server_class_name, prop_name, prop)}}
+
+boost::future<bool> {{stinger.cpp.server_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    {%for item in prop.arg_list %}
+    {{ser.addToValue('doc', item, 'doc.GetAllocator()') | indent(4)}}
+    {%endfor %}
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("{{prop.update_topic}}", buf.GetString(), 1, false, mqttProps);
 }
 {%endfor%}

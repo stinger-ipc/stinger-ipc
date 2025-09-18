@@ -5,7 +5,6 @@ on the next generation.
 It contains enumerations used by the weather interface.
 */
 
-
 #pragma once
 #include <string>
 #include <rapidjson/document.h>
@@ -16,14 +15,13 @@ It contains enumerations used by the weather interface.
  * Weather will be retrieved for the provided location.
  * 
  */
-struct LocationProperty {
+struct LocationProperty
+{
     static LocationProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
     double latitude;
     double longitude;
 };
-
-
 
 /**
  * The `current_temperature` property contains a single field:
@@ -43,7 +41,8 @@ typedef double CurrentTemperatureProperty;
  * updated about once per hour.
  * 
  */
-struct CurrentConditionProperty {
+struct CurrentConditionProperty
+{
     static CurrentConditionProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
     WeatherCondition condition;
@@ -57,10 +56,11 @@ struct CurrentConditionProperty {
  * will have a value for each day of the week.
  * 
  */
-struct DailyForecastProperty {
+struct DailyForecastProperty
+{
     static DailyForecastProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
-    ForecastForDay monday;  ///< This is the forecast for Monday.
+    ForecastForDay monday; ///< This is the forecast for Monday.
     ForecastForDay tuesday;
     ForecastForDay wednesday;
 };
@@ -71,16 +71,15 @@ struct DailyForecastProperty {
  * hour.
  * 
  */
-struct HourlyForecastProperty {
+struct HourlyForecastProperty
+{
     static HourlyForecastProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
-    ForecastForHour hour_0;  ///< This is the forecast for the current hour.
-    ForecastForHour hour_1;  ///< This is the forecast for the next hour.
+    ForecastForHour hour_0; ///< This is the forecast for the current hour.
+    ForecastForHour hour_1; ///< This is the forecast for the next hour.
     ForecastForHour hour_2;
     ForecastForHour hour_3;
 };
-
-
 
 /**
  * The `current_condition_refresh_interval` property contains a single field:
@@ -94,8 +93,6 @@ struct HourlyForecastProperty {
  */
 typedef int CurrentConditionRefreshIntervalProperty;
 
-
-
 /**
  * The `hourly_forecast_refresh_interval` property contains a single field:
  *   int seconds;  ///< Interval duration in seconds.
@@ -107,8 +104,6 @@ typedef int CurrentConditionRefreshIntervalProperty;
  */
 typedef int HourlyForecastRefreshIntervalProperty;
 
-
-
 /**
  * The `daily_forecast_refresh_interval` property contains a single field:
  *   int seconds;
@@ -119,4 +114,3 @@ typedef int HourlyForecastRefreshIntervalProperty;
  * 
  */
 typedef int DailyForecastRefreshIntervalProperty;
-

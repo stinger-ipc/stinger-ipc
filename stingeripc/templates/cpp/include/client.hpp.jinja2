@@ -5,7 +5,7 @@ on the next generation.
 It contains enumerations used by the {{stinger.name}} interface.
 */
 {% import 'partials/args.jinja2' as ar %}
-
+{% import 'partials/properties.jinja2' as pr %}
 #pragma once
 
 #include <cstdint>
@@ -56,18 +56,7 @@ public:
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------
     {%for prop_name, prop in stinger.properties.items()%}
-    // ---{{prop_name}} Property---
-
-    // Gets the latest value of the `{{prop_name}}` property, if one has been received.
-    // If no value has been received yet, an empty optional is returned.
-    boost::optional<{{prop_value_type(prop)}}> get{{prop_name | UpperCamelCase}}Property() const;
-
-    // Add a callback that will be called whenever the `{{prop_name}}` property is updated.
-    // The provided method will be called whenever a new value for the `{{prop_name}}` property is received.
-    void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.declarationParams(prop.arg_list)}})>& cb);
-    {% if not prop.read_only %}
-    boost::future<bool> update{{prop_name | UpperCamelCase}}Property({{ar.declarationParams(prop.arg_list)}}) const;
-    {%endif%}
+    {{ pr.public_declarations(prop_name, prop, true) | indent(4) }}
     {%endfor%}
     {%endif%}
 private:
@@ -104,27 +93,7 @@ private:
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------
     {%for prop_name, prop in stinger.properties.items()%}
-
-    // ---{{prop_name}} Property---
-
-    // Last received value{%if prop.arg_list|length > 1%}s{%endif%} for the `{{prop_name}}` property.
-    boost::optional<{{prop_value_type(prop)}}> _{{prop_name | lowerCamelCase}}Property;
-
-    // This is the property version of the last received `{{prop_name}}` property update.
-    int _last{{prop_name | UpperCamelCase}}PropertyVersion = -1;
-
-    // Mutex for protecting access to the `{{prop_name}}` property and its version.
-    mutable std::mutex _{{prop_name | lowerCamelCase}}PropertyMutex;
-   
-    // MQTT Subscription ID for `{{prop_name}}` property updates.
-    int _{{prop_name | lowerCamelCase}}PropertySubscriptionId;
-
-    // Method for parsing a JSON payload that updates the `{{prop_name}}` property.
-    void _receive{{prop_name | UpperCamelCase}}PropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
-
-    // Callbacks registered for changes to the `{{prop_name}}` property.
-    std::vector<std::function<void({{ar.declarationParams(prop.arg_list)}})>> _{{prop_name | lowerCamelCase}}PropertyCallbacks;
-    std::mutex _{{prop_name | lowerCamelCase}}PropertyCallbacksMutex;
+    {{pr.private_declarations(prop_name, prop, true) | indent(4)}}
     {%endfor%}
     {%endif%}
 };

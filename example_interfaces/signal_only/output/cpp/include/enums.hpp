@@ -6,4 +6,3 @@ It contains enumerations used by the SignalOnly interface.
 */
 
 #pragma once
-

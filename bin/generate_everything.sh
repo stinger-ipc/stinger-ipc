@@ -26,6 +26,11 @@ function generate_cpp() {
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build
     uv run stinger generate cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/
+    which clang-format &> /dev/null
+    if [ $? -eq 0 ]; then
+        echo "Running clang-format on generated C++ files"
+        find ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/ -name "*.hpp" -o -name "*.cpp" | xargs clang-format --style=file:${BASE_DIR}/../clang-format-config.yaml -i
+    fi
     if [ $? -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
     fi

@@ -1,8 +1,5 @@
 
 
-
-
-
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -23,28 +20,30 @@
 constexpr const char SignalOnlyClient::NAME[];
 constexpr const char SignalOnlyClient::INTERFACE_VERSION[];
 
-SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
+SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker)
+    : _broker(broker)
 {
     _broker->AddMessageCallback([this](
-            const std::string& topic, 
-            const std::string& payload, 
-            const MqttProperties& mqttProps)
-    {
-        _receiveMessage(topic, payload, mqttProps);
-    });
+                                        const std::string& topic,
+                                        const std::string& payload,
+                                        const MqttProperties& mqttProps
+                                )
+                                { _receiveMessage(topic, payload, mqttProps); });
     _anotherSignalSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/anotherSignal", 2);
 }
 
 void SignalOnlyClient::_receiveMessage(
-        const std::string& topic, 
-        const std::string& payload, 
-        const MqttProperties& mqttProps)
+        const std::string& topic,
+        const std::string& payload,
+        const MqttProperties& mqttProps
+)
 {
     if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _anotherSignalSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/anotherSignal"))
     {
         //Log("Handling anotherSignal signal");
         rapidjson::Document doc;
-        try {
+        try
+        {
             if (_anotherSignalSignalCallbacks.size() > 0)
             {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -54,51 +53,52 @@ void SignalOnlyClient::_receiveMessage(
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject()) {
+                if (!doc.IsObject())
+                {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                
                 double tempone;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("one");
-                    if (itr != doc.MemberEnd() && itr->value.IsDouble()) {
-                        
+                    if (itr != doc.MemberEnd() && itr->value.IsDouble())
+                    {
                         tempone = itr->value.GetDouble();
-                        
-                    } else {
+                    }
+                    else
+                    {
                         throw std::runtime_error("Received payload doesn't have required value/type");
-                    
                     }
                 }
-                
+
                 bool temptwo;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("two");
-                    if (itr != doc.MemberEnd() && itr->value.IsBool()) {
-                        
+                    if (itr != doc.MemberEnd() && itr->value.IsBool())
+                    {
                         temptwo = itr->value.GetBool();
-                        
-                    } else {
+                    }
+                    else
+                    {
                         throw std::runtime_error("Received payload doesn't have required value/type");
-                    
                     }
                 }
-                
+
                 std::string tempthree;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("three");
-                    if (itr != doc.MemberEnd() && itr->value.IsString()) {
-                        
+                    if (itr != doc.MemberEnd() && itr->value.IsString())
+                    {
                         tempthree = itr->value.GetString();
-                        
-                    } else {
+                    }
+                    else
+                    {
                         throw std::runtime_error("Received payload doesn't have required value/type");
-                    
                     }
                 }
-                
-                for (const auto& cb : _anotherSignalSignalCallbacks)
+
+                std::lock_guard<std::mutex> lock(_anotherSignalSignalCallbacksMutex);
+                for (const auto& cb: _anotherSignalSignalCallbacks)
                 {
                     cb(tempone, temptwo, tempthree);
                 }
@@ -107,15 +107,14 @@ void SignalOnlyClient::_receiveMessage(
         catch (const boost::bad_lexical_cast&)
         {
             // We couldn't find an integer out of the string in the topic name,
-            // so we are dropping the message completely. 
+            // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 }
+
 void SignalOnlyClient::registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb)
 {
+    std::lock_guard<std::mutex> lock(_anotherSignalSignalCallbacksMutex);
     _anotherSignalSignalCallbacks.push_back(cb);
 }
-
-
- 

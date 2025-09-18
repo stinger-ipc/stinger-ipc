@@ -5,26 +5,21 @@
 #include "broker.hpp"
 #include "client.hpp"
 
-int main(int argc, char** argv) {
-
-    
+int main(int argc, char** argv)
+{
     auto conn = std::make_shared<LocalConnection>("FullClient-demo");
     FullClient client(conn);
-    client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek) {
-        std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" << "None" <<  std::endl;
-    });
-    client.registerFavoriteNumberPropertyCallback([](int number) {
-        std::cout << "Received update for favorite_number property: " << "number=" << number <<std::endl;
-    });
-    
-    client.registerFavoriteFoodsPropertyCallback([](const std::string& drink, int slices_of_pizza, boost::optional<std::string> breakfast) {
-        std::cout << "Received update for favorite_foods property: " << "drink=" << drink << " | " << "slices_of_pizza=" << slices_of_pizza << " | " << "breakfast=" <<  "None" <<std::endl;
-    });
-    
-    client.registerLunchMenuPropertyCallback([](Lunch monday, Lunch tuesday) {
-        std::cout << "Received update for lunch_menu property: " << "monday=" << "[Lunch object]" << " | " << "tuesday=" << "[Lunch object]" <<std::endl;
-    });
-    
+    client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek)
+                                   { std::cout << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << "None" << std::endl; });
+    client.registerFavoriteNumberPropertyCallback([](int number)
+                                                  { std::cout << "Received update for favorite_number property: " << "number=" << number << std::endl; });
+
+    client.registerFavoriteFoodsPropertyCallback([](const std::string& drink, int slices_of_pizza, boost::optional<std::string> breakfast)
+                                                 { std::cout << "Received update for favorite_foods property: " << "drink=" << drink << " | " << "slices_of_pizza=" << slices_of_pizza << " | " << "breakfast=" << "None" << std::endl; });
+
+    client.registerLunchMenuPropertyCallback([](Lunch monday, Lunch tuesday)
+                                             { std::cout << "Received update for lunch_menu property: " << "monday=" << "[Lunch object]" << " | " << "tuesday=" << "[Lunch object]" << std::endl; });
+
     std::cout << "Calling addNumbers" << std::endl;
     auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
     auto addNumbersStatus = addNumbersResultFuture.wait_for(boost::chrono::seconds(5));
@@ -35,7 +30,6 @@ int main(int argc, char** argv) {
     else
     {
         std::cout << "Result: Sum=" << addNumbersResultFuture.get() << std::endl;
-        
     }
     std::cout << "Calling doSomething" << std::endl;
     auto doSomethingResultFuture = client.doSomething("apples");
@@ -47,13 +41,13 @@ int main(int argc, char** argv) {
     else
     {
         DoSomethingReturnValue returnValue = doSomethingResultFuture.get();
-        std::cout << "Results:" << " label=" << returnValue.label  << " identifier=" << returnValue.identifier  << " day=" << dayOfTheWeekStrings[static_cast<int>(returnValue.day)]  << std::endl;
-        
+        std::cout << "Results:" << " label=" << returnValue.label << " identifier=" << returnValue.identifier << " day=" << dayOfTheWeekStrings[static_cast<int>(returnValue.day)] << std::endl;
     }
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;
 
-    while (true) {
+    while (true)
+    {
         sleep(10);
     }
 

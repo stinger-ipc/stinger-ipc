@@ -11,8 +11,8 @@ It contains enumerations used by the Full interface.
 #include <rapidjson/document.h>
 #include "enums.hpp"
 
-
-struct Lunch {
+struct Lunch
+{
     static Lunch FromRapidJsonObject(const rapidjson::Value& jsonObj);
     bool drink;
     std::string sandwich;

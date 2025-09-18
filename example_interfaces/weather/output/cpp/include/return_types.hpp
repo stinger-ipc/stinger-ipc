@@ -5,8 +5,6 @@ on the next generation.
 It contains enumerations used by the weather interface.
 */
 
-
 #pragma once
 #include <string>
 #include "enums.hpp"
-

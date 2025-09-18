@@ -11,15 +11,16 @@ It contains enumerations used by the weather interface.
 #include <rapidjson/document.h>
 #include "enums.hpp"
 
-
-struct ForecastForHour {
+struct ForecastForHour
+{
     static ForecastForHour FromRapidJsonObject(const rapidjson::Value& jsonObj);
     double temperature;
     std::string starttime;
     WeatherCondition condition;
 };
 
-struct ForecastForDay {
+struct ForecastForDay
+{
     static ForecastForDay FromRapidJsonObject(const rapidjson::Value& jsonObj);
     double high_temperature;
     double low_temperature;

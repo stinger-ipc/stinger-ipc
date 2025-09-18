@@ -5,13 +5,12 @@ on the next generation.
 It contains enumerations used by the Full interface.
 */
 
-
 #pragma once
 #include <string>
 #include "enums.hpp"
 
-
-struct DoSomethingReturnValue {
+struct DoSomethingReturnValue
+{
     std::string label;
     int identifier;
     DayOfTheWeek day;

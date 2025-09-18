@@ -1,0 +1,55 @@
+{% import 'partials/args.jinja2' as ar %}
+{%macro prop_value_type(prop) -%}{%if prop.arg_list|length > 1%}struct {%endif%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
+{%macro public_declarations(prop_name, prop, client)%}
+// ---{{prop_name}} Property---
+
+// Gets the latest value of the `{{prop_name}}` property, if one has been received.
+// If no value has been received yet, an empty optional is returned.
+boost::optional<{{prop_value_type(prop)}}> get{{prop_name | UpperCamelCase}}Property() const;
+
+// Add a callback that will be called whenever the `{{prop_name}}` property is updated.
+// The provided method will be called whenever a new value for the `{{prop_name}}` property is received.
+void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.declarationParams(prop.arg_list)}})>& cb);
+{% if not client or not prop.read_only %}
+boost::future<bool> update{{prop_name | UpperCamelCase}}Property({{ar.declarationParams(prop.arg_list)}}) const;
+{%endif%}
+{%endmacro%}
+
+{%macro private_declarations(prop_name, prop, client)%}
+// ---{{prop_name}} Property---
+
+// {%if client %}Last received{%else%}Current{%endif%} value{%if prop.arg_list|length > 1%}s{%endif%} for the `{{prop_name}}` property.
+boost::optional<{{prop_value_type(prop)}}> _{{prop_name | lowerCamelCase}}Property;
+
+// This is the property version {% if client %}of the last received `{{prop_name}}` property update.{%else%} of `{{prop_name}}`.{%endif%}
+int _last{{prop_name | UpperCamelCase}}PropertyVersion = -1;
+
+// Mutex for protecting access to the `{{prop_name}}` property and its version.
+mutable std::mutex _{{prop_name | lowerCamelCase}}PropertyMutex;
+
+// MQTT Subscription ID for `{{prop_name}}` property {%if client %}updates{%else%}update requests{%endif%}.
+int _{{prop_name | lowerCamelCase}}PropertySubscriptionId;
+
+// Method for parsing a JSON payload that updates the `{{prop_name}}` property.
+void _receive{{prop_name | UpperCamelCase}}PropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+// Callbacks registered for changes to the `{{prop_name}}` property.
+std::vector<std::function<void({{ar.declarationParams(prop.arg_list)}})>> _{{prop_name | lowerCamelCase}}PropertyCallbacks;
+std::mutex _{{prop_name | lowerCamelCase}}PropertyCallbacksMutex;
+{%endmacro%}
+
+{%macro get_property_definition(class_name, prop_name, prop)%}
+boost::optional<{{prop_value_type(prop)}}> {{class_name}}::get{{prop_name | UpperCamelCase}}Property() const
+{
+    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+    return _{{prop_name | lowerCamelCase}}Property;
+}
+{%endmacro%}
+
+{%macro callback_registration_definition(class_name, prop_name, prop)%}
+void {{class_name}}::register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.methodParams(prop.arg_list)}})>& cb)
+{
+    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
+    _{{prop_name | lowerCamelCase}}PropertyCallbacks.push_back(cb);
+}
+{%endmacro%}

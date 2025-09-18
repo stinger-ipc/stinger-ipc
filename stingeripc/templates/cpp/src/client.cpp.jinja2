@@ -1,7 +1,7 @@
 {% import "partials/deserialize.jinja2" as deser %}
 {% import "partials/serialize.jinja2" as ser %}
 {% import "partials/args.jinja2" as ar %}
-{%macro prop_value_type(prop) -%}{%if prop.arg_list|length > 1%}struct {%endif%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
+{% import "partials/properties.jinja2" as pr %}
 
 #include <vector>
 #include <iostream>
@@ -92,6 +92,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
                     }
                 }
                 {%endfor%}{# for signal args #}
+                std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
                 for (const auto& cb : _{{sig_name | lowerCamelCase}}SignalCallbacks)
                 {
                     cb({%for arg in sig.arg_list%}temp{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
@@ -127,6 +128,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
 {%-for sig_name, sig in stinger.signals.items() %}
 void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb)
 {
+    std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
     _{{sig_name | lowerCamelCase}}SignalCallbacks.push_back(cb);
 }
 {%-endfor%}
@@ -249,17 +251,10 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     }
 }
 
-boost::optional<{{prop_value_type(prop)}}> {{stinger.cpp.client_class_name}}::get{{prop_name | UpperCamelCase}}Property() const
-{
-    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
-    return _{{prop_name | lowerCamelCase}}Property;
-}
+{{pr.get_property_definition(stinger.cpp.client_class_name, prop_name, prop)}}
 
-void {{stinger.cpp.client_class_name}}::register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.methodParams(prop.arg_list)}})>& cb)
-{
-    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
-    _{{prop_name | lowerCamelCase}}PropertyCallbacks.push_back(cb);
-}
+{{pr.callback_registration_definition(stinger.cpp.client_class_name, prop_name, prop)}}
+
 {% if not prop.read_only %}
 boost::future<bool> {{stinger.cpp.client_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
 {

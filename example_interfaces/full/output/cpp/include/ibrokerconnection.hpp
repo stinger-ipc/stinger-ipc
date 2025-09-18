@@ -5,7 +5,6 @@ on the next generation.
 It contains enumerations used by the Full interface.
 */
 
-
 #pragma once
 
 #include <functional>
@@ -30,12 +29,14 @@ enum class MethodResultCode
 struct MqttProperties
 {
     MqttProperties()
-        : correlationId(boost::none),
-            responseTopic(boost::none),
-            resultCode(boost::none),
-            subscriptionId(boost::none),
-            propertyVersion(boost::none)
-    {}
+        : correlationId(boost::none)
+        , responseTopic(boost::none)
+        , resultCode(boost::none)
+        , subscriptionId(boost::none)
+        , propertyVersion(boost::none)
+    {
+    }
+
     boost::optional<std::string> correlationId;
     boost::optional<std::string> responseTopic;
     boost::optional<MethodResultCode> resultCode;
@@ -59,11 +60,7 @@ public:
     /*! Provide a callback to be called on an incoming message.
      * Implementation should accept this at any time, even when not connected.
      */
-    virtual void AddMessageCallback(const std::function<void
-            (const std::string&, 
-            const std::string&, 
-            const MqttProperties&
-        )>& cb) = 0;
+    virtual void AddMessageCallback(const std::function<void(const std::string&, const std::string&, const MqttProperties&)>& cb) = 0;
 
     /*! Utility for matching topics.
      * This probably should be a wrapper around `mosquitto_topic_matches_sub` or similar
@@ -71,4 +68,4 @@ public:
     virtual bool TopicMatchesSubscription(const std::string& topic, const std::string& subscr) const = 0;
 
     virtual std::string GetClientId() const = 0;
-}; 
+};

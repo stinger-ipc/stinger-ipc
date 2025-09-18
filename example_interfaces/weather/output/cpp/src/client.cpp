@@ -1,8 +1,5 @@
 
 
-
-
-
 #include <vector>
 #include <iostream>
 #include <boost/format.hpp>
@@ -23,15 +20,15 @@
 constexpr const char WeatherClient::NAME[];
 constexpr const char WeatherClient::INTERFACE_VERSION[];
 
-WeatherClient::WeatherClient(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
+WeatherClient::WeatherClient(std::shared_ptr<IBrokerConnection> broker)
+    : _broker(broker)
 {
     _broker->AddMessageCallback([this](
-            const std::string& topic, 
-            const std::string& payload, 
-            const MqttProperties& mqttProps)
-    {
-        _receiveMessage(topic, payload, mqttProps);
-    });
+                                        const std::string& topic,
+                                        const std::string& payload,
+                                        const MqttProperties& mqttProps
+                                )
+                                { _receiveMessage(topic, payload, mqttProps); });
     _currentTimeSignalSubscriptionId = _broker->Subscribe("weather/signal/currentTime", 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
@@ -59,15 +56,17 @@ WeatherClient::WeatherClient(std::shared_ptr<IBrokerConnection> broker) : _broke
 }
 
 void WeatherClient::_receiveMessage(
-        const std::string& topic, 
-        const std::string& payload, 
-        const MqttProperties& mqttProps)
+        const std::string& topic,
+        const std::string& payload,
+        const MqttProperties& mqttProps
+)
 {
     if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentTimeSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "weather/signal/currentTime"))
     {
         //Log("Handling current_time signal");
         rapidjson::Document doc;
-        try {
+        try
+        {
             if (_currentTimeSignalCallbacks.size() > 0)
             {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -77,25 +76,26 @@ void WeatherClient::_receiveMessage(
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject()) {
+                if (!doc.IsObject())
+                {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                
                 std::string tempcurrent_time;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("current_time");
-                    if (itr != doc.MemberEnd() && itr->value.IsString()) {
-                        
+                    if (itr != doc.MemberEnd() && itr->value.IsString())
+                    {
                         tempcurrent_time = itr->value.GetString();
-                        
-                    } else {
+                    }
+                    else
+                    {
                         throw std::runtime_error("Received payload doesn't have required value/type");
-                    
                     }
                 }
-                
-                for (const auto& cb : _currentTimeSignalCallbacks)
+
+                std::lock_guard<std::mutex> lock(_currentTimeSignalCallbacksMutex);
+                for (const auto& cb: _currentTimeSignalCallbacks)
                 {
                     cb(tempcurrent_time);
                 }
@@ -104,7 +104,7 @@ void WeatherClient::_receiveMessage(
         catch (const boost::bad_lexical_cast&)
         {
             // We couldn't find an integer out of the string in the topic name,
-            // so we are dropping the message completely. 
+            // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
@@ -156,11 +156,12 @@ void WeatherClient::_receiveMessage(
         _receiveDailyForecastRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 }
+
 void WeatherClient::registerCurrentTimeCallback(const std::function<void(const std::string&)>& cb)
 {
+    std::lock_guard<std::mutex> lock(_currentTimeSignalCallbacksMutex);
     _currentTimeSignalCallbacks.push_back(cb);
 }
-
 
 boost::future<void> WeatherClient::refreshDailyForecast()
 {
@@ -171,7 +172,6 @@ boost::future<void> WeatherClient::refreshDailyForecast()
     rapidjson::Document doc;
     doc.SetObject();
 
-    
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -187,17 +187,17 @@ boost::future<void> WeatherClient::refreshDailyForecast()
 }
 
 void WeatherClient::_handleRefreshDailyForecastResponse(
-        const std::string& topic, 
-        const std::string& payload, 
-        const std::string &correlationId) 
+        const std::string& topic,
+        const std::string& payload,
+        const std::string& correlationId
+)
 {
     std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
-    
+
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingRefreshDailyForecastMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshDailyForecastMethodCalls.end())
     {
-        
         // There are no values in the response.
         promiseItr->second.set_value();
     }
@@ -214,7 +214,6 @@ boost::future<void> WeatherClient::refreshHourlyForecast()
     rapidjson::Document doc;
     doc.SetObject();
 
-    
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -230,17 +229,17 @@ boost::future<void> WeatherClient::refreshHourlyForecast()
 }
 
 void WeatherClient::_handleRefreshHourlyForecastResponse(
-        const std::string& topic, 
-        const std::string& payload, 
-        const std::string &correlationId) 
+        const std::string& topic,
+        const std::string& payload,
+        const std::string& correlationId
+)
 {
     std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
-    
+
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingRefreshHourlyForecastMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshHourlyForecastMethodCalls.end())
     {
-        
         // There are no values in the response.
         promiseItr->second.set_value();
     }
@@ -257,7 +256,6 @@ boost::future<void> WeatherClient::refreshCurrentConditions()
     rapidjson::Document doc;
     doc.SetObject();
 
-    
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -273,24 +271,23 @@ boost::future<void> WeatherClient::refreshCurrentConditions()
 }
 
 void WeatherClient::_handleRefreshCurrentConditionsResponse(
-        const std::string& topic, 
-        const std::string& payload, 
-        const std::string &correlationId) 
+        const std::string& topic,
+        const std::string& payload,
+        const std::string& correlationId
+)
 {
     std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
-    
+
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingRefreshCurrentConditionsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshCurrentConditionsMethodCalls.end())
     {
-        
         // There are no values in the response.
         promiseItr->second.set_value();
     }
 
     std::cout << "End of response handler for " << topic << std::endl;
 }
-
 
 void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
@@ -302,31 +299,32 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject()) {
+    if (!doc.IsObject())
+    {
         throw std::runtime_error("Received location payload is not an object");
     }
     LocationProperty tempValue;
-    
+
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("latitude");
-        if (itr != doc.MemberEnd() && itr->value.IsDouble()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsDouble())
+        {
             tempValue.latitude = itr->value.GetDouble();
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("longitude");
-        if (itr != doc.MemberEnd() && itr->value.IsDouble()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsDouble())
+        {
             tempValue.longitude = itr->value.GetDouble();
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
 
@@ -338,12 +336,11 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
     // Notify all registered callbacks.
     { // Scope lock
         std::lock_guard<std::mutex> lock(_locationPropertyCallbacksMutex);
-        for (const auto& cb : _locationPropertyCallbacks)
+        for (const auto& cb: _locationPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            
+
             cb(tempValue.latitude, tempValue.longitude);
-            
         }
     }
 }
@@ -362,26 +359,19 @@ void WeatherClient::registerLocationPropertyCallback(const std::function<void(do
 
 boost::future<bool> WeatherClient::updateLocationProperty(double latitude, double longitude) const
 {
-
     rapidjson::Document doc;
     doc.SetObject();
-    
-    
+
     doc.AddMember("latitude", latitude, doc.GetAllocator());
 
-    
-    
     doc.AddMember("longitude", longitude, doc.GetAllocator());
 
-    
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
     return _broker->Publish("weather/property/location/setValue", buf.GetString(), 1, false, mqttProps);
-
 }
-
 
 void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
@@ -393,17 +383,19 @@ void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject()) {
+    if (!doc.IsObject())
+    {
         throw std::runtime_error("Received current_temperature payload is not an object");
     }
     CurrentTemperatureProperty tempValue;
-    
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("temperature_f");
-    if (itr != doc.MemberEnd() && itr->value.IsDouble()) {
-        
-    tempValue = itr->value.GetDouble();
 
-    } else {
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("temperature_f");
+    if (itr != doc.MemberEnd() && itr->value.IsDouble())
+    {
+        tempValue = itr->value.GetDouble();
+    }
+    else
+    {
         throw std::runtime_error("Received payload doesn't have required value/type");
     }
 
@@ -415,12 +407,11 @@ void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
     // Notify all registered callbacks.
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentTemperaturePropertyCallbacksMutex);
-        for (const auto& cb : _currentTemperaturePropertyCallbacks)
+        for (const auto& cb: _currentTemperaturePropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            
+
             cb(tempValue);
-            
         }
     }
 }
@@ -437,7 +428,6 @@ void WeatherClient::registerCurrentTemperaturePropertyCallback(const std::functi
     _currentTemperaturePropertyCallbacks.push_back(cb);
 }
 
-
 void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
@@ -448,31 +438,32 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject()) {
+    if (!doc.IsObject())
+    {
         throw std::runtime_error("Received current_condition payload is not an object");
     }
     CurrentConditionProperty tempValue;
-    
+
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("condition");
-        if (itr != doc.MemberEnd() && itr->value.IsInt()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
             tempValue.condition = static_cast<WeatherCondition>(itr->value.GetInt());
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("description");
-        if (itr != doc.MemberEnd() && itr->value.IsString()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
             tempValue.description = itr->value.GetString();
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
 
@@ -484,12 +475,11 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
     // Notify all registered callbacks.
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentConditionPropertyCallbacksMutex);
-        for (const auto& cb : _currentConditionPropertyCallbacks)
+        for (const auto& cb: _currentConditionPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            
+
             cb(tempValue.condition, tempValue.description);
-            
         }
     }
 }
@@ -506,7 +496,6 @@ void WeatherClient::registerCurrentConditionPropertyCallback(const std::function
     _currentConditionPropertyCallbacks.push_back(cb);
 }
 
-
 void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
@@ -517,45 +506,43 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject()) {
+    if (!doc.IsObject())
+    {
         throw std::runtime_error("Received daily_forecast payload is not an object");
     }
     DailyForecastProperty tempValue;
-    
+
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("monday");
-        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsObject())
+        {
             tempValue.monday = ForecastForDay::FromRapidJsonObject(itr->value);
-
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("tuesday");
-        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsObject())
+        {
             tempValue.tuesday = ForecastForDay::FromRapidJsonObject(itr->value);
-
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("wednesday");
-        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsObject())
+        {
             tempValue.wednesday = ForecastForDay::FromRapidJsonObject(itr->value);
-
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
 
@@ -567,12 +554,11 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
     // Notify all registered callbacks.
     { // Scope lock
         std::lock_guard<std::mutex> lock(_dailyForecastPropertyCallbacksMutex);
-        for (const auto& cb : _dailyForecastPropertyCallbacks)
+        for (const auto& cb: _dailyForecastPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            
+
             cb(tempValue.monday, tempValue.tuesday, tempValue.wednesday);
-            
         }
     }
 }
@@ -589,7 +575,6 @@ void WeatherClient::registerDailyForecastPropertyCallback(const std::function<vo
     _dailyForecastPropertyCallbacks.push_back(cb);
 }
 
-
 void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
@@ -600,57 +585,54 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject()) {
+    if (!doc.IsObject())
+    {
         throw std::runtime_error("Received hourly_forecast payload is not an object");
     }
     HourlyForecastProperty tempValue;
-    
+
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_0");
-        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsObject())
+        {
             tempValue.hour_0 = ForecastForHour::FromRapidJsonObject(itr->value);
-
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_1");
-        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsObject())
+        {
             tempValue.hour_1 = ForecastForHour::FromRapidJsonObject(itr->value);
-
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_2");
-        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsObject())
+        {
             tempValue.hour_2 = ForecastForHour::FromRapidJsonObject(itr->value);
-
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_3");
-        if (itr != doc.MemberEnd() && itr->value.IsObject()) {
-            
+        if (itr != doc.MemberEnd() && itr->value.IsObject())
+        {
             tempValue.hour_3 = ForecastForHour::FromRapidJsonObject(itr->value);
-
-
-        } else {
+        }
+        else
+        {
             throw std::runtime_error("Received payload doesn't have required value/type");
-        
         }
     }
 
@@ -662,12 +644,11 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
     // Notify all registered callbacks.
     { // Scope lock
         std::lock_guard<std::mutex> lock(_hourlyForecastPropertyCallbacksMutex);
-        for (const auto& cb : _hourlyForecastPropertyCallbacks)
+        for (const auto& cb: _hourlyForecastPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            
+
             cb(tempValue.hour_0, tempValue.hour_1, tempValue.hour_2, tempValue.hour_3);
-            
         }
     }
 }
@@ -684,7 +665,6 @@ void WeatherClient::registerHourlyForecastPropertyCallback(const std::function<v
     _hourlyForecastPropertyCallbacks.push_back(cb);
 }
 
-
 void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
@@ -695,17 +675,19 @@ void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const 
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject()) {
+    if (!doc.IsObject())
+    {
         throw std::runtime_error("Received current_condition_refresh_interval payload is not an object");
     }
     CurrentConditionRefreshIntervalProperty tempValue;
-    
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
-    if (itr != doc.MemberEnd() && itr->value.IsInt()) {
-        
-    tempValue = itr->value.GetInt();
 
-    } else {
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
+    if (itr != doc.MemberEnd() && itr->value.IsInt())
+    {
+        tempValue = itr->value.GetInt();
+    }
+    else
+    {
         throw std::runtime_error("Received payload doesn't have required value/type");
     }
 
@@ -717,12 +699,11 @@ void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const 
     // Notify all registered callbacks.
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyCallbacksMutex);
-        for (const auto& cb : _currentConditionRefreshIntervalPropertyCallbacks)
+        for (const auto& cb: _currentConditionRefreshIntervalPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            
+
             cb(tempValue);
-            
         }
     }
 }
@@ -741,22 +722,17 @@ void WeatherClient::registerCurrentConditionRefreshIntervalPropertyCallback(cons
 
 boost::future<bool> WeatherClient::updateCurrentConditionRefreshIntervalProperty(int seconds) const
 {
-
     rapidjson::Document doc;
     doc.SetObject();
-    
-    
+
     doc.AddMember("seconds", seconds, doc.GetAllocator());
 
-    
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
     return _broker->Publish("weather/property/currentConditionRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
-
 }
-
 
 void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
@@ -768,17 +744,19 @@ void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const st
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject()) {
+    if (!doc.IsObject())
+    {
         throw std::runtime_error("Received hourly_forecast_refresh_interval payload is not an object");
     }
     HourlyForecastRefreshIntervalProperty tempValue;
-    
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
-    if (itr != doc.MemberEnd() && itr->value.IsInt()) {
-        
-    tempValue = itr->value.GetInt();
 
-    } else {
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
+    if (itr != doc.MemberEnd() && itr->value.IsInt())
+    {
+        tempValue = itr->value.GetInt();
+    }
+    else
+    {
         throw std::runtime_error("Received payload doesn't have required value/type");
     }
 
@@ -790,12 +768,11 @@ void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const st
     // Notify all registered callbacks.
     { // Scope lock
         std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyCallbacksMutex);
-        for (const auto& cb : _hourlyForecastRefreshIntervalPropertyCallbacks)
+        for (const auto& cb: _hourlyForecastRefreshIntervalPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            
+
             cb(tempValue);
-            
         }
     }
 }
@@ -814,22 +791,17 @@ void WeatherClient::registerHourlyForecastRefreshIntervalPropertyCallback(const 
 
 boost::future<bool> WeatherClient::updateHourlyForecastRefreshIntervalProperty(int seconds) const
 {
-
     rapidjson::Document doc;
     doc.SetObject();
-    
-    
+
     doc.AddMember("seconds", seconds, doc.GetAllocator());
 
-    
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
     return _broker->Publish("weather/property/hourlyForecastRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
-
 }
-
 
 void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
@@ -841,17 +813,19 @@ void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject()) {
+    if (!doc.IsObject())
+    {
         throw std::runtime_error("Received daily_forecast_refresh_interval payload is not an object");
     }
     DailyForecastRefreshIntervalProperty tempValue;
-    
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
-    if (itr != doc.MemberEnd() && itr->value.IsInt()) {
-        
-    tempValue = itr->value.GetInt();
 
-    } else {
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
+    if (itr != doc.MemberEnd() && itr->value.IsInt())
+    {
+        tempValue = itr->value.GetInt();
+    }
+    else
+    {
         throw std::runtime_error("Received payload doesn't have required value/type");
     }
 
@@ -863,12 +837,11 @@ void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std
     // Notify all registered callbacks.
     { // Scope lock
         std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyCallbacksMutex);
-        for (const auto& cb : _dailyForecastRefreshIntervalPropertyCallbacks)
+        for (const auto& cb: _dailyForecastRefreshIntervalPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            
+
             cb(tempValue);
-            
         }
     }
 }
@@ -887,20 +860,14 @@ void WeatherClient::registerDailyForecastRefreshIntervalPropertyCallback(const s
 
 boost::future<bool> WeatherClient::updateDailyForecastRefreshIntervalProperty(int seconds) const
 {
-
     rapidjson::Document doc;
     doc.SetObject();
-    
-    
+
     doc.AddMember("seconds", seconds, doc.GetAllocator());
 
-    
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
     return _broker->Publish("weather/property/dailyForecastRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
-
 }
-
- 

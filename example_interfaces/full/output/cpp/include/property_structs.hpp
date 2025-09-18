@@ -5,14 +5,11 @@ on the next generation.
 It contains enumerations used by the Full interface.
 */
 
-
 #pragma once
 #include <string>
 #include <rapidjson/document.h>
 #include "enums.hpp"
 #include "structs.hpp"
-
-
 
 /**
  * The `favorite_number` property contains a single field:
@@ -25,8 +22,8 @@ It contains enumerations used by the Full interface.
  */
 typedef int FavoriteNumberProperty;
 
-
-struct FavoriteFoodsProperty {
+struct FavoriteFoodsProperty
+{
     static FavoriteFoodsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
     std::string drink;
@@ -34,11 +31,10 @@ struct FavoriteFoodsProperty {
     boost::optional<std::string> breakfast;
 };
 
-
-struct LunchMenuProperty {
+struct LunchMenuProperty
+{
     static LunchMenuProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
     Lunch monday;
     Lunch tuesday;
 };
-

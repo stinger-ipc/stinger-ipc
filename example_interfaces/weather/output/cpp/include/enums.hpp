@@ -7,8 +7,8 @@ It contains enumerations used by the weather interface.
 
 #pragma once
 
-
-enum class WeatherCondition {
+enum class WeatherCondition
+{
     RAINY = 1,
     SUNNY = 2,
     PARTLY_CLOUDY = 3,
@@ -17,4 +17,4 @@ enum class WeatherCondition {
     WINDY = 6,
     SNOWY = 7
 };
-static const char *weatherConditionStrings[] = {"WeatherCondition", "rainy", "sunny", "partly_cloudy", "mostly_cloudy", "overcast", "windy", "snowy" };
+static const char *weatherConditionStrings[] = { "WeatherCondition", "rainy", "sunny", "partly_cloudy", "mostly_cloudy", "overcast", "windy", "snowy" };

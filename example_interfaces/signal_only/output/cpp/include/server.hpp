@@ -5,7 +5,6 @@ on the next generation.
 It contains enumerations used by the SignalOnly interface.
 */
 
-
 #pragma once
 
 #include <cstdint>
@@ -22,8 +21,8 @@ It contains enumerations used by the SignalOnly interface.
 #include "enums.hpp"
 #include "return_types.hpp"
 
-class SignalOnlyServer {
-
+class SignalOnlyServer
+{
 public:
     static constexpr const char NAME[] = "SignalOnly";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
@@ -32,19 +31,13 @@ public:
 
     virtual ~SignalOnlyServer() = default;
 
-    
     boost::future<bool> emitAnotherSignalSignal(double, bool, const std::string&);
-    
 
-    
-private: 
+private:
     std::shared_ptr<IBrokerConnection> _broker;
     void _receiveMessage(
-            const std::string& topic, 
-            const std::string& payload, 
+            const std::string& topic,
+            const std::string& payload,
             const MqttProperties& mqttProps
     );
-
-    
-
 };
