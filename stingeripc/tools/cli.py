@@ -28,13 +28,13 @@ def generate(
 ):
     """Generate code for a Stinger interface.
 
-    LANGUAGE must be one of: rust, python, markdown, cpp, web
+    LANGUAGE must be one of: rust, python, markdown, cpp, web, protobuf
     INPUT_FILE is the .stinger.yaml file
     OUTPUT_DIR is the directory that will receive generated files
     """
     lang = language.lower()
-    if lang not in ("rust", "python", "markdown", "cpp", "web"):
-        raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web")
+    if lang not in ("rust", "python", "markdown", "cpp", "web", "protobuf"):
+        raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf")
 
     if lang == "python":
         # python_generator.main expects Path arguments via typer
@@ -63,6 +63,14 @@ def generate(
         cpp_generator.main(input_file, output_dir)
     elif lang == "rust":
         rust_generator.main(input_file, output_dir)
+    elif lang == "protobuf":
+        ct = jj2.CodeTemplator(output_dir=output_dir)
+        ct.add_template_dir(
+            os.path.join(os.path.dirname(__file__), "../templates", "protobuf")
+        )
+        with open(input_file, "r") as f:
+            stinger = StingerInterface.from_yaml(f)
+        ct.render_template("proto.jinja2", f"{stinger.name}.proto", stinger=stinger)
     else:
         raise RuntimeError("Unreachable code reached")
 

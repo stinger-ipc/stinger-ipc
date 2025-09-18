@@ -250,6 +250,10 @@ class ArgPrimitive(Arg):
         return ArgPrimitiveType.to_cpp_type(self._arg_type, optional=self._optional)
 
     @property
+    def protobuf_type(self) -> str:
+        return ArgPrimitiveType.to_protobuf_type(self._arg_type)
+
+    @property
     def cpp_temp_type(self) -> str:
         if self._arg_type == ArgPrimitiveType.STRING:
             if self.optional:

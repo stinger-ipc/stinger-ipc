@@ -1,0 +1,97 @@
+
+
+
+enum WeatherCondition {
+    RAINY = 1,
+    SUNNY = 2,
+    PARTLY_CLOUDY = 3,
+    MOSTLY_CLOUDY = 4,
+    OVERCAST = 5,
+    WINDY = 6,
+    SNOWY = 7
+};
+
+
+message ForecastForHour {
+    float temperature = 1;
+    string starttime = 2;
+    WeatherCondition condition = 3;
+}
+
+message ForecastForDay {
+    float high_temperature = 1;
+    float low_temperature = 2;
+    WeatherCondition condition = 3;
+    string start_time = 4;
+    string end_time = 5;
+}
+
+
+
+message CurrentTimeSignal {
+    string current_time = 1;
+}
+
+
+
+message LocationProperty {
+    float latitude = 1;
+    float longitude = 2;
+}
+
+message CurrentTemperatureProperty {
+    float temperature_f = 1;
+}
+
+message CurrentConditionProperty {
+    WeatherCondition condition = 1;
+    string description = 2;
+}
+
+message DailyForecastProperty {
+    ForecastForDay monday = 1;
+    ForecastForDay tuesday = 2;
+    ForecastForDay wednesday = 3;
+}
+
+message HourlyForecastProperty {
+    ForecastForHour hour_0 = 1;
+    ForecastForHour hour_1 = 2;
+    ForecastForHour hour_2 = 3;
+    ForecastForHour hour_3 = 4;
+}
+
+message CurrentConditionRefreshIntervalProperty {
+    int32 seconds = 1;
+}
+
+message HourlyForecastRefreshIntervalProperty {
+    int32 seconds = 1;
+}
+
+message DailyForecastRefreshIntervalProperty {
+    int32 seconds = 1;
+}
+
+
+
+message RefreshDailyForecastRequest {
+}
+
+message RefreshDailyForecastResponse {
+    // Empty response
+}
+
+message RefreshHourlyForecastRequest {
+}
+
+message RefreshHourlyForecastResponse {
+    // Empty response
+}
+
+message RefreshCurrentConditionsRequest {
+}
+
+message RefreshCurrentConditionsResponse {
+    // Empty response
+}

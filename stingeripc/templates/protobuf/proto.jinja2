@@ -1,0 +1,58 @@
+{%macro field(arg, index)%}
+{%-if arg.arg_type.name.lower() == 'primitive'%}
+{{arg.protobuf_type}} {{arg.name}} = {{index}};
+{%-elif arg.arg_type.name.lower() == 'enum'%}
+{{arg.rust_local_type}} {{arg.name}} = {{index}};
+{%-elif arg.arg_type.name.lower() == 'struct'%}
+{{arg.rust_local_type}} {{arg.name}} = {{index}};
+{%-elif arg.arg_type.name.lower() == 'list'%}
+repeated {{arg.rust_local_type}} {{arg.name}} = {{index}};
+{%endif-%}
+{%endmacro%}
+
+{%for i_enum_name, i_enum in stinger.enums.items()%}
+enum {{i_enum_name | UpperCamelCase}} {
+    {%-for value in i_enum.values %}
+    {{value | CONST_CASE}} = {{loop.index}}{%if not loop.last%},{%endif%}
+    {%-endfor%}
+};
+{%endfor%}
+{%for struct_name, struct in stinger.structs.items() %}
+message {{struct_name | UpperCamelCase}} {
+    {%-for arg in struct.members%}
+    {{- field(arg, loop.index) | indent(4) }}
+    {%-endfor%}
+}
+{%endfor%}
+
+{%for signal_name, signal in stinger.signals.items()%}
+message {{signal_name | UpperCamelCase}}Signal {
+    {%- for arg in signal.arg_list %}
+    {{- field(arg, loop.index) | indent(4) }}
+    {%-endfor%}
+}
+{%endfor%}
+
+{%for prop_name, prop in stinger.properties.items()%}
+message {{prop_name | UpperCamelCase}}Property {
+    {%- for arg in prop.arg_list %}
+    {{- field(arg, loop.index) | indent(4) }}
+    {%-endfor%}
+}
+{%endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+message {{method_name | UpperCamelCase}}Request {
+    {%- for arg in method.arg_list %}
+    {{- field(arg, loop.index) | indent(4) }}
+    {%-endfor%}
+}
+
+message {{method_name | UpperCamelCase}}Response {
+    {%- if method.return_value %}
+    {{- field(method.return_value, 1) | indent(4) }}
+    {%- else %}
+    // Empty response
+    {%- endif %}
+}
+{%endfor%}
