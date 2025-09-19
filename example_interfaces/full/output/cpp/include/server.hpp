@@ -49,7 +49,7 @@ public:
     // The provided method will be called whenever a new value for the `favorite_number` property is received.
     void registerFavoriteNumberPropertyCallback(const std::function<void(int)>& cb);
 
-    boost::future<bool> updateFavoriteNumberProperty(int) const;
+    void updateFavoriteNumberProperty(int);
 
     // ---favorite_foods Property---
 
@@ -61,7 +61,7 @@ public:
     // The provided method will be called whenever a new value for the `favorite_foods` property is received.
     void registerFavoriteFoodsPropertyCallback(const std::function<void(const std::string&, int, boost::optional<std::string>)>& cb);
 
-    boost::future<bool> updateFavoriteFoodsProperty(const std::string&, int, boost::optional<std::string>) const;
+    void updateFavoriteFoodsProperty(const std::string&, int, boost::optional<std::string>);
 
     // ---lunch_menu Property---
 
@@ -73,7 +73,7 @@ public:
     // The provided method will be called whenever a new value for the `lunch_menu` property is received.
     void registerLunchMenuPropertyCallback(const std::function<void(Lunch, Lunch)>& cb);
 
-    boost::future<bool> updateLunchMenuProperty(Lunch, Lunch) const;
+    void updateLunchMenuProperty(Lunch, Lunch);
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;

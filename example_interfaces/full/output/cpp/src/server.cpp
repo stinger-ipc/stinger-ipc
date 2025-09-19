@@ -298,6 +298,11 @@ void FullServer::registerFavoriteNumberPropertyCallback(const std::function<void
     _favoriteNumberPropertyCallbacks.push_back(cb);
 }
 
+void FullServer::updateFavoriteNumberProperty(int number)
+{
+    _favoriteNumberProperty = number;
+}
+
 boost::optional<struct FavoriteFoodsProperty> FullServer::getFavoriteFoodsProperty() const
 {
     std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
@@ -310,6 +315,11 @@ void FullServer::registerFavoriteFoodsPropertyCallback(const std::function<void(
     _favoriteFoodsPropertyCallbacks.push_back(cb);
 }
 
+void FullServer::updateFavoriteFoodsProperty(const std::string& drink, int slices_of_pizza, boost::optional<std::string> breakfast)
+{
+    _favoriteFoodsProperty = FavoriteFoodsProperty{ drink, slices_of_pizza, breakfast };
+}
+
 boost::optional<struct LunchMenuProperty> FullServer::getLunchMenuProperty() const
 {
     std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
@@ -320,4 +330,9 @@ void FullServer::registerLunchMenuPropertyCallback(const std::function<void(Lunc
 {
     std::lock_guard<std::mutex> lock(_lunchMenuPropertyCallbacksMutex);
     _lunchMenuPropertyCallbacks.push_back(cb);
+}
+
+void FullServer::updateLunchMenuProperty(Lunch monday, Lunch tuesday)
+{
+    _lunchMenuProperty = LunchMenuProperty{ monday, tuesday };
 }

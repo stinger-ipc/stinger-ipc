@@ -51,7 +51,7 @@ public:
     // The provided method will be called whenever a new value for the `location` property is received.
     void registerLocationPropertyCallback(const std::function<void(double, double)>& cb);
 
-    boost::future<bool> updateLocationProperty(double, double) const;
+    void updateLocationProperty(double, double);
 
     // ---current_temperature Property---
 
@@ -63,7 +63,7 @@ public:
     // The provided method will be called whenever a new value for the `current_temperature` property is received.
     void registerCurrentTemperaturePropertyCallback(const std::function<void(double)>& cb);
 
-    boost::future<bool> updateCurrentTemperatureProperty(double) const;
+    void updateCurrentTemperatureProperty(double);
 
     // ---current_condition Property---
 
@@ -75,7 +75,7 @@ public:
     // The provided method will be called whenever a new value for the `current_condition` property is received.
     void registerCurrentConditionPropertyCallback(const std::function<void(WeatherCondition, const std::string&)>& cb);
 
-    boost::future<bool> updateCurrentConditionProperty(WeatherCondition, const std::string&) const;
+    void updateCurrentConditionProperty(WeatherCondition, const std::string&);
 
     // ---daily_forecast Property---
 
@@ -87,7 +87,7 @@ public:
     // The provided method will be called whenever a new value for the `daily_forecast` property is received.
     void registerDailyForecastPropertyCallback(const std::function<void(ForecastForDay, ForecastForDay, ForecastForDay)>& cb);
 
-    boost::future<bool> updateDailyForecastProperty(ForecastForDay, ForecastForDay, ForecastForDay) const;
+    void updateDailyForecastProperty(ForecastForDay, ForecastForDay, ForecastForDay);
 
     // ---hourly_forecast Property---
 
@@ -99,7 +99,7 @@ public:
     // The provided method will be called whenever a new value for the `hourly_forecast` property is received.
     void registerHourlyForecastPropertyCallback(const std::function<void(ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour)>& cb);
 
-    boost::future<bool> updateHourlyForecastProperty(ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour) const;
+    void updateHourlyForecastProperty(ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour);
 
     // ---current_condition_refresh_interval Property---
 
@@ -111,7 +111,7 @@ public:
     // The provided method will be called whenever a new value for the `current_condition_refresh_interval` property is received.
     void registerCurrentConditionRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
 
-    boost::future<bool> updateCurrentConditionRefreshIntervalProperty(int) const;
+    void updateCurrentConditionRefreshIntervalProperty(int);
 
     // ---hourly_forecast_refresh_interval Property---
 
@@ -123,7 +123,7 @@ public:
     // The provided method will be called whenever a new value for the `hourly_forecast_refresh_interval` property is received.
     void registerHourlyForecastRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
 
-    boost::future<bool> updateHourlyForecastRefreshIntervalProperty(int) const;
+    void updateHourlyForecastRefreshIntervalProperty(int);
 
     // ---daily_forecast_refresh_interval Property---
 
@@ -135,7 +135,7 @@ public:
     // The provided method will be called whenever a new value for the `daily_forecast_refresh_interval` property is received.
     void registerDailyForecastRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
 
-    boost::future<bool> updateDailyForecastRefreshIntervalProperty(int) const;
+    void updateDailyForecastRefreshIntervalProperty(int);
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;

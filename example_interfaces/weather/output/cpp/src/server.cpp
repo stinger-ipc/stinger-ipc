@@ -331,6 +331,11 @@ void WeatherServer::registerLocationPropertyCallback(const std::function<void(do
     _locationPropertyCallbacks.push_back(cb);
 }
 
+void WeatherServer::updateLocationProperty(double latitude, double longitude)
+{
+    _locationProperty = LocationProperty{ latitude, longitude };
+}
+
 boost::optional<CurrentTemperatureProperty> WeatherServer::getCurrentTemperatureProperty() const
 {
     std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
@@ -341,6 +346,11 @@ void WeatherServer::registerCurrentTemperaturePropertyCallback(const std::functi
 {
     std::lock_guard<std::mutex> lock(_currentTemperaturePropertyCallbacksMutex);
     _currentTemperaturePropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateCurrentTemperatureProperty(double temperature_f)
+{
+    _currentTemperatureProperty = temperature_f;
 }
 
 boost::optional<struct CurrentConditionProperty> WeatherServer::getCurrentConditionProperty() const
@@ -355,6 +365,11 @@ void WeatherServer::registerCurrentConditionPropertyCallback(const std::function
     _currentConditionPropertyCallbacks.push_back(cb);
 }
 
+void WeatherServer::updateCurrentConditionProperty(WeatherCondition condition, const std::string& description)
+{
+    _currentConditionProperty = CurrentConditionProperty{ condition, description };
+}
+
 boost::optional<struct DailyForecastProperty> WeatherServer::getDailyForecastProperty() const
 {
     std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
@@ -365,6 +380,11 @@ void WeatherServer::registerDailyForecastPropertyCallback(const std::function<vo
 {
     std::lock_guard<std::mutex> lock(_dailyForecastPropertyCallbacksMutex);
     _dailyForecastPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateDailyForecastProperty(ForecastForDay monday, ForecastForDay tuesday, ForecastForDay wednesday)
+{
+    _dailyForecastProperty = DailyForecastProperty{ monday, tuesday, wednesday };
 }
 
 boost::optional<struct HourlyForecastProperty> WeatherServer::getHourlyForecastProperty() const
@@ -379,6 +399,11 @@ void WeatherServer::registerHourlyForecastPropertyCallback(const std::function<v
     _hourlyForecastPropertyCallbacks.push_back(cb);
 }
 
+void WeatherServer::updateHourlyForecastProperty(ForecastForHour hour_0, ForecastForHour hour_1, ForecastForHour hour_2, ForecastForHour hour_3)
+{
+    _hourlyForecastProperty = HourlyForecastProperty{ hour_0, hour_1, hour_2, hour_3 };
+}
+
 boost::optional<CurrentConditionRefreshIntervalProperty> WeatherServer::getCurrentConditionRefreshIntervalProperty() const
 {
     std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
@@ -389,6 +414,11 @@ void WeatherServer::registerCurrentConditionRefreshIntervalPropertyCallback(cons
 {
     std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyCallbacksMutex);
     _currentConditionRefreshIntervalPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateCurrentConditionRefreshIntervalProperty(int seconds)
+{
+    _currentConditionRefreshIntervalProperty = seconds;
 }
 
 boost::optional<HourlyForecastRefreshIntervalProperty> WeatherServer::getHourlyForecastRefreshIntervalProperty() const
@@ -403,6 +433,11 @@ void WeatherServer::registerHourlyForecastRefreshIntervalPropertyCallback(const 
     _hourlyForecastRefreshIntervalPropertyCallbacks.push_back(cb);
 }
 
+void WeatherServer::updateHourlyForecastRefreshIntervalProperty(int seconds)
+{
+    _hourlyForecastRefreshIntervalProperty = seconds;
+}
+
 boost::optional<DailyForecastRefreshIntervalProperty> WeatherServer::getDailyForecastRefreshIntervalProperty() const
 {
     std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
@@ -413,4 +448,9 @@ void WeatherServer::registerDailyForecastRefreshIntervalPropertyCallback(const s
 {
     std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyCallbacksMutex);
     _dailyForecastRefreshIntervalPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateDailyForecastRefreshIntervalProperty(int seconds)
+{
+    _dailyForecastRefreshIntervalProperty = seconds;
 }

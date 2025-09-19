@@ -24,7 +24,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     $scope.online = false;
 
     $scope.enums = {
-        // <stingeripc.components.InterfaceEnum object at 0x7beb030d3f50>
+        // <stingeripc.components.InterfaceEnum object at 0x7fa469c239b0>
         "weather_condition": [
             {"name": "rainy", "id": 1 },
             

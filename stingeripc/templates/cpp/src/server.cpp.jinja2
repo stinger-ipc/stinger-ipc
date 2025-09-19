@@ -178,17 +178,12 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
 
 {{pr.callback_registration_definition(stinger.cpp.server_class_name, prop_name, prop)}}
 
-boost::future<bool> {{stinger.cpp.server_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
+void {{stinger.cpp.server_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}})
 {
-    rapidjson::Document doc;
-    doc.SetObject();
-    {%for item in prop.arg_list %}
-    {{ser.addToValue('doc', item, 'doc.GetAllocator()') | indent(4)}}
-    {%endfor %}
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish("{{prop.update_topic}}", buf.GetString(), 1, false, mqttProps);
+    {%if prop.arg_list|length == 1 %}
+    _{{prop_name | lowerCamelCase}}Property = {{prop.arg_list[0].name}};
+    {%else%}
+    _{{prop_name | lowerCamelCase}}Property = {{prop_name | UpperCamelCase}}Property{ {%for arg in prop.arg_list %}{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {%endif%}
 }
 {%endfor%}

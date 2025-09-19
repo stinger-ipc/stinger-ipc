@@ -11,7 +11,7 @@ boost::optional<{{prop_value_type(prop)}}> get{{prop_name | UpperCamelCase}}Prop
 // The provided method will be called whenever a new value for the `{{prop_name}}` property is received.
 void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.declarationParams(prop.arg_list)}})>& cb);
 {% if not client or not prop.read_only %}
-boost::future<bool> update{{prop_name | UpperCamelCase}}Property({{ar.declarationParams(prop.arg_list)}}) const;
+{% if client %}boost::future<bool>{%else%}void{%endif%} update{{prop_name | UpperCamelCase}}Property({{ar.declarationParams(prop.arg_list)}}){%if client%} const{%endif%};
 {%endif%}
 {%endmacro%}
 
