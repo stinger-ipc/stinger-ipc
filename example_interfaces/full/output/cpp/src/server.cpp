@@ -32,9 +32,7 @@ FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker)
     _doSomethingMethodSubscriptionId = _broker->Subscribe("full/method/doSomething", 2);
 
     _favoriteNumberPropertySubscriptionId = _broker->Subscribe("full/property/favoriteNumber/setValue", 1);
-
     _favoriteFoodsPropertySubscriptionId = _broker->Subscribe("full/property/favoriteFoods/setValue", 1);
-
     _lunchMenuPropertySubscriptionId = _broker->Subscribe("full/property/lunchMenu/setValue", 1);
 }
 
@@ -300,10 +298,82 @@ void FullServer::registerFavoriteNumberPropertyCallback(const std::function<void
 
 void FullServer::updateFavoriteNumberProperty(int number)
 {
-    _favoriteNumberProperty = number;
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteNumberPropertyMutex);
+        _favoriteNumberProperty = number;
+        _lastFavoriteNumberPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteNumberPropertyCallbacksMutex);
+        for (const auto& cb: _favoriteNumberPropertyCallbacks)
+        {
+            cb(number);
+        }
+    }
+    republishFavoriteNumberProperty();
 }
 
-boost::optional<struct FavoriteFoodsProperty> FullServer::getFavoriteFoodsProperty() const
+void FullServer::republishFavoriteNumberProperty() const
+{
+    std::lock_guard<std::mutex> lock(_favoriteNumberPropertyMutex);
+    rapidjson::Document doc;
+    if (_favoriteNumberProperty)
+    {
+        doc.SetObject();
+
+        doc.AddMember("number", *_favoriteNumberProperty, doc.GetAllocator());
+    }
+    else
+    {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    mqttProps.propertyVersion = _lastFavoriteNumberPropertyVersion;
+    _broker->Publish("full/property/favoriteNumber/value", buf.GetString(), 1, false, mqttProps);
+}
+
+void FullServer::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse favorite_number property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull())
+    {
+        throw std::runtime_error("Received favorite_number payload is not an object or null");
+    }
+
+    // TODO: Check _lastFavoriteNumberPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    int tempNumber;
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("number");
+    if (itr != doc.MemberEnd() && itr->value.IsInt())
+    {
+        tempNumber = itr->value.GetInt();
+    }
+    else
+    {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteNumberPropertyMutex);
+        _favoriteNumberProperty = tempNumber;
+        _lastFavoriteNumberPropertyVersion++;
+    }
+    republishFavoriteNumberProperty();
+}
+
+boost::optional<FavoriteFoodsProperty> FullServer::getFavoriteFoodsProperty() const
 {
     std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
     return _favoriteFoodsProperty;
@@ -317,10 +387,74 @@ void FullServer::registerFavoriteFoodsPropertyCallback(const std::function<void(
 
 void FullServer::updateFavoriteFoodsProperty(const std::string& drink, int slices_of_pizza, boost::optional<std::string> breakfast)
 {
-    _favoriteFoodsProperty = FavoriteFoodsProperty{ drink, slices_of_pizza, breakfast };
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
+        _favoriteFoodsProperty = FavoriteFoodsProperty{ drink, slices_of_pizza, breakfast };
+        _lastFavoriteFoodsPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyCallbacksMutex);
+        for (const auto& cb: _favoriteFoodsPropertyCallbacks)
+        {
+            cb(drink, slices_of_pizza, breakfast);
+        }
+    }
+    republishFavoriteFoodsProperty();
 }
 
-boost::optional<struct LunchMenuProperty> FullServer::getLunchMenuProperty() const
+void FullServer::republishFavoriteFoodsProperty() const
+{
+    std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
+    rapidjson::Document doc;
+    if (_favoriteFoodsProperty)
+    {
+        doc.SetObject();
+
+        _favoriteFoodsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    }
+    else
+    {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    mqttProps.propertyVersion = _lastFavoriteFoodsPropertyVersion;
+    _broker->Publish("full/property/favoriteFoods/value", buf.GetString(), 1, false, mqttProps);
+}
+
+void FullServer::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse favorite_foods property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull())
+    {
+        throw std::runtime_error("Received favorite_foods payload is not an object or null");
+    }
+
+    // TODO: Check _lastFavoriteFoodsPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 3 values into struct.
+    FavoriteFoodsProperty tempValue = FavoriteFoodsProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
+        _favoriteFoodsProperty = tempValue;
+        _lastFavoriteFoodsPropertyVersion++;
+    }
+    republishFavoriteFoodsProperty();
+}
+
+boost::optional<LunchMenuProperty> FullServer::getLunchMenuProperty() const
 {
     std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
     return _lunchMenuProperty;
@@ -334,5 +468,69 @@ void FullServer::registerLunchMenuPropertyCallback(const std::function<void(Lunc
 
 void FullServer::updateLunchMenuProperty(Lunch monday, Lunch tuesday)
 {
-    _lunchMenuProperty = LunchMenuProperty{ monday, tuesday };
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
+        _lunchMenuProperty = LunchMenuProperty{ monday, tuesday };
+        _lastLunchMenuPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_lunchMenuPropertyCallbacksMutex);
+        for (const auto& cb: _lunchMenuPropertyCallbacks)
+        {
+            cb(monday, tuesday);
+        }
+    }
+    republishLunchMenuProperty();
+}
+
+void FullServer::republishLunchMenuProperty() const
+{
+    std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
+    rapidjson::Document doc;
+    if (_lunchMenuProperty)
+    {
+        doc.SetObject();
+
+        _lunchMenuProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    }
+    else
+    {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    mqttProps.propertyVersion = _lastLunchMenuPropertyVersion;
+    _broker->Publish("full/property/lunchMenu/value", buf.GetString(), 1, false, mqttProps);
+}
+
+void FullServer::_receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse lunch_menu property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull())
+    {
+        throw std::runtime_error("Received lunch_menu payload is not an object or null");
+    }
+
+    // TODO: Check _lastLunchMenuPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 2 values into struct.
+    LunchMenuProperty tempValue = LunchMenuProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
+        _lunchMenuProperty = tempValue;
+        _lastLunchMenuPropertyVersion++;
+    }
+    republishLunchMenuProperty();
 }

@@ -19,7 +19,7 @@ It contains enumerations used by the {{stinger.name}} interface.
  */{%endif%}
 struct {{prop.name | UpperCamelCase}}Property {
     static {{prop.name | UpperCamelCase}}Property FromRapidJsonObject(const rapidjson::Value& jsonObj);
-    rapidjson::Value ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const;
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
 {%-for arg in prop.arg_list %}
     {%if arg.arg_type.name.lower() == "struct"-%}
     {{arg.cpp_type}} {{arg.name}};{%if arg.description %}  ///< {{arg.description}}{%endif%}

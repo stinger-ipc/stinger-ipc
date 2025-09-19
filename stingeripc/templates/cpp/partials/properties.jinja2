@@ -1,5 +1,5 @@
 {% import 'partials/args.jinja2' as ar %}
-{%macro prop_value_type(prop) -%}{%if prop.arg_list|length > 1%}struct {%endif%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
+{%macro prop_value_type(prop) -%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
 {%macro public_declarations(prop_name, prop, client)%}
 // ---{{prop_name}} Property---
 

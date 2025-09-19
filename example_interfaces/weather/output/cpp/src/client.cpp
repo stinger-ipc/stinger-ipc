@@ -345,7 +345,7 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
     }
 }
 
-boost::optional<struct LocationProperty> WeatherClient::getLocationProperty() const
+boost::optional<LocationProperty> WeatherClient::getLocationProperty() const
 {
     std::lock_guard<std::mutex> lock(_locationPropertyMutex);
     return _locationProperty;
@@ -484,7 +484,7 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
     }
 }
 
-boost::optional<struct CurrentConditionProperty> WeatherClient::getCurrentConditionProperty() const
+boost::optional<CurrentConditionProperty> WeatherClient::getCurrentConditionProperty() const
 {
     std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
     return _currentConditionProperty;
@@ -563,7 +563,7 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
     }
 }
 
-boost::optional<struct DailyForecastProperty> WeatherClient::getDailyForecastProperty() const
+boost::optional<DailyForecastProperty> WeatherClient::getDailyForecastProperty() const
 {
     std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
     return _dailyForecastProperty;
@@ -653,7 +653,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
     }
 }
 
-boost::optional<struct HourlyForecastProperty> WeatherClient::getHourlyForecastProperty() const
+boost::optional<HourlyForecastProperty> WeatherClient::getHourlyForecastProperty() const
 {
     std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
     return _hourlyForecastProperty;

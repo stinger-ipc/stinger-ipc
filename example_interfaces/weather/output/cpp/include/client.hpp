@@ -60,7 +60,7 @@ public:
 
     // Gets the latest value of the `location` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct LocationProperty> getLocationProperty() const;
+    boost::optional<LocationProperty> getLocationProperty() const;
 
     // Add a callback that will be called whenever the `location` property is updated.
     // The provided method will be called whenever a new value for the `location` property is received.
@@ -82,7 +82,7 @@ public:
 
     // Gets the latest value of the `current_condition` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct CurrentConditionProperty> getCurrentConditionProperty() const;
+    boost::optional<CurrentConditionProperty> getCurrentConditionProperty() const;
 
     // Add a callback that will be called whenever the `current_condition` property is updated.
     // The provided method will be called whenever a new value for the `current_condition` property is received.
@@ -92,7 +92,7 @@ public:
 
     // Gets the latest value of the `daily_forecast` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct DailyForecastProperty> getDailyForecastProperty() const;
+    boost::optional<DailyForecastProperty> getDailyForecastProperty() const;
 
     // Add a callback that will be called whenever the `daily_forecast` property is updated.
     // The provided method will be called whenever a new value for the `daily_forecast` property is received.
@@ -102,7 +102,7 @@ public:
 
     // Gets the latest value of the `hourly_forecast` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct HourlyForecastProperty> getHourlyForecastProperty() const;
+    boost::optional<HourlyForecastProperty> getHourlyForecastProperty() const;
 
     // Add a callback that will be called whenever the `hourly_forecast` property is updated.
     // The provided method will be called whenever a new value for the `hourly_forecast` property is received.
@@ -186,7 +186,7 @@ private:
     // ---location Property---
 
     // Last received values for the `location` property.
-    boost::optional<struct LocationProperty> _locationProperty;
+    boost::optional<LocationProperty> _locationProperty;
 
     // This is the property version of the last received `location` property update.
     int _lastLocationPropertyVersion = -1;
@@ -228,7 +228,7 @@ private:
     // ---current_condition Property---
 
     // Last received values for the `current_condition` property.
-    boost::optional<struct CurrentConditionProperty> _currentConditionProperty;
+    boost::optional<CurrentConditionProperty> _currentConditionProperty;
 
     // This is the property version of the last received `current_condition` property update.
     int _lastCurrentConditionPropertyVersion = -1;
@@ -249,7 +249,7 @@ private:
     // ---daily_forecast Property---
 
     // Last received values for the `daily_forecast` property.
-    boost::optional<struct DailyForecastProperty> _dailyForecastProperty;
+    boost::optional<DailyForecastProperty> _dailyForecastProperty;
 
     // This is the property version of the last received `daily_forecast` property update.
     int _lastDailyForecastPropertyVersion = -1;
@@ -270,7 +270,7 @@ private:
     // ---hourly_forecast Property---
 
     // Last received values for the `hourly_forecast` property.
-    boost::optional<struct HourlyForecastProperty> _hourlyForecastProperty;
+    boost::optional<HourlyForecastProperty> _hourlyForecastProperty;
 
     // This is the property version of the last received `hourly_forecast` property update.
     int _lastHourlyForecastPropertyVersion = -1;

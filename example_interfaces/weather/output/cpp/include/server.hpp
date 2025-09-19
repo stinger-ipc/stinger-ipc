@@ -45,13 +45,15 @@ public:
 
     // Gets the latest value of the `location` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct LocationProperty> getLocationProperty() const;
+    boost::optional<LocationProperty> getLocationProperty() const;
 
     // Add a callback that will be called whenever the `location` property is updated.
     // The provided method will be called whenever a new value for the `location` property is received.
     void registerLocationPropertyCallback(const std::function<void(double, double)>& cb);
 
     void updateLocationProperty(double, double);
+
+    void republishLocationProperty() const;
 
     // ---current_temperature Property---
 
@@ -65,11 +67,13 @@ public:
 
     void updateCurrentTemperatureProperty(double);
 
+    void republishCurrentTemperatureProperty() const;
+
     // ---current_condition Property---
 
     // Gets the latest value of the `current_condition` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct CurrentConditionProperty> getCurrentConditionProperty() const;
+    boost::optional<CurrentConditionProperty> getCurrentConditionProperty() const;
 
     // Add a callback that will be called whenever the `current_condition` property is updated.
     // The provided method will be called whenever a new value for the `current_condition` property is received.
@@ -77,11 +81,13 @@ public:
 
     void updateCurrentConditionProperty(WeatherCondition, const std::string&);
 
+    void republishCurrentConditionProperty() const;
+
     // ---daily_forecast Property---
 
     // Gets the latest value of the `daily_forecast` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct DailyForecastProperty> getDailyForecastProperty() const;
+    boost::optional<DailyForecastProperty> getDailyForecastProperty() const;
 
     // Add a callback that will be called whenever the `daily_forecast` property is updated.
     // The provided method will be called whenever a new value for the `daily_forecast` property is received.
@@ -89,17 +95,21 @@ public:
 
     void updateDailyForecastProperty(ForecastForDay, ForecastForDay, ForecastForDay);
 
+    void republishDailyForecastProperty() const;
+
     // ---hourly_forecast Property---
 
     // Gets the latest value of the `hourly_forecast` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct HourlyForecastProperty> getHourlyForecastProperty() const;
+    boost::optional<HourlyForecastProperty> getHourlyForecastProperty() const;
 
     // Add a callback that will be called whenever the `hourly_forecast` property is updated.
     // The provided method will be called whenever a new value for the `hourly_forecast` property is received.
     void registerHourlyForecastPropertyCallback(const std::function<void(ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour)>& cb);
 
     void updateHourlyForecastProperty(ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour);
+
+    void republishHourlyForecastProperty() const;
 
     // ---current_condition_refresh_interval Property---
 
@@ -113,6 +123,8 @@ public:
 
     void updateCurrentConditionRefreshIntervalProperty(int);
 
+    void republishCurrentConditionRefreshIntervalProperty() const;
+
     // ---hourly_forecast_refresh_interval Property---
 
     // Gets the latest value of the `hourly_forecast_refresh_interval` property, if one has been received.
@@ -125,6 +137,8 @@ public:
 
     void updateHourlyForecastRefreshIntervalProperty(int);
 
+    void republishHourlyForecastRefreshIntervalProperty() const;
+
     // ---daily_forecast_refresh_interval Property---
 
     // Gets the latest value of the `daily_forecast_refresh_interval` property, if one has been received.
@@ -136,6 +150,8 @@ public:
     void registerDailyForecastRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
 
     void updateDailyForecastRefreshIntervalProperty(int);
+
+    void republishDailyForecastRefreshIntervalProperty() const;
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;
@@ -162,7 +178,7 @@ private:
     // ---location Property---
 
     // Current values for the `location` property.
-    boost::optional<struct LocationProperty> _locationProperty;
+    boost::optional<LocationProperty> _locationProperty;
 
     // This is the property version  of `location`.
     int _lastLocationPropertyVersion = -1;
@@ -204,7 +220,7 @@ private:
     // ---current_condition Property---
 
     // Current values for the `current_condition` property.
-    boost::optional<struct CurrentConditionProperty> _currentConditionProperty;
+    boost::optional<CurrentConditionProperty> _currentConditionProperty;
 
     // This is the property version  of `current_condition`.
     int _lastCurrentConditionPropertyVersion = -1;
@@ -225,7 +241,7 @@ private:
     // ---daily_forecast Property---
 
     // Current values for the `daily_forecast` property.
-    boost::optional<struct DailyForecastProperty> _dailyForecastProperty;
+    boost::optional<DailyForecastProperty> _dailyForecastProperty;
 
     // This is the property version  of `daily_forecast`.
     int _lastDailyForecastPropertyVersion = -1;
@@ -246,7 +262,7 @@ private:
     // ---hourly_forecast Property---
 
     // Current values for the `hourly_forecast` property.
-    boost::optional<struct HourlyForecastProperty> _hourlyForecastProperty;
+    boost::optional<HourlyForecastProperty> _hourlyForecastProperty;
 
     // This is the property version  of `hourly_forecast`.
     int _lastHourlyForecastPropertyVersion = -1;

@@ -45,6 +45,7 @@ public:
 
     {%for prop_name, prop in stinger.properties.items()%}
     {{ pr.public_declarations(prop_name, prop, false) | indent(4) }}
+    void republish{{prop_name | UpperCamelCase}}Property() const;
     {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;

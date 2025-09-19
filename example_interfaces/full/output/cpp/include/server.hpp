@@ -51,11 +51,13 @@ public:
 
     void updateFavoriteNumberProperty(int);
 
+    void republishFavoriteNumberProperty() const;
+
     // ---favorite_foods Property---
 
     // Gets the latest value of the `favorite_foods` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct FavoriteFoodsProperty> getFavoriteFoodsProperty() const;
+    boost::optional<FavoriteFoodsProperty> getFavoriteFoodsProperty() const;
 
     // Add a callback that will be called whenever the `favorite_foods` property is updated.
     // The provided method will be called whenever a new value for the `favorite_foods` property is received.
@@ -63,17 +65,21 @@ public:
 
     void updateFavoriteFoodsProperty(const std::string&, int, boost::optional<std::string>);
 
+    void republishFavoriteFoodsProperty() const;
+
     // ---lunch_menu Property---
 
     // Gets the latest value of the `lunch_menu` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct LunchMenuProperty> getLunchMenuProperty() const;
+    boost::optional<LunchMenuProperty> getLunchMenuProperty() const;
 
     // Add a callback that will be called whenever the `lunch_menu` property is updated.
     // The provided method will be called whenever a new value for the `lunch_menu` property is received.
     void registerLunchMenuPropertyCallback(const std::function<void(Lunch, Lunch)>& cb);
 
     void updateLunchMenuProperty(Lunch, Lunch);
+
+    void republishLunchMenuProperty() const;
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;
@@ -117,7 +123,7 @@ private:
     // ---favorite_foods Property---
 
     // Current values for the `favorite_foods` property.
-    boost::optional<struct FavoriteFoodsProperty> _favoriteFoodsProperty;
+    boost::optional<FavoriteFoodsProperty> _favoriteFoodsProperty;
 
     // This is the property version  of `favorite_foods`.
     int _lastFavoriteFoodsPropertyVersion = -1;
@@ -138,7 +144,7 @@ private:
     // ---lunch_menu Property---
 
     // Current values for the `lunch_menu` property.
-    boost::optional<struct LunchMenuProperty> _lunchMenuProperty;
+    boost::optional<LunchMenuProperty> _lunchMenuProperty;
 
     // This is the property version  of `lunch_menu`.
     int _lastLunchMenuPropertyVersion = -1;

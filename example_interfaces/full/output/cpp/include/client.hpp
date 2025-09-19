@@ -68,7 +68,7 @@ public:
 
     // Gets the latest value of the `favorite_foods` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct FavoriteFoodsProperty> getFavoriteFoodsProperty() const;
+    boost::optional<FavoriteFoodsProperty> getFavoriteFoodsProperty() const;
 
     // Add a callback that will be called whenever the `favorite_foods` property is updated.
     // The provided method will be called whenever a new value for the `favorite_foods` property is received.
@@ -80,7 +80,7 @@ public:
 
     // Gets the latest value of the `lunch_menu` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<struct LunchMenuProperty> getLunchMenuProperty() const;
+    boost::optional<LunchMenuProperty> getLunchMenuProperty() const;
 
     // Add a callback that will be called whenever the `lunch_menu` property is updated.
     // The provided method will be called whenever a new value for the `lunch_menu` property is received.
@@ -146,7 +146,7 @@ private:
     // ---favorite_foods Property---
 
     // Last received values for the `favorite_foods` property.
-    boost::optional<struct FavoriteFoodsProperty> _favoriteFoodsProperty;
+    boost::optional<FavoriteFoodsProperty> _favoriteFoodsProperty;
 
     // This is the property version of the last received `favorite_foods` property update.
     int _lastFavoriteFoodsPropertyVersion = -1;
@@ -167,7 +167,7 @@ private:
     // ---lunch_menu Property---
 
     // Last received values for the `lunch_menu` property.
-    boost::optional<struct LunchMenuProperty> _lunchMenuProperty;
+    boost::optional<LunchMenuProperty> _lunchMenuProperty;
 
     // This is the property version of the last received `lunch_menu` property update.
     int _lastLunchMenuPropertyVersion = -1;

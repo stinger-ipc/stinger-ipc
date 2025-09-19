@@ -44,26 +44,22 @@ FavoriteFoodsProperty FavoriteFoodsProperty::FromRapidJsonObject(const rapidjson
     return favoriteFoods;
 };
 
-rapidjson::Value FavoriteFoodsProperty::ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const
+void FavoriteFoodsProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    rapidjson::Value obj(rapidjson::kObjectType);
-
     { // restrict scope
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(drink.c_str(), drink.size(), allocator);
-        obj.AddMember("drink", tempStringValue, allocator);
+        parent.AddMember("drink", tempStringValue, allocator);
     }
 
-    obj.AddMember("slices_of_pizza", slices_of_pizza, allocator);
+    parent.AddMember("slices_of_pizza", slices_of_pizza, allocator);
 
     if (breakfast)
     {
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(breakfast->c_str(), breakfast->size(), allocator);
-        obj.AddMember("breakfast", tempStringValue, allocator);
+        parent.AddMember("breakfast", tempStringValue, allocator);
     }
-
-    return obj;
 }
 
 LunchMenuProperty LunchMenuProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -96,9 +92,6 @@ LunchMenuProperty LunchMenuProperty::FromRapidJsonObject(const rapidjson::Value&
     return lunchMenu;
 };
 
-rapidjson::Value LunchMenuProperty::ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const
+void LunchMenuProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    rapidjson::Value obj(rapidjson::kObjectType);
-
-    return obj;
 }

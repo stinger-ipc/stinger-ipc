@@ -20,8 +20,10 @@ def main(
 
     params = {
         "stinger": stinger,
-        "source_files": [],
-        "header_files": [],
+        "client_source_files": [],
+        "server_source_files": [],
+        "client_header_files": [],
+        "server_header_files": [],
     }
 
     if outdir.is_file():
@@ -57,7 +59,10 @@ def main(
         if fname.endswith(".jinja2"):
             print(f"GENERATING HEADER: {fname}")
             header_dest_path = str(header_code_path)[:-len(".jinja2")]
-            params["header_files"].append(header_dest_path)
+            if "server" not in header_dest_path:
+                params["client_header_files"].append(header_dest_path)
+            if "client" not in header_dest_path:
+                params["server_header_files"].append(header_dest_path)
             t.render_template(header_code_path, header_dest_path, **params)
 
     src_template_dir = template_dir / "src"
@@ -66,7 +71,10 @@ def main(
         if fname.endswith(".jinja2"):
             print(f"GENERATING SOURCE: {fname}")
             source_dest_path = str(source_code_path)[:-len(".jinja2")]
-            params["source_files"].append(source_dest_path)
+            if "server" not in source_dest_path:
+                params["client_source_files"].append(source_dest_path)
+            if "client" not in source_dest_path:
+                params["server_source_files"].append(source_dest_path)
             t.render_template(source_code_path, source_dest_path, **params)
 
     example_template_dir = template_dir / "examples"

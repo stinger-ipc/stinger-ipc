@@ -34,7 +34,7 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
     {%-endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
     _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe("{{prop.update_topic}}", 1);
-    {%endfor%}
+    {%-endfor%}
 }
 
 void {{stinger.cpp.server_class_name}}::_receiveMessage(
@@ -180,10 +180,92 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
 
 void {{stinger.cpp.server_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}})
 {
-    {%if prop.arg_list|length == 1 %}
-    _{{prop_name | lowerCamelCase}}Property = {{prop.arg_list[0].name}};
+    { // Scope lock
+    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+        {%if prop.arg_list|length == 1 -%}
+        _{{prop_name | lowerCamelCase}}Property = {{prop.arg_list[0].name}};
+        {%else-%}
+        _{{prop_name | lowerCamelCase}}Property = {{prop_name | UpperCamelCase}}Property{ {%for arg in prop.arg_list %}{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%} };
+        {%endif-%}
+        _last{{prop_name | UpperCamelCase}}PropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
+        for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
+        {
+            cb({{ar.callParams(prop.arg_list)}});
+        }
+    }
+    republish{{prop_name | UpperCamelCase}}Property();
+}
+
+void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}Property() const
+{
+    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+    rapidjson::Document doc;
+    if (_{{prop_name | lowerCamelCase}}Property)
+    {
+        doc.SetObject();
+        {%if prop.arg_list|length == 1 %}
+        doc.AddMember("{{prop.arg_list[0].name}}", *_{{prop_name | lowerCamelCase}}Property, doc.GetAllocator());
+        {%else%}
+        _{{prop_name | lowerCamelCase}}Property->AddToRapidJsonObject(doc, doc.GetAllocator());
+        {%endif%}
+    }
+    else
+    {
+        doc.SetNull();
+    }
+    
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    mqttProps.propertyVersion = _last{{prop_name | UpperCamelCase}}PropertyVersion;
+    _broker->Publish("{{prop.value_topic}}", buf.GetString(), 1, false, mqttProps);
+}
+
+void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse {{prop_name}} property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull()) {
+        throw std::runtime_error("Received {{prop_name}} payload is not an object or null");
+    }
+
+    // TODO: Check _last{{prop_name | UpperCamelCase}}PropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    {%if prop.arg_list | length == 1%}
+    {% set arg = prop.arg_list[0] %}
+    {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}};
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
+    if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+        {%if arg.arg_type.name.lower() == 'primitive'%}
+        temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+        {%elif arg.arg_type.name.lower() == 'enum'%}
+        temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+        {%endif%}
+    } else {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
     {%else%}
-    _{{prop_name | lowerCamelCase}}Property = {{prop_name | UpperCamelCase}}Property{ {%for arg in prop.arg_list %}{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    // Deserialize {{prop.arg_list|length}} values into struct.
+    {{pr.prop_value_type(prop)}} tempValue = {{pr.prop_value_type(prop)}}::FromRapidJsonObject(doc);
     {%endif%}
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+        _{{prop_name | lowerCamelCase}}Property = {%if prop.arg_list|length == 1 %}temp{{arg.name|UpperCamelCase}};{%else%}tempValue;{%endif%}
+        _last{{prop_name | UpperCamelCase}}PropertyVersion++;
+    }
+    republish{{prop_name | UpperCamelCase}}Property();
 }
 {%endfor%}

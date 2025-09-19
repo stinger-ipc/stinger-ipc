@@ -33,15 +33,11 @@ LocationProperty LocationProperty::FromRapidJsonObject(const rapidjson::Value& j
     return location;
 };
 
-rapidjson::Value LocationProperty::ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const
+void LocationProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    rapidjson::Value obj(rapidjson::kObjectType);
+    parent.AddMember("latitude", latitude, allocator);
 
-    obj.AddMember("latitude", latitude, allocator);
-
-    obj.AddMember("longitude", longitude, allocator);
-
-    return obj;
+    parent.AddMember("longitude", longitude, allocator);
 }
 
 CurrentConditionProperty CurrentConditionProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -74,19 +70,15 @@ CurrentConditionProperty CurrentConditionProperty::FromRapidJsonObject(const rap
     return currentCondition;
 };
 
-rapidjson::Value CurrentConditionProperty::ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const
+void CurrentConditionProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    rapidjson::Value obj(rapidjson::kObjectType);
-
-    obj.AddMember("condition", static_cast<int>(condition), allocator);
+    parent.AddMember("condition", static_cast<int>(condition), allocator);
 
     { // restrict scope
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(description.c_str(), description.size(), allocator);
-        obj.AddMember("description", tempStringValue, allocator);
+        parent.AddMember("description", tempStringValue, allocator);
     }
-
-    return obj;
 }
 
 DailyForecastProperty DailyForecastProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -130,11 +122,8 @@ DailyForecastProperty DailyForecastProperty::FromRapidJsonObject(const rapidjson
     return dailyForecast;
 };
 
-rapidjson::Value DailyForecastProperty::ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const
+void DailyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    rapidjson::Value obj(rapidjson::kObjectType);
-
-    return obj;
 }
 
 HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -189,9 +178,6 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
     return hourlyForecast;
 };
 
-rapidjson::Value HourlyForecastProperty::ToRapidJsonObject(rapidjson::Document::AllocatorType& allocator) const
+void HourlyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    rapidjson::Value obj(rapidjson::kObjectType);
-
-    return obj;
 }

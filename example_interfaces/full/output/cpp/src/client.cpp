@@ -417,7 +417,7 @@ void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, c
     }
 }
 
-boost::optional<struct FavoriteFoodsProperty> FullClient::getFavoriteFoodsProperty() const
+boost::optional<FavoriteFoodsProperty> FullClient::getFavoriteFoodsProperty() const
 {
     std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
     return _favoriteFoodsProperty;
@@ -512,7 +512,7 @@ void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
     }
 }
 
-boost::optional<struct LunchMenuProperty> FullClient::getLunchMenuProperty() const
+boost::optional<LunchMenuProperty> FullClient::getLunchMenuProperty() const
 {
     std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
     return _lunchMenuProperty;

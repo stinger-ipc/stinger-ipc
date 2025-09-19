@@ -9,3 +9,9 @@
         {{ arg.cpp_type }}{% if not loop.last %}, {% endif %}
     {%- endfor -%}
 {%-endmacro%}
+
+{%macro callParams(arglist)%}
+    {%- for arg in arglist -%}
+        {{ arg.name }}{% if not loop.last %}, {% endif %}
+    {%- endfor -%}
+{%endmacro%}
