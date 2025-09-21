@@ -55,11 +55,17 @@ class FullServer:
         self._property_lunch_menu: PropertyControls[stinger_types.LunchMenuProperty, stinger_types.Lunch, stinger_types.Lunch] = PropertyControls()
         self._property_lunch_menu.subscription_id = self._conn.subscribe("full/property/lunchMenu/setValue")
 
+        self._property_family_name: PropertyControls[str, str] = PropertyControls()
+        self._property_family_name.subscription_id = self._conn.subscribe("full/property/familyName/setValue")
+
         self._method_add_numbers = MethodControls()
         self._method_add_numbers.subscription_id = self._conn.subscribe("full/method/addNumbers")
 
         self._method_do_something = MethodControls()
         self._method_do_something.subscription_id = self._conn.subscribe("full/method/doSomething")
+
+        self._method_echo = MethodControls()
+        self._method_echo.subscription_id = self._conn.subscribe("full/method/echo")
 
         self._publish_interface_info()
 
@@ -80,6 +86,13 @@ class FullServer:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
                 self._process_do_something_call(topic, payload_obj, properties)
+        elif (properties.get("SubscriptionId", -1) == self._method_echo.subscription_id) or self._conn.is_topic_sub(topic, "full/method/echo"):
+            try:
+                payload_obj = json.loads(payload)
+            except json.decoder.JSONDecodeError:
+                self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
+            else:
+                self._process_echo_call(topic, payload_obj, properties)
 
         if (properties.get("SubscriptionId", -1) == self._property_favorite_number.subscription_id) or self._conn.is_topic_sub(topic, "full/property/favoriteNumber/setValue"):
             payload_obj = json.loads(payload)
@@ -106,6 +119,15 @@ class FullServer:
             for callback in self._property_lunch_menu.callbacks:
                 callback(prop_value.monday, prop_value.tuesday)
 
+        elif (properties.get("SubscriptionId", -1) == self._property_family_name.subscription_id) or self._conn.is_topic_sub(topic, "full/property/familyName/setValue"):
+            payload_obj = json.loads(payload)
+            prop_value = str(payload_obj["family_name"])
+            with self._property_family_name.mutex:
+                self._property_family_name.value = prop_value
+                self._property_family_name.version += 1
+            for callback in self._property_family_name.callbacks:
+                callback(prop_value)
+
     def _publish_interface_info(self):
         self._conn.publish(
             "full/interface",
@@ -126,6 +148,16 @@ class FullServer:
             "dayOfWeek": stinger_types.DayOfTheWeek(dayOfWeek).value if dayOfWeek is not None else None,
         }
         self._conn.publish("full/signal/todayIs", json.dumps(payload), qos=1, retain=False)
+
+    def emit_bark(self, word: str):
+        """Server application code should call this method to emit the 'bark' signal."""
+        if not isinstance(word, str):
+            raise ValueError(f"The 'word' value must be str.")
+
+        payload = {
+            "word": str(word),
+        }
+        self._conn.publish("full/signal/bark", json.dumps(payload), qos=1, retain=False)
 
     def handle_add_numbers(self, handler: Callable[[int, int, int | None], int]):
         """This is a decorator to decorate a method that will handle the 'addNumbers' method calls."""
@@ -240,6 +272,54 @@ class FullServer:
 
                 except Exception as e:
                     self._logger.exception("Exception while handling doSomething", exc_info=e)
+                    return_code = MethodResultCode.SERVER_ERROR
+                    debug_msg = str(e)
+                else:
+                    return_code = MethodResultCode.SUCCESS
+                    debug_msg = None
+
+                self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+
+    def handle_echo(self, handler: Callable[[str], str]):
+        """This is a decorator to decorate a method that will handle the 'echo' method calls."""
+        if self._method_echo.callback is None and handler is not None:
+            self._method_echo.callback = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def _process_echo_call(self, topic: str, payload: Dict[str, Any], properties: Dict[str, Any]):
+        """This processes a call to the 'echo' method.  It deserializes the payload to find the method arguments,
+        then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
+        """
+        correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
+        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
+        self._logger.info("Correlation Data %s", correlation_id)
+        if self._method_echo.callback is not None:
+            method_args = []  # type: List[Any]
+            if "message" in payload:
+                if not isinstance(payload["message"], str):
+                    self._logger.warning("The 'message' property in the payload to '%s' wasn't the correct type.  It should have been str.", topic)
+                    # TODO: return an error via MQTT
+                    return
+                else:
+                    method_args.append(payload["message"])
+            else:
+
+                self._logger.warning("The 'message' property in the payload to '%s' wasn't present", topic)
+                # TODO: return an error via MQTT
+                return
+
+            if response_topic is not None:
+                return_json = ""
+                debug_msg = None  # type: Optional[str]
+                try:
+                    return_struct = self._method_echo.callback(*method_args)
+                    self._logger.debug("Return value is %s", return_struct)
+
+                    if return_struct is not None:
+                        return_json = json.dumps({"message": return_struct})
+                except Exception as e:
+                    self._logger.exception("Exception while handling echo", exc_info=e)
                     return_code = MethodResultCode.SERVER_ERROR
                     debug_msg = str(e)
                 else:
@@ -372,6 +452,43 @@ class FullServer:
         if handler is not None:
             self._property_lunch_menu.callbacks.append(handler)
 
+    @property
+    def family_name(self) -> str | None:
+        """This property returns the last received value for the 'family_name' property."""
+        with self._property_family_name_mutex:
+            return self._property_family_name
+
+    @family_name.setter
+    def family_name(self, family_name: str):
+        """This property sets (publishes) a new value for the 'family_name' property."""
+        if not isinstance(family_name, str):
+            raise ValueError(f"The value must be str.")
+
+        payload = json.dumps({"family_name": family_name})
+
+        if family_name != self._property_family_name.value:
+            with self._property_family_name.mutex:
+                self._property_family_name.value = family_name
+                self._property_family_name.version += 1
+            self._conn.publish("full/property/familyName/value", payload, qos=1, retain=True)
+            for callback in self._property_family_name.callbacks:
+                callback(family_name)
+
+    def set_family_name(self, family_name: str):
+        """This method sets (publishes) a new value for the 'family_name' property."""
+        if not isinstance(family_name, str):
+            raise ValueError(f"The 'family_name' value must be str.")
+
+        obj = family_name
+
+        # Use the property.setter to do that actual work.
+        self.family_name = obj
+
+    def on_family_name_updates(self, handler: Callable[[str], None]):
+        """This method registers a callback to be called whenever a new 'family_name' property update is received."""
+        if handler is not None:
+            self._property_family_name.callbacks.append(handler)
+
 
 class FullServerBuilder:
     """
@@ -383,10 +500,12 @@ class FullServerBuilder:
 
         self._add_numbers_method_handler: Optional[Callable[[int, int, int | None], int]] = None
         self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
+        self._echo_method_handler: Optional[Callable[[str], str]] = None
 
         self._favorite_number_property_callbacks: List[Callable[[int], None]] = []
         self._favorite_foods_property_callbacks: List[Callable[[str, int, str | None], None]] = []
         self._lunch_menu_property_callbacks: List[Callable[[stinger_types.Lunch, stinger_types.Lunch], None]] = []
+        self._family_name_property_callbacks: List[Callable[[str], None]] = []
 
     def handle_add_numbers(self, handler: Callable[[int, int, int | None], int]):
         if self._add_numbers_method_handler is None and handler is not None:
@@ -397,6 +516,12 @@ class FullServerBuilder:
     def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
         if self._do_something_method_handler is None and handler is not None:
             self._do_something_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def handle_echo(self, handler: Callable[[str], str]):
+        if self._echo_method_handler is None and handler is not None:
+            self._echo_method_handler = handler
         else:
             raise Exception("Method handler already set")
 
@@ -412,6 +537,10 @@ class FullServerBuilder:
         """This method registers a callback to be called whenever a new 'lunch_menu' property update is received."""
         self._lunch_menu_property_callbacks.append(handler)
 
+    def on_family_name_updates(self, handler: Callable[[str], None]):
+        """This method registers a callback to be called whenever a new 'family_name' property update is received."""
+        self._family_name_property_callbacks.append(handler)
+
     def build(self) -> FullServer:
         new_server = FullServer(self._conn)
 
@@ -419,6 +548,8 @@ class FullServerBuilder:
             new_server.handle_add_numbers(self._add_numbers_method_handler)
         if self._do_something_method_handler is not None:
             new_server.handle_do_something(self._do_something_method_handler)
+        if self._echo_method_handler is not None:
+            new_server.handle_echo(self._echo_method_handler)
 
         for callback in self._favorite_number_property_callbacks:
             new_server.on_favorite_number_updates(callback)
@@ -428,6 +559,9 @@ class FullServerBuilder:
 
         for callback in self._lunch_menu_property_callbacks:
             new_server.on_lunch_menu_updates(callback)
+
+        for callback in self._family_name_property_callbacks:
+            new_server.on_family_name_updates(callback)
 
         return new_server
 
@@ -458,6 +592,8 @@ if __name__ == "__main__":
         tuesday=stinger_types.Lunch(drink=True, sandwich="apples", crackers=3.14, day=stinger_types.DayOfTheWeek.MONDAY, order_number=42),
     )
 
+    server.family_name = "apples"
+
     @server.handle_add_numbers
     def add_numbers(first: int, second: int, third: int | None) -> int:
         """This is an example handler for the 'addNumbers' method."""
@@ -469,6 +605,12 @@ if __name__ == "__main__":
         """This is an example handler for the 'doSomething' method."""
         print(f"Running do_something'({aString})'")
         return ['"apples"', 42, "stinger_types.DayOfTheWeek.MONDAY"]
+
+    @server.handle_echo
+    def echo(message: str) -> str:
+        """This is an example handler for the 'echo' method."""
+        print(f"Running echo'({message})'")
+        return "apples"
 
     @server.on_favorite_number_updates
     def on_favorite_number_update(number: int):
@@ -482,14 +624,20 @@ if __name__ == "__main__":
     def on_lunch_menu_update(monday: stinger_types.Lunch, tuesday: stinger_types.Lunch):
         print(f"Received update for 'lunch_menu' property: { monday= }, { tuesday= }")
 
+    @server.on_family_name_updates
+    def on_family_name_update(family_name: str):
+        print(f"Received update for 'family_name' property: { family_name= }")
+
     print("Ctrl-C will stop the program.")
 
     while True:
         try:
             server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)
+            server.emit_bark("apples")
 
             sleep(4)
             server.emit_todayIs(dayOfMonth=42, dayOfWeek=stinger_types.DayOfTheWeek.MONDAY)
+            server.emit_bark(word="apples")
 
             sleep(6)
         except KeyboardInterrupt:

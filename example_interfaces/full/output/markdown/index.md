@@ -209,6 +209,93 @@ todayIsFuture.wait(); // Optional, to block until signal is sent.
 </details>
 
 
+### Signal `bark`
+
+Emitted when a dog barks.
+
+#### Signal Parameters for `bark`
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|      word     |  string  ||
+
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `bark` signal can be subscribed to by using the client's `receive_bark` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
+
+```python
+@client.receive_bark
+def on_bark(word: str):
+    print(f"Got a 'bark' signal: word={ word } ")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+A server can emit a `bark` signal simply by calling the server's `emit_bark` method.
+
+```python
+server.emit_bark("apples")
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
+
+Since receiving a message through the channel blocks, it may be best to put this into a separate async task.
+
+```rust
+let mut bark_signal_rx = client.get_bark_receiver();
+print("Got a 'bark' signal: {:?}", bark_signal_rx.recv().await);
+```
+
+</details>
+
+<details>
+  <summary>Rust Server</summary>
+
+A server can emit a `bark` signal simply by calling the server's `emit_bark` method.
+
+```rust
+server.emit_bark("apples".to_string()).await;
+```
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A client can register a callback function to be called when a `bark` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
+
+```cpp
+client.registerBarkCallback([](const std::string& word) {
+    std::cout << "word=" <<word <<  std::endl;
+});
+```
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+A `bark` signal can be emitted by calling the server's `emitBarkSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
+
+```cpp
+auto barkFuture = server.emitBarkSignal("apples");
+barkFuture.wait(); // Optional, to block until signal is sent.
+```
+
+</details>
+
+
 ## Methods
 
 Methods are requests from a client to a server and the server provides a response back to the client:
@@ -350,6 +437,67 @@ println!("doSomething response: {:?}", result);
 </details>
 
 
+### Method `echo`
+
+Echo back the received message.
+
+#### Request Parameters
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|    message    |  string  ||
+
+#### Return Parameters
+
+The return value type is `string`.
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `echo` method can be called by calling the clients's `echo` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.echo(message="apples")
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'echo' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `echo` method by using the `@server.handle_echo` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_echo 
+def echo(message: str) -> str:
+    """ This is an example handler for the 'echo' method.  """
+    print(f"Running echo'({message})'")
+    return "apples"
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `FullClient` provides an implementation for the `echo` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.echo("apples".to_string()).await.expect("Failed to call echo");
+println!("echo response: {:?}", result);
+```
+
+</details>
+
+
 ## Properties
 
 Properties are values (or a set of values) held by the server.   They are re-published when the value changes. 
@@ -388,6 +536,14 @@ _No documentation is available for this property_
 |---------------|----------|-----------|
 |     monday    |[Struct Lunch](#enum-Lunch)||
 |    tuesday    |[Struct Lunch](#enum-Lunch)||
+
+### Property `family_name`
+
+This is to test a property with a single string value.
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|  family_name  |  string  ||
 
 
 ## Enums

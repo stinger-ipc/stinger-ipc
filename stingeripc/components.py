@@ -510,6 +510,8 @@ class Method(InterfaceComponent):
         if self._return_value is None:
             return "void"
         elif isinstance(self._return_value, Arg):
+            if self._return_value.arg_type == ArgType.PRIMITIVE and self._return_value.type == ArgPrimitiveType.STRING:
+                return "std::string"
             return self._return_value.cpp_type
         elif isinstance(self._return_value, list):
             return stringmanip.upper_camel_case(self.return_value_name)

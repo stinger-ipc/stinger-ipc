@@ -206,9 +206,15 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
     if (_{{prop_name | lowerCamelCase}}Property)
     {
         doc.SetObject();
-        {%if prop.arg_list|length == 1 %}
+        {%if prop.arg_list|length == 1 -%}
+        {%if prop.arg_list[0].arg_type.name.lower() == 'primitive' and prop.arg_list[0].type.name.lower() == 'string' -%}
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(_{{prop_name | lowerCamelCase}}Property->c_str(), _{{prop_name | lowerCamelCase}}Property->size(), doc.GetAllocator());
+        doc.AddMember("{{prop.arg_list[0].name}}", tempStringValue, doc.GetAllocator());
+        {%else%} {# not string primitive #}
         doc.AddMember("{{prop.arg_list[0].name}}", *_{{prop_name | lowerCamelCase}}Property, doc.GetAllocator());
-        {%else%}
+        {%endif%} {# primitive string or other primitive #}
+        {%else%} {# complex type #}
         _{{prop_name | lowerCamelCase}}Property->AddToRapidJsonObject(doc, doc.GetAllocator());
         {%endif%}
     }

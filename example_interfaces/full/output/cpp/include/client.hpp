@@ -40,6 +40,10 @@ public:
     // The provided method will be called whenever a `todayIs` is received.
     void registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb);
 
+    // Register a callback for the `bark` signal.
+    // The provided method will be called whenever a `bark` is received.
+    void registerBarkCallback(const std::function<void(const std::string&)>& cb);
+
     // ------------------- METHODS --------------------
 
     // Calls the `addNumbers` method.
@@ -49,6 +53,10 @@ public:
     // Calls the `doSomething` method.
     // Returns a future.  When that future resolves, it will have the returned value.
     boost::future<DoSomethingReturnValue> doSomething(const std::string& aString);
+
+    // Calls the `echo` method.
+    // Returns a future.  When that future resolves, it will have the returned value.
+    boost::future<std::string> echo(const std::string& message);
 
     // ---------------- PROPERTIES ------------------
 
@@ -88,6 +96,18 @@ public:
 
     boost::future<bool> updateLunchMenuProperty(Lunch, Lunch) const;
 
+    // ---family_name Property---
+
+    // Gets the latest value of the `family_name` property, if one has been received.
+    // If no value has been received yet, an empty optional is returned.
+    boost::optional<FamilyNameProperty> getFamilyNameProperty() const;
+
+    // Add a callback that will be called whenever the `family_name` property is updated.
+    // The provided method will be called whenever a new value for the `family_name` property is received.
+    void registerFamilyNamePropertyCallback(const std::function<void(const std::string&)>& cb);
+
+    boost::future<bool> updateFamilyNameProperty(const std::string&) const;
+
 private:
     // Pointer to the broker connection.
     std::shared_ptr<IBrokerConnection> _broker;
@@ -108,6 +128,13 @@ private:
     // MQTT Subscription ID for `todayIs` signal receptions.
     int _todayIsSignalSubscriptionId;
 
+    // List of callbacks to be called whenever the `bark` signal is received.
+    std::vector<std::function<void(const std::string&)>> _barkSignalCallbacks;
+    std::mutex _barkSignalCallbacksMutex;
+
+    // MQTT Subscription ID for `bark` signal receptions.
+    int _barkSignalSubscriptionId;
+
     // ------------------- METHODS --------------------
     // Holds promises for pending `addNumbers` method calls.
     std::map<boost::uuids::uuid, boost::promise<int>> _pendingAddNumbersMethodCalls;
@@ -119,6 +146,11 @@ private:
 
     // This is called internally to process responses to `doSomething` method calls.
     void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    // Holds promises for pending `echo` method calls.
+    std::map<boost::uuids::uuid, boost::promise<std::string>> _pendingEchoMethodCalls;
+
+    // This is called internally to process responses to `echo` method calls.
+    void _handleEchoResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
 
     // ---------------- PROPERTIES ------------------
 
@@ -184,4 +216,25 @@ private:
     // Callbacks registered for changes to the `lunch_menu` property.
     std::vector<std::function<void(Lunch, Lunch)>> _lunchMenuPropertyCallbacks;
     std::mutex _lunchMenuPropertyCallbacksMutex;
+
+    // ---family_name Property---
+
+    // Last received value for the `family_name` property.
+    boost::optional<FamilyNameProperty> _familyNameProperty;
+
+    // This is the property version of the last received `family_name` property update.
+    int _lastFamilyNamePropertyVersion = -1;
+
+    // Mutex for protecting access to the `family_name` property and its version.
+    mutable std::mutex _familyNamePropertyMutex;
+
+    // MQTT Subscription ID for `family_name` property updates.
+    int _familyNamePropertySubscriptionId;
+
+    // Method for parsing a JSON payload that updates the `family_name` property.
+    void _receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+    // Callbacks registered for changes to the `family_name` property.
+    std::vector<std::function<void(const std::string&)>> _familyNamePropertyCallbacks;
+    std::mutex _familyNamePropertyCallbacksMutex;
 };

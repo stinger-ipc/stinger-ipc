@@ -207,14 +207,14 @@ impl {{stinger.rust.server_struct_name}} {
         let new_data: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(&payload_str).unwrap();
         let mut locked_data = data.lock().unwrap();
         {%-if prop.arg_list | length == 1%}
-        *locked_data = Some(new_data.{{prop.arg_list[0].name}});
+        *locked_data = Some(new_data.{{prop.arg_list[0].name}}{%if prop.arg_list[0].rust_type == 'String' %}.clone(){%endif%});
         {%-else%}
         *locked_data = Some(new_data.clone());
         {%endif%}
         let publisher2 = publisher.clone();
         let topic2: String = topic.as_ref().clone();
         {%-if prop.arg_list | length == 1%}
-        let data2 = new_data.{{prop.arg_list[0].name}};
+        let data2 = new_data.{{prop.arg_list[0].name}}{%if prop.arg_list[0].rust_type == 'String' %}.clone(){%endif%};
         {%-else%}
         let data2 = new_data;
         {%endif%}

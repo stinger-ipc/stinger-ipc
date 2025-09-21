@@ -30,10 +30,12 @@ FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker)
 
     _addNumbersMethodSubscriptionId = _broker->Subscribe("full/method/addNumbers", 2);
     _doSomethingMethodSubscriptionId = _broker->Subscribe("full/method/doSomething", 2);
+    _echoMethodSubscriptionId = _broker->Subscribe("full/method/echo", 2);
 
     _favoriteNumberPropertySubscriptionId = _broker->Subscribe("full/property/favoriteNumber/setValue", 1);
     _favoriteFoodsPropertySubscriptionId = _broker->Subscribe("full/property/favoriteFoods/setValue", 1);
     _lunchMenuPropertySubscriptionId = _broker->Subscribe("full/property/lunchMenu/setValue", 1);
+    _familyNamePropertySubscriptionId = _broker->Subscribe("full/property/familyName/setValue", 1);
 }
 
 void FullServer::_receiveMessage(
@@ -106,6 +108,37 @@ void FullServer::_receiveMessage(
         }
     }
 
+    else if ((subscriptionId == _echoMethodSubscriptionId) || _broker->TopicMatchesSubscription(topic, "full/method/echo"))
+    {
+        std::cout << "Message matched topic full/method/echo\n";
+        rapidjson::Document doc;
+        try
+        {
+            if (_echoHandler)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse  signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject())
+                {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                _callEchoHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+
     if (subscriptionId == _favoriteNumberPropertySubscriptionId || _broker->TopicMatchesSubscription(topic, "full/property/favoriteNumber/setValue"))
     {
         std::cout << "Message matched topic full/property/favoriteNumber/setValue\n";
@@ -122,6 +155,12 @@ void FullServer::_receiveMessage(
     {
         std::cout << "Message matched topic full/property/lunchMenu/setValue\n";
         _receiveLunchMenuPropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    }
+
+    else if (subscriptionId == _familyNamePropertySubscriptionId || _broker->TopicMatchesSubscription(topic, "full/property/familyName/setValue"))
+    {
+        std::cout << "Message matched topic full/property/familyName/setValue\n";
+        _receiveFamilyNamePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 }
 
@@ -140,6 +179,24 @@ boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optiona
     return _broker->Publish("full/signal/todayIs", buf.GetString(), 1, false, mqttProps);
 }
 
+boost::future<bool> FullServer::emitBarkSignal(const std::string& word)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(word.c_str(), word.size(), doc.GetAllocator());
+        doc.AddMember("word", tempStringValue, doc.GetAllocator());
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("full/signal/bark", buf.GetString(), 1, false, mqttProps);
+}
+
 void FullServer::registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func)
 {
     std::cout << "Registered method to handle full/method/addNumbers\n";
@@ -150,6 +207,12 @@ void FullServer::registerDoSomethingHandler(std::function<DoSomethingReturnValue
 {
     std::cout << "Registered method to handle full/method/doSomething\n";
     _doSomethingHandler = func;
+}
+
+void FullServer::registerEchoHandler(std::function<std::string(const std::string&)> func)
+{
+    std::cout << "Registered method to handle full/method/echo\n";
+    _echoHandler = func;
 }
 
 void FullServer::_callAddNumbersHandler(
@@ -272,6 +335,54 @@ void FullServer::_callDoSomethingHandler(
             rapidjson::Value returnValueDay;
             returnValueDay.SetInt(static_cast<int>(ret.day));
             responseJson.AddMember("day", returnValueDay, responseJson.GetAllocator());
+
+            rapidjson::StringBuffer buf;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+            responseJson.Accept(writer);
+            MqttProperties mqttProps;
+            mqttProps.correlationId = optCorrelationId;
+            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
+        }
+    }
+}
+
+void FullServer::_callEchoHandler(
+        const std::string& topic,
+        const rapidjson::Document& doc,
+        const boost::optional<std::string> optCorrelationId,
+        const boost::optional<std::string> optResponseTopic
+) const
+{
+    std::cout << "Handling call to echo\n";
+    if (_echoHandler)
+    {
+        std::string tempMessage;
+        { // Scoping
+            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("message");
+            if (itr != doc.MemberEnd() && itr->value.IsString())
+            {
+                tempMessage = itr->value.GetString();
+            }
+            else
+            {
+                throw std::runtime_error("Received payload doesn't have required value/type");
+            }
+        }
+
+        std::string ret = _echoHandler(tempMessage);
+
+        if (optResponseTopic)
+        {
+            rapidjson::Document responseJson;
+            responseJson.SetObject();
+
+            // Return type is a single value
+
+            // add the message (a/n PRIMITIVE) to the json
+            rapidjson::Value returnValueMessage;
+            returnValueMessage.SetString(ret.c_str(), ret.size(), responseJson.GetAllocator());
+            responseJson.AddMember("message", returnValueMessage, responseJson.GetAllocator());
 
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
@@ -533,4 +644,94 @@ void FullServer::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
         _lastLunchMenuPropertyVersion++;
     }
     republishLunchMenuProperty();
+}
+
+boost::optional<FamilyNameProperty> FullServer::getFamilyNameProperty() const
+{
+    std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
+    return _familyNameProperty;
+}
+
+void FullServer::registerFamilyNamePropertyCallback(const std::function<void(const std::string& family_name)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_familyNamePropertyCallbacksMutex);
+    _familyNamePropertyCallbacks.push_back(cb);
+}
+
+void FullServer::updateFamilyNameProperty(const std::string& family_name)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
+        _familyNameProperty = family_name;
+        _lastFamilyNamePropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_familyNamePropertyCallbacksMutex);
+        for (const auto& cb: _familyNamePropertyCallbacks)
+        {
+            cb(family_name);
+        }
+    }
+    republishFamilyNameProperty();
+}
+
+void FullServer::republishFamilyNameProperty() const
+{
+    std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
+    rapidjson::Document doc;
+    if (_familyNameProperty)
+    {
+        doc.SetObject();
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(_familyNameProperty->c_str(), _familyNameProperty->size(), doc.GetAllocator());
+        doc.AddMember("family_name", tempStringValue, doc.GetAllocator());
+    }
+    else
+    {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    mqttProps.propertyVersion = _lastFamilyNamePropertyVersion;
+    _broker->Publish("full/property/familyName/value", buf.GetString(), 1, false, mqttProps);
+}
+
+void FullServer::_receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse family_name property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull())
+    {
+        throw std::runtime_error("Received family_name payload is not an object or null");
+    }
+
+    // TODO: Check _lastFamilyNamePropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    std::string tempFamilyName;
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("family_name");
+    if (itr != doc.MemberEnd() && itr->value.IsString())
+    {
+        tempFamilyName = itr->value.GetString();
+    }
+    else
+    {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
+        _familyNameProperty = tempFamilyName;
+        _lastFamilyNamePropertyVersion++;
+    }
+    republishFamilyNameProperty();
 }

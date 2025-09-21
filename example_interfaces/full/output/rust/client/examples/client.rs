@@ -39,11 +39,32 @@ async fn main() {
             }
         });
 
+        let mut sig_rx = api_client.get_bark_receiver();
+        println!("Got signal receiver for bark");
+
+        sleep(Duration::from_secs(5)).await;
+
+        let sig_rx_task = tokio::spawn(async move {
+            println!("Looping for signals");
+            loop {
+                match sig_rx.recv().await {
+                    Ok(payload) => {
+                        println!("Received bark signal with payload: {:?}", payload);
+                    }
+                    Err(e) => {
+                        eprintln!("Error receiving bark signal: {:?}", e);
+                        break;
+                    }
+                }
+            }
+        });
+
         let client_for_prop_change = api_client.clone();
         let _prop_change_rx_task = tokio::spawn(async move {
             let mut favorite_number_change_rx = client_for_prop_change.watch_favorite_number();
             let mut favorite_foods_change_rx = client_for_prop_change.watch_favorite_foods();
             let mut lunch_menu_change_rx = client_for_prop_change.watch_lunch_menu();
+            let mut family_name_change_rx = client_for_prop_change.watch_family_name();
 
             loop {
                 tokio::select! {
@@ -55,6 +76,9 @@ async fn main() {
                     }
                     _ = lunch_menu_change_rx.changed() => {
                         println!("Property 'lunch_menu' changed to: {:?}", *lunch_menu_change_rx.borrow());
+                    }
+                    _ = family_name_change_rx.changed() => {
+                        println!("Property 'family_name' changed to: {:?}", *family_name_change_rx.borrow());
                     }
                 }
             }
@@ -73,6 +97,13 @@ async fn main() {
             .await
             .expect("Failed to call doSomething");
         println!("doSomething response: {:?}", result);
+
+        println!("Calling echo with example values...");
+        let result = api_client
+            .echo("apples".to_string())
+            .await
+            .expect("Failed to call echo");
+        println!("echo response: {:?}", result);
 
         let _ = api_client.set_favorite_number(42);
 
@@ -100,6 +131,8 @@ async fn main() {
             },
         };
         let _ = api_client.set_lunch_menu(lunch_menu_new_value);
+
+        let _ = api_client.set_family_name("apples".to_string());
 
         let _ = join!(sig_rx_task);
     });

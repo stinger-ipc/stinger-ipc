@@ -107,12 +107,33 @@ pub struct DoSomethingReturnValue {
     pub day: DayOfTheWeek,
 }
 
+// Structures for `echo` method
+
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+/// Request Object for `echo`
+pub struct EchoRequestObject {
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct EchoReturnValue {
+    pub message: String,
+}
+
 // Structures for `todayIs` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TodayIsSignalPayload {
     pub dayOfMonth: i32,
     pub dayOfWeek: Option<DayOfTheWeek>,
+}
+
+// Structures for `bark` signal
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BarkSignalPayload {
+    pub word: String,
 }
 
 // `favorite_number` property structure.
@@ -137,4 +158,11 @@ pub struct FavoriteFoodsProperty {
 pub struct LunchMenuProperty {
     pub monday: Lunch,
     pub tuesday: Lunch,
+}
+
+// `family_name` property structure.
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FamilyNameProperty {
+    pub family_name: String,
 }

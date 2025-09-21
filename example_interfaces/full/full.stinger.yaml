@@ -59,6 +59,12 @@ signals:
         enumName: dayOfTheWeek
         optional: true
 
+  bark:
+    documentation: Emitted when a dog barks.
+    payload:
+      - name: word
+        type: string
+
 methods:
 
   addNumbers:
@@ -87,6 +93,15 @@ methods:
         type: enum
         enumName: dayOfTheWeek
 
+  echo:
+    documentation: Echo back the received message.
+    arguments:
+      - name: message
+        type: string
+    returnValues:
+      - name: message
+        type: string
+
 properties:
 
   favorite_number:
@@ -114,3 +129,9 @@ properties:
       - name: tuesday
         type: struct
         structName: lunch
+  
+  family_name:
+    documentation: This is to test a property with a single string value.
+    values:
+      - name: family_name
+        type: string

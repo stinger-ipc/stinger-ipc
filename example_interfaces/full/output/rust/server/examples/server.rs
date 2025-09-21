@@ -57,6 +57,11 @@ impl FullMethodHandlers for FullMethodImpl {
         Ok(rv)
     }
 
+    async fn handle_echo(&self, _message: String) -> Result<String, MethodResultCode> {
+        println!("Handling echo");
+        Ok("apples".to_string())
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -105,9 +110,16 @@ async fn main() {
         };
         server.set_lunch_menu(new_value).await;
 
+        println!("Setting initial value for property 'family_name'");
+        server.set_family_name("apples".to_string()).await;
+
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'todayIs'");
         server.emit_today_is(42, Some(DayOfTheWeek::Monday)).await;
+
+        sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal 'bark'");
+        server.emit_bark("apples".to_string()).await;
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'favorite_number'");
@@ -142,6 +154,9 @@ async fn main() {
         };
         server.set_lunch_menu(new_value).await;
 
+        sleep(Duration::from_secs(1)).await;
+        println!("Changing property 'family_name'");
+        server.set_family_name("Joe".to_string()).await;
         let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop

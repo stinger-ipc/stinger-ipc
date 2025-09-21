@@ -11,6 +11,8 @@ int main(int argc, char** argv)
     FullClient client(conn);
     client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek)
                                    { std::cout << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << "None" << std::endl; });
+    client.registerBarkCallback([](const std::string& word)
+                                { std::cout << "word=" << word << std::endl; });
     client.registerFavoriteNumberPropertyCallback([](int number)
                                                   { std::cout << "Received update for favorite_number property: " << "number=" << number << std::endl; });
 
@@ -19,6 +21,9 @@ int main(int argc, char** argv)
 
     client.registerLunchMenuPropertyCallback([](Lunch monday, Lunch tuesday)
                                              { std::cout << "Received update for lunch_menu property: " << "monday=" << "[Lunch object]" << " | " << "tuesday=" << "[Lunch object]" << std::endl; });
+
+    client.registerFamilyNamePropertyCallback([](const std::string& family_name)
+                                              { std::cout << "Received update for family_name property: " << "family_name=" << family_name << std::endl; });
 
     std::cout << "Calling addNumbers" << std::endl;
     auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
@@ -42,6 +47,17 @@ int main(int argc, char** argv)
     {
         DoSomethingReturnValue returnValue = doSomethingResultFuture.get();
         std::cout << "Results:" << " label=" << returnValue.label << " identifier=" << returnValue.identifier << " day=" << dayOfTheWeekStrings[static_cast<int>(returnValue.day)] << std::endl;
+    }
+    std::cout << "Calling echo" << std::endl;
+    auto echoResultFuture = client.echo("apples");
+    auto echoStatus = echoResultFuture.wait_for(boost::chrono::seconds(5));
+    if (echoStatus == boost::future_status::timeout)
+    {
+        std::cout << "TIMEOUT after 5 seconds waiting for echo response." << std::endl;
+    }
+    else
+    {
+        std::cout << "Result: Message=" << echoResultFuture.get() << std::endl;
     }
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;

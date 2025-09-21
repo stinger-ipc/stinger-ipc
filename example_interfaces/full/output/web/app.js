@@ -48,6 +48,14 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null,
             "mqtt_topic": "full/signal/todayIs"
+        },
+    
+        "bark": {
+            "subscription_id": null,
+            "name": "bark",
+            "received": null,
+            "received_time": null,
+            "mqtt_topic": "full/signal/bark"
         }
     };
 
@@ -106,6 +114,16 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
              },
             "mqtt_topic": "full/property/lunchMenu/value",
             "update_topic": "full/property/lunchMenu/setValue"
+        },
+    
+        "family_name": {
+            "subscription_id": null,
+            "name": "family_name",
+            "received": { 
+                "family_name": {  }
+             },
+            "mqtt_topic": "full/property/familyName/value",
+            "update_topic": "full/property/familyName/setValue"
         }
     };
 
@@ -141,6 +159,20 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "pending_correlation_id": null,
             "args": {
                 "a_string": {
+                    "type": "ArgPrimitiveType.STRING",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
+        },
+        "echo": {
+            "name": "echo",
+            "mqtt_topic": "full/method/echo",
+            "response_topic": "client/"+clientId+"/full/method/echo/response",
+            "pending_correlation_id": null,
+            "args": {
+                "message": {
                     "type": "ArgPrimitiveType.STRING",
                     "value": null
                 }
@@ -261,6 +293,17 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         $scope.signals["todayIs"].subscription_id = subscription_count;
         client.subscribe("full/signal/todayIs", today_is_sub_opts);
         console.log("Subscribing to signal full/signal/todayIs with id ", subscription_count);
+        subscription_count++;
+        
+        const bark_sub_opts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": subscription_count
+            }
+        };
+        $scope.signals["bark"].subscription_id = subscription_count;
+        client.subscribe("full/signal/bark", bark_sub_opts);
+        console.log("Subscribing to signal full/signal/bark with id ", subscription_count);
         subscription_count++;
         
 

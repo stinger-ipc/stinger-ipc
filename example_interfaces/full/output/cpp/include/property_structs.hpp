@@ -38,3 +38,13 @@ struct LunchMenuProperty
     Lunch monday;
     Lunch tuesday;
 };
+
+/**
+ * The `family_name` property contains a single field:
+ *   std::string family_name;
+ *
+ * Because there is only one field, no outer-structure is needed. 
+ *
+ * This is to test a property with a single string value.
+ */
+typedef std::string FamilyNameProperty;

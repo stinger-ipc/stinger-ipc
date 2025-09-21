@@ -26,12 +26,15 @@ use tokio::task::JoinError;
 struct FullServerSubscriptionIds {
     add_numbers_method_req: usize,
     do_something_method_req: usize,
+    echo_method_req: usize,
 
     favorite_number_property_update: usize,
 
     favorite_foods_property_update: usize,
 
     lunch_menu_property_update: usize,
+
+    family_name_property_update: usize,
 }
 
 #[derive(Clone)]
@@ -45,6 +48,9 @@ struct FullProperties {
     lunch_menu_topic: Arc<String>,
     lunch_menu: Arc<Mutex<Option<LunchMenuProperty>>>,
     lunch_menu_tx_channel: watch::Sender<Option<LunchMenuProperty>>,
+    family_name_topic: Arc<String>,
+    family_name: Arc<Mutex<Option<String>>>,
+    family_name_tx_channel: watch::Sender<Option<String>>,
 }
 
 #[derive(Clone)]
@@ -102,6 +108,15 @@ impl FullServer {
             .await;
         let subscription_id_do_something_method_req =
             subscription_id_do_something_method_req.unwrap_or_else(|_| usize::MAX);
+        let subscription_id_echo_method_req = connection
+            .subscribe(
+                "full/method/echo".to_string(),
+                2,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_echo_method_req =
+            subscription_id_echo_method_req.unwrap_or_else(|_| usize::MAX);
 
         let subscription_id_favorite_number_property_update = connection
             .subscribe(
@@ -133,16 +148,29 @@ impl FullServer {
         let subscription_id_lunch_menu_property_update =
             subscription_id_lunch_menu_property_update.unwrap_or_else(|_| usize::MAX);
 
+        let subscription_id_family_name_property_update = connection
+            .subscribe(
+                "full/property/familyName/setValue".to_string(),
+                2,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_family_name_property_update =
+            subscription_id_family_name_property_update.unwrap_or_else(|_| usize::MAX);
+
         // Create structure for subscription ids.
         let sub_ids = FullServerSubscriptionIds {
             add_numbers_method_req: subscription_id_add_numbers_method_req,
             do_something_method_req: subscription_id_do_something_method_req,
+            echo_method_req: subscription_id_echo_method_req,
 
             favorite_number_property_update: subscription_id_favorite_number_property_update,
 
             favorite_foods_property_update: subscription_id_favorite_foods_property_update,
 
             lunch_menu_property_update: subscription_id_lunch_menu_property_update,
+
+            family_name_property_update: subscription_id_family_name_property_update,
         };
 
         let property_values = FullProperties {
@@ -158,6 +186,10 @@ impl FullServer {
 
             lunch_menu: Arc::new(Mutex::new(None)),
             lunch_menu_tx_channel: watch::channel(None).0,
+            family_name_topic: Arc::new(String::from("full/property/familyName/value")),
+
+            family_name: Arc::new(Mutex::new(None)),
+            family_name_tx_channel: watch::channel(None).0,
         };
 
         FullServer {
@@ -183,6 +215,14 @@ impl FullServer {
         let _ = self
             .mqttier_client
             .publish_structure("full/signal/todayIs".to_string(), &data)
+            .await;
+    }
+    /// Emits the bark signal with the given arguments.
+    pub async fn emit_bark(&mut self, word: String) {
+        let data = BarkSignalPayload { word: word };
+        let _ = self
+            .mqttier_client
+            .publish_structure("full/signal/bark".to_string(), &data)
             .await;
     }
 
@@ -258,6 +298,46 @@ impl FullServer {
                     eprintln!(
                         "Error occurred while handling {}: {:?}",
                         stringify!(doSomething),
+                        err
+                    );
+                }
+            }
+        } else {
+            eprintln!("No response topic found in message properties.");
+        }
+    }
+    /// Handles a request message for the echo method.
+    async fn handle_echo_request(
+        publisher: MqttierClient,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
+        msg: ReceivedMessage,
+    ) {
+        let opt_corr_data = msg.correlation_data;
+        let opt_resp_topic = msg.response_topic;
+        let payload_vec = msg.payload;
+        let payload = serde_json::from_slice::<EchoRequestObject>(&payload_vec).unwrap();
+
+        // call the method handler
+        let rv: Result<String, MethodResultCode> = {
+            let handler_guard = handlers.lock().await;
+            handler_guard.handle_echo(payload.message).await
+        };
+
+        if let Some(resp_topic) = opt_resp_topic {
+            let corr_data = opt_corr_data.unwrap_or_default();
+            match rv {
+                Ok(retval) => {
+                    let retval = EchoReturnValue { message: retval };
+
+                    publisher
+                        .publish_response(resp_topic, &retval, corr_data)
+                        .await
+                        .expect("Failed to publish response structure");
+                }
+                Err(err) => {
+                    eprintln!(
+                        "Error occurred while handling {}: {:?}",
+                        stringify!(echo),
                         err
                     );
                 }
@@ -443,6 +523,62 @@ impl FullServer {
         });
     }
 
+    async fn publish_family_name_value(publisher: MqttierClient, topic: String, data: String) {
+        let new_data = FamilyNameProperty { family_name: data };
+        println!("Publishing to topic {}", topic);
+        let _pub_result = publisher.publish_state(topic, &new_data, 1).await;
+    }
+
+    async fn update_family_name_value(
+        publisher: MqttierClient,
+        topic: Arc<String>,
+        data: Arc<Mutex<Option<String>>>,
+        watch_sender: watch::Sender<Option<String>>,
+        msg: ReceivedMessage,
+    ) {
+        let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
+        let new_data: FamilyNameProperty = serde_json::from_str(&payload_str).unwrap();
+        let mut locked_data = data.lock().unwrap();
+        *locked_data = Some(new_data.family_name.clone());
+        let publisher2 = publisher.clone();
+        let topic2: String = topic.as_ref().clone();
+        let data2 = new_data.family_name.clone();
+        let data_to_send_to_watchers = data2.clone();
+        let _ = watch_sender.send(Some(data_to_send_to_watchers));
+        let _ = tokio::spawn(async move {
+            FullServer::publish_family_name_value(publisher2, topic2, data2).await;
+        });
+    }
+
+    pub async fn watch_family_name(&self) -> watch::Receiver<Option<String>> {
+        self.properties.family_name_tx_channel.subscribe()
+    }
+
+    pub async fn set_family_name(&mut self, data: String) {
+        println!("Setting family_name of type String");
+        let prop = self.properties.family_name.clone();
+        {
+            let mut locked_data = prop.lock().unwrap();
+            *locked_data = Some(data.clone());
+        }
+
+        let data_to_send_to_watchers = data.clone();
+        let _ = self
+            .properties
+            .family_name_tx_channel
+            .send(Some(data_to_send_to_watchers));
+
+        let publisher2 = self.mqttier_client.clone();
+        let topic2 = self.properties.family_name_topic.as_ref().clone();
+        let _ = tokio::spawn(async move {
+            println!(
+                "Will publish property family_name of type String to {}",
+                topic2
+            );
+            FullServer::publish_family_name_value(publisher2, topic2, data).await;
+        });
+    }
+
     /// Starts the tasks that process messages received.
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
@@ -488,6 +624,13 @@ impl FullServer {
                         msg,
                     )
                     .await;
+                } else if msg.subscription_id == sub_ids.echo_method_req {
+                    FullServer::handle_echo_request(
+                        publisher.clone(),
+                        method_handlers.clone(),
+                        msg,
+                    )
+                    .await;
                 } else if msg.subscription_id == sub_ids.favorite_number_property_update {
                     FullServer::update_favorite_number_value(
                         publisher.clone(),
@@ -512,6 +655,15 @@ impl FullServer {
                         properties.lunch_menu_topic.clone(),
                         properties.lunch_menu.clone(),
                         properties.lunch_menu_tx_channel.clone(),
+                        msg,
+                    )
+                    .await;
+                } else if msg.subscription_id == sub_ids.family_name_property_update {
+                    FullServer::update_family_name_value(
+                        publisher.clone(),
+                        properties.family_name_topic.clone(),
+                        properties.family_name.clone(),
+                        properties.family_name_tx_channel.clone(),
                         msg,
                     )
                     .await;
@@ -543,6 +695,9 @@ pub trait FullMethodHandlers: Send + Sync {
         &self,
         a_string: String,
     ) -> Result<DoSomethingReturnValue, MethodResultCode>;
+
+    /// Pointer to a function to handle the echo method request.
+    async fn handle_echo(&self, message: String) -> Result<String, MethodResultCode>;
 
     fn as_any(&self) -> &dyn Any;
 }

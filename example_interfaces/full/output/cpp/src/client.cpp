@@ -30,6 +30,7 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker)
                                 )
                                 { _receiveMessage(topic, payload, mqttProps); });
     _todayIsSignalSubscriptionId = _broker->Subscribe("full/signal/todayIs", 2);
+    _barkSignalSubscriptionId = _broker->Subscribe("full/signal/bark", 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
         responseTopicStringStream << boost::format("client/%1%/full/method/addNumbers/response") % _broker->GetClientId();
@@ -40,9 +41,15 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker)
         responseTopicStringStream << boost::format("client/%1%/full/method/doSomething/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("client/%1%/full/method/echo/response") % _broker->GetClientId();
+        _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
     _favoriteNumberPropertySubscriptionId = _broker->Subscribe("full/property/favoriteNumber/value", 1);
     _favoriteFoodsPropertySubscriptionId = _broker->Subscribe("full/property/favoriteFoods/value", 1);
     _lunchMenuPropertySubscriptionId = _broker->Subscribe("full/property/lunchMenu/value", 1);
+    _familyNamePropertySubscriptionId = _broker->Subscribe("full/property/familyName/value", 1);
 }
 
 void FullClient::_receiveMessage(
@@ -111,6 +118,53 @@ void FullClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _barkSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "full/signal/bark"))
+    {
+        //Log("Handling bark signal");
+        rapidjson::Document doc;
+        try
+        {
+            if (_barkSignalCallbacks.size() > 0)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse bark signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject())
+                {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                std::string tempword;
+                { // Scoping
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("word");
+                    if (itr != doc.MemberEnd() && itr->value.IsString())
+                    {
+                        tempword = itr->value.GetString();
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Received payload doesn't have required value/type");
+                    }
+                }
+
+                std::lock_guard<std::mutex> lock(_barkSignalCallbacksMutex);
+                for (const auto& cb: _barkSignalCallbacks)
+                {
+                    cb(tempword);
+                }
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
     if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/addNumbers/response") && mqttProps.correlationId)
     {
         std::cout << "Matched topic for addNumbers response" << std::endl;
@@ -120,6 +174,11 @@ void FullClient::_receiveMessage(
     {
         std::cout << "Matched topic for doSomething response" << std::endl;
         _handleDoSomethingResponse(topic, payload, *mqttProps.correlationId);
+    }
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/echo/response") && mqttProps.correlationId)
+    {
+        std::cout << "Matched topic for echo response" << std::endl;
+        _handleEchoResponse(topic, payload, *mqttProps.correlationId);
     }
     if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _favoriteNumberPropertySubscriptionId)) || topic == "full/property/favoriteNumber/value")
     {
@@ -133,12 +192,22 @@ void FullClient::_receiveMessage(
     {
         _receiveLunchMenuPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _familyNamePropertySubscriptionId)) || topic == "full/property/familyName/value")
+    {
+        _receiveFamilyNamePropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    }
 }
 
 void FullClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_todayIsSignalCallbacksMutex);
     _todayIsSignalCallbacks.push_back(cb);
+}
+
+void FullClient::registerBarkCallback(const std::function<void(const std::string&)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_barkSignalCallbacksMutex);
+    _barkSignalCallbacks.push_back(cb);
 }
 
 boost::future<int> FullClient::addNumbers(int first, int second, boost::optional<int> third)
@@ -276,6 +345,69 @@ void FullClient::_handleDoSomethingResponse(
                                             day
         };
         promiseItr->second.set_value(returnValue);
+    }
+
+    std::cout << "End of response handler for " << topic << std::endl;
+}
+
+boost::future<std::string> FullClient::echo(const std::string& message)
+{
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pendingEchoMethodCalls[correlationId] = boost::promise<std::string>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(message.c_str(), message.size(), doc.GetAllocator());
+        doc.AddMember("message", tempStringValue, doc.GetAllocator());
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    std::stringstream responseTopicStringStream;
+    responseTopicStringStream << boost::format("client/%1%/full/method/echo/response") % _broker->GetClientId();
+    MqttProperties mqttProps;
+    mqttProps.correlationId = correlationIdStr;
+    mqttProps.responseTopic = responseTopicStringStream.str();
+    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    _broker->Publish("full/method/echo", buf.GetString(), 2, false, mqttProps);
+
+    return _pendingEchoMethodCalls[correlationId].get_future();
+}
+
+void FullClient::_handleEchoResponse(
+        const std::string& topic,
+        const std::string& payload,
+        const std::string& correlationId
+)
+{
+    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse echo signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+    if (!doc.IsObject())
+    {
+        throw std::runtime_error("Received payload is not an object");
+    }
+
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    auto promiseItr = _pendingEchoMethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pendingEchoMethodCalls.end())
+    {
+        // Response has a single value.
+        rapidjson::Value::ConstMemberIterator messageItr = doc.FindMember("message");
+        const std::string& message = messageItr->value.GetString();
+
+        promiseItr->second.set_value(message);
     }
 
     std::cout << "End of response handler for " << topic << std::endl;
@@ -534,4 +666,77 @@ boost::future<bool> FullClient::updateLunchMenuProperty(Lunch monday, Lunch tues
     doc.Accept(writer);
     MqttProperties mqttProps;
     return _broker->Publish("full/property/lunchMenu/setValue", buf.GetString(), 1, false, mqttProps);
+}
+
+void FullClient::_receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse family_name property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject())
+    {
+        throw std::runtime_error("Received family_name payload is not an object");
+    }
+    FamilyNameProperty tempValue;
+
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("family_name");
+    if (itr != doc.MemberEnd() && itr->value.IsString())
+    {
+        tempValue = itr->value.GetString();
+    }
+    else
+    {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
+        _familyNameProperty = tempValue;
+        _lastFamilyNamePropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+    }
+    // Notify all registered callbacks.
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_familyNamePropertyCallbacksMutex);
+        for (const auto& cb: _familyNamePropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+
+            cb(tempValue);
+        }
+    }
+}
+
+boost::optional<FamilyNameProperty> FullClient::getFamilyNameProperty() const
+{
+    std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
+    return _familyNameProperty;
+}
+
+void FullClient::registerFamilyNamePropertyCallback(const std::function<void(const std::string& family_name)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_familyNamePropertyCallbacksMutex);
+    _familyNamePropertyCallbacks.push_back(cb);
+}
+
+boost::future<bool> FullClient::updateFamilyNameProperty(const std::string& family_name) const
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(family_name.c_str(), family_name.size(), doc.GetAllocator());
+        doc.AddMember("family_name", tempStringValue, doc.GetAllocator());
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("full/property/familyName/setValue", buf.GetString(), 1, false, mqttProps);
 }

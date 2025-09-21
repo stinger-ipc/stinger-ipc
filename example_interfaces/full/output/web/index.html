@@ -57,6 +57,32 @@
         </div>
     </div>
     
+    <div class="component-box signal-box" id="signal-box-bark">
+        <h3 class="component-title signal-title">Signal: bark</h3>
+        <div class="component-doc signal-doc">
+<p>Emitted when a dog barks.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">word</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.bark.received.word" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
 
     <!------------- PROPERTIES ------------->
     
@@ -312,6 +338,35 @@
         <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.lunch_menu)" />
         
     </div>
+    
+    <div class="component-box prop-box" id="prop-box-family_name">
+        <h3 class="component-title prop-title">Property: family_name</h3>
+        <div class="component-doc prop-doc">
+<p>This is to test a property with a single string value.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">family_name</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.family_name.received.family_name" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.family_name)" />
+        
+    </div>
      
 
     <!------------- METHODS ------------->
@@ -399,6 +454,41 @@
             </form>
         </div>
         <div class="last-received method-response" ng-bind="methods['doSomething'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-echo">
+        <h3 class="component-title method-title">Method: echo</h3>
+        <div class="component-doc method-doc">
+<p>Echo back the received message.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.echo)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">message</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.echo.args.message" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call echo</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['echo'].received">
         
           <table class="arglist">
           

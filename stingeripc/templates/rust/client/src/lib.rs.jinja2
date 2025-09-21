@@ -203,7 +203,11 @@ impl {{stinger.rust.client_struct_name}} {
         let {%if method.return_value_type is false %}_{%endif%}resp_obj = receiver.await.unwrap();
         
         {%-if method.return_value_type == 'primitive' %}
+        {%if method.return_value_rust_type == 'String'%}
+        Ok(resp_obj["{{method.return_value_property_name}}"].as_str().unwrap().to_string())
+        {%else%}
         Ok(resp_obj["{{method.return_value_property_name}}"].as_{{method.return_value_rust_type}}().unwrap())
+        {%endif-%}
         {%-elif method.return_value_type == 'enum'%}
         Ok({{arg.rust_type}}::from_u32(payload_object["{{arg.name}}"].as_u32().unwrap())
         {%-elif method.return_value_type == 'struct'%}
