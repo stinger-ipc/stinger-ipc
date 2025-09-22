@@ -187,7 +187,7 @@ class WeatherServer:
     def _publish_interface_info(self):
         self._conn.publish(
             "weather/interface",
-            """{"name": "weather", "summary": "Current conditions, daily and hourly forecasts from the NWS API", "title": "NWS weather forecast", "version": "0.0.1"}""",
+            """{"name": "weather", "summary": "Current conditions, daily and hourly forecasts from the NWS API", "title": "NWS weather forecast", "version": "0.1.2"}""",
             qos=1,
             retain=True,
         )

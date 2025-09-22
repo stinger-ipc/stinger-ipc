@@ -14,15 +14,31 @@ add_library(lib-{{stinger.name}}-client ${CLIENT_SOURCE_FILES})
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_executable(client-demo examples/client_main.cpp)
-target_link_libraries(client-demo PUBLIC lib-{{stinger.name}}-client)
-target_link_libraries(client-demo PUBLIC mosquitto)
-target_link_libraries(client-demo PUBLIC boost_thread)
-target_link_libraries(client-demo PUBLIC boost_chrono)
-target_link_libraries(client-demo PRIVATE Threads::Threads)
+add_executable({{stinger.name}}-client-demo examples/client_main.cpp)
+target_link_libraries({{stinger.name}}-client-demo PUBLIC lib-{{stinger.name}}-client)
+target_link_libraries({{stinger.name}}-client-demo PUBLIC mosquitto)
+target_link_libraries({{stinger.name}}-client-demo PUBLIC boost_thread)
+target_link_libraries({{stinger.name}}-client-demo PUBLIC boost_chrono)
+target_link_libraries({{stinger.name}}-client-demo PRIVATE Threads::Threads)
 
-add_executable(server-demo examples/server_main.cpp)
-target_link_libraries(server-demo PUBLIC lib-{{stinger.name}}-server)
-target_link_libraries(server-demo PUBLIC mosquitto)
-target_link_libraries(server-demo PUBLIC boost_thread)
-target_link_libraries(server-demo PRIVATE Threads::Threads)
+add_executable({{stinger.name}}-server-demo examples/server_main.cpp)
+target_link_libraries({{stinger.name}}-server-demo PUBLIC lib-{{stinger.name}}-server)
+target_link_libraries({{stinger.name}}-server-demo PUBLIC mosquitto)
+target_link_libraries({{stinger.name}}-server-demo PUBLIC boost_thread)
+target_link_libraries({{stinger.name}}-server-demo PRIVATE Threads::Threads)
+
+# Install rules
+install(TARGETS lib-{{stinger.name}}-server lib-{{stinger.name}}-client
+	ARCHIVE DESTINATION lib
+	LIBRARY DESTINATION lib
+	RUNTIME DESTINATION bin)
+install(TARGETS {{stinger.name}}-client-demo {{stinger.name}}-server-demo
+	RUNTIME DESTINATION bin)
+install(DIRECTORY include/ DESTINATION include)
+
+# CPack configuration
+set(CPACK_PACKAGE_NAME "{{stinger.name}}-${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_PACKAGE_VERSION "{{stinger.version}}")
+set(CPACK_GENERATOR "TGZ")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "{{stinger.summary}}")
+include(CPack)

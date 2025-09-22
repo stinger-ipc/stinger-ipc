@@ -27,7 +27,7 @@ class WeatherServer
 {
 public:
     static constexpr const char NAME[] = "weather";
-    static constexpr const char INTERFACE_VERSION[] = "0.0.1";
+    static constexpr const char INTERFACE_VERSION[] = "0.1.2";
 
     WeatherServer(std::shared_ptr<IBrokerConnection> broker);
 

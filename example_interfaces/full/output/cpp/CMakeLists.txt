@@ -14,15 +14,31 @@ add_library(lib-Full-client ${CLIENT_SOURCE_FILES})
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_executable(client-demo examples/client_main.cpp)
-target_link_libraries(client-demo PUBLIC lib-Full-client)
-target_link_libraries(client-demo PUBLIC mosquitto)
-target_link_libraries(client-demo PUBLIC boost_thread)
-target_link_libraries(client-demo PUBLIC boost_chrono)
-target_link_libraries(client-demo PRIVATE Threads::Threads)
+add_executable(Full-client-demo examples/client_main.cpp)
+target_link_libraries(Full-client-demo PUBLIC lib-Full-client)
+target_link_libraries(Full-client-demo PUBLIC mosquitto)
+target_link_libraries(Full-client-demo PUBLIC boost_thread)
+target_link_libraries(Full-client-demo PUBLIC boost_chrono)
+target_link_libraries(Full-client-demo PRIVATE Threads::Threads)
 
-add_executable(server-demo examples/server_main.cpp)
-target_link_libraries(server-demo PUBLIC lib-Full-server)
-target_link_libraries(server-demo PUBLIC mosquitto)
-target_link_libraries(server-demo PUBLIC boost_thread)
-target_link_libraries(server-demo PRIVATE Threads::Threads)
+add_executable(Full-server-demo examples/server_main.cpp)
+target_link_libraries(Full-server-demo PUBLIC lib-Full-server)
+target_link_libraries(Full-server-demo PUBLIC mosquitto)
+target_link_libraries(Full-server-demo PUBLIC boost_thread)
+target_link_libraries(Full-server-demo PRIVATE Threads::Threads)
+
+# Install rules
+install(TARGETS lib-Full-server lib-Full-client
+	ARCHIVE DESTINATION lib
+	LIBRARY DESTINATION lib
+	RUNTIME DESTINATION bin)
+install(TARGETS Full-client-demo Full-server-demo
+	RUNTIME DESTINATION bin)
+install(DIRECTORY include/ DESTINATION include)
+
+# CPack configuration
+set(CPACK_PACKAGE_NAME "Full-${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_PACKAGE_VERSION "0.0.1")
+set(CPACK_GENERATOR "TGZ")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Example StingerAPI interface which demonstrates most features.")
+include(CPack)

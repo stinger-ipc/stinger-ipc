@@ -29,10 +29,10 @@ function generate_cpp() {
     which clang-format &> /dev/null
     if [ $? -eq 0 ]; then
         echo "Running clang-format on generated C++ files"
-        find ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/ -name "*.hpp" -o -name "*.cpp" | xargs clang-format --style=file:${BASE_DIR}/../clang-format-config.yaml -i
+        clang-format --style=file:${BASE_DIR}/../clang-format-config.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/include/*.hpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/src/*.cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/examples/*.cpp -i
     fi
     if [ $? -eq 0 ]; then
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j4)
     fi
 }
 
