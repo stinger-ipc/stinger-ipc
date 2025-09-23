@@ -14,8 +14,9 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use weather_types::MethodReturnCode;
 #[allow(unused_imports)]
-use weather_types::payloads::{MethodResultCode, *};
+use weather_types::payloads::*;
 
 struct WeatherMethodImpl {
     server: Option<WeatherServer>,
@@ -29,22 +30,22 @@ impl WeatherMethodImpl {
 
 #[async_trait]
 impl WeatherMethodHandlers for WeatherMethodImpl {
-    async fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodResultCode> {
+    async fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodReturnCode> {
         self.server = Some(server.clone());
         Ok(())
     }
 
-    async fn handle_refresh_daily_forecast(&self) -> Result<(), MethodResultCode> {
+    async fn handle_refresh_daily_forecast(&self) -> Result<(), MethodReturnCode> {
         println!("Handling refresh_daily_forecast");
         Ok(())
     }
 
-    async fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodResultCode> {
+    async fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodReturnCode> {
         println!("Handling refresh_hourly_forecast");
         Ok(())
     }
 
-    async fn handle_refresh_current_conditions(&self) -> Result<(), MethodResultCode> {
+    async fn handle_refresh_current_conditions(&self) -> Result<(), MethodReturnCode> {
         println!("Handling refresh_current_conditions");
         Ok(())
     }

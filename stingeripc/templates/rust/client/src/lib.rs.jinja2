@@ -15,7 +15,7 @@ use serde_json;
 
 
 #[allow(unused_imports)]
-use {{stinger.rust.common_package_name}}::{MethodResultCode, *};
+use {{stinger.rust.common_package_name}}::{MethodReturnCode, *};
 
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc{%if stinger.methods|length > 0 -%}, oneshot{%endif-%}{%if stinger.properties|length > 0 -%}, watch{%endif-%}};
@@ -183,7 +183,7 @@ impl {{stinger.rust.client_struct_name}} {
     /// and published to the `{{method.topic}}` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn {{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodResultCode> {
+    pub async fn {{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodReturnCode> {
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -261,7 +261,7 @@ impl {{stinger.rust.client_struct_name}} {
         self.properties.{{prop_name | snake_case}}_tx_channel.subscribe()
     }
     {%if not prop.read_only %}
-    pub fn set_{{prop_name | snake_case}}(&mut self, value: {%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}) -> Result<(), MethodResultCode> {
+    pub fn set_{{prop_name | snake_case}}(&mut self, value: {%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}) -> Result<(), MethodReturnCode> {
         let data = {%if prop.arg_list | length > 1 %}value{% else %}value{% endif %};
         let _publish_result = self.mqttier_client.publish_structure("{{prop.update_topic}}".to_string(), &data);
         Ok(())

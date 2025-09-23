@@ -180,7 +180,7 @@ boost::future<void> WeatherClient::refreshDailyForecast()
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
-    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
     _broker->Publish("weather/method/refreshDailyForecast", buf.GetString(), 2, false, mqttProps);
 
     return _pendingRefreshDailyForecastMethodCalls[correlationId].get_future();
@@ -222,7 +222,7 @@ boost::future<void> WeatherClient::refreshHourlyForecast()
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
-    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
     _broker->Publish("weather/method/refreshHourlyForecast", buf.GetString(), 2, false, mqttProps);
 
     return _pendingRefreshHourlyForecastMethodCalls[correlationId].get_future();
@@ -264,7 +264,7 @@ boost::future<void> WeatherClient::refreshCurrentConditions()
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
-    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
     _broker->Publish("weather/method/refreshCurrentConditions", buf.GetString(), 2, false, mqttProps);
 
     return _pendingRefreshCurrentConditionsMethodCalls[correlationId].get_future();

@@ -62,13 +62,6 @@ pub struct {{struct_name | UpperCamelCase}} {
 }
 {%-endfor%}
 
-#[allow(dead_code)]
-#[derive(Debug)]
-pub enum MethodResultCode { {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
-    {{rc_name | UpperCamelCase}} = {{rc_i}},
-    {%-endfor%}
-}
-
 {%for method_name, method in stinger.methods.items()%}
 // Structures for `{{method_name}}` method
 

@@ -15,7 +15,8 @@ use tokio::sync::Mutex;
 use async_trait::async_trait;
 {%endif%}
 #[allow(unused_imports)]
-use {{stinger.rust.common_package_name}}::payloads::{MethodResultCode, *};
+use {{stinger.rust.common_package_name}}::payloads::{*};
+use {{stinger.rust.common_package_name}}::MethodReturnCode;
 
 {%if stinger.methods|length > 0%}
 struct {{stinger.name | UpperCamelCase }}MethodImpl {
@@ -33,13 +34,13 @@ impl {{stinger.name | UpperCamelCase }}MethodImpl {
 #[async_trait]
 impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | UpperCamelCase }}MethodImpl {
 
-    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodResultCode> {
+    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodReturnCode> {
         self.server = Some(server.clone());
         Ok(())
     }
 
     {%for method_name, method in stinger.methods.items()%}
-    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode> {
+    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode> {
         println!("Handling {{method_name}}");
         {%-if method.return_value_type == 'struct'%}
         let rv = {{method.return_value_rust_type}} {

@@ -259,13 +259,13 @@ class WeatherClient:
 
         # Handle 'refresh_daily_forecast' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/weather/method/refreshDailyForecast/response"):
-            result_code = MethodResultCode.SUCCESS
+            result_code = MethodReturnCode.SUCCESS
             if "UserProperty" in properties:
                 user_properties = properties["UserProperty"]
                 if "DebugInfo" in user_properties:
                     self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
                 if "ReturnValue" in user_properties:
-                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
             response = json.loads(payload)
             if "CorrelationData" in properties:
                 correlation_id = properties["CorrelationData"].decode()
@@ -280,13 +280,13 @@ class WeatherClient:
 
         # Handle 'refresh_hourly_forecast' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/weather/method/refreshHourlyForecast/response"):
-            result_code = MethodResultCode.SUCCESS
+            result_code = MethodReturnCode.SUCCESS
             if "UserProperty" in properties:
                 user_properties = properties["UserProperty"]
                 if "DebugInfo" in user_properties:
                     self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
                 if "ReturnValue" in user_properties:
-                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
             response = json.loads(payload)
             if "CorrelationData" in properties:
                 correlation_id = properties["CorrelationData"].decode()
@@ -301,13 +301,13 @@ class WeatherClient:
 
         # Handle 'refresh_current_conditions' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/weather/method/refreshCurrentConditions/response"):
-            result_code = MethodResultCode.SUCCESS
+            result_code = MethodReturnCode.SUCCESS
             if "UserProperty" in properties:
                 user_properties = properties["UserProperty"]
                 if "DebugInfo" in user_properties:
                     self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
                 if "ReturnValue" in user_properties:
-                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
             response = json.loads(payload)
             if "CorrelationData" in properties:
                 correlation_id = properties["CorrelationData"].decode()
@@ -446,11 +446,11 @@ class WeatherClient:
         )
         return fut
 
-    def _handle_refresh_daily_forecast_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+    def _handle_refresh_daily_forecast_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
         """This called with the response to a `refresh_daily_forecast` IPC method call."""
         self._logger.debug("Handling refresh_daily_forecast response message %s", fut)
         try:
-            if return_value != MethodResultCode.SUCCESS.value:
+            if return_value != MethodReturnCode.SUCCESS.value:
                 raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
 
             fut.set_result(None)
@@ -480,11 +480,11 @@ class WeatherClient:
         )
         return fut
 
-    def _handle_refresh_hourly_forecast_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+    def _handle_refresh_hourly_forecast_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
         """This called with the response to a `refresh_hourly_forecast` IPC method call."""
         self._logger.debug("Handling refresh_hourly_forecast response message %s", fut)
         try:
-            if return_value != MethodResultCode.SUCCESS.value:
+            if return_value != MethodReturnCode.SUCCESS.value:
                 raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
 
             fut.set_result(None)
@@ -514,11 +514,11 @@ class WeatherClient:
         )
         return fut
 
-    def _handle_refresh_current_conditions_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+    def _handle_refresh_current_conditions_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
         """This called with the response to a `refresh_current_conditions` IPC method call."""
         self._logger.debug("Handling refresh_current_conditions response message %s", fut)
         try:
-            if return_value != MethodResultCode.SUCCESS.value:
+            if return_value != MethodReturnCode.SUCCESS.value:
                 raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
 
             fut.set_result(None)

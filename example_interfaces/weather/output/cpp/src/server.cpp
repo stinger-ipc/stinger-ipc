@@ -250,7 +250,7 @@ void WeatherServer::_callRefreshDailyForecastHandler(
             responseJson.Accept(writer);
             MqttProperties mqttProps;
             mqttProps.correlationId = optCorrelationId;
-            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            mqttProps.returnCode = MethodReturnCode::SUCCESS;
             _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
@@ -278,7 +278,7 @@ void WeatherServer::_callRefreshHourlyForecastHandler(
             responseJson.Accept(writer);
             MqttProperties mqttProps;
             mqttProps.correlationId = optCorrelationId;
-            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            mqttProps.returnCode = MethodReturnCode::SUCCESS;
             _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
@@ -306,7 +306,7 @@ void WeatherServer::_callRefreshCurrentConditionsHandler(
             responseJson.Accept(writer);
             MqttProperties mqttProps;
             mqttProps.correlationId = optCorrelationId;
-            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            mqttProps.returnCode = MethodReturnCode::SUCCESS;
             _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }

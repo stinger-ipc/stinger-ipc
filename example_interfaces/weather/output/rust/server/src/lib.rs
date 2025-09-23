@@ -9,7 +9,8 @@ use mqttier::{MqttierClient, ReceivedMessage};
 
 use std::any::Any;
 #[allow(unused_imports)]
-use weather_types::payloads::{MethodResultCode, *};
+use weather_types::MethodReturnCode;
+use weather_types::payloads::*;
 
 use async_trait::async_trait;
 use std::sync::{Arc, Mutex};
@@ -271,7 +272,7 @@ impl WeatherServer {
         let opt_resp_topic = msg.response_topic;
 
         // call the method handler
-        let rv: Result<(), MethodResultCode> = {
+        let rv: Result<(), MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_refresh_daily_forecast().await
         };
@@ -309,7 +310,7 @@ impl WeatherServer {
         let opt_resp_topic = msg.response_topic;
 
         // call the method handler
-        let rv: Result<(), MethodResultCode> = {
+        let rv: Result<(), MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_refresh_hourly_forecast().await
         };
@@ -347,7 +348,7 @@ impl WeatherServer {
         let opt_resp_topic = msg.response_topic;
 
         // call the method handler
-        let rv: Result<(), MethodResultCode> = {
+        let rv: Result<(), MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_refresh_current_conditions().await
         };
@@ -894,16 +895,16 @@ impl WeatherServer {
 
 #[async_trait]
 pub trait WeatherMethodHandlers: Send + Sync {
-    async fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodResultCode>;
+    async fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the refresh_daily_forecast method request.
-    async fn handle_refresh_daily_forecast(&self) -> Result<(), MethodResultCode>;
+    async fn handle_refresh_daily_forecast(&self) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the refresh_hourly_forecast method request.
-    async fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodResultCode>;
+    async fn handle_refresh_hourly_forecast(&self) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the refresh_current_conditions method request.
-    async fn handle_refresh_current_conditions(&self) -> Result<(), MethodResultCode>;
+    async fn handle_refresh_current_conditions(&self) -> Result<(), MethodReturnCode>;
 
     fn as_any(&self) -> &dyn Any;
 }

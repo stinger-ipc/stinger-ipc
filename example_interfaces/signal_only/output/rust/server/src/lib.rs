@@ -8,7 +8,8 @@ This is the Server for the SignalOnly interface.
 use mqttier::MqttierClient;
 
 #[allow(unused_imports)]
-use signal_only_types::payloads::{MethodResultCode, *};
+use signal_only_types::MethodReturnCode;
+use signal_only_types::payloads::*;
 use std::any::Any;
 
 use tokio::task::JoinError;

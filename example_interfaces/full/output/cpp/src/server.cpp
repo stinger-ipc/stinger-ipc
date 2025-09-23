@@ -283,7 +283,7 @@ void FullServer::_callAddNumbersHandler(
             responseJson.Accept(writer);
             MqttProperties mqttProps;
             mqttProps.correlationId = optCorrelationId;
-            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            mqttProps.returnCode = MethodReturnCode::SUCCESS;
             _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
@@ -341,7 +341,7 @@ void FullServer::_callDoSomethingHandler(
             responseJson.Accept(writer);
             MqttProperties mqttProps;
             mqttProps.correlationId = optCorrelationId;
-            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            mqttProps.returnCode = MethodReturnCode::SUCCESS;
             _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }
@@ -389,7 +389,7 @@ void FullServer::_callEchoHandler(
             responseJson.Accept(writer);
             MqttProperties mqttProps;
             mqttProps.correlationId = optCorrelationId;
-            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            mqttProps.returnCode = MethodReturnCode::SUCCESS;
             _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }

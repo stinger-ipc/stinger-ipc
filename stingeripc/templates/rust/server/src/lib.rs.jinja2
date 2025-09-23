@@ -10,7 +10,8 @@ This is the Server for the {{stinger.name}} interface.
 use mqttier::{MqttierClient{%if stinger.methods|length > 0 or stinger.properties|length > 0 %}, ReceivedMessage{%endif%}};
 
 #[allow(unused_imports)]
-use {{stinger.rust.common_package_name}}::payloads::{*, MethodResultCode};
+use {{stinger.rust.common_package_name}}::MethodReturnCode;
+use {{stinger.rust.common_package_name}}::payloads::{*};
 use std::any::Any;
 {%if stinger.methods|length > 0 %}
 use async_trait::async_trait;
@@ -159,7 +160,7 @@ impl {{stinger.rust.server_struct_name}} {
         let payload = serde_json::from_slice::<{{method_name | UpperCamelCase}}RequestObject>(&payload_vec).unwrap();
         {%endif%}{# has arg_list #} 
         // call the method handler
-        let rv: Result<{{method.return_value_rust_type}}, MethodResultCode> = {
+        let rv: Result<{{method.return_value_rust_type}}, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_{{method_name|snake_case}}({%for arg in method.arg_list%}payload.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}).await
         };
@@ -306,11 +307,11 @@ impl {{stinger.rust.server_struct_name}} {
 #[async_trait]
 pub trait {{stinger.name | UpperCamelCase }}MethodHandlers: Send + Sync {
 
-    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodResultCode>;
+    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodReturnCode>;
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode>;
+    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode>;
     
     {%endfor%}
 

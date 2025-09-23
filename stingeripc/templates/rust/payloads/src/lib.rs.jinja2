@@ -2,3 +2,29 @@ pub mod payloads;
 
 // Re-export all public types from payloads
 pub use payloads::{*};
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub enum MethodReturnCode { {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
+    {{rc_name | UpperCamelCase}}{%if not loop.first%}(String){%endif%},
+    {%-endfor%}
+}
+
+impl MethodReturnCode {
+    pub fn from_code(code: u32, message: Option<String>) -> Self {
+        match code {
+            {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
+            {{rc_i}} => MethodReturnCode::{{rc_name | UpperCamelCase}}{%if not loop.first%}(message.unwrap_or_default()){%endif%},
+            {%-endfor%}
+            _ => MethodReturnCode::UnknownError(message.unwrap_or_default()),
+        }
+    }
+
+    pub fn to_code(&self) -> (u32, Option<String>) {
+        match self {
+            {%-for rc_i, rc_name in stinger.method_return_codes.items() %}
+            MethodReturnCode::{{rc_name | UpperCamelCase}}{%if not loop.first%}(msg){%endif%} => ({{rc_i}}, {%if not loop.first%}Some(msg.clone()){%else%}None{%endif%}),
+            {%-endfor%}
+        }
+    }
+}

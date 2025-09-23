@@ -8,7 +8,8 @@ This is the Server for the Full interface.
 use mqttier::{MqttierClient, ReceivedMessage};
 
 #[allow(unused_imports)]
-use full_types::payloads::{MethodResultCode, *};
+use full_types::MethodReturnCode;
+use full_types::payloads::*;
 use std::any::Any;
 
 use async_trait::async_trait;
@@ -238,7 +239,7 @@ impl FullServer {
         let payload = serde_json::from_slice::<AddNumbersRequestObject>(&payload_vec).unwrap();
 
         // call the method handler
-        let rv: Result<i32, MethodResultCode> = {
+        let rv: Result<i32, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard
                 .handle_add_numbers(payload.first, payload.second, payload.third)
@@ -280,7 +281,7 @@ impl FullServer {
         let payload = serde_json::from_slice::<DoSomethingRequestObject>(&payload_vec).unwrap();
 
         // call the method handler
-        let rv: Result<DoSomethingReturnValue, MethodResultCode> = {
+        let rv: Result<DoSomethingReturnValue, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_do_something(payload.aString).await
         };
@@ -318,7 +319,7 @@ impl FullServer {
         let payload = serde_json::from_slice::<EchoRequestObject>(&payload_vec).unwrap();
 
         // call the method handler
-        let rv: Result<String, MethodResultCode> = {
+        let rv: Result<String, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_echo(payload.message).await
         };
@@ -680,7 +681,7 @@ impl FullServer {
 
 #[async_trait]
 pub trait FullMethodHandlers: Send + Sync {
-    async fn initialize(&mut self, server: FullServer) -> Result<(), MethodResultCode>;
+    async fn initialize(&mut self, server: FullServer) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the addNumbers method request.
     async fn handle_add_numbers(
@@ -688,16 +689,16 @@ pub trait FullMethodHandlers: Send + Sync {
         first: i32,
         second: i32,
         third: Option<i32>,
-    ) -> Result<i32, MethodResultCode>;
+    ) -> Result<i32, MethodReturnCode>;
 
     /// Pointer to a function to handle the doSomething method request.
     async fn handle_do_something(
         &self,
         a_string: String,
-    ) -> Result<DoSomethingReturnValue, MethodResultCode>;
+    ) -> Result<DoSomethingReturnValue, MethodReturnCode>;
 
     /// Pointer to a function to handle the echo method request.
-    async fn handle_echo(&self, message: String) -> Result<String, MethodResultCode>;
+    async fn handle_echo(&self, message: String) -> Result<String, MethodReturnCode>;
 
     fn as_any(&self) -> &dyn Any;
 }

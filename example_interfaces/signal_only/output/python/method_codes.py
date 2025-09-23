@@ -2,7 +2,7 @@ from typing import Optional
 from enum import IntEnum
 
 
-class MethodResultCode(IntEnum):
+class MethodReturnCode(IntEnum):
     SUCCESS = 0
     CLIENT_ERROR = 1
     SERVER_ERROR = 2
@@ -15,53 +15,53 @@ class MethodResultCode(IntEnum):
 
 class StingerMethodException(Exception):
 
-    def __init__(self, result_code: MethodResultCode, message: str):
+    def __init__(self, result_code: MethodReturnCode, message: str):
         super().__init__(message)
         self._result_code = result_code
 
     @property
-    def result_code(self) -> MethodResultCode:
+    def result_code(self) -> MethodReturnCode:
         return self._result_code
 
 
 class SuccessStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodResultCode.SUCCESS, message)
+        super().__init__(MethodReturnCode.SUCCESS, message)
 
 
 class ClientErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodResultCode.CLIENT_ERROR, message)
+        super().__init__(MethodReturnCode.CLIENT_ERROR, message)
 
 
 class ServerErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodResultCode.SERVER_ERROR, message)
+        super().__init__(MethodReturnCode.SERVER_ERROR, message)
 
 
 class TransportErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodResultCode.TRANSPORT_ERROR, message)
+        super().__init__(MethodReturnCode.TRANSPORT_ERROR, message)
 
 
 class PayloadErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodResultCode.PAYLOAD_ERROR, message)
+        super().__init__(MethodReturnCode.PAYLOAD_ERROR, message)
 
 
 class TimeoutStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodResultCode.TIMEOUT, message)
+        super().__init__(MethodReturnCode.TIMEOUT, message)
 
 
 class UnknownErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodResultCode.UNKNOWN_ERROR, message)
+        super().__init__(MethodReturnCode.UNKNOWN_ERROR, message)
 
 
 class NotImplementedStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodResultCode.NOT_IMPLEMENTED, message)
+        super().__init__(MethodReturnCode.NOT_IMPLEMENTED, message)
 
 
 def stinger_exception_factory(result_code: int, message: Optional[str] = None):

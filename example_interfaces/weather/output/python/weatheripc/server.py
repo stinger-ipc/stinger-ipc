@@ -231,10 +231,10 @@ class WeatherServer:
 
                 except Exception as e:
                     self._logger.exception("Exception while handling refresh_daily_forecast", exc_info=e)
-                    return_code = MethodResultCode.SERVER_ERROR
+                    return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
                 else:
-                    return_code = MethodResultCode.SUCCESS
+                    return_code = MethodReturnCode.SUCCESS
                     debug_msg = None
 
                 self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
@@ -268,10 +268,10 @@ class WeatherServer:
 
                 except Exception as e:
                     self._logger.exception("Exception while handling refresh_hourly_forecast", exc_info=e)
-                    return_code = MethodResultCode.SERVER_ERROR
+                    return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
                 else:
-                    return_code = MethodResultCode.SUCCESS
+                    return_code = MethodReturnCode.SUCCESS
                     debug_msg = None
 
                 self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
@@ -305,10 +305,10 @@ class WeatherServer:
 
                 except Exception as e:
                     self._logger.exception("Exception while handling refresh_current_conditions", exc_info=e)
-                    return_code = MethodResultCode.SERVER_ERROR
+                    return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
                 else:
-                    return_code = MethodResultCode.SUCCESS
+                    return_code = MethodReturnCode.SUCCESS
                     debug_msg = None
 
                 self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)

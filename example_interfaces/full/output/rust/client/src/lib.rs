@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 #[allow(unused_imports)]
-use full_types::{MethodResultCode, *};
+use full_types::{MethodReturnCode, *};
 
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
@@ -255,7 +255,7 @@ impl FullClient {
         first: i32,
         second: i32,
         third: Option<i32>,
-    ) -> Result<i32, MethodResultCode> {
+    ) -> Result<i32, MethodReturnCode> {
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -319,7 +319,7 @@ impl FullClient {
     pub async fn do_something(
         &mut self,
         a_string: String,
-    ) -> Result<DoSomethingReturnValue, MethodResultCode> {
+    ) -> Result<DoSomethingReturnValue, MethodReturnCode> {
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -381,7 +381,7 @@ impl FullClient {
     /// and published to the `full/method/echo` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn echo(&mut self, message: String) -> Result<String, MethodResultCode> {
+    pub async fn echo(&mut self, message: String) -> Result<String, MethodReturnCode> {
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -439,7 +439,7 @@ impl FullClient {
         self.properties.favorite_number_tx_channel.subscribe()
     }
 
-    pub fn set_favorite_number(&mut self, value: i32) -> Result<(), MethodResultCode> {
+    pub fn set_favorite_number(&mut self, value: i32) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self
             .mqttier_client
@@ -456,7 +456,7 @@ impl FullClient {
     pub fn set_favorite_foods(
         &mut self,
         value: FavoriteFoodsProperty,
-    ) -> Result<(), MethodResultCode> {
+    ) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self
             .mqttier_client
@@ -470,7 +470,7 @@ impl FullClient {
         self.properties.lunch_menu_tx_channel.subscribe()
     }
 
-    pub fn set_lunch_menu(&mut self, value: LunchMenuProperty) -> Result<(), MethodResultCode> {
+    pub fn set_lunch_menu(&mut self, value: LunchMenuProperty) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self
             .mqttier_client
@@ -484,7 +484,7 @@ impl FullClient {
         self.properties.family_name_tx_channel.subscribe()
     }
 
-    pub fn set_family_name(&mut self, value: String) -> Result<(), MethodResultCode> {
+    pub fn set_family_name(&mut self, value: String) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self
             .mqttier_client

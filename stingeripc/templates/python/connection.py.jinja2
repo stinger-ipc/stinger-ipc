@@ -19,7 +19,7 @@ class BrokerConnection(ABC):
     @abstractmethod
     def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
             correlation_id: Union[str, bytes, None] = None, response_topic: Optional[str] = None,
-            return_value: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
+            return_value: Optional[MethodReturnCode] = None, debug_info: Optional[str] = None):
         pass
 
     @abstractmethod
@@ -119,7 +119,7 @@ class {{broker.class_name}}(BrokerConnection):
     
     def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
             correlation_id: Union[str, bytes, None] = None, response_topic: Optional[str] = None,
-            return_value: Optional[MethodResultCode] = None, debug_info: Optional[str] = None):
+            return_value: Optional[MethodReturnCode] = None, debug_info: Optional[str] = None):
         """ Publish a message to mqtt.
         """
         properties = MqttProperties(PacketTypes.PUBLISH)

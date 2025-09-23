@@ -978,9 +978,13 @@ class StingerSpec:
             2: "Server Error",
             3: "Transport Error",
             4: "Payload Error",
-            5: "Timeout",
-            6: "Unknown Error",
-            7: "Not Implemented",
+            5: "Serialization Error",
+            6: "Deserialization Error",
+            7: "Unauthorized",
+            8: "Timeout",
+            9: "Unknown Error",
+            10: "Not Implemented",
+            11: "Service Unavailable",
         }
 
     @property

@@ -14,16 +14,20 @@ It contains enumerations used by the Full interface.
 #include <boost/thread/future.hpp>
 #include <boost/optional.hpp> // Include the Boost.Optional header
 
-enum class MethodResultCode
+enum class MethodReturnCode
 {
     SUCCESS = 0,
     CLIENT_ERROR = 1,
     SERVER_ERROR = 2,
     TRANSPORT_ERROR = 3,
     PAYLOAD_ERROR = 4,
-    TIMEOUT = 5,
-    UNKNOWN_ERROR = 6,
-    NOT_IMPLEMENTED = 7
+    SERIALIZATION_ERROR = 5,
+    DESERIALIZATION_ERROR = 6,
+    UNAUTHORIZED = 7,
+    TIMEOUT = 8,
+    UNKNOWN_ERROR = 9,
+    NOT_IMPLEMENTED = 10,
+    SERVICE_UNAVAILABLE = 11
 };
 
 struct MqttProperties
@@ -31,7 +35,7 @@ struct MqttProperties
     MqttProperties()
         : correlationId(boost::none)
         , responseTopic(boost::none)
-        , resultCode(boost::none)
+        , returnCode(boost::none)
         , subscriptionId(boost::none)
         , propertyVersion(boost::none)
     {
@@ -39,7 +43,7 @@ struct MqttProperties
 
     boost::optional<std::string> correlationId;
     boost::optional<std::string> responseTopic;
-    boost::optional<MethodResultCode> resultCode;
+    boost::optional<MethodReturnCode> returnCode;
     boost::optional<int> subscriptionId;
     boost::optional<int> propertyVersion;
 };

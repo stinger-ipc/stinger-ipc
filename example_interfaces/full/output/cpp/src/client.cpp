@@ -234,7 +234,7 @@ boost::future<int> FullClient::addNumbers(int first, int second, boost::optional
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
-    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
     _broker->Publish("full/method/addNumbers", buf.GetString(), 2, false, mqttProps);
 
     return _pendingAddNumbersMethodCalls[correlationId].get_future();
@@ -297,7 +297,7 @@ boost::future<DoSomethingReturnValue> FullClient::doSomething(const std::string&
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
-    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
     _broker->Publish("full/method/doSomething", buf.GetString(), 2, false, mqttProps);
 
     return _pendingDoSomethingMethodCalls[correlationId].get_future();
@@ -373,7 +373,7 @@ boost::future<std::string> FullClient::echo(const std::string& message)
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
-    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
     _broker->Publish("full/method/echo", buf.GetString(), 2, false, mqttProps);
 
     return _pendingEchoMethodCalls[correlationId].get_future();

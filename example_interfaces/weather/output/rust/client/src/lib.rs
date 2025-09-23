@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 #[allow(unused_imports)]
-use weather_types::{MethodResultCode, *};
+use weather_types::{MethodReturnCode, *};
 
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
@@ -329,7 +329,7 @@ impl WeatherClient {
     /// and published to the `weather/method/refreshDailyForecast` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn refresh_daily_forecast(&mut self) -> Result<(), MethodResultCode> {
+    pub async fn refresh_daily_forecast(&mut self) -> Result<(), MethodReturnCode> {
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -387,7 +387,7 @@ impl WeatherClient {
     /// and published to the `weather/method/refreshHourlyForecast` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn refresh_hourly_forecast(&mut self) -> Result<(), MethodResultCode> {
+    pub async fn refresh_hourly_forecast(&mut self) -> Result<(), MethodReturnCode> {
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -445,7 +445,7 @@ impl WeatherClient {
     /// and published to the `weather/method/refreshCurrentConditions` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn refresh_current_conditions(&mut self) -> Result<(), MethodResultCode> {
+    pub async fn refresh_current_conditions(&mut self) -> Result<(), MethodReturnCode> {
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -505,7 +505,7 @@ impl WeatherClient {
         self.properties.location_tx_channel.subscribe()
     }
 
-    pub fn set_location(&mut self, value: LocationProperty) -> Result<(), MethodResultCode> {
+    pub fn set_location(&mut self, value: LocationProperty) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self
             .mqttier_client
@@ -548,7 +548,7 @@ impl WeatherClient {
     pub fn set_current_condition_refresh_interval(
         &mut self,
         value: i32,
-    ) -> Result<(), MethodResultCode> {
+    ) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self.mqttier_client.publish_structure(
             "weather/property/currentConditionRefreshInterval/setValue".to_string(),
@@ -568,7 +568,7 @@ impl WeatherClient {
     pub fn set_hourly_forecast_refresh_interval(
         &mut self,
         value: i32,
-    ) -> Result<(), MethodResultCode> {
+    ) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self.mqttier_client.publish_structure(
             "weather/property/hourlyForecastRefreshInterval/setValue".to_string(),
@@ -588,7 +588,7 @@ impl WeatherClient {
     pub fn set_daily_forecast_refresh_interval(
         &mut self,
         value: i32,
-    ) -> Result<(), MethodResultCode> {
+    ) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self.mqttier_client.publish_structure(
             "weather/property/dailyForecastRefreshInterval/setValue".to_string(),

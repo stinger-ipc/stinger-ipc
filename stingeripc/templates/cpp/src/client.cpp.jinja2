@@ -154,7 +154,7 @@ boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
-    mqttProps.resultCode = MethodResultCode::SUCCESS;
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
     _broker->Publish("{{method.topic}}", buf.GetString(), 2, false, mqttProps);
 
     return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();

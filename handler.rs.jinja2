@@ -1,5 +1,5 @@
 use std::any::Any;
-use {{stinger.rust.common_package_name}}::payloads::MethodResultCode;
+use {{stinger.rust.common_package_name}}::MethodReturnCode;
 {%for method_name, method in stinger.methods.items()-%}
 {%if method.return_value_type == "struct" -%}
 use {{stinger.rust.common_package_name}}::payloads::{{method.return_value_rust_type}};
@@ -12,7 +12,7 @@ pub trait {{stinger.name | UpperCamelCase }}MethodHandlers: Send + Sync {
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodResultCode>;
+    fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode>;
     
     {%endfor%}
 

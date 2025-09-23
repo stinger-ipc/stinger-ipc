@@ -128,13 +128,13 @@ class {{stinger.python.client_class_name}}:
         {%-for method_name, method in stinger.methods.items()%}
         # Handle '{{method_name}}' method response.
         if self._conn.is_topic_sub(topic, f"{{method.response_topic('{self._client_id}')}}"):
-            result_code = MethodResultCode.SUCCESS
+            result_code = MethodReturnCode.SUCCESS
             if "UserProperty" in properties:
                 user_properties = properties["UserProperty"]
                 if "DebugInfo" in user_properties:
                     self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
                 if "ReturnValue" in user_properties:
-                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
             response = json.loads(payload)
             if "CorrelationData" in properties:
                 correlation_id = properties["CorrelationData"].decode()
@@ -194,12 +194,12 @@ class {{stinger.python.client_class_name}}:
                            correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._client_id}')}}")
         return fut
 
-    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
         """ This called with the response to a `{{method_name}}` IPC method call.
         """
         self._logger.debug("Handling {{method_name | snake_case}} response message %s", fut)
         try:
-            if return_value != MethodResultCode.SUCCESS.value:
+            if return_value != MethodReturnCode.SUCCESS.value:
                 raise stinger_exception_factory(return_value, response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
             {%if method.return_value is none%}
             fut.set_result(None)

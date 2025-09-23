@@ -10,8 +10,9 @@ use signal_only_server::SignalOnlyServer;
 use std::any::Any;
 use tokio::time::{Duration, sleep};
 
+use signal_only_types::MethodReturnCode;
 #[allow(unused_imports)]
-use signal_only_types::payloads::{MethodResultCode, *};
+use signal_only_types::payloads::*;
 
 #[tokio::main]
 async fn main() {

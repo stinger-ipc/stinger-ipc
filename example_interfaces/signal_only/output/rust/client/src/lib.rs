@@ -9,7 +9,7 @@ use mqttier::{MqttierClient, ReceivedMessage};
 use serde_json;
 
 #[allow(unused_imports)]
-use signal_only_types::{MethodResultCode, *};
+use signal_only_types::{MethodReturnCode, *};
 
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc};

@@ -25,7 +25,7 @@ class BrokerConnection(ABC):
         retain: bool = False,
         correlation_id: Union[str, bytes, None] = None,
         response_topic: Optional[str] = None,
-        return_value: Optional[MethodResultCode] = None,
+        return_value: Optional[MethodReturnCode] = None,
         debug_info: Optional[str] = None,
     ):
         pass
@@ -130,7 +130,7 @@ class DefaultConnection(BrokerConnection):
         retain: bool = False,
         correlation_id: Union[str, bytes, None] = None,
         response_topic: Optional[str] = None,
-        return_value: Optional[MethodResultCode] = None,
+        return_value: Optional[MethodReturnCode] = None,
         debug_info: Optional[str] = None,
     ):
         """Publish a message to mqtt."""

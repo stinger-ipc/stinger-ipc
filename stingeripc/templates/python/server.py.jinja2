@@ -169,10 +169,10 @@ class {{stinger.python.server_class_name}}:
                     {%-endif%}
                 except Exception as e:
                     self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
-                    return_code = MethodResultCode.SERVER_ERROR
+                    return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
                 else:
-                    return_code = MethodResultCode.SUCCESS
+                    return_code = MethodReturnCode.SUCCESS
                     debug_msg = None
 
                 self._conn.publish(response_topic, return_json, qos=1, retain=False, 

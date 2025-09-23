@@ -99,7 +99,7 @@ MqttConnection::MqttConnection(const std::string& host, int port, const std::str
                     if (strcmp(name, "ReturnValue") == 0)
                     {
                         int returnValueInt = boost::lexical_cast<int>(value);
-                        mqttProps.resultCode = static_cast<MethodResultCode>(returnValueInt);
+                        mqttProps.returnCode = static_cast<MethodReturnCode>(returnValueInt);
                     }
                     else if (strcmp(name, "PropertyVersion") == 0)
                     {
@@ -175,10 +175,10 @@ boost::future<bool> MqttConnection::Publish(
     {
         mosquitto_property_add_string(&propList, MQTT_PROP_RESPONSE_TOPIC, mqttProps.responseTopic->c_str());
     }
-    if (mqttProps.resultCode)
+    if (mqttProps.returnCode)
     {
-        std::string resultCodeStr = std::to_string(static_cast<int>(*mqttProps.resultCode));
-        mosquitto_property_add_string_pair(&propList, MQTT_PROP_USER_PROPERTY, "ReturnValue", resultCodeStr.c_str());
+        std::string returnCodeStr = std::to_string(static_cast<int>(*mqttProps.returnCode));
+        mosquitto_property_add_string_pair(&propList, MQTT_PROP_USER_PROPERTY, "ReturnValue", returnCodeStr.c_str());
     }
     int rc = mosquitto_publish_v5(_mosq, &mid, topic.c_str(), payload.size(), payload.c_str(), qos, retain, propList);
     mosquitto_property_free_all(&propList);

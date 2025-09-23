@@ -14,8 +14,9 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use full_types::MethodReturnCode;
 #[allow(unused_imports)]
-use full_types::payloads::{MethodResultCode, *};
+use full_types::payloads::*;
 
 struct FullMethodImpl {
     server: Option<FullServer>,
@@ -29,7 +30,7 @@ impl FullMethodImpl {
 
 #[async_trait]
 impl FullMethodHandlers for FullMethodImpl {
-    async fn initialize(&mut self, server: FullServer) -> Result<(), MethodResultCode> {
+    async fn initialize(&mut self, server: FullServer) -> Result<(), MethodReturnCode> {
         self.server = Some(server.clone());
         Ok(())
     }
@@ -39,7 +40,7 @@ impl FullMethodHandlers for FullMethodImpl {
         _first: i32,
         _second: i32,
         _third: Option<i32>,
-    ) -> Result<i32, MethodResultCode> {
+    ) -> Result<i32, MethodReturnCode> {
         println!("Handling addNumbers");
         Ok(42)
     }
@@ -47,7 +48,7 @@ impl FullMethodHandlers for FullMethodImpl {
     async fn handle_do_something(
         &self,
         _a_string: String,
-    ) -> Result<DoSomethingReturnValue, MethodResultCode> {
+    ) -> Result<DoSomethingReturnValue, MethodReturnCode> {
         println!("Handling doSomething");
         let rv = DoSomethingReturnValue {
             label: "apples".to_string(),
@@ -57,7 +58,7 @@ impl FullMethodHandlers for FullMethodImpl {
         Ok(rv)
     }
 
-    async fn handle_echo(&self, _message: String) -> Result<String, MethodResultCode> {
+    async fn handle_echo(&self, _message: String) -> Result<String, MethodReturnCode> {
         println!("Handling echo");
         Ok("apples".to_string())
     }

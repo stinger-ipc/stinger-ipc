@@ -60,19 +60,6 @@ pub struct Lunch {
     pub order_number: Option<i32>,
 }
 
-#[allow(dead_code)]
-#[derive(Debug)]
-pub enum MethodResultCode {
-    Success = 0,
-    ClientError = 1,
-    ServerError = 2,
-    TransportError = 3,
-    PayloadError = 4,
-    Timeout = 5,
-    UnknownError = 6,
-    NotImplemented = 7,
-}
-
 // Structures for `addNumbers` method
 
 #[allow(dead_code, non_snake_case)]

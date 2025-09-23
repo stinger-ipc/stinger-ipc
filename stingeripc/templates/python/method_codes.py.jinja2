@@ -2,29 +2,29 @@
 from typing import Optional
 from enum import IntEnum
 
-class MethodResultCode(IntEnum):{%for rc_i, rc_name in stinger.method_return_codes.items()%}
+class MethodReturnCode(IntEnum):{%for rc_i, rc_name in stinger.method_return_codes.items()%}
     {{rc_name | CONST_CASE}} = {{rc_i}}
     {%-endfor%}
 
 class StingerMethodException(Exception):
     
-    def __init__(self, result_code: MethodResultCode, message: str):
+    def __init__(self, return_code: MethodReturnCode, message: str):
         super().__init__(message)
-        self._result_code = result_code
+        self._return_code = return_code
 
     @property
-    def result_code(self) -> MethodResultCode:
-        return self._result_code
+    def return_code(self) -> MethodReturnCode:
+        return self._return_code
 {%for rc_i, rc_name in stinger.method_return_codes.items()%}
 class {{rc_name | UpperCamelCase}}StingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodResultCode.{{rc_name | CONST_CASE}}, message)
+        super().__init__(MethodReturnCode.{{rc_name | CONST_CASE}}, message)
 {%endfor%}
 
-def stinger_exception_factory(result_code: int, message: Optional[str]=None):
+def stinger_exception_factory(return_code: int, message: Optional[str]=None):
     exc_classes = { {%for rc_i, rc_name in stinger.method_return_codes.items()%}
         {{rc_i}}: {{rc_name | UpperCamelCase}}StingerMethodException,
         {%endfor%}
     }
-    exc_class = exc_classes[result_code]
+    exc_class = exc_classes[return_code]
     return exc_class(message or "")

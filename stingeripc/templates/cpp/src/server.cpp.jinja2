@@ -166,7 +166,7 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
             responseJson.Accept(writer);
             MqttProperties mqttProps;
             mqttProps.correlationId = optCorrelationId;
-            mqttProps.resultCode = MethodResultCode::SUCCESS;
+            mqttProps.returnCode = MethodReturnCode::SUCCESS;
             _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
         }
     }

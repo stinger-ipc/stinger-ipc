@@ -15,7 +15,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include <boost/thread/future.hpp>
 #include <boost/optional.hpp> // Include the Boost.Optional header
 
-enum class MethodResultCode
+enum class MethodReturnCode
 {
     {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
     {{rc_name | CONST_CASE}} = {{rc_i}}{%if not loop.last%},{%endif%}
@@ -27,13 +27,13 @@ struct MqttProperties
     MqttProperties()
         : correlationId(boost::none),
             responseTopic(boost::none),
-            resultCode(boost::none),
+            returnCode(boost::none),
             subscriptionId(boost::none),
             propertyVersion(boost::none)
     {}
     boost::optional<std::string> correlationId;
     boost::optional<std::string> responseTopic;
-    boost::optional<MethodResultCode> resultCode;
+    boost::optional<MethodReturnCode> returnCode;
     boost::optional<int> subscriptionId;
     boost::optional<int> propertyVersion;
 };

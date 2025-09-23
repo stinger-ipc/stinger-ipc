@@ -4,7 +4,7 @@ use tokio::join;
 use tokio::time::{Duration, sleep};
 use weather_client::WeatherClient;
 #[allow(unused_imports)]
-use weather_types::{MethodResultCode, *};
+use weather_types::{MethodReturnCode, *};
 
 #[tokio::main]
 async fn main() {

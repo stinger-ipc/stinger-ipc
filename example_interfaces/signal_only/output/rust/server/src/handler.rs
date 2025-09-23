@@ -1,5 +1,5 @@
 use std::any::Any;
-use signal_only_types::payloads::MethodResultCode;
+use signal_only_types::payloads::MethodReturnCode;
 
 
 /// Method handlers for the SignalOnlyServer server.

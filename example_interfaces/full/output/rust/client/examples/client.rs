@@ -1,6 +1,6 @@
 use full_client::FullClient;
 #[allow(unused_imports)]
-use full_types::{MethodResultCode, *};
+use full_types::{MethodReturnCode, *};
 use futures::executor::block_on;
 use mqttier::MqttierClient;
 use tokio::join;

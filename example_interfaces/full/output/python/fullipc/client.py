@@ -203,13 +203,13 @@ class FullClient:
 
         # Handle 'addNumbers' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/full/method/addNumbers/response"):
-            result_code = MethodResultCode.SUCCESS
+            result_code = MethodReturnCode.SUCCESS
             if "UserProperty" in properties:
                 user_properties = properties["UserProperty"]
                 if "DebugInfo" in user_properties:
                     self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
                 if "ReturnValue" in user_properties:
-                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
             response = json.loads(payload)
             if "CorrelationData" in properties:
                 correlation_id = properties["CorrelationData"].decode()
@@ -224,13 +224,13 @@ class FullClient:
 
         # Handle 'doSomething' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/full/method/doSomething/response"):
-            result_code = MethodResultCode.SUCCESS
+            result_code = MethodReturnCode.SUCCESS
             if "UserProperty" in properties:
                 user_properties = properties["UserProperty"]
                 if "DebugInfo" in user_properties:
                     self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
                 if "ReturnValue" in user_properties:
-                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
             response = json.loads(payload)
             if "CorrelationData" in properties:
                 correlation_id = properties["CorrelationData"].decode()
@@ -245,13 +245,13 @@ class FullClient:
 
         # Handle 'echo' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/full/method/echo/response"):
-            result_code = MethodResultCode.SUCCESS
+            result_code = MethodReturnCode.SUCCESS
             if "UserProperty" in properties:
                 user_properties = properties["UserProperty"]
                 if "DebugInfo" in user_properties:
                     self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
                 if "ReturnValue" in user_properties:
-                    result_code = MethodResultCode(int(user_properties["ReturnValue"]))
+                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
             response = json.loads(payload)
             if "CorrelationData" in properties:
                 correlation_id = properties["CorrelationData"].decode()
@@ -353,11 +353,11 @@ class FullClient:
         )
         return fut
 
-    def _handle_add_numbers_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+    def _handle_add_numbers_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
         """This called with the response to a `addNumbers` IPC method call."""
         self._logger.debug("Handling add_numbers response message %s", fut)
         try:
-            if return_value != MethodResultCode.SUCCESS.value:
+            if return_value != MethodReturnCode.SUCCESS.value:
                 raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
 
             if "sum" in response_json:
@@ -391,11 +391,11 @@ class FullClient:
         )
         return fut
 
-    def _handle_do_something_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+    def _handle_do_something_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
         """This called with the response to a `doSomething` IPC method call."""
         self._logger.debug("Handling do_something response message %s", fut)
         try:
-            if return_value != MethodResultCode.SUCCESS.value:
+            if return_value != MethodReturnCode.SUCCESS.value:
                 raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
 
             return_args = self._filter_for_args(
@@ -434,11 +434,11 @@ class FullClient:
         self._conn.publish("full/method/echo", json.dumps(payload), qos=2, retain=False, correlation_id=correlation_id, response_topic=f"client/{self._client_id}/full/method/echo/response")
         return fut
 
-    def _handle_echo_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodResultCode):
+    def _handle_echo_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
         """This called with the response to a `echo` IPC method call."""
         self._logger.debug("Handling echo response message %s", fut)
         try:
-            if return_value != MethodResultCode.SUCCESS.value:
+            if return_value != MethodReturnCode.SUCCESS.value:
                 raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
 
             if "message" in response_json:
