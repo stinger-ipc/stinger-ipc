@@ -116,11 +116,15 @@ async fn main() {
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'todayIs'");
-        server.emit_today_is(42, Some(DayOfTheWeek::Monday)).await;
+        let signal_result_future = server.emit_today_is(42, Some(DayOfTheWeek::Monday)).await;
+        let signal_result = signal_result_future.await;
+        println!("Signal 'todayIs' was sent: {:?}", signal_result);
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'bark'");
-        server.emit_bark("apples".to_string()).await;
+        let signal_result_future = server.emit_bark("apples".to_string()).await;
+        let signal_result = signal_result_future.await;
+        println!("Signal 'bark' was sent: {:?}", signal_result);
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'favorite_number'");

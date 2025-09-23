@@ -5,7 +5,7 @@ on the next generation.
 This is the Server for the weather interface.
 */
 
-use mqttier::{MqttierClient, ReceivedMessage};
+use mqttier::{MqttierClient, PublishResult, ReceivedMessage};
 
 use std::any::Any;
 #[allow(unused_imports)]
@@ -19,7 +19,9 @@ use tokio::sync::Mutex as AsyncMutex;
 use serde_json;
 use tokio::sync::{mpsc, watch};
 
+use std::future::Future;
 use tokio::task::JoinError;
+use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -252,14 +254,62 @@ impl WeatherServer {
     }
 
     /// Emits the current_time signal with the given arguments.
-    pub async fn emit_current_time(&mut self, current_time: String) {
+    pub async fn emit_current_time(
+        &mut self,
+        current_time: String,
+    ) -> Box<dyn Future<Output = Result<(), MethodReturnCode>>> {
         let data = CurrentTimeSignalPayload {
             current_time: current_time,
         };
-        let _ = self
+        let publish_oneshot = self
             .mqttier_client
             .publish_structure("weather/signal/currentTime".to_string(), &data)
             .await;
+        Box::new(async move {
+            let publish_result = publish_oneshot.await;
+            match publish_result {
+                Ok(PublishResult::Acknowledged(_))
+                | Ok(PublishResult::Completed(_))
+                | Ok(PublishResult::Sent(_)) => Ok(()),
+
+                Ok(PublishResult::TimedOut) => Err(MethodReturnCode::Timeout(
+                    "Timed out publishing signal".to_string(),
+                )),
+
+                Ok(PublishResult::SerializationError(s)) => {
+                    Err(MethodReturnCode::SerializationError(s))
+                }
+
+                Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
+
+                Err(_) => Err(MethodReturnCode::UnknownError(
+                    "Error publishing signal".to_string(),
+                )),
+            }
+        })
+    }
+
+    /// Publishes an error response to the given response topic with the given correlation data.
+    async fn publish_error_response(
+        publisher: MqttierClient,
+        response_topic: Option<String>,
+        correlation_data: Option<Vec<u8>>,
+        err: &MethodReturnCode,
+    ) {
+        if let Some(resp_topic) = response_topic {
+            let corr_data = correlation_data.unwrap_or_default();
+            let (return_code, debug_message) = err.to_code();
+            let _ = publisher
+                .publish_error_response(
+                    resp_topic,
+                    debug_message.unwrap_or_default(),
+                    corr_data,
+                    return_code,
+                )
+                .await;
+        } else {
+            info!("No response topic found in message properties; cannot send error response.");
+        }
     }
 
     /// Handles a request message for the refresh_daily_forecast method.
@@ -272,21 +322,20 @@ impl WeatherServer {
         let opt_resp_topic = msg.response_topic;
 
         // call the method handler
-        let rv: Result<(), MethodReturnCode> = {
+        let rc: Result<(), MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_refresh_daily_forecast().await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            match rv {
+            match rc {
                 Ok(_) => {
                     let retval = RefreshDailyForecastReturnValue {};
 
-                    publisher
+                    let _publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
-                        .await
-                        .expect("Failed to publish response structure");
+                        .await;
                 }
                 Err(err) => {
                     eprintln!(
@@ -310,21 +359,20 @@ impl WeatherServer {
         let opt_resp_topic = msg.response_topic;
 
         // call the method handler
-        let rv: Result<(), MethodReturnCode> = {
+        let rc: Result<(), MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_refresh_hourly_forecast().await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            match rv {
+            match rc {
                 Ok(_) => {
                     let retval = RefreshHourlyForecastReturnValue {};
 
-                    publisher
+                    let _publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
-                        .await
-                        .expect("Failed to publish response structure");
+                        .await;
                 }
                 Err(err) => {
                     eprintln!(
@@ -348,21 +396,20 @@ impl WeatherServer {
         let opt_resp_topic = msg.response_topic;
 
         // call the method handler
-        let rv: Result<(), MethodReturnCode> = {
+        let rc: Result<(), MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_refresh_current_conditions().await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            match rv {
+            match rc {
                 Ok(_) => {
                     let retval = RefreshCurrentConditionsReturnValue {};
 
-                    publisher
+                    let _publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
-                        .await
-                        .expect("Failed to publish response structure");
+                        .await;
                 }
                 Err(err) => {
                     eprintln!(

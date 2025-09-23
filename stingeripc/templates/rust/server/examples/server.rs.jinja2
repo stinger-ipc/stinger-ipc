@@ -96,7 +96,9 @@ async fn main() {
         {%for sig_name, sig in stinger.signals.items()%}
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal '{{sig_name}}'");
-        server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+        let signal_result_future = server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+        let signal_result = signal_result_future.await;
+        println!("Signal '{{sig_name}}' was sent: {:?}", signal_result);
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()%}
         sleep(Duration::from_secs(1)).await;

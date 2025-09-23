@@ -5,14 +5,16 @@ on the next generation.
 This is the Server for the SignalOnly interface.
 */
 
-use mqttier::MqttierClient;
+use mqttier::{MqttierClient, PublishResult};
 
 #[allow(unused_imports)]
 use signal_only_types::MethodReturnCode;
 use signal_only_types::payloads::*;
 use std::any::Any;
 
+use std::future::Future;
 use tokio::task::JoinError;
+use tracing::{debug, error, info, warn};
 
 #[derive(Clone)]
 pub struct SignalOnlyServer {
@@ -33,7 +35,12 @@ impl SignalOnlyServer {
     }
 
     /// Emits the anotherSignal signal with the given arguments.
-    pub async fn emit_another_signal(&mut self, one: f32, two: bool, three: String) {
+    pub async fn emit_another_signal(
+        &mut self,
+        one: f32,
+        two: bool,
+        three: String,
+    ) -> Box<dyn Future<Output = Result<(), MethodReturnCode>>> {
         let data = AnotherSignalSignalPayload {
             one: one,
 
@@ -41,10 +48,32 @@ impl SignalOnlyServer {
 
             three: three,
         };
-        let _ = self
+        let publish_oneshot = self
             .mqttier_client
             .publish_structure("signalOnly/signal/anotherSignal".to_string(), &data)
             .await;
+        Box::new(async move {
+            let publish_result = publish_oneshot.await;
+            match publish_result {
+                Ok(PublishResult::Acknowledged(_))
+                | Ok(PublishResult::Completed(_))
+                | Ok(PublishResult::Sent(_)) => Ok(()),
+
+                Ok(PublishResult::TimedOut) => Err(MethodReturnCode::Timeout(
+                    "Timed out publishing signal".to_string(),
+                )),
+
+                Ok(PublishResult::SerializationError(s)) => {
+                    Err(MethodReturnCode::SerializationError(s))
+                }
+
+                Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
+
+                Err(_) => Err(MethodReturnCode::UnknownError(
+                    "Error publishing signal".to_string(),
+                )),
+            }
+        })
     }
 
     /// Starts the tasks that process messages received.

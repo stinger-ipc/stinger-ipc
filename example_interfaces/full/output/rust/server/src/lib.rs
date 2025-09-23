@@ -5,7 +5,7 @@ on the next generation.
 This is the Server for the Full interface.
 */
 
-use mqttier::{MqttierClient, ReceivedMessage};
+use mqttier::{MqttierClient, PublishResult, ReceivedMessage};
 
 #[allow(unused_imports)]
 use full_types::MethodReturnCode;
@@ -19,7 +19,9 @@ use tokio::sync::Mutex as AsyncMutex;
 use serde_json;
 use tokio::sync::{mpsc, watch};
 
+use std::future::Future;
 use tokio::task::JoinError;
+use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -207,24 +209,98 @@ impl FullServer {
     }
 
     /// Emits the todayIs signal with the given arguments.
-    pub async fn emit_today_is(&mut self, day_of_month: i32, day_of_week: Option<DayOfTheWeek>) {
+    pub async fn emit_today_is(
+        &mut self,
+        day_of_month: i32,
+        day_of_week: Option<DayOfTheWeek>,
+    ) -> Box<dyn Future<Output = Result<(), MethodReturnCode>>> {
         let data = TodayIsSignalPayload {
             dayOfMonth: day_of_month,
 
             dayOfWeek: day_of_week,
         };
-        let _ = self
+        let publish_oneshot = self
             .mqttier_client
             .publish_structure("full/signal/todayIs".to_string(), &data)
             .await;
+        Box::new(async move {
+            let publish_result = publish_oneshot.await;
+            match publish_result {
+                Ok(PublishResult::Acknowledged(_))
+                | Ok(PublishResult::Completed(_))
+                | Ok(PublishResult::Sent(_)) => Ok(()),
+
+                Ok(PublishResult::TimedOut) => Err(MethodReturnCode::Timeout(
+                    "Timed out publishing signal".to_string(),
+                )),
+
+                Ok(PublishResult::SerializationError(s)) => {
+                    Err(MethodReturnCode::SerializationError(s))
+                }
+
+                Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
+
+                Err(_) => Err(MethodReturnCode::UnknownError(
+                    "Error publishing signal".to_string(),
+                )),
+            }
+        })
     }
     /// Emits the bark signal with the given arguments.
-    pub async fn emit_bark(&mut self, word: String) {
+    pub async fn emit_bark(
+        &mut self,
+        word: String,
+    ) -> Box<dyn Future<Output = Result<(), MethodReturnCode>>> {
         let data = BarkSignalPayload { word: word };
-        let _ = self
+        let publish_oneshot = self
             .mqttier_client
             .publish_structure("full/signal/bark".to_string(), &data)
             .await;
+        Box::new(async move {
+            let publish_result = publish_oneshot.await;
+            match publish_result {
+                Ok(PublishResult::Acknowledged(_))
+                | Ok(PublishResult::Completed(_))
+                | Ok(PublishResult::Sent(_)) => Ok(()),
+
+                Ok(PublishResult::TimedOut) => Err(MethodReturnCode::Timeout(
+                    "Timed out publishing signal".to_string(),
+                )),
+
+                Ok(PublishResult::SerializationError(s)) => {
+                    Err(MethodReturnCode::SerializationError(s))
+                }
+
+                Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
+
+                Err(_) => Err(MethodReturnCode::UnknownError(
+                    "Error publishing signal".to_string(),
+                )),
+            }
+        })
+    }
+
+    /// Publishes an error response to the given response topic with the given correlation data.
+    async fn publish_error_response(
+        publisher: MqttierClient,
+        response_topic: Option<String>,
+        correlation_data: Option<Vec<u8>>,
+        err: &MethodReturnCode,
+    ) {
+        if let Some(resp_topic) = response_topic {
+            let corr_data = correlation_data.unwrap_or_default();
+            let (return_code, debug_message) = err.to_code();
+            let _ = publisher
+                .publish_error_response(
+                    resp_topic,
+                    debug_message.unwrap_or_default(),
+                    corr_data,
+                    return_code,
+                )
+                .await;
+        } else {
+            info!("No response topic found in message properties; cannot send error response.");
+        }
     }
 
     /// Handles a request message for the addNumbers method.
@@ -236,10 +312,28 @@ impl FullServer {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
         let payload_vec = msg.payload;
-        let payload = serde_json::from_slice::<AddNumbersRequestObject>(&payload_vec).unwrap();
+        let payload_obj = serde_json::from_slice::<AddNumbersRequestObject>(&payload_vec);
+        if payload_obj.is_err() {
+            error!(
+                "Error deserializing request payload for {}: {:?}",
+                "addNumbers",
+                payload_obj.err()
+            );
+            FullServer::publish_error_response(
+                publisher,
+                opt_resp_topic,
+                opt_corr_data,
+                &MethodReturnCode::DeserializationError(
+                    "Failed to deserialize request payload".to_string(),
+                ),
+            )
+            .await;
+            return;
+        }
+        let payload = payload_obj.unwrap();
 
         // call the method handler
-        let rv: Result<i32, MethodReturnCode> = {
+        let rc: Result<i32, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard
                 .handle_add_numbers(payload.first, payload.second, payload.third)
@@ -248,14 +342,13 @@ impl FullServer {
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            match rv {
+            match rc {
                 Ok(retval) => {
                     let retval = AddNumbersReturnValue { sum: retval };
 
-                    publisher
+                    let _publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
-                        .await
-                        .expect("Failed to publish response structure");
+                        .await;
                 }
                 Err(err) => {
                     eprintln!(
@@ -278,22 +371,39 @@ impl FullServer {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
         let payload_vec = msg.payload;
-        let payload = serde_json::from_slice::<DoSomethingRequestObject>(&payload_vec).unwrap();
+        let payload_obj = serde_json::from_slice::<DoSomethingRequestObject>(&payload_vec);
+        if payload_obj.is_err() {
+            error!(
+                "Error deserializing request payload for {}: {:?}",
+                "doSomething",
+                payload_obj.err()
+            );
+            FullServer::publish_error_response(
+                publisher,
+                opt_resp_topic,
+                opt_corr_data,
+                &MethodReturnCode::DeserializationError(
+                    "Failed to deserialize request payload".to_string(),
+                ),
+            )
+            .await;
+            return;
+        }
+        let payload = payload_obj.unwrap();
 
         // call the method handler
-        let rv: Result<DoSomethingReturnValue, MethodReturnCode> = {
+        let rc: Result<DoSomethingReturnValue, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_do_something(payload.aString).await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            match rv {
+            match rc {
                 Ok(retval) => {
-                    publisher
+                    let _publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
-                        .await
-                        .expect("Failed to publish response structure");
+                        .await;
                 }
                 Err(err) => {
                     eprintln!(
@@ -316,24 +426,41 @@ impl FullServer {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
         let payload_vec = msg.payload;
-        let payload = serde_json::from_slice::<EchoRequestObject>(&payload_vec).unwrap();
+        let payload_obj = serde_json::from_slice::<EchoRequestObject>(&payload_vec);
+        if payload_obj.is_err() {
+            error!(
+                "Error deserializing request payload for {}: {:?}",
+                "echo",
+                payload_obj.err()
+            );
+            FullServer::publish_error_response(
+                publisher,
+                opt_resp_topic,
+                opt_corr_data,
+                &MethodReturnCode::DeserializationError(
+                    "Failed to deserialize request payload".to_string(),
+                ),
+            )
+            .await;
+            return;
+        }
+        let payload = payload_obj.unwrap();
 
         // call the method handler
-        let rv: Result<String, MethodReturnCode> = {
+        let rc: Result<String, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_echo(payload.message).await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
-            match rv {
+            match rc {
                 Ok(retval) => {
                     let retval = EchoReturnValue { message: retval };
 
-                    publisher
+                    let _publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
-                        .await
-                        .expect("Failed to publish response structure");
+                        .await;
                 }
                 Err(err) => {
                     eprintln!(

@@ -27,9 +27,11 @@ async fn main() {
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'anotherSignal'");
-        server
+        let signal_result_future = server
             .emit_another_signal(3.14, true, "apples".to_string())
             .await;
+        let signal_result = signal_result_future.await;
+        println!("Signal 'anotherSignal' was sent: {:?}", signal_result);
 
         let _server_loop_task = server.run_loop().await;
     });

@@ -147,7 +147,9 @@ async fn main() {
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'current_time'");
-        server.emit_current_time("apples".to_string()).await;
+        let signal_result_future = server.emit_current_time("apples".to_string()).await;
+        let signal_result = signal_result_future.await;
+        println!("Signal 'current_time' was sent: {:?}", signal_result);
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'location'");

@@ -23,10 +23,10 @@ async fn main() {
             i = i + 1;
             sleep(Duration::from_secs(1)).await; // Simulate periodic publishing
             let message = format!("Periodic message {}", i);
-            client2
+            let pub_result_rx = client2
                 .publish_string("example/pub_topic".to_string(), message, 1, false, None)
-                .await
-                .expect("Failed to publish periodic message");
+                .await;
+            let pub_result = pub_result_rx.await;
         }
     });
 

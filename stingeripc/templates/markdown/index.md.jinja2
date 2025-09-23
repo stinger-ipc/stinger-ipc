@@ -191,8 +191,10 @@ print("Got a '{{sig_name}}' signal: {:?}", {{sig_name|snake_case}}_signal_rx.rec
 A server can emit a `{{sig_name}}` signal simply by calling the server's `emit_{{sig_name | snake_case}}` method.
 
 ```rust
-server.emit_{{sig_name|snake_case}}({%for arg in signal.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+let publish_result = server.emit_{{sig_name|snake_case}}({%for arg in signal.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
 ```
+
+The return type is a **Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the boxed future.
 
 </details>
 

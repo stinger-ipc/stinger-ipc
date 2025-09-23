@@ -178,8 +178,10 @@ print("Got a 'todayIs' signal: {:?}", today_is_signal_rx.recv().await);
 A server can emit a `todayIs` signal simply by calling the server's `emit_today_is` method.
 
 ```rust
-server.emit_today_is(42, Some(DayOfTheWeek::Monday)).await;
+let publish_result = server.emit_today_is(42, Some(DayOfTheWeek::Monday)).await;
 ```
+
+The return type is a **Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the boxed future.
 
 </details>
 
@@ -265,8 +267,10 @@ print("Got a 'bark' signal: {:?}", bark_signal_rx.recv().await);
 A server can emit a `bark` signal simply by calling the server's `emit_bark` method.
 
 ```rust
-server.emit_bark("apples".to_string()).await;
+let publish_result = server.emit_bark("apples".to_string()).await;
 ```
+
+The return type is a **Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the boxed future.
 
 </details>
 
