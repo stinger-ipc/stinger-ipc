@@ -197,7 +197,7 @@ impl {{stinger.rust.server_struct_name}} {
         let payload_vec = msg.payload;
         let payload_obj = serde_json::from_slice::<{{method_name | UpperCamelCase}}RequestObject>(&payload_vec);
         if payload_obj.is_err() {
-            error!("Error deserializing request payload for {}: {:?}", "{{method_name}}", payload_obj.err());
+            error!("Error deserializing request payload for {{method_name}}: {:?}", payload_obj.err());
             {{stinger.rust.server_struct_name}}::publish_error_response(publisher, opt_resp_topic, opt_corr_data, &MethodReturnCode::DeserializationError("Failed to deserialize request payload".to_string())).await;
             return;
         }
@@ -220,10 +220,11 @@ impl {{stinger.rust.server_struct_name}} {
                     {%elif method.return_value_type is false %}
                     let retval = {{method_name | UpperCamelCase}}ReturnValue {};
                     {%endif%}
-                    let _publish_result = publisher.publish_response(resp_topic, &retval, corr_data).await;
+                    let _fut_publish_result = publisher.publish_response(resp_topic, &retval, corr_data).await;
                 }
                 Err(err) => {
-                    eprintln!("Error occurred while handling {}: {:?}", stringify!({{method_name}}), err);
+                    info!("Error occurred while handling {{method_name}}: {:?}", &err);
+                    {{stinger.rust.server_struct_name}}::publish_error_response(publisher, Some(resp_topic), Some(corr_data), &err).await;
                 }
             }
         } else {

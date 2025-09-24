@@ -318,8 +318,7 @@ impl FullServer {
         let payload_obj = serde_json::from_slice::<AddNumbersRequestObject>(&payload_vec);
         if payload_obj.is_err() {
             error!(
-                "Error deserializing request payload for {}: {:?}",
-                "addNumbers",
+                "Error deserializing request payload for addNumbers: {:?}",
                 payload_obj.err()
             );
             FullServer::publish_error_response(
@@ -349,16 +348,19 @@ impl FullServer {
                 Ok(retval) => {
                     let retval = AddNumbersReturnValue { sum: retval };
 
-                    let _publish_result = publisher
+                    let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
                         .await;
                 }
                 Err(err) => {
-                    eprintln!(
-                        "Error occurred while handling {}: {:?}",
-                        stringify!(addNumbers),
-                        err
-                    );
+                    info!("Error occurred while handling addNumbers: {:?}", &err);
+                    FullServer::publish_error_response(
+                        publisher,
+                        Some(resp_topic),
+                        Some(corr_data),
+                        &err,
+                    )
+                    .await;
                 }
             }
         } else {
@@ -377,8 +379,7 @@ impl FullServer {
         let payload_obj = serde_json::from_slice::<DoSomethingRequestObject>(&payload_vec);
         if payload_obj.is_err() {
             error!(
-                "Error deserializing request payload for {}: {:?}",
-                "doSomething",
+                "Error deserializing request payload for doSomething: {:?}",
                 payload_obj.err()
             );
             FullServer::publish_error_response(
@@ -404,16 +405,19 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let _publish_result = publisher
+                    let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
                         .await;
                 }
                 Err(err) => {
-                    eprintln!(
-                        "Error occurred while handling {}: {:?}",
-                        stringify!(doSomething),
-                        err
-                    );
+                    info!("Error occurred while handling doSomething: {:?}", &err);
+                    FullServer::publish_error_response(
+                        publisher,
+                        Some(resp_topic),
+                        Some(corr_data),
+                        &err,
+                    )
+                    .await;
                 }
             }
         } else {
@@ -432,8 +436,7 @@ impl FullServer {
         let payload_obj = serde_json::from_slice::<EchoRequestObject>(&payload_vec);
         if payload_obj.is_err() {
             error!(
-                "Error deserializing request payload for {}: {:?}",
-                "echo",
+                "Error deserializing request payload for echo: {:?}",
                 payload_obj.err()
             );
             FullServer::publish_error_response(
@@ -461,16 +464,19 @@ impl FullServer {
                 Ok(retval) => {
                     let retval = EchoReturnValue { message: retval };
 
-                    let _publish_result = publisher
+                    let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
                         .await;
                 }
                 Err(err) => {
-                    eprintln!(
-                        "Error occurred while handling {}: {:?}",
-                        stringify!(echo),
-                        err
-                    );
+                    info!("Error occurred while handling echo: {:?}", &err);
+                    FullServer::publish_error_response(
+                        publisher,
+                        Some(resp_topic),
+                        Some(corr_data),
+                        &err,
+                    )
+                    .await;
                 }
             }
         } else {

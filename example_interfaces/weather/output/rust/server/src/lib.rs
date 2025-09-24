@@ -336,16 +336,22 @@ impl WeatherServer {
                 Ok(_) => {
                     let retval = RefreshDailyForecastReturnValue {};
 
-                    let _publish_result = publisher
+                    let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
                         .await;
                 }
                 Err(err) => {
-                    eprintln!(
-                        "Error occurred while handling {}: {:?}",
-                        stringify!(refresh_daily_forecast),
-                        err
+                    info!(
+                        "Error occurred while handling refresh_daily_forecast: {:?}",
+                        &err
                     );
+                    WeatherServer::publish_error_response(
+                        publisher,
+                        Some(resp_topic),
+                        Some(corr_data),
+                        &err,
+                    )
+                    .await;
                 }
             }
         } else {
@@ -373,16 +379,22 @@ impl WeatherServer {
                 Ok(_) => {
                     let retval = RefreshHourlyForecastReturnValue {};
 
-                    let _publish_result = publisher
+                    let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
                         .await;
                 }
                 Err(err) => {
-                    eprintln!(
-                        "Error occurred while handling {}: {:?}",
-                        stringify!(refresh_hourly_forecast),
-                        err
+                    info!(
+                        "Error occurred while handling refresh_hourly_forecast: {:?}",
+                        &err
                     );
+                    WeatherServer::publish_error_response(
+                        publisher,
+                        Some(resp_topic),
+                        Some(corr_data),
+                        &err,
+                    )
+                    .await;
                 }
             }
         } else {
@@ -410,16 +422,22 @@ impl WeatherServer {
                 Ok(_) => {
                     let retval = RefreshCurrentConditionsReturnValue {};
 
-                    let _publish_result = publisher
+                    let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
                         .await;
                 }
                 Err(err) => {
-                    eprintln!(
-                        "Error occurred while handling {}: {:?}",
-                        stringify!(refresh_current_conditions),
-                        err
+                    info!(
+                        "Error occurred while handling refresh_current_conditions: {:?}",
+                        &err
                     );
+                    WeatherServer::publish_error_response(
+                        publisher,
+                        Some(resp_topic),
+                        Some(corr_data),
+                        &err,
+                    )
+                    .await;
                 }
             }
         } else {
