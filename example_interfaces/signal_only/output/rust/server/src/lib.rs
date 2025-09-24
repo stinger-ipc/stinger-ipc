@@ -12,11 +12,10 @@ use signal_only_types::MethodReturnCode;
 use signal_only_types::payloads::*;
 use std::any::Any;
 
-use tokio::task::JoinError;
-
 use std::future::Future;
 use std::pin::Pin;
-
+use tokio::task::JoinError;
+type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use tracing::{debug, error, info, warn};
 
 #[derive(Clone)]
@@ -37,24 +36,10 @@ impl SignalOnlyServer {
         }
     }
 
-    /// Emits the anotherSignal signal with the given arguments.
-    pub async fn emit_another_signal(
-        &mut self,
-        one: f32,
-        two: bool,
-        three: String,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>>>> {
-        let data = AnotherSignalSignalPayload {
-            one: one,
-
-            two: two,
-
-            three: three,
-        };
-        let publish_oneshot = self
-            .mqttier_client
-            .publish_structure("signalOnly/signal/anotherSignal".to_string(), &data)
-            .await;
+    /// Converts a oneshot receiver for the publish result into a Future that resolves to
+    pub async fn oneshot_to_future(
+        publish_oneshot: tokio::sync::oneshot::Receiver<PublishResult>,
+    ) -> SentMessageFuture {
         Box::pin(async move {
             let publish_result = publish_oneshot.await;
             match publish_result {
@@ -77,6 +62,36 @@ impl SignalOnlyServer {
                 )),
             }
         })
+    }
+
+    pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
+        Box::pin(async move {
+            match rc {
+                MethodReturnCode::Success => Ok(()),
+                _ => Err(rc),
+            }
+        })
+    }
+
+    /// Emits the anotherSignal signal with the given arguments.
+    pub async fn emit_another_signal(
+        &mut self,
+        one: f32,
+        two: bool,
+        three: String,
+    ) -> SentMessageFuture {
+        let data = AnotherSignalSignalPayload {
+            one: one,
+
+            two: two,
+
+            three: three,
+        };
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/signal/anotherSignal".to_string(), &data)
+            .await;
+        SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
 
     /// Starts the tasks that process messages received.

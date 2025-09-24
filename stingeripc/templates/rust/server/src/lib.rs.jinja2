@@ -23,10 +23,9 @@ use serde_json;
 use tokio::sync::{mpsc{%if stinger.properties|length > 0 %}, watch{%endif%}};
 {%endif%}
 use tokio::task::JoinError;
-{%if stinger.signals | length > 0 %}
 use std::future::Future;
 use std::pin::Pin;
-{%endif%}
+type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use tracing::{debug, info, warn, error};
 
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
@@ -143,15 +142,8 @@ impl {{stinger.rust.server_struct_name}} {
         }
     }
 
-    {%for sig_name, sig in stinger.signals.items()-%}
-    /// Emits the {{sig_name}} signal with the given arguments.
-    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>>>> {
-        let data = {{sig_name|UpperCamelCase}}SignalPayload {
-            {%for arg in sig.arg_list%}
-        {{arg.name}}: {{arg.name|snake_case}},
-            {%endfor%}
-        };
-        let publish_oneshot = self.mqttier_client.publish_structure("{{sig.topic}}".to_string(), &data).await;
+    /// Converts a oneshot receiver for the publish result into a Future that resolves to
+    pub async fn oneshot_to_future(publish_oneshot: tokio::sync::oneshot::Receiver<PublishResult>) -> SentMessageFuture {
         Box::pin(async move {
             let publish_result = publish_oneshot.await;
             match publish_result {
@@ -174,6 +166,27 @@ impl {{stinger.rust.server_struct_name}} {
                 )),
             }
         })
+    }
+
+    pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
+        Box::pin(async move {
+            match rc {
+                MethodReturnCode::Success => Ok(()),
+                _ => Err(rc),
+            }
+        })
+    }
+
+    {%for sig_name, sig in stinger.signals.items()-%}
+    /// Emits the {{sig_name}} signal with the given arguments.
+    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
+        let data = {{sig_name|UpperCamelCase}}SignalPayload {
+            {%for arg in sig.arg_list%}
+        {{arg.name}}: {{arg.name|snake_case}},
+            {%endfor%}
+        };
+        let published_oneshot = self.mqttier_client.publish_structure("{{sig.topic}}".to_string(), &data).await;
+        {{stinger.rust.server_struct_name}}::oneshot_to_future(published_oneshot).await
     }
     {%endfor%}
     {%if stinger.methods | length > 0%}
@@ -234,30 +247,55 @@ impl {{stinger.rust.server_struct_name}} {
     {%endfor%}
 
     {%-for prop_name, prop in stinger.properties.items()%}
-    async fn publish_{{prop_name}}_value(publisher: MqttierClient, topic: String, data: {{prop.rust_type}})
+    async fn publish_{{prop_name}}_value(publisher: MqttierClient, topic: String, data: {{prop.rust_type}}) -> SentMessageFuture
     {
         {%-if prop.arg_list | length == 1%}
         let new_data = {{prop_name | UpperCamelCase}}Property {
             {{prop.arg_list[0].name}}: data,
         };
-        println!("Publishing to topic {}", topic);
-        let _pub_result = publisher.publish_state(topic, &new_data, 1).await;
+        debug!("Publishing '{{prop_name}}' property value to topic {}", topic);
+        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
         {%else%}
-        let _pub_result = publisher.publish_state(topic, &data, 1).await;
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
         {%endif%}
+        {{stinger.rust.server_struct_name}}::oneshot_to_future(published_oneshot).await
     }
     {%if not prop.read_only %}
-    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, watch_sender: watch::Sender<Option<{{prop.rust_type}}>>, msg: ReceivedMessage)
+    /// This is the method called from an MQTT request to update the property value.
+    /// It updates the local value, notifies any watchers, and publishes the new value.
+    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, watch_sender: watch::Sender<Option<{{prop.rust_type}}>>, msg: ReceivedMessage) -> SentMessageFuture
     {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_data: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(&payload_str).unwrap();
-        let mut locked_data = data.lock().unwrap();
-        {%-if prop.arg_list | length == 1%}
-        *locked_data = Some(new_data.{{prop.arg_list[0].name}}{%if prop.arg_list[0].rust_type == 'String' %}.clone(){%endif%});
-        {%-else%}
-        *locked_data = Some(new_data.clone());
-        {%endif%}
-        let publisher2 = publisher.clone();
+        let new_data: {{prop_name | UpperCamelCase}}Property = {
+            match serde_json::from_str(&payload_str) {
+                Ok(data) => data,
+                Err(e) => {
+                    error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
+                    return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::DeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string())).await;
+                }
+            }
+        };
+
+        let assignment_result = match data.lock() {
+            Ok(mut guard) => {
+                {%if prop.arg_list | length == 1 -%}
+                *guard = Some(new_data.{{prop.arg_list[0].name}}{%if prop.arg_list[0].rust_type == 'String' %}.clone(){%endif%});
+                {%else-%}
+                *guard = Some(new_data.clone());
+                {%endif%}
+                Ok(())
+            }
+            Err(_e) => {
+                Err(())
+            }
+        };
+        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
+        if let Err(()) = assignment_result {
+            return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::ServerError(
+                format!("Failed to lock mutex for updating property '{{prop_name}}'"),
+            ))
+            .await;
+        }
         let topic2: String = topic.as_ref().clone();
         {%-if prop.arg_list | length == 1%}
         let data2 = new_data.{{prop.arg_list[0].name}}{%if prop.arg_list[0].rust_type == 'String' %}.clone(){%endif%};
@@ -265,10 +303,13 @@ impl {{stinger.rust.server_struct_name}} {
         let data2 = new_data;
         {%endif%}
         let data_to_send_to_watchers = data2.clone();
-        let _ = watch_sender.send(Some(data_to_send_to_watchers));
-        let _ = tokio::spawn(async move {
-            {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data2).await;
-        });
+        match watch_sender.send(Some(data_to_send_to_watchers)) {
+            Ok(_) => {}
+            Err(e) => {
+                error!("Failed to notify local watchers for '{{prop_name}}' property: {:?}", e);
+            }
+        };
+        {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher, topic2, data2).await
     }
 
     pub async fn watch_{{prop_name}}(&self) -> watch::Receiver<Option<{{prop.rust_type}}>> {

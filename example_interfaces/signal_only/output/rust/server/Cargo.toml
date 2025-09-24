@@ -7,7 +7,7 @@ edition = "2024"
 signal_only_types = { path = "../payloads" }
 futures = "0.3"
 json = "0.12.4"
-mqttier = { git = "https://github.com/stinger-ipc/mqttier.git", rev = "4d3f110355da07265e8e58494395513256894f4c" }
+mqttier = "0.3.0"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 tokio = { version = "1", features = ["full"] }

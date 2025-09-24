@@ -4,7 +4,7 @@ version = "0.1.2"
 edition = "2024"
 
 [dependencies]
-mqttier = { git = "https://github.com/stinger-ipc/mqttier.git", rev = "4d3f110355da07265e8e58494395513256894f4c" }
+mqttier = "0.3.0"
 weather_types = { path = "../payloads" }
 futures = "0.3"
 json = "0.12.4"
