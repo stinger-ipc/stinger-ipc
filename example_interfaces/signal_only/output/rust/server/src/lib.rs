@@ -12,8 +12,11 @@ use signal_only_types::MethodReturnCode;
 use signal_only_types::payloads::*;
 use std::any::Any;
 
-use std::future::Future;
 use tokio::task::JoinError;
+
+use std::future::Future;
+use std::pin::Pin;
+
 use tracing::{debug, error, info, warn};
 
 #[derive(Clone)]
@@ -40,7 +43,7 @@ impl SignalOnlyServer {
         one: f32,
         two: bool,
         three: String,
-    ) -> Box<dyn Future<Output = Result<(), MethodReturnCode>>> {
+    ) -> Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>>>> {
         let data = AnotherSignalSignalPayload {
             one: one,
 
@@ -52,7 +55,7 @@ impl SignalOnlyServer {
             .mqttier_client
             .publish_structure("signalOnly/signal/anotherSignal".to_string(), &data)
             .await;
-        Box::new(async move {
+        Box::pin(async move {
             let publish_result = publish_oneshot.await;
             match publish_result {
                 Ok(PublishResult::Acknowledged(_))

@@ -27,6 +27,10 @@ async fn main() {
                 .publish_string("example/pub_topic".to_string(), message, 1, false, None)
                 .await;
             let pub_result = pub_result_rx.await;
+            match pub_result {
+                Ok(_) => println!("Published message {}", i),
+                Err(e) => eprintln!("Failed to publish message {}: {:?}", i, e),
+            }
         }
     });
 

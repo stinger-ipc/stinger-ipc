@@ -23,7 +23,10 @@ use serde_json;
 use tokio::sync::{mpsc{%if stinger.properties|length > 0 %}, watch{%endif%}};
 {%endif%}
 use tokio::task::JoinError;
+{%if stinger.signals | length > 0 %}
 use std::future::Future;
+use std::pin::Pin;
+{%endif%}
 use tracing::{debug, info, warn, error};
 
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
@@ -142,14 +145,14 @@ impl {{stinger.rust.server_struct_name}} {
 
     {%for sig_name, sig in stinger.signals.items()-%}
     /// Emits the {{sig_name}} signal with the given arguments.
-    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Box<dyn Future<Output = Result<(), MethodReturnCode>>> {
+    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>>>> {
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
         {{arg.name}}: {{arg.name|snake_case}},
             {%endfor%}
         };
         let publish_oneshot = self.mqttier_client.publish_structure("{{sig.topic}}".to_string(), &data).await;
-        Box::new(async move {
+        Box::pin(async move {
             let publish_result = publish_oneshot.await;
             match publish_result {
                 Ok(PublishResult::Acknowledged(_))

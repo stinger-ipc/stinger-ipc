@@ -15,6 +15,7 @@ pub enum MethodReturnCode {
     DeserializationError(String),
     Unauthorized(String),
     Timeout(String),
+    OutOfSync(String),
     UnknownError(String),
     NotImplemented(String),
     ServiceUnavailable(String),
@@ -32,9 +33,10 @@ impl MethodReturnCode {
             6 => MethodReturnCode::DeserializationError(message.unwrap_or_default()),
             7 => MethodReturnCode::Unauthorized(message.unwrap_or_default()),
             8 => MethodReturnCode::Timeout(message.unwrap_or_default()),
-            9 => MethodReturnCode::UnknownError(message.unwrap_or_default()),
-            10 => MethodReturnCode::NotImplemented(message.unwrap_or_default()),
-            11 => MethodReturnCode::ServiceUnavailable(message.unwrap_or_default()),
+            9 => MethodReturnCode::OutOfSync(message.unwrap_or_default()),
+            10 => MethodReturnCode::UnknownError(message.unwrap_or_default()),
+            11 => MethodReturnCode::NotImplemented(message.unwrap_or_default()),
+            12 => MethodReturnCode::ServiceUnavailable(message.unwrap_or_default()),
             _ => MethodReturnCode::UnknownError(message.unwrap_or_default()),
         }
     }
@@ -50,9 +52,10 @@ impl MethodReturnCode {
             MethodReturnCode::DeserializationError(msg) => (6, Some(msg.clone())),
             MethodReturnCode::Unauthorized(msg) => (7, Some(msg.clone())),
             MethodReturnCode::Timeout(msg) => (8, Some(msg.clone())),
-            MethodReturnCode::UnknownError(msg) => (9, Some(msg.clone())),
-            MethodReturnCode::NotImplemented(msg) => (10, Some(msg.clone())),
-            MethodReturnCode::ServiceUnavailable(msg) => (11, Some(msg.clone())),
+            MethodReturnCode::OutOfSync(msg) => (9, Some(msg.clone())),
+            MethodReturnCode::UnknownError(msg) => (10, Some(msg.clone())),
+            MethodReturnCode::NotImplemented(msg) => (11, Some(msg.clone())),
+            MethodReturnCode::ServiceUnavailable(msg) => (12, Some(msg.clone())),
         }
     }
 }

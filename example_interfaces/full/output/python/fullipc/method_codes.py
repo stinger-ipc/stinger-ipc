@@ -12,9 +12,10 @@ class MethodReturnCode(IntEnum):
     DESERIALIZATION_ERROR = 6
     UNAUTHORIZED = 7
     TIMEOUT = 8
-    UNKNOWN_ERROR = 9
-    NOT_IMPLEMENTED = 10
-    SERVICE_UNAVAILABLE = 11
+    OUT_OF_SYNC = 9
+    UNKNOWN_ERROR = 10
+    NOT_IMPLEMENTED = 11
+    SERVICE_UNAVAILABLE = 12
 
 
 class StingerMethodException(Exception):
@@ -73,6 +74,11 @@ class TimeoutStingerMethodException(StingerMethodException):
         super().__init__(MethodReturnCode.TIMEOUT, message)
 
 
+class OutOfSyncStingerMethodException(StingerMethodException):
+    def __init__(self, message: str):
+        super().__init__(MethodReturnCode.OUT_OF_SYNC, message)
+
+
 class UnknownErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
         super().__init__(MethodReturnCode.UNKNOWN_ERROR, message)
@@ -99,9 +105,10 @@ def stinger_exception_factory(return_code: int, message: Optional[str] = None):
         6: DeserializationErrorStingerMethodException,
         7: UnauthorizedStingerMethodException,
         8: TimeoutStingerMethodException,
-        9: UnknownErrorStingerMethodException,
-        10: NotImplementedStingerMethodException,
-        11: ServiceUnavailableStingerMethodException,
+        9: OutOfSyncStingerMethodException,
+        10: UnknownErrorStingerMethodException,
+        11: NotImplementedStingerMethodException,
+        12: ServiceUnavailableStingerMethodException,
     }
     exc_class = exc_classes[return_code]
     return exc_class(message or "")

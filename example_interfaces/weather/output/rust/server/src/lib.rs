@@ -19,8 +19,11 @@ use tokio::sync::Mutex as AsyncMutex;
 use serde_json;
 use tokio::sync::{mpsc, watch};
 
-use std::future::Future;
 use tokio::task::JoinError;
+
+use std::future::Future;
+use std::pin::Pin;
+
 use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
@@ -257,7 +260,7 @@ impl WeatherServer {
     pub async fn emit_current_time(
         &mut self,
         current_time: String,
-    ) -> Box<dyn Future<Output = Result<(), MethodReturnCode>>> {
+    ) -> Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>>>> {
         let data = CurrentTimeSignalPayload {
             current_time: current_time,
         };
@@ -265,7 +268,7 @@ impl WeatherServer {
             .mqttier_client
             .publish_structure("weather/signal/currentTime".to_string(), &data)
             .await;
-        Box::new(async move {
+        Box::pin(async move {
             let publish_result = publish_oneshot.await;
             match publish_result {
                 Ok(PublishResult::Acknowledged(_))

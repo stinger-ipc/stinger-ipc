@@ -25,9 +25,10 @@ enum class MethodReturnCode
     DESERIALIZATION_ERROR = 6,
     UNAUTHORIZED = 7,
     TIMEOUT = 8,
-    UNKNOWN_ERROR = 9,
-    NOT_IMPLEMENTED = 10,
-    SERVICE_UNAVAILABLE = 11
+    OUT_OF_SYNC = 9,
+    UNKNOWN_ERROR = 10,
+    NOT_IMPLEMENTED = 11,
+    SERVICE_UNAVAILABLE = 12
 };
 
 struct MqttProperties

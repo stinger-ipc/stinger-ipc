@@ -19,8 +19,11 @@ use tokio::sync::Mutex as AsyncMutex;
 use serde_json;
 use tokio::sync::{mpsc, watch};
 
-use std::future::Future;
 use tokio::task::JoinError;
+
+use std::future::Future;
+use std::pin::Pin;
+
 use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
@@ -213,7 +216,7 @@ impl FullServer {
         &mut self,
         day_of_month: i32,
         day_of_week: Option<DayOfTheWeek>,
-    ) -> Box<dyn Future<Output = Result<(), MethodReturnCode>>> {
+    ) -> Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>>>> {
         let data = TodayIsSignalPayload {
             dayOfMonth: day_of_month,
 
@@ -223,7 +226,7 @@ impl FullServer {
             .mqttier_client
             .publish_structure("full/signal/todayIs".to_string(), &data)
             .await;
-        Box::new(async move {
+        Box::pin(async move {
             let publish_result = publish_oneshot.await;
             match publish_result {
                 Ok(PublishResult::Acknowledged(_))
@@ -250,13 +253,13 @@ impl FullServer {
     pub async fn emit_bark(
         &mut self,
         word: String,
-    ) -> Box<dyn Future<Output = Result<(), MethodReturnCode>>> {
+    ) -> Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>>>> {
         let data = BarkSignalPayload { word: word };
         let publish_oneshot = self
             .mqttier_client
             .publish_structure("full/signal/bark".to_string(), &data)
             .await;
-        Box::new(async move {
+        Box::pin(async move {
             let publish_result = publish_oneshot.await;
             match publish_result {
                 Ok(PublishResult::Acknowledged(_))

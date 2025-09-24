@@ -982,9 +982,10 @@ class StingerSpec:
             6: "Deserialization Error",
             7: "Unauthorized",
             8: "Timeout",
-            9: "Unknown Error",
-            10: "Not Implemented",
-            11: "Service Unavailable",
+            9: "OutOfSync",
+            10: "Unknown Error",
+            11: "Not Implemented",
+            12: "Service Unavailable",
         }
 
     @property
