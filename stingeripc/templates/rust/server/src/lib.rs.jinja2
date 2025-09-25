@@ -189,7 +189,7 @@ impl {{stinger.rust.server_struct_name}} {
         {{stinger.rust.server_struct_name}}::oneshot_to_future(published_oneshot).await
     }
     {%endfor%}
-    {%if stinger.methods | length > 0%}
+    {%if stinger.methods | length > 0 or stinger.properties | length > 0 %}
     /// Publishes an error response to the given response topic with the given correlation data.
     async fn publish_error_response(publisher: MqttierClient, response_topic: Option<String>, correlation_data: Option<Vec<u8>>, err: &MethodReturnCode) {
         if let Some(resp_topic) = response_topic {
@@ -200,8 +200,8 @@ impl {{stinger.rust.server_struct_name}} {
             info!("No response topic found in message properties; cannot send error response.");
         }
     }
-    {%endif%}
-    {%for method_name, method in stinger.methods.items()-%}
+    {%endif-%}
+    {%for method_name, method in stinger.methods.items()%}
     /// Handles a request message for the {{method_name}} method.
     async fn handle_{{method_name|snake_case}}_request(publisher: MqttierClient, handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>>, msg: ReceivedMessage) {
         let opt_corr_data = msg.correlation_data;
@@ -368,16 +368,35 @@ impl {{stinger.rust.server_struct_name}} {
 
         let loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
+                {%if stinger.properties | length > 0 %}
+                let opt_resp_topic = msg.response_topic.clone();
+                let opt_corr_data = msg.correlation_data.clone();
+                let topic = msg.topic.clone();
+                {%endif%}
+                
                 {%-for method_name, method in stinger.methods.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method_req {
                     {{stinger.rust.server_struct_name}}::handle_{{method_name|snake_case}}_request(publisher.clone(), method_handlers.clone(), msg).await;
                 }
                 {%-endfor%}{# methods #}
-                {%-for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
-                {%if not loop.first or (stinger.methods | length > 0) %}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_update {
-                    {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), properties.{{prop_name | snake_case}}_tx_channel.clone(), msg).await;
+                {%if stinger.properties | length > 0 %}
+                else {
+                    let update_prop_future = {
+                        {%-for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
+                            {%if not loop.first %}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_update {
+                                {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), properties.{{prop_name | snake_case}}_tx_channel.clone(), msg).await
+                            }
+                        {%-endif%}{%endfor%}{# properties #}
+                            else {
+                                {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::NotImplemented("Could not find a property matching the request".to_string())).await
+                            }
+                    };
+                    match update_prop_future.await {
+                        Ok(_) => debug!("Successfully processed update  property"),
+                        Err(e) => error!("Error processing update  property: {:?}", e),
+                    }
                 }
-                {%-endif%}{%endfor%}{# properties #}
+                {%endif%}{# any properties #}
             }
             println!("No more messages from message_receiver channel");
         });
