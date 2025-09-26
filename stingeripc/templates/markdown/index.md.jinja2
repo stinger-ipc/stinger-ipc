@@ -329,10 +329,41 @@ Client <<- Server: Property Updated
 This property is **read-only**.  It can only be modified by the server.{%endif%}
 
 {{argtable(prop.arg_list)}}
+
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `{{prop_name}}`.  The value can be changed by calling the server's `set_{{prop_name | snake_case}}` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_{{prop_name | snake_case}}()` method with an initial value when starting up, and then whenever the value changes.
+{%if not prop.read_only %}
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<{{prop.rust_type}}>>` by calling the server's `get_{{prop_name | snake_case}}_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_{{prop_name|snake_case}}_changed = server.watch_{{prop_name|snake_case}}();
+
+while let Some(new_value) = on_{{prop_name|snake_case}}_changed.recv().await {
+    println!("Property '{{prop_name}}' changed to: {:?}", new_value);
+}
+```
+{%endif%}
+</details>
+
 {%endfor%}{# for each property #}
 {%endif%}{#end condition that there are a number of properties#}
 {%if stinger.enums | length > 0%}## Enums
 {%endif%}
+
 {%for ie_name, ie in stinger.enums.items() %}
 {#- ------------------------------------------------------- -#}
 ### Enum `{{ie.class_name }}`

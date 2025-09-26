@@ -324,10 +324,9 @@ impl {{stinger.rust.server_struct_name}} {
 
     {%endif%}{# not read only property #}
     pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) -> SentMessageFuture {
-        println!("Setting {{prop_name}} of type {{prop.rust_type}}");
         let prop = self.properties.{{prop_name}}.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -348,11 +347,12 @@ impl {{stinger.rust.server_struct_name}} {
         });
         if !send_result {
             debug!("Property '{{prop_name}}' value not changed, so not notifying watchers.");
+            return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.{{prop_name}}_topic.as_ref().clone();
+            {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.{{prop_name}}_topic.as_ref().clone();
-        {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data).await
     }
     {%endfor%}
 
@@ -390,7 +390,6 @@ impl {{stinger.rust.server_struct_name}} {
                 {%if stinger.properties | length > 0 %}
                 let opt_resp_topic = msg.response_topic.clone();
                 let opt_corr_data = msg.correlation_data.clone();
-                let topic = msg.topic.clone();
                 {%endif%}
                 
                 {%-for method_name, method in stinger.methods.items()%}
@@ -412,17 +411,23 @@ impl {{stinger.rust.server_struct_name}} {
                     };
                     match update_prop_future.await {
                         Ok(_) => debug!("Successfully processed update  property"),
-                        Err(e) => error!("Error processing update  property: {:?}", e),
+                        Err(e) => {
+                            error!("Error processing update to '{{prop_name}}' property: {:?}", e);
+                            if let Some(resp_topic) = opt_resp_topic {
+                                {{stinger.rust.server_struct_name}}::publish_error_response(publisher.clone(), Some(resp_topic), opt_corr_data, &e).await;
+                            } else {
+                                warn!("No response topic found in message properties; cannot send error response.");
+                            }
+                        }
                     }
                 }
                 {%endif%}{# any properties #}
             }
-            println!("No more messages from message_receiver channel");
         });
         let _ = tokio::join!(loop_task);
         {%endif%} {# any methods or properties #}
         
-        println!("Server receive loop completed [error?]");
+        warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())
     }
 

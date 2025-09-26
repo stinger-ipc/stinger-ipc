@@ -11,7 +11,7 @@ This is the Client for the Full interface.
 
 use futures::executor::block_on;
 use mqttier::MqttierClient;
-use signal_only_ipc::payloads::SignalOnlyClient;
+use signal_only_ipc::client::SignalOnlyClient;
 #[allow(unused_imports)]
 use signal_only_ipc::payloads::{MethodReturnCode, *};
 use tokio::join;

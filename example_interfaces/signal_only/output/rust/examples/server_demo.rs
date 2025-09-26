@@ -6,7 +6,7 @@ It contains enumerations used by the SignalOnly interface.
 */
 use futures::executor::block_on;
 use mqttier::MqttierClient;
-use signal_only_ipc::SignalOnlyServer;
+use signal_only_ipc::server::SignalOnlyServer;
 use std::any::Any;
 use tokio::time::{Duration, sleep};
 

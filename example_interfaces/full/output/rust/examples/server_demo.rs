@@ -4,7 +4,7 @@ on the next generation.
 
 It contains enumerations used by the Full interface.
 */
-use full_ipc::{FullMethodHandlers, FullServer};
+use full_ipc::server::{FullMethodHandlers, FullServer};
 use futures::executor::block_on;
 use mqttier::MqttierClient;
 use std::any::Any;
@@ -81,7 +81,10 @@ async fn main() {
         let mut server = FullServer::new(&mut connection, handlers.clone()).await;
 
         println!("Setting initial value for property 'favorite_number'");
-        server.set_favorite_number(42).await;
+        let prop_init_future = server.set_favorite_number(42).await;
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'favorite_number': {:?}", e);
+        }
 
         println!("Setting initial value for property 'favorite_foods'");
         let new_value = FavoriteFoodsProperty {
@@ -89,7 +92,11 @@ async fn main() {
             slices_of_pizza: 42,
             breakfast: Some("apples".to_string()),
         };
-        server.set_favorite_foods(new_value).await;
+        let prop_init_future = server.set_favorite_foods(new_value).await;
+
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'favorite_foods': {:?}", e);
+        }
 
         println!("Setting initial value for property 'lunch_menu'");
         let new_value = LunchMenuProperty {
@@ -108,10 +115,17 @@ async fn main() {
                 order_number: Some(42),
             },
         };
-        server.set_lunch_menu(new_value).await;
+        let prop_init_future = server.set_lunch_menu(new_value).await;
+
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'lunch_menu': {:?}", e);
+        }
 
         println!("Setting initial value for property 'family_name'");
-        server.set_family_name("apples".to_string()).await;
+        let prop_init_future = server.set_family_name("apples".to_string()).await;
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'family_name': {:?}", e);
+        }
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'todayIs'");
@@ -121,7 +135,10 @@ async fn main() {
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'favorite_number'");
-        server.set_favorite_number(2022).await;
+        let prop_change_future = server.set_favorite_number(2022).await;
+        if let Err(e) = prop_change_future.await {
+            eprintln!("Error changing property 'favorite_number': {:?}", e);
+        }
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'favorite_foods'");
@@ -154,7 +171,10 @@ async fn main() {
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'family_name'");
-        server.set_family_name("foo".to_string()).await;
+        let prop_change_future = server.set_family_name("foo".to_string()).await;
+        if let Err(e) = prop_change_future.await {
+            eprintln!("Error changing property 'family_name': {:?}", e);
+        }
         let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop

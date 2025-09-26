@@ -445,6 +445,36 @@ Weather will be retrieved for the provided location.
 |    latitude   |  number  ||
 |   longitude   |  number  ||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `location`.  The value can be changed by calling the server's `set_location` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_location(3.14).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_location()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<LocationProperty>>` by calling the server's `get_location_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_location_changed = server.watch_location();
+
+while let Some(new_value) = on_location_changed.recv().await {
+    println!("Property 'location' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
 ### Property `current_temperature`
 
 This is the current (estimated) temperature in degrees fahrenheit.  This values
@@ -458,6 +488,25 @@ This property is **read-only**.  It can only be modified by the server.
 |---------------|----------|-----------|
 | temperature_f |  number  ||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `current_temperature`.  The value can be changed by calling the server's `set_current_temperature` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_current_temperature(3.14).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_current_temperature()` method with an initial value when starting up, and then whenever the value changes.
+
+</details>
+
+
 ### Property `current_condition`
 
 This is the current weather outside.  This comes from the hourly forecast and is
@@ -470,6 +519,25 @@ This property is **read-only**.  It can only be modified by the server.
 |---------------|----------|-----------|
 |   condition   |[Enum WeatherCondition](#enum-WeatherCondition)||
 |  description  |  string  ||
+
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `current_condition`.  The value can be changed by calling the server's `set_current_condition` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_current_condition(WeatherCondition::Sunny).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_current_condition()` method with an initial value when starting up, and then whenever the value changes.
+
+</details>
+
 
 ### Property `daily_forecast`
 
@@ -487,6 +555,25 @@ This property is **read-only**.  It can only be modified by the server.
 |    tuesday    |[Struct ForecastForDay](#enum-ForecastForDay)||
 |   wednesday   |[Struct ForecastForDay](#enum-ForecastForDay)||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `daily_forecast`.  The value can be changed by calling the server's `set_daily_forecast` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_daily_forecast(ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Sunny, start_time: "apples".to_string(), end_time: "apples".to_string()}).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_daily_forecast()` method with an initial value when starting up, and then whenever the value changes.
+
+</details>
+
+
 ### Property `hourly_forecast`
 
 This contains the weather forecast for each hour of the next 24 hours.  The data source
@@ -503,6 +590,25 @@ This property is **read-only**.  It can only be modified by the server.
 |     hour_2    |[Struct ForecastForHour](#enum-ForecastForHour)||
 |     hour_3    |[Struct ForecastForHour](#enum-ForecastForHour)||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `hourly_forecast`.  The value can be changed by calling the server's `set_hourly_forecast` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_hourly_forecast(ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: WeatherCondition::Sunny}).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_hourly_forecast()` method with an initial value when starting up, and then whenever the value changes.
+
+</details>
+
+
 ### Property `current_condition_refresh_interval`
 
 This is the maximum interval, in seconds, that the latest weather conditions at the nearest weather
@@ -513,6 +619,36 @@ station are retrieved.
 |---------------|----------|-----------|
 |    seconds    | integer  ||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `current_condition_refresh_interval`.  The value can be changed by calling the server's `set_current_condition_refresh_interval` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_current_condition_refresh_interval(42).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_current_condition_refresh_interval()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<i32>>` by calling the server's `get_current_condition_refresh_interval_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_current_condition_refresh_interval_changed = server.watch_current_condition_refresh_interval();
+
+while let Some(new_value) = on_current_condition_refresh_interval_changed.recv().await {
+    println!("Property 'current_condition_refresh_interval' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
 ### Property `hourly_forecast_refresh_interval`
 
 This is the maximum interval, in seconds, that the hourly forecast data is retrieved.
@@ -521,6 +657,36 @@ This is the maximum interval, in seconds, that the hourly forecast data is retri
 | Name          | Type     |Description|
 |---------------|----------|-----------|
 |    seconds    | integer  |Interval duration in seconds.|
+
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `hourly_forecast_refresh_interval`.  The value can be changed by calling the server's `set_hourly_forecast_refresh_interval` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_hourly_forecast_refresh_interval(42).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_hourly_forecast_refresh_interval()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<i32>>` by calling the server's `get_hourly_forecast_refresh_interval_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_hourly_forecast_refresh_interval_changed = server.watch_hourly_forecast_refresh_interval();
+
+while let Some(new_value) = on_hourly_forecast_refresh_interval_changed.recv().await {
+    println!("Property 'hourly_forecast_refresh_interval' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
 
 ### Property `daily_forecast_refresh_interval`
 
@@ -531,8 +697,39 @@ This is the maximum interval, in seconds, that the daily forecast data is retrie
 |---------------|----------|-----------|
 |    seconds    | integer  ||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `daily_forecast_refresh_interval`.  The value can be changed by calling the server's `set_daily_forecast_refresh_interval` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_daily_forecast_refresh_interval(42).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_daily_forecast_refresh_interval()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<i32>>` by calling the server's `get_daily_forecast_refresh_interval_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_daily_forecast_refresh_interval_changed = server.watch_daily_forecast_refresh_interval();
+
+while let Some(new_value) = on_daily_forecast_refresh_interval_changed.recv().await {
+    println!("Property 'daily_forecast_refresh_interval' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
 
 ## Enums
+
 
 ### Enum `WeatherCondition`
 

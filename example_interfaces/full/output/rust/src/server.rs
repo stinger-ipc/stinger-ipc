@@ -557,10 +557,9 @@ impl FullServer {
     }
 
     pub async fn set_favorite_number(&mut self, data: i32) -> SentMessageFuture {
-        println!("Setting favorite_number of type i32");
         let prop = self.properties.favorite_number.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -584,11 +583,12 @@ impl FullServer {
                 });
         if !send_result {
             debug!("Property 'favorite_number' value not changed, so not notifying watchers.");
+            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.favorite_number_topic.as_ref().clone();
+            FullServer::publish_favorite_number_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.favorite_number_topic.as_ref().clone();
-        FullServer::publish_favorite_number_value(publisher2, topic2, data).await
     }
 
     async fn publish_favorite_foods_value(
@@ -667,10 +667,9 @@ impl FullServer {
     }
 
     pub async fn set_favorite_foods(&mut self, data: FavoriteFoodsProperty) -> SentMessageFuture {
-        println!("Setting favorite_foods of type FavoriteFoodsProperty");
         let prop = self.properties.favorite_foods.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -694,11 +693,12 @@ impl FullServer {
                 });
         if !send_result {
             debug!("Property 'favorite_foods' value not changed, so not notifying watchers.");
+            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
+            FullServer::publish_favorite_foods_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
-        FullServer::publish_favorite_foods_value(publisher2, topic2, data).await
     }
 
     async fn publish_lunch_menu_value(
@@ -777,10 +777,9 @@ impl FullServer {
     }
 
     pub async fn set_lunch_menu(&mut self, data: LunchMenuProperty) -> SentMessageFuture {
-        println!("Setting lunch_menu of type LunchMenuProperty");
         let prop = self.properties.lunch_menu.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -804,11 +803,12 @@ impl FullServer {
             });
         if !send_result {
             debug!("Property 'lunch_menu' value not changed, so not notifying watchers.");
+            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
+            FullServer::publish_lunch_menu_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
-        FullServer::publish_lunch_menu_value(publisher2, topic2, data).await
     }
 
     async fn publish_family_name_value(
@@ -888,10 +888,9 @@ impl FullServer {
     }
 
     pub async fn set_family_name(&mut self, data: String) -> SentMessageFuture {
-        println!("Setting family_name of type String");
         let prop = self.properties.family_name.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -915,11 +914,12 @@ impl FullServer {
             });
         if !send_result {
             debug!("Property 'family_name' value not changed, so not notifying watchers.");
+            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.family_name_topic.as_ref().clone();
+            FullServer::publish_family_name_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.family_name_topic.as_ref().clone();
-        FullServer::publish_family_name_value(publisher2, topic2, data).await
     }
 
     /// Starts the tasks that process messages received.
@@ -955,7 +955,6 @@ impl FullServer {
             while let Some(msg) = message_receiver.recv().await {
                 let opt_resp_topic = msg.response_topic.clone();
                 let opt_corr_data = msg.correlation_data.clone();
-                let topic = msg.topic.clone();
 
                 if msg.subscription_id == sub_ids.add_numbers_method_req {
                     FullServer::handle_add_numbers_request(
@@ -1027,15 +1026,29 @@ impl FullServer {
                     };
                     match update_prop_future.await {
                         Ok(_) => debug!("Successfully processed update  property"),
-                        Err(e) => error!("Error processing update  property: {:?}", e),
+                        Err(e) => {
+                            error!("Error processing update to '' property: {:?}", e);
+                            if let Some(resp_topic) = opt_resp_topic {
+                                FullServer::publish_error_response(
+                                    publisher.clone(),
+                                    Some(resp_topic),
+                                    opt_corr_data,
+                                    &e,
+                                )
+                                .await;
+                            } else {
+                                warn!(
+                                    "No response topic found in message properties; cannot send error response."
+                                );
+                            }
+                        }
                     }
                 }
             }
-            println!("No more messages from message_receiver channel");
         });
         let _ = tokio::join!(loop_task);
 
-        println!("Server receive loop completed [error?]");
+        warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())
     }
 }

@@ -13,7 +13,7 @@ use futures::executor::block_on;
 use mqttier::MqttierClient;
 use tokio::join;
 use tokio::time::{Duration, sleep};
-use weather_ipc::payloads::WeatherClient;
+use weather_ipc::client::WeatherClient;
 #[allow(unused_imports)]
 use weather_ipc::payloads::{MethodReturnCode, *};
 

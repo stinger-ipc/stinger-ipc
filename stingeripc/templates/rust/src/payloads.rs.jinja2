@@ -11,7 +11,9 @@ It contains enumerations used by the {{stinger.name}} interface.
 
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
+{%if stinger.enums | length > 0 %}
 use std::fmt;
+{%endif%}
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]

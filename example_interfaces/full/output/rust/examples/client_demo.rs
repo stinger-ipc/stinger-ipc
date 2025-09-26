@@ -9,7 +9,7 @@ on the next generation.
 This is the Client for the Full interface.
 */
 
-use full_ipc::payloads::FullClient;
+use full_ipc::client::FullClient;
 #[allow(unused_imports)]
 use full_ipc::payloads::{MethodReturnCode, *};
 use futures::executor::block_on;

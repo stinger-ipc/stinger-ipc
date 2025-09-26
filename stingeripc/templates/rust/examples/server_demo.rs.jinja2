@@ -7,7 +7,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 use std::any::Any;
 use futures::{executor::block_on};
 use mqttier::MqttierClient;
-use {{stinger.rust.package_name}}::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
+use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
 use tokio::time::{sleep, Duration};
 {%if stinger.methods|length > 0%}
 use std::sync::Arc;
@@ -81,15 +81,18 @@ async fn main() {
         {%for prop_name, prop in stinger.properties.items()%}
         println!("Setting initial value for property '{{prop_name}}'");
         {%-if prop.arg_list | length == 1 %}
-        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
+        let prop_init_future = server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
         {%-else%}{# many args in property #}
         let new_value = {{prop.rust_type}} {
             {%-for arg in prop.arg_list %}
                 {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
             {%-endfor%}
         };
-        server.set_{{prop_name | snake_case}}(new_value).await;
+        let prop_init_future = server.set_{{prop_name | snake_case}}(new_value).await;
         {%endif%}
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property '{{prop_name}}': {:?}", e);
+        }
         {%endfor%}{# property initialization -#}
 
         {%for sig_name, sig in stinger.signals.items()%}
@@ -103,7 +106,10 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Changing property '{{prop_name}}'");
         {%-if prop.arg_list | length == 1 %}
-        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}}).await;
+        let prop_change_future = server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}}).await;
+        if let Err(e) = prop_change_future.await {
+            eprintln!("Error changing property '{{prop_name}}': {:?}", e);
+        }
         {%-else%}{# many args in property #}
         let new_value = {{prop.rust_type}} {
             {%-for arg in prop.arg_list %}

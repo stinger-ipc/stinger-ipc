@@ -433,6 +433,36 @@ My favorite number
 |---------------|----------|-----------|
 |     number    | integer  ||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `favorite_number`.  The value can be changed by calling the server's `set_favorite_number` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_favorite_number(42).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_favorite_number()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<i32>>` by calling the server's `get_favorite_number_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_favorite_number_changed = server.watch_favorite_number();
+
+while let Some(new_value) = on_favorite_number_changed.recv().await {
+    println!("Property 'favorite_number' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
 ### Property `favorite_foods`
 
 _No documentation is available for this property_
@@ -443,6 +473,36 @@ _No documentation is available for this property_
 |slices_of_pizza| integer  ||
 |   breakfast   |  string   (optional)||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `favorite_foods`.  The value can be changed by calling the server's `set_favorite_foods` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_favorite_foods("apples".to_string()).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_favorite_foods()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<FavoriteFoodsProperty>>` by calling the server's `get_favorite_foods_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_favorite_foods_changed = server.watch_favorite_foods();
+
+while let Some(new_value) = on_favorite_foods_changed.recv().await {
+    println!("Property 'favorite_foods' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
 ### Property `lunch_menu`
 
 _No documentation is available for this property_
@@ -452,6 +512,36 @@ _No documentation is available for this property_
 |     monday    |[Struct Lunch](#enum-Lunch)||
 |    tuesday    |[Struct Lunch](#enum-Lunch)||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `lunch_menu`.  The value can be changed by calling the server's `set_lunch_menu` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_lunch_menu(Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Monday, order_number: Some(42)}).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_lunch_menu()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<LunchMenuProperty>>` by calling the server's `get_lunch_menu_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_lunch_menu_changed = server.watch_lunch_menu();
+
+while let Some(new_value) = on_lunch_menu_changed.recv().await {
+    println!("Property 'lunch_menu' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
 ### Property `family_name`
 
 This is to test a property with a single string value.
@@ -460,8 +550,39 @@ This is to test a property with a single string value.
 |---------------|----------|-----------|
 |  family_name  |  string  ||
 
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `family_name`.  The value can be changed by calling the server's `set_family_name` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_family_name("apples".to_string()).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_family_name()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<String>>` by calling the server's `get_family_name_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_family_name_changed = server.watch_family_name();
+
+while let Some(new_value) = on_family_name_changed.recv().await {
+    println!("Property 'family_name' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
 
 ## Enums
+
 
 ### Enum `DayOfTheWeek`
 

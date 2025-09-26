@@ -547,10 +547,9 @@ impl WeatherServer {
     }
 
     pub async fn set_location(&mut self, data: LocationProperty) -> SentMessageFuture {
-        println!("Setting location of type LocationProperty");
         let prop = self.properties.location.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -574,11 +573,12 @@ impl WeatherServer {
             });
         if !send_result {
             debug!("Property 'location' value not changed, so not notifying watchers.");
+            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.location_topic.as_ref().clone();
+            WeatherServer::publish_location_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.location_topic.as_ref().clone();
-        WeatherServer::publish_location_value(publisher2, topic2, data).await
     }
 
     async fn publish_current_temperature_value(
@@ -599,10 +599,9 @@ impl WeatherServer {
     }
 
     pub async fn set_current_temperature(&mut self, data: f32) -> SentMessageFuture {
-        println!("Setting current_temperature of type f32");
         let prop = self.properties.current_temperature.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -626,11 +625,12 @@ impl WeatherServer {
             });
         if !send_result {
             debug!("Property 'current_temperature' value not changed, so not notifying watchers.");
+            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.current_temperature_topic.as_ref().clone();
+            WeatherServer::publish_current_temperature_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.current_temperature_topic.as_ref().clone();
-        WeatherServer::publish_current_temperature_value(publisher2, topic2, data).await
     }
 
     async fn publish_current_condition_value(
@@ -647,10 +647,9 @@ impl WeatherServer {
         &mut self,
         data: CurrentConditionProperty,
     ) -> SentMessageFuture {
-        println!("Setting current_condition of type CurrentConditionProperty");
         let prop = self.properties.current_condition.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -674,11 +673,12 @@ impl WeatherServer {
             });
         if !send_result {
             debug!("Property 'current_condition' value not changed, so not notifying watchers.");
+            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.current_condition_topic.as_ref().clone();
+            WeatherServer::publish_current_condition_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.current_condition_topic.as_ref().clone();
-        WeatherServer::publish_current_condition_value(publisher2, topic2, data).await
     }
 
     async fn publish_daily_forecast_value(
@@ -692,10 +692,9 @@ impl WeatherServer {
     }
 
     pub async fn set_daily_forecast(&mut self, data: DailyForecastProperty) -> SentMessageFuture {
-        println!("Setting daily_forecast of type DailyForecastProperty");
         let prop = self.properties.daily_forecast.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -719,11 +718,12 @@ impl WeatherServer {
                 });
         if !send_result {
             debug!("Property 'daily_forecast' value not changed, so not notifying watchers.");
+            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.daily_forecast_topic.as_ref().clone();
+            WeatherServer::publish_daily_forecast_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.daily_forecast_topic.as_ref().clone();
-        WeatherServer::publish_daily_forecast_value(publisher2, topic2, data).await
     }
 
     async fn publish_hourly_forecast_value(
@@ -737,10 +737,9 @@ impl WeatherServer {
     }
 
     pub async fn set_hourly_forecast(&mut self, data: HourlyForecastProperty) -> SentMessageFuture {
-        println!("Setting hourly_forecast of type HourlyForecastProperty");
         let prop = self.properties.hourly_forecast.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -764,11 +763,12 @@ impl WeatherServer {
                 });
         if !send_result {
             debug!("Property 'hourly_forecast' value not changed, so not notifying watchers.");
+            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.hourly_forecast_topic.as_ref().clone();
+            WeatherServer::publish_hourly_forecast_value(publisher2, topic2, data).await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self.properties.hourly_forecast_topic.as_ref().clone();
-        WeatherServer::publish_hourly_forecast_value(publisher2, topic2, data).await
     }
 
     async fn publish_current_condition_refresh_interval_value(
@@ -849,10 +849,9 @@ impl WeatherServer {
     }
 
     pub async fn set_current_condition_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
-        println!("Setting current_condition_refresh_interval of type i32");
         let prop = self.properties.current_condition_refresh_interval.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -878,16 +877,19 @@ impl WeatherServer {
             debug!(
                 "Property 'current_condition_refresh_interval' value not changed, so not notifying watchers."
             );
-        }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self
-            .properties
-            .current_condition_refresh_interval_topic
-            .as_ref()
-            .clone();
-        WeatherServer::publish_current_condition_refresh_interval_value(publisher2, topic2, data)
+            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self
+                .properties
+                .current_condition_refresh_interval_topic
+                .as_ref()
+                .clone();
+            WeatherServer::publish_current_condition_refresh_interval_value(
+                publisher2, topic2, data,
+            )
             .await
+        }
     }
 
     async fn publish_hourly_forecast_refresh_interval_value(
@@ -970,10 +972,9 @@ impl WeatherServer {
     }
 
     pub async fn set_hourly_forecast_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
-        println!("Setting hourly_forecast_refresh_interval of type i32");
         let prop = self.properties.hourly_forecast_refresh_interval.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -999,16 +1000,17 @@ impl WeatherServer {
             debug!(
                 "Property 'hourly_forecast_refresh_interval' value not changed, so not notifying watchers."
             );
+            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self
+                .properties
+                .hourly_forecast_refresh_interval_topic
+                .as_ref()
+                .clone();
+            WeatherServer::publish_hourly_forecast_refresh_interval_value(publisher2, topic2, data)
+                .await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self
-            .properties
-            .hourly_forecast_refresh_interval_topic
-            .as_ref()
-            .clone();
-        WeatherServer::publish_hourly_forecast_refresh_interval_value(publisher2, topic2, data)
-            .await
     }
 
     async fn publish_daily_forecast_refresh_interval_value(
@@ -1090,10 +1092,9 @@ impl WeatherServer {
     }
 
     pub async fn set_daily_forecast_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
-        println!("Setting daily_forecast_refresh_interval of type i32");
         let prop = self.properties.daily_forecast_refresh_interval.clone();
         {
-            if let mut locked_data = prop.lock().unwrap() {
+            if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -1119,15 +1120,17 @@ impl WeatherServer {
             debug!(
                 "Property 'daily_forecast_refresh_interval' value not changed, so not notifying watchers."
             );
+            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self
+                .properties
+                .daily_forecast_refresh_interval_topic
+                .as_ref()
+                .clone();
+            WeatherServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data)
+                .await
         }
-
-        let publisher2 = self.mqttier_client.clone();
-        let topic2 = self
-            .properties
-            .daily_forecast_refresh_interval_topic
-            .as_ref()
-            .clone();
-        WeatherServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data).await
     }
 
     /// Starts the tasks that process messages received.
@@ -1163,7 +1166,6 @@ impl WeatherServer {
             while let Some(msg) = message_receiver.recv().await {
                 let opt_resp_topic = msg.response_topic.clone();
                 let opt_corr_data = msg.correlation_data.clone();
-                let topic = msg.topic.clone();
 
                 if msg.subscription_id == sub_ids.refresh_daily_forecast_method_req {
                     WeatherServer::handle_refresh_daily_forecast_request(
@@ -1247,15 +1249,29 @@ impl WeatherServer {
                     };
                     match update_prop_future.await {
                         Ok(_) => debug!("Successfully processed update  property"),
-                        Err(e) => error!("Error processing update  property: {:?}", e),
+                        Err(e) => {
+                            error!("Error processing update to '' property: {:?}", e);
+                            if let Some(resp_topic) = opt_resp_topic {
+                                WeatherServer::publish_error_response(
+                                    publisher.clone(),
+                                    Some(resp_topic),
+                                    opt_corr_data,
+                                    &e,
+                                )
+                                .await;
+                            } else {
+                                warn!(
+                                    "No response topic found in message properties; cannot send error response."
+                                );
+                            }
+                        }
                     }
                 }
             }
-            println!("No more messages from message_receiver channel");
         });
         let _ = tokio::join!(loop_task);
 
-        println!("Server receive loop completed [error?]");
+        warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())
     }
 }

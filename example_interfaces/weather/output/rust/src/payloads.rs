@@ -11,8 +11,10 @@ It contains enumerations used by the weather interface.
 
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
-use serde::{Deserialize, Serialize};
+
 use std::fmt;
+
+use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
 #[derive(Debug)]

@@ -11,8 +11,8 @@ It contains enumerations used by the SignalOnly interface.
 
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
+
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 #[allow(dead_code)]
 #[derive(Debug)]

@@ -132,7 +132,7 @@ impl SignalOnlyServer {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
-        println!("Server receive loop completed [error?]");
+        warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())
     }
 }

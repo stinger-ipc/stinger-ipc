@@ -10,13 +10,15 @@ function generate_python() {
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
     uv run stinger generate python ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
-    #uv run mypy ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    RC=$?
+    if [ $RC -ne 0 ]; then return $RC; fi
     uv run black ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    return 0
 }
 
-generate_python signal_only
-generate_python full
-generate_python weather
+generate_python signal_only || exit 1
+generate_python full || exit 1
+generate_python weather || exit 1
 
 #### C++
 
@@ -26,6 +28,8 @@ function generate_cpp() {
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build
     uv run stinger generate cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/
+    RC=$?
+    if [ $RC -ne 0 ]; then return $RC; fi
     which clang-format &> /dev/null
     if [ $? -eq 0 ]; then
         echo "Running clang-format on generated C++ files"
@@ -34,11 +38,12 @@ function generate_cpp() {
     if [ $? -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j4)
     fi
+    return 0
 }
 
-generate_cpp full
-generate_cpp signal_only
-generate_cpp weather
+generate_cpp full || exit 1
+generate_cpp signal_only || exit 1
+generate_cpp weather || exit 1
 
 #### Rust
 
@@ -48,18 +53,20 @@ function generate_rust() {
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     uv run stinger generate rust ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
-    if [ $? -eq 0 ]; then
+    RC=$?
+    if [ $RC -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo update)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo fmt)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_client_demo --features client)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_server_demo --features server)
     fi
+    return $RC
 }
 
-generate_rust signal_only
-generate_rust full
-generate_rust weather
+generate_rust signal_only || exit 1
+generate_rust full || exit 1
+generate_rust weather || exit 1
 
 (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example full_connection_demo --features payloads)
 

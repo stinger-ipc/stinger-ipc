@@ -8,7 +8,7 @@ use futures::executor::block_on;
 use mqttier::MqttierClient;
 use std::any::Any;
 use tokio::time::{Duration, sleep};
-use weather_ipc::{WeatherMethodHandlers, WeatherServer};
+use weather_ipc::server::{WeatherMethodHandlers, WeatherServer};
 
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -72,17 +72,28 @@ async fn main() {
             latitude: 3.14,
             longitude: 3.14,
         };
-        server.set_location(new_value).await;
+        let prop_init_future = server.set_location(new_value).await;
+
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'location': {:?}", e);
+        }
 
         println!("Setting initial value for property 'current_temperature'");
-        server.set_current_temperature(3.14).await;
+        let prop_init_future = server.set_current_temperature(3.14).await;
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'current_temperature': {:?}", e);
+        }
 
         println!("Setting initial value for property 'current_condition'");
         let new_value = CurrentConditionProperty {
             condition: WeatherCondition::Sunny,
             description: "apples".to_string(),
         };
-        server.set_current_condition(new_value).await;
+        let prop_init_future = server.set_current_condition(new_value).await;
+
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'current_condition': {:?}", e);
+        }
 
         println!("Setting initial value for property 'daily_forecast'");
         let new_value = DailyForecastProperty {
@@ -108,7 +119,11 @@ async fn main() {
                 end_time: "apples".to_string(),
             },
         };
-        server.set_daily_forecast(new_value).await;
+        let prop_init_future = server.set_daily_forecast(new_value).await;
+
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'daily_forecast': {:?}", e);
+        }
 
         println!("Setting initial value for property 'hourly_forecast'");
         let new_value = HourlyForecastProperty {
@@ -133,16 +148,38 @@ async fn main() {
                 condition: WeatherCondition::Sunny,
             },
         };
-        server.set_hourly_forecast(new_value).await;
+        let prop_init_future = server.set_hourly_forecast(new_value).await;
+
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'hourly_forecast': {:?}", e);
+        }
 
         println!("Setting initial value for property 'current_condition_refresh_interval'");
-        server.set_current_condition_refresh_interval(42).await;
+        let prop_init_future = server.set_current_condition_refresh_interval(42).await;
+        if let Err(e) = prop_init_future.await {
+            eprintln!(
+                "Error initializing property 'current_condition_refresh_interval': {:?}",
+                e
+            );
+        }
 
         println!("Setting initial value for property 'hourly_forecast_refresh_interval'");
-        server.set_hourly_forecast_refresh_interval(42).await;
+        let prop_init_future = server.set_hourly_forecast_refresh_interval(42).await;
+        if let Err(e) = prop_init_future.await {
+            eprintln!(
+                "Error initializing property 'hourly_forecast_refresh_interval': {:?}",
+                e
+            );
+        }
 
         println!("Setting initial value for property 'daily_forecast_refresh_interval'");
-        server.set_daily_forecast_refresh_interval(42).await;
+        let prop_init_future = server.set_daily_forecast_refresh_interval(42).await;
+        if let Err(e) = prop_init_future.await {
+            eprintln!(
+                "Error initializing property 'daily_forecast_refresh_interval': {:?}",
+                e
+            );
+        }
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'current_time'");
@@ -160,7 +197,10 @@ async fn main() {
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'current_temperature'");
-        server.set_current_temperature(1.0).await;
+        let prop_change_future = server.set_current_temperature(1.0).await;
+        if let Err(e) = prop_change_future.await {
+            eprintln!("Error changing property 'current_temperature': {:?}", e);
+        }
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'current_condition'");
@@ -225,15 +265,33 @@ async fn main() {
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'current_condition_refresh_interval'");
-        server.set_current_condition_refresh_interval(2022).await;
+        let prop_change_future = server.set_current_condition_refresh_interval(2022).await;
+        if let Err(e) = prop_change_future.await {
+            eprintln!(
+                "Error changing property 'current_condition_refresh_interval': {:?}",
+                e
+            );
+        }
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'hourly_forecast_refresh_interval'");
-        server.set_hourly_forecast_refresh_interval(2022).await;
+        let prop_change_future = server.set_hourly_forecast_refresh_interval(2022).await;
+        if let Err(e) = prop_change_future.await {
+            eprintln!(
+                "Error changing property 'hourly_forecast_refresh_interval': {:?}",
+                e
+            );
+        }
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'daily_forecast_refresh_interval'");
-        server.set_daily_forecast_refresh_interval(2022).await;
+        let prop_change_future = server.set_daily_forecast_refresh_interval(2022).await;
+        if let Err(e) = prop_change_future.await {
+            eprintln!(
+                "Error changing property 'daily_forecast_refresh_interval': {:?}",
+                e
+            );
+        }
         let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop
