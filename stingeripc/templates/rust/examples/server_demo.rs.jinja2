@@ -1,0 +1,119 @@
+/*
+DO NOT MODIFY THIS FILE {# unless you see this comment #}.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+*/
+use std::any::Any;
+use futures::{executor::block_on};
+use mqttier::MqttierClient;
+use {{stinger.rust.package_name}}::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
+use tokio::time::{sleep, Duration};
+{%if stinger.methods|length > 0%}
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use async_trait::async_trait;
+{%endif%}
+#[allow(unused_imports)]
+use {{stinger.rust.package_name}}::payloads::{MethodReturnCode, *};
+
+{%if stinger.methods|length > 0%}
+struct {{stinger.name | UpperCamelCase }}MethodImpl {
+    server: Option<{{stinger.rust.server_struct_name}}>,
+}
+
+impl {{stinger.name | UpperCamelCase }}MethodImpl {
+    fn new() -> Self {
+        Self {
+            server: None,
+        }
+    }
+}
+
+#[async_trait]
+impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | UpperCamelCase }}MethodImpl {
+
+    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodReturnCode> {
+        self.server = Some(server.clone());
+        Ok(())
+    }
+
+    {%for method_name, method in stinger.methods.items()%}
+    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode> {
+        println!("Handling {{method_name}}");
+        {%-if method.return_value_type == 'struct'%}
+        let rv = {{method.return_value_rust_type}} {
+            {%for arg in method.return_value-%}
+            {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
+            {%endfor%}
+        };
+        Ok(rv)
+        {%elif method.return_value_type is not false %}
+        Ok({{method.return_value.get_random_example_value(lang="rust")}})
+        {%else%}
+        Ok(())
+        {%-endif%}
+    }
+    {%endfor%}
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+{%endif%}
+
+#[tokio::main]
+async fn main() {
+    env_logger::Builder::from_default_env()
+    .target(env_logger::Target::Stdout)
+    .init();
+
+    block_on(async {
+        {%set broker = stinger.get_example_broker()%}
+        let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
+        {%if stinger.methods|length > 0%}
+        let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
+        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, handlers.clone()).await;
+        {%else%}
+        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection).await;
+        {%endif%}
+
+        {%for prop_name, prop in stinger.properties.items()%}
+        println!("Setting initial value for property '{{prop_name}}'");
+        {%-if prop.arg_list | length == 1 %}
+        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
+        {%-else%}{# many args in property #}
+        let new_value = {{prop.rust_type}} {
+            {%-for arg in prop.arg_list %}
+                {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
+            {%-endfor%}
+        };
+        server.set_{{prop_name | snake_case}}(new_value).await;
+        {%endif%}
+        {%endfor%}{# property initialization -#}
+
+        {%for sig_name, sig in stinger.signals.items()%}
+        sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal '{{sig_name}}'");
+        let signal_result_future = server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+        let signal_result = signal_result_future.await;
+        println!("Signal '{{sig_name}}' was sent: {:?}", signal_result);
+        {%endfor%}
+        {%for prop_name, prop in stinger.properties.items()%}
+        sleep(Duration::from_secs(1)).await;
+        println!("Changing property '{{prop_name}}'");
+        {%-if prop.arg_list | length == 1 %}
+        server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}}).await;
+        {%-else%}{# many args in property #}
+        let new_value = {{prop.rust_type}} {
+            {%-for arg in prop.arg_list %}
+                {{arg.name}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
+            {%-endfor%}
+        };
+        server.set_{{prop_name | snake_case}}(new_value).await;
+        {%endif%}
+        {%endfor%}{# property initialization -#}
+        let _server_loop_task = server.run_loop().await;
+    });
+    // Ctrl-C to stop
+}

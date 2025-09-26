@@ -1,0 +1,93 @@
+//! Client module for Full IPC
+//! 
+//! This module is only available when the "client" feature is enabled.
+
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+This is the Client for the Full interface.
+*/
+
+use {{stinger.rust.package_name}}::payloads::{{stinger.rust.client_struct_name}};
+use futures::{executor::block_on};
+use mqttier::MqttierClient;
+use tokio::time::{sleep, Duration};
+use tokio::join;
+#[allow(unused_imports)]
+use {{stinger.rust.package_name}}::payloads::{MethodReturnCode, *};
+
+#[tokio::main]
+async fn main() {
+    block_on(async {
+        {%set broker = stinger.get_example_broker()%}
+        let mut mqttier_client = MqttierClient::new("localhost", 1883, Some("client_example".to_string())).unwrap();
+        let {%if stinger.methods|length > 0%}mut {%endif%}api_client = {{stinger.rust.client_struct_name}}::new(&mut mqttier_client).await;
+
+        let client_for_loop = api_client.clone();
+        tokio::spawn(async move {
+            println!("Making call to start connection loop");
+            let _conn_loop = client_for_loop.run_loop().await;
+        });
+
+        {%for sig_name, sig in stinger.signals.items()%}
+        let mut sig_rx = api_client.get_{{sig_name|snake_case}}_receiver();
+        println!("Got signal receiver for {{sig_name}}");
+
+        sleep(Duration::from_secs(5)).await;
+
+        let sig_rx_task = tokio::spawn(async move {
+            println!("Looping for signals");
+            loop {
+                match sig_rx.recv().await {
+                    Ok(payload) => {
+                        println!("Received {{sig_name}} signal with payload: {:?}", payload);
+                    },
+                    Err(e) => {
+                        eprintln!("Error receiving {{sig_name}} signal: {:?}", e);
+                        break;
+                    }
+                }
+            }
+        });
+        {%endfor%}
+        {%if stinger.properties|length > 0  %}
+        let client_for_prop_change = api_client.clone();
+        let _prop_change_rx_task = tokio::spawn(async move {
+            {%for prop_name, prop in stinger.properties.items()-%}
+            let mut {{prop_name|snake_case}}_change_rx = client_for_prop_change.watch_{{prop_name|snake_case}}();
+            {%endfor%}
+
+            loop {
+                tokio::select! { {%-for prop_name, prop in stinger.properties.items()%}
+                    _ = {{prop_name|snake_case}}_change_rx.changed() => {
+                        println!("Property '{{prop_name}}' changed to: {:?}", *{{prop_name|snake_case}}_change_rx.borrow());
+                    }{%endfor%}
+                }
+            }
+        });
+        {%endif%}
+
+        {%for method_name, method in stinger.methods.items()%}
+        println!("Calling {{method_name}} with example values...");
+        let result = api_client.{{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang='rust')}}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
+        println!("{{method_name}} response: {:?}", result);
+        {%endfor%}
+
+        {%for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
+        {%if prop.arg_list|length == 1 %}
+        let _ = api_client.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}});
+        {%else%}
+        let {{prop_name|snake_case}}_new_value = {{prop.rust_type}} {
+            {%-for arg in prop.arg_list %}
+                {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
+            {%-endfor%}
+        };
+        let _ = api_client.set_{{prop_name | snake_case}}({{prop_name|snake_case}}_new_value);
+        {%endif%}
+        {%endif%}{%endfor%}
+
+        let _ = join!(sig_rx_task);
+    });
+    // Ctrl-C to stop
+}

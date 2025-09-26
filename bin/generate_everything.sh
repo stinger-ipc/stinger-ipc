@@ -52,8 +52,8 @@ function generate_rust() {
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo update)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo fmt)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check)
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_client_demo)
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_server_demo)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_client_demo --features client)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_server_demo --features server)
     fi
 }
 
@@ -61,7 +61,7 @@ generate_rust signal_only
 generate_rust full
 generate_rust weather
 
-(cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example full_connection_demo)
+(cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example full_connection_demo --features payloads)
 
 # AsyncAPI
 #echo "----------- Creating AsyncAPI Spec ----------------"

@@ -1,4 +1,53 @@
-[workspace]
-members = ["server", "client", "payloads"]
+[package]
+name = "full_ipc"
+version = "0.0.1"
+edition = "2024"
 
-resolver = "2"
+[features]
+default = []
+client = ["payloads", "paho-mqtt", "json", "log", "env_logger"]
+server = ["payloads", "async-trait", "tracing", "env_logger"]
+payloads = []
+
+[dependencies]
+# Core dependencies (always available)
+futures = "0.3.31"
+mqttier = "0.3.0"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.142"
+tokio = { version = "1", features = ["full"] }
+num-derive = "0.4.2"
+num-traits = "0.2.19"
+
+# Client specific dependencies
+paho-mqtt = { version = "0.13.3", optional = true }
+json = { version = "0.12.4", optional = true }
+log = { version = "0.4", optional = true }
+env_logger = { version = "0.10", optional = true }
+
+# Server specific dependencies
+async-trait = { version = "0.1", optional = true }
+tracing = { version = "0.1.41", optional = true }
+
+[dependencies.uuid]
+version = "1.17.0"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]
+
+[[example]]
+name = "full_client_demo"
+path = "examples/client_demo.rs"
+required-features = ["client"]
+
+[[example]]
+name = "full_server_demo" 
+path = "examples/server_demo.rs"
+required-features = ["server"]
+
+[[example]]
+name = "full_connection_demo"
+path = "examples/pub_and_recv.rs"
+required-features = ["payloads"]
