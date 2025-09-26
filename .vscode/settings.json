@@ -157,6 +157,7 @@
     "Mqttier",
     "retval",
     "serde",
+    "stingeripc",
     "usize"
   ]
 }
