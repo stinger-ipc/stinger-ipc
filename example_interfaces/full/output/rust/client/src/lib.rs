@@ -27,7 +27,6 @@ struct FullSubscriptionIds {
     echo_method_resp: usize,
 
     today_is_signal: Option<usize>,
-    bark_signal: Option<usize>,
     favorite_number_property_value: usize,
     favorite_foods_property_value: usize,
     lunch_menu_property_value: usize,
@@ -41,7 +40,6 @@ struct FullSubscriptionIds {
 #[derive(Clone)]
 struct FullSignalChannels {
     today_is_sender: broadcast::Sender<TodayIsSignalPayload>,
-    bark_sender: broadcast::Sender<BarkSignalPayload>,
 }
 
 #[derive(Clone)]
@@ -134,12 +132,6 @@ impl FullClient {
             .await;
         let subscription_id_today_is_signal =
             subscription_id_today_is_signal.unwrap_or_else(|_| usize::MAX);
-        let topic_bark_signal = "full/signal/bark".to_string();
-        let subscription_id_bark_signal = connection
-            .subscribe(topic_bark_signal, 2, message_received_tx.clone())
-            .await;
-        let subscription_id_bark_signal =
-            subscription_id_bark_signal.unwrap_or_else(|_| usize::MAX);
 
         // Subscribe to all the topics needed for properties.
 
@@ -205,7 +197,6 @@ impl FullClient {
             do_something_method_resp: subscription_id_do_something_method_resp,
             echo_method_resp: subscription_id_echo_method_resp,
             today_is_signal: Some(subscription_id_today_is_signal),
-            bark_signal: Some(subscription_id_bark_signal),
             favorite_number_property_value: subscription_id_favorite_number_property_value,
             favorite_foods_property_value: subscription_id_favorite_foods_property_value,
             lunch_menu_property_value: subscription_id_lunch_menu_property_value,
@@ -215,7 +206,6 @@ impl FullClient {
         // Create structure for the tx side of broadcast channels for signals.
         let signal_channels = FullSignalChannels {
             today_is_sender: broadcast::channel(64).0,
-            bark_sender: broadcast::channel(64).0,
         };
 
         // Create FullClient structure.
@@ -238,11 +228,6 @@ impl FullClient {
     /// The signal payload, `TodayIsSignalPayload`, will be put onto the channel whenever it is received.
     pub fn get_today_is_receiver(&self) -> broadcast::Receiver<TodayIsSignalPayload> {
         self.signal_channels.today_is_sender.subscribe()
-    }
-    /// Get the RX receiver side of the broadcast channel for the bark signal.
-    /// The signal payload, `BarkSignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_bark_receiver(&self) -> broadcast::Receiver<BarkSignalPayload> {
-        self.signal_channels.bark_sender.subscribe()
     }
 
     /// The `addNumbers` method.
@@ -534,11 +519,6 @@ impl FullClient {
                 if msg.subscription_id == sub_ids.today_is_signal.unwrap_or_default() {
                     let chan = sig_chans.today_is_sender.clone();
                     let pl: TodayIsSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
-                } else if msg.subscription_id == sub_ids.bark_signal.unwrap_or_default() {
-                    let chan = sig_chans.bark_sender.clone();
-                    let pl: BarkSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let _send_result = chan.send(pl);
                 }

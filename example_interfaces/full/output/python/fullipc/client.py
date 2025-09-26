@@ -21,7 +21,6 @@ import interface_types as stinger_types
 logging.basicConfig(level=logging.DEBUG)
 
 TodayIsSignalCallbackType = Callable[[int, stinger_types.DayOfTheWeek | None], None]
-BarkSignalCallbackType = Callable[[str], None]
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
 DoSomethingMethodResponseCallbackType = Callable[[], None]
 EchoMethodResponseCallbackType = Callable[[str], None]
@@ -58,7 +57,6 @@ class FullClient:
         self._family_name_prop_subscription_id: int = self._conn.subscribe("full/property/familyName/value")
         self._changed_value_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
-        self._signal_recv_callbacks_for_bark: list[BarkSignalCallbackType] = []
         self._addNumbers_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/full/method/addNumbers/response")
         self._doSomething_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/full/method/doSomething/response")
         self._echo_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/full/method/echo/response")
@@ -188,18 +186,6 @@ class FullClient:
             kwargs["dayOfWeek"] = stinger_types.DayOfTheWeek(kwargs["dayOfWeek"]) if kwargs.get("dayOfWeek") else None
 
             self._do_callbacks_for(self._signal_recv_callbacks_for_today_is, **kwargs)
-        # Handle 'bark' signal.
-        elif self._conn.is_topic_sub(topic, "full/signal/bark"):
-            if "ContentType" not in properties or properties["ContentType"] != "application/json":
-                self._logger.warning("Received 'bark' signal with non-JSON content type")
-                return
-            allowed_args = [
-                "word",
-            ]
-            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-            kwargs["word"] = str(kwargs["word"])
-
-            self._do_callbacks_for(self._signal_recv_callbacks_for_bark, **kwargs)
 
         # Handle 'addNumbers' method response.
         if self._conn.is_topic_sub(topic, f"client/{self._client_id}/full/method/addNumbers/response"):
@@ -319,13 +305,6 @@ class FullClient:
         self._signal_recv_callbacks_for_today_is.append(handler)
         if len(self._signal_recv_callbacks_for_today_is) == 1:
             self._conn.subscribe("full/signal/todayIs")
-        return handler
-
-    def receive_bark(self, handler: BarkSignalCallbackType):
-        """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_bark.append(handler)
-        if len(self._signal_recv_callbacks_for_bark) == 1:
-            self._conn.subscribe("full/signal/bark")
         return handler
 
     def add_numbers(self, first: int, second: int, third: int | None) -> futures.Future:
@@ -463,7 +442,6 @@ class FullClientBuilder:
         self._conn = broker
         self._logger = logging.getLogger("FullClientBuilder")
         self._signal_recv_callbacks_for_today_is = []  # type: List[TodayIsSignalCallbackType]
-        self._signal_recv_callbacks_for_bark = []  # type: List[BarkSignalCallbackType]
         self._property_updated_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
@@ -472,10 +450,6 @@ class FullClientBuilder:
     def receive_today_is(self, handler):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_today_is.append(handler)
-
-    def receive_bark(self, handler):
-        """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_bark.append(handler)
 
     def favorite_number_updated(self, handler: FavoriteNumberPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
@@ -500,9 +474,6 @@ class FullClientBuilder:
 
         for cb in self._signal_recv_callbacks_for_today_is:
             client.receive_today_is(cb)
-
-        for cb in self._signal_recv_callbacks_for_bark:
-            client.receive_bark(cb)
 
         for cb in self._property_updated_callbacks_for_favorite_number:
             client.favorite_number_changed(cb)
@@ -534,13 +505,6 @@ if __name__ == "__main__":
         @param dayOfWeek stinger_types.DayOfTheWeek | None
         """
         print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
-
-    @client_builder.receive_bark
-    def print_bark_receipt(word: str):
-        """
-        @param word str
-        """
-        print(f"Got a 'bark' signal: word={ word } ")
 
     @client_builder.favorite_number_updated
     def print_new_favorite_number_value(value: int):

@@ -11,8 +11,6 @@ int main(int argc, char** argv)
     FullClient client(conn);
     client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek)
                                    { std::cout << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << "None" << std::endl; });
-    client.registerBarkCallback([](const std::string& word)
-                                { std::cout << "word=" << word << std::endl; });
     client.registerFavoriteNumberPropertyCallback([](int number)
                                                   { std::cout << "Received update for favorite_number property: " << "number=" << number << std::endl; });
 

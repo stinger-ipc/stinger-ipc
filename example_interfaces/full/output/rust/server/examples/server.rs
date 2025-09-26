@@ -121,21 +121,15 @@ async fn main() {
         println!("Signal 'todayIs' was sent: {:?}", signal_result);
 
         sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'bark'");
-        let signal_result_future = server.emit_bark("apples".to_string()).await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'bark' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
         println!("Changing property 'favorite_number'");
         server.set_favorite_number(2022).await;
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'favorite_foods'");
         let new_value = FavoriteFoodsProperty {
-            drink: "Joe".to_string(),
+            drink: "foo".to_string(),
             slices_of_pizza: 2022,
-            breakfast: Some("Joe".to_string()),
+            breakfast: Some("foo".to_string()),
         };
         server.set_favorite_foods(new_value).await;
 
@@ -144,14 +138,14 @@ async fn main() {
         let new_value = LunchMenuProperty {
             monday: Lunch {
                 drink: true,
-                sandwich: "Joe".to_string(),
+                sandwich: "foo".to_string(),
                 crackers: 1.0,
                 day: DayOfTheWeek::Monday,
                 order_number: Some(2022),
             },
             tuesday: Lunch {
                 drink: true,
-                sandwich: "Joe".to_string(),
+                sandwich: "foo".to_string(),
                 crackers: 1.0,
                 day: DayOfTheWeek::Monday,
                 order_number: Some(2022),
@@ -161,7 +155,7 @@ async fn main() {
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'family_name'");
-        server.set_family_name("Joe".to_string()).await;
+        server.set_family_name("foo".to_string()).await;
         let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop

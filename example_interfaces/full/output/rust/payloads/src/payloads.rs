@@ -12,7 +12,7 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 #[repr(u32)]
-#[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize)]
+#[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(into = "u32", try_from = "u32")]
 pub enum DayOfTheWeek {
     Sunday = 1,
@@ -50,7 +50,7 @@ impl fmt::Display for DayOfTheWeek {
 }
 
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Lunch {
     pub drink: bool,
     pub sandwich: String,
@@ -116,23 +116,16 @@ pub struct TodayIsSignalPayload {
     pub dayOfWeek: Option<DayOfTheWeek>,
 }
 
-// Structures for `bark` signal
-#[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct BarkSignalPayload {
-    pub word: String,
-}
-
 // `favorite_number` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FavoriteNumberProperty {
     pub number: i32,
 }
 
 // `favorite_foods` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FavoriteFoodsProperty {
     pub drink: String,
     pub slices_of_pizza: i32,
@@ -141,7 +134,7 @@ pub struct FavoriteFoodsProperty {
 
 // `lunch_menu` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct LunchMenuProperty {
     pub monday: Lunch,
     pub tuesday: Lunch,
@@ -149,7 +142,7 @@ pub struct LunchMenuProperty {
 
 // `family_name` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FamilyNameProperty {
     pub family_name: String,
 }

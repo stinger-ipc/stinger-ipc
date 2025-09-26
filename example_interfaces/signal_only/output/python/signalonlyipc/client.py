@@ -17,6 +17,9 @@ from connection import BrokerConnection
 logging.basicConfig(level=logging.DEBUG)
 
 AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]
+BarkSignalCallbackType = Callable[[str], None]
+MaybeNumberSignalCallbackType = Callable[[int | None], None]
+MaybeNameSignalCallbackType = Callable[[str | None], None]
 
 
 class SignalOnlyClient:
@@ -31,6 +34,9 @@ class SignalOnlyClient:
         self._conn.set_message_callback(self._receive_message)
 
         self._signal_recv_callbacks_for_another_signal: list[AnotherSignalSignalCallbackType] = []
+        self._signal_recv_callbacks_for_bark: list[BarkSignalCallbackType] = []
+        self._signal_recv_callbacks_for_maybe_number: list[MaybeNumberSignalCallbackType] = []
+        self._signal_recv_callbacks_for_maybe_name: list[MaybeNameSignalCallbackType] = []
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """Call each callback in the callback dictionary with the provided args."""
@@ -67,12 +73,69 @@ class SignalOnlyClient:
             kwargs["three"] = str(kwargs["three"])
 
             self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
+        # Handle 'bark' signal.
+        elif self._conn.is_topic_sub(topic, "signalOnly/signal/bark"):
+            if "ContentType" not in properties or properties["ContentType"] != "application/json":
+                self._logger.warning("Received 'bark' signal with non-JSON content type")
+                return
+            allowed_args = [
+                "word",
+            ]
+            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+            kwargs["word"] = str(kwargs["word"])
+
+            self._do_callbacks_for(self._signal_recv_callbacks_for_bark, **kwargs)
+        # Handle 'maybe_number' signal.
+        elif self._conn.is_topic_sub(topic, "signalOnly/signal/maybeNumber"):
+            if "ContentType" not in properties or properties["ContentType"] != "application/json":
+                self._logger.warning("Received 'maybe_number' signal with non-JSON content type")
+                return
+            allowed_args = [
+                "number",
+            ]
+            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+            kwargs["number"] = int | None(kwargs["number"]) if kwargs.get("number") else None
+
+            self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_number, **kwargs)
+        # Handle 'maybe_name' signal.
+        elif self._conn.is_topic_sub(topic, "signalOnly/signal/maybeName"):
+            if "ContentType" not in properties or properties["ContentType"] != "application/json":
+                self._logger.warning("Received 'maybe_name' signal with non-JSON content type")
+                return
+            allowed_args = [
+                "name",
+            ]
+            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+            kwargs["name"] = str | None(kwargs["name"]) if kwargs.get("name") else None
+
+            self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_name, **kwargs)
 
     def receive_another_signal(self, handler: AnotherSignalSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_another_signal.append(handler)
         if len(self._signal_recv_callbacks_for_another_signal) == 1:
             self._conn.subscribe("signalOnly/signal/anotherSignal")
+        return handler
+
+    def receive_bark(self, handler: BarkSignalCallbackType):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_bark.append(handler)
+        if len(self._signal_recv_callbacks_for_bark) == 1:
+            self._conn.subscribe("signalOnly/signal/bark")
+        return handler
+
+    def receive_maybe_number(self, handler: MaybeNumberSignalCallbackType):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_maybe_number.append(handler)
+        if len(self._signal_recv_callbacks_for_maybe_number) == 1:
+            self._conn.subscribe("signalOnly/signal/maybeNumber")
+        return handler
+
+    def receive_maybe_name(self, handler: MaybeNameSignalCallbackType):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_maybe_name.append(handler)
+        if len(self._signal_recv_callbacks_for_maybe_name) == 1:
+            self._conn.subscribe("signalOnly/signal/maybeName")
         return handler
 
 
@@ -83,10 +146,25 @@ class SignalOnlyClientBuilder:
         self._conn = broker
         self._logger = logging.getLogger("SignalOnlyClientBuilder")
         self._signal_recv_callbacks_for_another_signal = []  # type: List[AnotherSignalSignalCallbackType]
+        self._signal_recv_callbacks_for_bark = []  # type: List[BarkSignalCallbackType]
+        self._signal_recv_callbacks_for_maybe_number = []  # type: List[MaybeNumberSignalCallbackType]
+        self._signal_recv_callbacks_for_maybe_name = []  # type: List[MaybeNameSignalCallbackType]
 
     def receive_another_signal(self, handler):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_another_signal.append(handler)
+
+    def receive_bark(self, handler):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_bark.append(handler)
+
+    def receive_maybe_number(self, handler):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_maybe_number.append(handler)
+
+    def receive_maybe_name(self, handler):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_maybe_name.append(handler)
 
     def build(self) -> SignalOnlyClient:
         """Builds a new SignalOnlyClient."""
@@ -95,6 +173,15 @@ class SignalOnlyClientBuilder:
 
         for cb in self._signal_recv_callbacks_for_another_signal:
             client.receive_another_signal(cb)
+
+        for cb in self._signal_recv_callbacks_for_bark:
+            client.receive_bark(cb)
+
+        for cb in self._signal_recv_callbacks_for_maybe_number:
+            client.receive_maybe_number(cb)
+
+        for cb in self._signal_recv_callbacks_for_maybe_name:
+            client.receive_maybe_name(cb)
 
         return client
 
@@ -115,6 +202,27 @@ if __name__ == "__main__":
         @param three str
         """
         print(f"Got a 'anotherSignal' signal: one={ one } two={ two } three={ three } ")
+
+    @client_builder.receive_bark
+    def print_bark_receipt(word: str):
+        """
+        @param word str
+        """
+        print(f"Got a 'bark' signal: word={ word } ")
+
+    @client_builder.receive_maybe_number
+    def print_maybe_number_receipt(number: int | None):
+        """
+        @param number int | None
+        """
+        print(f"Got a 'maybe_number' signal: number={ number } ")
+
+    @client_builder.receive_maybe_name
+    def print_maybe_name_receipt(name: str | None):
+        """
+        @param name str | None
+        """
+        print(f"Got a 'maybe_name' signal: name={ name } ")
 
     client = client_builder.build()
 

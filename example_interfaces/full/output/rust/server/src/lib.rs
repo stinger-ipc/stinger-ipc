@@ -247,33 +247,6 @@ impl FullServer {
         })
     }
 
-    /// Emits the todayIs signal with the given arguments.
-    pub async fn emit_today_is(
-        &mut self,
-        day_of_month: i32,
-        day_of_week: Option<DayOfTheWeek>,
-    ) -> SentMessageFuture {
-        let data = TodayIsSignalPayload {
-            dayOfMonth: day_of_month,
-
-            dayOfWeek: day_of_week,
-        };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure("full/signal/todayIs".to_string(), &data)
-            .await;
-        FullServer::oneshot_to_future(published_oneshot).await
-    }
-    /// Emits the bark signal with the given arguments.
-    pub async fn emit_bark(&mut self, word: String) -> SentMessageFuture {
-        let data = BarkSignalPayload { word: word };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure("full/signal/bark".to_string(), &data)
-            .await;
-        FullServer::oneshot_to_future(published_oneshot).await
-    }
-
     /// Publishes an error response to the given response topic with the given correlation data.
     async fn publish_error_response(
         publisher: MqttierClient,
@@ -295,6 +268,23 @@ impl FullServer {
         } else {
             info!("No response topic found in message properties; cannot send error response.");
         }
+    }
+    /// Emits the todayIs signal with the given arguments.
+    pub async fn emit_today_is(
+        &mut self,
+        day_of_month: i32,
+        day_of_week: Option<DayOfTheWeek>,
+    ) -> SentMessageFuture {
+        let data = TodayIsSignalPayload {
+            dayOfMonth: day_of_month,
+
+            dayOfWeek: day_of_week,
+        };
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("full/signal/todayIs".to_string(), &data)
+            .await;
+        FullServer::oneshot_to_future(published_oneshot).await
     }
 
     /// Handles a request message for the addNumbers method.
@@ -323,6 +313,7 @@ impl FullServer {
             .await;
             return;
         }
+        // Unwrap is OK here because we just checked for error.
         let payload = payload_obj.unwrap();
 
         // call the method handler
@@ -355,7 +346,8 @@ impl FullServer {
                 }
             }
         } else {
-            eprintln!("No response topic found in message properties.");
+            // Without a response topic, we cannot send a response.
+            info!("No response topic provided, so no publishing response to `addNumbers`.");
         }
     }
 
@@ -385,6 +377,7 @@ impl FullServer {
             .await;
             return;
         }
+        // Unwrap is OK here because we just checked for error.
         let payload = payload_obj.unwrap();
 
         // call the method handler
@@ -413,7 +406,8 @@ impl FullServer {
                 }
             }
         } else {
-            eprintln!("No response topic found in message properties.");
+            // Without a response topic, we cannot send a response.
+            info!("No response topic provided, so no publishing response to `doSomething`.");
         }
     }
 
@@ -443,6 +437,7 @@ impl FullServer {
             .await;
             return;
         }
+        // Unwrap is OK here because we just checked for error.
         let payload = payload_obj.unwrap();
 
         // call the method handler
@@ -473,7 +468,8 @@ impl FullServer {
                 }
             }
         } else {
-            eprintln!("No response topic found in message properties.");
+            // Without a response topic, we cannot send a response.
+            info!("No response topic provided, so no publishing response to `echo`.");
         }
     }
 
@@ -492,8 +488,9 @@ impl FullServer {
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
-    /// This is the method called from an MQTT request to update the property value.
+    /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// If there is an error, it can publish back if a response topic was provided.
     async fn update_favorite_number_value(
         publisher: MqttierClient,
         topic: Arc<String>,
@@ -502,6 +499,7 @@ impl FullServer {
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
+
         let new_data: FavoriteNumberProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(data) => data,
@@ -554,29 +552,39 @@ impl FullServer {
         self.properties.favorite_number_tx_channel.subscribe()
     }
 
-    pub async fn set_favorite_number(&mut self, data: i32) {
+    pub async fn set_favorite_number(&mut self, data: i32) -> SentMessageFuture {
         println!("Setting favorite_number of type i32");
         let prop = self.properties.favorite_number.clone();
         {
-            let mut locked_data = prop.lock().unwrap();
-            *locked_data = Some(data.clone());
+            if let mut locked_data = prop.lock().unwrap() {
+                *locked_data = Some(data.clone());
+            } else {
+                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
+                    format!("Failed to lock mutex for setting property 'favorite_number'"),
+                ))
+                .await;
+            }
         }
 
-        let data_to_send_to_watchers = data.clone();
-        let _ = self
-            .properties
-            .favorite_number_tx_channel
-            .send(Some(data_to_send_to_watchers));
+        let data_to_send_to_watchers = Some(data.clone());
+        let send_result =
+            self.properties
+                .favorite_number_tx_channel
+                .send_if_modified(|current_data| {
+                    if current_data != &data_to_send_to_watchers {
+                        *current_data = data_to_send_to_watchers;
+                        true
+                    } else {
+                        false
+                    }
+                });
+        if !send_result {
+            debug!("Property 'favorite_number' value not changed, so not notifying watchers.");
+        }
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.favorite_number_topic.as_ref().clone();
-        let _ = tokio::spawn(async move {
-            println!(
-                "Will publish property favorite_number of type i32 to {}",
-                topic2
-            );
-            FullServer::publish_favorite_number_value(publisher2, topic2, data).await;
-        });
+        FullServer::publish_favorite_number_value(publisher2, topic2, data).await
     }
 
     async fn publish_favorite_foods_value(
@@ -589,8 +597,9 @@ impl FullServer {
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
-    /// This is the method called from an MQTT request to update the property value.
+    /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// If there is an error, it can publish back if a response topic was provided.
     async fn update_favorite_foods_value(
         publisher: MqttierClient,
         topic: Arc<String>,
@@ -599,6 +608,7 @@ impl FullServer {
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
+
         let new_data: FavoriteFoodsProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(data) => data,
@@ -652,29 +662,39 @@ impl FullServer {
         self.properties.favorite_foods_tx_channel.subscribe()
     }
 
-    pub async fn set_favorite_foods(&mut self, data: FavoriteFoodsProperty) {
+    pub async fn set_favorite_foods(&mut self, data: FavoriteFoodsProperty) -> SentMessageFuture {
         println!("Setting favorite_foods of type FavoriteFoodsProperty");
         let prop = self.properties.favorite_foods.clone();
         {
-            let mut locked_data = prop.lock().unwrap();
-            *locked_data = Some(data.clone());
+            if let mut locked_data = prop.lock().unwrap() {
+                *locked_data = Some(data.clone());
+            } else {
+                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
+                    format!("Failed to lock mutex for setting property 'favorite_foods'"),
+                ))
+                .await;
+            }
         }
 
-        let data_to_send_to_watchers = data.clone();
-        let _ = self
-            .properties
-            .favorite_foods_tx_channel
-            .send(Some(data_to_send_to_watchers));
+        let data_to_send_to_watchers = Some(data.clone());
+        let send_result =
+            self.properties
+                .favorite_foods_tx_channel
+                .send_if_modified(|current_data| {
+                    if current_data != &data_to_send_to_watchers {
+                        *current_data = data_to_send_to_watchers;
+                        true
+                    } else {
+                        false
+                    }
+                });
+        if !send_result {
+            debug!("Property 'favorite_foods' value not changed, so not notifying watchers.");
+        }
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
-        let _ = tokio::spawn(async move {
-            println!(
-                "Will publish property favorite_foods of type FavoriteFoodsProperty to {}",
-                topic2
-            );
-            FullServer::publish_favorite_foods_value(publisher2, topic2, data).await;
-        });
+        FullServer::publish_favorite_foods_value(publisher2, topic2, data).await
     }
 
     async fn publish_lunch_menu_value(
@@ -687,8 +707,9 @@ impl FullServer {
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
-    /// This is the method called from an MQTT request to update the property value.
+    /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// If there is an error, it can publish back if a response topic was provided.
     async fn update_lunch_menu_value(
         publisher: MqttierClient,
         topic: Arc<String>,
@@ -697,6 +718,7 @@ impl FullServer {
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
+
         let new_data: LunchMenuProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(data) => data,
@@ -750,29 +772,39 @@ impl FullServer {
         self.properties.lunch_menu_tx_channel.subscribe()
     }
 
-    pub async fn set_lunch_menu(&mut self, data: LunchMenuProperty) {
+    pub async fn set_lunch_menu(&mut self, data: LunchMenuProperty) -> SentMessageFuture {
         println!("Setting lunch_menu of type LunchMenuProperty");
         let prop = self.properties.lunch_menu.clone();
         {
-            let mut locked_data = prop.lock().unwrap();
-            *locked_data = Some(data.clone());
+            if let mut locked_data = prop.lock().unwrap() {
+                *locked_data = Some(data.clone());
+            } else {
+                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
+                    format!("Failed to lock mutex for setting property 'lunch_menu'"),
+                ))
+                .await;
+            }
         }
 
-        let data_to_send_to_watchers = data.clone();
-        let _ = self
+        let data_to_send_to_watchers = Some(data.clone());
+        let send_result = self
             .properties
             .lunch_menu_tx_channel
-            .send(Some(data_to_send_to_watchers));
+            .send_if_modified(|current_data| {
+                if current_data != &data_to_send_to_watchers {
+                    *current_data = data_to_send_to_watchers;
+                    true
+                } else {
+                    false
+                }
+            });
+        if !send_result {
+            debug!("Property 'lunch_menu' value not changed, so not notifying watchers.");
+        }
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
-        let _ = tokio::spawn(async move {
-            println!(
-                "Will publish property lunch_menu of type LunchMenuProperty to {}",
-                topic2
-            );
-            FullServer::publish_lunch_menu_value(publisher2, topic2, data).await;
-        });
+        FullServer::publish_lunch_menu_value(publisher2, topic2, data).await
     }
 
     async fn publish_family_name_value(
@@ -787,8 +819,9 @@ impl FullServer {
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
-    /// This is the method called from an MQTT request to update the property value.
+    /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// If there is an error, it can publish back if a response topic was provided.
     async fn update_family_name_value(
         publisher: MqttierClient,
         topic: Arc<String>,
@@ -797,6 +830,7 @@ impl FullServer {
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
+
         let new_data: FamilyNameProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(data) => data,
@@ -849,29 +883,39 @@ impl FullServer {
         self.properties.family_name_tx_channel.subscribe()
     }
 
-    pub async fn set_family_name(&mut self, data: String) {
+    pub async fn set_family_name(&mut self, data: String) -> SentMessageFuture {
         println!("Setting family_name of type String");
         let prop = self.properties.family_name.clone();
         {
-            let mut locked_data = prop.lock().unwrap();
-            *locked_data = Some(data.clone());
+            if let mut locked_data = prop.lock().unwrap() {
+                *locked_data = Some(data.clone());
+            } else {
+                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
+                    format!("Failed to lock mutex for setting property 'family_name'"),
+                ))
+                .await;
+            }
         }
 
-        let data_to_send_to_watchers = data.clone();
-        let _ = self
+        let data_to_send_to_watchers = Some(data.clone());
+        let send_result = self
             .properties
             .family_name_tx_channel
-            .send(Some(data_to_send_to_watchers));
+            .send_if_modified(|current_data| {
+                if current_data != &data_to_send_to_watchers {
+                    *current_data = data_to_send_to_watchers;
+                    true
+                } else {
+                    false
+                }
+            });
+        if !send_result {
+            debug!("Property 'family_name' value not changed, so not notifying watchers.");
+        }
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.family_name_topic.as_ref().clone();
-        let _ = tokio::spawn(async move {
-            println!(
-                "Will publish property family_name of type String to {}",
-                topic2
-            );
-            FullServer::publish_family_name_value(publisher2, topic2, data).await;
-        });
+        FullServer::publish_family_name_value(publisher2, topic2, data).await
     }
 
     /// Starts the tasks that process messages received.

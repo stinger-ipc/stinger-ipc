@@ -179,24 +179,6 @@ boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optiona
     return _broker->Publish("full/signal/todayIs", buf.GetString(), 1, false, mqttProps);
 }
 
-boost::future<bool> FullServer::emitBarkSignal(const std::string& word)
-{
-    rapidjson::Document doc;
-    doc.SetObject();
-
-    { // restrict scope
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString(word.c_str(), word.size(), doc.GetAllocator());
-        doc.AddMember("word", tempStringValue, doc.GetAllocator());
-    }
-
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish("full/signal/bark", buf.GetString(), 1, false, mqttProps);
-}
-
 void FullServer::registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func)
 {
     std::cout << "Registered method to handle full/method/addNumbers\n";

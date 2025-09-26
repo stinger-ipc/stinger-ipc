@@ -167,7 +167,7 @@ async fn main() {
         println!("Changing property 'current_condition'");
         let new_value = CurrentConditionProperty {
             condition: WeatherCondition::Sunny,
-            description: "Joe".to_string(),
+            description: "foo".to_string(),
         };
         server.set_current_condition(new_value).await;
 
@@ -178,22 +178,22 @@ async fn main() {
                 high_temperature: 1.0,
                 low_temperature: 1.0,
                 condition: WeatherCondition::Sunny,
-                start_time: "Joe".to_string(),
-                end_time: "Joe".to_string(),
+                start_time: "foo".to_string(),
+                end_time: "foo".to_string(),
             },
             tuesday: ForecastForDay {
                 high_temperature: 1.0,
                 low_temperature: 1.0,
                 condition: WeatherCondition::Sunny,
-                start_time: "Joe".to_string(),
-                end_time: "Joe".to_string(),
+                start_time: "foo".to_string(),
+                end_time: "foo".to_string(),
             },
             wednesday: ForecastForDay {
                 high_temperature: 1.0,
                 low_temperature: 1.0,
                 condition: WeatherCondition::Sunny,
-                start_time: "Joe".to_string(),
-                end_time: "Joe".to_string(),
+                start_time: "foo".to_string(),
+                end_time: "foo".to_string(),
             },
         };
         server.set_daily_forecast(new_value).await;
@@ -203,22 +203,22 @@ async fn main() {
         let new_value = HourlyForecastProperty {
             hour_0: ForecastForHour {
                 temperature: 1.0,
-                starttime: "Joe".to_string(),
+                starttime: "foo".to_string(),
                 condition: WeatherCondition::Sunny,
             },
             hour_1: ForecastForHour {
                 temperature: 1.0,
-                starttime: "Joe".to_string(),
+                starttime: "foo".to_string(),
                 condition: WeatherCondition::Sunny,
             },
             hour_2: ForecastForHour {
                 temperature: 1.0,
-                starttime: "Joe".to_string(),
+                starttime: "foo".to_string(),
                 condition: WeatherCondition::Sunny,
             },
             hour_3: ForecastForHour {
                 temperature: 1.0,
-                starttime: "Joe".to_string(),
+                starttime: "foo".to_string(),
                 condition: WeatherCondition::Sunny,
             },
         };

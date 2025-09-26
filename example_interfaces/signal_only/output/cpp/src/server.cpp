@@ -59,3 +59,53 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
     MqttProperties mqttProps;
     return _broker->Publish("signalOnly/signal/anotherSignal", buf.GetString(), 1, false, mqttProps);
 }
+
+boost::future<bool> SignalOnlyServer::emitBarkSignal(const std::string& word)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(word.c_str(), word.size(), doc.GetAllocator());
+        doc.AddMember("word", tempStringValue, doc.GetAllocator());
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("signalOnly/signal/bark", buf.GetString(), 1, false, mqttProps);
+}
+
+boost::future<bool> SignalOnlyServer::emitMaybeNumberSignal(boost::optional<int> number)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    if (number)
+        doc.AddMember("number", *number, doc.GetAllocator());
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("signalOnly/signal/maybeNumber", buf.GetString(), 1, false, mqttProps);
+}
+
+boost::future<bool> SignalOnlyServer::emitMaybeNameSignal(boost::optional<std::string> name)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    if (name)
+    {
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(name->c_str(), name->size(), doc.GetAllocator());
+        doc.AddMember("name", tempStringValue, doc.GetAllocator());
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("signalOnly/signal/maybeName", buf.GetString(), 1, false, mqttProps);
+}

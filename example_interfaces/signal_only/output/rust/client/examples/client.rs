@@ -39,6 +39,66 @@ async fn main() {
             }
         });
 
+        let mut sig_rx = api_client.get_bark_receiver();
+        println!("Got signal receiver for bark");
+
+        sleep(Duration::from_secs(5)).await;
+
+        let sig_rx_task = tokio::spawn(async move {
+            println!("Looping for signals");
+            loop {
+                match sig_rx.recv().await {
+                    Ok(payload) => {
+                        println!("Received bark signal with payload: {:?}", payload);
+                    }
+                    Err(e) => {
+                        eprintln!("Error receiving bark signal: {:?}", e);
+                        break;
+                    }
+                }
+            }
+        });
+
+        let mut sig_rx = api_client.get_maybe_number_receiver();
+        println!("Got signal receiver for maybe_number");
+
+        sleep(Duration::from_secs(5)).await;
+
+        let sig_rx_task = tokio::spawn(async move {
+            println!("Looping for signals");
+            loop {
+                match sig_rx.recv().await {
+                    Ok(payload) => {
+                        println!("Received maybe_number signal with payload: {:?}", payload);
+                    }
+                    Err(e) => {
+                        eprintln!("Error receiving maybe_number signal: {:?}", e);
+                        break;
+                    }
+                }
+            }
+        });
+
+        let mut sig_rx = api_client.get_maybe_name_receiver();
+        println!("Got signal receiver for maybe_name");
+
+        sleep(Duration::from_secs(5)).await;
+
+        let sig_rx_task = tokio::spawn(async move {
+            println!("Looping for signals");
+            loop {
+                match sig_rx.recv().await {
+                    Ok(payload) => {
+                        println!("Received maybe_name signal with payload: {:?}", payload);
+                    }
+                    Err(e) => {
+                        eprintln!("Error receiving maybe_name signal: {:?}", e);
+                        break;
+                    }
+                }
+            }
+        });
+
         let _ = join!(sig_rx_task);
     });
     // Ctrl-C to stop

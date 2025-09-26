@@ -33,6 +33,24 @@ async fn main() {
         let signal_result = signal_result_future.await;
         println!("Signal 'anotherSignal' was sent: {:?}", signal_result);
 
+        sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal 'bark'");
+        let signal_result_future = server.emit_bark("apples".to_string()).await;
+        let signal_result = signal_result_future.await;
+        println!("Signal 'bark' was sent: {:?}", signal_result);
+
+        sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal 'maybe_number'");
+        let signal_result_future = server.emit_maybe_number(Some(42)).await;
+        let signal_result = signal_result_future.await;
+        println!("Signal 'maybe_number' was sent: {:?}", signal_result);
+
+        sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal 'maybe_name'");
+        let signal_result_future = server.emit_maybe_name(Some("apples".to_string())).await;
+        let signal_result = signal_result_future.await;
+        println!("Signal 'maybe_name' was sent: {:?}", signal_result);
+
         let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop

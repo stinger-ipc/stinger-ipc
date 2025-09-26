@@ -16,3 +16,22 @@ signals:
       - name: three 
         type: string
 
+  bark:
+    documentation: Emitted when a dog barks.
+    payload:
+      - name: word
+        type: string
+
+  maybe_number:
+    documentation: A signal with optionally no payload.
+    payload:
+      - name: number
+        type: integer
+        optional: true
+  
+  maybe_name:
+    documentation: A signal with optionally no payload.
+    payload:
+      - name: name
+        type: string
+        optional: true

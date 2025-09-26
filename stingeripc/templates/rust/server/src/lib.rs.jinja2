@@ -176,19 +176,6 @@ impl {{stinger.rust.server_struct_name}} {
             }
         })
     }
-
-    {%for sig_name, sig in stinger.signals.items()-%}
-    /// Emits the {{sig_name}} signal with the given arguments.
-    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
-        let data = {{sig_name|UpperCamelCase}}SignalPayload {
-            {%for arg in sig.arg_list%}
-        {{arg.name}}: {{arg.name|snake_case}},
-            {%endfor%}
-        };
-        let published_oneshot = self.mqttier_client.publish_structure("{{sig.topic}}".to_string(), &data).await;
-        {{stinger.rust.server_struct_name}}::oneshot_to_future(published_oneshot).await
-    }
-    {%endfor%}
     {%if stinger.methods | length > 0 or stinger.properties | length > 0 %}
     /// Publishes an error response to the given response topic with the given correlation data.
     async fn publish_error_response(publisher: MqttierClient, response_topic: Option<String>, correlation_data: Option<Vec<u8>>, err: &MethodReturnCode) {
@@ -201,6 +188,18 @@ impl {{stinger.rust.server_struct_name}} {
         }
     }
     {%endif-%}
+    {%for sig_name, sig in stinger.signals.items()-%}
+    /// Emits the {{sig_name}} signal with the given arguments.
+    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
+        let data = {{sig_name|UpperCamelCase}}SignalPayload {
+            {%for arg in sig.arg_list%}
+        {{arg.name}}: {{arg.name|snake_case}},
+            {%endfor%}
+        };
+        let published_oneshot = self.mqttier_client.publish_structure("{{sig.topic}}".to_string(), &data).await;
+        {{stinger.rust.server_struct_name}}::oneshot_to_future(published_oneshot).await
+    }
+    {%endfor%}
     {%for method_name, method in stinger.methods.items()%}
     /// Handles a request message for the {{method_name}} method.
     async fn handle_{{method_name|snake_case}}_request(publisher: MqttierClient, handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>>, msg: ReceivedMessage) {
@@ -214,6 +213,7 @@ impl {{stinger.rust.server_struct_name}} {
             {{stinger.rust.server_struct_name}}::publish_error_response(publisher, opt_resp_topic, opt_corr_data, &MethodReturnCode::DeserializationError("Failed to deserialize request payload".to_string())).await;
             return;
         }
+        // Unwrap is OK here because we just checked for error.
         let payload = payload_obj.unwrap();
         {%endif%}{# has arg_list #} 
         // call the method handler
@@ -241,7 +241,8 @@ impl {{stinger.rust.server_struct_name}} {
                 }
             }
         } else {
-            eprintln!("No response topic found in message properties.");
+            // Without a response topic, we cannot send a response.
+            info!("No response topic provided, so no publishing response to `{{method_name}}`.");
         }
     }
     {%endfor%}
@@ -261,11 +262,13 @@ impl {{stinger.rust.server_struct_name}} {
         {{stinger.rust.server_struct_name}}::oneshot_to_future(published_oneshot).await
     }
     {%if not prop.read_only %}
-    /// This is the method called from an MQTT request to update the property value.
+    /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// If there is an error, it can publish back if a response topic was provided.
     async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, watch_sender: watch::Sender<Option<{{prop.rust_type}}>>, msg: ReceivedMessage) -> SentMessageFuture
     {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
+
         let new_data: {{prop_name | UpperCamelCase}}Property = {
             match serde_json::from_str(&payload_str) {
                 Ok(data) => data,
@@ -317,23 +320,36 @@ impl {{stinger.rust.server_struct_name}} {
     }
 
     {%endif%}{# not read only property #}
-    pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) {
+    pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) -> SentMessageFuture {
         println!("Setting {{prop_name}} of type {{prop.rust_type}}");
         let prop = self.properties.{{prop_name}}.clone();
         {
-            let mut locked_data = prop.lock().unwrap();
-            *locked_data = Some(data.clone());
+            if let mut locked_data = prop.lock().unwrap() {
+                *locked_data = Some(data.clone());
+            } else {
+                return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::ServerError(
+                    format!("Failed to lock mutex for setting property '{{prop_name}}'"),
+                ))
+                .await;
+            }
         }
 
-        let data_to_send_to_watchers = data.clone();
-        let _ = self.properties.{{prop_name}}_tx_channel.send(Some(data_to_send_to_watchers));
+        let data_to_send_to_watchers = Some(data.clone());
+        let send_result = self.properties.{{prop_name}}_tx_channel.send_if_modified(|current_data| {
+            if current_data != &data_to_send_to_watchers {
+                *current_data = data_to_send_to_watchers;
+                true
+            } else {
+                false
+            }
+        });
+        if !send_result {
+            debug!("Property '{{prop_name}}' value not changed, so not notifying watchers.");
+        }
 
         let publisher2 = self.mqttier_client.clone();
         let topic2 = self.properties.{{prop_name}}_topic.as_ref().clone();
-        let _ = tokio::spawn(async move {
-            println!("Will publish property {{prop_name}} of type {{prop.rust_type}} to {}", topic2);
-            {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data).await;
-        });
+        {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data).await
     }
     {%endfor%}
 

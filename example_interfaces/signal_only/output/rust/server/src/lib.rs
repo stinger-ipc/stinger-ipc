@@ -72,7 +72,6 @@ impl SignalOnlyServer {
             }
         })
     }
-
     /// Emits the anotherSignal signal with the given arguments.
     pub async fn emit_another_signal(
         &mut self,
@@ -90,6 +89,33 @@ impl SignalOnlyServer {
         let published_oneshot = self
             .mqttier_client
             .publish_structure("signalOnly/signal/anotherSignal".to_string(), &data)
+            .await;
+        SignalOnlyServer::oneshot_to_future(published_oneshot).await
+    }
+    /// Emits the bark signal with the given arguments.
+    pub async fn emit_bark(&mut self, word: String) -> SentMessageFuture {
+        let data = BarkSignalPayload { word: word };
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/signal/bark".to_string(), &data)
+            .await;
+        SignalOnlyServer::oneshot_to_future(published_oneshot).await
+    }
+    /// Emits the maybe_number signal with the given arguments.
+    pub async fn emit_maybe_number(&mut self, number: Option<i32>) -> SentMessageFuture {
+        let data = MaybeNumberSignalPayload { number: number };
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/signal/maybeNumber".to_string(), &data)
+            .await;
+        SignalOnlyServer::oneshot_to_future(published_oneshot).await
+    }
+    /// Emits the maybe_name signal with the given arguments.
+    pub async fn emit_maybe_name(&mut self, name: Option<String>) -> SentMessageFuture {
+        let data = MaybeNameSignalPayload { name: name };
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/signal/maybeName".to_string(), &data)
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }

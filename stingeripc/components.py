@@ -286,10 +286,12 @@ class ArgPrimitive(Arg):
             retval = random.choice([42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955])
         elif self._arg_type == ArgPrimitiveType.STRING:
             retval = random.choice(
-                ['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"']
+                ['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"', '"bear"', '"root beer"']
             )
             if lang == "rust":
                 retval = f"{retval}.to_string()"
+            if self.optional and lang in ["cpp", "c++"]:
+                retval = f'boost::make_optional(std::string({retval}))'
         if self.optional and lang == "rust":
             retval = f"Some({retval})"
         random.setstate(random_state)

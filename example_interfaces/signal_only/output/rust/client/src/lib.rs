@@ -20,6 +20,9 @@ use tokio::task::JoinError;
 #[derive(Clone, Debug)]
 struct SignalOnlySubscriptionIds {
     another_signal_signal: Option<usize>,
+    bark_signal: Option<usize>,
+    maybe_number_signal: Option<usize>,
+    maybe_name_signal: Option<usize>,
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -29,6 +32,9 @@ struct SignalOnlySubscriptionIds {
 #[derive(Clone)]
 struct SignalOnlySignalChannels {
     another_signal_sender: broadcast::Sender<AnotherSignalSignalPayload>,
+    bark_sender: broadcast::Sender<BarkSignalPayload>,
+    maybe_number_sender: broadcast::Sender<MaybeNumberSignalPayload>,
+    maybe_name_sender: broadcast::Sender<MaybeNameSignalPayload>,
 }
 
 /// This is the struct for our API client.
@@ -68,17 +74,41 @@ impl SignalOnlyClient {
             .await;
         let subscription_id_another_signal_signal =
             subscription_id_another_signal_signal.unwrap_or_else(|_| usize::MAX);
+        let topic_bark_signal = "signalOnly/signal/bark".to_string();
+        let subscription_id_bark_signal = connection
+            .subscribe(topic_bark_signal, 2, message_received_tx.clone())
+            .await;
+        let subscription_id_bark_signal =
+            subscription_id_bark_signal.unwrap_or_else(|_| usize::MAX);
+        let topic_maybe_number_signal = "signalOnly/signal/maybeNumber".to_string();
+        let subscription_id_maybe_number_signal = connection
+            .subscribe(topic_maybe_number_signal, 2, message_received_tx.clone())
+            .await;
+        let subscription_id_maybe_number_signal =
+            subscription_id_maybe_number_signal.unwrap_or_else(|_| usize::MAX);
+        let topic_maybe_name_signal = "signalOnly/signal/maybeName".to_string();
+        let subscription_id_maybe_name_signal = connection
+            .subscribe(topic_maybe_name_signal, 2, message_received_tx.clone())
+            .await;
+        let subscription_id_maybe_name_signal =
+            subscription_id_maybe_name_signal.unwrap_or_else(|_| usize::MAX);
 
         // Subscribe to all the topics needed for properties.
 
         // Create structure for subscription ids.
         let sub_ids = SignalOnlySubscriptionIds {
             another_signal_signal: Some(subscription_id_another_signal_signal),
+            bark_signal: Some(subscription_id_bark_signal),
+            maybe_number_signal: Some(subscription_id_maybe_number_signal),
+            maybe_name_signal: Some(subscription_id_maybe_name_signal),
         };
 
         // Create structure for the tx side of broadcast channels for signals.
         let signal_channels = SignalOnlySignalChannels {
             another_signal_sender: broadcast::channel(64).0,
+            bark_sender: broadcast::channel(64).0,
+            maybe_number_sender: broadcast::channel(64).0,
+            maybe_name_sender: broadcast::channel(64).0,
         };
 
         // Create SignalOnlyClient structure.
@@ -100,6 +130,21 @@ impl SignalOnlyClient {
     pub fn get_another_signal_receiver(&self) -> broadcast::Receiver<AnotherSignalSignalPayload> {
         self.signal_channels.another_signal_sender.subscribe()
     }
+    /// Get the RX receiver side of the broadcast channel for the bark signal.
+    /// The signal payload, `BarkSignalPayload`, will be put onto the channel whenever it is received.
+    pub fn get_bark_receiver(&self) -> broadcast::Receiver<BarkSignalPayload> {
+        self.signal_channels.bark_sender.subscribe()
+    }
+    /// Get the RX receiver side of the broadcast channel for the maybe_number signal.
+    /// The signal payload, `MaybeNumberSignalPayload`, will be put onto the channel whenever it is received.
+    pub fn get_maybe_number_receiver(&self) -> broadcast::Receiver<MaybeNumberSignalPayload> {
+        self.signal_channels.maybe_number_sender.subscribe()
+    }
+    /// Get the RX receiver side of the broadcast channel for the maybe_name signal.
+    /// The signal payload, `MaybeNameSignalPayload`, will be put onto the channel whenever it is received.
+    pub fn get_maybe_name_receiver(&self) -> broadcast::Receiver<MaybeNameSignalPayload> {
+        self.signal_channels.maybe_name_sender.subscribe()
+    }
 
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&self) -> Result<(), JoinError> {
@@ -120,6 +165,21 @@ impl SignalOnlyClient {
                 if msg.subscription_id == sub_ids.another_signal_signal.unwrap_or_default() {
                     let chan = sig_chans.another_signal_sender.clone();
                     let pl: AnotherSignalSignalPayload =
+                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let _send_result = chan.send(pl);
+                } else if msg.subscription_id == sub_ids.bark_signal.unwrap_or_default() {
+                    let chan = sig_chans.bark_sender.clone();
+                    let pl: BarkSignalPayload =
+                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let _send_result = chan.send(pl);
+                } else if msg.subscription_id == sub_ids.maybe_number_signal.unwrap_or_default() {
+                    let chan = sig_chans.maybe_number_sender.clone();
+                    let pl: MaybeNumberSignalPayload =
+                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let _send_result = chan.send(pl);
+                } else if msg.subscription_id == sub_ids.maybe_name_signal.unwrap_or_default() {
+                    let chan = sig_chans.maybe_name_sender.clone();
+                    let pl: MaybeNameSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let _send_result = chan.send(pl);
                 }

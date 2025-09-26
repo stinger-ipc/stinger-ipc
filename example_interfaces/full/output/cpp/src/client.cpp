@@ -30,7 +30,6 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker)
                                 )
                                 { _receiveMessage(topic, payload, mqttProps); });
     _todayIsSignalSubscriptionId = _broker->Subscribe("full/signal/todayIs", 2);
-    _barkSignalSubscriptionId = _broker->Subscribe("full/signal/bark", 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
         responseTopicStringStream << boost::format("client/%1%/full/method/addNumbers/response") % _broker->GetClientId();
@@ -118,53 +117,6 @@ void FullClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _barkSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "full/signal/bark"))
-    {
-        //Log("Handling bark signal");
-        rapidjson::Document doc;
-        try
-        {
-            if (_barkSignalCallbacks.size() > 0)
-            {
-                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
-                    //Log("Could not JSON parse bark signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-                }
-
-                if (!doc.IsObject())
-                {
-                    throw std::runtime_error("Received payload is not an object");
-                }
-
-                std::string tempword;
-                { // Scoping
-                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("word");
-                    if (itr != doc.MemberEnd() && itr->value.IsString())
-                    {
-                        tempword = itr->value.GetString();
-                    }
-                    else
-                    {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
-                    }
-                }
-
-                std::lock_guard<std::mutex> lock(_barkSignalCallbacksMutex);
-                for (const auto& cb: _barkSignalCallbacks)
-                {
-                    cb(tempword);
-                }
-            }
-        }
-        catch (const boost::bad_lexical_cast&)
-        {
-            // We couldn't find an integer out of the string in the topic name,
-            // so we are dropping the message completely.
-            // TODO: Log this failure
-        }
-    }
     if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/addNumbers/response") && mqttProps.correlationId)
     {
         std::cout << "Matched topic for addNumbers response" << std::endl;
@@ -202,12 +154,6 @@ void FullClient::registerTodayIsCallback(const std::function<void(int, boost::op
 {
     std::lock_guard<std::mutex> lock(_todayIsSignalCallbacksMutex);
     _todayIsSignalCallbacks.push_back(cb);
-}
-
-void FullClient::registerBarkCallback(const std::function<void(const std::string&)>& cb)
-{
-    std::lock_guard<std::mutex> lock(_barkSignalCallbacksMutex);
-    _barkSignalCallbacks.push_back(cb);
 }
 
 boost::future<int> FullClient::addNumbers(int first, int second, boost::optional<int> third)

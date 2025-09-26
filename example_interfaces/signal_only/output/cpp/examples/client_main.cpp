@@ -11,6 +11,12 @@ int main(int argc, char** argv)
     SignalOnlyClient client(conn);
     client.registerAnotherSignalCallback([](double one, bool two, const std::string& three)
                                          { std::cout << "one=" << one << " | " << "two=" << two << " | " << "three=" << three << std::endl; });
+    client.registerBarkCallback([](const std::string& word)
+                                { std::cout << "word=" << word << std::endl; });
+    client.registerMaybeNumberCallback([](boost::optional<int> number)
+                                       { std::cout << "number=" << "None" << std::endl; });
+    client.registerMaybeNameCallback([](boost::optional<std::string> name)
+                                     { std::cout << "name=" << "None" << std::endl; });
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;
 

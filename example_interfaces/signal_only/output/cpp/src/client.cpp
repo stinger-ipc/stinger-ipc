@@ -30,6 +30,9 @@ SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker)
                                 )
                                 { _receiveMessage(topic, payload, mqttProps); });
     _anotherSignalSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/anotherSignal", 2);
+    _barkSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/bark", 2);
+    _maybeNumberSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/maybeNumber", 2);
+    _maybeNameSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/maybeName", 2);
 }
 
 void SignalOnlyClient::_receiveMessage(
@@ -111,10 +114,169 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _barkSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/bark"))
+    {
+        //Log("Handling bark signal");
+        rapidjson::Document doc;
+        try
+        {
+            if (_barkSignalCallbacks.size() > 0)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse bark signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject())
+                {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                std::string tempword;
+                { // Scoping
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("word");
+                    if (itr != doc.MemberEnd() && itr->value.IsString())
+                    {
+                        tempword = itr->value.GetString();
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Received payload doesn't have required value/type");
+                    }
+                }
+
+                std::lock_guard<std::mutex> lock(_barkSignalCallbacksMutex);
+                for (const auto& cb: _barkSignalCallbacks)
+                {
+                    cb(tempword);
+                }
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _maybeNumberSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/maybeNumber"))
+    {
+        //Log("Handling maybe_number signal");
+        rapidjson::Document doc;
+        try
+        {
+            if (_maybeNumberSignalCallbacks.size() > 0)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse maybe_number signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject())
+                {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                boost::optional<int> tempnumber;
+                { // Scoping
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("number");
+                    if (itr != doc.MemberEnd() && itr->value.IsInt())
+                    {
+                        tempnumber = itr->value.GetInt();
+                    }
+                    else
+                    {
+                        tempnumber = boost::none;
+                    }
+                }
+
+                std::lock_guard<std::mutex> lock(_maybeNumberSignalCallbacksMutex);
+                for (const auto& cb: _maybeNumberSignalCallbacks)
+                {
+                    cb(tempnumber);
+                }
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _maybeNameSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/maybeName"))
+    {
+        //Log("Handling maybe_name signal");
+        rapidjson::Document doc;
+        try
+        {
+            if (_maybeNameSignalCallbacks.size() > 0)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse maybe_name signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject())
+                {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                boost::optional<std::string> tempname;
+                { // Scoping
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("name");
+                    if (itr != doc.MemberEnd() && itr->value.IsString())
+                    {
+                        tempname = itr->value.GetString();
+                    }
+                    else
+                    {
+                        tempname = boost::none;
+                    }
+                }
+
+                std::lock_guard<std::mutex> lock(_maybeNameSignalCallbacksMutex);
+                for (const auto& cb: _maybeNameSignalCallbacks)
+                {
+                    cb(tempname);
+                }
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
 }
 
 void SignalOnlyClient::registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb)
 {
     std::lock_guard<std::mutex> lock(_anotherSignalSignalCallbacksMutex);
     _anotherSignalSignalCallbacks.push_back(cb);
+}
+
+void SignalOnlyClient::registerBarkCallback(const std::function<void(const std::string&)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_barkSignalCallbacksMutex);
+    _barkSignalCallbacks.push_back(cb);
+}
+
+void SignalOnlyClient::registerMaybeNumberCallback(const std::function<void(boost::optional<int>)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_maybeNumberSignalCallbacksMutex);
+    _maybeNumberSignalCallbacks.push_back(cb);
+}
+
+void SignalOnlyClient::registerMaybeNameCallback(const std::function<void(boost::optional<std::string>)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_maybeNameSignalCallbacksMutex);
+    _maybeNameSignalCallbacks.push_back(cb);
 }

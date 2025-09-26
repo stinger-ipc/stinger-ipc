@@ -39,26 +39,6 @@ async fn main() {
             }
         });
 
-        let mut sig_rx = api_client.get_bark_receiver();
-        println!("Got signal receiver for bark");
-
-        sleep(Duration::from_secs(5)).await;
-
-        let sig_rx_task = tokio::spawn(async move {
-            println!("Looping for signals");
-            loop {
-                match sig_rx.recv().await {
-                    Ok(payload) => {
-                        println!("Received bark signal with payload: {:?}", payload);
-                    }
-                    Err(e) => {
-                        eprintln!("Error receiving bark signal: {:?}", e);
-                        break;
-                    }
-                }
-            }
-        });
-
         let client_for_prop_change = api_client.clone();
         let _prop_change_rx_task = tokio::spawn(async move {
             let mut favorite_number_change_rx = client_for_prop_change.watch_favorite_number();

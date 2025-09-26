@@ -40,10 +40,6 @@ public:
     // The provided method will be called whenever a `todayIs` is received.
     void registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb);
 
-    // Register a callback for the `bark` signal.
-    // The provided method will be called whenever a `bark` is received.
-    void registerBarkCallback(const std::function<void(const std::string&)>& cb);
-
     // ------------------- METHODS --------------------
 
     // Calls the `addNumbers` method.
@@ -127,13 +123,6 @@ private:
 
     // MQTT Subscription ID for `todayIs` signal receptions.
     int _todayIsSignalSubscriptionId;
-
-    // List of callbacks to be called whenever the `bark` signal is received.
-    std::vector<std::function<void(const std::string&)>> _barkSignalCallbacks;
-    std::mutex _barkSignalCallbacksMutex;
-
-    // MQTT Subscription ID for `bark` signal receptions.
-    int _barkSignalSubscriptionId;
 
     // ------------------- METHODS --------------------
     // Holds promises for pending `addNumbers` method calls.

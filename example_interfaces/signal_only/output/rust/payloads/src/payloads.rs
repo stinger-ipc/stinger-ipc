@@ -17,3 +17,24 @@ pub struct AnotherSignalSignalPayload {
 
     pub three: String,
 }
+
+// Structures for `bark` signal
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BarkSignalPayload {
+    pub word: String,
+}
+
+// Structures for `maybe_number` signal
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MaybeNumberSignalPayload {
+    pub number: Option<i32>,
+}
+
+// Structures for `maybe_name` signal
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MaybeNameSignalPayload {
+    pub name: Option<String>,
+}

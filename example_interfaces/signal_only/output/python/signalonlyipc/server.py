@@ -71,6 +71,36 @@ class SignalOnlyServer:
         }
         self._conn.publish("signalOnly/signal/anotherSignal", json.dumps(payload), qos=1, retain=False)
 
+    def emit_bark(self, word: str):
+        """Server application code should call this method to emit the 'bark' signal."""
+        if not isinstance(word, str):
+            raise ValueError(f"The 'word' value must be str.")
+
+        payload = {
+            "word": str(word),
+        }
+        self._conn.publish("signalOnly/signal/bark", json.dumps(payload), qos=1, retain=False)
+
+    def emit_maybe_number(self, number: int | None):
+        """Server application code should call this method to emit the 'maybe_number' signal."""
+        if not isinstance(number, int | None) and number is not None:
+            raise ValueError(f"The 'number' value must be int | None.")
+
+        payload = {
+            "number": int | None(number) if number is not None else None,
+        }
+        self._conn.publish("signalOnly/signal/maybeNumber", json.dumps(payload), qos=1, retain=False)
+
+    def emit_maybe_name(self, name: str | None):
+        """Server application code should call this method to emit the 'maybe_name' signal."""
+        if not isinstance(name, str | None) and name is not None:
+            raise ValueError(f"The 'name' value must be str | None.")
+
+        payload = {
+            "name": str | None(name) if name is not None else None,
+        }
+        self._conn.publish("signalOnly/signal/maybeName", json.dumps(payload), qos=1, retain=False)
+
 
 class SignalOnlyServerBuilder:
     """
@@ -104,9 +134,15 @@ if __name__ == "__main__":
     while True:
         try:
             server.emit_anotherSignal(3.14, True, "apples")
+            server.emit_bark("apples")
+            server.emit_maybe_number(42)
+            server.emit_maybe_name("apples")
 
             sleep(4)
             server.emit_anotherSignal(one=3.14, two=True, three="apples")
+            server.emit_bark(word="apples")
+            server.emit_maybe_number(number=42)
+            server.emit_maybe_name(name="apples")
 
             sleep(6)
         except KeyboardInterrupt:

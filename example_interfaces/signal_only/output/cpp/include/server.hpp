@@ -33,6 +33,12 @@ public:
 
     boost::future<bool> emitAnotherSignalSignal(double, bool, const std::string&);
 
+    boost::future<bool> emitBarkSignal(const std::string&);
+
+    boost::future<bool> emitMaybeNumberSignal(boost::optional<int>);
+
+    boost::future<bool> emitMaybeNameSignal(boost::optional<std::string>);
+
 private:
     std::shared_ptr<IBrokerConnection> _broker;
     void _receiveMessage(

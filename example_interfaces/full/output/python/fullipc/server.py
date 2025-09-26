@@ -149,16 +149,6 @@ class FullServer:
         }
         self._conn.publish("full/signal/todayIs", json.dumps(payload), qos=1, retain=False)
 
-    def emit_bark(self, word: str):
-        """Server application code should call this method to emit the 'bark' signal."""
-        if not isinstance(word, str):
-            raise ValueError(f"The 'word' value must be str.")
-
-        payload = {
-            "word": str(word),
-        }
-        self._conn.publish("full/signal/bark", json.dumps(payload), qos=1, retain=False)
-
     def handle_add_numbers(self, handler: Callable[[int, int, int | None], int]):
         """This is a decorator to decorate a method that will handle the 'addNumbers' method calls."""
         if self._method_add_numbers.callback is None and handler is not None:
@@ -633,11 +623,9 @@ if __name__ == "__main__":
     while True:
         try:
             server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)
-            server.emit_bark("apples")
 
             sleep(4)
             server.emit_todayIs(dayOfMonth=42, dayOfWeek=stinger_types.DayOfTheWeek.MONDAY)
-            server.emit_bark(word="apples")
 
             sleep(6)
         except KeyboardInterrupt:

@@ -14,7 +14,7 @@ use serde::{Serialize, Deserialize};
 
 {%for ie_name, ie in stinger.enums.items() %}
 #[repr(u32)]
-#[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize)]
+#[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(into = "u32", try_from = "u32")]
 pub enum {{ie_name | UpperCamelCase }} {
     {%-for value in ie.values %}
@@ -50,7 +50,7 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 
 {%for struct_name, struct in stinger.structs.items() %}
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct {{struct_name | UpperCamelCase}} {
     {%-for arg in struct.members%}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
@@ -117,7 +117,7 @@ pub struct {{sig_name | UpperCamelCase}}SignalPayload {
 {%for prop_name, prop in stinger.properties.items()%}
 // `{{prop_name}}` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct {{prop_name | UpperCamelCase}}Property {
     {%for arg in prop.arg_list%}
     {%-if arg.arg_type.name.lower() == 'primitive' -%}

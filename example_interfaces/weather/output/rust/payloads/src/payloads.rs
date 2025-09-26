@@ -12,7 +12,7 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 #[repr(u32)]
-#[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize)]
+#[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(into = "u32", try_from = "u32")]
 pub enum WeatherCondition {
     Rainy = 1,
@@ -50,14 +50,14 @@ impl fmt::Display for WeatherCondition {
 }
 
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ForecastForHour {
     pub temperature: f32,
     pub starttime: String,
     pub condition: WeatherCondition,
 }
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ForecastForDay {
     pub high_temperature: f32,
     pub low_temperature: f32,
@@ -109,7 +109,7 @@ pub struct CurrentTimeSignalPayload {
 
 // `location` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct LocationProperty {
     pub latitude: f32,
     pub longitude: f32,
@@ -117,14 +117,14 @@ pub struct LocationProperty {
 
 // `current_temperature` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CurrentTemperatureProperty {
     pub temperature_f: f32,
 }
 
 // `current_condition` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CurrentConditionProperty {
     pub condition: WeatherCondition,
     pub description: String,
@@ -132,7 +132,7 @@ pub struct CurrentConditionProperty {
 
 // `daily_forecast` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DailyForecastProperty {
     pub monday: ForecastForDay,
     pub tuesday: ForecastForDay,
@@ -141,7 +141,7 @@ pub struct DailyForecastProperty {
 
 // `hourly_forecast` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct HourlyForecastProperty {
     pub hour_0: ForecastForHour,
     pub hour_1: ForecastForHour,
@@ -151,21 +151,21 @@ pub struct HourlyForecastProperty {
 
 // `current_condition_refresh_interval` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CurrentConditionRefreshIntervalProperty {
     pub seconds: i32,
 }
 
 // `hourly_forecast_refresh_interval` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct HourlyForecastRefreshIntervalProperty {
     pub seconds: i32,
 }
 
 // `daily_forecast_refresh_interval` property structure.
 #[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DailyForecastRefreshIntervalProperty {
     pub seconds: i32,
 }

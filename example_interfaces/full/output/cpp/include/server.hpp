@@ -35,8 +35,6 @@ public:
 
     boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>);
 
-    boost::future<bool> emitBarkSignal(const std::string&);
-
     void registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func);
 
     void registerDoSomethingHandler(std::function<DoSomethingReturnValue(const std::string&)> func);
