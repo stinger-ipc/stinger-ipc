@@ -39,30 +39,6 @@ properties:
     required:
       - name
       - version
-  
-  brokers:
-    type: object
-    additionalProperties:
-      type: object
-      properties:
-        host:
-          type: string
-        port:
-          type: integer
-        protocol:
-          type: string
-          enum:
-            - tcp
-            - websockets
-          default: tcp
-        secure:
-          type: boolean
-          default: false
-        description:
-          type: string
-
-      dependentRequired:
-        host: ["port"]
 
   enums:
     type: object
@@ -76,6 +52,8 @@ properties:
             type: object
             properties:
               name:
+                type: string
+              description:
                 type: string
             required:
               - name
@@ -152,8 +130,6 @@ $defs:
           - string
           - integer
           - boolean
-          - date
-          - time
           - datetime
           - duration
           - binary
