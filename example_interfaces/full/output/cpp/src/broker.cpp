@@ -27,6 +27,7 @@ MqttConnection::MqttConnection(const std::string &host, int port, const std::str
         throw std::runtime_error("Mosquitto lib init problem");
     };
     _mosq = mosquitto_new(_clientId.c_str(), false, (void *)this);
+    mosquitto_int_option(_mosq, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
 
     mosquitto_connect_callback_set(_mosq, [](struct mosquitto *mosq, void *user, int i)
                                    {
@@ -62,6 +63,15 @@ MqttConnection::MqttConnection(const std::string &host, int port, const std::str
             mosquitto_property_free_all(&propList);
             thisClient->_sendMessages[mid] = msg._pSentPromise;
             thisClient->_msgQueue.pop();
+        }
+
+        { // Send online message
+            auto onlineTopic = GetOnlineTopic()
+            mosquitto_property *propList = NULL;
+            mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
+            const char *onlinePayload = "{\"status\":\"online\"}";
+            mosquitto_publish_v5(mosq, &mid, onlineTopic.c_str(), sizeof(onlinePayload), onlinePayload, 1, true, propList);
+            mosquitto_property_free_all(&propList);
         } });
 
     mosquitto_message_v5_callback_set(_mosq, [](struct mosquitto *mosq, void *user, const struct mosquitto_message *mmsg, const mosquitto_property *props)
@@ -153,7 +163,23 @@ MqttConnection::~MqttConnection()
 
 void MqttConnection::Connect()
 {
-    mosquitto_int_option(_mosq, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
+    { // configure LWT
+        auto onlineTopic = GetOnlineTopic();
+        mosquitto_property *propList = NULL;
+        mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
+        const char *offlinePayload = "{\"status\":\"offline\"}";
+        mosquitto_will_set_v5(
+                _mosq,
+                onlineTopic.c_str(),
+                sizeof(offlinePayload),
+                offlinePayload,
+                1, // qos
+                true, // retain
+                propList
+        );
+        mosquitto_property_free_all(&propList);
+    }
+
     mosquitto_connect(_mosq, _host.c_str(), _port, 120);
 }
 
@@ -257,7 +283,7 @@ std::string MqttConnection::GetClientId() const
     return _clientId;
 }
 
-LocalConnection::LocalConnection(const std::string &clientId)
-    : MqttConnection("127.0.0.1", 1883, clientId)
+std::string MqttConnection::GetOnlineTopic() const
 {
+    return boost::str(boost::format("client/%1%/online") % _clientId);
 }

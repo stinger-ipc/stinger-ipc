@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv)
 {
-    auto conn = std::make_shared<LocalConnection>("FullClient-demo");
+    auto conn = std::make_shared<MqttBrokerConnection>();
     FullClient client(conn);
     client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek)
                                    { std::cout << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << "None" << std::endl; });

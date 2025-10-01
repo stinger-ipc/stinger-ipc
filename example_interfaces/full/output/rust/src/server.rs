@@ -101,7 +101,7 @@ impl FullServer {
         // Create method handler struct
         let subscription_id_add_numbers_method_req = connection
             .subscribe(
-                "full/method/addNumbers".to_string(),
+                "full/{}/method/addNumbers".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -110,7 +110,7 @@ impl FullServer {
             subscription_id_add_numbers_method_req.unwrap_or_else(|_| usize::MAX);
         let subscription_id_do_something_method_req = connection
             .subscribe(
-                "full/method/doSomething".to_string(),
+                "full/{}/method/doSomething".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -119,7 +119,7 @@ impl FullServer {
             subscription_id_do_something_method_req.unwrap_or_else(|_| usize::MAX);
         let subscription_id_echo_method_req = connection
             .subscribe(
-                "full/method/echo".to_string(),
+                "full/{}/method/echo".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -129,7 +129,7 @@ impl FullServer {
 
         let subscription_id_favorite_number_property_update = connection
             .subscribe(
-                "full/property/favoriteNumber/setValue".to_string(),
+                "full/{}/property/favoriteNumber/setValue".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -139,7 +139,7 @@ impl FullServer {
 
         let subscription_id_favorite_foods_property_update = connection
             .subscribe(
-                "full/property/favoriteFoods/setValue".to_string(),
+                "full/{}/property/favoriteFoods/setValue".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -149,7 +149,7 @@ impl FullServer {
 
         let subscription_id_lunch_menu_property_update = connection
             .subscribe(
-                "full/property/lunchMenu/setValue".to_string(),
+                "full/{}/property/lunchMenu/setValue".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -159,7 +159,7 @@ impl FullServer {
 
         let subscription_id_family_name_property_update = connection
             .subscribe(
-                "full/property/familyName/setValue".to_string(),
+                "full/{}/property/familyName/setValue".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -183,19 +183,19 @@ impl FullServer {
         };
 
         let property_values = FullProperties {
-            favorite_number_topic: Arc::new(String::from("full/property/favoriteNumber/value")),
+            favorite_number_topic: Arc::new(String::from("full/{}/property/favoriteNumber/value")),
 
             favorite_number: Arc::new(Mutex::new(None)),
             favorite_number_tx_channel: watch::channel(None).0,
-            favorite_foods_topic: Arc::new(String::from("full/property/favoriteFoods/value")),
+            favorite_foods_topic: Arc::new(String::from("full/{}/property/favoriteFoods/value")),
 
             favorite_foods: Arc::new(Mutex::new(None)),
             favorite_foods_tx_channel: watch::channel(None).0,
-            lunch_menu_topic: Arc::new(String::from("full/property/lunchMenu/value")),
+            lunch_menu_topic: Arc::new(String::from("full/{}/property/lunchMenu/value")),
 
             lunch_menu: Arc::new(Mutex::new(None)),
             lunch_menu_tx_channel: watch::channel(None).0,
-            family_name_topic: Arc::new(String::from("full/property/familyName/value")),
+            family_name_topic: Arc::new(String::from("full/{}/property/familyName/value")),
 
             family_name: Arc::new(Mutex::new(None)),
             family_name_tx_channel: watch::channel(None).0,
@@ -286,7 +286,7 @@ impl FullServer {
         };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("full/signal/todayIs".to_string(), &data)
+            .publish_structure("full/{}/signal/todayIs".to_string(), &data)
             .await;
         FullServer::oneshot_to_future(published_oneshot).await
     }

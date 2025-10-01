@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv)
 {
-    auto conn = std::make_shared<DefaultConnection>("localhost", 1883, "Weather");
+    auto conn = std::make_shared<MqttBrokerConnection>();
     WeatherServer server(conn);
     auto current_timeFuture = server.emitCurrentTimeSignal("apples");
     current_timeFuture.wait();

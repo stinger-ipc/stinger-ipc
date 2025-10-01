@@ -58,7 +58,7 @@ class SignalOnlyClient:
         """
         self._logger.debug("Receiving message sent to %s", topic)
         # Handle 'anotherSignal' signal.
-        if self._conn.is_topic_sub(topic, "signalOnly/signal/anotherSignal"):
+        if self._conn.is_topic_sub(topic, "signalOnly/{}/signal/anotherSignal"):
             if "ContentType" not in properties or properties["ContentType"] != "application/json":
                 self._logger.warning("Received 'anotherSignal' signal with non-JSON content type")
                 return
@@ -74,7 +74,7 @@ class SignalOnlyClient:
 
             self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
         # Handle 'bark' signal.
-        elif self._conn.is_topic_sub(topic, "signalOnly/signal/bark"):
+        elif self._conn.is_topic_sub(topic, "signalOnly/{}/signal/bark"):
             if "ContentType" not in properties or properties["ContentType"] != "application/json":
                 self._logger.warning("Received 'bark' signal with non-JSON content type")
                 return
@@ -86,7 +86,7 @@ class SignalOnlyClient:
 
             self._do_callbacks_for(self._signal_recv_callbacks_for_bark, **kwargs)
         # Handle 'maybe_number' signal.
-        elif self._conn.is_topic_sub(topic, "signalOnly/signal/maybeNumber"):
+        elif self._conn.is_topic_sub(topic, "signalOnly/{}/signal/maybeNumber"):
             if "ContentType" not in properties or properties["ContentType"] != "application/json":
                 self._logger.warning("Received 'maybe_number' signal with non-JSON content type")
                 return
@@ -98,7 +98,7 @@ class SignalOnlyClient:
 
             self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_number, **kwargs)
         # Handle 'maybe_name' signal.
-        elif self._conn.is_topic_sub(topic, "signalOnly/signal/maybeName"):
+        elif self._conn.is_topic_sub(topic, "signalOnly/{}/signal/maybeName"):
             if "ContentType" not in properties or properties["ContentType"] != "application/json":
                 self._logger.warning("Received 'maybe_name' signal with non-JSON content type")
                 return
@@ -114,28 +114,28 @@ class SignalOnlyClient:
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_another_signal.append(handler)
         if len(self._signal_recv_callbacks_for_another_signal) == 1:
-            self._conn.subscribe("signalOnly/signal/anotherSignal")
+            self._conn.subscribe("signalOnly/{}/signal/anotherSignal")
         return handler
 
     def receive_bark(self, handler: BarkSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_bark.append(handler)
         if len(self._signal_recv_callbacks_for_bark) == 1:
-            self._conn.subscribe("signalOnly/signal/bark")
+            self._conn.subscribe("signalOnly/{}/signal/bark")
         return handler
 
     def receive_maybe_number(self, handler: MaybeNumberSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_maybe_number.append(handler)
         if len(self._signal_recv_callbacks_for_maybe_number) == 1:
-            self._conn.subscribe("signalOnly/signal/maybeNumber")
+            self._conn.subscribe("signalOnly/{}/signal/maybeNumber")
         return handler
 
     def receive_maybe_name(self, handler: MaybeNameSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_maybe_name.append(handler)
         if len(self._signal_recv_callbacks_for_maybe_name) == 1:
-            self._conn.subscribe("signalOnly/signal/maybeName")
+            self._conn.subscribe("signalOnly/{}/signal/maybeName")
         return handler
 
 
@@ -189,9 +189,7 @@ class SignalOnlyClientBuilder:
 if __name__ == "__main__":
     import signal
 
-    from connection import DefaultConnection
-
-    conn = DefaultConnection("localhost", 1883)
+    conn = MqttBrokerConnection()
     client_builder = SignalOnlyClientBuilder(conn)
 
     @client_builder.receive_another_signal

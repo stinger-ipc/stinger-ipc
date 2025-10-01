@@ -6,7 +6,7 @@ It contains enumerations used by the Full interface.
 */
 use full_ipc::server::{FullMethodHandlers, FullServer};
 use futures::executor::block_on;
-use mqttier::MqttierClient;
+use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
 use std::any::Any;
 use tokio::time::{Duration, sleep};
 
@@ -74,7 +74,14 @@ async fn main() {
         .init();
 
     block_on(async {
-        let mut connection = MqttierClient::new("localhost", 1883, None).unwrap();
+        let conn_opts = MqttierOptionsBuilder::new()
+            .connection(Connection::TcpLocalhost(1883))
+            .build()
+            .unwrap()
+            .expect("Failed to build MQTT connection options");
+        let mut connection = MqttierClient::new(conn_opts)
+            .unwrap()
+            .expect("Failed to create MQTT client");
 
         let handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>> =
             Arc::new(Mutex::new(Box::new(FullMethodImpl::new())));

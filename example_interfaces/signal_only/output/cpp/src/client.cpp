@@ -29,10 +29,10 @@ SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker)
                                         const MqttProperties& mqttProps
                                 )
                                 { _receiveMessage(topic, payload, mqttProps); });
-    _anotherSignalSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/anotherSignal", 2);
-    _barkSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/bark", 2);
-    _maybeNumberSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/maybeNumber", 2);
-    _maybeNameSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/maybeName", 2);
+    _anotherSignalSignalSubscriptionId = _broker->Subscribe("signalOnly/{}/signal/anotherSignal", 2);
+    _barkSignalSubscriptionId = _broker->Subscribe("signalOnly/{}/signal/bark", 2);
+    _maybeNumberSignalSubscriptionId = _broker->Subscribe("signalOnly/{}/signal/maybeNumber", 2);
+    _maybeNameSignalSubscriptionId = _broker->Subscribe("signalOnly/{}/signal/maybeName", 2);
 }
 
 void SignalOnlyClient::_receiveMessage(
@@ -41,7 +41,7 @@ void SignalOnlyClient::_receiveMessage(
         const MqttProperties& mqttProps
 )
 {
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _anotherSignalSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/anotherSignal"))
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _anotherSignalSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/{}/signal/anotherSignal"))
     {
         //Log("Handling anotherSignal signal");
         rapidjson::Document doc;
@@ -114,7 +114,7 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _barkSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/bark"))
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _barkSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/{}/signal/bark"))
     {
         //Log("Handling bark signal");
         rapidjson::Document doc;
@@ -161,7 +161,7 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _maybeNumberSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/maybeNumber"))
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _maybeNumberSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/{}/signal/maybeNumber"))
     {
         //Log("Handling maybe_number signal");
         rapidjson::Document doc;
@@ -208,7 +208,7 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _maybeNameSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/maybeName"))
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _maybeNameSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/{}/signal/maybeName"))
     {
         //Log("Handling maybe_name signal");
         rapidjson::Document doc;

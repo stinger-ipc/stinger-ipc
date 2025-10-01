@@ -5,8 +5,17 @@ on the next generation.
 It contains enumerations used by the weather interface.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from enum import IntEnum
+
+
+class InterfaceInfo(BaseModel):
+    interfaceName: str = Field(default="weather")
+    title: str = Field(default="NWS weather forecast")
+    version: str = Field(default="0.1.2")
+    instance: str
+    connection_topic: str
+    timestamp: str
 
 
 class WeatherCondition(IntEnum):

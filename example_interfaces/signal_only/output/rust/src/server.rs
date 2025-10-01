@@ -92,7 +92,7 @@ impl SignalOnlyServer {
         };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("signalOnly/signal/anotherSignal".to_string(), &data)
+            .publish_structure("signalOnly/{}/signal/anotherSignal".to_string(), &data)
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
@@ -101,7 +101,7 @@ impl SignalOnlyServer {
         let data = BarkSignalPayload { word: word };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("signalOnly/signal/bark".to_string(), &data)
+            .publish_structure("signalOnly/{}/signal/bark".to_string(), &data)
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
@@ -110,7 +110,7 @@ impl SignalOnlyServer {
         let data = MaybeNumberSignalPayload { number: number };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("signalOnly/signal/maybeNumber".to_string(), &data)
+            .publish_structure("signalOnly/{}/signal/maybeNumber".to_string(), &data)
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
@@ -119,7 +119,7 @@ impl SignalOnlyServer {
         let data = MaybeNameSignalPayload { name: name };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("signalOnly/signal/maybeName".to_string(), &data)
+            .publish_structure("signalOnly/{}/signal/maybeName".to_string(), &data)
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }

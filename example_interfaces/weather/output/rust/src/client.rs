@@ -110,7 +110,7 @@ impl WeatherClient {
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
         let topic_refresh_daily_forecast_method_resp = format!(
-            "client/{}/weather/method/refreshDailyForecast/response",
+            "client/{}/weather/{}/method/refreshDailyForecast/response",
             connection.client_id
         );
         let subscription_id_refresh_daily_forecast_method_resp = connection
@@ -123,7 +123,7 @@ impl WeatherClient {
         let subscription_id_refresh_daily_forecast_method_resp =
             subscription_id_refresh_daily_forecast_method_resp.unwrap_or_else(|_| usize::MAX);
         let topic_refresh_hourly_forecast_method_resp = format!(
-            "client/{}/weather/method/refreshHourlyForecast/response",
+            "client/{}/weather/{}/method/refreshHourlyForecast/response",
             connection.client_id
         );
         let subscription_id_refresh_hourly_forecast_method_resp = connection
@@ -136,7 +136,7 @@ impl WeatherClient {
         let subscription_id_refresh_hourly_forecast_method_resp =
             subscription_id_refresh_hourly_forecast_method_resp.unwrap_or_else(|_| usize::MAX);
         let topic_refresh_current_conditions_method_resp = format!(
-            "client/{}/weather/method/refreshCurrentConditions/response",
+            "client/{}/weather/{}/method/refreshCurrentConditions/response",
             connection.client_id
         );
         let subscription_id_refresh_current_conditions_method_resp = connection
@@ -150,7 +150,7 @@ impl WeatherClient {
             subscription_id_refresh_current_conditions_method_resp.unwrap_or_else(|_| usize::MAX);
 
         // Subscribe to all the topics needed for signals.
-        let topic_current_time_signal = "weather/signal/currentTime".to_string();
+        let topic_current_time_signal = "weather/{}/signal/currentTime".to_string();
         let subscription_id_current_time_signal = connection
             .subscribe(topic_current_time_signal, 2, message_received_tx.clone())
             .await;
@@ -159,7 +159,7 @@ impl WeatherClient {
 
         // Subscribe to all the topics needed for properties.
 
-        let topic_location_property_value = "weather/property/location/value".to_string();
+        let topic_location_property_value = "weather/{}/property/location/value".to_string();
         let subscription_id_location_property_value = connection
             .subscribe(
                 topic_location_property_value,
@@ -171,7 +171,7 @@ impl WeatherClient {
             subscription_id_location_property_value.unwrap_or_else(|_| usize::MAX);
 
         let topic_current_temperature_property_value =
-            "weather/property/currentTemperature/value".to_string();
+            "weather/{}/property/currentTemperature/value".to_string();
         let subscription_id_current_temperature_property_value = connection
             .subscribe(
                 topic_current_temperature_property_value,
@@ -183,7 +183,7 @@ impl WeatherClient {
             subscription_id_current_temperature_property_value.unwrap_or_else(|_| usize::MAX);
 
         let topic_current_condition_property_value =
-            "weather/property/currentCondition/value".to_string();
+            "weather/{}/property/currentCondition/value".to_string();
         let subscription_id_current_condition_property_value = connection
             .subscribe(
                 topic_current_condition_property_value,
@@ -195,7 +195,7 @@ impl WeatherClient {
             subscription_id_current_condition_property_value.unwrap_or_else(|_| usize::MAX);
 
         let topic_daily_forecast_property_value =
-            "weather/property/dailyForecast/value".to_string();
+            "weather/{}/property/dailyForecast/value".to_string();
         let subscription_id_daily_forecast_property_value = connection
             .subscribe(
                 topic_daily_forecast_property_value,
@@ -207,7 +207,7 @@ impl WeatherClient {
             subscription_id_daily_forecast_property_value.unwrap_or_else(|_| usize::MAX);
 
         let topic_hourly_forecast_property_value =
-            "weather/property/hourlyForecast/value".to_string();
+            "weather/{}/property/hourlyForecast/value".to_string();
         let subscription_id_hourly_forecast_property_value = connection
             .subscribe(
                 topic_hourly_forecast_property_value,
@@ -219,7 +219,7 @@ impl WeatherClient {
             subscription_id_hourly_forecast_property_value.unwrap_or_else(|_| usize::MAX);
 
         let topic_current_condition_refresh_interval_property_value =
-            "weather/property/currentConditionRefreshInterval/value".to_string();
+            "weather/{}/property/currentConditionRefreshInterval/value".to_string();
         let subscription_id_current_condition_refresh_interval_property_value = connection
             .subscribe(
                 topic_current_condition_refresh_interval_property_value,
@@ -232,7 +232,7 @@ impl WeatherClient {
                 .unwrap_or_else(|_| usize::MAX);
 
         let topic_hourly_forecast_refresh_interval_property_value =
-            "weather/property/hourlyForecastRefreshInterval/value".to_string();
+            "weather/{}/property/hourlyForecastRefreshInterval/value".to_string();
         let subscription_id_hourly_forecast_refresh_interval_property_value = connection
             .subscribe(
                 topic_hourly_forecast_refresh_interval_property_value,
@@ -245,7 +245,7 @@ impl WeatherClient {
                 .unwrap_or_else(|_| usize::MAX);
 
         let topic_daily_forecast_refresh_interval_property_value =
-            "weather/property/dailyForecastRefreshInterval/value".to_string();
+            "weather/{}/property/dailyForecastRefreshInterval/value".to_string();
         let subscription_id_daily_forecast_refresh_interval_property_value = connection
             .subscribe(
                 topic_daily_forecast_refresh_interval_property_value,
@@ -330,7 +330,7 @@ impl WeatherClient {
 
     /// The `refresh_daily_forecast` method.
     /// Method arguments are packed into a RefreshDailyForecastRequestObject structure
-    /// and published to the `weather/method/refreshDailyForecast` MQTT topic.
+    /// and published to the `weather/{}/method/refreshDailyForecast` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn refresh_daily_forecast(&mut self) -> Result<(), MethodReturnCode> {
@@ -345,13 +345,13 @@ impl WeatherClient {
         let data = RefreshDailyForecastRequestObject {};
 
         let response_topic: String = format!(
-            "client/{}/weather/method/refreshDailyForecast/response",
+            "client/{}/weather/{}/method/refreshDailyForecast/response",
             self.client_id
         );
         let _ = self
             .mqttier_client
             .publish_request(
-                "weather/method/refreshDailyForecast".to_string(),
+                "weather/{}/method/refreshDailyForecast".to_string(),
                 &data,
                 response_topic,
                 correlation_data,
@@ -388,7 +388,7 @@ impl WeatherClient {
     }
     /// The `refresh_hourly_forecast` method.
     /// Method arguments are packed into a RefreshHourlyForecastRequestObject structure
-    /// and published to the `weather/method/refreshHourlyForecast` MQTT topic.
+    /// and published to the `weather/{}/method/refreshHourlyForecast` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn refresh_hourly_forecast(&mut self) -> Result<(), MethodReturnCode> {
@@ -403,13 +403,13 @@ impl WeatherClient {
         let data = RefreshHourlyForecastRequestObject {};
 
         let response_topic: String = format!(
-            "client/{}/weather/method/refreshHourlyForecast/response",
+            "client/{}/weather/{}/method/refreshHourlyForecast/response",
             self.client_id
         );
         let _ = self
             .mqttier_client
             .publish_request(
-                "weather/method/refreshHourlyForecast".to_string(),
+                "weather/{}/method/refreshHourlyForecast".to_string(),
                 &data,
                 response_topic,
                 correlation_data,
@@ -446,7 +446,7 @@ impl WeatherClient {
     }
     /// The `refresh_current_conditions` method.
     /// Method arguments are packed into a RefreshCurrentConditionsRequestObject structure
-    /// and published to the `weather/method/refreshCurrentConditions` MQTT topic.
+    /// and published to the `weather/{}/method/refreshCurrentConditions` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn refresh_current_conditions(&mut self) -> Result<(), MethodReturnCode> {
@@ -461,13 +461,13 @@ impl WeatherClient {
         let data = RefreshCurrentConditionsRequestObject {};
 
         let response_topic: String = format!(
-            "client/{}/weather/method/refreshCurrentConditions/response",
+            "client/{}/weather/{}/method/refreshCurrentConditions/response",
             self.client_id
         );
         let _ = self
             .mqttier_client
             .publish_request(
-                "weather/method/refreshCurrentConditions".to_string(),
+                "weather/{}/method/refreshCurrentConditions".to_string(),
                 &data,
                 response_topic,
                 correlation_data,
@@ -513,7 +513,7 @@ impl WeatherClient {
         let data = value;
         let _publish_result = self
             .mqttier_client
-            .publish_structure("weather/property/location/setValue".to_string(), &data);
+            .publish_structure("weather/{}/property/location/setValue".to_string(), &data);
         Ok(())
     }
 
@@ -555,7 +555,7 @@ impl WeatherClient {
     ) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self.mqttier_client.publish_structure(
-            "weather/property/currentConditionRefreshInterval/setValue".to_string(),
+            "weather/{}/property/currentConditionRefreshInterval/setValue".to_string(),
             &data,
         );
         Ok(())
@@ -575,7 +575,7 @@ impl WeatherClient {
     ) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self.mqttier_client.publish_structure(
-            "weather/property/hourlyForecastRefreshInterval/setValue".to_string(),
+            "weather/{}/property/hourlyForecastRefreshInterval/setValue".to_string(),
             &data,
         );
         Ok(())
@@ -595,7 +595,7 @@ impl WeatherClient {
     ) -> Result<(), MethodReturnCode> {
         let data = value;
         let _publish_result = self.mqttier_client.publish_structure(
-            "weather/property/dailyForecastRefreshInterval/setValue".to_string(),
+            "weather/{}/property/dailyForecastRefreshInterval/setValue".to_string(),
             &data,
         );
         Ok(())

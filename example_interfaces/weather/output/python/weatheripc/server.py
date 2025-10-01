@@ -8,13 +8,16 @@ This is the Server for the weather interface.
 import json
 import logging
 import threading
+from time import sleep
 from dataclasses import dataclass, field
+import datetime
 
 logging.basicConfig(level=logging.DEBUG)
-
+from pydantic import BaseModel
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import BrokerConnection
 from method_codes import *
+from interface_types import InterfaceInfo
 import interface_types as stinger_types
 
 
@@ -38,71 +41,87 @@ class MethodControls:
 
 class WeatherServer:
 
-    def __init__(self, connection: BrokerConnection):
-        self._logger = logging.getLogger("WeatherServer")
+    def __init__(self, connection: BrokerConnection, instance_id: str):
+        self._logger = logging.getLogger(f"WeatherServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing WeatherServer")
+        self._logger.debug("Initializing WeatherServer instance %s", instance_id)
+        self._instance_id = instance_id
+        self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
+        self._running = True
         self._conn.set_message_callback(self._receive_message)
-        self._conn.set_last_will(topic="weather/interface", payload=None, qos=1, retain=True)
 
         self._property_location: PropertyControls[stinger_types.LocationProperty, float, float] = PropertyControls()
-        self._property_location.subscription_id = self._conn.subscribe("weather/property/location/setValue")
+        self._property_location.subscription_id = self._conn.subscribe("weather/{}/property/location/setValue")
 
         self._property_current_temperature: PropertyControls[float, float] = PropertyControls()
-        self._property_current_temperature.subscription_id = self._conn.subscribe("weather/property/currentTemperature/setValue")
+        self._property_current_temperature.subscription_id = self._conn.subscribe("weather/{}/property/currentTemperature/setValue")
 
         self._property_current_condition: PropertyControls[stinger_types.CurrentConditionProperty, stinger_types.WeatherCondition, str] = PropertyControls()
-        self._property_current_condition.subscription_id = self._conn.subscribe("weather/property/currentCondition/setValue")
+        self._property_current_condition.subscription_id = self._conn.subscribe("weather/{}/property/currentCondition/setValue")
 
         self._property_daily_forecast: PropertyControls[stinger_types.DailyForecastProperty, stinger_types.ForecastForDay, stinger_types.ForecastForDay, stinger_types.ForecastForDay] = (
             PropertyControls()
         )
-        self._property_daily_forecast.subscription_id = self._conn.subscribe("weather/property/dailyForecast/setValue")
+        self._property_daily_forecast.subscription_id = self._conn.subscribe("weather/{}/property/dailyForecast/setValue")
 
         self._property_hourly_forecast: PropertyControls[
             stinger_types.HourlyForecastProperty, stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour
         ] = PropertyControls()
-        self._property_hourly_forecast.subscription_id = self._conn.subscribe("weather/property/hourlyForecast/setValue")
+        self._property_hourly_forecast.subscription_id = self._conn.subscribe("weather/{}/property/hourlyForecast/setValue")
 
         self._property_current_condition_refresh_interval: PropertyControls[int, int] = PropertyControls()
-        self._property_current_condition_refresh_interval.subscription_id = self._conn.subscribe("weather/property/currentConditionRefreshInterval/setValue")
+        self._property_current_condition_refresh_interval.subscription_id = self._conn.subscribe("weather/{}/property/currentConditionRefreshInterval/setValue")
 
         self._property_hourly_forecast_refresh_interval: PropertyControls[int, int] = PropertyControls()
-        self._property_hourly_forecast_refresh_interval.subscription_id = self._conn.subscribe("weather/property/hourlyForecastRefreshInterval/setValue")
+        self._property_hourly_forecast_refresh_interval.subscription_id = self._conn.subscribe("weather/{}/property/hourlyForecastRefreshInterval/setValue")
 
         self._property_daily_forecast_refresh_interval: PropertyControls[int, int] = PropertyControls()
-        self._property_daily_forecast_refresh_interval.subscription_id = self._conn.subscribe("weather/property/dailyForecastRefreshInterval/setValue")
+        self._property_daily_forecast_refresh_interval.subscription_id = self._conn.subscribe("weather/{}/property/dailyForecastRefreshInterval/setValue")
 
         self._method_refresh_daily_forecast = MethodControls()
-        self._method_refresh_daily_forecast.subscription_id = self._conn.subscribe("weather/method/refreshDailyForecast")
+        self._method_refresh_daily_forecast.subscription_id = self._conn.subscribe("weather/{}/method/refreshDailyForecast")
 
         self._method_refresh_hourly_forecast = MethodControls()
-        self._method_refresh_hourly_forecast.subscription_id = self._conn.subscribe("weather/method/refreshHourlyForecast")
+        self._method_refresh_hourly_forecast.subscription_id = self._conn.subscribe("weather/{}/method/refreshHourlyForecast")
 
         self._method_refresh_current_conditions = MethodControls()
-        self._method_refresh_current_conditions.subscription_id = self._conn.subscribe("weather/method/refreshCurrentConditions")
+        self._method_refresh_current_conditions.subscription_id = self._conn.subscribe("weather/{}/method/refreshCurrentConditions")
 
-        self._publish_interface_info()
+        self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
+        self._advertise_thread.start()
+
+    def __del__(self):
+        self._running = False
+        self._conn.unpublish_retained(self._conn.online_topic)
+        self._advertise_thread.join()
+
+    def prepend_topic_prefix(self, topic: str) -> str:
+        return f"/{self._instance_id}/{topic}"
+
+    def loop_publishing_interface_info(self):
+        while self._conn.is_connected() and self._running:
+            self._publish_interface_info()
+            sleep(self._re_advertise_server_interval_seconds)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
         self._logger.debug("Received message to %s", topic)
-        if (properties.get("SubscriptionId", -1) == self._method_refresh_daily_forecast.subscription_id) or self._conn.is_topic_sub(topic, "weather/method/refreshDailyForecast"):
+        if (properties.get("SubscriptionId", -1) == self._method_refresh_daily_forecast.subscription_id) or self._conn.is_topic_sub(topic, "weather/{}/method/refreshDailyForecast"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
                 self._process_refresh_daily_forecast_call(topic, payload_obj, properties)
-        elif (properties.get("SubscriptionId", -1) == self._method_refresh_hourly_forecast.subscription_id) or self._conn.is_topic_sub(topic, "weather/method/refreshHourlyForecast"):
+        elif (properties.get("SubscriptionId", -1) == self._method_refresh_hourly_forecast.subscription_id) or self._conn.is_topic_sub(topic, "weather/{}/method/refreshHourlyForecast"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
                 self._process_refresh_hourly_forecast_call(topic, payload_obj, properties)
-        elif (properties.get("SubscriptionId", -1) == self._method_refresh_current_conditions.subscription_id) or self._conn.is_topic_sub(topic, "weather/method/refreshCurrentConditions"):
+        elif (properties.get("SubscriptionId", -1) == self._method_refresh_current_conditions.subscription_id) or self._conn.is_topic_sub(topic, "weather/{}/method/refreshCurrentConditions"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
@@ -110,7 +129,7 @@ class WeatherServer:
             else:
                 self._process_refresh_current_conditions_call(topic, payload_obj, properties)
 
-        if (properties.get("SubscriptionId", -1) == self._property_location.subscription_id) or self._conn.is_topic_sub(topic, "weather/property/location/setValue"):
+        if (properties.get("SubscriptionId", -1) == self._property_location.subscription_id) or self._conn.is_topic_sub(topic, "weather/{}/property/location/setValue"):
             prop_value = stinger_types.LocationProperty.model_validate_json(payload)
             with self._property_location.mutex:
                 self._property_location.value = prop_value
@@ -118,7 +137,7 @@ class WeatherServer:
             for callback in self._property_location.callbacks:
                 callback(prop_value.latitude, prop_value.longitude)
 
-        elif (properties.get("SubscriptionId", -1) == self._property_current_temperature.subscription_id) or self._conn.is_topic_sub(topic, "weather/property/currentTemperature/setValue"):
+        elif (properties.get("SubscriptionId", -1) == self._property_current_temperature.subscription_id) or self._conn.is_topic_sub(topic, "weather/{}/property/currentTemperature/setValue"):
             payload_obj = json.loads(payload)
             prop_value = float(payload_obj["temperature_f"])
             with self._property_current_temperature.mutex:
@@ -127,7 +146,7 @@ class WeatherServer:
             for callback in self._property_current_temperature.callbacks:
                 callback(prop_value)
 
-        elif (properties.get("SubscriptionId", -1) == self._property_current_condition.subscription_id) or self._conn.is_topic_sub(topic, "weather/property/currentCondition/setValue"):
+        elif (properties.get("SubscriptionId", -1) == self._property_current_condition.subscription_id) or self._conn.is_topic_sub(topic, "weather/{}/property/currentCondition/setValue"):
             prop_value = stinger_types.CurrentConditionProperty.model_validate_json(payload)
             with self._property_current_condition.mutex:
                 self._property_current_condition.value = prop_value
@@ -135,7 +154,7 @@ class WeatherServer:
             for callback in self._property_current_condition.callbacks:
                 callback(prop_value.condition, prop_value.description)
 
-        elif (properties.get("SubscriptionId", -1) == self._property_daily_forecast.subscription_id) or self._conn.is_topic_sub(topic, "weather/property/dailyForecast/setValue"):
+        elif (properties.get("SubscriptionId", -1) == self._property_daily_forecast.subscription_id) or self._conn.is_topic_sub(topic, "weather/{}/property/dailyForecast/setValue"):
             prop_value = stinger_types.DailyForecastProperty.model_validate_json(payload)
             with self._property_daily_forecast.mutex:
                 self._property_daily_forecast.value = prop_value
@@ -143,7 +162,7 @@ class WeatherServer:
             for callback in self._property_daily_forecast.callbacks:
                 callback(prop_value.monday, prop_value.tuesday, prop_value.wednesday)
 
-        elif (properties.get("SubscriptionId", -1) == self._property_hourly_forecast.subscription_id) or self._conn.is_topic_sub(topic, "weather/property/hourlyForecast/setValue"):
+        elif (properties.get("SubscriptionId", -1) == self._property_hourly_forecast.subscription_id) or self._conn.is_topic_sub(topic, "weather/{}/property/hourlyForecast/setValue"):
             prop_value = stinger_types.HourlyForecastProperty.model_validate_json(payload)
             with self._property_hourly_forecast.mutex:
                 self._property_hourly_forecast.value = prop_value
@@ -152,7 +171,7 @@ class WeatherServer:
                 callback(prop_value.hour_0, prop_value.hour_1, prop_value.hour_2, prop_value.hour_3)
 
         elif (properties.get("SubscriptionId", -1) == self._property_current_condition_refresh_interval.subscription_id) or self._conn.is_topic_sub(
-            topic, "weather/property/currentConditionRefreshInterval/setValue"
+            topic, "weather/{}/property/currentConditionRefreshInterval/setValue"
         ):
             payload_obj = json.loads(payload)
             prop_value = int(payload_obj["seconds"])
@@ -163,7 +182,7 @@ class WeatherServer:
                 callback(prop_value)
 
         elif (properties.get("SubscriptionId", -1) == self._property_hourly_forecast_refresh_interval.subscription_id) or self._conn.is_topic_sub(
-            topic, "weather/property/hourlyForecastRefreshInterval/setValue"
+            topic, "weather/{}/property/hourlyForecastRefreshInterval/setValue"
         ):
             payload_obj = json.loads(payload)
             prop_value = int(payload_obj["seconds"])
@@ -174,7 +193,7 @@ class WeatherServer:
                 callback(prop_value)
 
         elif (properties.get("SubscriptionId", -1) == self._property_daily_forecast_refresh_interval.subscription_id) or self._conn.is_topic_sub(
-            topic, "weather/property/dailyForecastRefreshInterval/setValue"
+            topic, "weather/{}/property/dailyForecastRefreshInterval/setValue"
         ):
             payload_obj = json.loads(payload)
             prop_value = int(payload_obj["seconds"])
@@ -185,12 +204,9 @@ class WeatherServer:
                 callback(prop_value)
 
     def _publish_interface_info(self):
-        self._conn.publish(
-            "weather/interface",
-            """{"name": "weather", "summary": "Current conditions, daily and hourly forecasts from the NWS API", "title": "NWS weather forecast", "version": "0.1.2"}""",
-            qos=1,
-            retain=True,
-        )
+        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.utcnow().isoformat())
+        expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
+        self._conn.publish_status(topic, data, expiry)
 
     def emit_current_time(self, current_time: str):
         """Server application code should call this method to emit the 'current_time' signal."""
@@ -200,7 +216,7 @@ class WeatherServer:
         payload = {
             "current_time": str(current_time),
         }
-        self._conn.publish("weather/signal/currentTime", json.dumps(payload), qos=1, retain=False)
+        self._conn.publish("weather/{}/signal/currentTime", json.dumps(payload), qos=1, retain=False)
 
     def handle_refresh_daily_forecast(self, handler: Callable[[None], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_daily_forecast' method calls."""
@@ -331,7 +347,7 @@ class WeatherServer:
             with self._property_location.mutex:
                 self._property_location.value = value
                 self._property_location.version += 1
-            self._conn.publish("weather/property/location/value", payload, qos=1, retain=True)
+            self._conn.publish("weather/{}/property/location/value", payload, qos=1, retain=True)
             for callback in self._property_location.callbacks:
                 callback(value.latitude, value.longitude)
 
@@ -373,7 +389,7 @@ class WeatherServer:
             with self._property_current_temperature.mutex:
                 self._property_current_temperature.value = temperature_f
                 self._property_current_temperature.version += 1
-            self._conn.publish("weather/property/currentTemperature/value", payload, qos=1, retain=True)
+            self._conn.publish("weather/{}/property/currentTemperature/value", payload, qos=1, retain=True)
             for callback in self._property_current_temperature.callbacks:
                 callback(temperature_f)
 
@@ -410,7 +426,7 @@ class WeatherServer:
             with self._property_current_condition.mutex:
                 self._property_current_condition.value = value
                 self._property_current_condition.version += 1
-            self._conn.publish("weather/property/currentCondition/value", payload, qos=1, retain=True)
+            self._conn.publish("weather/{}/property/currentCondition/value", payload, qos=1, retain=True)
             for callback in self._property_current_condition.callbacks:
                 callback(value.condition, value.description)
 
@@ -452,7 +468,7 @@ class WeatherServer:
             with self._property_daily_forecast.mutex:
                 self._property_daily_forecast.value = value
                 self._property_daily_forecast.version += 1
-            self._conn.publish("weather/property/dailyForecast/value", payload, qos=1, retain=True)
+            self._conn.publish("weather/{}/property/dailyForecast/value", payload, qos=1, retain=True)
             for callback in self._property_daily_forecast.callbacks:
                 callback(value.monday, value.tuesday, value.wednesday)
 
@@ -497,7 +513,7 @@ class WeatherServer:
             with self._property_hourly_forecast.mutex:
                 self._property_hourly_forecast.value = value
                 self._property_hourly_forecast.version += 1
-            self._conn.publish("weather/property/hourlyForecast/value", payload, qos=1, retain=True)
+            self._conn.publish("weather/{}/property/hourlyForecast/value", payload, qos=1, retain=True)
             for callback in self._property_hourly_forecast.callbacks:
                 callback(value.hour_0, value.hour_1, value.hour_2, value.hour_3)
 
@@ -545,7 +561,7 @@ class WeatherServer:
             with self._property_current_condition_refresh_interval.mutex:
                 self._property_current_condition_refresh_interval.value = seconds
                 self._property_current_condition_refresh_interval.version += 1
-            self._conn.publish("weather/property/currentConditionRefreshInterval/value", payload, qos=1, retain=True)
+            self._conn.publish("weather/{}/property/currentConditionRefreshInterval/value", payload, qos=1, retain=True)
             for callback in self._property_current_condition_refresh_interval.callbacks:
                 callback(seconds)
 
@@ -582,7 +598,7 @@ class WeatherServer:
             with self._property_hourly_forecast_refresh_interval.mutex:
                 self._property_hourly_forecast_refresh_interval.value = seconds
                 self._property_hourly_forecast_refresh_interval.version += 1
-            self._conn.publish("weather/property/hourlyForecastRefreshInterval/value", payload, qos=1, retain=True)
+            self._conn.publish("weather/{}/property/hourlyForecastRefreshInterval/value", payload, qos=1, retain=True)
             for callback in self._property_hourly_forecast_refresh_interval.callbacks:
                 callback(seconds)
 
@@ -619,7 +635,7 @@ class WeatherServer:
             with self._property_daily_forecast_refresh_interval.mutex:
                 self._property_daily_forecast_refresh_interval.value = seconds
                 self._property_daily_forecast_refresh_interval.version += 1
-            self._conn.publish("weather/property/dailyForecastRefreshInterval/value", payload, qos=1, retain=True)
+            self._conn.publish("weather/{}/property/dailyForecastRefreshInterval/value", payload, qos=1, retain=True)
             for callback in self._property_daily_forecast_refresh_interval.callbacks:
                 callback(seconds)
 
@@ -756,11 +772,12 @@ if __name__ == "__main__":
     """
     from time import sleep
     import signal
+    from connection import MqttBrokerConnection
 
-    from connection import DefaultConnection
-
-    conn = DefaultConnection("localhost", 1883)
-    server = WeatherServer(conn)
+    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    service_id = "1"
+    conn = MqttBrokerConnection(transport)
+    server = WeatherServer(conn, service_id)
 
     server.location = stinger_types.LocationProperty(
         latitude=3.14,

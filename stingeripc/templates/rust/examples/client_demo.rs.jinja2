@@ -20,7 +20,6 @@ use {{stinger.rust.package_name}}::payloads::{MethodReturnCode, *};
 #[tokio::main]
 async fn main() {
     block_on(async {
-        {%set broker = stinger.get_example_broker()%}
         let mut mqttier_client = MqttierClient::new("localhost", 1883, Some("client_example".to_string())).unwrap();
         let {%if stinger.methods|length > 0%}mut {%endif%}api_client = {{stinger.rust.client_struct_name}}::new(&mut mqttier_client).await;
 
