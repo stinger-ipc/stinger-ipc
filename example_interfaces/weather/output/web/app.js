@@ -47,7 +47,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "current_time",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "weather/signal/currentTime"
+            "mqtt_topic": "weather/{}/signal/currentTime"
         }
     };
 
@@ -60,8 +60,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "longitude": {  }
              },
-            "mqtt_topic": "weather/property/location/value",
-            "update_topic": "weather/property/location/setValue"
+            "mqtt_topic": "weather/{}/property/location/value",
+            "update_topic": "weather/{}/property/location/setValue"
         },
     
         "current_temperature": {
@@ -70,7 +70,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "temperature_f": {  }
              },
-            "mqtt_topic": "weather/property/currentTemperature/value"
+            "mqtt_topic": "weather/{}/property/currentTemperature/value"
         },
     
         "current_condition": {
@@ -81,7 +81,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "description": {  }
              },
-            "mqtt_topic": "weather/property/currentCondition/value"
+            "mqtt_topic": "weather/{}/property/currentCondition/value"
         },
     
         "daily_forecast": {
@@ -124,7 +124,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "end_time": ""
                  }
              },
-            "mqtt_topic": "weather/property/dailyForecast/value"
+            "mqtt_topic": "weather/{}/property/dailyForecast/value"
         },
     
         "hourly_forecast": {
@@ -163,7 +163,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "condition": ""
                  }
              },
-            "mqtt_topic": "weather/property/hourlyForecast/value"
+            "mqtt_topic": "weather/{}/property/hourlyForecast/value"
         },
     
         "current_condition_refresh_interval": {
@@ -172,8 +172,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "seconds": {  }
              },
-            "mqtt_topic": "weather/property/currentConditionRefreshInterval/value",
-            "update_topic": "weather/property/currentConditionRefreshInterval/setValue"
+            "mqtt_topic": "weather/{}/property/currentConditionRefreshInterval/value",
+            "update_topic": "weather/{}/property/currentConditionRefreshInterval/setValue"
         },
     
         "hourly_forecast_refresh_interval": {
@@ -182,8 +182,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "seconds": {  }
              },
-            "mqtt_topic": "weather/property/hourlyForecastRefreshInterval/value",
-            "update_topic": "weather/property/hourlyForecastRefreshInterval/setValue"
+            "mqtt_topic": "weather/{}/property/hourlyForecastRefreshInterval/value",
+            "update_topic": "weather/{}/property/hourlyForecastRefreshInterval/setValue"
         },
     
         "daily_forecast_refresh_interval": {
@@ -192,16 +192,16 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "seconds": {  }
              },
-            "mqtt_topic": "weather/property/dailyForecastRefreshInterval/value",
-            "update_topic": "weather/property/dailyForecastRefreshInterval/setValue"
+            "mqtt_topic": "weather/{}/property/dailyForecastRefreshInterval/value",
+            "update_topic": "weather/{}/property/dailyForecastRefreshInterval/setValue"
         }
     };
 
     $scope.methods = {
         "refresh_daily_forecast": {
             "name": "refresh_daily_forecast",
-            "mqtt_topic": "weather/method/refreshDailyForecast",
-            "response_topic": "client/"+clientId+"/weather/method/refreshDailyForecast/response",
+            "mqtt_topic": "weather/{}/method/refreshDailyForecast",
+            "response_topic": "client/"+clientId+"/weather/{}/method/refreshDailyForecast/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -209,8 +209,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "refresh_hourly_forecast": {
             "name": "refresh_hourly_forecast",
-            "mqtt_topic": "weather/method/refreshHourlyForecast",
-            "response_topic": "client/"+clientId+"/weather/method/refreshHourlyForecast/response",
+            "mqtt_topic": "weather/{}/method/refreshHourlyForecast",
+            "response_topic": "client/"+clientId+"/weather/{}/method/refreshHourlyForecast/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -218,8 +218,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "refresh_current_conditions": {
             "name": "refresh_current_conditions",
-            "mqtt_topic": "weather/method/refreshCurrentConditions",
-            "response_topic": "client/"+clientId+"/weather/method/refreshCurrentConditions/response",
+            "mqtt_topic": "weather/{}/method/refreshCurrentConditions",
+            "response_topic": "client/"+clientId+"/weather/{}/method/refreshCurrentConditions/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -336,8 +336,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             }
         };
         $scope.signals["currentTime"].subscription_id = subscription_count;
-        client.subscribe("weather/signal/currentTime", current_time_sub_opts);
-        console.log("Subscribing to signal weather/signal/currentTime with id ", subscription_count);
+        client.subscribe("weather/{}/signal/currentTime", current_time_sub_opts);
+        console.log("Subscribing to signal weather/{}/signal/currentTime with id ", subscription_count);
         subscription_count++;
         
 

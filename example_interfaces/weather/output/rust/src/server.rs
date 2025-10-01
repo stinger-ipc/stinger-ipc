@@ -113,7 +113,7 @@ impl WeatherServer {
         // Create method handler struct
         let subscription_id_refresh_daily_forecast_method_req = connection
             .subscribe(
-                "weather/method/refreshDailyForecast".to_string(),
+                "weather/{}/method/refreshDailyForecast".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -122,7 +122,7 @@ impl WeatherServer {
             subscription_id_refresh_daily_forecast_method_req.unwrap_or_else(|_| usize::MAX);
         let subscription_id_refresh_hourly_forecast_method_req = connection
             .subscribe(
-                "weather/method/refreshHourlyForecast".to_string(),
+                "weather/{}/method/refreshHourlyForecast".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -131,7 +131,7 @@ impl WeatherServer {
             subscription_id_refresh_hourly_forecast_method_req.unwrap_or_else(|_| usize::MAX);
         let subscription_id_refresh_current_conditions_method_req = connection
             .subscribe(
-                "weather/method/refreshCurrentConditions".to_string(),
+                "weather/{}/method/refreshCurrentConditions".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -141,7 +141,7 @@ impl WeatherServer {
 
         let subscription_id_location_property_update = connection
             .subscribe(
-                "weather/property/location/setValue".to_string(),
+                "weather/{}/property/location/setValue".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -151,7 +151,7 @@ impl WeatherServer {
 
         let subscription_id_current_condition_refresh_interval_property_update = connection
             .subscribe(
-                "weather/property/currentConditionRefreshInterval/setValue".to_string(),
+                "weather/{}/property/currentConditionRefreshInterval/setValue".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -162,7 +162,7 @@ impl WeatherServer {
 
         let subscription_id_hourly_forecast_refresh_interval_property_update = connection
             .subscribe(
-                "weather/property/hourlyForecastRefreshInterval/setValue".to_string(),
+                "weather/{}/property/hourlyForecastRefreshInterval/setValue".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -173,7 +173,7 @@ impl WeatherServer {
 
         let subscription_id_daily_forecast_refresh_interval_property_update = connection
             .subscribe(
-                "weather/property/dailyForecastRefreshInterval/setValue".to_string(),
+                "weather/{}/property/dailyForecastRefreshInterval/setValue".to_string(),
                 2,
                 message_received_tx.clone(),
             )
@@ -202,44 +202,46 @@ impl WeatherServer {
         };
 
         let property_values = WeatherProperties {
-            location_topic: Arc::new(String::from("weather/property/location/value")),
+            location_topic: Arc::new(String::from("weather/{}/property/location/value")),
 
             location: Arc::new(Mutex::new(None)),
             location_tx_channel: watch::channel(None).0,
             current_temperature_topic: Arc::new(String::from(
-                "weather/property/currentTemperature/value",
+                "weather/{}/property/currentTemperature/value",
             )),
 
             current_temperature: Arc::new(Mutex::new(None)),
             current_temperature_tx_channel: watch::channel(None).0,
             current_condition_topic: Arc::new(String::from(
-                "weather/property/currentCondition/value",
+                "weather/{}/property/currentCondition/value",
             )),
 
             current_condition: Arc::new(Mutex::new(None)),
             current_condition_tx_channel: watch::channel(None).0,
-            daily_forecast_topic: Arc::new(String::from("weather/property/dailyForecast/value")),
+            daily_forecast_topic: Arc::new(String::from("weather/{}/property/dailyForecast/value")),
 
             daily_forecast: Arc::new(Mutex::new(None)),
             daily_forecast_tx_channel: watch::channel(None).0,
-            hourly_forecast_topic: Arc::new(String::from("weather/property/hourlyForecast/value")),
+            hourly_forecast_topic: Arc::new(String::from(
+                "weather/{}/property/hourlyForecast/value",
+            )),
 
             hourly_forecast: Arc::new(Mutex::new(None)),
             hourly_forecast_tx_channel: watch::channel(None).0,
             current_condition_refresh_interval_topic: Arc::new(String::from(
-                "weather/property/currentConditionRefreshInterval/value",
+                "weather/{}/property/currentConditionRefreshInterval/value",
             )),
 
             current_condition_refresh_interval: Arc::new(Mutex::new(None)),
             current_condition_refresh_interval_tx_channel: watch::channel(None).0,
             hourly_forecast_refresh_interval_topic: Arc::new(String::from(
-                "weather/property/hourlyForecastRefreshInterval/value",
+                "weather/{}/property/hourlyForecastRefreshInterval/value",
             )),
 
             hourly_forecast_refresh_interval: Arc::new(Mutex::new(None)),
             hourly_forecast_refresh_interval_tx_channel: watch::channel(None).0,
             daily_forecast_refresh_interval_topic: Arc::new(String::from(
-                "weather/property/dailyForecastRefreshInterval/value",
+                "weather/{}/property/dailyForecastRefreshInterval/value",
             )),
 
             daily_forecast_refresh_interval: Arc::new(Mutex::new(None)),
@@ -325,7 +327,7 @@ impl WeatherServer {
         };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("weather/signal/currentTime".to_string(), &data)
+            .publish_structure("weather/{}/signal/currentTime".to_string(), &data)
             .await;
         WeatherServer::oneshot_to_future(published_oneshot).await
     }

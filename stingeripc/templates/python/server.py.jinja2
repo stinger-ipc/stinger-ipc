@@ -8,12 +8,15 @@ This is the Server for the {{stinger.name}} interface.
 import json
 import logging
 import threading
+from time import sleep
 from dataclasses import dataclass, field
+import datetime
 logging.basicConfig(level=logging.DEBUG)
-
+from pydantic import BaseModel
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import BrokerConnection
 from method_codes import *
+from interface_types import InterfaceInfo
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
 {%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_type}}]{%endmacro%}
 
@@ -34,13 +37,15 @@ class MethodControls:
 
 class {{stinger.python.server_class_name}}:
 
-    def __init__(self, connection: BrokerConnection):
-        self._logger = logging.getLogger('{{stinger.python.server_class_name}}')
+    def __init__(self, connection: BrokerConnection, instance_id: str):
+        self._logger = logging.getLogger(f'{{stinger.python.server_class_name}}:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing {{stinger.python.server_class_name}}")
+        self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
+        self._instance_id = instance_id
+        self._re_advertise_server_interval_seconds = 120 # every two minutes
         self._conn = connection
+        self._running = True
         self._conn.set_message_callback(self._receive_message)
-        self._conn.set_last_will(topic="{{stinger.interface_info.0}}", payload=None, qos=1, retain=True)
         {%for prop_name, prop in stinger.properties.items()%}
         self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}, {%for arg in prop.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}] = PropertyControls()
         self._property_{{prop_name|snake_case}}.subscription_id = self._conn.subscribe("{{prop.update_topic}}")
@@ -49,8 +54,22 @@ class {{stinger.python.server_class_name}}:
         self._method_{{method_name|snake_case}} = MethodControls()
         self._method_{{method_name|snake_case}}.subscription_id = self._conn.subscribe("{{method.topic}}")
         {%endfor%}
-        self._publish_interface_info()
-    
+        self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
+        self._advertise_thread.start()
+
+    def __del__(self):
+        self._running = False
+        self._conn.unpublish_retained(self._conn.online_topic)
+        self._advertise_thread.join()
+
+    def prepend_topic_prefix(self, topic: str) -> str:
+        return f"{{stinger.interface_name}}/{self._instance_id}/{topic}"
+
+    def loop_publishing_interface_info(self):
+        while self._conn.is_connected() and self._running:
+            self._publish_interface_info()
+            sleep(self._re_advertise_server_interval_seconds)
+
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ This is the callback that is called whenever any message is received on a subscribed topic.
         """
@@ -86,7 +105,13 @@ class {{stinger.python.server_class_name}}:
         {%endfor%}
 
     def _publish_interface_info(self):
-        self._conn.publish("{{stinger.interface_info.0}}", '''{{stinger.interface_info.1 | tojson}}''', qos=1, retain=True)
+        data = InterfaceInfo(
+            instance=self._instance_id,
+            connection_topic=self._conn.online_topic,
+            timestamp=datetime.utcnow().isoformat()
+        )
+        expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
+        self._conn.publish_status(topic, data, expiry)
 
     {%for sig_name, sig in stinger.signals.items()-%}
     def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
@@ -283,11 +308,12 @@ if __name__ == '__main__':
     """
     from time import sleep
     import signal
-    {%set broker = stinger.get_example_broker()%}
-    from connection import {{broker.class_name}}
+    from connection import MqttBrokerConnection
 
-    conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
-    server = {{stinger.python.server_class_name}}(conn)
+    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    service_id = "1"
+    conn = MqttBrokerConnection(transport)
+    server = {{stinger.python.server_class_name}}(conn, service_id)
 
     {%for prop_name, prop in stinger.properties.items()-%}
     {%if prop.arg_list | length > 1%}

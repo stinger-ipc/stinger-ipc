@@ -273,8 +273,8 @@ class {{stinger.python.client_class_name}}Builder:
 if __name__ == '__main__':
     import signal
 
-    {%set broker = stinger.get_example_broker()%}from connection import {{broker.class_name}}
-    conn = {{broker.class_name}}({%if broker.hostname is none%}'localhost', 1883{%endif%})
+
+    conn = MqttBrokerConnection()
     client_builder = {{stinger.python.client_class_name}}Builder(conn)
     {%for sig_name, sig in stinger.signals.items()%}
     @client_builder.receive_{{sig_name | snake_case }}

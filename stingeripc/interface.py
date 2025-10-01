@@ -16,7 +16,7 @@ class StingerInterface(StingerSpec):
 
     @staticmethod
     def _create_topic_creator(
-        stinger_spec: Dict[str, Any], topic_prefix: Optional[str] = None
+        stinger_spec: Dict[str, Any], placeholder: str='{}', topic_prefix: Optional[str] = None
     ) -> InterfaceTopicCreator:
         if (
             "stingeripc" not in stinger_spec
@@ -31,12 +31,12 @@ class StingerInterface(StingerSpec):
                 "Could not find interface name in Stinger Spec"
             )
         itc = InterfaceTopicCreator(
-            stinger_spec["interface"]["name"], root=topic_prefix
+            stinger_spec["interface"]["name"], placeholder, root=topic_prefix
         )
         return itc
 
     @classmethod
-    def from_yaml(cls, yaml_input: Union[str, IO]) -> StingerSpec:
+    def from_yaml(cls, yaml_input: Union[str, IO], placeholder:str='{}') -> StingerSpec:
         yaml_obj = yaml.load(yaml_input, Loader=yamlloader.ordereddict.Loader)
-        itc = cls._create_topic_creator(yaml_obj)
+        itc = cls._create_topic_creator(yaml_obj, placeholder)
         return cls.new_spec_from_stinger(itc, yaml_obj)

@@ -23,10 +23,10 @@ It contains enumerations used by the SignalOnly interface.
 
 /*! This class presents a connection to a MQTT broker.
  */
-class MqttConnection: public IBrokerConnection
+class MqttBrokerConnection: public IBrokerConnection
 {
 public:
-    /*! Constructor for a MqttConnection.
+    /*! Constructor for a MqttBrokerConnection.
      * \param hostname IP address or hostname of the MQTT broker server.
      * \param port Port where the MQTT broker is running (often 1883).
      */
@@ -73,6 +73,8 @@ public:
     virtual bool TopicMatchesSubscription(const std::string& topic, const std::string& subscr) const;
 
     virtual std::string GetClientId() const;
+
+    std::string GetOnlineTopic() const;
 
 protected:
     /*! Establishes the connection to the broker.
@@ -145,18 +147,4 @@ private:
             _messageCallbacks;
     std::queue<MqttMessage> _msgQueue;
     std::map<int, std::shared_ptr<boost::promise<bool>>> _sendMessages;
-};
-
-/*! This class presents a connection to a MQTT broker.
- */
-class DefaultConnection: public MqttConnection
-{
-public:
-    /*! Constructor for a DefaultConnection.
-     * \param hostname IP address or hostname of the MQTT broker server.
-     * \param port Port where the MQTT broker is running (often 1883).
-     */
-    DefaultConnection(const std::string& host, int port, const std::string& clientId);
-
-    virtual ~DefaultConnection() = default;
 };

@@ -5,8 +5,17 @@ on the next generation.
 It contains enumerations used by the Full interface.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from enum import IntEnum
+
+
+class InterfaceInfo(BaseModel):
+    interfaceName: str = Field(default="Full")
+    title: str = Field(default="Fully Featured Example Interface")
+    version: str = Field(default="0.0.1")
+    instance: str
+    connection_topic: str
+    timestamp: str
 
 
 class DayOfTheWeek(IntEnum):

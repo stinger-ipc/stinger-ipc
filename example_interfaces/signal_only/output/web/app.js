@@ -31,7 +31,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "anotherSignal",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/signal/anotherSignal"
+            "mqtt_topic": "signalOnly/{}/signal/anotherSignal"
         },
     
         "bark": {
@@ -39,7 +39,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "bark",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/signal/bark"
+            "mqtt_topic": "signalOnly/{}/signal/bark"
         },
     
         "maybe_number": {
@@ -47,7 +47,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "maybe_number",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/signal/maybeNumber"
+            "mqtt_topic": "signalOnly/{}/signal/maybeNumber"
         },
     
         "maybe_name": {
@@ -55,7 +55,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "maybe_name",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/signal/maybeName"
+            "mqtt_topic": "signalOnly/{}/signal/maybeName"
         },
     
         "now": {
@@ -63,7 +63,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "now",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/signal/now"
+            "mqtt_topic": "signalOnly/{}/signal/now"
         }
     };
 
@@ -181,8 +181,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             }
         };
         $scope.signals["anotherSignal"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/signal/anotherSignal", another_signal_sub_opts);
-        console.log("Subscribing to signal signalOnly/signal/anotherSignal with id ", subscription_count);
+        client.subscribe("signalOnly/{}/signal/anotherSignal", another_signal_sub_opts);
+        console.log("Subscribing to signal signalOnly/{}/signal/anotherSignal with id ", subscription_count);
         subscription_count++;
         
         const bark_sub_opts = {
@@ -192,8 +192,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             }
         };
         $scope.signals["bark"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/signal/bark", bark_sub_opts);
-        console.log("Subscribing to signal signalOnly/signal/bark with id ", subscription_count);
+        client.subscribe("signalOnly/{}/signal/bark", bark_sub_opts);
+        console.log("Subscribing to signal signalOnly/{}/signal/bark with id ", subscription_count);
         subscription_count++;
         
         const maybe_number_sub_opts = {
@@ -203,8 +203,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             }
         };
         $scope.signals["maybeNumber"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/signal/maybeNumber", maybe_number_sub_opts);
-        console.log("Subscribing to signal signalOnly/signal/maybeNumber with id ", subscription_count);
+        client.subscribe("signalOnly/{}/signal/maybeNumber", maybe_number_sub_opts);
+        console.log("Subscribing to signal signalOnly/{}/signal/maybeNumber with id ", subscription_count);
         subscription_count++;
         
         const maybe_name_sub_opts = {
@@ -214,8 +214,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             }
         };
         $scope.signals["maybeName"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/signal/maybeName", maybe_name_sub_opts);
-        console.log("Subscribing to signal signalOnly/signal/maybeName with id ", subscription_count);
+        client.subscribe("signalOnly/{}/signal/maybeName", maybe_name_sub_opts);
+        console.log("Subscribing to signal signalOnly/{}/signal/maybeName with id ", subscription_count);
         subscription_count++;
         
         const now_sub_opts = {
@@ -225,8 +225,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             }
         };
         $scope.signals["now"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/signal/now", now_sub_opts);
-        console.log("Subscribing to signal signalOnly/signal/now with id ", subscription_count);
+        client.subscribe("signalOnly/{}/signal/now", now_sub_opts);
+        console.log("Subscribing to signal signalOnly/{}/signal/now with id ", subscription_count);
         subscription_count++;
         
 

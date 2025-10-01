@@ -47,7 +47,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "todayIs",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "full/signal/todayIs"
+            "mqtt_topic": "full/{}/signal/todayIs"
         }
     };
 
@@ -58,8 +58,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "number": {  }
              },
-            "mqtt_topic": "full/property/favoriteNumber/value",
-            "update_topic": "full/property/favoriteNumber/setValue"
+            "mqtt_topic": "full/{}/property/favoriteNumber/value",
+            "update_topic": "full/{}/property/favoriteNumber/setValue"
         },
     
         "favorite_foods": {
@@ -72,8 +72,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "breakfast": {  }
              },
-            "mqtt_topic": "full/property/favoriteFoods/value",
-            "update_topic": "full/property/favoriteFoods/setValue"
+            "mqtt_topic": "full/{}/property/favoriteFoods/value",
+            "update_topic": "full/{}/property/favoriteFoods/setValue"
         },
     
         "lunch_menu": {
@@ -104,8 +104,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "order_number": ""
                  }
              },
-            "mqtt_topic": "full/property/lunchMenu/value",
-            "update_topic": "full/property/lunchMenu/setValue"
+            "mqtt_topic": "full/{}/property/lunchMenu/value",
+            "update_topic": "full/{}/property/lunchMenu/setValue"
         },
     
         "family_name": {
@@ -114,8 +114,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "family_name": {  }
              },
-            "mqtt_topic": "full/property/familyName/value",
-            "update_topic": "full/property/familyName/setValue"
+            "mqtt_topic": "full/{}/property/familyName/value",
+            "update_topic": "full/{}/property/familyName/setValue"
         },
     
         "last_breakfast_time": {
@@ -124,8 +124,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "timestamp": {  }
              },
-            "mqtt_topic": "full/property/lastBreakfastTime/value",
-            "update_topic": "full/property/lastBreakfastTime/setValue"
+            "mqtt_topic": "full/{}/property/lastBreakfastTime/value",
+            "update_topic": "full/{}/property/lastBreakfastTime/setValue"
         },
     
         "last_birthdays": {
@@ -138,16 +138,16 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "sister": {  }
              },
-            "mqtt_topic": "full/property/lastBirthdays/value",
-            "update_topic": "full/property/lastBirthdays/setValue"
+            "mqtt_topic": "full/{}/property/lastBirthdays/value",
+            "update_topic": "full/{}/property/lastBirthdays/setValue"
         }
     };
 
     $scope.methods = {
         "add_numbers": {
             "name": "addNumbers",
-            "mqtt_topic": "full/method/addNumbers",
-            "response_topic": "client/"+clientId+"/full/method/addNumbers/response",
+            "mqtt_topic": "full/{}/method/addNumbers",
+            "response_topic": "client/"+clientId+"/full/{}/method/addNumbers/response",
             "pending_correlation_id": null,
             "args": {
                 "first": {
@@ -170,8 +170,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "do_something": {
             "name": "doSomething",
-            "mqtt_topic": "full/method/doSomething",
-            "response_topic": "client/"+clientId+"/full/method/doSomething/response",
+            "mqtt_topic": "full/{}/method/doSomething",
+            "response_topic": "client/"+clientId+"/full/{}/method/doSomething/response",
             "pending_correlation_id": null,
             "args": {
                 "a_string": {
@@ -184,8 +184,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "echo": {
             "name": "echo",
-            "mqtt_topic": "full/method/echo",
-            "response_topic": "client/"+clientId+"/full/method/echo/response",
+            "mqtt_topic": "full/{}/method/echo",
+            "response_topic": "client/"+clientId+"/full/{}/method/echo/response",
             "pending_correlation_id": null,
             "args": {
                 "message": {
@@ -198,8 +198,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "what_time_is_it": {
             "name": "what_time_is_it",
-            "mqtt_topic": "full/method/whatTimeIsIt",
-            "response_topic": "client/"+clientId+"/full/method/whatTimeIsIt/response",
+            "mqtt_topic": "full/{}/method/whatTimeIsIt",
+            "response_topic": "client/"+clientId+"/full/{}/method/whatTimeIsIt/response",
             "pending_correlation_id": null,
             "args": {
                 "the_first_time": {
@@ -212,8 +212,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "set_the_time": {
             "name": "set_the_time",
-            "mqtt_topic": "full/method/setTheTime",
-            "response_topic": "client/"+clientId+"/full/method/setTheTime/response",
+            "mqtt_topic": "full/{}/method/setTheTime",
+            "response_topic": "client/"+clientId+"/full/{}/method/setTheTime/response",
             "pending_correlation_id": null,
             "args": {
                 "the_first_time": {
@@ -340,8 +340,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             }
         };
         $scope.signals["todayIs"].subscription_id = subscription_count;
-        client.subscribe("full/signal/todayIs", today_is_sub_opts);
-        console.log("Subscribing to signal full/signal/todayIs with id ", subscription_count);
+        client.subscribe("full/{}/signal/todayIs", today_is_sub_opts);
+        console.log("Subscribing to signal full/{}/signal/todayIs with id ", subscription_count);
         subscription_count++;
         
 

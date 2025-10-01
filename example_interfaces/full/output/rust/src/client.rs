@@ -106,7 +106,7 @@ impl FullClient {
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
         let topic_add_numbers_method_resp = format!(
-            "client/{}/full/method/addNumbers/response",
+            "client/{}/full/{}/method/addNumbers/response",
             connection.client_id
         );
         let subscription_id_add_numbers_method_resp = connection
@@ -119,7 +119,7 @@ impl FullClient {
         let subscription_id_add_numbers_method_resp =
             subscription_id_add_numbers_method_resp.unwrap_or_else(|_| usize::MAX);
         let topic_do_something_method_resp = format!(
-            "client/{}/full/method/doSomething/response",
+            "client/{}/full/{}/method/doSomething/response",
             connection.client_id
         );
         let subscription_id_do_something_method_resp = connection
@@ -131,15 +131,17 @@ impl FullClient {
             .await;
         let subscription_id_do_something_method_resp =
             subscription_id_do_something_method_resp.unwrap_or_else(|_| usize::MAX);
-        let topic_echo_method_resp =
-            format!("client/{}/full/method/echo/response", connection.client_id);
+        let topic_echo_method_resp = format!(
+            "client/{}/full/{}/method/echo/response",
+            connection.client_id
+        );
         let subscription_id_echo_method_resp = connection
             .subscribe(topic_echo_method_resp, 2, message_received_tx.clone())
             .await;
         let subscription_id_echo_method_resp =
             subscription_id_echo_method_resp.unwrap_or_else(|_| usize::MAX);
         let topic_what_time_is_it_method_resp = format!(
-            "client/{}/full/method/whatTimeIsIt/response",
+            "client/{}/full/{}/method/whatTimeIsIt/response",
             connection.client_id
         );
         let subscription_id_what_time_is_it_method_resp = connection
@@ -152,7 +154,7 @@ impl FullClient {
         let subscription_id_what_time_is_it_method_resp =
             subscription_id_what_time_is_it_method_resp.unwrap_or_else(|_| usize::MAX);
         let topic_set_the_time_method_resp = format!(
-            "client/{}/full/method/setTheTime/response",
+            "client/{}/full/{}/method/setTheTime/response",
             connection.client_id
         );
         let subscription_id_set_the_time_method_resp = connection
@@ -166,7 +168,7 @@ impl FullClient {
             subscription_id_set_the_time_method_resp.unwrap_or_else(|_| usize::MAX);
 
         // Subscribe to all the topics needed for signals.
-        let topic_today_is_signal = "full/signal/todayIs".to_string();
+        let topic_today_is_signal = "full/{}/signal/todayIs".to_string();
         let subscription_id_today_is_signal = connection
             .subscribe(topic_today_is_signal, 2, message_received_tx.clone())
             .await;
@@ -175,7 +177,8 @@ impl FullClient {
 
         // Subscribe to all the topics needed for properties.
 
-        let topic_favorite_number_property_value = "full/property/favoriteNumber/value".to_string();
+        let topic_favorite_number_property_value =
+            "full/{}/property/favoriteNumber/value".to_string();
         let subscription_id_favorite_number_property_value = connection
             .subscribe(
                 topic_favorite_number_property_value,
@@ -186,7 +189,8 @@ impl FullClient {
         let subscription_id_favorite_number_property_value =
             subscription_id_favorite_number_property_value.unwrap_or_else(|_| usize::MAX);
 
-        let topic_favorite_foods_property_value = "full/property/favoriteFoods/value".to_string();
+        let topic_favorite_foods_property_value =
+            "full/{}/property/favoriteFoods/value".to_string();
         let subscription_id_favorite_foods_property_value = connection
             .subscribe(
                 topic_favorite_foods_property_value,
@@ -197,7 +201,7 @@ impl FullClient {
         let subscription_id_favorite_foods_property_value =
             subscription_id_favorite_foods_property_value.unwrap_or_else(|_| usize::MAX);
 
-        let topic_lunch_menu_property_value = "full/property/lunchMenu/value".to_string();
+        let topic_lunch_menu_property_value = "full/{}/property/lunchMenu/value".to_string();
         let subscription_id_lunch_menu_property_value = connection
             .subscribe(
                 topic_lunch_menu_property_value,
@@ -208,7 +212,7 @@ impl FullClient {
         let subscription_id_lunch_menu_property_value =
             subscription_id_lunch_menu_property_value.unwrap_or_else(|_| usize::MAX);
 
-        let topic_family_name_property_value = "full/property/familyName/value".to_string();
+        let topic_family_name_property_value = "full/{}/property/familyName/value".to_string();
         let subscription_id_family_name_property_value = connection
             .subscribe(
                 topic_family_name_property_value,
@@ -220,7 +224,7 @@ impl FullClient {
             subscription_id_family_name_property_value.unwrap_or_else(|_| usize::MAX);
 
         let topic_last_breakfast_time_property_value =
-            "full/property/lastBreakfastTime/value".to_string();
+            "full/{}/property/lastBreakfastTime/value".to_string();
         let subscription_id_last_breakfast_time_property_value = connection
             .subscribe(
                 topic_last_breakfast_time_property_value,
@@ -231,7 +235,8 @@ impl FullClient {
         let subscription_id_last_breakfast_time_property_value =
             subscription_id_last_breakfast_time_property_value.unwrap_or_else(|_| usize::MAX);
 
-        let topic_last_birthdays_property_value = "full/property/lastBirthdays/value".to_string();
+        let topic_last_birthdays_property_value =
+            "full/{}/property/lastBirthdays/value".to_string();
         let subscription_id_last_birthdays_property_value = connection
             .subscribe(
                 topic_last_birthdays_property_value,
@@ -304,7 +309,7 @@ impl FullClient {
 
     /// The `addNumbers` method.
     /// Method arguments are packed into a AddNumbersRequestObject structure
-    /// and published to the `full/method/addNumbers` MQTT topic.
+    /// and published to the `full/{}/method/addNumbers` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn add_numbers(
@@ -327,12 +332,14 @@ impl FullClient {
             third: third,
         };
 
-        let response_topic: String =
-            format!("client/{}/full/method/addNumbers/response", self.client_id);
+        let response_topic: String = format!(
+            "client/{}/full/{}/method/addNumbers/response",
+            self.client_id
+        );
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/method/addNumbers".to_string(),
+                "full/{}/method/addNumbers".to_string(),
                 &data,
                 response_topic,
                 correlation_data,
@@ -370,7 +377,7 @@ impl FullClient {
     }
     /// The `doSomething` method.
     /// Method arguments are packed into a DoSomethingRequestObject structure
-    /// and published to the `full/method/doSomething` MQTT topic.
+    /// and published to the `full/{}/method/doSomething` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn do_something(
@@ -387,12 +394,14 @@ impl FullClient {
 
         let data = DoSomethingRequestObject { aString: a_string };
 
-        let response_topic: String =
-            format!("client/{}/full/method/doSomething/response", self.client_id);
+        let response_topic: String = format!(
+            "client/{}/full/{}/method/doSomething/response",
+            self.client_id
+        );
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/method/doSomething".to_string(),
+                "full/{}/method/doSomething".to_string(),
                 &data,
                 response_topic,
                 correlation_data,
@@ -435,7 +444,7 @@ impl FullClient {
     }
     /// The `echo` method.
     /// Method arguments are packed into a EchoRequestObject structure
-    /// and published to the `full/method/echo` MQTT topic.
+    /// and published to the `full/{}/method/echo` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn echo(&mut self, message: String) -> Result<String, MethodReturnCode> {
@@ -449,11 +458,12 @@ impl FullClient {
 
         let data = EchoRequestObject { message: message };
 
-        let response_topic: String = format!("client/{}/full/method/echo/response", self.client_id);
+        let response_topic: String =
+            format!("client/{}/full/{}/method/echo/response", self.client_id);
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/method/echo".to_string(),
+                "full/{}/method/echo".to_string(),
                 &data,
                 response_topic,
                 correlation_data,
@@ -491,7 +501,7 @@ impl FullClient {
     }
     /// The `what_time_is_it` method.
     /// Method arguments are packed into a WhatTimeIsItRequestObject structure
-    /// and published to the `full/method/whatTimeIsIt` MQTT topic.
+    /// and published to the `full/{}/method/whatTimeIsIt` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn what_time_is_it(
@@ -511,13 +521,13 @@ impl FullClient {
         };
 
         let response_topic: String = format!(
-            "client/{}/full/method/whatTimeIsIt/response",
+            "client/{}/full/{}/method/whatTimeIsIt/response",
             self.client_id
         );
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/method/whatTimeIsIt".to_string(),
+                "full/{}/method/whatTimeIsIt".to_string(),
                 &data,
                 response_topic,
                 correlation_data,
@@ -565,7 +575,7 @@ impl FullClient {
     }
     /// The `set_the_time` method.
     /// Method arguments are packed into a SetTheTimeRequestObject structure
-    /// and published to the `full/method/setTheTime` MQTT topic.
+    /// and published to the `full/{}/method/setTheTime` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
     pub async fn set_the_time(
@@ -586,12 +596,14 @@ impl FullClient {
             the_second_time: the_second_time,
         };
 
-        let response_topic: String =
-            format!("client/{}/full/method/setTheTime/response", self.client_id);
+        let response_topic: String = format!(
+            "client/{}/full/{}/method/setTheTime/response",
+            self.client_id
+        );
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/method/setTheTime".to_string(),
+                "full/{}/method/setTheTime".to_string(),
                 &data,
                 response_topic,
                 correlation_data,
@@ -652,9 +664,10 @@ impl FullClient {
 
     pub fn set_favorite_number(&mut self, value: i32) -> Result<(), MethodReturnCode> {
         let data = FavoriteNumberProperty { number: value };
-        let _publish_result = self
-            .mqttier_client
-            .publish_structure("full/property/favoriteNumber/setValue".to_string(), &data);
+        let _publish_result = self.mqttier_client.publish_structure(
+            "full/{}/property/favoriteNumber/setValue".to_string(),
+            &data,
+        );
         Ok(())
     }
 
@@ -671,7 +684,7 @@ impl FullClient {
         let data = value;
         let _publish_result = self
             .mqttier_client
-            .publish_structure("full/property/favoriteFoods/setValue".to_string(), &data);
+            .publish_structure("full/{}/property/favoriteFoods/setValue".to_string(), &data);
         Ok(())
     }
 
@@ -685,7 +698,7 @@ impl FullClient {
         let data = value;
         let _publish_result = self
             .mqttier_client
-            .publish_structure("full/property/lunchMenu/setValue".to_string(), &data);
+            .publish_structure("full/{}/property/lunchMenu/setValue".to_string(), &data);
         Ok(())
     }
 
@@ -699,7 +712,7 @@ impl FullClient {
         let data = FamilyNameProperty { family_name: value };
         let _publish_result = self
             .mqttier_client
-            .publish_structure("full/property/familyName/setValue".to_string(), &data);
+            .publish_structure("full/{}/property/familyName/setValue".to_string(), &data);
         Ok(())
     }
 
@@ -717,7 +730,7 @@ impl FullClient {
     ) -> Result<(), MethodReturnCode> {
         let data = LastBreakfastTimeProperty { timestamp: value };
         let _publish_result = self.mqttier_client.publish_structure(
-            "full/property/lastBreakfastTime/setValue".to_string(),
+            "full/{}/property/lastBreakfastTime/setValue".to_string(),
             &data,
         );
         Ok(())
@@ -736,7 +749,7 @@ impl FullClient {
         let data = value;
         let _publish_result = self
             .mqttier_client
-            .publish_structure("full/property/lastBirthdays/setValue".to_string(), &data);
+            .publish_structure("full/{}/property/lastBirthdays/setValue".to_string(), &data);
         Ok(())
     }
 

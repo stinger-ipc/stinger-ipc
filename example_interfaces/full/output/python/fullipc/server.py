@@ -8,13 +8,16 @@ This is the Server for the Full interface.
 import json
 import logging
 import threading
+from time import sleep
 from dataclasses import dataclass, field
+import datetime
 
 logging.basicConfig(level=logging.DEBUG)
-
+from pydantic import BaseModel
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import BrokerConnection
 from method_codes import *
+from interface_types import InterfaceInfo
 import interface_types as stinger_types
 
 
@@ -38,81 +41,97 @@ class MethodControls:
 
 class FullServer:
 
-    def __init__(self, connection: BrokerConnection):
-        self._logger = logging.getLogger("FullServer")
+    def __init__(self, connection: BrokerConnection, instance_id: str):
+        self._logger = logging.getLogger(f"FullServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing FullServer")
+        self._logger.debug("Initializing FullServer instance %s", instance_id)
+        self._instance_id = instance_id
+        self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
+        self._running = True
         self._conn.set_message_callback(self._receive_message)
-        self._conn.set_last_will(topic="full/interface", payload=None, qos=1, retain=True)
 
         self._property_favorite_number: PropertyControls[int, int] = PropertyControls()
-        self._property_favorite_number.subscription_id = self._conn.subscribe("full/property/favoriteNumber/setValue")
+        self._property_favorite_number.subscription_id = self._conn.subscribe("full/{}/property/favoriteNumber/setValue")
 
         self._property_favorite_foods: PropertyControls[stinger_types.FavoriteFoodsProperty, str, int, str | None] = PropertyControls()
-        self._property_favorite_foods.subscription_id = self._conn.subscribe("full/property/favoriteFoods/setValue")
+        self._property_favorite_foods.subscription_id = self._conn.subscribe("full/{}/property/favoriteFoods/setValue")
 
         self._property_lunch_menu: PropertyControls[stinger_types.LunchMenuProperty, stinger_types.Lunch, stinger_types.Lunch] = PropertyControls()
-        self._property_lunch_menu.subscription_id = self._conn.subscribe("full/property/lunchMenu/setValue")
+        self._property_lunch_menu.subscription_id = self._conn.subscribe("full/{}/property/lunchMenu/setValue")
 
         self._property_family_name: PropertyControls[str, str] = PropertyControls()
-        self._property_family_name.subscription_id = self._conn.subscribe("full/property/familyName/setValue")
+        self._property_family_name.subscription_id = self._conn.subscribe("full/{}/property/familyName/setValue")
 
         self._property_last_breakfast_time: PropertyControls[datetime.datetime, datetime.datetime] = PropertyControls()
-        self._property_last_breakfast_time.subscription_id = self._conn.subscribe("full/property/lastBreakfastTime/setValue")
+        self._property_last_breakfast_time.subscription_id = self._conn.subscribe("full/{}/property/lastBreakfastTime/setValue")
 
         self._property_last_birthdays: PropertyControls[stinger_types.LastBirthdaysProperty, datetime.datetime, datetime.datetime, datetime.datetime] = PropertyControls()
-        self._property_last_birthdays.subscription_id = self._conn.subscribe("full/property/lastBirthdays/setValue")
+        self._property_last_birthdays.subscription_id = self._conn.subscribe("full/{}/property/lastBirthdays/setValue")
 
         self._method_add_numbers = MethodControls()
-        self._method_add_numbers.subscription_id = self._conn.subscribe("full/method/addNumbers")
+        self._method_add_numbers.subscription_id = self._conn.subscribe("full/{}/method/addNumbers")
 
         self._method_do_something = MethodControls()
-        self._method_do_something.subscription_id = self._conn.subscribe("full/method/doSomething")
+        self._method_do_something.subscription_id = self._conn.subscribe("full/{}/method/doSomething")
 
         self._method_echo = MethodControls()
-        self._method_echo.subscription_id = self._conn.subscribe("full/method/echo")
+        self._method_echo.subscription_id = self._conn.subscribe("full/{}/method/echo")
 
         self._method_what_time_is_it = MethodControls()
-        self._method_what_time_is_it.subscription_id = self._conn.subscribe("full/method/whatTimeIsIt")
+        self._method_what_time_is_it.subscription_id = self._conn.subscribe("full/{}/method/whatTimeIsIt")
 
         self._method_set_the_time = MethodControls()
-        self._method_set_the_time.subscription_id = self._conn.subscribe("full/method/setTheTime")
+        self._method_set_the_time.subscription_id = self._conn.subscribe("full/{}/method/setTheTime")
 
-        self._publish_interface_info()
+        self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
+        self._advertise_thread.start()
+
+    def __del__(self):
+        self._running = False
+        self._conn.unpublish_retained(self._conn.online_topic)
+        self._advertise_thread.join()
+
+    def prepend_topic_prefix(self, topic: str) -> str:
+        return f"/{self._instance_id}/{topic}"
+
+    def loop_publishing_interface_info(self):
+        while self._conn.is_connected() and self._running:
+            self._publish_interface_info()
+            sleep(self._re_advertise_server_interval_seconds)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
         self._logger.debug("Received message to %s", topic)
-        if (properties.get("SubscriptionId", -1) == self._method_add_numbers.subscription_id) or self._conn.is_topic_sub(topic, "full/method/addNumbers"):
+        if (properties.get("SubscriptionId", -1) == self._method_add_numbers.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/method/addNumbers"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
                 self._process_add_numbers_call(topic, payload_obj, properties)
-        elif (properties.get("SubscriptionId", -1) == self._method_do_something.subscription_id) or self._conn.is_topic_sub(topic, "full/method/doSomething"):
+        elif (properties.get("SubscriptionId", -1) == self._method_do_something.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/method/doSomething"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
                 self._process_do_something_call(topic, payload_obj, properties)
-        elif (properties.get("SubscriptionId", -1) == self._method_echo.subscription_id) or self._conn.is_topic_sub(topic, "full/method/echo"):
+        elif (properties.get("SubscriptionId", -1) == self._method_echo.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/method/echo"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
                 self._process_echo_call(topic, payload_obj, properties)
-        elif (properties.get("SubscriptionId", -1) == self._method_what_time_is_it.subscription_id) or self._conn.is_topic_sub(topic, "full/method/whatTimeIsIt"):
+        elif (properties.get("SubscriptionId", -1) == self._method_what_time_is_it.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/method/whatTimeIsIt"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
                 self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
             else:
                 self._process_what_time_is_it_call(topic, payload_obj, properties)
-        elif (properties.get("SubscriptionId", -1) == self._method_set_the_time.subscription_id) or self._conn.is_topic_sub(topic, "full/method/setTheTime"):
+        elif (properties.get("SubscriptionId", -1) == self._method_set_the_time.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/method/setTheTime"):
             try:
                 payload_obj = json.loads(payload)
             except json.decoder.JSONDecodeError:
@@ -120,7 +139,7 @@ class FullServer:
             else:
                 self._process_set_the_time_call(topic, payload_obj, properties)
 
-        if (properties.get("SubscriptionId", -1) == self._property_favorite_number.subscription_id) or self._conn.is_topic_sub(topic, "full/property/favoriteNumber/setValue"):
+        if (properties.get("SubscriptionId", -1) == self._property_favorite_number.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/property/favoriteNumber/setValue"):
             payload_obj = json.loads(payload)
             prop_value = int(payload_obj["number"])
             with self._property_favorite_number.mutex:
@@ -129,7 +148,7 @@ class FullServer:
             for callback in self._property_favorite_number.callbacks:
                 callback(prop_value)
 
-        elif (properties.get("SubscriptionId", -1) == self._property_favorite_foods.subscription_id) or self._conn.is_topic_sub(topic, "full/property/favoriteFoods/setValue"):
+        elif (properties.get("SubscriptionId", -1) == self._property_favorite_foods.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/property/favoriteFoods/setValue"):
             prop_value = stinger_types.FavoriteFoodsProperty.model_validate_json(payload)
             with self._property_favorite_foods.mutex:
                 self._property_favorite_foods.value = prop_value
@@ -137,7 +156,7 @@ class FullServer:
             for callback in self._property_favorite_foods.callbacks:
                 callback(prop_value.drink, prop_value.slices_of_pizza, prop_value.breakfast)
 
-        elif (properties.get("SubscriptionId", -1) == self._property_lunch_menu.subscription_id) or self._conn.is_topic_sub(topic, "full/property/lunchMenu/setValue"):
+        elif (properties.get("SubscriptionId", -1) == self._property_lunch_menu.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/property/lunchMenu/setValue"):
             prop_value = stinger_types.LunchMenuProperty.model_validate_json(payload)
             with self._property_lunch_menu.mutex:
                 self._property_lunch_menu.value = prop_value
@@ -145,7 +164,7 @@ class FullServer:
             for callback in self._property_lunch_menu.callbacks:
                 callback(prop_value.monday, prop_value.tuesday)
 
-        elif (properties.get("SubscriptionId", -1) == self._property_family_name.subscription_id) or self._conn.is_topic_sub(topic, "full/property/familyName/setValue"):
+        elif (properties.get("SubscriptionId", -1) == self._property_family_name.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/property/familyName/setValue"):
             payload_obj = json.loads(payload)
             prop_value = str(payload_obj["family_name"])
             with self._property_family_name.mutex:
@@ -154,7 +173,7 @@ class FullServer:
             for callback in self._property_family_name.callbacks:
                 callback(prop_value)
 
-        elif (properties.get("SubscriptionId", -1) == self._property_last_breakfast_time.subscription_id) or self._conn.is_topic_sub(topic, "full/property/lastBreakfastTime/setValue"):
+        elif (properties.get("SubscriptionId", -1) == self._property_last_breakfast_time.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/property/lastBreakfastTime/setValue"):
             payload_obj = json.loads(payload)
             prop_value = datetime.datetime(payload_obj["timestamp"])
             with self._property_last_breakfast_time.mutex:
@@ -163,7 +182,7 @@ class FullServer:
             for callback in self._property_last_breakfast_time.callbacks:
                 callback(prop_value)
 
-        elif (properties.get("SubscriptionId", -1) == self._property_last_birthdays.subscription_id) or self._conn.is_topic_sub(topic, "full/property/lastBirthdays/setValue"):
+        elif (properties.get("SubscriptionId", -1) == self._property_last_birthdays.subscription_id) or self._conn.is_topic_sub(topic, "full/{}/property/lastBirthdays/setValue"):
             prop_value = stinger_types.LastBirthdaysProperty.model_validate_json(payload)
             with self._property_last_birthdays.mutex:
                 self._property_last_birthdays.value = prop_value
@@ -172,12 +191,9 @@ class FullServer:
                 callback(prop_value.mom, prop_value.dad, prop_value.sister)
 
     def _publish_interface_info(self):
-        self._conn.publish(
-            "full/interface",
-            """{"name": "Full", "summary": "Example StingerAPI interface which demonstrates most features.", "title": "Fully Featured Example Interface", "version": "0.0.1"}""",
-            qos=1,
-            retain=True,
-        )
+        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.utcnow().isoformat())
+        expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
+        self._conn.publish_status(topic, data, expiry)
 
     def emit_todayIs(self, dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
         """Server application code should call this method to emit the 'todayIs' signal."""
@@ -190,7 +206,7 @@ class FullServer:
             "dayOfMonth": int(dayOfMonth),
             "dayOfWeek": stinger_types.DayOfTheWeek(dayOfWeek).value if dayOfWeek is not None else None,
         }
-        self._conn.publish("full/signal/todayIs", json.dumps(payload), qos=1, retain=False)
+        self._conn.publish("full/{}/signal/todayIs", json.dumps(payload), qos=1, retain=False)
 
     def handle_add_numbers(self, handler: Callable[[int, int, int | None], int]):
         """This is a decorator to decorate a method that will handle the 'addNumbers' method calls."""
@@ -490,7 +506,7 @@ class FullServer:
             with self._property_favorite_number.mutex:
                 self._property_favorite_number.value = number
                 self._property_favorite_number.version += 1
-            self._conn.publish("full/property/favoriteNumber/value", payload, qos=1, retain=True)
+            self._conn.publish("full/{}/property/favoriteNumber/value", payload, qos=1, retain=True)
             for callback in self._property_favorite_number.callbacks:
                 callback(number)
 
@@ -527,7 +543,7 @@ class FullServer:
             with self._property_favorite_foods.mutex:
                 self._property_favorite_foods.value = value
                 self._property_favorite_foods.version += 1
-            self._conn.publish("full/property/favoriteFoods/value", payload, qos=1, retain=True)
+            self._conn.publish("full/{}/property/favoriteFoods/value", payload, qos=1, retain=True)
             for callback in self._property_favorite_foods.callbacks:
                 callback(value.drink, value.slices_of_pizza, value.breakfast)
 
@@ -572,7 +588,7 @@ class FullServer:
             with self._property_lunch_menu.mutex:
                 self._property_lunch_menu.value = value
                 self._property_lunch_menu.version += 1
-            self._conn.publish("full/property/lunchMenu/value", payload, qos=1, retain=True)
+            self._conn.publish("full/{}/property/lunchMenu/value", payload, qos=1, retain=True)
             for callback in self._property_lunch_menu.callbacks:
                 callback(value.monday, value.tuesday)
 
@@ -614,7 +630,7 @@ class FullServer:
             with self._property_family_name.mutex:
                 self._property_family_name.value = family_name
                 self._property_family_name.version += 1
-            self._conn.publish("full/property/familyName/value", payload, qos=1, retain=True)
+            self._conn.publish("full/{}/property/familyName/value", payload, qos=1, retain=True)
             for callback in self._property_family_name.callbacks:
                 callback(family_name)
 
@@ -651,7 +667,7 @@ class FullServer:
             with self._property_last_breakfast_time.mutex:
                 self._property_last_breakfast_time.value = timestamp
                 self._property_last_breakfast_time.version += 1
-            self._conn.publish("full/property/lastBreakfastTime/value", payload, qos=1, retain=True)
+            self._conn.publish("full/{}/property/lastBreakfastTime/value", payload, qos=1, retain=True)
             for callback in self._property_last_breakfast_time.callbacks:
                 callback(timestamp)
 
@@ -688,7 +704,7 @@ class FullServer:
             with self._property_last_birthdays.mutex:
                 self._property_last_birthdays.value = value
                 self._property_last_birthdays.version += 1
-            self._conn.publish("full/property/lastBirthdays/value", payload, qos=1, retain=True)
+            self._conn.publish("full/{}/property/lastBirthdays/value", payload, qos=1, retain=True)
             for callback in self._property_last_birthdays.callbacks:
                 callback(value.mom, value.dad, value.sister)
 
@@ -833,11 +849,12 @@ if __name__ == "__main__":
     """
     from time import sleep
     import signal
+    from connection import MqttBrokerConnection
 
-    from connection import LocalConnection
-
-    conn = LocalConnection()
-    server = FullServer(conn)
+    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    service_id = "1"
+    conn = MqttBrokerConnection(transport)
+    server = FullServer(conn, service_id)
 
     server.favorite_number = 42
 

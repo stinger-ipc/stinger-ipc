@@ -1164,7 +1164,6 @@ class StingerSpec:
         self.methods: dict[str, Method] = {}
         self.enums: dict[str, InterfaceEnum] = {}
         self.structs: dict[str, InterfaceStruct] = {}
-        self._brokers: dict[str, Broker] = {}
 
     @property
     def method_return_codes(self) -> dict[int, str]:
@@ -1185,14 +1184,8 @@ class StingerSpec:
         }
 
     @property
-    def interface_info(self) -> tuple[str, dict[str, Any]]:
-        info = {
-            "name": self._name,
-            "version": self._version,
-            "title": self._title or self._name,
-            "summary": self._summary or "",
-        }
-        return (self._topic_creator.interface_info_topic(), info)
+    def interface_info_topic(self) -> str:
+        return self._topic_creator.interface_info_topic()
 
     @property
     def summary(self) -> str:
@@ -1205,23 +1198,6 @@ class StingerSpec:
     @property
     def documentation(self) -> str:
         return self._documentation or ""
-
-    def add_broker(self, broker: Broker):
-        assert broker is not None
-        self._brokers[broker.name] = broker
-
-    @property
-    def brokers(self) -> dict[str, Broker]:
-        if len(self._brokers) == 0:
-            default_broker = Broker()
-            return {default_broker.name: default_broker}
-        else:
-            return self._brokers
-
-    def get_example_broker(self) -> Broker | None:
-        for broker in self.brokers.values():
-            return broker
-        return None
 
     def add_signal(self, signal: Signal):
         assert isinstance(signal, Signal)
@@ -1321,19 +1297,6 @@ class StingerSpec:
         except TypeError as e:
             raise InvalidStingerStructure(
                 f"Struct specification appears to be invalid: {e}"
-            )
-
-        try:
-            if "brokers" in stinger:
-                for broker_name, broker_spec in stinger["brokers"].items():
-                    broker = Broker.new_broker_from_stinger(broker_name, broker_spec)
-                    assert (
-                        broker is not None
-                    ), f"Did not create broker from {broker_name} and {broker_spec}"
-                    stinger_spec.add_broker(broker)
-        except TypeError as e:
-            raise InvalidStingerStructure(
-                f"Broker specification appears to be invalid: {e}"
             )
 
         try:

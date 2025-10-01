@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv)
 {
-    auto conn = std::make_shared<LocalConnection>("Full");
+    auto conn = std::make_shared<MqttBrokerConnection>();
     FullServer server(conn);
     auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::MONDAY);
     todayIsFuture.wait();

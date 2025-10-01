@@ -14,17 +14,18 @@ use num_traits::FromPrimitive;
 
 use std::fmt;
 
+use base64::prelude::*;
+use iso8601_duration::Duration as IsoDuration;
 use serde::{Deserialize, Serialize};
 
 pub mod base64_binary_format {
     use serde::{Deserialize, Deserializer, Serializer};
-    use base64::{engine::general_purpose, Engine as _};
 
     pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let b64_string = general_purpose::STANDARD.encode(bytes);
+        let b64_string = BASE64_STANDARD.encode(bytes);
         serializer.serialize_str(&b64_string)
     }
 
@@ -33,7 +34,7 @@ pub mod base64_binary_format {
         D: Deserializer<'de>,
     {
         let b64_string = String::deserialize(deserializer)?;
-        general_purpose::STANDARD
+        BASE64_STANDARD
             .decode(b64_string.as_bytes())
             .map_err(serde::de::Error::custom)
     }
@@ -56,7 +57,7 @@ pub mod base64_binary_format {
         let opt = Option::<String>::deserialize(deserializer)?;
         match opt {
             Some(b64_string) => {
-                let decoded = general_purpose::STANDARD
+                let decoded = BASE64_STANDARD
                     .decode(b64_string.as_bytes())
                     .map_err(serde::de::Error::custom)?;
                 Ok(Some(decoded))
@@ -91,10 +92,6 @@ pub mod datetime_iso_format {
 }
 
 pub mod duration_iso_format {
-    use serde::{Deserialize, Deserializer, Serializer};
-    use iso8601_duration::Duration as IsoDuration;
-    use chrono::Duration;
-
     // Serialization and deserialization for Duration as ISO 8601 string
     pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -110,43 +107,8 @@ pub mod duration_iso_format {
         D: Deserializer<'de>,
     {
         let iso_string = String::deserialize(deserializer)?;
-        let iso_dur = iso_string
-            .parse::<IsoDuration>()
-            .map_err(|e| serde::de::Error::custom(format!("invalid ISO 8601 duration '{}': {:?}", iso_string, e)))?;
-
-        iso_dur
-            .to_chrono()
-            .ok_or_else(|| serde::de::Error::custom("cannot convert ISO 8601 duration to chrono Duration"))
-    }
-
-    // Optional helper for serializing/deserializing Option<Duration>
-    pub fn serialize_option<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match duration {
-            Some(d) => serialize(d, serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let opt = Option::<String>::deserialize(deserializer)?;
-        match opt {
-            Some(s) => {
-                let iso_dur = s
-                    .parse::<IsoDuration>()
-                    .map_err(|e| serde::de::Error::custom(format!("invalid ISO 8601 duration '{}': {:?}", s, e)))?;
-                let chrono_dur = iso_dur
-                    .to_chrono()
-                    .ok_or_else(|| serde::de::Error::custom("cannot convert ISO 8601 duration to chrono Duration"))?;
-                Ok(Some(chrono_dur))
-            }
-            None => Ok(None),
-        }
+        let iso_dur = iso_string.parse::<IsoDuration>().unwrap();
+        iso_dur.to_chrono()
     }
 }
 

@@ -15,9 +15,10 @@ Generally, you only need one connection object per daemon/program, as it can sup
   <summary>Python</summary>
 
 ```python
-from connection import DefaultConnection
+from connection import MqttBrokerConnection, MqttTransportType, MqttTransport
 
-connection_object = DefaultConnection('localhost', 1883)
+transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883) # Or: MqttTransport(MqttTransportType.UNIX, socket_path="/path/to/socket")
+connection_object = MqttBrokerConnection(transport)
 ```
 
 The `connection_object` will be passed to client and server constructors.
@@ -27,10 +28,17 @@ The `connection_object` will be passed to client and server constructors.
 <details>
   <summary>Rust</summary>
 
-```rust
-use mqttier::MqttierClient;
+Rust implementations use the [MQTTier](https://crates.io/crates/mqttier) crate for MQTT connectivity.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.
 
-MqttierClient::new("localhost", 1883, Some("mqtt_client_id".to_string())).expect("Failed to create MQTT client");
+```rust
+use mqttier::{MqttierClient, MqttierOptions};
+
+  let conn_opts = MqttierOptionsBuilder::new()
+      .connection(Connection::TcpLocalhost(1883)) // Connection::UnixSocket("/path/to/socket") is also supported.
+      .build()
+      .unwrap()
+      .expect("Failed to build MQTT connection options");
+  let mut connection = MqttierClient::new(conn_opts).unwrap().expect("Failed to create MQTT client");
 ```
 
 The `connection_object` will be passed to client and server constructors.
@@ -40,10 +48,12 @@ The `connection_object` will be passed to client and server constructors.
 <details>
   <summary>C++</summary>
 
+The C++ connection object is a wrapper around the [libmosquitto](https://mosquitto.org/api/files/mosquitto-h.html) C library.  This library only supports TCP and WebSocket connections.  Unix Domain Socket support may be added in the future.
+
 ```c++
 #include "broker.hpp"
 
-auto connection_object = std::make_shared<DefaultConnection>("localhost", 1883, "Weather");
+auto connection_object = std::make_shared<MqttBrokerConnection>("localhost", 1883, "daemon-name");
 ```
 
 The `connection_object` will be passed to client and server constructors.
@@ -70,7 +80,6 @@ The `server` object provides methods for emitting signals and updating propertie
 A full example can be viewed by looking at the `if __name__ == "__main__":` section of the generated `weatheripc.server.py` module.
 
 </details>
-
 
 
 <details>

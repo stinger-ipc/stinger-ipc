@@ -12,17 +12,14 @@ payloads = []
 [dependencies]
 # Core dependencies (always available)
 futures = "0.3.31"
-mqttier = "0.3.0"
+mqttier = "0.4.2"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 tokio = { version = "1", features = ["full"] }
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 chrono = "0.4.42"
-iso8601-duration = { version = "0.2.0", features = ["chrono"] }
-
-# Base64 encoding/decoding used by generated payload helpers
-base64 = "0.21"
+iso8601-duration = "0.2.0"
 
 # Client specific dependencies
 paho-mqtt = { version = "0.13.3", optional = true }

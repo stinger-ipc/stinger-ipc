@@ -57,7 +57,7 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/signal/anotherSignal", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/{}/signal/anotherSignal", buf.GetString(), 1, false, mqttProps);
 }
 
 boost::future<bool> SignalOnlyServer::emitBarkSignal(const std::string& word)
@@ -75,7 +75,7 @@ boost::future<bool> SignalOnlyServer::emitBarkSignal(const std::string& word)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/signal/bark", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/{}/signal/bark", buf.GetString(), 1, false, mqttProps);
 }
 
 boost::future<bool> SignalOnlyServer::emitMaybeNumberSignal(boost::optional<int> number)
@@ -89,7 +89,7 @@ boost::future<bool> SignalOnlyServer::emitMaybeNumberSignal(boost::optional<int>
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/signal/maybeNumber", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/{}/signal/maybeNumber", buf.GetString(), 1, false, mqttProps);
 }
 
 boost::future<bool> SignalOnlyServer::emitMaybeNameSignal(boost::optional<std::string> name)
@@ -107,7 +107,7 @@ boost::future<bool> SignalOnlyServer::emitMaybeNameSignal(boost::optional<std::s
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/signal/maybeName", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/{}/signal/maybeName", buf.GetString(), 1, false, mqttProps);
 }
 
 boost::future<bool> SignalOnlyServer::emitNowSignal(std::chrono::time_point<std::chrono::system_clock> timestamp)
@@ -119,5 +119,5 @@ boost::future<bool> SignalOnlyServer::emitNowSignal(std::chrono::time_point<std:
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/signal/now", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/{}/signal/now", buf.GetString(), 1, false, mqttProps);
 }
