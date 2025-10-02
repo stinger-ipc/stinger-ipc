@@ -15,7 +15,7 @@ import asyncio
 import concurrent.futures as futures
 from method_codes import *
 {%endif%}
-from connection import BrokerConnection
+from connection import IBrokerConnection
 {%if stinger.uses_enums()%}import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
 
 logging.basicConfig(level=logging.DEBUG)
@@ -32,28 +32,28 @@ logging.basicConfig(level=logging.DEBUG)
 
 class {{stinger.python.client_class_name}}:
 
-    def __init__(self, connection: BrokerConnection):
+    def __init__(self, connection: IBrokerConnection, service_instance_id: str):
         """ Constructor for a `{{stinger.python.client_class_name}}` object.
         """
         self._logger = logging.getLogger('{{stinger.python.client_class_name}}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.python.client_class_name}}")
-        self._client_id = str(uuid4())
         self._conn = connection
-        self._conn.set_message_callback(self._receive_message)
+        self._conn.add_message_callback(self._receive_message)
+        self._service_id = service_instance_id
         {%if stinger.methods | length > 0 %}
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
         self._property_{{prop_name}}: {{prop_spec.python_class}}|None = None
-        self._{{prop_name}}_prop_subscription_id: int = self._conn.subscribe("{{prop_spec.value_topic}}")
+        self._conn.subscribe("{{prop_spec.value_topic}}".format(self._service_id), self._receive_{{prop_name | snake_case}}_property_update_message)
         self._changed_value_callbacks_for_{{prop_name}}: list[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
         {%-for sig_name in stinger.signals.keys()-%}
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}: list[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()-%}
-        self._{{method_name}}_method_call_subscription_id: int = self._conn.subscribe(f"{{method.response_topic('{self._client_id}')}}")
+        self._conn.subscribe(f"{{method.response_topic('{self._conn.client_id}')}}", self._receive_{{method_name | snake_case}}_response_message)
         {%endfor%}
 
     {%for prop_name, prop_spec in stinger.properties.items()-%}
@@ -75,7 +75,7 @@ class {{stinger.python.client_class_name}}:
         serialized = json.dumps({ "{{prop_spec.arg_list[0].name}}": value.{{prop_spec.arg_list[0].name}} })
         {%endif-%}
         self._logger.debug("Setting '{{prop_name}}' property to %s", serialized)
-        self._conn.publish("{{prop_spec.update_topic}}", serialized, qos=1)
+        self._conn.publish("{{prop_spec.update_topic}}".format(self._service_id), serialized, qos=1)
     {%endif%}
     def {{prop_name | snake_case}}_changed(self, handler: {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType, call_immediately: bool=False):
         """ Sets a callback to be called when the '{{prop_name}}' property changes.
@@ -104,67 +104,66 @@ class {{stinger.python.client_class_name}}:
                 filtered_args[k] = v
         return filtered_args
 
+    {%for sig_name, sig in stinger.signals.items()-%}
+    def _receive_{{sig_name|snake_case}}_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+            self._logger.warning("Received '{{sig_name}}' signal with non-JSON content type")
+            return
+        allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
+        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+        {%for arg in sig.arg_list-%}
+        kwargs["{{arg.name}}"] = {{arg.python_class}}(kwargs["{{arg.name}}"]){%if arg.optional %} if kwargs.get("{{arg.name}}") else None {%endif%}
+        {%endfor%}
+        self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
+    {%endfor%}{# end signal loop #}
+
+    {%-for method_name, method in stinger.methods.items()%}
+    def _receive_{{method_name | snake_case}}_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        # Handle '{{method_name}}' method response.
+        result_code = MethodReturnCode.SUCCESS
+        if "UserProperty" in properties:
+            user_properties = properties["UserProperty"]
+            if "DebugInfo" in user_properties:
+                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+            if "ReturnValue" in user_properties:
+                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+        response = json.loads(payload)
+        if "CorrelationData" in properties:
+            correlation_id = properties["CorrelationData"].decode()
+            if correlation_id in self._pending_method_responses:
+                cb = self._pending_method_responses[correlation_id]
+                del self._pending_method_responses[correlation_id]
+                cb(response, result_code)
+            else:
+                self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+        else:
+            self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+    {%endfor%}{# end method loop #}
+
+    {%-for prop_name, prop_spec in stinger.properties.items()%}
+    def _receive_{{prop_name | snake_case}}_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        # Handle '{{prop_name}}' property change.
+        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+            self._logger.warning("Received '{{prop_name}}' property change with non-JSON content type")
+            return
+        try:
+            {%if prop_spec.arg_list | length > 1 -%}
+            prop_value = {{prop_spec.python_class}}.model_validate_json(payload)
+            {%else-%}
+            payload_obj = json.loads(payload)
+            prop_value = {{prop_spec.arg_list[0].python_class}}(payload_obj["{{prop_spec.arg_list[0].name}}"])
+            {%endif-%}
+            self._property_{{prop_name}} = prop_value
+            self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name}}, value=self._property_{{prop_name}})
+        except Exception as e:
+            self._logger.error("Error processing '{{prop_name}}' property change: %s", e)
+    {%endfor%}{# end property loop #}
+
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
-        self._logger.debug("Receiving message sent to %s", topic)
-        {%if stinger.signals | length > 0 -%}
-        {%for sig_name, sig in stinger.signals.items()-%}
-        # Handle '{{sig_name}}' signal.
-        {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{sig.topic}}"):
-            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
-                self._logger.warning("Received '{{sig_name}}' signal with non-JSON content type")
-                return
-            allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
-            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-            {%for arg in sig.arg_list-%}
-            kwargs["{{arg.name}}"] = {{arg.python_class}}(kwargs["{{arg.name}}"]){%if arg.optional %} if kwargs.get("{{arg.name}}") else None {%endif%}
-            {%endfor%}
-            self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
-        {%endfor%}{# end signal loop #}
-        
-        {%-else%}pass{%-endif%}
-        {%-for method_name, method in stinger.methods.items()%}
-        # Handle '{{method_name}}' method response.
-        if self._conn.is_topic_sub(topic, f"{{method.response_topic('{self._client_id}')}}"):
-            result_code = MethodReturnCode.SUCCESS
-            if "UserProperty" in properties:
-                user_properties = properties["UserProperty"]
-                if "DebugInfo" in user_properties:
-                    self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
-                if "ReturnValue" in user_properties:
-                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-            response = json.loads(payload)
-            if "CorrelationData" in properties:
-                correlation_id = properties["CorrelationData"].decode()
-                if correlation_id in self._pending_method_responses:
-                    cb = self._pending_method_responses[correlation_id]
-                    del self._pending_method_responses[correlation_id]
-                    cb(response, result_code)
-                else:
-                    self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
-            else:
-                self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
-        {%endfor%}{# end method loop #}
-        {%-for prop_name, prop_spec in stinger.properties.items()%}
-        # Handle '{{prop_name}}' property change.
-        {%if not loop.first%}el{%endif%}if self._conn.is_topic_sub(topic, "{{prop_spec.value_topic}}"):
-            if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
-                self._logger.warning("Received '{{prop_name}}' property change with non-JSON content type")
-                return
-            try:
-                {%if prop_spec.arg_list | length > 1 -%}
-                prop_value = {{prop_spec.python_class}}.model_validate_json(payload)
-                {%else-%}
-                payload_obj = json.loads(payload)
-                prop_value = {{prop_spec.arg_list[0].python_class}}(payload_obj["{{prop_spec.arg_list[0].name}}"])
-                {%endif-%}
-                self._property_{{prop_name}} = prop_value
-                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name}}, value=self._property_{{prop_name}})
-            except Exception as e:
-                self._logger.error("Error processing '{{prop_name}}' property change: %s", e)
-        {%endfor%}{# end property loop #}
+        self._logger.warning("Receiving message sent to %s, but without a handler", topic)
 
     {%for sig_name, sig in stinger.signals.items()%}
     def receive_{{sig_name | snake_case }}(self, handler: {{sig_name | UpperCamelCase}}SignalCallbackType):
@@ -172,7 +171,7 @@ class {{stinger.python.client_class_name}}:
         """
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
         if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) == 1:
-            self._conn.subscribe("{{sig.topic}}")
+            self._conn.subscribe("{{sig.topic}}".format(self._service_id), self._receive_{{sig_name|snake_case}}_signal_message)
         return handler
     {%endfor%}
 
@@ -190,8 +189,8 @@ class {{stinger.python.client_class_name}}:
         payload = { {%-for arg in method.arg_list%}
             "{{arg.name}}": {{arg.name}},{%endfor%}
         }
-        self._conn.publish("{{method.topic}}", json.dumps(payload), qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._client_id}')}}")
+        self._conn.publish("{{method.topic}}".format(self._service_id), json.dumps(payload), qos=2, retain=False,
+                           correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._conn.client_id}')}}")
         return fut
 
     def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
@@ -228,7 +227,7 @@ class {{stinger.python.client_class_name}}:
 
 class {{stinger.python.client_class_name}}Builder:
 
-    def __init__(self, broker: BrokerConnection):
+    def __init__(self, broker: IBrokerConnection):
         """ Creates a new {{stinger.python.client_class_name}}Builder.
         """
         self._conn = broker
@@ -254,11 +253,11 @@ class {{stinger.python.client_class_name}}Builder:
         self._property_updated_callbacks_for_{{prop_name | snake_case}}.append(handler)
     {%endfor%}
 
-    def build(self) -> {{stinger.python.client_class_name}}:
+    def build(self, service_instance_id: str) -> {{stinger.python.client_class_name}}:
         """ Builds a new {{stinger.python.client_class_name}}.
         """
-        self._logger.debug("Building {{stinger.python.client_class_name}}")
-        client = {{stinger.python.client_class_name}}(self._conn)
+        self._logger.debug("Building {{stinger.python.client_class_name}} for service instance %s", service_instance_id)
+        client = {{stinger.python.client_class_name}}(self._conn, service_instance_id)
         {%for sig_name, sig in stinger.signals.items()%}
         for cb in self._signal_recv_callbacks_for_{{sig_name | snake_case }}:
             client.receive_{{sig_name | snake_case}}(cb)
@@ -269,12 +268,36 @@ class {{stinger.python.client_class_name}}Builder:
         {%endfor%}
         return client
 
+class {{stinger.python.client_class_name}}Discoverer:
+    
+    def __init__(self, connection: IBrokerConnection):
+        """ Creates a new {{stinger.python.client_class_name}}Discoverer.
+        """
+        self.discovered_services: Dict[str, InterfaceInfo] = {}
+        self._conn = connection
+        self._logger = logging.getLogger('{{stinger.python.client_class_name}}Discoverer')
+        self._logger.setLevel(logging.DEBUG)
+        service_discovery_topic = "{{stinger.interface_info_topic}}".format(self._instance_id)
+        self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
+
+    def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        """ Processes a service discovery message.
+        """
+        self._logger.debug("Received service discovery message on %s: %s", topic, payload)
+        try:
+            service_info = InterfaceInfo.model_validate_json(payload)
+            self.discovered_services[service_info.instance] = service_info
+            self._logger.info("Discovered service: %s", service_info)
+        except Exception as e:
+            self._logger.error("Failed to process service discovery message: %s", e)
 
 if __name__ == '__main__':
     import signal
+    from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
-
-    conn = MqttBrokerConnection()
+    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    service_id = "1"
+    conn = MqttBrokerConnection(transport)
     client_builder = {{stinger.python.client_class_name}}Builder(conn)
     {%for sig_name, sig in stinger.signals.items()%}
     @client_builder.receive_{{sig_name | snake_case }}
@@ -293,7 +316,7 @@ if __name__ == '__main__':
         print(f"Property '{{prop_name}}' has been updated to: {value}")
     {%endfor%}
 
-    client = client_builder.build()
+    client = client_builder.build(service_id)
     {%if stinger.methods | length > 0 %}
     {%-for method_name, method in stinger.methods.items()%}
     print("Making call to '{{method_name|snake_case}}'")

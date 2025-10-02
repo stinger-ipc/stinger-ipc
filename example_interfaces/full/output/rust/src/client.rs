@@ -95,10 +95,8 @@ impl FullClient {
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
-        let topic_add_numbers_method_resp = format!(
-            "client/{}/full/{}/method/addNumbers/response",
-            connection.client_id
-        );
+        let topic_add_numbers_method_resp =
+            format!("client/{}/addNumbers/response", connection.client_id);
         let subscription_id_add_numbers_method_resp = connection
             .subscribe(
                 topic_add_numbers_method_resp,
@@ -108,10 +106,8 @@ impl FullClient {
             .await;
         let subscription_id_add_numbers_method_resp =
             subscription_id_add_numbers_method_resp.unwrap_or_else(|_| usize::MAX);
-        let topic_do_something_method_resp = format!(
-            "client/{}/full/{}/method/doSomething/response",
-            connection.client_id
-        );
+        let topic_do_something_method_resp =
+            format!("client/{}/doSomething/response", connection.client_id);
         let subscription_id_do_something_method_resp = connection
             .subscribe(
                 topic_do_something_method_resp,
@@ -121,10 +117,7 @@ impl FullClient {
             .await;
         let subscription_id_do_something_method_resp =
             subscription_id_do_something_method_resp.unwrap_or_else(|_| usize::MAX);
-        let topic_echo_method_resp = format!(
-            "client/{}/full/{}/method/echo/response",
-            connection.client_id
-        );
+        let topic_echo_method_resp = format!("client/{}/echo/response", connection.client_id);
         let subscription_id_echo_method_resp = connection
             .subscribe(topic_echo_method_resp, 2, message_received_tx.clone())
             .await;
@@ -263,10 +256,7 @@ impl FullClient {
             third: third,
         };
 
-        let response_topic: String = format!(
-            "client/{}/full/{}/method/addNumbers/response",
-            self.client_id
-        );
+        let response_topic: String = format!("client/{}/addNumbers/response", self.client_id);
         let _ = self
             .mqttier_client
             .publish_request(
@@ -325,10 +315,7 @@ impl FullClient {
 
         let data = DoSomethingRequestObject { aString: a_string };
 
-        let response_topic: String = format!(
-            "client/{}/full/{}/method/doSomething/response",
-            self.client_id
-        );
+        let response_topic: String = format!("client/{}/doSomething/response", self.client_id);
         let _ = self
             .mqttier_client
             .publish_request(
@@ -389,8 +376,7 @@ impl FullClient {
 
         let data = EchoRequestObject { message: message };
 
-        let response_topic: String =
-            format!("client/{}/full/{}/method/echo/response", self.client_id);
+        let response_topic: String = format!("client/{}/echo/response", self.client_id);
         let _ = self
             .mqttier_client
             .publish_request(

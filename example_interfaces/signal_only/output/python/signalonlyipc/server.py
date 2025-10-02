@@ -10,12 +10,12 @@ import logging
 import threading
 from time import sleep
 from dataclasses import dataclass, field
-import datetime
+from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from connection import BrokerConnection
+from connection import IBrokerConnection
 from method_codes import *
 from interface_types import InterfaceInfo
 import interface_types as stinger_types
@@ -41,7 +41,7 @@ class MethodControls:
 
 class SignalOnlyServer:
 
-    def __init__(self, connection: BrokerConnection, instance_id: str):
+    def __init__(self, connection: IBrokerConnection, instance_id: str):
         self._logger = logging.getLogger(f"SignalOnlyServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SignalOnlyServer instance %s", instance_id)
@@ -49,7 +49,7 @@ class SignalOnlyServer:
         self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
         self._running = True
-        self._conn.set_message_callback(self._receive_message)
+        self._conn.add_message_callback(self._receive_message)
 
         self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
         self._advertise_thread.start()
@@ -59,22 +59,21 @@ class SignalOnlyServer:
         self._conn.unpublish_retained(self._conn.online_topic)
         self._advertise_thread.join()
 
-    def prepend_topic_prefix(self, topic: str) -> str:
-        return f"/{self._instance_id}/{topic}"
-
     def loop_publishing_interface_info(self):
         while self._conn.is_connected() and self._running:
             self._publish_interface_info()
             sleep(self._re_advertise_server_interval_seconds)
 
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        """This is the callback that is called whenever any message is received on a subscribed topic."""
-        self._logger.debug("Received message to %s", topic)
-
     def _publish_interface_info(self):
         data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.utcnow().isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
+        topic = "signalOnly/{}/interface".format(self._instance_id)
+        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
         self._conn.publish_status(topic, data, expiry)
+
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        """This is the callback that is called whenever any message is received on a subscribed topic."""
+        self._logger.warning("Received unexpected message to %s", topic)
 
     def emit_anotherSignal(self, one: float, two: bool, three: str):
         """Server application code should call this method to emit the 'anotherSignal' signal."""
@@ -90,7 +89,7 @@ class SignalOnlyServer:
             "two": bool(two),
             "three": str(three),
         }
-        self._conn.publish("signalOnly/{}/signal/anotherSignal", json.dumps(payload), qos=1, retain=False)
+        self._conn.publish("signalOnly/{}/signal/anotherSignal".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
 
     def emit_bark(self, word: str):
         """Server application code should call this method to emit the 'bark' signal."""
@@ -100,7 +99,7 @@ class SignalOnlyServer:
         payload = {
             "word": str(word),
         }
-        self._conn.publish("signalOnly/{}/signal/bark", json.dumps(payload), qos=1, retain=False)
+        self._conn.publish("signalOnly/{}/signal/bark".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
 
     def emit_maybe_number(self, number: int | None):
         """Server application code should call this method to emit the 'maybe_number' signal."""
@@ -110,7 +109,7 @@ class SignalOnlyServer:
         payload = {
             "number": int | None(number) if number is not None else None,
         }
-        self._conn.publish("signalOnly/{}/signal/maybeNumber", json.dumps(payload), qos=1, retain=False)
+        self._conn.publish("signalOnly/{}/signal/maybeNumber".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
 
     def emit_maybe_name(self, name: str | None):
         """Server application code should call this method to emit the 'maybe_name' signal."""
@@ -120,7 +119,7 @@ class SignalOnlyServer:
         payload = {
             "name": str | None(name) if name is not None else None,
         }
-        self._conn.publish("signalOnly/{}/signal/maybeName", json.dumps(payload), qos=1, retain=False)
+        self._conn.publish("signalOnly/{}/signal/maybeName".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
 
 
 class SignalOnlyServerBuilder:
@@ -128,7 +127,7 @@ class SignalOnlyServerBuilder:
     This is a builder for the SignalOnlyServer.  It is used to create a server with the desired parameters.
     """
 
-    def __init__(self, connection: BrokerConnection):
+    def __init__(self, connection: IBrokerConnection):
         self._conn = connection
 
     def build(self) -> SignalOnlyServer:
@@ -144,7 +143,7 @@ if __name__ == "__main__":
     """
     from time import sleep
     import signal
-    from connection import MqttBrokerConnection
+    from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     service_id = "1"

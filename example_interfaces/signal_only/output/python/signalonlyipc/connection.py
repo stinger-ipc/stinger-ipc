@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Callable, Optional, Tuple, Any, Union
+from typing import Callable, Optional, Tuple, Any, Union, List
 from paho.mqtt.client import Client as MqttClient, topic_matches_sub
 from paho.mqtt.enums import MQTTProtocolVersion, CallbackAPIVersion
 from paho.mqtt.properties import Properties as MqttProperties
@@ -33,15 +33,19 @@ class IBrokerConnection(ABC):
         pass
 
     @abstractmethod
-    def subscribe(self, topic) -> int:
+    def subscribe(self, topic: str, callback: Optional[MessageCallback] = None) -> int:
         pass
 
     @abstractmethod
-    def set_message_callback(self, callback: MessageCallback) -> None:
+    def add_message_callback(self, callback: MessageCallback) -> None:
         pass
 
     @abstractmethod
     def is_topic_sub(self, topic: str, sub: str) -> bool:
+        pass
+
+    @abstractmethod
+    def is_connected(self) -> bool:
         pass
 
 
@@ -63,7 +67,7 @@ class MqttTransport:
         port: int | None = None,
         socket_path: str | None = None,
     ):
-        self.transport = transport
+        self.transport = transport_type
         self.host_or_path = socket_path if transport_type == MqttTransportType.UNIX else host
         self.port = 0 if transport_type == MqttTransportType.UNIX else (port or 1883)
 
@@ -90,9 +94,10 @@ class MqttBrokerConnection(IBrokerConnection):
         self._client = MqttClient(CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5, transport=transport.transport.value, client_id=self._client_id, reconnect_on_failure=True)
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
-
+        self._client.will_set(**self._lwt)
         self._client.connect(self._transport.host_or_path, self._transport.port)
-        self._message_callback: Optional[MessageCallback] = None
+        self._subscription_callbacks: Dict[int, MessageCallback] = dict()
+        self._message_callbacks: List[MessageCallback] = []
         self._client.loop_start()
         self._next_subscription_id = 10
 
@@ -106,26 +111,39 @@ class MqttBrokerConnection(IBrokerConnection):
     def online_topic(self) -> str:
         return f"client/{self._client_id}/online"
 
+    @property
+    def client_id(self) -> str:
+        return self._client_id
+
+    def is_connected(self) -> bool:
+        return self._connected
+
     def get_next_subscription_id(self) -> int:
         sub_id = self._next_subscription_id
         self._next_subscription_id += 1
         return sub_id
 
-    def set_message_callback(self, callback: MessageCallback):
-        self._message_callback = callback
+    def add_message_callback(self, callback: MessageCallback):
+        self._message_callbacks.append(callback)
 
     def _on_message(self, client, userdata, msg):
         self._logger.debug("Got a message to %s", msg.topic)
-        if self._message_callback:
+        if self._message_callbacks:
             properties = msg.properties.__dict__ if hasattr(msg, "properties") else {}
             if "UserProperty" in properties:
                 properties["UserProperty"] = dict(properties["UserProperty"])
-            self._message_callback(msg.topic, msg.payload.decode(), properties)
+            if "SubscriptionIdentifier" in properties:
+                sub_id = int(properties["SubscriptionIdentifier"])
+                if sub_id in self._subscription_callbacks:
+                    self._subscription_callbacks[sub_id](msg.topic, msg.payload.decode(), properties)
+                    return
+            for callback in self._message_callbacks:
+                callback(msg.topic, msg.payload.decode(), properties)
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:  # Connection successful
             self._connected = True
-            self._logger.info("Connected to %s:%d", self._host, self._port)
+            self._logger.info("Connected to %s:%d", self._transport.host_or_path, self._transport.port)
             while not self._queued_subscriptions.empty():
                 try:
                     pending_subscr = self._queued_subscriptions.get_nowait()
@@ -212,7 +230,7 @@ class MqttBrokerConnection(IBrokerConnection):
     def unpublish_retained(self, topic):
         self.publish(topic, None, qos=1, retain=True)
 
-    def subscribe(self, topic: str) -> int:
+    def subscribe(self, topic: str, callback: Optional[MessageCallback] = None) -> int:
         """Subscribes to a topic. If the connection is not established, the subscription is queued.
         Returns the subscription ID.
         """
@@ -225,6 +243,8 @@ class MqttBrokerConnection(IBrokerConnection):
         else:
             self._logger.debug("Pending subscription to %s", topic)
             self._queued_subscriptions.put(self.PendingSubscription(topic, sub_id))
+        if callback is not None:
+            self._subscription_callbacks[sub_id] = callback
         return sub_id
 
     def is_topic_sub(self, topic: str, sub: str) -> bool:

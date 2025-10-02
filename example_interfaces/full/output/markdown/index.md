@@ -18,7 +18,7 @@ Generally, you only need one connection object per daemon/program, as it can sup
 from connection import MqttBrokerConnection, MqttTransportType, MqttTransport
 
 transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883) # Or: MqttTransport(MqttTransportType.UNIX, socket_path="/path/to/socket")
-connection_object = MqttBrokerConnection(transport, "1") # "1" is the service instance ID
+connection_object = MqttBrokerConnection(transport)
 ```
 
 The `connection_object` will be passed to client and server constructors.

@@ -33,7 +33,7 @@ class MethodTopicCreator(TopicCreatorBase):
 
     def method_response_topic(self, method_name: str, client_id: str) -> str:
         method_topic = self.method_topic(method_name)
-        return f"client/{client_id}/{method_topic}/response"
+        return f"client/{client_id}/{method_name}/response"
 
 
 class PropertyTopicCreator(TopicCreatorBase):

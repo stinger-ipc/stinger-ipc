@@ -10,11 +10,11 @@ import logging
 import threading
 from time import sleep
 from dataclasses import dataclass, field
-import datetime
+from datetime import datetime
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from connection import BrokerConnection
+from connection import IBrokerConnection
 from method_codes import *
 from interface_types import InterfaceInfo
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
@@ -37,7 +37,7 @@ class MethodControls:
 
 class {{stinger.python.server_class_name}}:
 
-    def __init__(self, connection: BrokerConnection, instance_id: str):
+    def __init__(self, connection: IBrokerConnection, instance_id: str):
         self._logger = logging.getLogger(f'{{stinger.python.server_class_name}}:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
@@ -45,14 +45,14 @@ class {{stinger.python.server_class_name}}:
         self._re_advertise_server_interval_seconds = 120 # every two minutes
         self._conn = connection
         self._running = True
-        self._conn.set_message_callback(self._receive_message)
+        self._conn.add_message_callback(self._receive_message)
         {%for prop_name, prop in stinger.properties.items()%}
         self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}, {%for arg in prop.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}] = PropertyControls()
-        self._property_{{prop_name|snake_case}}.subscription_id = self._conn.subscribe("{{prop.update_topic}}")
+        self._property_{{prop_name|snake_case}}.subscription_id = self._conn.subscribe("{{prop.update_topic}}".format(self._instance_id), self._receive_{{prop_name|snake_case}}_update_request_message)
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()%}
         self._method_{{method_name|snake_case}} = MethodControls()
-        self._method_{{method_name|snake_case}}.subscription_id = self._conn.subscribe("{{method.topic}}")
+        self._method_{{method_name|snake_case}}.subscription_id = self._conn.subscribe("{{method.topic}}".format(self._instance_id), self._process_{{method_name | snake_case}}_call)
         {%endfor%}
         self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
         self._advertise_thread.start()
@@ -62,47 +62,10 @@ class {{stinger.python.server_class_name}}:
         self._conn.unpublish_retained(self._conn.online_topic)
         self._advertise_thread.join()
 
-    def prepend_topic_prefix(self, topic: str) -> str:
-        return f"{{stinger.interface_name}}/{self._instance_id}/{topic}"
-
     def loop_publishing_interface_info(self):
         while self._conn.is_connected() and self._running:
             self._publish_interface_info()
             sleep(self._re_advertise_server_interval_seconds)
-
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        """ This is the callback that is called whenever any message is received on a subscribed topic.
-        """
-        self._logger.debug("Received message to %s", topic)
-        {%if stinger.methods | length > 0 -%}
-        {%for method_name, method in stinger.methods.items()-%}
-        {%if not loop.first%}el{%endif%}if (properties.get('SubscriptionId', -1) == self._method_{{method_name|snake_case}}.subscription_id) or self._conn.is_topic_sub(topic, "{{method.topic}}"):
-            try:
-                payload_obj = json.loads(payload)
-            except json.decoder.JSONDecodeError:
-                self._logger.warning("Invalid JSON payload received at topic '%s'", topic)
-            else:
-                self._process_{{method_name | snake_case}}_call(topic, payload_obj, properties)
-        {%endfor%}
-        {%-endif%}
-        {%for prop_name, prop in stinger.properties.items()%}
-        {%if not loop.first%}el{%endif%}if (properties.get('SubscriptionId', -1) == self._property_{{prop_name|snake_case}}.subscription_id) or self._conn.is_topic_sub(topic, "{{prop.update_topic}}"):
-            {%if prop.arg_list | length > 1 -%}
-            prop_value = {{prop.python_class}}.model_validate_json(payload)
-            {%else-%}
-            payload_obj = json.loads(payload)
-            prop_value = {{prop.arg_list[0].python_class}}(payload_obj["{{prop.arg_list[0].name}}"])
-            {%endif-%}
-            with self._property_{{prop_name|snake_case}}.mutex:
-                self._property_{{prop_name|snake_case}}.value = prop_value
-                self._property_{{prop_name|snake_case}}.version += 1
-            for callback in self._property_{{prop_name|snake_case}}.callbacks:
-                {%-if prop.arg_list | length > 1%}
-                    callback({%for arg in prop.arg_list %}prop_value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
-                {%-else%}
-                callback(prop_value)
-                {%-endif%}
-        {%endfor%}
 
     def _publish_interface_info(self):
         data = InterfaceInfo(
@@ -111,7 +74,33 @@ class {{stinger.python.server_class_name}}:
             timestamp=datetime.utcnow().isoformat()
         )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
+        topic = "{{stinger.interface_info_topic}}".format(self._instance_id)
+        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
         self._conn.publish_status(topic, data, expiry)
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    def _receive_{{prop_name|snake_case}}_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        {%if prop.arg_list | length > 1 -%}
+        prop_value = {{prop.python_class}}.model_validate_json(payload)
+        {%else-%}
+        payload_obj = json.loads(payload)
+        prop_value = {{prop.arg_list[0].python_class}}(payload_obj["{{prop.arg_list[0].name}}"])
+        {%endif-%}
+        with self._property_{{prop_name|snake_case}}.mutex:
+            self._property_{{prop_name|snake_case}}.value = prop_value
+            self._property_{{prop_name|snake_case}}.version += 1
+        for callback in self._property_{{prop_name|snake_case}}.callbacks:
+            {%-if prop.arg_list | length > 1%}
+                callback({%for arg in prop.arg_list %}prop_value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
+            {%-else%}
+            callback(prop_value)
+            {%-endif%}
+    {%endfor%}
+
+    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
+        self._logger.warning("Received unexpected message to %s", topic)
 
     {%for sig_name, sig in stinger.signals.items()-%}
     def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
@@ -126,7 +115,7 @@ class {{stinger.python.server_class_name}}:
             {%if arg.arg_type.name.lower() == 'primitive'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}){%if arg.optional%} if {{arg.name}} is not None else None{%endif%},{%endif-%}
             {%if arg.arg_type.name.lower() == 'enum'%}"{{arg.name}}": {{arg.python_class}}({{arg.name}}).value{%if arg.optional%} if {{arg.name}} is not None else None{%endif%},{%endif%}{%endfor%}
         }
-        self._conn.publish("{{sig.topic}}", json.dumps(payload), qos=1, retain=False)
+        self._conn.publish("{{sig.topic}}".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
 
     {%endfor%}
 
@@ -139,10 +128,11 @@ class {{stinger.python.server_class_name}}:
         else:
             raise Exception("Method handler already set")
 
-    def _process_{{method_name | snake_case}}_call(self, topic: str, payload: Dict[str, Any], properties: Dict[str, Any]):
+    def _process_{{method_name | snake_case}}_call(self, topic: str, payload_str: str, properties: Dict[str, Any]):
         """ This processes a call to the '{{method_name}}' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
+        payload = json.loads(payload_str)
         correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
         response_topic = properties.get('ResponseTopic') # type: Optional[str]
         self._logger.info("Correlation Data %s", correlation_id)
@@ -228,7 +218,7 @@ class {{stinger.python.server_class_name}}:
             with self._property_{{prop_name|snake_case}}.mutex:
                 self._property_{{prop_name|snake_case}}.value = {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}
                 self._property_{{prop_name|snake_case}}.version += 1
-            self._conn.publish("{{prop.value_topic}}", payload, qos=1, retain=True)
+            self._conn.publish("{{prop.value_topic}}".format(self._instance_id), payload, qos=1, retain=True)
             for callback in self._property_{{prop_name|snake_case}}.callbacks:
                 {%-if prop.arg_list | length > 1%}
                     callback({%for arg in prop.arg_list %}value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
@@ -268,7 +258,7 @@ class {{stinger.python.server_class_name}}Builder:
     This is a builder for the {{stinger.python.server_class_name}}.  It is used to create a server with the desired parameters.
     """
 
-    def __init__(self, connection: BrokerConnection):
+    def __init__(self, connection: IBrokerConnection):
         self._conn = connection
         {%for method_name, method in stinger.methods.items()%}
         self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
@@ -308,7 +298,7 @@ if __name__ == '__main__':
     """
     from time import sleep
     import signal
-    from connection import MqttBrokerConnection
+    from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     service_id = "1"

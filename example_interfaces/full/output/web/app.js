@@ -123,7 +123,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "add_numbers": {
             "name": "addNumbers",
             "mqtt_topic": "full/{}/method/addNumbers",
-            "response_topic": "client/"+clientId+"/full/{}/method/addNumbers/response",
+            "response_topic": "client/"+clientId+"/addNumbers/response",
             "pending_correlation_id": null,
             "args": {
                 "first": {
@@ -147,7 +147,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "do_something": {
             "name": "doSomething",
             "mqtt_topic": "full/{}/method/doSomething",
-            "response_topic": "client/"+clientId+"/full/{}/method/doSomething/response",
+            "response_topic": "client/"+clientId+"/doSomething/response",
             "pending_correlation_id": null,
             "args": {
                 "a_string": {
@@ -161,7 +161,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "echo": {
             "name": "echo",
             "mqtt_topic": "full/{}/method/echo",
-            "response_topic": "client/"+clientId+"/full/{}/method/echo/response",
+            "response_topic": "client/"+clientId+"/echo/response",
             "pending_correlation_id": null,
             "args": {
                 "message": {
