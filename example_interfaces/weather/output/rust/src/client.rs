@@ -110,7 +110,7 @@ impl WeatherClient {
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
         let topic_refresh_daily_forecast_method_resp = format!(
-            "client/{}/weather/{}/method/refreshDailyForecast/response",
+            "client/{}/refresh_daily_forecast/response",
             connection.client_id
         );
         let subscription_id_refresh_daily_forecast_method_resp = connection
@@ -123,7 +123,7 @@ impl WeatherClient {
         let subscription_id_refresh_daily_forecast_method_resp =
             subscription_id_refresh_daily_forecast_method_resp.unwrap_or_else(|_| usize::MAX);
         let topic_refresh_hourly_forecast_method_resp = format!(
-            "client/{}/weather/{}/method/refreshHourlyForecast/response",
+            "client/{}/refresh_hourly_forecast/response",
             connection.client_id
         );
         let subscription_id_refresh_hourly_forecast_method_resp = connection
@@ -136,7 +136,7 @@ impl WeatherClient {
         let subscription_id_refresh_hourly_forecast_method_resp =
             subscription_id_refresh_hourly_forecast_method_resp.unwrap_or_else(|_| usize::MAX);
         let topic_refresh_current_conditions_method_resp = format!(
-            "client/{}/weather/{}/method/refreshCurrentConditions/response",
+            "client/{}/refresh_current_conditions/response",
             connection.client_id
         );
         let subscription_id_refresh_current_conditions_method_resp = connection
@@ -344,10 +344,8 @@ impl WeatherClient {
 
         let data = RefreshDailyForecastRequestObject {};
 
-        let response_topic: String = format!(
-            "client/{}/weather/{}/method/refreshDailyForecast/response",
-            self.client_id
-        );
+        let response_topic: String =
+            format!("client/{}/refresh_daily_forecast/response", self.client_id);
         let _ = self
             .mqttier_client
             .publish_request(
@@ -402,10 +400,8 @@ impl WeatherClient {
 
         let data = RefreshHourlyForecastRequestObject {};
 
-        let response_topic: String = format!(
-            "client/{}/weather/{}/method/refreshHourlyForecast/response",
-            self.client_id
-        );
+        let response_topic: String =
+            format!("client/{}/refresh_hourly_forecast/response", self.client_id);
         let _ = self
             .mqttier_client
             .publish_request(
@@ -461,7 +457,7 @@ impl WeatherClient {
         let data = RefreshCurrentConditionsRequestObject {};
 
         let response_topic: String = format!(
-            "client/{}/weather/{}/method/refreshCurrentConditions/response",
+            "client/{}/refresh_current_conditions/response",
             self.client_id
         );
         let _ = self

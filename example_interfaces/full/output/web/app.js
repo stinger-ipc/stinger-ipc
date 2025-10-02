@@ -147,7 +147,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "add_numbers": {
             "name": "addNumbers",
             "mqtt_topic": "full/{}/method/addNumbers",
-            "response_topic": "client/"+clientId+"/full/{}/method/addNumbers/response",
+            "response_topic": "client/"+clientId+"/addNumbers/response",
             "pending_correlation_id": null,
             "args": {
                 "first": {
@@ -171,7 +171,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "do_something": {
             "name": "doSomething",
             "mqtt_topic": "full/{}/method/doSomething",
-            "response_topic": "client/"+clientId+"/full/{}/method/doSomething/response",
+            "response_topic": "client/"+clientId+"/doSomething/response",
             "pending_correlation_id": null,
             "args": {
                 "a_string": {
@@ -185,7 +185,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "echo": {
             "name": "echo",
             "mqtt_topic": "full/{}/method/echo",
-            "response_topic": "client/"+clientId+"/full/{}/method/echo/response",
+            "response_topic": "client/"+clientId+"/echo/response",
             "pending_correlation_id": null,
             "args": {
                 "message": {
@@ -199,7 +199,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "what_time_is_it": {
             "name": "what_time_is_it",
             "mqtt_topic": "full/{}/method/whatTimeIsIt",
-            "response_topic": "client/"+clientId+"/full/{}/method/whatTimeIsIt/response",
+            "response_topic": "client/"+clientId+"/what_time_is_it/response",
             "pending_correlation_id": null,
             "args": {
                 "the_first_time": {
@@ -213,7 +213,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "set_the_time": {
             "name": "set_the_time",
             "mqtt_topic": "full/{}/method/setTheTime",
-            "response_topic": "client/"+clientId+"/full/{}/method/setTheTime/response",
+            "response_topic": "client/"+clientId+"/set_the_time/response",
             "pending_correlation_id": null,
             "args": {
                 "the_first_time": {

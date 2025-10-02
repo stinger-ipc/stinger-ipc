@@ -11,7 +11,7 @@ from functools import partial
 import json
 import logging
 
-from connection import BrokerConnection
+from connection import IBrokerConnection
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -25,14 +25,14 @@ NowSignalCallbackType = Callable[[datetime.datetime], None]
 
 class SignalOnlyClient:
 
-    def __init__(self, connection: BrokerConnection):
+    def __init__(self, connection: IBrokerConnection, service_instance_id: str):
         """Constructor for a `SignalOnlyClient` object."""
         self._logger = logging.getLogger("SignalOnlyClient")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SignalOnlyClient")
-        self._client_id = str(uuid4())
         self._conn = connection
-        self._conn.set_message_callback(self._receive_message)
+        self._conn.add_message_callback(self._receive_message)
+        self._service_id = service_instance_id
 
         self._signal_recv_callbacks_for_another_signal: list[AnotherSignalSignalCallbackType] = []
         self._signal_recv_callbacks_for_bark: list[BarkSignalCallbackType] = []
@@ -54,115 +54,115 @@ class SignalOnlyClient:
                 filtered_args[k] = v
         return filtered_args
 
+    def _receive_another_signal_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'anotherSignal' signal with non-JSON content type")
+            return
+        allowed_args = [
+            "one",
+            "two",
+            "three",
+        ]
+        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+        kwargs["one"] = float(kwargs["one"])
+        kwargs["two"] = bool(kwargs["two"])
+        kwargs["three"] = str(kwargs["three"])
+
+        self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
+
+    def _receive_bark_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'bark' signal with non-JSON content type")
+            return
+        allowed_args = [
+            "word",
+        ]
+        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+        kwargs["word"] = str(kwargs["word"])
+
+        self._do_callbacks_for(self._signal_recv_callbacks_for_bark, **kwargs)
+
+    def _receive_maybe_number_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'maybe_number' signal with non-JSON content type")
+            return
+        allowed_args = [
+            "number",
+        ]
+        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+        kwargs["number"] = int | None(kwargs["number"]) if kwargs.get("number") else None
+
+        self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_number, **kwargs)
+
+    def _receive_maybe_name_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'maybe_name' signal with non-JSON content type")
+            return
+        allowed_args = [
+            "name",
+        ]
+        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+        kwargs["name"] = str | None(kwargs["name"]) if kwargs.get("name") else None
+
+        self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_name, **kwargs)
+
+    def _receive_now_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'now' signal with non-JSON content type")
+            return
+        allowed_args = [
+            "timestamp",
+        ]
+        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+        kwargs["timestamp"] = datetime.datetime(kwargs["timestamp"])
+
+        self._do_callbacks_for(self._signal_recv_callbacks_for_now, **kwargs)
+
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
-        self._logger.debug("Receiving message sent to %s", topic)
-        # Handle 'anotherSignal' signal.
-        if self._conn.is_topic_sub(topic, "signalOnly/{}/signal/anotherSignal"):
-            if "ContentType" not in properties or properties["ContentType"] != "application/json":
-                self._logger.warning("Received 'anotherSignal' signal with non-JSON content type")
-                return
-            allowed_args = [
-                "one",
-                "two",
-                "three",
-            ]
-            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-            kwargs["one"] = float(kwargs["one"])
-            kwargs["two"] = bool(kwargs["two"])
-            kwargs["three"] = str(kwargs["three"])
-
-            self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
-        # Handle 'bark' signal.
-        elif self._conn.is_topic_sub(topic, "signalOnly/{}/signal/bark"):
-            if "ContentType" not in properties or properties["ContentType"] != "application/json":
-                self._logger.warning("Received 'bark' signal with non-JSON content type")
-                return
-            allowed_args = [
-                "word",
-            ]
-            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-            kwargs["word"] = str(kwargs["word"])
-
-            self._do_callbacks_for(self._signal_recv_callbacks_for_bark, **kwargs)
-        # Handle 'maybe_number' signal.
-        elif self._conn.is_topic_sub(topic, "signalOnly/{}/signal/maybeNumber"):
-            if "ContentType" not in properties or properties["ContentType"] != "application/json":
-                self._logger.warning("Received 'maybe_number' signal with non-JSON content type")
-                return
-            allowed_args = [
-                "number",
-            ]
-            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-            kwargs["number"] = int | None(kwargs["number"]) if kwargs.get("number") else None
-
-            self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_number, **kwargs)
-        # Handle 'maybe_name' signal.
-        elif self._conn.is_topic_sub(topic, "signalOnly/{}/signal/maybeName"):
-            if "ContentType" not in properties or properties["ContentType"] != "application/json":
-                self._logger.warning("Received 'maybe_name' signal with non-JSON content type")
-                return
-            allowed_args = [
-                "name",
-            ]
-            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-            kwargs["name"] = str | None(kwargs["name"]) if kwargs.get("name") else None
-
-            self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_name, **kwargs)
-        # Handle 'now' signal.
-        elif self._conn.is_topic_sub(topic, "signalOnly/{}/signal/now"):
-            if "ContentType" not in properties or properties["ContentType"] != "application/json":
-                self._logger.warning("Received 'now' signal with non-JSON content type")
-                return
-            allowed_args = [
-                "timestamp",
-            ]
-            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-            kwargs["timestamp"] = datetime.datetime(kwargs["timestamp"])
-
-            self._do_callbacks_for(self._signal_recv_callbacks_for_now, **kwargs)
+        self._logger.warning("Receiving message sent to %s, but without a handler", topic)
 
     def receive_another_signal(self, handler: AnotherSignalSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_another_signal.append(handler)
         if len(self._signal_recv_callbacks_for_another_signal) == 1:
-            self._conn.subscribe("signalOnly/{}/signal/anotherSignal")
+            self._conn.subscribe("signalOnly/{}/signal/anotherSignal".format(self._service_id), self._receive_another_signal_signal_message)
         return handler
 
     def receive_bark(self, handler: BarkSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_bark.append(handler)
         if len(self._signal_recv_callbacks_for_bark) == 1:
-            self._conn.subscribe("signalOnly/{}/signal/bark")
+            self._conn.subscribe("signalOnly/{}/signal/bark".format(self._service_id), self._receive_bark_signal_message)
         return handler
 
     def receive_maybe_number(self, handler: MaybeNumberSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_maybe_number.append(handler)
         if len(self._signal_recv_callbacks_for_maybe_number) == 1:
-            self._conn.subscribe("signalOnly/{}/signal/maybeNumber")
+            self._conn.subscribe("signalOnly/{}/signal/maybeNumber".format(self._service_id), self._receive_maybe_number_signal_message)
         return handler
 
     def receive_maybe_name(self, handler: MaybeNameSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_maybe_name.append(handler)
         if len(self._signal_recv_callbacks_for_maybe_name) == 1:
-            self._conn.subscribe("signalOnly/{}/signal/maybeName")
+            self._conn.subscribe("signalOnly/{}/signal/maybeName".format(self._service_id), self._receive_maybe_name_signal_message)
         return handler
 
     def receive_now(self, handler: NowSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_now.append(handler)
         if len(self._signal_recv_callbacks_for_now) == 1:
-            self._conn.subscribe("signalOnly/{}/signal/now")
+            self._conn.subscribe("signalOnly/{}/signal/now".format(self._service_id), self._receive_now_signal_message)
         return handler
 
 
 class SignalOnlyClientBuilder:
 
-    def __init__(self, broker: BrokerConnection):
+    def __init__(self, broker: IBrokerConnection):
         """Creates a new SignalOnlyClientBuilder."""
         self._conn = broker
         self._logger = logging.getLogger("SignalOnlyClientBuilder")
@@ -192,10 +192,10 @@ class SignalOnlyClientBuilder:
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_now.append(handler)
 
-    def build(self) -> SignalOnlyClient:
+    def build(self, service_instance_id: str) -> SignalOnlyClient:
         """Builds a new SignalOnlyClient."""
-        self._logger.debug("Building SignalOnlyClient")
-        client = SignalOnlyClient(self._conn)
+        self._logger.debug("Building SignalOnlyClient for service instance %s", service_instance_id)
+        client = SignalOnlyClient(self._conn, service_instance_id)
 
         for cb in self._signal_recv_callbacks_for_another_signal:
             client.receive_another_signal(cb)
@@ -215,10 +215,35 @@ class SignalOnlyClientBuilder:
         return client
 
 
+class SignalOnlyClientDiscoverer:
+
+    def __init__(self, connection: IBrokerConnection):
+        """Creates a new SignalOnlyClientDiscoverer."""
+        self.discovered_services: Dict[str, InterfaceInfo] = {}
+        self._conn = connection
+        self._logger = logging.getLogger("SignalOnlyClientDiscoverer")
+        self._logger.setLevel(logging.DEBUG)
+        service_discovery_topic = "signalOnly/{}/interface".format(self._instance_id)
+        self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
+
+    def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        """Processes a service discovery message."""
+        self._logger.debug("Received service discovery message on %s: %s", topic, payload)
+        try:
+            service_info = InterfaceInfo.model_validate_json(payload)
+            self.discovered_services[service_info.instance] = service_info
+            self._logger.info("Discovered service: %s", service_info)
+        except Exception as e:
+            self._logger.error("Failed to process service discovery message: %s", e)
+
+
 if __name__ == "__main__":
     import signal
+    from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
-    conn = MqttBrokerConnection()
+    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    service_id = "1"
+    conn = MqttBrokerConnection(transport)
     client_builder = SignalOnlyClientBuilder(conn)
 
     @client_builder.receive_another_signal
@@ -258,7 +283,7 @@ if __name__ == "__main__":
         """
         print(f"Got a 'now' signal: timestamp={ timestamp } ")
 
-    client = client_builder.build()
+    client = client_builder.build(service_id)
 
     print("Ctrl-C will stop the program.")
     signal.pause()
