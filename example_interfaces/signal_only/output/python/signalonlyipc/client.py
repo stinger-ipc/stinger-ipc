@@ -18,8 +18,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]
 BarkSignalCallbackType = Callable[[str], None]
-MaybeNumberSignalCallbackType = Callable[[int | None], None]
-MaybeNameSignalCallbackType = Callable[[str | None], None]
+MaybeNumberSignalCallbackType = Callable[[Optional[int]], None]
+MaybeNameSignalCallbackType = Callable[[Optional[str]], None]
 NowSignalCallbackType = Callable[[datetime.datetime], None]
 
 
@@ -90,7 +90,7 @@ class SignalOnlyClient:
             "number",
         ]
         kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-        kwargs["number"] = int | None(kwargs["number"]) if kwargs.get("number") else None
+        kwargs["number"] = int(kwargs["number"]) if kwargs.get("number") else None
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_number, **kwargs)
 
@@ -102,7 +102,7 @@ class SignalOnlyClient:
             "name",
         ]
         kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-        kwargs["name"] = str | None(kwargs["name"]) if kwargs.get("name") else None
+        kwargs["name"] = str(kwargs["name"]) if kwargs.get("name") else None
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_name, **kwargs)
 
@@ -326,16 +326,16 @@ if __name__ == "__main__":
         print(f"Got a 'bark' signal: word={ word } ")
 
     @client_builder.receive_maybe_number
-    def print_maybe_number_receipt(number: int | None):
+    def print_maybe_number_receipt(number: Optional[int]):
         """
-        @param number int | None
+        @param number Optional[int]
         """
         print(f"Got a 'maybe_number' signal: number={ number } ")
 
     @client_builder.receive_maybe_name
-    def print_maybe_name_receipt(name: str | None):
+    def print_maybe_name_receipt(name: Optional[str]):
         """
-        @param name str | None
+        @param name Optional[str]
         """
         print(f"Got a 'maybe_name' signal: name={ name } ")
 

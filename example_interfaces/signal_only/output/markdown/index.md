@@ -327,7 +327,7 @@ The `maybe_number` signal can be subscribed to by using the client's `receive_ma
 
 ```python
 @client.receive_maybe_number
-def on_maybe_number(number: int | None):
+def on_maybe_number(number: Optional[int]):
     print(f"Got a 'maybe_number' signal: number={ number } ")
 ```
 
@@ -416,7 +416,7 @@ The `maybe_name` signal can be subscribed to by using the client's `receive_mayb
 
 ```python
 @client.receive_maybe_name
-def on_maybe_name(name: str | None):
+def on_maybe_name(name: Optional[str]):
     print(f"Got a 'maybe_name' signal: name={ name } ")
 ```
 

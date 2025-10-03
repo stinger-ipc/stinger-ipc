@@ -278,7 +278,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_refresh_daily_forecast 
-def refresh_daily_forecast() -> None:
+def refresh_daily_forecast() -> :
     """ This is an example handler for the 'refresh_daily_forecast' method.  """
     print(f"Running refresh_daily_forecast'()'")
     return None
@@ -344,7 +344,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_refresh_hourly_forecast 
-def refresh_hourly_forecast() -> None:
+def refresh_hourly_forecast() -> :
     """ This is an example handler for the 'refresh_hourly_forecast' method.  """
     print(f"Running refresh_hourly_forecast'()'")
     return None
@@ -412,7 +412,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_refresh_current_conditions 
-def refresh_current_conditions() -> None:
+def refresh_current_conditions() -> :
     """ This is an example handler for the 'refresh_current_conditions' method.  """
     print(f"Running refresh_current_conditions'()'")
     return None

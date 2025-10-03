@@ -47,7 +47,7 @@ class ArgPrimitiveType(Enum):
     @classmethod
     def to_python_type(cls, arg_type: ArgPrimitiveType, optional: bool = False) -> str:
         if optional:
-            return f"{cls.to_python_type(arg_type, optional=False)} | None"
+            return f"Optional[{cls.to_python_type(arg_type, optional=False)}]"
         if arg_type == cls.BOOLEAN:
             return "bool"
         elif arg_type == cls.INTEGER:

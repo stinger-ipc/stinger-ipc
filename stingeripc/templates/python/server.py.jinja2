@@ -18,7 +18,7 @@ from connection import IBrokerConnection
 from method_codes import *
 from interface_types import InterfaceInfo
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
-{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_type}}]{%endmacro%}
+{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_type}}]{%endmacro%}
 
 T = TypeVar('T')
 
@@ -47,7 +47,7 @@ class {{stinger.python.server_class_name}}:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
         {%for prop_name, prop in stinger.properties.items()%}
-        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}, {%for arg in prop.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}] = PropertyControls()
+        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}, {%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}] = PropertyControls()
         self._property_{{prop_name|snake_case}}.subscription_id = self._conn.subscribe("{{prop.update_topic}}".format(self._instance_id), self._receive_{{prop_name|snake_case}}_update_request_message)
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()%}
@@ -103,16 +103,16 @@ class {{stinger.python.server_class_name}}:
         self._logger.warning("Received unexpected message to %s", topic)
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ Server application code should call this method to emit the '{{sig_name}}' signal.
         """
         {%-for arg in sig.arg_list%}
         if not isinstance({{arg.name}}, {{arg.python_class}}){%if arg.optional%} and {{arg.name}} is not None{%endif%}:
-            raise ValueError(f"The '{{arg.name}}' value must be {{arg.python_type}}.")
+            raise ValueError(f"The '{{arg.name}}' value must be {{arg.python_annotation}}.")
         {%-endfor%}
         
         payload = { {%-for arg in sig.arg_list%}
-            {%if arg.arg_type.name.lower() == 'primitive'%}"{{arg.name}}": {{arg.python_type}}({{arg.name}}){%if arg.optional%} if {{arg.name}} is not None else None{%endif%},{%endif-%}
+            {%if arg.arg_type.name.lower() == 'primitive'%}"{{arg.name}}": {{arg.python_annotation}}({{arg.name}}){%if arg.optional%} if {{arg.name}} is not None else None{%endif%},{%endif-%}
             {%if arg.arg_type.name.lower() == 'enum'%}"{{arg.name}}": {{arg.python_class}}({{arg.name}}).value{%if arg.optional%} if {{arg.name}} is not None else None{%endif%},{%endif%}{%endfor%}
         }
         self._conn.publish("{{sig.topic}}".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
@@ -140,8 +140,8 @@ class {{stinger.python.server_class_name}}:
             method_args = [] # type: List[Any]
             {%for arg in method.arg_list -%}
             if "{{arg.name}}" in payload:
-                if not isinstance(payload["{{arg.name}}"], {{arg.python_class}}){%if arg.optional%} or {{arg.name}} is None{%endif%}:
-                    self._logger.warning("The '{{arg.name}}' property in the payload to '%s' wasn't the correct type.  It should have been {{arg.python_type}}.", topic)
+                if not isinstance(payload["{{arg.name}}"], {{arg.python_type}}){%if arg.optional%} or payload["{{arg.name}}"] is None{%endif%}:
+                    self._logger.warning("The '{{arg.name}}' property in the payload to '%s' wasn't the correct type.  It should have been {{arg.python_annotation}}.", topic)
                     # TODO: return an error via MQTT
                     return
                 else:
@@ -226,12 +226,12 @@ class {{stinger.python.server_class_name}}:
                 callback({{prop.arg_list[0].name|snake_case}})
                 {%-endif%}
 
-    def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ This method sets (publishes) a new value for the '{{prop_name}}' property.
         """
         {%-for arg in prop.arg_list%}
         if not isinstance({{arg.name|snake_case}}, {{arg.python_class}}){%if arg.optional%} and {{arg.name|snake_case}} is not None{%endif%}:
-            raise ValueError(f"The '{{arg.name|snake_case}}' value must be {{arg.python_type}}.")
+            raise ValueError(f"The '{{arg.name|snake_case}}' value must be {{arg.python_annotation}}.")
         {%-endfor%}
 
         {%if prop.arg_list | length > 1%}
@@ -246,7 +246,7 @@ class {{stinger.python.server_class_name}}:
         # Use the property.setter to do that actual work.
         self.{{prop_name|snake_case}} = obj
 
-    def on_{{prop_name | snake_case}}_updates(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+    def on_{{prop_name | snake_case}}_updates(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
         """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
         """
         if handler is not None:
@@ -264,7 +264,7 @@ class {{stinger.python.server_class_name}}Builder:
         self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
         {%-endfor%}
         {%for prop_name, property in stinger.properties.items()%}
-        self._{{prop_name|snake_case}}_property_callbacks: List[Callable[[{%for arg in property.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]] = []
+        self._{{prop_name|snake_case}}_property_callbacks: List[Callable[[{%for arg in property.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]] = []
         {%-endfor%}
     {%for method_name, method in stinger.methods.items()%}
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
@@ -274,7 +274,7 @@ class {{stinger.python.server_class_name}}Builder:
             raise Exception("Method handler already set")
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
-    def on_{{prop_name | snake_case}}_updates(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+    def on_{{prop_name | snake_case}}_updates(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
         """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
         """
         self._{{prop_name|snake_case}}_property_callbacks.append(handler)
@@ -318,7 +318,7 @@ if __name__ == '__main__':
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}} 
-    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_type}}:
+    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_type}}:
         """ This is an example handler for the '{{method_name}}' method.  """
         print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
         return {{method.get_return_value_random_example_value('python')}}
@@ -326,7 +326,7 @@ if __name__ == '__main__':
 
     {%for prop_name, prop in stinger.properties.items()%}
     @server.on_{{prop_name | snake_case}}_updates
-    def on_{{prop_name | snake_case}}_update({%for arg in prop.arg_list %}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def on_{{prop_name | snake_case}}_update({%for arg in prop.arg_list %}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         print(f"Received update for '{{prop_name}}' property: {%for arg in prop.arg_list %}{ {{arg.name}}= }{%if not loop.last%}, {%endif%}{%endfor%}")
     {%endfor%}
 

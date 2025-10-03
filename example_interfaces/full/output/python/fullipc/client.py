@@ -22,7 +22,7 @@ import interface_types as stinger_types
 
 logging.basicConfig(level=logging.DEBUG)
 
-TodayIsSignalCallbackType = Callable[[int, stinger_types.DayOfTheWeek | None], None]
+TodayIsSignalCallbackType = Callable[[int, Optional[stinger_types.DayOfTheWeek]], None]
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
 DoSomethingMethodResponseCallbackType = Callable[[], None]
 EchoMethodResponseCallbackType = Callable[[str], None]
@@ -434,7 +434,7 @@ class FullClient:
             self._conn.subscribe("full/{}/signal/todayIs".format(self._service_id), self._receive_today_is_signal_message)
         return handler
 
-    def add_numbers(self, first: int, second: int, third: int | None) -> futures.Future:
+    def add_numbers(self, first: int, second: int, third: Optional[int]) -> futures.Future:
         """Calling this initiates a `addNumbers` IPC method call."""
 
         if not isinstance(first, int) and first is not None:
@@ -443,8 +443,8 @@ class FullClient:
         if not isinstance(second, int) and second is not None:
             raise ValueError("The 'second' argument wasn't a int")
 
-        if not isinstance(third, int | None):
-            raise ValueError("The 'third' argument wasn't a int | None")
+        if not isinstance(third, int):
+            raise ValueError("The 'third' argument wasn't a Optional[int]")
 
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -835,10 +835,10 @@ if __name__ == "__main__":
     client_builder = FullClientBuilder()
 
     @client_builder.receive_today_is
-    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
+    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: Optional[stinger_types.DayOfTheWeek]):
         """
         @param dayOfMonth int
-        @param dayOfWeek stinger_types.DayOfTheWeek | None
+        @param dayOfWeek Optional[stinger_types.DayOfTheWeek]
         """
         print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
 

@@ -101,23 +101,23 @@ class SignalOnlyServer:
         }
         self._conn.publish("signalOnly/{}/signal/bark".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
 
-    def emit_maybe_number(self, number: int | None):
+    def emit_maybe_number(self, number: Optional[int]):
         """Server application code should call this method to emit the 'maybe_number' signal."""
-        if not isinstance(number, int | None) and number is not None:
-            raise ValueError(f"The 'number' value must be int | None.")
+        if not isinstance(number, int) and number is not None:
+            raise ValueError(f"The 'number' value must be Optional[int].")
 
         payload = {
-            "number": int | None(number) if number is not None else None,
+            "number": Optional[int](number) if number is not None else None,
         }
         self._conn.publish("signalOnly/{}/signal/maybeNumber".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
 
-    def emit_maybe_name(self, name: str | None):
+    def emit_maybe_name(self, name: Optional[str]):
         """Server application code should call this method to emit the 'maybe_name' signal."""
-        if not isinstance(name, str | None) and name is not None:
-            raise ValueError(f"The 'name' value must be str | None.")
+        if not isinstance(name, str) and name is not None:
+            raise ValueError(f"The 'name' value must be Optional[str].")
 
         payload = {
-            "name": str | None(name) if name is not None else None,
+            "name": Optional[str](name) if name is not None else None,
         }
         self._conn.publish("signalOnly/{}/signal/maybeName".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
 

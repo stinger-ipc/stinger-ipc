@@ -3,7 +3,7 @@ from enum import Enum
 import random
 import stringcase
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Optional
 from .topic import (
     SignalTopicCreator,
     InterfaceTopicCreator,
@@ -23,7 +23,7 @@ YamlIfaceProperty = dict[str, str | bool | YamlArgList]
 
 
 class Arg:
-    def __init__(self, name: str, description: str | None = None):
+    def __init__(self, name: str, description: Optional[str] = None):
         self._name = name
         self._description = description
         self._default_value = None
@@ -72,6 +72,10 @@ class Arg:
         return self.python_type.split(".")[-1]
 
     @property
+    def python_annotation(self) -> str:
+        return self.python_class
+
+    @property
     def rust_type(self) -> str:
         return self.name
 
@@ -85,7 +89,7 @@ class Arg:
 
     @classmethod
     def new_arg_from_stinger(
-        cls, arg_spec: YamlArg, stinger_spec: StingerSpec | None = None
+        cls, arg_spec: YamlArg, stinger_spec: Optional[StingerSpec] = None
     ) -> Arg:
         if "type" not in arg_spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
@@ -180,7 +184,7 @@ class Arg:
 
 
 class ArgEnum(Arg):
-    def __init__(self, name: str, enum: InterfaceEnum, description: str | None = None):
+    def __init__(self, name: str, enum: InterfaceEnum, description: Optional[str] = None):
         super().__init__(name, description)
         self._enum = enum
         self._type = ArgType.ENUM
@@ -191,12 +195,16 @@ class ArgEnum(Arg):
 
     @property
     def python_type(self) -> str:
-        if self.optional:
-            return f"{self._enum.python_type} | None"
         return self._enum.python_type
 
     @property
     def python_class(self) -> str:
+        return self._enum.python_type
+
+    @property
+    def python_annotation(self) -> str:
+        if self.optional:
+            return f"Optional[{self._enum.python_type}]"
         return self._enum.python_type
 
     @property
@@ -257,7 +265,7 @@ class ArgEnum(Arg):
 
 class ArgPrimitive(Arg):
     def __init__(
-        self, name: str, arg_type: ArgPrimitiveType, description: str | None = None
+        self, name: str, arg_type: ArgPrimitiveType, description: Optional[str] = None
     ):
         super().__init__(name, description)
         self._arg_type = arg_type
@@ -269,6 +277,10 @@ class ArgPrimitive(Arg):
 
     @property
     def python_type(self) -> str:
+        return ArgPrimitiveType.to_python_type(self._arg_type)
+
+    @property
+    def python_annotation(self) -> str:
         return ArgPrimitiveType.to_python_type(self._arg_type, optional=self._optional)
 
     @property
@@ -583,7 +595,7 @@ class InterfaceComponent:
 
     def __init__(self, name: str):
         self._name = name
-        self._documentation: str | None = None
+        self._documentation: Optional[str] = None
 
     @property
     def name(self) -> str:
@@ -631,7 +643,7 @@ class Signal(InterfaceComponent):
         topic_creator: SignalTopicCreator,
         name: str,
         signal_spec: dict[str, str],
-        stinger_spec: StingerSpec | None = None,
+        stinger_spec: Optional[StingerSpec] = None,
     ) -> "Signal":
         """Alternative constructor from a Stinger signal structure."""
         signal = cls(topic_creator, name)
@@ -797,7 +809,7 @@ class Method(InterfaceComponent):
         topic_creator: MethodTopicCreator,
         name: str,
         method_spec: dict[str, str],
-        stinger_spec: StingerSpec | None = None,
+        stinger_spec: Optional[StingerSpec] = None,
     ) -> "Method":
         """Alternative constructor from a Stinger method structure."""
         method = cls(topic_creator, name)
@@ -859,6 +871,10 @@ class Property(InterfaceComponent):
             return f"stinger_types.{stringmanip.upper_camel_case(self.name)}Property"
 
     @property
+    def python_annotation(self) -> str:
+        return self.python_class
+
+    @property
     def rust_local_type(self) -> str:
         if len(self._arg_list) == 1:
             return self._arg_list[0].rust_local_type
@@ -894,7 +910,7 @@ class Property(InterfaceComponent):
         topic_creator: PropertyTopicCreator,
         name: str,
         prop_spec: YamlIfaceProperty,
-        stinger_spec: StingerSpec | None = None,
+        stinger_spec: Optional[StingerSpec] = None,
     ) -> "Property":
         """Alternative constructor from a Stinger method structure."""
         prop_obj = cls(topic_creator, name)
@@ -930,9 +946,9 @@ class InterfaceEnum:
         self._name = name
         self._values: list[str] = []
         self._value_descriptions: list[str | None] = []
-        self._description: str | None = None
+        self._description: Optional[str] = None
 
-    def add_value(self, value: str, description: str | None = None):
+    def add_value(self, value: str, description: Optional[str] = None):
         self._values.append(value)
         self._value_descriptions.append(description)
 
@@ -1008,7 +1024,7 @@ class InterfaceStruct:
     def __init__(self, name: str):
         self._name = name
         self._members: list[Arg] = []
-        self._description: str | None = None
+        self._description: Optional[str] = None
 
     def add_member(self, arg: Arg):
         self._members.append(arg)
@@ -1095,8 +1111,8 @@ class MqttTransportProtocol(Enum):
 class Broker:
     def __init__(self, name: str = "Default"):
         self._name: str = name
-        self._host: str | None = None
-        self._port: int | None = None
+        self._host: Optional[str] = None
+        self._port: Optional[int] = None
         self._auth = None
         self._transport_protocol: MqttTransportProtocol = MqttTransportProtocol.TCP
 

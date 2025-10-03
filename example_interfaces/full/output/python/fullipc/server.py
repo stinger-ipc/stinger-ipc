@@ -56,7 +56,7 @@ class FullServer:
             "full/{}/property/favoriteNumber/setValue".format(self._instance_id), self._receive_favorite_number_update_request_message
         )
 
-        self._property_favorite_foods: PropertyControls[stinger_types.FavoriteFoodsProperty, str, int, str | None] = PropertyControls()
+        self._property_favorite_foods: PropertyControls[stinger_types.FavoriteFoodsProperty, str, int, Optional[str]] = PropertyControls()
         self._property_favorite_foods.subscription_id = self._conn.subscribe("full/{}/property/favoriteFoods/setValue".format(self._instance_id), self._receive_favorite_foods_update_request_message)
 
         self._property_lunch_menu: PropertyControls[stinger_types.LunchMenuProperty, stinger_types.Lunch, stinger_types.Lunch] = PropertyControls()
@@ -163,12 +163,12 @@ class FullServer:
         """This is the callback that is called whenever any message is received on a subscribed topic."""
         self._logger.warning("Received unexpected message to %s", topic)
 
-    def emit_todayIs(self, dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
+    def emit_todayIs(self, dayOfMonth: int, dayOfWeek: Optional[stinger_types.DayOfTheWeek]):
         """Server application code should call this method to emit the 'todayIs' signal."""
         if not isinstance(dayOfMonth, int):
             raise ValueError(f"The 'dayOfMonth' value must be int.")
         if not isinstance(dayOfWeek, stinger_types.DayOfTheWeek) and dayOfWeek is not None:
-            raise ValueError(f"The 'dayOfWeek' value must be stinger_types.DayOfTheWeek | None.")
+            raise ValueError(f"The 'dayOfWeek' value must be Optional[stinger_types.DayOfTheWeek].")
 
         payload = {
             "dayOfMonth": int(dayOfMonth),
@@ -176,7 +176,7 @@ class FullServer:
         }
         self._conn.publish("full/{}/signal/todayIs".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
 
-    def handle_add_numbers(self, handler: Callable[[int, int, int | None], int]):
+    def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
         """This is a decorator to decorate a method that will handle the 'addNumbers' method calls."""
         if self._method_add_numbers.callback is None and handler is not None:
             self._method_add_numbers.callback = handler
@@ -220,8 +220,8 @@ class FullServer:
                 return
 
             if "third" in payload:
-                if not isinstance(payload["third"], int | None) or third is None:
-                    self._logger.warning("The 'third' property in the payload to '%s' wasn't the correct type.  It should have been int | None.", topic)
+                if not isinstance(payload["third"], int) or payload["third"] is None:
+                    self._logger.warning("The 'third' property in the payload to '%s' wasn't the correct type.  It should have been Optional[int].", topic)
                     # TODO: return an error via MQTT
                     return
                 else:
@@ -520,14 +520,14 @@ class FullServer:
             for callback in self._property_favorite_foods.callbacks:
                 callback(value.drink, value.slices_of_pizza, value.breakfast)
 
-    def set_favorite_foods(self, drink: str, slices_of_pizza: int, breakfast: str | None):
+    def set_favorite_foods(self, drink: str, slices_of_pizza: int, breakfast: Optional[str]):
         """This method sets (publishes) a new value for the 'favorite_foods' property."""
         if not isinstance(drink, str):
             raise ValueError(f"The 'drink' value must be str.")
         if not isinstance(slices_of_pizza, int):
             raise ValueError(f"The 'slices_of_pizza' value must be int.")
-        if not isinstance(breakfast, str | None) and breakfast is not None:
-            raise ValueError(f"The 'breakfast' value must be str | None.")
+        if not isinstance(breakfast, str) and breakfast is not None:
+            raise ValueError(f"The 'breakfast' value must be Optional[str].")
 
         obj = stinger_types.FavoriteFoodsProperty(
             drink=drink,
@@ -538,7 +538,7 @@ class FullServer:
         # Use the property.setter to do that actual work.
         self.favorite_foods = obj
 
-    def on_favorite_foods_updates(self, handler: Callable[[str, int, str | None], None]):
+    def on_favorite_foods_updates(self, handler: Callable[[str, int, Optional[str]], None]):
         """This method registers a callback to be called whenever a new 'favorite_foods' property update is received."""
         if handler is not None:
             self._property_favorite_foods.callbacks.append(handler)
@@ -712,20 +712,20 @@ class FullServerBuilder:
 
     def __init__(self):
 
-        self._add_numbers_method_handler: Optional[Callable[[int, int, int | None], int]] = None
+        self._add_numbers_method_handler: Optional[Callable[[int, int, Optional[int]], int]] = None
         self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
         self._echo_method_handler: Optional[Callable[[str], str]] = None
         self._what_time_is_it_method_handler: Optional[Callable[[datetime.datetime], datetime.datetime]] = None
         self._set_the_time_method_handler: Optional[Callable[[datetime.datetime, datetime.datetime], stinger_types.SetTheTimeReturnValue]] = None
 
         self._favorite_number_property_callbacks: List[Callable[[int], None]] = []
-        self._favorite_foods_property_callbacks: List[Callable[[str, int, str | None], None]] = []
+        self._favorite_foods_property_callbacks: List[Callable[[str, int, Optional[str]], None]] = []
         self._lunch_menu_property_callbacks: List[Callable[[stinger_types.Lunch, stinger_types.Lunch], None]] = []
         self._family_name_property_callbacks: List[Callable[[str], None]] = []
         self._last_breakfast_time_property_callbacks: List[Callable[[datetime.datetime], None]] = []
         self._last_birthdays_property_callbacks: List[Callable[[datetime.datetime, datetime.datetime, datetime.datetime], None]] = []
 
-    def handle_add_numbers(self, handler: Callable[[int, int, int | None], int]):
+    def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
         if self._add_numbers_method_handler is None and handler is not None:
             self._add_numbers_method_handler = handler
         else:
@@ -759,7 +759,7 @@ class FullServerBuilder:
         """This method registers a callback to be called whenever a new 'favorite_number' property update is received."""
         self._favorite_number_property_callbacks.append(handler)
 
-    def on_favorite_foods_updates(self, handler: Callable[[str, int, str | None], None]):
+    def on_favorite_foods_updates(self, handler: Callable[[str, int, Optional[str]], None]):
         """This method registers a callback to be called whenever a new 'favorite_foods' property update is received."""
         self._favorite_foods_property_callbacks.append(handler)
 
@@ -851,7 +851,7 @@ if __name__ == "__main__":
     )
 
     @server.handle_add_numbers
-    def add_numbers(first: int, second: int, third: int | None) -> int:
+    def add_numbers(first: int, second: int, third: Optional[int]) -> int:
         """This is an example handler for the 'addNumbers' method."""
         print(f"Running add_numbers'({first}, {second}, {third})'")
         return 42
@@ -885,7 +885,7 @@ if __name__ == "__main__":
         print(f"Received update for 'favorite_number' property: { number= }")
 
     @server.on_favorite_foods_updates
-    def on_favorite_foods_update(drink: str, slices_of_pizza: int, breakfast: str | None):
+    def on_favorite_foods_update(drink: str, slices_of_pizza: int, breakfast: Optional[str]):
         print(f"Received update for 'favorite_foods' property: { drink= }, { slices_of_pizza= }, { breakfast= }")
 
     @server.on_lunch_menu_updates
