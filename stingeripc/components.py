@@ -587,7 +587,10 @@ class Method(InterfaceComponent):
             elif isinstance(self._return_value, Arg):
                 return self._return_value.get_random_example_value(lang, seed)
             elif isinstance(self._return_value, list):
-                return f"{[a.get_random_example_value(lang,seed) for a in self._return_value]}"
+                s = ", ".join([f"{a.name}={a.get_random_example_value(lang,seed)}" for a in self._return_value])
+                return f"{self.return_value_python_type}({s})"
+            else:
+                raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
         if lang == "c++" or lang == "cpp":
             if self._return_value is None:
                 return "null"

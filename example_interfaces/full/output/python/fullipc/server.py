@@ -212,11 +212,9 @@ class FullServer:
                     self._logger.exception("Exception while handling addNumbers", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
-                    return_code = MethodReturnCode.SUCCESS
-                    debug_msg = None
-
-                self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
         """This is a decorator to decorate a method that will handle the 'doSomething' method calls."""
@@ -256,17 +254,15 @@ class FullServer:
                     self._logger.debug("Return value is %s", return_struct)
 
                     if return_struct is not None:
-                        return_json = json.dumps({"doSomething": return_struct.model_dump_json()})
+                        return_json = return_struct.model_dump_json()
 
                 except Exception as e:
                     self._logger.exception("Exception while handling doSomething", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
-                    return_code = MethodReturnCode.SUCCESS
-                    debug_msg = None
-
-                self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     def handle_echo(self, handler: Callable[[str], str]):
         """This is a decorator to decorate a method that will handle the 'echo' method calls."""
@@ -311,11 +307,9 @@ class FullServer:
                     self._logger.exception("Exception while handling echo", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
-                    return_code = MethodReturnCode.SUCCESS
-                    debug_msg = None
-
-                self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     @property
     def favorite_number(self) -> int | None:
@@ -592,7 +586,7 @@ if __name__ == "__main__":
     def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
         """This is an example handler for the 'doSomething' method."""
         print(f"Running do_something'({aString})'")
-        return ['"apples"', 42, "stinger_types.DayOfTheWeek.MONDAY"]
+        return stinger_types.DoSomethingReturnValue(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.MONDAY)
 
     @server.handle_echo
     def echo(message: str) -> str:

@@ -343,7 +343,7 @@ The decorated method is called everytime the a request for the method is receive
 def do_something(aString: str) -> :
     """ This is an example handler for the 'doSomething' method.  """
     print(f"Running do_something'({aString})'")
-    return ['"apples"', 42, 'stinger_types.DayOfTheWeek.MONDAY']
+    return stinger_types.DoSomethingReturnValue(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.MONDAY)
 ```
 
 </details>
