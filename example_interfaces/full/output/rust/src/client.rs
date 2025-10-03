@@ -8,15 +8,16 @@ on the next generation.
 
 This is the Client for the Full interface.
 */
+#[allow(unused_imports)]
+use crate::payloads::{MethodReturnCode, *};
+use base64::prelude::*;
+use iso8601_duration::Duration as IsoDuration;
 use json::JsonValue;
 #[cfg(feature = "client")]
 use mqttier::{MqttierClient, ReceivedMessage};
 use serde_json;
 use std::collections::HashMap;
 use uuid::Uuid;
-
-#[allow(unused_imports)]
-use crate::payloads::{MethodReturnCode, *};
 
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
@@ -29,12 +30,16 @@ struct FullSubscriptionIds {
     add_numbers_method_resp: usize,
     do_something_method_resp: usize,
     echo_method_resp: usize,
+    what_time_is_it_method_resp: usize,
+    set_the_time_method_resp: usize,
 
     today_is_signal: Option<usize>,
     favorite_number_property_value: usize,
     favorite_foods_property_value: usize,
     lunch_menu_property_value: usize,
     family_name_property_value: usize,
+    last_breakfast_time_property_value: usize,
+    last_birthdays_property_value: usize,
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -58,6 +63,11 @@ pub struct FullProperties {
     pub family_name: Arc<Mutex<Option<String>>>,
 
     family_name_tx_channel: watch::Sender<Option<String>>,
+    pub last_breakfast_time: Arc<Mutex<Option<chrono::DateTime<chrono::Utc>>>>,
+
+    last_breakfast_time_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+    pub last_birthdays: Arc<Mutex<Option<LastBirthdaysProperty>>>,
+    last_birthdays_tx_channel: watch::Sender<Option<LastBirthdaysProperty>>,
 }
 
 /// This is the struct for our API client.
@@ -128,6 +138,32 @@ impl FullClient {
             .await;
         let subscription_id_echo_method_resp =
             subscription_id_echo_method_resp.unwrap_or_else(|_| usize::MAX);
+        let topic_what_time_is_it_method_resp = format!(
+            "client/{}/full/method/whatTimeIsIt/response",
+            connection.client_id
+        );
+        let subscription_id_what_time_is_it_method_resp = connection
+            .subscribe(
+                topic_what_time_is_it_method_resp,
+                2,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_what_time_is_it_method_resp =
+            subscription_id_what_time_is_it_method_resp.unwrap_or_else(|_| usize::MAX);
+        let topic_set_the_time_method_resp = format!(
+            "client/{}/full/method/setTheTime/response",
+            connection.client_id
+        );
+        let subscription_id_set_the_time_method_resp = connection
+            .subscribe(
+                topic_set_the_time_method_resp,
+                2,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_set_the_time_method_resp =
+            subscription_id_set_the_time_method_resp.unwrap_or_else(|_| usize::MAX);
 
         // Subscribe to all the topics needed for signals.
         let topic_today_is_signal = "full/signal/todayIs".to_string();
@@ -183,6 +219,29 @@ impl FullClient {
         let subscription_id_family_name_property_value =
             subscription_id_family_name_property_value.unwrap_or_else(|_| usize::MAX);
 
+        let topic_last_breakfast_time_property_value =
+            "full/property/lastBreakfastTime/value".to_string();
+        let subscription_id_last_breakfast_time_property_value = connection
+            .subscribe(
+                topic_last_breakfast_time_property_value,
+                1,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_last_breakfast_time_property_value =
+            subscription_id_last_breakfast_time_property_value.unwrap_or_else(|_| usize::MAX);
+
+        let topic_last_birthdays_property_value = "full/property/lastBirthdays/value".to_string();
+        let subscription_id_last_birthdays_property_value = connection
+            .subscribe(
+                topic_last_birthdays_property_value,
+                1,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_last_birthdays_property_value =
+            subscription_id_last_birthdays_property_value.unwrap_or_else(|_| usize::MAX);
+
         let property_values = FullProperties {
             favorite_number: Arc::new(Mutex::new(None)),
             favorite_number_tx_channel: watch::channel(None).0,
@@ -193,6 +252,11 @@ impl FullClient {
 
             family_name: Arc::new(Mutex::new(None)),
             family_name_tx_channel: watch::channel(None).0,
+
+            last_breakfast_time: Arc::new(Mutex::new(None)),
+            last_breakfast_time_tx_channel: watch::channel(None).0,
+            last_birthdays: Arc::new(Mutex::new(None)),
+            last_birthdays_tx_channel: watch::channel(None).0,
         };
 
         // Create structure for subscription ids.
@@ -200,11 +264,15 @@ impl FullClient {
             add_numbers_method_resp: subscription_id_add_numbers_method_resp,
             do_something_method_resp: subscription_id_do_something_method_resp,
             echo_method_resp: subscription_id_echo_method_resp,
+            what_time_is_it_method_resp: subscription_id_what_time_is_it_method_resp,
+            set_the_time_method_resp: subscription_id_set_the_time_method_resp,
             today_is_signal: Some(subscription_id_today_is_signal),
             favorite_number_property_value: subscription_id_favorite_number_property_value,
             favorite_foods_property_value: subscription_id_favorite_foods_property_value,
             lunch_menu_property_value: subscription_id_lunch_menu_property_value,
             family_name_property_value: subscription_id_family_name_property_value,
+            last_breakfast_time_property_value: subscription_id_last_breakfast_time_property_value,
+            last_birthdays_property_value: subscription_id_last_birthdays_property_value,
         };
 
         // Create structure for the tx side of broadcast channels for signals.
@@ -421,6 +489,160 @@ impl FullClient {
             }
         }
     }
+    /// The `what_time_is_it` method.
+    /// Method arguments are packed into a WhatTimeIsItRequestObject structure
+    /// and published to the `full/method/whatTimeIsIt` MQTT topic.
+    ///
+    /// This method awaits on the response to the call before returning.
+    pub async fn what_time_is_it(
+        &mut self,
+        the_first_time: chrono::DateTime<chrono::Utc>,
+    ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
+        let correlation_id = Uuid::new_v4();
+        let correlation_data = correlation_id.as_bytes().to_vec();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+
+        let data = WhatTimeIsItRequestObject {
+            the_first_time: the_first_time,
+        };
+
+        let response_topic: String = format!(
+            "client/{}/full/method/whatTimeIsIt/response",
+            self.client_id
+        );
+        let _ = self
+            .mqttier_client
+            .publish_request(
+                "full/method/whatTimeIsIt".to_string(),
+                &data,
+                response_topic,
+                correlation_data,
+            )
+            .await;
+        let resp_obj = receiver.await.unwrap();
+        {
+            let dt_str = resp_obj["timestamp"].as_str().unwrap();
+            let dt = chrono::DateTime::parse_from_rfc3339(dt_str)
+                .map_err(|e| {
+                    MethodReturnCode::DeserializationError(format!(
+                        "Failed to parse datetime: {}",
+                        e
+                    ))
+                })?
+                .with_timezone(&chrono::Utc);
+            Ok(dt)
+        }
+    }
+
+    /// Handler for responses to `what_time_is_it` method calls.
+    /// It finds oneshot channel created for the method call, and sends the response to that channel.
+    fn handle_what_time_is_it_response(
+        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
+        payload: String,
+        opt_correlation_id: Option<Uuid>,
+    ) {
+        let payload_object = json::parse(&payload).unwrap();
+        if opt_correlation_id.is_some() {
+            let sender_opt = opt_correlation_id.and_then(|uuid| {
+                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
+                hashmap.remove(&uuid)
+            });
+            match sender_opt {
+                Some(sender) => {
+                    let oss: oneshot::Sender<JsonValue> = sender;
+                    match oss.send(payload_object) {
+                        Ok(_) => (),
+                        Err(_) => (),
+                    }
+                }
+                None => (),
+            }
+        }
+    }
+    /// The `set_the_time` method.
+    /// Method arguments are packed into a SetTheTimeRequestObject structure
+    /// and published to the `full/method/setTheTime` MQTT topic.
+    ///
+    /// This method awaits on the response to the call before returning.
+    pub async fn set_the_time(
+        &mut self,
+        the_first_time: chrono::DateTime<chrono::Utc>,
+        the_second_time: chrono::DateTime<chrono::Utc>,
+    ) -> Result<SetTheTimeReturnValue, MethodReturnCode> {
+        let correlation_id = Uuid::new_v4();
+        let correlation_data = correlation_id.as_bytes().to_vec();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+
+        let data = SetTheTimeRequestObject {
+            the_first_time: the_first_time,
+            the_second_time: the_second_time,
+        };
+
+        let response_topic: String =
+            format!("client/{}/full/method/setTheTime/response", self.client_id);
+        let _ = self
+            .mqttier_client
+            .publish_request(
+                "full/method/setTheTime".to_string(),
+                &data,
+                response_topic,
+                correlation_data,
+            )
+            .await;
+        let resp_obj = receiver.await.unwrap();
+        Ok(SetTheTimeReturnValue {
+            timestamp: {
+                let dt_str = resp_obj["timestamp"].as_str().unwrap();
+                chrono::DateTime::parse_from_rfc3339(dt_str)
+                    .map_err(|e| {
+                        MethodReturnCode::DeserializationError(format!(
+                            "Failed to parse datetime: {}",
+                            e
+                        ))
+                    })?
+                    .with_timezone(&chrono::Utc)
+            },
+
+            confirmation_message: resp_obj["confirmation_message"]
+                .as_str()
+                .unwrap()
+                .to_string(),
+        })
+    }
+
+    /// Handler for responses to `set_the_time` method calls.
+    /// It finds oneshot channel created for the method call, and sends the response to that channel.
+    fn handle_set_the_time_response(
+        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
+        payload: String,
+        opt_correlation_id: Option<Uuid>,
+    ) {
+        let payload_object = json::parse(&payload).unwrap();
+        if opt_correlation_id.is_some() {
+            let sender_opt = opt_correlation_id.and_then(|uuid| {
+                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
+                hashmap.remove(&uuid)
+            });
+            match sender_opt {
+                Some(sender) => {
+                    let oss: oneshot::Sender<JsonValue> = sender;
+                    match oss.send(payload_object) {
+                        Ok(_) => (),
+                        Err(_) => (),
+                    }
+                }
+                None => (),
+            }
+        }
+    }
 
     /// Watch for changes to the `favorite_number` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
@@ -429,7 +651,7 @@ impl FullClient {
     }
 
     pub fn set_favorite_number(&mut self, value: i32) -> Result<(), MethodReturnCode> {
-        let data = value;
+        let data = FavoriteNumberProperty { number: value };
         let _publish_result = self
             .mqttier_client
             .publish_structure("full/property/favoriteNumber/setValue".to_string(), &data);
@@ -474,10 +696,47 @@ impl FullClient {
     }
 
     pub fn set_family_name(&mut self, value: String) -> Result<(), MethodReturnCode> {
-        let data = value;
+        let data = FamilyNameProperty { family_name: value };
         let _publish_result = self
             .mqttier_client
             .publish_structure("full/property/familyName/setValue".to_string(), &data);
+        Ok(())
+    }
+
+    /// Watch for changes to the `last_breakfast_time` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_last_breakfast_time(
+        &self,
+    ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
+        self.properties.last_breakfast_time_tx_channel.subscribe()
+    }
+
+    pub fn set_last_breakfast_time(
+        &mut self,
+        value: chrono::DateTime<chrono::Utc>,
+    ) -> Result<(), MethodReturnCode> {
+        let data = LastBreakfastTimeProperty { timestamp: value };
+        let _publish_result = self.mqttier_client.publish_structure(
+            "full/property/lastBreakfastTime/setValue".to_string(),
+            &data,
+        );
+        Ok(())
+    }
+
+    /// Watch for changes to the `last_birthdays` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_last_birthdays(&self) -> watch::Receiver<Option<LastBirthdaysProperty>> {
+        self.properties.last_birthdays_tx_channel.subscribe()
+    }
+
+    pub fn set_last_birthdays(
+        &mut self,
+        value: LastBirthdaysProperty,
+    ) -> Result<(), MethodReturnCode> {
+        let data = value;
+        let _publish_result = self
+            .mqttier_client
+            .publish_structure("full/property/lastBirthdays/setValue".to_string(), &data);
         Ok(())
     }
 
@@ -518,6 +777,18 @@ impl FullClient {
                     );
                 } else if msg.subscription_id == sub_ids.echo_method_resp {
                     FullClient::handle_echo_response(resp_map.clone(), payload, opt_corr_id);
+                } else if msg.subscription_id == sub_ids.what_time_is_it_method_resp {
+                    FullClient::handle_what_time_is_it_response(
+                        resp_map.clone(),
+                        payload,
+                        opt_corr_id,
+                    );
+                } else if msg.subscription_id == sub_ids.set_the_time_method_resp {
+                    FullClient::handle_set_the_time_response(
+                        resp_map.clone(),
+                        payload,
+                        opt_corr_id,
+                    );
                 }
 
                 if msg.subscription_id == sub_ids.today_is_signal.unwrap_or_default() {
@@ -528,8 +799,10 @@ impl FullClient {
                 }
 
                 if msg.subscription_id == sub_ids.favorite_number_property_value {
-                    let pl: i32 =
+                    let deserialized_data: FavoriteNumberProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let pl = deserialized_data.number;
+
                     let mut guard = props.favorite_number.lock().expect("Mutex was poisoned");
                     *guard = Some(pl.clone());
                     // Notify any watchers of the property that it has changed.
@@ -537,6 +810,7 @@ impl FullClient {
                 } else if msg.subscription_id == sub_ids.favorite_foods_property_value {
                     let pl: FavoriteFoodsProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+
                     let mut guard = props.favorite_foods.lock().expect("Mutex was poisoned");
                     *guard = Some(pl.clone());
                     // Notify any watchers of the property that it has changed.
@@ -544,17 +818,40 @@ impl FullClient {
                 } else if msg.subscription_id == sub_ids.lunch_menu_property_value {
                     let pl: LunchMenuProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+
                     let mut guard = props.lunch_menu.lock().expect("Mutex was poisoned");
                     *guard = Some(pl.clone());
                     // Notify any watchers of the property that it has changed.
                     let _ = props.lunch_menu_tx_channel.send(Some(pl));
                 } else if msg.subscription_id == sub_ids.family_name_property_value {
-                    let pl: String =
+                    let deserialized_data: FamilyNameProperty =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let pl = deserialized_data.family_name;
+
                     let mut guard = props.family_name.lock().expect("Mutex was poisoned");
                     *guard = Some(pl.clone());
                     // Notify any watchers of the property that it has changed.
                     let _ = props.family_name_tx_channel.send(Some(pl));
+                } else if msg.subscription_id == sub_ids.last_breakfast_time_property_value {
+                    let deserialized_data: LastBreakfastTimeProperty =
+                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let pl = deserialized_data.timestamp;
+
+                    let mut guard = props
+                        .last_breakfast_time
+                        .lock()
+                        .expect("Mutex was poisoned");
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.last_breakfast_time_tx_channel.send(Some(pl));
+                } else if msg.subscription_id == sub_ids.last_birthdays_property_value {
+                    let pl: LastBirthdaysProperty =
+                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+
+                    let mut guard = props.last_birthdays.lock().expect("Mutex was poisoned");
+                    *guard = Some(pl.clone());
+                    // Notify any watchers of the property that it has changed.
+                    let _ = props.last_birthdays_tx_channel.send(Some(pl));
                 }
             }
         });

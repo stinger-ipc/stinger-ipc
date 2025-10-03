@@ -16,7 +16,8 @@ use json::JsonValue;
 use uuid::Uuid;
 {%endif-%}
 use serde_json;
-
+use iso8601_duration::Duration as IsoDuration;
+use base64::prelude::*;
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 
@@ -224,12 +225,56 @@ impl {{stinger.rust.client_struct_name}} {
             {%-endif-%}
             {%elif member.arg_type.name.lower() == 'enum'%}
             {{member.name|snake_case}}: {{member.rust_type}}::from_u32(resp_obj["{{member.name}}"].as_u32().unwrap()).unwrap(),
+            {%elif member.arg_type.name.lower() == 'datetime'%}
+            {{member.name|snake_case}}:{
+                let dt_str = resp_obj["{{member.name}}"].as_str().unwrap();
+                chrono::DateTime::parse_from_rfc3339(dt_str)
+                    .map_err(|e| MethodReturnCode::DeserializationError(format!("Failed to parse datetime: {}", e)))?
+                    .with_timezone(&chrono::Utc)
+            },
+            {%elif member.arg_type.name.lower() == 'duration'%}
+            {{member.name|snake_case}}:{
+                let dur_str = resp_obj["{{member.name}}"].as_str().unwrap();
+                let iso_dur = dur_str.parse::<IsoDuration>().unwrap();
+                iso_dur.to_chrono().unwrap()
+            },
+            {%elif member.arg_type.name.lower() == 'binary'%}
+            {{member.name|snake_case}}:{
+                let bin_data = BASE64_STANDARD.decode(resp_obj["{{member.name}}"].as_str().unwrap());
+                bin_data
+            },
             {%endif%}
         {%endfor-%} })
         {%elif method.return_value_type is false%}
         Ok(())
+        {%elif method.return_value_type == 'datetime' %}
+        {
+            let dt_str = resp_obj["{{method.return_value_property_name}}"].as_str().unwrap();
+            let dt = chrono::DateTime::parse_from_rfc3339(dt_str)
+                .map_err(|e| MethodReturnCode::DeserializationError(format!("Failed to parse datetime: {}", e)))?
+                .with_timezone(&chrono::Utc);
+            Ok(dt)
+        }
+        {%elif method.return_value_type == 'duration' %}
+        {
+            let dur_str = resp_obj["{{method.return_value_property_name}}"].as_str().unwrap();
+            let iso_dur = dur_str.parse::<IsoDuration>().unwrap();
+            iso_dur.to_chrono().unwrap()
+        }
+        {%elif method.return_value_type == 'binary' %}
+        {
+            let bin_str = resp_obj["{{method.return_value_property_name}}"].as_str().unwrap();
+            let bin_data = BASE64_STANDARD.decode(bin_str).unwrap();
+            Ok(bin_data)
+        }
+            let dt_str = resp_obj["{{method.return_value_property_name}}"].as_str().unwrap();
+            let dt = chrono::DateTime::parse_from_rfc3339(dt_str)
+                .map_err(|e| MethodReturnCode::DeserializationError(format!("Failed to parse datetime: {}", e)))?
+                .with_timezone(&chrono::Utc);
+            Ok(dt)
+        }
         {%else%}
-        TEMPLATE ERROR CASE NOT HANDLED
+        TEMPLATE ERROR CASE NOT HANDLED for {{method.return_value_type}}
         {%-endif %}
     }
 
@@ -265,7 +310,9 @@ impl {{stinger.rust.client_struct_name}} {
     }
     {%if not prop.read_only %}
     pub fn set_{{prop_name | snake_case}}(&mut self, value: {%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}) -> Result<(), MethodReturnCode> {
-        let data = {%if prop.arg_list | length > 1 %}value{% else %}value{% endif %};
+        let data = {%if prop.arg_list | length > 1 %}value{% else %}{{prop_name | UpperCamelCase}}Property { 
+            {{prop.arg_list[0].name}}: value
+        } {%- endif %};
         let _publish_result = self.mqttier_client.publish_structure("{{prop.update_topic}}".to_string(), &data);
         Ok(())
     }
@@ -314,7 +361,12 @@ impl {{stinger.rust.client_struct_name}} {
                 {%endfor%}
                 {%-for prop_name, prop in stinger.properties.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
+                    {%if prop.arg_list | length == 1 %}
+                    let deserialized_data: {{prop_name | UpperCamelCase}}Property = serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let pl = deserialized_data.{{prop.arg_list[0].name}};
+                    {%else%}
                     let pl: {{prop.rust_type}} =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    {%endif%}
                     let mut guard = props.{{prop_name | snake_case}}.lock().expect("Mutex was poisoned");
                     *guard = Some(pl.clone());
                     // Notify any watchers of the property that it has changed.

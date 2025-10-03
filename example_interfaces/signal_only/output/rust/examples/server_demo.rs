@@ -50,6 +50,12 @@ async fn main() {
         let signal_result = signal_result_future.await;
         println!("Signal 'maybe_name' was sent: {:?}", signal_result);
 
+        sleep(Duration::from_secs(1)).await;
+        println!("Emitting signal 'now'");
+        let signal_result_future = server.emit_now(chrono::Utc::now()).await;
+        let signal_result = signal_result_future.await;
+        println!("Signal 'now' was sent: {:?}", signal_result);
+
         let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop

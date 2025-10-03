@@ -413,6 +413,133 @@ println!("echo response: {:?}", result);
 </details>
 
 
+### Method `what_time_is_it`
+
+Get the current date and time.
+
+#### Request Parameters
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+| the_first_time|          ||
+
+#### Return Parameters
+
+The return value type is ``.
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `what_time_is_it` method can be called by calling the clients's `what_time_is_it` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.what_time_is_it(the_first_time=datetime.datetime.now())
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'what_time_is_it' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `what_time_is_it` method by using the `@server.handle_what_time_is_it` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_what_time_is_it 
+def what_time_is_it(the_first_time: datetime.datetime) -> datetime.datetime:
+    """ This is an example handler for the 'what_time_is_it' method.  """
+    print(f"Running what_time_is_it'({the_first_time})'")
+    return datetime.datetime.now()
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `FullClient` provides an implementation for the `what_time_is_it` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.what_time_is_it(chrono::Utc::now()).await.expect("Failed to call what_time_is_it");
+println!("what_time_is_it response: {:?}", result);
+```
+
+</details>
+
+
+### Method `set_the_time`
+
+_No documentation for this method_
+
+#### Request Parameters
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+| the_first_time|          ||
+|the_second_time|          ||
+
+#### Return Parameters
+
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|   timestamp   |          ||
+|confirmation_message|  string  ||
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `set_the_time` method can be called by calling the clients's `set_the_time` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.set_the_time(the_first_time=datetime.datetime.now(), the_second_time=datetime.datetime.now())
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'set_the_time' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `set_the_time` method by using the `@server.handle_set_the_time` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_set_the_time 
+def set_the_time(the_first_time: datetime.datetime, the_second_time: datetime.datetime) -> stinger_types.SetTheTimeReturnValue:
+    """ This is an example handler for the 'set_the_time' method.  """
+    print(f"Running set_the_time'({the_first_time}, {the_second_time})'")
+    return ['datetime.datetime.now()', '"apples"']
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `FullClient` provides an implementation for the `set_the_time` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.set_the_time(chrono::Utc::now(), chrono::Utc::now()).await.expect("Failed to call set_the_time");
+println!("set_the_time response: {:?}", result);
+```
+
+</details>
+
+
 ## Properties
 
 Properties are values (or a set of values) held by the server.   They are re-published when the value changes. 
@@ -574,6 +701,84 @@ let mut on_family_name_changed = server.watch_family_name();
 
 while let Some(new_value) = on_family_name_changed.recv().await {
     println!("Property 'family_name' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
+### Property `last_breakfast_time`
+
+This is to test a property with a single datetime value.
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|   timestamp   |          ||
+
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `last_breakfast_time`.  The value can be changed by calling the server's `set_last_breakfast_time` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_last_breakfast_time(chrono::Utc::now()).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_last_breakfast_time()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<chrono::DateTime<chrono::Utc>>>` by calling the server's `get_last_breakfast_time_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_last_breakfast_time_changed = server.watch_last_breakfast_time();
+
+while let Some(new_value) = on_last_breakfast_time_changed.recv().await {
+    println!("Property 'last_breakfast_time' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
+### Property `last_birthdays`
+
+This is to test a property with multiple datetime values.
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|      mom      |          ||
+|      dad      |          ||
+|     sister    |           (optional)||
+
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `last_birthdays`.  The value can be changed by calling the server's `set_last_birthdays` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_last_birthdays(chrono::Utc::now()).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_last_birthdays()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<LastBirthdaysProperty>>` by calling the server's `get_last_birthdays_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_last_birthdays_changed = server.watch_last_birthdays();
+
+while let Some(new_value) = on_last_birthdays_changed.recv().await {
+    println!("Property 'last_birthdays' changed to: {:?}", new_value);
 }
 ```
 

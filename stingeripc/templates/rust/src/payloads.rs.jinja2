@@ -15,6 +15,103 @@ use num_traits::FromPrimitive;
 use std::fmt;
 {%endif%}
 use serde::{Deserialize, Serialize};
+use iso8601_duration::Duration as IsoDuration;
+use base64::prelude::*;
+
+pub mod base64_binary_format {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let b64_string = BASE64_STANDARD.encode(bytes);
+        serializer.serialize_str(&b64_string)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let b64_string = String::deserialize(deserializer)?;
+        BASE64_STANDARD
+            .decode(b64_string.as_bytes())
+            .map_err(serde::de::Error::custom)
+    }
+
+    // For Option<Vec<u8>>
+    pub fn serialize_option<S>(bytes: &Option<Vec<u8>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match bytes {
+            Some(b) => serialize(b, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(b64_string) => {
+                let decoded = BASE64_STANDARD
+                    .decode(b64_string.as_bytes())
+                    .map_err(serde::de::Error::custom)?;
+                Ok(Some(decoded))
+            }
+            None => Ok(None),
+        }
+    }
+}
+
+// Helper functions for DateTime serialization/deserialization
+pub mod datetime_iso_format {
+    use chrono::{DateTime, Utc};
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let iso_string = dt.to_rfc3339();
+        serializer.serialize_str(&iso_string)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let iso_string = String::deserialize(deserializer)?;
+        DateTime::parse_from_rfc3339(&iso_string)
+            .map(|dt| dt.with_timezone(&Utc))
+            .map_err(serde::de::Error::custom)
+    }
+}
+
+pub mod duration_iso_format {
+    // Serialization and deserialization for Duration as ISO 8601 string
+    pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let seconds = duration.num_seconds();
+        let iso_string = format!("PT{}S", seconds);
+        serializer.serialize_str(&iso_string)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let iso_string = String::deserialize(deserializer)?;
+        let iso_dur = iso_string.parse::<IsoDuration>().unwrap();
+        iso_dur.to_chrono()
+    }
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -88,6 +185,9 @@ pub struct {{struct_name | UpperCamelCase}} {
     pub {{arg.name}}: {{arg.rust_type}},
     {%-elif arg.arg_type.name.lower() == 'enum'%}
     pub {{arg.name}}: {{arg.rust_local_type}},
+    {%elif arg.arg_type.name.lower() == 'datetime'%}
+    #[serde(with = "datetime_iso_format")]
+    pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
     {%endif-%}
     {%endfor%}
 }
@@ -98,13 +198,18 @@ pub struct {{struct_name | UpperCamelCase}} {
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-/// Request Object for `{{method_name}}`
+/// Request Object for `{{method_name}}` method.
 pub struct {{method_name | UpperCamelCase}}RequestObject {
     {%-for arg in method.arg_list%}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
     pub {{arg.name}}: {{arg.rust_type}},
     {%-elif arg.arg_type.name.lower() == 'enum'-%}
     pub {{arg.name}}: u32,
+    {%elif arg.arg_type.name.lower() == 'datetime'%}
+    #[serde(with = "datetime_iso_format")]
+    pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
+    {%else%}
+    TEMPLATE ERROR CASE NOT HANDLED for {{arg.arg_type.name}} - please report a bug.
     {%endif-%}
     {%endfor%}
 }
@@ -112,9 +217,10 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
 {%if method.return_value_type == 'struct' %}
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-/// Return Object for `{{method_name}}`
+/// Return Object for `{{method_name}}` method.
 pub struct {{method.return_value_name | UpperCamelCase}} {
-{%-for arg in method.return_value %}
+{%-for arg in method.return_value %}{%if arg.arg_type.name.lower() == 'datetime'%}
+    #[serde(with = "datetime_iso_format")]{%endif%}
     pub {{arg.name}}: {{arg.rust_local_type}},
 {%-endfor%}
 }
@@ -122,6 +228,12 @@ pub struct {{method.return_value_name | UpperCamelCase}} {
 #[derive(Debug, Clone, Serialize)]
 pub struct {{method.return_value_name | UpperCamelCase}} {
     pub {{method.return_value_property_name}}: {{method.return_value.rust_local_type}},
+}
+{%elif method.return_value_type == 'datetime'%}
+#[derive(Debug, Clone, Serialize)]
+pub struct {{method.return_value_name | UpperCamelCase}} {
+    #[serde(with = "datetime_iso_format")]
+    pub {{method.return_value_property_name}}: chrono::DateTime<chrono::Utc>,
 }
 {%else%}
 #[derive(Debug, Clone, Serialize)]
@@ -140,6 +252,9 @@ pub struct {{sig_name | UpperCamelCase}}SignalPayload {
     pub {{arg.name}}: {{arg.rust_type}},
     {%elif arg.arg_type.name.lower() == 'enum'-%}
     pub {{arg.name}}: {{arg.rust_local_type}},
+    {%elif arg.arg_type.name.lower() == 'datetime'%}
+    #[serde(with = "datetime_iso_format")]
+    pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
     {%endif-%}
     {%endfor%}
 }
@@ -157,7 +272,111 @@ pub struct {{prop_name | UpperCamelCase}}Property {
     pub {{arg.name}}: {{arg.rust_local_type}},
     {%elif arg.arg_type.name.lower() == 'struct'-%}
     pub {{arg.name}}: {{arg.rust_local_type}},
+    {%elif arg.arg_type.name.lower() == 'datetime'%}
+    #[serde(with = "datetime_iso_format")]
+    pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
     {%endif-%}
     {%endfor%}
 }
 {%endfor%}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{DateTime, Utc};
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    #[test]
+    fn test_{{prop_name | snake_case}}_property_json_format() {
+        // Test deserializing from a known JSON string
+        let json_str = r#"{ {%-for arg in prop.arg_list%}
+            "{{arg.name}}": {{arg.get_random_example_value(lang="json")}} {%if not loop.last%},{%endif%}
+        {%endfor-%} }"#;
+
+        let parsed: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(json_str).unwrap();
+    }
+    {%endfor%}
+
+    #[test]
+    fn test_base64_binary_format_serialization() {
+        use serde::{Deserialize, Serialize};
+        
+        #[derive(Serialize, Deserialize, Debug, PartialEq)]
+        struct TestStruct {
+            #[serde(with = "base64_binary_format")]
+            data: Vec<u8>,
+        }
+
+        // Test with various binary data
+        let test_data = vec![0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37];
+        let test_struct = TestStruct { data: test_data.clone() };
+
+        // Test serialization
+        let serialized = serde_json::to_string(&test_struct).unwrap();
+        
+        // The base64 encoded value of [0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37] should be "AAEC//5CEzc="
+        assert!(serialized.contains("AAEC//5CEzc="));
+
+        // Test deserialization
+        let deserialized: TestStruct = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized.data, test_data);
+    }
+
+    #[test]
+    fn test_base64_binary_format_option_serialization() {
+        use serde::{Deserialize, Serialize};
+        
+        #[derive(Serialize, Deserialize, Debug, PartialEq)]
+        struct TestStruct {
+            #[serde(with = "base64_binary_format")]
+            #[serde(serialize_with = "base64_binary_format::serialize_option")]
+            #[serde(deserialize_with = "base64_binary_format::deserialize_option")]
+            data: Option<Vec<u8>>,
+        }
+
+        // Test with Some data
+        let test_data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F]; // "Hello" in bytes
+        let test_struct_some = TestStruct { data: Some(test_data.clone()) };
+
+        let serialized_some = serde_json::to_string(&test_struct_some).unwrap();
+        let deserialized_some: TestStruct = serde_json::from_str(&serialized_some).unwrap();
+        assert_eq!(deserialized_some.data, Some(test_data));
+
+        // Test with None
+        let test_struct_none = TestStruct { data: None };
+        let serialized_none = serde_json::to_string(&test_struct_none).unwrap();
+        let deserialized_none: TestStruct = serde_json::from_str(&serialized_none).unwrap();
+        assert_eq!(deserialized_none.data, None);
+    }
+
+    #[test]
+    fn test_base64_binary_format_round_trip() {
+        use serde::{Deserialize, Serialize};
+        
+        #[derive(Serialize, Deserialize, Debug, PartialEq)]
+        struct BinaryData {
+            #[serde(with = "base64_binary_format")]
+            payload: Vec<u8>,
+            name: String,
+        }
+
+        // Test with empty data
+        let empty_data = BinaryData {
+            payload: vec![],
+            name: "empty".to_string(),
+        };
+        let json = serde_json::to_string(&empty_data).unwrap();
+        let parsed: BinaryData = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed, empty_data);
+
+        // Test with random binary data
+        let random_data = BinaryData {
+            payload: vec![0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE],
+            name: "random".to_string(),
+        };
+        let json = serde_json::to_string(&random_data).unwrap();
+        let parsed: BinaryData = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed, random_data);
+    }
+}

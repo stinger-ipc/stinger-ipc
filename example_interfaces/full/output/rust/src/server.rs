@@ -36,6 +36,8 @@ struct FullServerSubscriptionIds {
     add_numbers_method_req: usize,
     do_something_method_req: usize,
     echo_method_req: usize,
+    what_time_is_it_method_req: usize,
+    set_the_time_method_req: usize,
 
     favorite_number_property_update: usize,
 
@@ -44,6 +46,10 @@ struct FullServerSubscriptionIds {
     lunch_menu_property_update: usize,
 
     family_name_property_update: usize,
+
+    last_breakfast_time_property_update: usize,
+
+    last_birthdays_property_update: usize,
 }
 
 #[derive(Clone)]
@@ -60,6 +66,12 @@ struct FullProperties {
     family_name_topic: Arc<String>,
     family_name: Arc<Mutex<Option<String>>>,
     family_name_tx_channel: watch::Sender<Option<String>>,
+    last_breakfast_time_topic: Arc<String>,
+    last_breakfast_time: Arc<Mutex<Option<chrono::DateTime<chrono::Utc>>>>,
+    last_breakfast_time_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+    last_birthdays_topic: Arc<String>,
+    last_birthdays: Arc<Mutex<Option<LastBirthdaysProperty>>>,
+    last_birthdays_tx_channel: watch::Sender<Option<LastBirthdaysProperty>>,
 }
 
 #[derive(Clone)]
@@ -126,6 +138,24 @@ impl FullServer {
             .await;
         let subscription_id_echo_method_req =
             subscription_id_echo_method_req.unwrap_or_else(|_| usize::MAX);
+        let subscription_id_what_time_is_it_method_req = connection
+            .subscribe(
+                "full/method/whatTimeIsIt".to_string(),
+                2,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_what_time_is_it_method_req =
+            subscription_id_what_time_is_it_method_req.unwrap_or_else(|_| usize::MAX);
+        let subscription_id_set_the_time_method_req = connection
+            .subscribe(
+                "full/method/setTheTime".to_string(),
+                2,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_set_the_time_method_req =
+            subscription_id_set_the_time_method_req.unwrap_or_else(|_| usize::MAX);
 
         let subscription_id_favorite_number_property_update = connection
             .subscribe(
@@ -167,11 +197,33 @@ impl FullServer {
         let subscription_id_family_name_property_update =
             subscription_id_family_name_property_update.unwrap_or_else(|_| usize::MAX);
 
+        let subscription_id_last_breakfast_time_property_update = connection
+            .subscribe(
+                "full/property/lastBreakfastTime/setValue".to_string(),
+                2,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_last_breakfast_time_property_update =
+            subscription_id_last_breakfast_time_property_update.unwrap_or_else(|_| usize::MAX);
+
+        let subscription_id_last_birthdays_property_update = connection
+            .subscribe(
+                "full/property/lastBirthdays/setValue".to_string(),
+                2,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_last_birthdays_property_update =
+            subscription_id_last_birthdays_property_update.unwrap_or_else(|_| usize::MAX);
+
         // Create structure for subscription ids.
         let sub_ids = FullServerSubscriptionIds {
             add_numbers_method_req: subscription_id_add_numbers_method_req,
             do_something_method_req: subscription_id_do_something_method_req,
             echo_method_req: subscription_id_echo_method_req,
+            what_time_is_it_method_req: subscription_id_what_time_is_it_method_req,
+            set_the_time_method_req: subscription_id_set_the_time_method_req,
 
             favorite_number_property_update: subscription_id_favorite_number_property_update,
 
@@ -180,6 +232,11 @@ impl FullServer {
             lunch_menu_property_update: subscription_id_lunch_menu_property_update,
 
             family_name_property_update: subscription_id_family_name_property_update,
+
+            last_breakfast_time_property_update:
+                subscription_id_last_breakfast_time_property_update,
+
+            last_birthdays_property_update: subscription_id_last_birthdays_property_update,
         };
 
         let property_values = FullProperties {
@@ -199,6 +256,16 @@ impl FullServer {
 
             family_name: Arc::new(Mutex::new(None)),
             family_name_tx_channel: watch::channel(None).0,
+            last_breakfast_time_topic: Arc::new(String::from(
+                "full/property/lastBreakfastTime/value",
+            )),
+
+            last_breakfast_time: Arc::new(Mutex::new(None)),
+            last_breakfast_time_tx_channel: watch::channel(None).0,
+            last_birthdays_topic: Arc::new(String::from("full/property/lastBirthdays/value")),
+
+            last_birthdays: Arc::new(Mutex::new(None)),
+            last_birthdays_tx_channel: watch::channel(None).0,
         };
 
         FullServer {
@@ -474,6 +541,132 @@ impl FullServer {
         } else {
             // Without a response topic, we cannot send a response.
             info!("No response topic provided, so no publishing response to `echo`.");
+        }
+    }
+
+    /// Handles a request message for the what_time_is_it method.
+    async fn handle_what_time_is_it_request(
+        publisher: MqttierClient,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
+        msg: ReceivedMessage,
+    ) {
+        let opt_corr_data = msg.correlation_data;
+        let opt_resp_topic = msg.response_topic;
+        let payload_vec = msg.payload;
+        let payload_obj = serde_json::from_slice::<WhatTimeIsItRequestObject>(&payload_vec);
+        if payload_obj.is_err() {
+            error!(
+                "Error deserializing request payload for what_time_is_it: {:?}",
+                payload_obj.err()
+            );
+            FullServer::publish_error_response(
+                publisher,
+                opt_resp_topic,
+                opt_corr_data,
+                &MethodReturnCode::DeserializationError(
+                    "Failed to deserialize request payload".to_string(),
+                ),
+            )
+            .await;
+            return;
+        }
+        // Unwrap is OK here because we just checked for error.
+        let payload = payload_obj.unwrap();
+
+        // call the method handler
+        let rc: Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> = {
+            let handler_guard = handlers.lock().await;
+            handler_guard
+                .handle_what_time_is_it(payload.the_first_time)
+                .await
+        };
+
+        if let Some(resp_topic) = opt_resp_topic {
+            let corr_data = opt_corr_data.unwrap_or_default();
+            match rc {
+                Ok(retval) => {
+                    let retval = WhatTimeIsItReturnValue { timestamp: retval };
+
+                    let _fut_publish_result = publisher
+                        .publish_response(resp_topic, &retval, corr_data)
+                        .await;
+                }
+                Err(err) => {
+                    info!("Error occurred while handling what_time_is_it: {:?}", &err);
+                    FullServer::publish_error_response(
+                        publisher,
+                        Some(resp_topic),
+                        Some(corr_data),
+                        &err,
+                    )
+                    .await;
+                }
+            }
+        } else {
+            // Without a response topic, we cannot send a response.
+            info!("No response topic provided, so no publishing response to `what_time_is_it`.");
+        }
+    }
+
+    /// Handles a request message for the set_the_time method.
+    async fn handle_set_the_time_request(
+        publisher: MqttierClient,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
+        msg: ReceivedMessage,
+    ) {
+        let opt_corr_data = msg.correlation_data;
+        let opt_resp_topic = msg.response_topic;
+        let payload_vec = msg.payload;
+        let payload_obj = serde_json::from_slice::<SetTheTimeRequestObject>(&payload_vec);
+        if payload_obj.is_err() {
+            error!(
+                "Error deserializing request payload for set_the_time: {:?}",
+                payload_obj.err()
+            );
+            FullServer::publish_error_response(
+                publisher,
+                opt_resp_topic,
+                opt_corr_data,
+                &MethodReturnCode::DeserializationError(
+                    "Failed to deserialize request payload".to_string(),
+                ),
+            )
+            .await;
+            return;
+        }
+        // Unwrap is OK here because we just checked for error.
+        let payload = payload_obj.unwrap();
+
+        // call the method handler
+        let rc: Result<SetTheTimeReturnValue, MethodReturnCode> = {
+            let handler_guard = handlers.lock().await;
+            handler_guard
+                .handle_set_the_time(payload.the_first_time, payload.the_second_time)
+                .await
+        };
+
+        if let Some(resp_topic) = opt_resp_topic {
+            let corr_data = opt_corr_data.unwrap_or_default();
+            match rc {
+                Ok(retval) => {
+                    let _fut_publish_result = publisher
+                        .publish_response(resp_topic, &retval, corr_data)
+                        .await;
+                }
+                Err(err) => {
+                    info!("Error occurred while handling set_the_time: {:?}", &err);
+                    FullServer::publish_error_response(
+                        publisher,
+                        Some(resp_topic),
+                        Some(corr_data),
+                        &err,
+                    )
+                    .await;
+                }
+            }
+        } else {
+            // Without a response topic, we cannot send a response.
+            info!("No response topic provided, so no publishing response to `set_the_time`.");
         }
     }
 
@@ -922,6 +1115,236 @@ impl FullServer {
         }
     }
 
+    async fn publish_last_breakfast_time_value(
+        publisher: MqttierClient,
+        topic: String,
+        data: chrono::DateTime<chrono::Utc>,
+    ) -> SentMessageFuture {
+        let new_data = LastBreakfastTimeProperty { timestamp: data };
+        debug!(
+            "Publishing 'last_breakfast_time' property value to topic {}",
+            topic
+        );
+        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
+
+        FullServer::oneshot_to_future(published_oneshot).await
+    }
+
+    /// This is called because of an MQTT request to update the property value.
+    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// If there is an error, it can publish back if a response topic was provided.
+    async fn update_last_breakfast_time_value(
+        publisher: MqttierClient,
+        topic: Arc<String>,
+        data: Arc<Mutex<Option<chrono::DateTime<chrono::Utc>>>>,
+        watch_sender: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+        msg: ReceivedMessage,
+    ) -> SentMessageFuture {
+        let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
+
+        let new_data: LastBreakfastTimeProperty = {
+            match serde_json::from_str(&payload_str) {
+                Ok(data) => data,
+                Err(e) => {
+                    error!(
+                        "Failed to parse JSON received over MQTT to update 'last_breakfast_time' property: {:?}",
+                        e
+                    );
+                    return FullServer::wrap_return_code_in_future(
+                        MethodReturnCode::DeserializationError(
+                            "Failed to deserialize property 'last_breakfast_time' payload"
+                                .to_string(),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        };
+
+        let assignment_result = match data.lock() {
+            Ok(mut guard) => {
+                *guard = Some(new_data.timestamp);
+
+                Ok(())
+            }
+            Err(_e) => Err(()),
+        };
+        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
+        if let Err(()) = assignment_result {
+            return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(format!(
+                "Failed to lock mutex for updating property 'last_breakfast_time'"
+            )))
+            .await;
+        }
+        let topic2: String = topic.as_ref().clone();
+        let data2 = new_data.timestamp;
+        let data_to_send_to_watchers = data2.clone();
+        match watch_sender.send(Some(data_to_send_to_watchers)) {
+            Ok(_) => {}
+            Err(e) => {
+                error!(
+                    "Failed to notify local watchers for 'last_breakfast_time' property: {:?}",
+                    e
+                );
+            }
+        };
+        FullServer::publish_last_breakfast_time_value(publisher, topic2, data2).await
+    }
+
+    pub async fn watch_last_breakfast_time(
+        &self,
+    ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
+        self.properties.last_breakfast_time_tx_channel.subscribe()
+    }
+
+    pub async fn set_last_breakfast_time(
+        &mut self,
+        data: chrono::DateTime<chrono::Utc>,
+    ) -> SentMessageFuture {
+        let prop = self.properties.last_breakfast_time.clone();
+        {
+            if let Ok(mut locked_data) = prop.lock() {
+                *locked_data = Some(data.clone());
+            } else {
+                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
+                    format!("Failed to lock mutex for setting property 'last_breakfast_time'"),
+                ))
+                .await;
+            }
+        }
+
+        let data_to_send_to_watchers = Some(data.clone());
+        let send_result = self
+            .properties
+            .last_breakfast_time_tx_channel
+            .send_if_modified(|current_data| {
+                if current_data != &data_to_send_to_watchers {
+                    *current_data = data_to_send_to_watchers;
+                    true
+                } else {
+                    false
+                }
+            });
+        if !send_result {
+            debug!("Property 'last_breakfast_time' value not changed, so not notifying watchers.");
+            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.last_breakfast_time_topic.as_ref().clone();
+            FullServer::publish_last_breakfast_time_value(publisher2, topic2, data).await
+        }
+    }
+
+    async fn publish_last_birthdays_value(
+        publisher: MqttierClient,
+        topic: String,
+        data: LastBirthdaysProperty,
+    ) -> SentMessageFuture {
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
+
+        FullServer::oneshot_to_future(published_oneshot).await
+    }
+
+    /// This is called because of an MQTT request to update the property value.
+    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// If there is an error, it can publish back if a response topic was provided.
+    async fn update_last_birthdays_value(
+        publisher: MqttierClient,
+        topic: Arc<String>,
+        data: Arc<Mutex<Option<LastBirthdaysProperty>>>,
+        watch_sender: watch::Sender<Option<LastBirthdaysProperty>>,
+        msg: ReceivedMessage,
+    ) -> SentMessageFuture {
+        let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
+
+        let new_data: LastBirthdaysProperty = {
+            match serde_json::from_str(&payload_str) {
+                Ok(data) => data,
+                Err(e) => {
+                    error!(
+                        "Failed to parse JSON received over MQTT to update 'last_birthdays' property: {:?}",
+                        e
+                    );
+                    return FullServer::wrap_return_code_in_future(
+                        MethodReturnCode::DeserializationError(
+                            "Failed to deserialize property 'last_birthdays' payload".to_string(),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        };
+
+        let assignment_result = match data.lock() {
+            Ok(mut guard) => {
+                *guard = Some(new_data.clone());
+
+                Ok(())
+            }
+            Err(_e) => Err(()),
+        };
+        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
+        if let Err(()) = assignment_result {
+            return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(format!(
+                "Failed to lock mutex for updating property 'last_birthdays'"
+            )))
+            .await;
+        }
+        let topic2: String = topic.as_ref().clone();
+        let data2 = new_data;
+
+        let data_to_send_to_watchers = data2.clone();
+        match watch_sender.send(Some(data_to_send_to_watchers)) {
+            Ok(_) => {}
+            Err(e) => {
+                error!(
+                    "Failed to notify local watchers for 'last_birthdays' property: {:?}",
+                    e
+                );
+            }
+        };
+        FullServer::publish_last_birthdays_value(publisher, topic2, data2).await
+    }
+
+    pub async fn watch_last_birthdays(&self) -> watch::Receiver<Option<LastBirthdaysProperty>> {
+        self.properties.last_birthdays_tx_channel.subscribe()
+    }
+
+    pub async fn set_last_birthdays(&mut self, data: LastBirthdaysProperty) -> SentMessageFuture {
+        let prop = self.properties.last_birthdays.clone();
+        {
+            if let Ok(mut locked_data) = prop.lock() {
+                *locked_data = Some(data.clone());
+            } else {
+                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
+                    format!("Failed to lock mutex for setting property 'last_birthdays'"),
+                ))
+                .await;
+            }
+        }
+
+        let data_to_send_to_watchers = Some(data.clone());
+        let send_result =
+            self.properties
+                .last_birthdays_tx_channel
+                .send_if_modified(|current_data| {
+                    if current_data != &data_to_send_to_watchers {
+                        *current_data = data_to_send_to_watchers;
+                        true
+                    } else {
+                        false
+                    }
+                });
+        if !send_result {
+            debug!("Property 'last_birthdays' value not changed, so not notifying watchers.");
+            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+        } else {
+            let publisher2 = self.mqttier_client.clone();
+            let topic2 = self.properties.last_birthdays_topic.as_ref().clone();
+            FullServer::publish_last_birthdays_value(publisher2, topic2, data).await
+        }
+    }
+
     /// Starts the tasks that process messages received.
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
@@ -977,6 +1400,20 @@ impl FullServer {
                         msg,
                     )
                     .await;
+                } else if msg.subscription_id == sub_ids.what_time_is_it_method_req {
+                    FullServer::handle_what_time_is_it_request(
+                        publisher.clone(),
+                        method_handlers.clone(),
+                        msg,
+                    )
+                    .await;
+                } else if msg.subscription_id == sub_ids.set_the_time_method_req {
+                    FullServer::handle_set_the_time_request(
+                        publisher.clone(),
+                        method_handlers.clone(),
+                        msg,
+                    )
+                    .await;
                 } else {
                     let update_prop_future = {
                         if msg.subscription_id == sub_ids.favorite_number_property_update {
@@ -1012,6 +1449,25 @@ impl FullServer {
                                 properties.family_name_topic.clone(),
                                 properties.family_name.clone(),
                                 properties.family_name_tx_channel.clone(),
+                                msg,
+                            )
+                            .await
+                        } else if msg.subscription_id == sub_ids.last_breakfast_time_property_update
+                        {
+                            FullServer::update_last_breakfast_time_value(
+                                publisher.clone(),
+                                properties.last_breakfast_time_topic.clone(),
+                                properties.last_breakfast_time.clone(),
+                                properties.last_breakfast_time_tx_channel.clone(),
+                                msg,
+                            )
+                            .await
+                        } else if msg.subscription_id == sub_ids.last_birthdays_property_update {
+                            FullServer::update_last_birthdays_value(
+                                publisher.clone(),
+                                properties.last_birthdays_topic.clone(),
+                                properties.last_birthdays.clone(),
+                                properties.last_birthdays_tx_channel.clone(),
                                 msg,
                             )
                             .await
@@ -1073,6 +1529,19 @@ pub trait FullMethodHandlers: Send + Sync {
 
     /// Pointer to a function to handle the echo method request.
     async fn handle_echo(&self, message: String) -> Result<String, MethodReturnCode>;
+
+    /// Pointer to a function to handle the what_time_is_it method request.
+    async fn handle_what_time_is_it(
+        &self,
+        the_first_time: chrono::DateTime<chrono::Utc>,
+    ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode>;
+
+    /// Pointer to a function to handle the set_the_time method request.
+    async fn handle_set_the_time(
+        &self,
+        the_first_time: chrono::DateTime<chrono::Utc>,
+        the_second_time: chrono::DateTime<chrono::Utc>,
+    ) -> Result<SetTheTimeReturnValue, MethodReturnCode>;
 
     fn as_any(&self) -> &dyn Any;
 }

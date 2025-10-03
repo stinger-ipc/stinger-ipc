@@ -101,6 +101,14 @@ class SignalOnlyServer:
         }
         self._conn.publish("signalOnly/signal/maybeName", json.dumps(payload), qos=1, retain=False)
 
+    def emit_now(self, timestamp: datetime.datetime):
+        """Server application code should call this method to emit the 'now' signal."""
+        if not isinstance(timestamp, datetime.datetime):
+            raise ValueError(f"The 'timestamp' value must be datetime.datetime.")
+
+        payload = {}
+        self._conn.publish("signalOnly/signal/now", json.dumps(payload), qos=1, retain=False)
+
 
 class SignalOnlyServerBuilder:
     """
@@ -137,12 +145,14 @@ if __name__ == "__main__":
             server.emit_bark("apples")
             server.emit_maybe_number(42)
             server.emit_maybe_name("apples")
+            server.emit_now(datetime.datetime.now())
 
             sleep(4)
             server.emit_anotherSignal(one=3.14, two=True, three="apples")
             server.emit_bark(word="apples")
             server.emit_maybe_number(number=42)
             server.emit_maybe_name(name="apples")
+            server.emit_now(timestamp=datetime.datetime.now())
 
             sleep(6)
         except KeyboardInterrupt:

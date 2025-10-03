@@ -35,3 +35,9 @@ signals:
       - name: name
         type: string
         optional: true
+
+  now:
+    documentation: The current date and time.
+    payload:
+      - name: timestamp
+        type: datetime

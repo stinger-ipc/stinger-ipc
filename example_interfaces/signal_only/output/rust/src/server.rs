@@ -123,6 +123,20 @@ impl SignalOnlyServer {
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
+    /// Emits the now signal with the given arguments.
+    pub async fn emit_now(
+        &mut self,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    ) -> SentMessageFuture {
+        let data = NowSignalPayload {
+            timestamp: timestamp,
+        };
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/signal/now".to_string(), &data)
+            .await;
+        SignalOnlyServer::oneshot_to_future(published_oneshot).await
+    }
 
     /// Starts the tasks that process messages received.
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.

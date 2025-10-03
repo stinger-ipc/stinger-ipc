@@ -56,6 +56,9 @@ async fn main() {
             let mut favorite_foods_change_rx = client_for_prop_change.watch_favorite_foods();
             let mut lunch_menu_change_rx = client_for_prop_change.watch_lunch_menu();
             let mut family_name_change_rx = client_for_prop_change.watch_family_name();
+            let mut last_breakfast_time_change_rx =
+                client_for_prop_change.watch_last_breakfast_time();
+            let mut last_birthdays_change_rx = client_for_prop_change.watch_last_birthdays();
 
             loop {
                 tokio::select! {
@@ -70,6 +73,12 @@ async fn main() {
                     }
                     _ = family_name_change_rx.changed() => {
                         println!("Property 'family_name' changed to: {:?}", *family_name_change_rx.borrow());
+                    }
+                    _ = last_breakfast_time_change_rx.changed() => {
+                        println!("Property 'last_breakfast_time' changed to: {:?}", *last_breakfast_time_change_rx.borrow());
+                    }
+                    _ = last_birthdays_change_rx.changed() => {
+                        println!("Property 'last_birthdays' changed to: {:?}", *last_birthdays_change_rx.borrow());
                     }
                 }
             }
@@ -95,6 +104,20 @@ async fn main() {
             .await
             .expect("Failed to call echo");
         println!("echo response: {:?}", result);
+
+        println!("Calling what_time_is_it with example values...");
+        let result = api_client
+            .what_time_is_it(chrono::Utc::now())
+            .await
+            .expect("Failed to call what_time_is_it");
+        println!("what_time_is_it response: {:?}", result);
+
+        println!("Calling set_the_time with example values...");
+        let result = api_client
+            .set_the_time(chrono::Utc::now(), chrono::Utc::now())
+            .await
+            .expect("Failed to call set_the_time");
+        println!("set_the_time response: {:?}", result);
 
         let _ = api_client.set_favorite_number(42);
 
@@ -124,6 +147,15 @@ async fn main() {
         let _ = api_client.set_lunch_menu(lunch_menu_new_value);
 
         let _ = api_client.set_family_name("apples".to_string());
+
+        let _ = api_client.set_last_breakfast_time(chrono::Utc::now());
+
+        let last_birthdays_new_value = LastBirthdaysProperty {
+            mom: chrono::Utc::now(),
+            dad: chrono::Utc::now(),
+            sister: chrono::Utc::now(),
+        };
+        let _ = api_client.set_last_birthdays(last_birthdays_new_value);
 
         let _ = join!(sig_rx_task);
     });

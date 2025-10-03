@@ -24,11 +24,15 @@ TodayIsSignalCallbackType = Callable[[int, stinger_types.DayOfTheWeek | None], N
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
 DoSomethingMethodResponseCallbackType = Callable[[], None]
 EchoMethodResponseCallbackType = Callable[[str], None]
+WhatTimeIsItMethodResponseCallbackType = Callable[[datetime.datetime], None]
+SetTheTimeMethodResponseCallbackType = Callable[[], None]
 
 FavoriteNumberPropertyUpdatedCallbackType = Callable[[int], None]
 FavoriteFoodsPropertyUpdatedCallbackType = Callable[[stinger_types.FavoriteFoodsProperty], None]
 LunchMenuPropertyUpdatedCallbackType = Callable[[stinger_types.LunchMenuProperty], None]
 FamilyNamePropertyUpdatedCallbackType = Callable[[str], None]
+LastBreakfastTimePropertyUpdatedCallbackType = Callable[[datetime.datetime], None]
+LastBirthdaysPropertyUpdatedCallbackType = Callable[[stinger_types.LastBirthdaysProperty], None]
 
 
 class FullClient:
@@ -56,10 +60,18 @@ class FullClient:
         self._property_family_name: str | None = None
         self._family_name_prop_subscription_id: int = self._conn.subscribe("full/property/familyName/value")
         self._changed_value_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
+        self._property_last_breakfast_time: datetime.datetime | None = None
+        self._last_breakfast_time_prop_subscription_id: int = self._conn.subscribe("full/property/lastBreakfastTime/value")
+        self._changed_value_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
+        self._property_last_birthdays: stinger_types.LastBirthdaysProperty | None = None
+        self._last_birthdays_prop_subscription_id: int = self._conn.subscribe("full/property/lastBirthdays/value")
+        self._changed_value_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
         self._addNumbers_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/full/method/addNumbers/response")
         self._doSomething_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/full/method/doSomething/response")
         self._echo_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/full/method/echo/response")
+        self._what_time_is_it_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/full/method/whatTimeIsIt/response")
+        self._set_the_time_method_call_subscription_id: int = self._conn.subscribe(f"client/{self._client_id}/full/method/setTheTime/response")
 
     @property
     def favorite_number(self) -> int | None:
@@ -151,6 +163,52 @@ class FullClient:
         self._changed_value_callbacks_for_family_name.append(handler)
         if call_immediately and self._property_family_name is not None:
             handler(self._property_family_name)
+        return handler
+
+    @property
+    def last_breakfast_time(self) -> datetime.datetime | None:
+        """Property 'last_breakfast_time' getter."""
+        return self._property_last_breakfast_time
+
+    @last_breakfast_time.setter
+    def last_breakfast_time(self, value: datetime.datetime):
+        """Serializes and publishes the 'last_breakfast_time' property."""
+        if not isinstance(value, datetime.datetime):
+            raise ValueError("The 'last_breakfast_time' property must be a datetime.datetime")
+        serialized = json.dumps({"timestamp": value.timestamp})
+        self._logger.debug("Setting 'last_breakfast_time' property to %s", serialized)
+        self._conn.publish("full/property/lastBreakfastTime/setValue", serialized, qos=1)
+
+    def last_breakfast_time_changed(self, handler: LastBreakfastTimePropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'last_breakfast_time' property changes.
+        Can be used as a decorator.
+        """
+        self._changed_value_callbacks_for_last_breakfast_time.append(handler)
+        if call_immediately and self._property_last_breakfast_time is not None:
+            handler(self._property_last_breakfast_time)
+        return handler
+
+    @property
+    def last_birthdays(self) -> stinger_types.LastBirthdaysProperty | None:
+        """Property 'last_birthdays' getter."""
+        return self._property_last_birthdays
+
+    @last_birthdays.setter
+    def last_birthdays(self, value: stinger_types.LastBirthdaysProperty):
+        """Serializes and publishes the 'last_birthdays' property."""
+        if not isinstance(value, stinger_types.LastBirthdaysProperty):
+            raise ValueError("The 'last_birthdays' property must be a stinger_types.LastBirthdaysProperty")
+        serialized = value.model_dump_json(exclude_none=True)
+        self._logger.debug("Setting 'last_birthdays' property to %s", serialized)
+        self._conn.publish("full/property/lastBirthdays/setValue", serialized, qos=1)
+
+    def last_birthdays_changed(self, handler: LastBirthdaysPropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'last_birthdays' property changes.
+        Can be used as a decorator.
+        """
+        self._changed_value_callbacks_for_last_birthdays.append(handler)
+        if call_immediately and self._property_last_birthdays is not None:
+            handler(self._property_last_birthdays)
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
@@ -250,6 +308,48 @@ class FullClient:
             else:
                 self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
 
+        # Handle 'what_time_is_it' method response.
+        if self._conn.is_topic_sub(topic, f"client/{self._client_id}/full/method/whatTimeIsIt/response"):
+            result_code = MethodReturnCode.SUCCESS
+            if "UserProperty" in properties:
+                user_properties = properties["UserProperty"]
+                if "DebugInfo" in user_properties:
+                    self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                if "ReturnValue" in user_properties:
+                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            response = json.loads(payload)
+            if "CorrelationData" in properties:
+                correlation_id = properties["CorrelationData"].decode()
+                if correlation_id in self._pending_method_responses:
+                    cb = self._pending_method_responses[correlation_id]
+                    del self._pending_method_responses[correlation_id]
+                    cb(response, result_code)
+                else:
+                    self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+            else:
+                self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+
+        # Handle 'set_the_time' method response.
+        if self._conn.is_topic_sub(topic, f"client/{self._client_id}/full/method/setTheTime/response"):
+            result_code = MethodReturnCode.SUCCESS
+            if "UserProperty" in properties:
+                user_properties = properties["UserProperty"]
+                if "DebugInfo" in user_properties:
+                    self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                if "ReturnValue" in user_properties:
+                    result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            response = json.loads(payload)
+            if "CorrelationData" in properties:
+                correlation_id = properties["CorrelationData"].decode()
+                if correlation_id in self._pending_method_responses:
+                    cb = self._pending_method_responses[correlation_id]
+                    del self._pending_method_responses[correlation_id]
+                    cb(response, result_code)
+                else:
+                    self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+            else:
+                self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+
         # Handle 'favorite_number' property change.
         if self._conn.is_topic_sub(topic, "full/property/favoriteNumber/value"):
             if "ContentType" not in properties or properties["ContentType"] != "application/json":
@@ -299,6 +399,31 @@ class FullClient:
                 self._do_callbacks_for(self._changed_value_callbacks_for_family_name, value=self._property_family_name)
             except Exception as e:
                 self._logger.error("Error processing 'family_name' property change: %s", e)
+
+        # Handle 'last_breakfast_time' property change.
+        elif self._conn.is_topic_sub(topic, "full/property/lastBreakfastTime/value"):
+            if "ContentType" not in properties or properties["ContentType"] != "application/json":
+                self._logger.warning("Received 'last_breakfast_time' property change with non-JSON content type")
+                return
+            try:
+                payload_obj = json.loads(payload)
+                prop_value = datetime.datetime(payload_obj["timestamp"])
+                self._property_last_breakfast_time = prop_value
+                self._do_callbacks_for(self._changed_value_callbacks_for_last_breakfast_time, value=self._property_last_breakfast_time)
+            except Exception as e:
+                self._logger.error("Error processing 'last_breakfast_time' property change: %s", e)
+
+        # Handle 'last_birthdays' property change.
+        elif self._conn.is_topic_sub(topic, "full/property/lastBirthdays/value"):
+            if "ContentType" not in properties or properties["ContentType"] != "application/json":
+                self._logger.warning("Received 'last_birthdays' property change with non-JSON content type")
+                return
+            try:
+                prop_value = stinger_types.LastBirthdaysProperty.model_validate_json(payload)
+                self._property_last_birthdays = prop_value
+                self._do_callbacks_for(self._changed_value_callbacks_for_last_birthdays, value=self._property_last_birthdays)
+            except Exception as e:
+                self._logger.error("Error processing 'last_birthdays' property change: %s", e)
 
     def receive_today_is(self, handler: TodayIsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
@@ -434,6 +559,91 @@ class FullClient:
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
 
+    def what_time_is_it(self, the_first_time: datetime.datetime) -> futures.Future:
+        """Calling this initiates a `what_time_is_it` IPC method call."""
+
+        if not isinstance(the_first_time, datetime.datetime) and the_first_time is not None:
+            raise ValueError("The 'the_first_time' argument wasn't a datetime.datetime")
+
+        fut = futures.Future()  # type: futures.Future
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_what_time_is_it_response, fut)
+        payload = {
+            "the_first_time": the_first_time,
+        }
+        self._conn.publish(
+            "full/method/whatTimeIsIt", json.dumps(payload), qos=2, retain=False, correlation_id=correlation_id, response_topic=f"client/{self._client_id}/full/method/whatTimeIsIt/response"
+        )
+        return fut
+
+    def _handle_what_time_is_it_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+        """This called with the response to a `what_time_is_it` IPC method call."""
+        self._logger.debug("Handling what_time_is_it response message %s", fut)
+        try:
+            if return_value != MethodReturnCode.SUCCESS.value:
+                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
+
+            if "timestamp" in response_json:
+                if not isinstance(response_json["timestamp"], datetime.datetime):
+                    raise ValueError("Return value 'timestamp'' had wrong type")
+                self._logger.debug("Setting future result")
+                fut.set_result(response_json["timestamp"])
+            else:
+                raise Exception("Response message didn't have the return value")
+
+        except Exception as e:
+            self._logger.info("Exception while handling what_time_is_it", exc_info=e)
+            fut.set_exception(e)
+        if not fut.done():
+            fut.set_exception(Exception("No return value set"))
+
+    def set_the_time(self, the_first_time: datetime.datetime, the_second_time: datetime.datetime) -> futures.Future:
+        """Calling this initiates a `set_the_time` IPC method call."""
+
+        if not isinstance(the_first_time, datetime.datetime) and the_first_time is not None:
+            raise ValueError("The 'the_first_time' argument wasn't a datetime.datetime")
+
+        if not isinstance(the_second_time, datetime.datetime) and the_second_time is not None:
+            raise ValueError("The 'the_second_time' argument wasn't a datetime.datetime")
+
+        fut = futures.Future()  # type: futures.Future
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_set_the_time_response, fut)
+        payload = {
+            "the_first_time": the_first_time,
+            "the_second_time": the_second_time,
+        }
+        self._conn.publish(
+            "full/method/setTheTime", json.dumps(payload), qos=2, retain=False, correlation_id=correlation_id, response_topic=f"client/{self._client_id}/full/method/setTheTime/response"
+        )
+        return fut
+
+    def _handle_set_the_time_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+        """This called with the response to a `set_the_time` IPC method call."""
+        self._logger.debug("Handling set_the_time response message %s", fut)
+        try:
+            if return_value != MethodReturnCode.SUCCESS.value:
+                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
+
+            return_args = self._filter_for_args(
+                response_json,
+                [
+                    "timestamp",
+                    "confirmation_message",
+                ],
+            )
+            return_args["timestamp"] = datetime.datetime(return_args["timestamp"])
+            return_args["confirmation_message"] = str(return_args["confirmation_message"])
+
+            return_obj = stinger_types.SetTheTimeReturnValue(**return_args)
+            fut.set_result(return_obj)
+
+        except Exception as e:
+            self._logger.info("Exception while handling set_the_time", exc_info=e)
+            fut.set_exception(e)
+        if not fut.done():
+            fut.set_exception(Exception("No return value set"))
+
 
 class FullClientBuilder:
 
@@ -446,6 +656,8 @@ class FullClientBuilder:
         self._property_updated_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
 
     def receive_today_is(self, handler):
         """Used as a decorator for methods which handle particular signals."""
@@ -467,6 +679,14 @@ class FullClientBuilder:
         """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_family_name.append(handler)
 
+    def last_breakfast_time_updated(self, handler: LastBreakfastTimePropertyUpdatedCallbackType):
+        """Used as a decorator for methods which handle updates to properties."""
+        self._property_updated_callbacks_for_last_breakfast_time.append(handler)
+
+    def last_birthdays_updated(self, handler: LastBirthdaysPropertyUpdatedCallbackType):
+        """Used as a decorator for methods which handle updates to properties."""
+        self._property_updated_callbacks_for_last_birthdays.append(handler)
+
     def build(self) -> FullClient:
         """Builds a new FullClient."""
         self._logger.debug("Building FullClient")
@@ -486,6 +706,12 @@ class FullClientBuilder:
 
         for cb in self._property_updated_callbacks_for_family_name:
             client.family_name_changed(cb)
+
+        for cb in self._property_updated_callbacks_for_last_breakfast_time:
+            client.last_breakfast_time_changed(cb)
+
+        for cb in self._property_updated_callbacks_for_last_birthdays:
+            client.last_birthdays_changed(cb)
 
         return client
 
@@ -526,6 +752,16 @@ if __name__ == "__main__":
         """ """
         print(f"Property 'family_name' has been updated to: {value}")
 
+    @client_builder.last_breakfast_time_updated
+    def print_new_last_breakfast_time_value(value: datetime.datetime):
+        """ """
+        print(f"Property 'last_breakfast_time' has been updated to: {value}")
+
+    @client_builder.last_birthdays_updated
+    def print_new_last_birthdays_value(value: stinger_types.LastBirthdaysProperty):
+        """ """
+        print(f"Property 'last_birthdays' has been updated to: {value}")
+
     client = client_builder.build()
 
     print("Making call to 'add_numbers'")
@@ -548,6 +784,20 @@ if __name__ == "__main__":
         print(f"RESULT:  {future.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'echo' call")
+
+    print("Making call to 'what_time_is_it'")
+    future = client.what_time_is_it(the_first_time=datetime.datetime.now())
+    try:
+        print(f"RESULT:  {future.result(5)}")
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'what_time_is_it' call")
+
+    print("Making call to 'set_the_time'")
+    future = client.set_the_time(the_first_time=datetime.datetime.now(), the_second_time=datetime.datetime.now())
+    try:
+        print(f"RESULT:  {future.result(5)}")
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'set_the_time' call")
 
     print("Ctrl-C will stop the program.")
     signal.pause()

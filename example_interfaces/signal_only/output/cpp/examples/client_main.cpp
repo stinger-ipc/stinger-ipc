@@ -1,9 +1,11 @@
 
 
 #include <iostream>
+#include <sstream>
 #include <boost/chrono/chrono.hpp>
 #include "broker.hpp"
 #include "client.hpp"
+#include "structs.hpp"
 
 int main(int argc, char** argv)
 {
@@ -17,6 +19,12 @@ int main(int argc, char** argv)
                                        { std::cout << "number=" << "None" << std::endl; });
     client.registerMaybeNameCallback([](boost::optional<std::string> name)
                                      { std::cout << "name=" << "None" << std::endl; });
+    client.registerNowCallback([](std::chrono::time_point<std::chrono::system_clock> timestamp)
+                               {
+        
+        std::string timestampStr = timePointToIsoString(timestamp);
+        
+        std::cout << "timestamp=" <<timestampStr <<  std::endl; });
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;
 

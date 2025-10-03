@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SignalOnly Web Interface</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  
+  <body ng-app="myApp" ng-controller="myCtrl">
+    <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
+
+    <div class="interface-box">
+      <h1>SignalOnly</h1>
+      <p id="interface-summary"><i></i></p>
+      <p id="interface-doc">
+      
+      </p>
+    </div>
+    <!------------- SIGNALS ------------->
+    
+    <div class="component-box signal-box" id="signal-box-anotherSignal">
+        <h3 class="component-title signal-title">Signal: anotherSignal</h3>
+        <div class="component-doc signal-doc">
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">one</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.another_signal.received.one" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">two</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.another_signal.received.two" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">three</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.another_signal.received.three" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-bark">
+        <h3 class="component-title signal-title">Signal: bark</h3>
+        <div class="component-doc signal-doc">
+<p>Emitted when a dog barks.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">word</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.bark.received.word" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-maybe_number">
+        <h3 class="component-title signal-title">Signal: maybe_number</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with optionally no payload.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">number</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.maybe_number.received.number" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-maybe_name">
+        <h3 class="component-title signal-title">Signal: maybe_name</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with optionally no payload.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">name</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.maybe_name.received.name" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-now">
+        <h3 class="component-title signal-title">Signal: now</h3>
+        <div class="component-doc signal-doc">
+<p>The current date and time.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">timestamp</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.now.received.timestamp" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+
+    <!------------- PROPERTIES ------------->
+     
+
+    <!------------- METHODS ------------->
+     
+
+    
+    <div id="console" ng-class="{ 'expanded' : (console.showing) }">
+      <div class="top" ng-click=" console.showing = !console.showing ">Request Console <span ng-show="console.showing && console.requests.length > 0" ng-click="console.requests = []"> - Clear</span>
+        <p class="expanded-toggle">{{ console.showing ? 'Hide' : 'Show' }}</p>
+      </div>
+      <div id="request-list">
+        <p ng-repeat="msg in console.requests" class="entry">
+          <strong>{{msg.name}}:</strong> <em>{{msg.topic}}</em> <span class="elapsedTime" ng-show="msg.responseTime">{{msg.responseTime - msg.requestTime}}ms</span><span class="elapsedTime" ng-show="msg.eventTime">{{msg.eventTime}}</span>
+          <span class="outgoing" ng-show="msg.payload">{{msg.payload}}</span>
+          <span class="incoming" ng-show="msg.response">{{msg.response}}</span>
+          <span ng-repeat="result in msg.results" class="action-result">{{result}}</span>
+        </p>
+      </div>
+    </div>
+    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js"></script>
+    <script src="https://unpkg.com/mqtt@5.14.0/dist/mqtt.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

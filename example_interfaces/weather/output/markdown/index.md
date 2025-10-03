@@ -598,7 +598,7 @@ This property is **read-only**.  It can only be modified by the server.
 A server hold the "source of truth" for the value of `hourly_forecast`.  The value can be changed by calling the server's `set_hourly_forecast` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_hourly_forecast(ForecastForHour {temperature: 3.14, starttime: "apples".to_string(), condition: WeatherCondition::Sunny}).await;
+let property_set_future: SentMessageFuture = server.set_hourly_forecast(ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Sunny}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -756,7 +756,7 @@ Structures are a group of values and may be used as an argument in signals, meth
 | Name          | Type     |Description|
 |---------------|----------|-----------|
 |  temperature  |  number  |Forecasted temperature in degrees fahrenheit.|
-|   starttime   |  string  |Forecast is valid for the hour starting at this time.|
+|   starttime   |          |Forecast is valid for the hour starting at this time.|
 |   condition   |[Enum WeatherCondition](#enum-WeatherCondition)||
 
 ### Struct `ForecastForDay`

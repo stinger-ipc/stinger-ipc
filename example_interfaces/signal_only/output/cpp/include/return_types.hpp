@@ -7,4 +7,5 @@ It contains enumerations used by the SignalOnly interface.
 
 #pragma once
 #include <string>
+#include <chrono>
 #include "enums.hpp"

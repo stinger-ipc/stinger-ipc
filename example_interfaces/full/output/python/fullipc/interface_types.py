@@ -39,6 +39,13 @@ class DoSomethingReturnValue(BaseModel):
     day: DayOfTheWeek
 
 
+class SetTheTimeReturnValue(BaseModel):
+    """Interface method `set_the_time` return value struct."""
+
+    timestamp: datetime
+    confirmation_message: str
+
+
 class FavoriteFoodsProperty(BaseModel):
     """Interface property `favorite_foods` (multi-value struct)."""
 
@@ -52,3 +59,7 @@ class LunchMenuProperty(BaseModel):
 
     monday: Lunch
     tuesday: Lunch
+
+
+class LastBirthdaysProperty(BaseModel):
+    """Interface property `last_birthdays` (multi-value struct)."""

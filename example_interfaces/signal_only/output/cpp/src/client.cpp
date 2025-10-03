@@ -2,6 +2,10 @@
 
 #include <vector>
 #include <iostream>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -12,7 +16,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
 #include <rapidjson/document.h>
-
+#include "structs.hpp"
 #include "client.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
@@ -33,6 +37,7 @@ SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker)
     _barkSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/bark", 2);
     _maybeNumberSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/maybeNumber", 2);
     _maybeNameSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/maybeName", 2);
+    _nowSignalSubscriptionId = _broker->Subscribe("signalOnly/signal/now", 2);
 }
 
 void SignalOnlyClient::_receiveMessage(
@@ -61,12 +66,12 @@ void SignalOnlyClient::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                double tempone;
+                double tempOne;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("one");
                     if (itr != doc.MemberEnd() && itr->value.IsDouble())
                     {
-                        tempone = itr->value.GetDouble();
+                        tempOne = itr->value.GetDouble();
                     }
                     else
                     {
@@ -74,12 +79,12 @@ void SignalOnlyClient::_receiveMessage(
                     }
                 }
 
-                bool temptwo;
+                bool tempTwo;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("two");
                     if (itr != doc.MemberEnd() && itr->value.IsBool())
                     {
-                        temptwo = itr->value.GetBool();
+                        tempTwo = itr->value.GetBool();
                     }
                     else
                     {
@@ -87,12 +92,12 @@ void SignalOnlyClient::_receiveMessage(
                     }
                 }
 
-                std::string tempthree;
+                std::string tempThree;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("three");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
                     {
-                        tempthree = itr->value.GetString();
+                        tempThree = itr->value.GetString();
                     }
                     else
                     {
@@ -103,7 +108,7 @@ void SignalOnlyClient::_receiveMessage(
                 std::lock_guard<std::mutex> lock(_anotherSignalSignalCallbacksMutex);
                 for (const auto& cb: _anotherSignalSignalCallbacks)
                 {
-                    cb(tempone, temptwo, tempthree);
+                    cb(tempOne, tempTwo, tempThree);
                 }
             }
         }
@@ -134,12 +139,12 @@ void SignalOnlyClient::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                std::string tempword;
+                std::string tempWord;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("word");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
                     {
-                        tempword = itr->value.GetString();
+                        tempWord = itr->value.GetString();
                     }
                     else
                     {
@@ -150,7 +155,7 @@ void SignalOnlyClient::_receiveMessage(
                 std::lock_guard<std::mutex> lock(_barkSignalCallbacksMutex);
                 for (const auto& cb: _barkSignalCallbacks)
                 {
-                    cb(tempword);
+                    cb(tempWord);
                 }
             }
         }
@@ -181,23 +186,23 @@ void SignalOnlyClient::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                boost::optional<int> tempnumber;
+                boost::optional<int> tempNumber;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("number");
                     if (itr != doc.MemberEnd() && itr->value.IsInt())
                     {
-                        tempnumber = itr->value.GetInt();
+                        tempNumber = itr->value.GetInt();
                     }
                     else
                     {
-                        tempnumber = boost::none;
+                        tempNumber = boost::none;
                     }
                 }
 
                 std::lock_guard<std::mutex> lock(_maybeNumberSignalCallbacksMutex);
                 for (const auto& cb: _maybeNumberSignalCallbacks)
                 {
-                    cb(tempnumber);
+                    cb(tempNumber);
                 }
             }
         }
@@ -228,23 +233,77 @@ void SignalOnlyClient::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                boost::optional<std::string> tempname;
+                boost::optional<std::string> tempName;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("name");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
                     {
-                        tempname = itr->value.GetString();
+                        tempName = itr->value.GetString();
                     }
                     else
                     {
-                        tempname = boost::none;
+                        tempName = boost::none;
                     }
                 }
 
                 std::lock_guard<std::mutex> lock(_maybeNameSignalCallbacksMutex);
                 for (const auto& cb: _maybeNameSignalCallbacks)
                 {
-                    cb(tempname);
+                    cb(tempName);
+                }
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _nowSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/signal/now"))
+    {
+        //Log("Handling now signal");
+        rapidjson::Document doc;
+        try
+        {
+            if (_nowSignalCallbacks.size() > 0)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse now signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject())
+                {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                std::chrono::time_point<std::chrono::system_clock> tempTimestamp;
+                { // Scoping
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("timestamp");
+                    if (itr != doc.MemberEnd() && itr->value.IsString())
+                    {
+                        std::istringstream ss(itr->value.GetString());
+                        std::tm tm = {};
+                        ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+                        if (ss.fail())
+                        {
+                            throw std::runtime_error("Failed to parse datetime string");
+                        }
+                        tempTimestamp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Received payload doesn't have required value/type");
+                    }
+                }
+
+                std::lock_guard<std::mutex> lock(_nowSignalCallbacksMutex);
+                for (const auto& cb: _nowSignalCallbacks)
+                {
+                    cb(tempTimestamp);
                 }
             }
         }
@@ -279,4 +338,10 @@ void SignalOnlyClient::registerMaybeNameCallback(const std::function<void(boost:
 {
     std::lock_guard<std::mutex> lock(_maybeNameSignalCallbacksMutex);
     _maybeNameSignalCallbacks.push_back(cb);
+}
+
+void SignalOnlyClient::registerNowCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_nowSignalCallbacksMutex);
+    _nowSignalCallbacks.push_back(cb);
 }

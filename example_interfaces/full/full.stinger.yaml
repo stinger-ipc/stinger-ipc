@@ -96,6 +96,27 @@ methods:
       - name: message
         type: string
 
+  what_time_is_it:
+    documentation: Get the current date and time.
+    arguments:
+      - name: the_first_time
+        type: datetime
+    returnValues:
+      - name: timestamp
+        type: datetime
+
+  set_the_time:
+    arguments:
+      - name: the_first_time
+        type: datetime
+      - name: the_second_time
+        type: datetime
+    returnValues:
+      - name: timestamp
+        type: datetime
+      - name: confirmation_message
+        type: string
+
 properties:
 
   favorite_number:
@@ -129,3 +150,20 @@ properties:
     values:
       - name: family_name
         type: string
+
+  last_breakfast_time:
+    documentation: This is to test a property with a single datetime value.
+    values:
+      - name: timestamp
+        type: datetime
+  
+  last_birthdays:
+    documentation: This is to test a property with multiple datetime values.
+    values:
+      - name: mom
+        type: datetime
+      - name: dad
+        type: datetime
+      - name: sister
+        type: datetime
+        optional: true

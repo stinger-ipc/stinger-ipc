@@ -26,6 +26,16 @@ int main(int argc, char** argv)
         std::cout << "Received call for echo\n";
         return "apples"; });
 
+    server.registerWhatTimeIsItHandler([](std::chrono::time_point<std::chrono::system_clock> unused1) -> std::chrono::time_point<std::chrono::system_clock>
+                                       {
+        std::cout << "Received call for what_time_is_it\n";
+        return std::chrono::system_clock::now(); });
+
+    server.registerSetTheTimeHandler([](std::chrono::time_point<std::chrono::system_clock> unused1, std::chrono::time_point<std::chrono::system_clock> unused2) -> SetTheTimeReturnValue
+                                     {
+        std::cout << "Received call for set_the_time\n";
+        return SetTheTimeReturnValue{ std::chrono::system_clock::now(), "apples" }; });
+
     std::cout << "Press Enter to exit\n";
     std::cin.ignore();
     return 0;

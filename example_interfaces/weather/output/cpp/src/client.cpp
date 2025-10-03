@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <iostream>
+#include <chrono>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -81,12 +82,12 @@ void WeatherClient::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                std::string tempcurrent_time;
+                std::string tempCurrentTime;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("current_time");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
                     {
-                        tempcurrent_time = itr->value.GetString();
+                        tempCurrentTime = itr->value.GetString();
                     }
                     else
                     {
@@ -97,7 +98,7 @@ void WeatherClient::_receiveMessage(
                 std::lock_guard<std::mutex> lock(_currentTimeSignalCallbacksMutex);
                 for (const auto& cb: _currentTimeSignalCallbacks)
                 {
-                    cb(tempcurrent_time);
+                    cb(tempCurrentTime);
                 }
             }
         }

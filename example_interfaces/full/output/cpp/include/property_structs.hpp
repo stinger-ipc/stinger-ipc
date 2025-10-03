@@ -48,3 +48,25 @@ struct LunchMenuProperty
  * This is to test a property with a single string value.
  */
 typedef std::string FamilyNameProperty;
+
+/**
+ * The `last_breakfast_time` property contains a single field:
+ *   std::chrono::time_point<std::chrono::system_clock> timestamp;
+ *
+ * Because there is only one field, no outer-structure is needed. 
+ *
+ * This is to test a property with a single datetime value.
+ */
+typedef std::chrono::time_point<std::chrono::system_clock> LastBreakfastTimeProperty;
+
+/**
+ * This is to test a property with multiple datetime values.
+ */
+struct LastBirthdaysProperty
+{
+    static LastBirthdaysProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::chrono::time_point<std::chrono::system_clock> mom;
+    std::chrono::time_point<std::chrono::system_clock> dad;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister;
+};

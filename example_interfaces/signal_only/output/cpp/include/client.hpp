@@ -13,6 +13,7 @@ It contains enumerations used by the SignalOnly interface.
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <chrono>
 #include <rapidjson/document.h>
 #include <boost/uuid/uuid.hpp>
 #include <boost/optional.hpp>
@@ -49,6 +50,10 @@ public:
     // Register a callback for the `maybe_name` signal.
     // The provided method will be called whenever a `maybe_name` is received.
     void registerMaybeNameCallback(const std::function<void(boost::optional<std::string>)>& cb);
+
+    // Register a callback for the `now` signal.
+    // The provided method will be called whenever a `now` is received.
+    void registerNowCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>)>& cb);
 
 private:
     // Pointer to the broker connection.
@@ -90,4 +95,11 @@ private:
 
     // MQTT Subscription ID for `maybe_name` signal receptions.
     int _maybeNameSignalSubscriptionId;
+
+    // List of callbacks to be called whenever the `now` signal is received.
+    std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _nowSignalCallbacks;
+    std::mutex _nowSignalCallbacksMutex;
+
+    // MQTT Subscription ID for `now` signal receptions.
+    int _nowSignalSubscriptionId;
 };

@@ -14,6 +14,7 @@ It contains enumerations used by the SignalOnly interface.
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <chrono>
 #include <boost/optional.hpp>
 #include <rapidjson/document.h>
 
@@ -38,6 +39,8 @@ public:
     boost::future<bool> emitMaybeNumberSignal(boost::optional<int>);
 
     boost::future<bool> emitMaybeNameSignal(boost::optional<std::string>);
+
+    boost::future<bool> emitNowSignal(std::chrono::time_point<std::chrono::system_clock>);
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;

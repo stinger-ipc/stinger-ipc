@@ -235,6 +235,18 @@ impl {{stinger.rust.server_struct_name}} {
                     };
                     {%elif method.return_value_type is false %}
                     let retval = {{method_name | UpperCamelCase}}ReturnValue {};
+                    {%elif method.return_value_type == "datetime" %}
+                    let retval = {{method_name | UpperCamelCase}}ReturnValue {
+                        {{method.return_value_property_name}}: retval,
+                    };
+                    {%elif method.return_value_type == "duration" %}
+                    let retval = {{method_name | UpperCamelCase}}ReturnValue {
+                        {{method.return_value_property_name}}: retval,
+                    };
+                    {%elif method.return_value_type == "binary" %}
+                    let retval = {{method_name | UpperCamelCase}}ReturnValue {
+                        {{method.return_value_property_name}}: retval,
+                    };
                     {%endif%}
                     let _fut_publish_result = publisher.publish_response(resp_topic, &retval, corr_data).await;
                 }

@@ -145,6 +145,34 @@ class Arg:
                 st_arg.optional = opt
             st_arg.try_set_description_from_spec(arg_spec)
             return st_arg
+        
+        if arg_spec["type"] == "datetime":
+            dt_arg = ArgDateTime(arg_spec["name"])
+            if opt := arg_spec.get("optional", False):
+                if not isinstance(opt, bool):
+                    raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
+                dt_arg.optional = opt
+            dt_arg.try_set_description_from_spec(arg_spec)
+            return dt_arg
+
+        if arg_spec["type"] == "duration":
+            dur_arg = ArgDuration(arg_spec["name"])
+            if opt := arg_spec.get("optional", False):
+                if not isinstance(opt, bool):
+                    raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
+                dur_arg.optional = opt
+            dur_arg.try_set_description_from_spec(arg_spec)
+            return dur_arg
+        
+        if arg_spec["type"] == "binary":
+            bin_arg = ArgBinary(arg_spec["name"])
+            if opt := arg_spec.get("optional", False):
+                if not isinstance(opt, bool):
+                    raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
+                bin_arg.optional = opt
+            bin_arg.try_set_description_from_spec(arg_spec)
+            return bin_arg
+
         raise RuntimeError(f"unknown arg type: {arg_spec['type']}")
 
     @abstractmethod
@@ -218,6 +246,8 @@ class ArgEnum(Arg):
                 retval = f"Some({self._enum.class_name}::{stringmanip.upper_camel_case(value)})"
             else:
                 retval = f"{self._enum.class_name}::{stringmanip.upper_camel_case(value)}"
+        elif lang == "json":
+            retval = 1
         random.setstate(random_state)
         return retval
 
@@ -376,6 +406,8 @@ class ArgStruct(Arg):
                 self.rust_type,
                 ", ".join([f"{k}: {v}" for k, v in example_list.items()]),
             )
+        elif lang == "json":
+            return "{" + ", ".join([f'"{k}": {v}' for k, v in example_list.items()]) + "}"
         return None
 
     def __str__(self) -> str:
@@ -383,6 +415,168 @@ class ArgStruct(Arg):
 
     def __repr__(self):
         return f"ArgStruct(name={self.name}, iface_struct={self._interface_struct})"
+
+class ArgDateTime(Arg):
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._type = ArgType.DATETIME
+
+    @property
+    def cpp_type(self) -> str:
+        if self.optional:
+            return "boost::optional<std::chrono::time_point<std::chrono::system_clock>>"
+        return "std::chrono::time_point<std::chrono::system_clock>"
+
+    @property
+    def cpp_temp_type(self) -> str:
+        return self.cpp_type
+
+    @property
+    def cpp_rapidjson_type(self) -> str:
+        return "String"
+
+    @property
+    def python_type(self) -> str:
+        return "datetime.datetime"
+
+    @property
+    def rust_type(self) -> str:
+        return "chrono::DateTime<chrono::Utc>"
+
+    @property
+    def markdown_type(self) -> str:
+        return "[DateTime](#datetime)"
+
+    def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        if lang == "python":
+            return f"datetime.datetime.now()"
+        elif lang == "rust":
+            return "chrono::Utc::now()"
+        elif lang in ["c++", "cpp"]:
+            return "std::chrono::system_clock::now()"
+        elif lang == "json":
+            return '"1990-07-08T16:20:00Z"'
+        return None
+
+    def __str__(self) -> str:
+        return f"<ArgDateTime name={self.name}>"
+
+    def __repr__(self):
+        return f"ArgDateTime(name={self.name})"
+
+class ArgDuration(Arg):
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._type = ArgType.DURATION
+
+    @property
+    def cpp_type(self) -> str:
+        return "std::chrono::milliseconds"
+
+    @property
+    def python_type(self) -> str:
+        return "datetime.timedelta"
+
+    @property
+    def rust_type(self) -> str:
+        return "std::time::Duration"
+
+    @property
+    def markdown_type(self) -> str:
+        return "[Duration](#duration)"
+
+    def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        if lang == "python":
+            return f"datetime.timedelta(seconds=5)"
+        elif lang == "rust":
+            return "std::time::Duration::from_secs(5)"
+        return None
+
+    def __str__(self) -> str:
+        return f"<ArgDuration name={self.name}>"
+
+    def __repr__(self):
+        return f"ArgDuration(name={self.name})"
+    
+
+class ArgBinary(Arg):
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._type = ArgType.BINARY
+
+    @property
+    def cpp_type(self) -> str:
+        return "std::vector<unsigned char>"
+
+    @property
+    def python_type(self) -> str:
+        return "bytes"
+
+    @property
+    def rust_type(self) -> str:
+        return "Vec<u8>"
+
+    @property
+    def markdown_type(self) -> str:
+        return "[Binary](#binary)"
+
+    def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        if lang == "python":
+            return f'b"example binary data"'
+        elif lang == "rust":
+            return 'vec![101, 120, 97, 109, 112, 108, 101]'  # "example" in ASCII bytes
+        elif lang in ["c++", "cpp"]:
+            return '{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
+        return None
+
+    def __str__(self) -> str:
+        return f"<ArgBinary name={self.name}>"
+
+    def __repr__(self):
+        return f"ArgBinary(name={self.name})"
+    
+
+class ArgList(Arg):
+    def __init__(self, name: str, element_type: Arg):
+        super().__init__(name)
+        self._element_type = element_type
+        self._type = ArgType.LIST
+
+    @property
+    def element_type(self) -> Arg:
+        return self._element_type
+
+    @property
+    def cpp_type(self) -> str:
+        return f"std::vector<{self._element_type.cpp_type}>"
+
+    @property
+    def python_type(self) -> str:
+        return f"list[{self._element_type.python_type}]"
+
+    @property
+    def rust_type(self) -> str:
+        return f"Vec<{self._element_type.rust_type}>"
+
+    @property
+    def markdown_type(self) -> str:
+        return f"List of {self._element_type.markdown_type}"
+
+    def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        example_value = self._element_type.get_random_example_value(lang, seed=seed)
+        if lang == "python":
+            return f"[{example_value}, {example_value}]"
+        elif lang == "rust":
+            return f"vec![{example_value}, {example_value}]"
+        elif lang in ["c++", "cpp"]:
+            return f"std::vector<{self._element_type.cpp_type}>{{{example_value}, {example_value}}}"
+        return None
+
+    def __str__(self) -> str:
+        return f"<ArgList name={self.name} element_type={self._element_type}>"
+
+    def __repr__(self):
+        return f"ArgList(name={self.name}, element_type={self._element_type})"
 
 
 class InterfaceComponent:

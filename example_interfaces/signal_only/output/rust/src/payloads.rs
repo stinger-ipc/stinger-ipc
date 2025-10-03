@@ -12,7 +12,103 @@ It contains enumerations used by the SignalOnly interface.
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 
+use base64::prelude::*;
+use iso8601_duration::Duration as IsoDuration;
 use serde::{Deserialize, Serialize};
+
+pub mod base64_binary_format {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let b64_string = BASE64_STANDARD.encode(bytes);
+        serializer.serialize_str(&b64_string)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let b64_string = String::deserialize(deserializer)?;
+        BASE64_STANDARD
+            .decode(b64_string.as_bytes())
+            .map_err(serde::de::Error::custom)
+    }
+
+    // For Option<Vec<u8>>
+    pub fn serialize_option<S>(bytes: &Option<Vec<u8>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match bytes {
+            Some(b) => serialize(b, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(b64_string) => {
+                let decoded = BASE64_STANDARD
+                    .decode(b64_string.as_bytes())
+                    .map_err(serde::de::Error::custom)?;
+                Ok(Some(decoded))
+            }
+            None => Ok(None),
+        }
+    }
+}
+
+// Helper functions for DateTime serialization/deserialization
+pub mod datetime_iso_format {
+    use chrono::{DateTime, Utc};
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let iso_string = dt.to_rfc3339();
+        serializer.serialize_str(&iso_string)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let iso_string = String::deserialize(deserializer)?;
+        DateTime::parse_from_rfc3339(&iso_string)
+            .map(|dt| dt.with_timezone(&Utc))
+            .map_err(serde::de::Error::custom)
+    }
+}
+
+pub mod duration_iso_format {
+    // Serialization and deserialization for Duration as ISO 8601 string
+    pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let seconds = duration.num_seconds();
+        let iso_string = format!("PT{}S", seconds);
+        serializer.serialize_str(&iso_string)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let iso_string = String::deserialize(deserializer)?;
+        let iso_dur = iso_string.parse::<IsoDuration>().unwrap();
+        iso_dur.to_chrono()
+    }
+}
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -101,4 +197,104 @@ pub struct MaybeNumberSignalPayload {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MaybeNameSignalPayload {
     pub name: Option<String>,
+}
+
+// Structures for `now` signal
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct NowSignalPayload {
+    #[serde(with = "datetime_iso_format")]
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{DateTime, Utc};
+
+    #[test]
+    fn test_base64_binary_format_serialization() {
+        use serde::{Deserialize, Serialize};
+
+        #[derive(Serialize, Deserialize, Debug, PartialEq)]
+        struct TestStruct {
+            #[serde(with = "base64_binary_format")]
+            data: Vec<u8>,
+        }
+
+        // Test with various binary data
+        let test_data = vec![0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37];
+        let test_struct = TestStruct {
+            data: test_data.clone(),
+        };
+
+        // Test serialization
+        let serialized = serde_json::to_string(&test_struct).unwrap();
+
+        // The base64 encoded value of [0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37] should be "AAEC//5CEzc="
+        assert!(serialized.contains("AAEC//5CEzc="));
+
+        // Test deserialization
+        let deserialized: TestStruct = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized.data, test_data);
+    }
+
+    #[test]
+    fn test_base64_binary_format_option_serialization() {
+        use serde::{Deserialize, Serialize};
+
+        #[derive(Serialize, Deserialize, Debug, PartialEq)]
+        struct TestStruct {
+            #[serde(with = "base64_binary_format")]
+            #[serde(serialize_with = "base64_binary_format::serialize_option")]
+            #[serde(deserialize_with = "base64_binary_format::deserialize_option")]
+            data: Option<Vec<u8>>,
+        }
+
+        // Test with Some data
+        let test_data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F]; // "Hello" in bytes
+        let test_struct_some = TestStruct {
+            data: Some(test_data.clone()),
+        };
+
+        let serialized_some = serde_json::to_string(&test_struct_some).unwrap();
+        let deserialized_some: TestStruct = serde_json::from_str(&serialized_some).unwrap();
+        assert_eq!(deserialized_some.data, Some(test_data));
+
+        // Test with None
+        let test_struct_none = TestStruct { data: None };
+        let serialized_none = serde_json::to_string(&test_struct_none).unwrap();
+        let deserialized_none: TestStruct = serde_json::from_str(&serialized_none).unwrap();
+        assert_eq!(deserialized_none.data, None);
+    }
+
+    #[test]
+    fn test_base64_binary_format_round_trip() {
+        use serde::{Deserialize, Serialize};
+
+        #[derive(Serialize, Deserialize, Debug, PartialEq)]
+        struct BinaryData {
+            #[serde(with = "base64_binary_format")]
+            payload: Vec<u8>,
+            name: String,
+        }
+
+        // Test with empty data
+        let empty_data = BinaryData {
+            payload: vec![],
+            name: "empty".to_string(),
+        };
+        let json = serde_json::to_string(&empty_data).unwrap();
+        let parsed: BinaryData = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed, empty_data);
+
+        // Test with random binary data
+        let random_data = BinaryData {
+            payload: vec![0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE],
+            name: "random".to_string(),
+        };
+        let json = serde_json::to_string(&random_data).unwrap();
+        let parsed: BinaryData = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed, random_data);
+    }
 }

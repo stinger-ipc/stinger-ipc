@@ -13,6 +13,7 @@ It contains enumerations used by the Full interface.
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <chrono>
 #include <rapidjson/document.h>
 #include <boost/uuid/uuid.hpp>
 #include <boost/optional.hpp>
@@ -53,6 +54,14 @@ public:
     // Calls the `echo` method.
     // Returns a future.  When that future resolves, it will have the returned value.
     boost::future<std::string> echo(const std::string& message);
+
+    // Calls the `what_time_is_it` method.
+    // Returns a future.  When that future resolves, it will have the returned value.
+    boost::future<std::chrono::time_point<std::chrono::system_clock>> whatTimeIsIt(std::chrono::time_point<std::chrono::system_clock> the_first_time);
+
+    // Calls the `set_the_time` method.
+    // Returns a future.  When that future resolves, it will have the returned value.
+    boost::future<SetTheTimeReturnValue> setTheTime(std::chrono::time_point<std::chrono::system_clock> the_first_time, std::chrono::time_point<std::chrono::system_clock> the_second_time);
 
     // ---------------- PROPERTIES ------------------
 
@@ -104,6 +113,30 @@ public:
 
     boost::future<bool> updateFamilyNameProperty(const std::string&) const;
 
+    // ---last_breakfast_time Property---
+
+    // Gets the latest value of the `last_breakfast_time` property, if one has been received.
+    // If no value has been received yet, an empty optional is returned.
+    boost::optional<LastBreakfastTimeProperty> getLastBreakfastTimeProperty() const;
+
+    // Add a callback that will be called whenever the `last_breakfast_time` property is updated.
+    // The provided method will be called whenever a new value for the `last_breakfast_time` property is received.
+    void registerLastBreakfastTimePropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>)>& cb);
+
+    boost::future<bool> updateLastBreakfastTimeProperty(std::chrono::time_point<std::chrono::system_clock>) const;
+
+    // ---last_birthdays Property---
+
+    // Gets the latest value of the `last_birthdays` property, if one has been received.
+    // If no value has been received yet, an empty optional is returned.
+    boost::optional<LastBirthdaysProperty> getLastBirthdaysProperty() const;
+
+    // Add a callback that will be called whenever the `last_birthdays` property is updated.
+    // The provided method will be called whenever a new value for the `last_birthdays` property is received.
+    void registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)>& cb);
+
+    boost::future<bool> updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>) const;
+
 private:
     // Pointer to the broker connection.
     std::shared_ptr<IBrokerConnection> _broker;
@@ -140,6 +173,16 @@ private:
 
     // This is called internally to process responses to `echo` method calls.
     void _handleEchoResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    // Holds promises for pending `what_time_is_it` method calls.
+    std::map<boost::uuids::uuid, boost::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingWhatTimeIsItMethodCalls;
+
+    // This is called internally to process responses to `what_time_is_it` method calls.
+    void _handleWhatTimeIsItResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    // Holds promises for pending `set_the_time` method calls.
+    std::map<boost::uuids::uuid, boost::promise<SetTheTimeReturnValue>> _pendingSetTheTimeMethodCalls;
+
+    // This is called internally to process responses to `set_the_time` method calls.
+    void _handleSetTheTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
 
     // ---------------- PROPERTIES ------------------
 
@@ -226,4 +269,46 @@ private:
     // Callbacks registered for changes to the `family_name` property.
     std::vector<std::function<void(const std::string&)>> _familyNamePropertyCallbacks;
     std::mutex _familyNamePropertyCallbacksMutex;
+
+    // ---last_breakfast_time Property---
+
+    // Last received value for the `last_breakfast_time` property.
+    boost::optional<LastBreakfastTimeProperty> _lastBreakfastTimeProperty;
+
+    // This is the property version of the last received `last_breakfast_time` property update.
+    int _lastLastBreakfastTimePropertyVersion = -1;
+
+    // Mutex for protecting access to the `last_breakfast_time` property and its version.
+    mutable std::mutex _lastBreakfastTimePropertyMutex;
+
+    // MQTT Subscription ID for `last_breakfast_time` property updates.
+    int _lastBreakfastTimePropertySubscriptionId;
+
+    // Method for parsing a JSON payload that updates the `last_breakfast_time` property.
+    void _receiveLastBreakfastTimePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+    // Callbacks registered for changes to the `last_breakfast_time` property.
+    std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _lastBreakfastTimePropertyCallbacks;
+    std::mutex _lastBreakfastTimePropertyCallbacksMutex;
+
+    // ---last_birthdays Property---
+
+    // Last received values for the `last_birthdays` property.
+    boost::optional<LastBirthdaysProperty> _lastBirthdaysProperty;
+
+    // This is the property version of the last received `last_birthdays` property update.
+    int _lastLastBirthdaysPropertyVersion = -1;
+
+    // Mutex for protecting access to the `last_birthdays` property and its version.
+    mutable std::mutex _lastBirthdaysPropertyMutex;
+
+    // MQTT Subscription ID for `last_birthdays` property updates.
+    int _lastBirthdaysPropertySubscriptionId;
+
+    // Method for parsing a JSON payload that updates the `last_birthdays` property.
+    void _receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+    // Callbacks registered for changes to the `last_birthdays` property.
+    std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)>> _lastBirthdaysPropertyCallbacks;
+    std::mutex _lastBirthdaysPropertyCallbacksMutex;
 };

@@ -23,6 +23,10 @@ class ArgType(Enum):
     PRIMITIVE = 1
     ENUM = 2
     STRUCT = 3
+    DATETIME = 4
+    DURATION = 5
+    BINARY = 6
+    LIST = 7
 
 
 class ArgPrimitiveType(Enum):

@@ -28,7 +28,7 @@ structures:
         type: float
         description: Forecasted temperature in degrees fahrenheit.
       - name: starttime
-        type: string
+        type: datetime
         description: Forecast is valid for the hour starting at this time.
       - name: condition
         type: enum

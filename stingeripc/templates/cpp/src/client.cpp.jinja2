@@ -5,6 +5,10 @@
 
 #include <vector>
 #include <iostream>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -15,7 +19,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
 #include <rapidjson/document.h>
-
+#include "structs.hpp"
 #include "client.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include "ibrokerconnection.hpp"
@@ -74,18 +78,30 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
                 }
 
                 {%for arg in sig.arg_list%}
-                {{arg.cpp_temp_type}} temp{{arg.name}};
+                {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}};
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
                     if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
                         {%if arg.arg_type.name.lower() == 'primitive'%}
-                        temp{{arg.name}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+                        temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
                         {%elif arg.arg_type.name.lower() == 'enum'%}
-                        temp{{arg.name}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                        temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                        {%elif arg.arg_type.name.lower() == 'datetime'%}
+                        std::istringstream ss(itr->value.GetString());
+                        std::tm tm = {};
+                        ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+                        if (ss.fail()) {
+                            throw std::runtime_error("Failed to parse datetime string");
+                        }
+                        temp{{arg.name|UpperCamelCase}} = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+                        {%elif arg.arg_type.name.lower() == 'duration'%}
+                        temp{{arg.name|UpperCamelCase}} = parseIsoDuration(itr->value.GetString());
+                        {%elif arg.arg_type.name.lower() == 'binary'%}
+                        temp{{arg.name|UpperCamelCase}} = base64Decode(itr->value.GetString());
                         {%endif%}
                     } else {
                     {%-if arg.optional%}
-                        temp{{arg.name}} = boost::none;
+                        temp{{arg.name|UpperCamelCase}} = boost::none;
                     {%else%}
                         throw std::runtime_error("Received payload doesn't have required value/type");
                     {%endif%}
@@ -95,7 +111,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
                 std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
                 for (const auto& cb : _{{sig_name | lowerCamelCase}}SignalCallbacks)
                 {
-                    cb({%for arg in sig.arg_list%}temp{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+                    cb({%for arg in sig.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
                 }
             }
         }
@@ -183,11 +199,21 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
     if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())
     {
         {%macro unpack_rv(arg)-%}
-        rapidjson::Value::ConstMemberIterator {{arg.name}}Itr = doc.FindMember("{{arg.name}}");
+        rapidjson::Value::ConstMemberIterator {{arg.name|lowerCamelCase}}Itr = doc.FindMember("{{arg.name}}");
         {%if arg.arg_type.name.lower() == 'primitive'-%}
-        {{arg.cpp_type}} {{arg.name}} = {{arg.name}}Itr->value.Get{{arg.cpp_rapidjson_type}}();
+        {{arg.cpp_type}} {{arg.name}} = {{arg.name|lowerCamelCase}}Itr->value.Get{{arg.cpp_rapidjson_type}}();
         {%elif arg.arg_type.name.lower() == 'enum'-%}
-        {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_type}}>({{arg.name}}Itr->value.GetInt());
+        {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_type}}>({{arg.name|lowerCamelCase}}Itr->value.GetInt());
+        {%elif arg.arg_type.name.lower() == 'datetime'%}
+        {{arg.cpp_type}} {{arg.name}};
+        if ({{arg.name|lowerCamelCase}}Itr != doc.MemberEnd() && {{arg.name|lowerCamelCase}}Itr->value.IsString()) {
+            {{arg.name}} = parseIsoTimestamp({{arg.name|lowerCamelCase}}Itr->value.Get{{arg.cpp_rapidjson_type}}());
+        }
+        {%elif method.return_value_type == 'struct'%}{%for arg2 in method.return_value%}
+        // {{arg2}}
+        {%endfor%}
+        {%else%}
+        TEMPLATE ERROR with unhandled return value type {{method.return_value_type}}
         {%endif-%}
         {%endmacro-%}
         {%if method.return_value_type == 'struct'-%}

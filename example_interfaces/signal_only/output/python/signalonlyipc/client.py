@@ -20,6 +20,7 @@ AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]
 BarkSignalCallbackType = Callable[[str], None]
 MaybeNumberSignalCallbackType = Callable[[int | None], None]
 MaybeNameSignalCallbackType = Callable[[str | None], None]
+NowSignalCallbackType = Callable[[datetime.datetime], None]
 
 
 class SignalOnlyClient:
@@ -37,6 +38,7 @@ class SignalOnlyClient:
         self._signal_recv_callbacks_for_bark: list[BarkSignalCallbackType] = []
         self._signal_recv_callbacks_for_maybe_number: list[MaybeNumberSignalCallbackType] = []
         self._signal_recv_callbacks_for_maybe_name: list[MaybeNameSignalCallbackType] = []
+        self._signal_recv_callbacks_for_now: list[NowSignalCallbackType] = []
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """Call each callback in the callback dictionary with the provided args."""
@@ -109,6 +111,18 @@ class SignalOnlyClient:
             kwargs["name"] = str | None(kwargs["name"]) if kwargs.get("name") else None
 
             self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_name, **kwargs)
+        # Handle 'now' signal.
+        elif self._conn.is_topic_sub(topic, "signalOnly/signal/now"):
+            if "ContentType" not in properties or properties["ContentType"] != "application/json":
+                self._logger.warning("Received 'now' signal with non-JSON content type")
+                return
+            allowed_args = [
+                "timestamp",
+            ]
+            kwargs = self._filter_for_args(json.loads(payload), allowed_args)
+            kwargs["timestamp"] = datetime.datetime(kwargs["timestamp"])
+
+            self._do_callbacks_for(self._signal_recv_callbacks_for_now, **kwargs)
 
     def receive_another_signal(self, handler: AnotherSignalSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
@@ -138,6 +152,13 @@ class SignalOnlyClient:
             self._conn.subscribe("signalOnly/signal/maybeName")
         return handler
 
+    def receive_now(self, handler: NowSignalCallbackType):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_now.append(handler)
+        if len(self._signal_recv_callbacks_for_now) == 1:
+            self._conn.subscribe("signalOnly/signal/now")
+        return handler
+
 
 class SignalOnlyClientBuilder:
 
@@ -149,6 +170,7 @@ class SignalOnlyClientBuilder:
         self._signal_recv_callbacks_for_bark = []  # type: List[BarkSignalCallbackType]
         self._signal_recv_callbacks_for_maybe_number = []  # type: List[MaybeNumberSignalCallbackType]
         self._signal_recv_callbacks_for_maybe_name = []  # type: List[MaybeNameSignalCallbackType]
+        self._signal_recv_callbacks_for_now = []  # type: List[NowSignalCallbackType]
 
     def receive_another_signal(self, handler):
         """Used as a decorator for methods which handle particular signals."""
@@ -166,6 +188,10 @@ class SignalOnlyClientBuilder:
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_maybe_name.append(handler)
 
+    def receive_now(self, handler):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_now.append(handler)
+
     def build(self) -> SignalOnlyClient:
         """Builds a new SignalOnlyClient."""
         self._logger.debug("Building SignalOnlyClient")
@@ -182,6 +208,9 @@ class SignalOnlyClientBuilder:
 
         for cb in self._signal_recv_callbacks_for_maybe_name:
             client.receive_maybe_name(cb)
+
+        for cb in self._signal_recv_callbacks_for_now:
+            client.receive_now(cb)
 
         return client
 
@@ -223,6 +252,13 @@ if __name__ == "__main__":
         @param name str | None
         """
         print(f"Got a 'maybe_name' signal: name={ name } ")
+
+    @client_builder.receive_now
+    def print_now_receipt(timestamp: datetime.datetime):
+        """
+        @param timestamp datetime.datetime
+        """
+        print(f"Got a 'now' signal: timestamp={ timestamp } ")
 
     client = client_builder.build()
 

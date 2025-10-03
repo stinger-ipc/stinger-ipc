@@ -211,6 +211,21 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(_{{prop_name | lowerCamelCase}}Property->c_str(), _{{prop_name | lowerCamelCase}}Property->size(), doc.GetAllocator());
         doc.AddMember("{{prop.arg_list[0].name}}", tempStringValue, doc.GetAllocator());
+        {%elif prop.arg_list[0].arg_type.name.lower() == 'datetime' -%}
+        // Datetime field
+        std::string {{prop.arg_list[0].name|lowerCamelCase}}Str = timePointToIsoString(*_{{prop_name | lowerCamelCase}}Property);
+        rapidjson::Value {{prop.arg_list[0].name|lowerCamelCase}}Value({{prop.arg_list[0].name|lowerCamelCase}}Str.c_str(), doc.GetAllocator());
+        doc.AddMember("{{prop.arg_list[0].name}}", {{prop.arg_list[0].name|lowerCamelCase}}Value, doc.GetAllocator());
+        {%elif prop.arg_list[0].arg_type.name.lower() == 'duration' -%}
+        // duration field
+        std::string {{prop.arg_list[0].name|lowerCamelCase}}Str = durationToIsoString(*_{{prop_name | lowerCamelCase}}Property);
+        rapidjson::Value {{prop.arg_list[0].name|lowerCamelCase}}Value({{prop.arg_list[0].name|lowerCamelCase}}Str.c_str(), doc.GetAllocator());
+        doc.AddMember("{{prop.arg_list[0].name}}", {{prop.arg_list[0].name|lowerCamelCase}}Value, doc.GetAllocator());
+        {%elif prop.arg_list[0].arg_type.name.lower() == 'binary' -%}
+        // binary field
+        std::string {{prop.arg_list[0].name|lowerCamelCase}}Str = base64Encode(*_{{prop_name | lowerCamelCase}}Property);
+        rapidjson::Value {{prop.arg_list[0].name|lowerCamelCase}}Value({{prop.arg_list[0].name|lowerCamelCase}}Str.c_str(), doc.GetAllocator());
+        doc.AddMember("{{prop.arg_list[0].name}}", {{prop.arg_list[0].name|lowerCamelCase}}Value, doc.GetAllocator());
         {%else%} {# not string primitive #}
         doc.AddMember("{{prop.arg_list[0].name}}", *_{{prop_name | lowerCamelCase}}Property, doc.GetAllocator());
         {%endif%} {# primitive string or other primitive #}

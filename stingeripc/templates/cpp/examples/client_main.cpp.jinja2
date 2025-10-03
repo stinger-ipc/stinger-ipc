@@ -1,9 +1,11 @@
 {% import 'partials/args.jinja2' as ar %}
 
 #include <iostream>
+#include <sstream>
 #include <boost/chrono/chrono.hpp>
 #include "broker.hpp"
 #include "client.hpp"
+#include "structs.hpp"
 
 int main(int argc, char** argv) {
 
@@ -13,12 +15,42 @@ int main(int argc, char** argv) {
 
     {%-for sig_name, sig in stinger.signals.items() %}
     client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
-        std::cout << {%for arg in sig.arg_list%}"{{arg.name}}=" << {%-if arg.optional%} "None"{%else%}{%if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]{%else%}{{arg.name}}{%endif%}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
+        {%-for arg in sig.arg_list-%}{%if arg.arg_type.name.lower() == 'datetime'%}
+        {%if arg.optional%}
+        if ({{arg.name}}) {
+            std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString(*{{arg.name}});
+        } else {
+            std::string {{arg.name|lowerCamelCase}}Str = "None";
+        }
+        {%else%}
+        std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString({{arg.name}});
+        {%endif%}
+        {%elif arg.arg_type.name.lower() == 'binary'%}
+        std::string {{arg.name|lowerCamelCase}}Str = "[Binary Data]";
+        {%elif arg.arg_type.name.lower() == 'duration'%}
+        std::string {{arg.name|lowerCamelCase}}Str = "[Duration Data]";
+        {%endif%}{%endfor-%}
+        std::cout << {%for arg in sig.arg_list%}"{{arg.name}}=" << 
+        {%-if arg.optional%} "None"{%else%}
+        {%-if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]
+        {%-elif arg.arg_type.name.lower() == 'datetime' or arg.arg_type.name.lower() == 'duration' or arg.arg_type.name.lower() == 'binary'%}{{arg.name|lowerCamelCase}}Str
+        {%-else%}{{arg.name}}{%endif%}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
     });
     {%-endfor%}
 
     {%- for prop_name, prop in stinger.properties.items() %}
     client.register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.methodParams(prop.arg_list)}}) {
+        {%-for arg in prop.arg_list-%}{%if arg.arg_type.name.lower() == 'datetime'%}
+        {%if arg.optional%}
+        if ({{arg.name}}) {
+            std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString(*{{arg.name}});
+        } else {
+            std::string {{arg.name|lowerCamelCase}}Str = "None";
+        }
+        {%else%}
+        std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString({{arg.name}});
+        {%endif%}
+        {%endif%}{%endfor-%}
         std::cout << "Received update for {{prop_name}} property: " << {# #}
                         {%-for arg in prop.arg_list-%}
                         "{{arg.name}}=" << {%if arg.optional%} "None"{%else%}
@@ -26,7 +58,9 @@ int main(int argc, char** argv) {
                                 {{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]
                             {%elif arg.arg_type.name.lower() == 'struct'-%}
                                 "[{{arg.cpp_type}} object]"
-                            {%-else%}{{arg.name}}{%endif%}
+                            {%elif arg.arg_type.name.lower() == 'datetime'%}
+                                {{arg.name|lowerCamelCase}}Str
+                            {%-else%}{{arg.name}} /* unhandled arg type*/ {%endif%}
                             {%-endif%} <<
                          {%-if not loop.last %} " | " << {%endif%}
                         {%-endfor-%} 
@@ -50,7 +84,11 @@ int main(int argc, char** argv) {
         std::cout << "Result: {{method.return_value.name | UpperCamelCase}}=" << {{method.return_value.enum.name | camelCase }}Strings[{{method_name|camelCase}}ResultFuture.get()] << std::endl;
         {%elif method.return_value_type == 'struct'-%}
         {{method.return_value_cpp_class}} returnValue = {{method_name|camelCase}}ResultFuture.get();
-        std::cout << "Results:"{%for m in method.return_value%} << " {{m.name}}=" << {%if m.arg_type.name.lower() == 'enum'%}{{m.enum.name | camelCase }}Strings[static_cast<int>(returnValue.{{m.name}})]{%else%}returnValue.{{m.name}}{%endif%} {%endfor%} << std::endl;
+        std::cout << "Results:"{%for m in method.return_value%} << " {{m.name}}=" << 
+        {%-if m.arg_type.name.lower() == 'enum'%}{{m.enum.name | camelCase }}Strings[static_cast<int>(returnValue.{{m.name}})]
+        {%-elif m.arg_type.name.lower() == 'datetime'%}
+        timePointToIsoString(returnValue.{{m.name}})
+        {%-else%}returnValue.{{m.name}}{%endif%} {%endfor%} << std::endl;
         {%endif%}
     }
     {%-endfor%}

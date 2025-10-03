@@ -110,6 +110,26 @@ async fn main() {
             }
         });
 
+        let mut sig_rx = api_client.get_now_receiver();
+        println!("Got signal receiver for now");
+
+        sleep(Duration::from_secs(5)).await;
+
+        let sig_rx_task = tokio::spawn(async move {
+            println!("Looping for signals");
+            loop {
+                match sig_rx.recv().await {
+                    Ok(payload) => {
+                        println!("Received now signal with payload: {:?}", payload);
+                    }
+                    Err(e) => {
+                        eprintln!("Error receiving now signal: {:?}", e);
+                        break;
+                    }
+                }
+            }
+        });
+
         let _ = join!(sig_rx_task);
     });
     // Ctrl-C to stop

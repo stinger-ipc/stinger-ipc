@@ -62,6 +62,27 @@ impl FullMethodHandlers for FullMethodImpl {
         Ok("apples".to_string())
     }
 
+    async fn handle_what_time_is_it(
+        &self,
+        _the_first_time: chrono::DateTime<chrono::Utc>,
+    ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
+        println!("Handling what_time_is_it");
+        Ok(chrono::Utc::now())
+    }
+
+    async fn handle_set_the_time(
+        &self,
+        _the_first_time: chrono::DateTime<chrono::Utc>,
+        _the_second_time: chrono::DateTime<chrono::Utc>,
+    ) -> Result<SetTheTimeReturnValue, MethodReturnCode> {
+        println!("Handling set_the_time");
+        let rv = SetTheTimeReturnValue {
+            timestamp: chrono::Utc::now(),
+            confirmation_message: "apples".to_string(),
+        };
+        Ok(rv)
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -127,6 +148,24 @@ async fn main() {
             eprintln!("Error initializing property 'family_name': {:?}", e);
         }
 
+        println!("Setting initial value for property 'last_breakfast_time'");
+        let prop_init_future = server.set_last_breakfast_time(chrono::Utc::now()).await;
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'last_breakfast_time': {:?}", e);
+        }
+
+        println!("Setting initial value for property 'last_birthdays'");
+        let new_value = LastBirthdaysProperty {
+            mom: chrono::Utc::now(),
+            dad: chrono::Utc::now(),
+            sister: chrono::Utc::now(),
+        };
+        let prop_init_future = server.set_last_birthdays(new_value).await;
+
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'last_birthdays': {:?}", e);
+        }
+
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'todayIs'");
         let signal_result_future = server.emit_today_is(42, Some(DayOfTheWeek::Monday)).await;
@@ -175,6 +214,23 @@ async fn main() {
         if let Err(e) = prop_change_future.await {
             eprintln!("Error changing property 'family_name': {:?}", e);
         }
+
+        sleep(Duration::from_secs(1)).await;
+        println!("Changing property 'last_breakfast_time'");
+        let prop_change_future = server.set_last_breakfast_time(chrono::Utc::now()).await;
+        if let Err(e) = prop_change_future.await {
+            eprintln!("Error changing property 'last_breakfast_time': {:?}", e);
+        }
+
+        sleep(Duration::from_secs(1)).await;
+        println!("Changing property 'last_birthdays'");
+        let new_value = LastBirthdaysProperty {
+            mom: chrono::Utc::now(),
+            dad: chrono::Utc::now(),
+            sister: chrono::Utc::now(),
+        };
+        server.set_last_birthdays(new_value).await;
+
         let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop

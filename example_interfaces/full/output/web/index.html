@@ -341,6 +341,88 @@
         <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.family_name)" />
         
     </div>
+    
+    <div class="component-box prop-box" id="prop-box-last_breakfast_time">
+        <h3 class="component-title prop-title">Property: last_breakfast_time</h3>
+        <div class="component-doc prop-doc">
+<p>This is to test a property with a single datetime value.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">timestamp</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.last_breakfast_time.received.timestamp" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.last_breakfast_time)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-last_birthdays">
+        <h3 class="component-title prop-title">Property: last_birthdays</h3>
+        <div class="component-doc prop-doc">
+<p>This is to test a property with multiple datetime values.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">mom</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.last_birthdays.received.mom" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">dad</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.last_birthdays.received.dad" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">sister</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.last_birthdays.received.sister" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.last_birthdays)" />
+        
+    </div>
      
 
     <!------------- METHODS ------------->
@@ -463,6 +545,86 @@
             </form>
         </div>
         <div class="last-received method-response" ng-bind="methods['echo'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-what_time_is_it">
+        <h3 class="component-title method-title">Method: what_time_is_it</h3>
+        <div class="component-doc method-doc">
+<p>Get the current date and time.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.what_time_is_it)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_first_time</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.what_time_is_it.args.the_first_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call what_time_is_it</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['what_time_is_it'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-set_the_time">
+        <h3 class="component-title method-title">Method: set_the_time</h3>
+        <div class="component-doc method-doc">
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.set_the_time)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_first_time</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.set_the_time.args.the_first_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_second_time</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.set_the_time.args.the_second_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call set_the_time</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['set_the_time'].received">
         
           <table class="arglist">
           

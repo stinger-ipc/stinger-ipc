@@ -95,3 +95,45 @@ LunchMenuProperty LunchMenuProperty::FromRapidJsonObject(const rapidjson::Value&
 void LunchMenuProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
 }
+
+LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    LastBirthdaysProperty lastBirthdays;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("mom");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
+        {
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("dad");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
+        {
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("sister");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
+        {
+        }
+        else
+        {
+            lastBirthdays.sister = boost::none;
+        }
+    }
+
+    return lastBirthdays;
+};
+
+void LastBirthdaysProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+}

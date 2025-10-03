@@ -8,12 +8,13 @@ on the next generation.
 
 This is the Client for the SignalOnly interface.
 */
+#[allow(unused_imports)]
+use crate::payloads::{MethodReturnCode, *};
+use base64::prelude::*;
+use iso8601_duration::Duration as IsoDuration;
 #[cfg(feature = "client")]
 use mqttier::{MqttierClient, ReceivedMessage};
 use serde_json;
-
-#[allow(unused_imports)]
-use crate::payloads::{MethodReturnCode, *};
 
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc};
@@ -27,6 +28,7 @@ struct SignalOnlySubscriptionIds {
     bark_signal: Option<usize>,
     maybe_number_signal: Option<usize>,
     maybe_name_signal: Option<usize>,
+    now_signal: Option<usize>,
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -39,6 +41,7 @@ struct SignalOnlySignalChannels {
     bark_sender: broadcast::Sender<BarkSignalPayload>,
     maybe_number_sender: broadcast::Sender<MaybeNumberSignalPayload>,
     maybe_name_sender: broadcast::Sender<MaybeNameSignalPayload>,
+    now_sender: broadcast::Sender<NowSignalPayload>,
 }
 
 /// This is the struct for our API client.
@@ -96,6 +99,11 @@ impl SignalOnlyClient {
             .await;
         let subscription_id_maybe_name_signal =
             subscription_id_maybe_name_signal.unwrap_or_else(|_| usize::MAX);
+        let topic_now_signal = "signalOnly/signal/now".to_string();
+        let subscription_id_now_signal = connection
+            .subscribe(topic_now_signal, 2, message_received_tx.clone())
+            .await;
+        let subscription_id_now_signal = subscription_id_now_signal.unwrap_or_else(|_| usize::MAX);
 
         // Subscribe to all the topics needed for properties.
 
@@ -105,6 +113,7 @@ impl SignalOnlyClient {
             bark_signal: Some(subscription_id_bark_signal),
             maybe_number_signal: Some(subscription_id_maybe_number_signal),
             maybe_name_signal: Some(subscription_id_maybe_name_signal),
+            now_signal: Some(subscription_id_now_signal),
         };
 
         // Create structure for the tx side of broadcast channels for signals.
@@ -113,6 +122,7 @@ impl SignalOnlyClient {
             bark_sender: broadcast::channel(64).0,
             maybe_number_sender: broadcast::channel(64).0,
             maybe_name_sender: broadcast::channel(64).0,
+            now_sender: broadcast::channel(64).0,
         };
 
         // Create SignalOnlyClient structure.
@@ -149,6 +159,11 @@ impl SignalOnlyClient {
     pub fn get_maybe_name_receiver(&self) -> broadcast::Receiver<MaybeNameSignalPayload> {
         self.signal_channels.maybe_name_sender.subscribe()
     }
+    /// Get the RX receiver side of the broadcast channel for the now signal.
+    /// The signal payload, `NowSignalPayload`, will be put onto the channel whenever it is received.
+    pub fn get_now_receiver(&self) -> broadcast::Receiver<NowSignalPayload> {
+        self.signal_channels.now_sender.subscribe()
+    }
 
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&self) -> Result<(), JoinError> {
@@ -184,6 +199,11 @@ impl SignalOnlyClient {
                 } else if msg.subscription_id == sub_ids.maybe_name_signal.unwrap_or_default() {
                     let chan = sig_chans.maybe_name_sender.clone();
                     let pl: MaybeNameSignalPayload =
+                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    let _send_result = chan.send(pl);
+                } else if msg.subscription_id == sub_ids.now_signal.unwrap_or_default() {
+                    let chan = sig_chans.now_sender.clone();
+                    let pl: NowSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let _send_result = chan.send(pl);
                 }

@@ -2,6 +2,10 @@
 
 #include <vector>
 #include <iostream>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -12,7 +16,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
 #include <rapidjson/document.h>
-
+#include "structs.hpp"
 #include "client.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
@@ -45,10 +49,22 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker)
         responseTopicStringStream << boost::format("client/%1%/full/method/echo/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("client/%1%/full/method/whatTimeIsIt/response") % _broker->GetClientId();
+        _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("client/%1%/full/method/setTheTime/response") % _broker->GetClientId();
+        _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
     _favoriteNumberPropertySubscriptionId = _broker->Subscribe("full/property/favoriteNumber/value", 1);
     _favoriteFoodsPropertySubscriptionId = _broker->Subscribe("full/property/favoriteFoods/value", 1);
     _lunchMenuPropertySubscriptionId = _broker->Subscribe("full/property/lunchMenu/value", 1);
     _familyNamePropertySubscriptionId = _broker->Subscribe("full/property/familyName/value", 1);
+    _lastBreakfastTimePropertySubscriptionId = _broker->Subscribe("full/property/lastBreakfastTime/value", 1);
+    _lastBirthdaysPropertySubscriptionId = _broker->Subscribe("full/property/lastBirthdays/value", 1);
 }
 
 void FullClient::_receiveMessage(
@@ -77,12 +93,12 @@ void FullClient::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                int tempdayOfMonth;
+                int tempDayOfMonth;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("dayOfMonth");
                     if (itr != doc.MemberEnd() && itr->value.IsInt())
                     {
-                        tempdayOfMonth = itr->value.GetInt();
+                        tempDayOfMonth = itr->value.GetInt();
                     }
                     else
                     {
@@ -90,23 +106,23 @@ void FullClient::_receiveMessage(
                     }
                 }
 
-                boost::optional<DayOfTheWeek> tempdayOfWeek;
+                boost::optional<DayOfTheWeek> tempDayOfWeek;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("dayOfWeek");
                     if (itr != doc.MemberEnd() && itr->value.IsInt())
                     {
-                        tempdayOfWeek = static_cast<DayOfTheWeek>(itr->value.GetInt());
+                        tempDayOfWeek = static_cast<DayOfTheWeek>(itr->value.GetInt());
                     }
                     else
                     {
-                        tempdayOfWeek = boost::none;
+                        tempDayOfWeek = boost::none;
                     }
                 }
 
                 std::lock_guard<std::mutex> lock(_todayIsSignalCallbacksMutex);
                 for (const auto& cb: _todayIsSignalCallbacks)
                 {
-                    cb(tempdayOfMonth, tempdayOfWeek);
+                    cb(tempDayOfMonth, tempDayOfWeek);
                 }
             }
         }
@@ -132,6 +148,16 @@ void FullClient::_receiveMessage(
         std::cout << "Matched topic for echo response" << std::endl;
         _handleEchoResponse(topic, payload, *mqttProps.correlationId);
     }
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/whatTimeIsIt/response") && mqttProps.correlationId)
+    {
+        std::cout << "Matched topic for what_time_is_it response" << std::endl;
+        _handleWhatTimeIsItResponse(topic, payload, *mqttProps.correlationId);
+    }
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/full/method/setTheTime/response") && mqttProps.correlationId)
+    {
+        std::cout << "Matched topic for set_the_time response" << std::endl;
+        _handleSetTheTimeResponse(topic, payload, *mqttProps.correlationId);
+    }
     if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _favoriteNumberPropertySubscriptionId)) || topic == "full/property/favoriteNumber/value")
     {
         _receiveFavoriteNumberPropertyUpdate(topic, payload, mqttProps.propertyVersion);
@@ -147,6 +173,14 @@ void FullClient::_receiveMessage(
     else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _familyNamePropertySubscriptionId)) || topic == "full/property/familyName/value")
     {
         _receiveFamilyNamePropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    }
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _lastBreakfastTimePropertySubscriptionId)) || topic == "full/property/lastBreakfastTime/value")
+    {
+        _receiveLastBreakfastTimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    }
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _lastBirthdaysPropertySubscriptionId)) || topic == "full/property/lastBirthdays/value")
+    {
+        _receiveLastBirthdaysPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 }
 
@@ -354,6 +388,139 @@ void FullClient::_handleEchoResponse(
         const std::string& message = messageItr->value.GetString();
 
         promiseItr->second.set_value(message);
+    }
+
+    std::cout << "End of response handler for " << topic << std::endl;
+}
+
+boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::whatTimeIsIt(std::chrono::time_point<std::chrono::system_clock> the_first_time)
+{
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pendingWhatTimeIsItMethodCalls[correlationId] = boost::promise<std::chrono::time_point<std::chrono::system_clock>>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    std::stringstream responseTopicStringStream;
+    responseTopicStringStream << boost::format("client/%1%/full/method/whatTimeIsIt/response") % _broker->GetClientId();
+    MqttProperties mqttProps;
+    mqttProps.correlationId = correlationIdStr;
+    mqttProps.responseTopic = responseTopicStringStream.str();
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
+    _broker->Publish("full/method/whatTimeIsIt", buf.GetString(), 2, false, mqttProps);
+
+    return _pendingWhatTimeIsItMethodCalls[correlationId].get_future();
+}
+
+void FullClient::_handleWhatTimeIsItResponse(
+        const std::string& topic,
+        const std::string& payload,
+        const std::string& correlationId
+)
+{
+    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse what_time_is_it signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+    if (!doc.IsObject())
+    {
+        throw std::runtime_error("Received payload is not an object");
+    }
+
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    auto promiseItr = _pendingWhatTimeIsItMethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pendingWhatTimeIsItMethodCalls.end())
+    {
+        // Response has a single value.
+        rapidjson::Value::ConstMemberIterator timestampItr = doc.FindMember("timestamp");
+
+        std::chrono::time_point<std::chrono::system_clock> timestamp;
+        if (timestampItr != doc.MemberEnd() && timestampItr->value.IsString())
+        {
+            timestamp = parseIsoTimestamp(timestampItr->value.GetString());
+        }
+
+        promiseItr->second.set_value(timestamp);
+    }
+
+    std::cout << "End of response handler for " << topic << std::endl;
+}
+
+boost::future<SetTheTimeReturnValue> FullClient::setTheTime(std::chrono::time_point<std::chrono::system_clock> the_first_time, std::chrono::time_point<std::chrono::system_clock> the_second_time)
+{
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pendingSetTheTimeMethodCalls[correlationId] = boost::promise<SetTheTimeReturnValue>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    std::stringstream responseTopicStringStream;
+    responseTopicStringStream << boost::format("client/%1%/full/method/setTheTime/response") % _broker->GetClientId();
+    MqttProperties mqttProps;
+    mqttProps.correlationId = correlationIdStr;
+    mqttProps.responseTopic = responseTopicStringStream.str();
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
+    _broker->Publish("full/method/setTheTime", buf.GetString(), 2, false, mqttProps);
+
+    return _pendingSetTheTimeMethodCalls[correlationId].get_future();
+}
+
+void FullClient::_handleSetTheTimeResponse(
+        const std::string& topic,
+        const std::string& payload,
+        const std::string& correlationId
+)
+{
+    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse set_the_time signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+    if (!doc.IsObject())
+    {
+        throw std::runtime_error("Received payload is not an object");
+    }
+
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    auto promiseItr = _pendingSetTheTimeMethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pendingSetTheTimeMethodCalls.end())
+    {
+        // Response has multiple values.
+
+        rapidjson::Value::ConstMemberIterator timestampItr = doc.FindMember("timestamp");
+
+        std::chrono::time_point<std::chrono::system_clock> timestamp;
+        if (timestampItr != doc.MemberEnd() && timestampItr->value.IsString())
+        {
+            timestamp = parseIsoTimestamp(timestampItr->value.GetString());
+        }
+
+        rapidjson::Value::ConstMemberIterator confirmationMessageItr = doc.FindMember("confirmation_message");
+        const std::string& confirmation_message = confirmationMessageItr->value.GetString();
+
+        SetTheTimeReturnValue returnValue{ //initializer list
+
+                                           timestamp,
+                                           confirmation_message
+        };
+        promiseItr->second.set_value(returnValue);
     }
 
     std::cout << "End of response handler for " << topic << std::endl;
@@ -685,4 +852,158 @@ boost::future<bool> FullClient::updateFamilyNameProperty(const std::string& fami
     doc.Accept(writer);
     MqttProperties mqttProps;
     return _broker->Publish("full/property/familyName/setValue", buf.GetString(), 1, false, mqttProps);
+}
+
+void FullClient::_receiveLastBreakfastTimePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse last_breakfast_time property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject())
+    {
+        throw std::runtime_error("Received last_breakfast_time payload is not an object");
+    }
+    LastBreakfastTimeProperty tempValue;
+
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("timestamp");
+    if (itr != doc.MemberEnd() && itr->value.IsString())
+    {
+    }
+    else
+    {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_lastBreakfastTimePropertyMutex);
+        _lastBreakfastTimeProperty = tempValue;
+        _lastLastBreakfastTimePropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+    }
+    // Notify all registered callbacks.
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_lastBreakfastTimePropertyCallbacksMutex);
+        for (const auto& cb: _lastBreakfastTimePropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+
+            cb(tempValue);
+        }
+    }
+}
+
+boost::optional<LastBreakfastTimeProperty> FullClient::getLastBreakfastTimeProperty() const
+{
+    std::lock_guard<std::mutex> lock(_lastBreakfastTimePropertyMutex);
+    return _lastBreakfastTimeProperty;
+}
+
+void FullClient::registerLastBreakfastTimePropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> timestamp)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_lastBreakfastTimePropertyCallbacksMutex);
+    _lastBreakfastTimePropertyCallbacks.push_back(cb);
+}
+
+boost::future<bool> FullClient::updateLastBreakfastTimeProperty(std::chrono::time_point<std::chrono::system_clock> timestamp) const
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("full/property/lastBreakfastTime/setValue", buf.GetString(), 1, false, mqttProps);
+}
+
+void FullClient::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse last_birthdays property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject())
+    {
+        throw std::runtime_error("Received last_birthdays payload is not an object");
+    }
+    LastBirthdaysProperty tempValue;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("mom");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("dad");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("sister");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+        }
+        else
+        {
+            tempValue.sister = boost::none;
+        }
+    }
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyMutex);
+        _lastBirthdaysProperty = tempValue;
+        _lastLastBirthdaysPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+    }
+    // Notify all registered callbacks.
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyCallbacksMutex);
+        for (const auto& cb: _lastBirthdaysPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+
+            cb(tempValue.mom, tempValue.dad, tempValue.sister);
+        }
+    }
+}
+
+boost::optional<LastBirthdaysProperty> FullClient::getLastBirthdaysProperty() const
+{
+    std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyMutex);
+    return _lastBirthdaysProperty;
+}
+
+void FullClient::registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyCallbacksMutex);
+    _lastBirthdaysPropertyCallbacks.push_back(cb);
+}
+
+boost::future<bool> FullClient::updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister) const
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("full/property/lastBirthdays/setValue", buf.GetString(), 1, false, mqttProps);
 }

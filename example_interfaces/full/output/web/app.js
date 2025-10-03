@@ -116,6 +116,30 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
              },
             "mqtt_topic": "full/property/familyName/value",
             "update_topic": "full/property/familyName/setValue"
+        },
+    
+        "last_breakfast_time": {
+            "subscription_id": null,
+            "name": "last_breakfast_time",
+            "received": { 
+                "timestamp": {  }
+             },
+            "mqtt_topic": "full/property/lastBreakfastTime/value",
+            "update_topic": "full/property/lastBreakfastTime/setValue"
+        },
+    
+        "last_birthdays": {
+            "subscription_id": null,
+            "name": "last_birthdays",
+            "received": { 
+                "mom": {  },
+            
+                "dad": {  },
+            
+                "sister": {  }
+             },
+            "mqtt_topic": "full/property/lastBirthdays/value",
+            "update_topic": "full/property/lastBirthdays/setValue"
         }
     };
 
@@ -166,6 +190,39 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "args": {
                 "message": {
                     "type": "ArgPrimitiveType.STRING",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
+        },
+        "what_time_is_it": {
+            "name": "what_time_is_it",
+            "mqtt_topic": "full/method/whatTimeIsIt",
+            "response_topic": "client/"+clientId+"/full/method/whatTimeIsIt/response",
+            "pending_correlation_id": null,
+            "args": {
+                "the_first_time": {
+                    "type": "",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
+        },
+        "set_the_time": {
+            "name": "set_the_time",
+            "mqtt_topic": "full/method/setTheTime",
+            "response_topic": "client/"+clientId+"/full/method/setTheTime/response",
+            "pending_correlation_id": null,
+            "args": {
+                "the_first_time": {
+                    "type": "",
+                    "value": null
+                },
+            
+                "the_second_time": {
+                    "type": "",
                     "value": null
                 }
             },

@@ -46,9 +46,13 @@ class InterfaceEnumValue(BaseModel):
     name: str = Field(..., description="The name of the enum value")
     description: Optional[str] = Field(None, description="A brief description of the enum value")
 
-class InterfaceEnum(BaseModel):
+class InterfaceEnumSpec(BaseModel):
     values: List[InterfaceEnumValue] = Field(..., description="A list of enum values")
     documentation: Optional[str] = Field(None, description="A brief description of the enum")
+
+class InterfaceEnum(BaseModel):
+    name: str = Field(..., description="The name of the enum")
+    spec: InterfaceEnumSpec = Field(..., description="The specification of the enum")
 
 class GenericArg(BaseModel):
     name: str = Field(..., description="The name of the argument")
@@ -120,3 +124,7 @@ class StingerSpec(BaseModel):
     interface: InterfaceMetadata = Field(..., description="Metadata about the interface")
     enums: Optional[Dict[str, InterfaceEnum]] = Field(None, description="A dictionary of enums used in the interface")
     structs: Optional[Dict[str, InterfaceStruct]] = Field(None, description="A dictionary of structs used in the interface")
+    signals: Optional[Dict[str, InterfaceSignal]] = Field(None, description="A dictionary of signals in the interface")
+    methods: Optional[Dict[str, InterfaceMethod]] = Field(None, description="A dictionary of methods in the interface")
+    properties: Optional[Dict[str, InterfaceProperty]] = Field(None, description="A dictionary of properties in the interface")
+    
