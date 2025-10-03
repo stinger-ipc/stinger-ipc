@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv) {
 
-    auto conn = std::make_shared<MqttBrokerConnection>();
+    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "{{stinger.name}}-server-demo");
     {{stinger.cpp.server_class_name}} server(conn);
 
     {%-for sig_name, sig in stinger.signals.items() %}
