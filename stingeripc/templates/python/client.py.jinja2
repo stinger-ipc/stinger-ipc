@@ -23,10 +23,10 @@ from connection import IBrokerConnection
 logging.basicConfig(level=logging.DEBUG)
 
 {%for sig_name, sig in stinger.signals.items()-%}
-{{sig_name | UpperCamelCase}}SignalCallbackType = Callable[[{%for arg in sig.arg_list%}{{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}], None]
+{{sig_name | UpperCamelCase}}SignalCallbackType = Callable[[{%for arg in sig.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]
 {%endfor%}
 {%-for method_name, method in stinger.methods.items()-%}
-{{method_name | UpperCamelCase}}MethodResponseCallbackType = Callable[[{%if method.return_value%}{{method.return_value.python_type}}{%endif%}], None]
+{{method_name | UpperCamelCase}}MethodResponseCallbackType = Callable[[{%if method.return_value%}{{method.return_value.python_annotation}}{%endif%}], None]
 {%endfor%}
 {%for prop_name, prop in stinger.properties.items()-%}
 {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Callable[[{{prop.python_class}}], None]
@@ -178,12 +178,12 @@ class {{stinger.python.client_class_name}}:
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
+    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
         """ Calling this initiates a `{{method_name}}` IPC method call.
         """
         {%for arg in method.arg_list%}
         if not isinstance({{arg.name}}, {{arg.python_class}}){%- if not arg.optional -%} and {{arg.name}} is not None{%endif-%}:
-            raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_type}}")
+            raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_annotation}}")
         {%endfor%}
         fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
@@ -370,10 +370,10 @@ if __name__ == '__main__':
     client_builder = {{stinger.python.client_class_name}}Builder()
     {%for sig_name, sig in stinger.signals.items()%}
     @client_builder.receive_{{sig_name | snake_case }}
-    def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """{{sig.description}}
         {%for arg in sig.arg_list-%}
-        @param {{arg.name}} {{arg.python_type}} {{arg.description or ''}}
+        @param {{arg.name}} {{arg.python_annotation}} {{arg.description or ''}}
         {%endfor%}"""
         print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
     {%endfor%}

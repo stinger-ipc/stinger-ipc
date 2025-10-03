@@ -163,7 +163,7 @@ The `{{sig_name}}` signal can be subscribed to by using the client's `receive_{{
 
 ```python
 @client.receive_{{sig_name | snake_case }}
-def on_{{sig_name | snake_case }}({%for arg in signal.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}):
+def on_{{sig_name | snake_case }}({%for arg in signal.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
     print(f"Got a '{{sig_name}}' signal: {%for arg in signal.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
 ```
 
@@ -297,7 +297,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_{{method_name | snake_case}} 
-def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_type}}:
+def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
     """ This is an example handler for the '{{method_name}}' method.  """
     print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
     return {{method.get_return_value_random_example_value('python')}}

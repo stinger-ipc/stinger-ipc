@@ -150,7 +150,7 @@ The `todayIs` signal can be subscribed to by using the client's `receive_today_i
 
 ```python
 @client.receive_today_is
-def on_today_is(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
+def on_today_is(dayOfMonth: int, dayOfWeek: Optional[stinger_types.DayOfTheWeek]):
     print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
 ```
 
@@ -274,7 +274,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_add_numbers 
-def add_numbers(first: int, second: int, third: int | None) -> int:
+def add_numbers(first: int, second: int, third: Optional[int]) -> :
     """ This is an example handler for the 'addNumbers' method.  """
     print(f"Running add_numbers'({first}, {second}, {third})'")
     return 42
@@ -340,7 +340,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_do_something 
-def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
+def do_something(aString: str) -> :
     """ This is an example handler for the 'doSomething' method.  """
     print(f"Running do_something'({aString})'")
     return ['"apples"', 42, 'stinger_types.DayOfTheWeek.MONDAY']
@@ -401,7 +401,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_echo 
-def echo(message: str) -> str:
+def echo(message: str) -> :
     """ This is an example handler for the 'echo' method.  """
     print(f"Running echo'({message})'")
     return "apples"
