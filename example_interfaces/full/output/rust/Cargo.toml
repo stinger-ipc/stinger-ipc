@@ -19,7 +19,10 @@ tokio = { version = "1", features = ["full"] }
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 chrono = "0.4.42"
-iso8601-duration = "0.2.0"
+iso8601-duration = { version = "0.2.0", features = ["chrono"] }
+
+# Base64 encoding/decoding used by generated payload helpers
+base64 = "0.21"
 
 # Client specific dependencies
 paho-mqtt = { version = "0.13.3", optional = true }
