@@ -10,7 +10,7 @@ This is the Client for the Full interface.
 */
 
 use futures::executor::block_on;
-use mqttier::MqttierClient;
+use mqttier::{Connection, MqttierClient, MqttierOptions};
 use tokio::join;
 use tokio::time::{Duration, sleep};
 use weather_ipc::client::WeatherClient;
@@ -20,8 +20,10 @@ use weather_ipc::payloads::{MethodReturnCode, *};
 #[tokio::main]
 async fn main() {
     block_on(async {
-        let mut mqttier_client =
-            MqttierClient::new("localhost", 1883, Some("client_example".to_string())).unwrap();
+        let mqttier_options = MqttierOptions::new()
+            .connection(Connection::TcpLocalhost(1883))
+            .build();
+        let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
         let mut api_client = WeatherClient::new(&mut mqttier_client).await;
 
         let client_for_loop = api_client.clone();

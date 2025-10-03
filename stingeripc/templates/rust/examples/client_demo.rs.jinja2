@@ -11,7 +11,7 @@ This is the Client for the Full interface.
 
 use {{stinger.rust.package_name}}::client::{{stinger.rust.client_struct_name}};
 use futures::{executor::block_on};
-use mqttier::MqttierClient;
+use mqttier::{MqttierClient, MqttierOptions, Connection};
 use tokio::time::{sleep, Duration};
 use tokio::join;
 #[allow(unused_imports)]
@@ -20,7 +20,10 @@ use {{stinger.rust.package_name}}::payloads::{MethodReturnCode, *};
 #[tokio::main]
 async fn main() {
     block_on(async {
-        let mut mqttier_client = MqttierClient::new("localhost", 1883, Some("client_example".to_string())).unwrap();
+        let mqttier_options = MqttierOptions::new()
+            .connection(Connection::TcpLocalhost(1883))
+            .build();
+        let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
         let {%if stinger.methods|length > 0%}mut {%endif%}api_client = {{stinger.rust.client_struct_name}}::new(&mut mqttier_client).await;
 
         let client_for_loop = api_client.clone();

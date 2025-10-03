@@ -5,7 +5,7 @@ on the next generation.
 It contains enumerations used by the weather interface.
 */
 use futures::executor::block_on;
-use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
+use mqttier::{Connection, MqttierClient, MqttierOptions};
 use std::any::Any;
 use tokio::time::{Duration, sleep};
 use weather_ipc::server::{WeatherMethodHandlers, WeatherServer};
@@ -61,14 +61,10 @@ async fn main() {
         .init();
 
     block_on(async {
-        let conn_opts = MqttierOptionsBuilder::new()
+        let conn_opts = MqttierOptions::new()
             .connection(Connection::TcpLocalhost(1883))
-            .build()
-            .unwrap()
-            .expect("Failed to build MQTT connection options");
-        let mut connection = MqttierClient::new(conn_opts)
-            .unwrap()
-            .expect("Failed to create MQTT client");
+            .build();
+        let mut connection = MqttierClient::new(conn_opts).unwrap();
 
         let handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers>>> =
             Arc::new(Mutex::new(Box::new(WeatherMethodImpl::new())));
@@ -200,7 +196,7 @@ async fn main() {
             latitude: 1.0,
             longitude: 1.0,
         };
-        server.set_location(new_value).await;
+        let _ = server.set_location(new_value).await;
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'current_temperature'");
@@ -215,7 +211,7 @@ async fn main() {
             condition: WeatherCondition::Sunny,
             description: "foo".to_string(),
         };
-        server.set_current_condition(new_value).await;
+        let _ = server.set_current_condition(new_value).await;
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'daily_forecast'");
@@ -242,7 +238,7 @@ async fn main() {
                 end_time: "foo".to_string(),
             },
         };
-        server.set_daily_forecast(new_value).await;
+        let _ = server.set_daily_forecast(new_value).await;
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'hourly_forecast'");
@@ -268,7 +264,7 @@ async fn main() {
                 condition: WeatherCondition::Sunny,
             },
         };
-        server.set_hourly_forecast(new_value).await;
+        let _ = server.set_hourly_forecast(new_value).await;
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'current_condition_refresh_interval'");

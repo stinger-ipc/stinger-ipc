@@ -6,7 +6,7 @@ It contains enumerations used by the Full interface.
 */
 use full_ipc::server::{FullMethodHandlers, FullServer};
 use futures::executor::block_on;
-use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
+use mqttier::{Connection, MqttierClient, MqttierOptions};
 use std::any::Any;
 use tokio::time::{Duration, sleep};
 
@@ -95,14 +95,10 @@ async fn main() {
         .init();
 
     block_on(async {
-        let conn_opts = MqttierOptionsBuilder::new()
+        let conn_opts = MqttierOptions::new()
             .connection(Connection::TcpLocalhost(1883))
-            .build()
-            .unwrap()
-            .expect("Failed to build MQTT connection options");
-        let mut connection = MqttierClient::new(conn_opts)
-            .unwrap()
-            .expect("Failed to create MQTT client");
+            .build();
+        let mut connection = MqttierClient::new(conn_opts).unwrap();
 
         let handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>> =
             Arc::new(Mutex::new(Box::new(FullMethodImpl::new())));
@@ -193,7 +189,7 @@ async fn main() {
             slices_of_pizza: 2022,
             breakfast: Some("foo".to_string()),
         };
-        server.set_favorite_foods(new_value).await;
+        let _ = server.set_favorite_foods(new_value).await;
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'lunch_menu'");
@@ -213,7 +209,7 @@ async fn main() {
                 order_number: Some(2022),
             },
         };
-        server.set_lunch_menu(new_value).await;
+        let _ = server.set_lunch_menu(new_value).await;
 
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'family_name'");

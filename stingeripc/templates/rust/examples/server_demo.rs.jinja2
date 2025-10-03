@@ -6,7 +6,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 */
 use std::any::Any;
 use futures::{executor::block_on};
-use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
+use mqttier::{MqttierClient, MqttierOptions, Connection};
 use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
 use tokio::time::{sleep, Duration};
 {%if stinger.methods|length > 0%}
@@ -69,12 +69,10 @@ async fn main() {
     .init();
 
     block_on(async {
-        let conn_opts = MqttierOptionsBuilder::new()
+        let conn_opts = MqttierOptions::new()
             .connection(Connection::TcpLocalhost(1883))
-            .build()
-            .unwrap()
-            .expect("Failed to build MQTT connection options");
-        let mut connection = MqttierClient::new(conn_opts).unwrap().expect("Failed to create MQTT client");
+            .build();
+        let mut connection = MqttierClient::new(conn_opts).unwrap();
 
         {%if stinger.methods|length > 0%}
         let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
@@ -121,7 +119,7 @@ async fn main() {
                 {{arg.name}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
             {%-endfor%}
         };
-        server.set_{{prop_name | snake_case}}(new_value).await;
+        let _ = server.set_{{prop_name | snake_case}}(new_value).await;
         {%endif%}
         {%endfor%}{# property initialization -#}
         let _server_loop_task = server.run_loop().await;
