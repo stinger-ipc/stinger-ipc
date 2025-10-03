@@ -386,11 +386,9 @@ class FullServer:
                     self._logger.exception("Exception while handling what_time_is_it", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
-                    return_code = MethodReturnCode.SUCCESS
-                    debug_msg = None
-
-                self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     def handle_set_the_time(self, handler: Callable[[datetime.datetime, datetime.datetime], stinger_types.SetTheTimeReturnValue]):
         """This is a decorator to decorate a method that will handle the 'set_the_time' method calls."""
@@ -443,17 +441,15 @@ class FullServer:
                     self._logger.debug("Return value is %s", return_struct)
 
                     if return_struct is not None:
-                        return_json = json.dumps({"set_the_time": return_struct.model_dump_json()})
+                        return_json = return_struct.model_dump_json()
 
                 except Exception as e:
                     self._logger.exception("Exception while handling set_the_time", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
-                    return_code = MethodReturnCode.SUCCESS
-                    debug_msg = None
-
-                self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     @property
     def favorite_number(self) -> int | None:
@@ -872,7 +868,7 @@ if __name__ == "__main__":
     def set_the_time(the_first_time: datetime.datetime, the_second_time: datetime.datetime) -> stinger_types.SetTheTimeReturnValue:
         """This is an example handler for the 'set_the_time' method."""
         print(f"Running set_the_time'({the_first_time}, {the_second_time})'")
-        return ["datetime.datetime.now()", '"apples"']
+        return stinger_types.SetTheTimeReturnValue(timestamp=datetime.datetime.now(), confirmation_message="apples")
 
     @server.on_favorite_number_updates
     def on_favorite_number_update(number: int):

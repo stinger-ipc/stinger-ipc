@@ -12,12 +12,13 @@ payloads = []
 [dependencies]
 # Core dependencies (always available)
 futures = "0.3.31"
-mqttier = "0.4.2"
+mqttier = "0.4.3"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 tokio = { version = "1", features = ["full"] }
 num-derive = "0.4.2"
 num-traits = "0.2.19"
+builder-pattern = "0.4"
 
 # Client specific dependencies
 paho-mqtt = { version = "0.13.3", optional = true }

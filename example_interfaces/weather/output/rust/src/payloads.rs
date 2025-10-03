@@ -1,5 +1,5 @@
 //! Payloads module for weather IPC
-//!
+//! 
 //! Contains all the data structures, enums, and return codes used by the weather IPC system.
 
 /*
@@ -73,6 +73,8 @@ impl MethodReturnCode {
     }
 }
 
+
+
 #[repr(u32)]
 #[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(into = "u32", try_from = "u32")]
@@ -83,7 +85,7 @@ pub enum WeatherCondition {
     MostlyCloudy = 4,
     Overcast = 5,
     Windy = 6,
-    Snowy = 7,
+    Snowy = 7
 }
 
 #[allow(dead_code)]
@@ -107,9 +109,11 @@ impl From<u32> for WeatherCondition {
 
 impl fmt::Display for WeatherCondition {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+       write!(f, "{:?}", self)
     }
 }
+
+
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -117,6 +121,7 @@ pub struct ForecastForHour {
     pub temperature: f32,
     pub starttime: String,
     pub condition: WeatherCondition,
+    
 }
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -124,50 +129,64 @@ pub struct ForecastForDay {
     pub high_temperature: f32,
     pub low_temperature: f32,
     pub condition: WeatherCondition,
-
+    
     pub start_time: String,
     pub end_time: String,
 }
+
 
 // Structures for `refresh_daily_forecast` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `refresh_daily_forecast`
-pub struct RefreshDailyForecastRequestObject {}
+pub struct RefreshDailyForecastRequestObject {
+}
+
 
 #[derive(Debug, Clone, Serialize)]
 /// Empty (no parameters) return structure for the `refresh_daily_forecast` method.
-pub struct RefreshDailyForecastReturnValue {}
+pub struct RefreshDailyForecastReturnValue {
+}
 
 // Structures for `refresh_hourly_forecast` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `refresh_hourly_forecast`
-pub struct RefreshHourlyForecastRequestObject {}
+pub struct RefreshHourlyForecastRequestObject {
+}
+
 
 #[derive(Debug, Clone, Serialize)]
 /// Empty (no parameters) return structure for the `refresh_hourly_forecast` method.
-pub struct RefreshHourlyForecastReturnValue {}
+pub struct RefreshHourlyForecastReturnValue {
+}
 
 // Structures for `refresh_current_conditions` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `refresh_current_conditions`
-pub struct RefreshCurrentConditionsRequestObject {}
+pub struct RefreshCurrentConditionsRequestObject {
+}
+
 
 #[derive(Debug, Clone, Serialize)]
 /// Empty (no parameters) return structure for the `refresh_current_conditions` method.
-pub struct RefreshCurrentConditionsReturnValue {}
+pub struct RefreshCurrentConditionsReturnValue {
+}
+
 
 // Structures for `current_time` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CurrentTimeSignalPayload {
     pub current_time: String,
+    
 }
+
+
 
 // `location` property structure.
 #[allow(dead_code, non_snake_case)]
@@ -175,6 +194,7 @@ pub struct CurrentTimeSignalPayload {
 pub struct LocationProperty {
     pub latitude: f32,
     pub longitude: f32,
+    
 }
 
 // `current_temperature` property structure.
@@ -182,6 +202,7 @@ pub struct LocationProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CurrentTemperatureProperty {
     pub temperature_f: f32,
+    
 }
 
 // `current_condition` property structure.
@@ -190,6 +211,7 @@ pub struct CurrentTemperatureProperty {
 pub struct CurrentConditionProperty {
     pub condition: WeatherCondition,
     pub description: String,
+    
 }
 
 // `daily_forecast` property structure.
@@ -199,6 +221,7 @@ pub struct DailyForecastProperty {
     pub monday: ForecastForDay,
     pub tuesday: ForecastForDay,
     pub wednesday: ForecastForDay,
+    
 }
 
 // `hourly_forecast` property structure.
@@ -209,6 +232,7 @@ pub struct HourlyForecastProperty {
     pub hour_1: ForecastForHour,
     pub hour_2: ForecastForHour,
     pub hour_3: ForecastForHour,
+    
 }
 
 // `current_condition_refresh_interval` property structure.
@@ -216,6 +240,7 @@ pub struct HourlyForecastProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CurrentConditionRefreshIntervalProperty {
     pub seconds: i32,
+    
 }
 
 // `hourly_forecast_refresh_interval` property structure.
@@ -223,6 +248,7 @@ pub struct CurrentConditionRefreshIntervalProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct HourlyForecastRefreshIntervalProperty {
     pub seconds: i32,
+    
 }
 
 // `daily_forecast_refresh_interval` property structure.
@@ -230,4 +256,5 @@ pub struct HourlyForecastRefreshIntervalProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DailyForecastRefreshIntervalProperty {
     pub seconds: i32,
+    
 }

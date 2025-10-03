@@ -232,7 +232,7 @@ async fn main() {
             dad: chrono::Utc::now(),
             sister: chrono::Utc::now(),
         };
-        server.set_last_birthdays(new_value).await;
+        let _ = server.set_last_birthdays(new_value).await;
 
         let _server_loop_task = server.run_loop().await;
     });

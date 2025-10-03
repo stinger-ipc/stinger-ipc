@@ -1,5 +1,5 @@
 //! Payloads module for SignalOnly IPC
-//!
+//! 
 //! Contains all the data structures, enums, and return codes used by the SignalOnly IPC system.
 
 /*
@@ -12,9 +12,9 @@ It contains enumerations used by the SignalOnly interface.
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 
-use base64::prelude::*;
-use iso8601_duration::Duration as IsoDuration;
 use serde::{Deserialize, Serialize};
+use iso8601_duration::Duration as IsoDuration;
+use base64::prelude::*;
 
 pub mod base64_binary_format {
     use serde::{Deserialize, Deserializer, Serializer};
@@ -110,6 +110,7 @@ pub mod duration_iso_format {
     }
 }
 
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum MethodReturnCode {
@@ -167,15 +168,23 @@ impl MethodReturnCode {
     }
 }
 
+
+
+
+
+
+
+
 // Structures for `anotherSignal` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnotherSignalSignalPayload {
     pub one: f32,
-
+    
     pub two: bool,
-
+    
     pub three: String,
+    
 }
 
 // Structures for `bark` signal
@@ -183,6 +192,7 @@ pub struct AnotherSignalSignalPayload {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BarkSignalPayload {
     pub word: String,
+    
 }
 
 // Structures for `maybe_number` signal
@@ -190,6 +200,7 @@ pub struct BarkSignalPayload {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MaybeNumberSignalPayload {
     pub number: Option<i32>,
+    
 }
 
 // Structures for `maybe_name` signal
@@ -197,6 +208,7 @@ pub struct MaybeNumberSignalPayload {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MaybeNameSignalPayload {
     pub name: Option<String>,
+    
 }
 
 // Structures for `now` signal
@@ -205,17 +217,24 @@ pub struct MaybeNameSignalPayload {
 pub struct NowSignalPayload {
     #[serde(with = "datetime_iso_format")]
     pub timestamp: chrono::DateTime<chrono::Utc>,
+    
 }
+
+
+
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::{DateTime, Utc};
 
+    
+
     #[test]
     fn test_base64_binary_format_serialization() {
         use serde::{Deserialize, Serialize};
-
+        
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct TestStruct {
             #[serde(with = "base64_binary_format")]
@@ -224,13 +243,11 @@ mod tests {
 
         // Test with various binary data
         let test_data = vec![0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37];
-        let test_struct = TestStruct {
-            data: test_data.clone(),
-        };
+        let test_struct = TestStruct { data: test_data.clone() };
 
         // Test serialization
         let serialized = serde_json::to_string(&test_struct).unwrap();
-
+        
         // The base64 encoded value of [0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37] should be "AAEC//5CEzc="
         assert!(serialized.contains("AAEC//5CEzc="));
 
@@ -242,7 +259,7 @@ mod tests {
     #[test]
     fn test_base64_binary_format_option_serialization() {
         use serde::{Deserialize, Serialize};
-
+        
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct TestStruct {
             #[serde(with = "base64_binary_format")]
@@ -253,9 +270,7 @@ mod tests {
 
         // Test with Some data
         let test_data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F]; // "Hello" in bytes
-        let test_struct_some = TestStruct {
-            data: Some(test_data.clone()),
-        };
+        let test_struct_some = TestStruct { data: Some(test_data.clone()) };
 
         let serialized_some = serde_json::to_string(&test_struct_some).unwrap();
         let deserialized_some: TestStruct = serde_json::from_str(&serialized_some).unwrap();
@@ -271,7 +286,7 @@ mod tests {
     #[test]
     fn test_base64_binary_format_round_trip() {
         use serde::{Deserialize, Serialize};
-
+        
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct BinaryData {
             #[serde(with = "base64_binary_format")]

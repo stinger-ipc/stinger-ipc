@@ -531,7 +531,7 @@ The decorated method is called everytime the a request for the method is receive
 def set_the_time(the_first_time: datetime.datetime, the_second_time: datetime.datetime) -> :
     """ This is an example handler for the 'set_the_time' method.  """
     print(f"Running set_the_time'({the_first_time}, {the_second_time})'")
-    return ['datetime.datetime.now()', '"apples"']
+    return stinger_types.SetTheTimeReturnValue(timestamp=datetime.datetime.now(), confirmation_message="apples")
 ```
 
 </details>
