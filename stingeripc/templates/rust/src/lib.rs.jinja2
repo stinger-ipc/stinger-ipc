@@ -7,6 +7,8 @@
 //! - `server`: Includes server and payloads modules  
 //! - `payloads`: Includes only payloads module
 
+pub mod interface;
+
 #[cfg(feature = "payloads")]
 pub mod payloads;
 

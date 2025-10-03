@@ -1,5 +1,5 @@
 //! Payloads module for SignalOnly IPC
-//!
+//! 
 //! Contains all the data structures, enums, and return codes used by the SignalOnly IPC system.
 
 /*
@@ -71,15 +71,23 @@ impl MethodReturnCode {
     }
 }
 
+
+
+
+
+
+
+
 // Structures for `anotherSignal` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnotherSignalSignalPayload {
     pub one: f32,
-
+    
     pub two: bool,
-
+    
     pub three: String,
+    
 }
 
 // Structures for `bark` signal
@@ -87,6 +95,7 @@ pub struct AnotherSignalSignalPayload {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BarkSignalPayload {
     pub word: String,
+    
 }
 
 // Structures for `maybe_number` signal
@@ -94,6 +103,7 @@ pub struct BarkSignalPayload {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MaybeNumberSignalPayload {
     pub number: Option<i32>,
+    
 }
 
 // Structures for `maybe_name` signal
@@ -101,4 +111,7 @@ pub struct MaybeNumberSignalPayload {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MaybeNameSignalPayload {
     pub name: Option<String>,
+    
 }
+
+

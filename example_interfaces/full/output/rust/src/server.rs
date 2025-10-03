@@ -87,12 +87,15 @@ pub struct FullServer {
     /// Copy of MQTT Client ID
     #[allow(dead_code)]
     pub client_id: String,
+
+    pub instance_id: String,
 }
 
 impl FullServer {
     pub async fn new(
         connection: &mut MqttierClient,
         method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
+        instance_id: String,
     ) -> Self {
         // Create a channel for messages to get from the MqttierClient object to this FullServer object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -201,6 +204,21 @@ impl FullServer {
             family_name_tx_channel: watch::channel(None).0,
         };
 
+        let info = crate::interface::InterfaceInfo::new()
+            .interface_name("Full".to_string())
+            .title("Fully Featured Example Interface".to_string())
+            .version("0.0.1".to_string())
+            .instance(instance_id.clone())
+            .connection_topic(connection.connection_topic.clone())
+            .build();
+        let _ = connection
+            .publish_status(
+                format!("full/{}/interface", connection.client_id),
+                &info,
+                150,
+            )
+            .await;
+
         FullServer {
             mqttier_client: connection.clone(),
 
@@ -211,6 +229,7 @@ impl FullServer {
             subscription_ids: sub_ids,
 
             client_id: connection.client_id.to_string(),
+            instance_id,
         }
     }
 
