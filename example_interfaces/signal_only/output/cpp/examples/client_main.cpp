@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv)
 {
-    auto conn = std::make_shared<MqttBrokerConnection>();
+    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "SignalOnly-client-demo");
     SignalOnlyClient client(conn);
     client.registerAnotherSignalCallback([](double one, bool two, const std::string& three)
                                          { std::cout << "one=" << one << " | " << "two=" << two << " | " << "three=" << three << std::endl; });

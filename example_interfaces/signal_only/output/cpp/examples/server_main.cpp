@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv)
 {
-    auto conn = std::make_shared<MqttBrokerConnection>();
+    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "SignalOnly-server-demo");
     SignalOnlyServer server(conn);
     auto anotherSignalFuture = server.emitAnotherSignalSignal(3.14, true, "apples");
     auto barkFuture = server.emitBarkSignal("apples");
