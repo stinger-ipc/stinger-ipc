@@ -174,10 +174,6 @@ class {{stinger.python.server_class_name}}:
                         return_json = json.dumps({
                             "{{method.return_value_property_name}}": return_struct.value
                         })
-                        {%-elif method.return_value_type == "struct" %}
-                        return_json = json.dumps({
-                            "{{method.return_value_property_name}}": return_struct.model_dump_json()
-                        })
                         {%else%}                        
                         return_json = return_struct.model_dump_json()
                         {%endif%}
@@ -186,12 +182,11 @@ class {{stinger.python.server_class_name}}:
                     self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
-                    return_code = MethodReturnCode.SUCCESS
-                    debug_msg = None
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-                self._conn.publish(response_topic, return_json, qos=1, retain=False, 
-                    correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
     @property

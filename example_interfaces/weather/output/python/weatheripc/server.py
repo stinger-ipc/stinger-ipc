@@ -238,11 +238,9 @@ class WeatherServer:
                     self._logger.exception("Exception while handling refresh_daily_forecast", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
-                    return_code = MethodReturnCode.SUCCESS
-                    debug_msg = None
-
-                self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     def handle_refresh_hourly_forecast(self, handler: Callable[[None], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_hourly_forecast' method calls."""
@@ -276,11 +274,9 @@ class WeatherServer:
                     self._logger.exception("Exception while handling refresh_hourly_forecast", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
-                    return_code = MethodReturnCode.SUCCESS
-                    debug_msg = None
-
-                self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     def handle_refresh_current_conditions(self, handler: Callable[[None], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_current_conditions' method calls."""
@@ -314,11 +310,9 @@ class WeatherServer:
                     self._logger.exception("Exception while handling refresh_current_conditions", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
-                    return_code = MethodReturnCode.SUCCESS
-                    debug_msg = None
-
-                self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id, return_value=return_code, debug_info=debug_msg)
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     @property
     def location(self) -> stinger_types.LocationProperty | None:
