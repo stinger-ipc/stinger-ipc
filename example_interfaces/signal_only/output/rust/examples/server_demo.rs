@@ -5,7 +5,7 @@ on the next generation.
 It contains enumerations used by the SignalOnly interface.
 */
 use futures::executor::block_on;
-use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
+use mqttier::{Connection, MqttierClient, MqttierOptions};
 use signal_only_ipc::server::SignalOnlyServer;
 use std::any::Any;
 use tokio::time::{Duration, sleep};
@@ -20,14 +20,10 @@ async fn main() {
         .init();
 
     block_on(async {
-        let conn_opts = MqttierOptionsBuilder::new()
+        let conn_opts = MqttierOptions::new()
             .connection(Connection::TcpLocalhost(1883))
-            .build()
-            .unwrap()
-            .expect("Failed to build MQTT connection options");
-        let mut connection = MqttierClient::new(conn_opts)
-            .unwrap()
-            .expect("Failed to create MQTT client");
+            .build();
+        let mut connection = MqttierClient::new(conn_opts).unwrap();
 
         let mut server = SignalOnlyServer::new(&mut connection).await;
 

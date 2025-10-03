@@ -1,4 +1,4 @@
-use mqttier::MqttierClient;
+use mqttier::{Connection, MqttierClient, MqttierOptions};
 use tokio::join;
 use tokio::sync::mpsc;
 use tokio::time::{Duration, sleep};
@@ -6,7 +6,11 @@ use tokio::time::{Duration, sleep};
 #[tokio::main]
 async fn main() {
     println!("Starting pub and recv example");
-    let client = MqttierClient::new("localhost", 1883, None).unwrap();
+
+    let conn_opts = MqttierOptions::new()
+        .connection(Connection::TcpLocalhost(1883))
+        .build();
+    let client = MqttierClient::new(conn_opts).unwrap();
     let (recv_chan_tx, mut recv_chan_rx) = mpsc::channel(32);
     client
         .subscribe("example/recv_topic".to_string(), 1, recv_chan_tx.clone())
