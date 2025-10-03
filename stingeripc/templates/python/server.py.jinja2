@@ -258,8 +258,8 @@ class {{stinger.python.server_class_name}}Builder:
     This is a builder for the {{stinger.python.server_class_name}}.  It is used to create a server with the desired parameters.
     """
 
-    def __init__(self, connection: IBrokerConnection):
-        self._conn = connection
+    def __init__(self):
+        {%if (stinger.methods|length + stinger.properties|length) == 0 %}pass{%endif%}
         {%for method_name, method in stinger.methods.items()%}
         self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
         {%-endfor%}
@@ -279,8 +279,8 @@ class {{stinger.python.server_class_name}}Builder:
         """
         self._{{prop_name|snake_case}}_property_callbacks.append(handler)
     {%endfor%}
-    def build(self) -> {{stinger.python.server_class_name}}:
-        new_server = {{stinger.python.server_class_name}}(self._conn)
+    def build(self, connection: IBrokerConnection) -> {{stinger.python.server_class_name}}:
+        new_server = {{stinger.python.server_class_name}}(connection)
         {%for method_name, method in stinger.methods.items()%}
         if self._{{method_name|snake_case}}_method_handler is not None:
             new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler)
@@ -301,9 +301,8 @@ if __name__ == '__main__':
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    service_id = "1"
     conn = MqttBrokerConnection(transport)
-    server = {{stinger.python.server_class_name}}(conn, service_id)
+    server = {{stinger.python.server_class_name}}(conn, "demo")
 
     {%for prop_name, prop in stinger.properties.items()-%}
     {%if prop.arg_list | length > 1%}

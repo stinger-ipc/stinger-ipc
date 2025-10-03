@@ -651,8 +651,7 @@ class WeatherServerBuilder:
     This is a builder for the WeatherServer.  It is used to create a server with the desired parameters.
     """
 
-    def __init__(self, connection: IBrokerConnection):
-        self._conn = connection
+    def __init__(self):
 
         self._refresh_daily_forecast_method_handler: Optional[Callable[[None], None]] = None
         self._refresh_hourly_forecast_method_handler: Optional[Callable[[None], None]] = None
@@ -719,8 +718,8 @@ class WeatherServerBuilder:
         """This method registers a callback to be called whenever a new 'daily_forecast_refresh_interval' property update is received."""
         self._daily_forecast_refresh_interval_property_callbacks.append(handler)
 
-    def build(self) -> WeatherServer:
-        new_server = WeatherServer(self._conn)
+    def build(self, connection: IBrokerConnection) -> WeatherServer:
+        new_server = WeatherServer(connection)
 
         if self._refresh_daily_forecast_method_handler is not None:
             new_server.handle_refresh_daily_forecast(self._refresh_daily_forecast_method_handler)
@@ -766,9 +765,8 @@ if __name__ == "__main__":
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    service_id = "1"
     conn = MqttBrokerConnection(transport)
-    server = WeatherServer(conn, service_id)
+    server = WeatherServer(conn, "demo")
 
     server.location = stinger_types.LocationProperty(
         latitude=3.14,

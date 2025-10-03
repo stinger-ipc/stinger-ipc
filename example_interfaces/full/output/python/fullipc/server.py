@@ -484,8 +484,7 @@ class FullServerBuilder:
     This is a builder for the FullServer.  It is used to create a server with the desired parameters.
     """
 
-    def __init__(self, connection: IBrokerConnection):
-        self._conn = connection
+    def __init__(self):
 
         self._add_numbers_method_handler: Optional[Callable[[int, int, int | None], int]] = None
         self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
@@ -530,8 +529,8 @@ class FullServerBuilder:
         """This method registers a callback to be called whenever a new 'family_name' property update is received."""
         self._family_name_property_callbacks.append(handler)
 
-    def build(self) -> FullServer:
-        new_server = FullServer(self._conn)
+    def build(self, connection: IBrokerConnection) -> FullServer:
+        new_server = FullServer(connection)
 
         if self._add_numbers_method_handler is not None:
             new_server.handle_add_numbers(self._add_numbers_method_handler)
@@ -565,9 +564,8 @@ if __name__ == "__main__":
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    service_id = "1"
     conn = MqttBrokerConnection(transport)
-    server = FullServer(conn, service_id)
+    server = FullServer(conn, "demo")
 
     server.favorite_number = 42
 

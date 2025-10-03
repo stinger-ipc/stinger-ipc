@@ -117,15 +117,20 @@ class MqttBrokerConnection(IBrokerConnection):
 
     def _on_message(self, client, userdata, msg):
         self._logger.debug("Got a message to %s", msg.topic)
-        if self._message_callbacks:
-            properties = msg.properties.__dict__ if hasattr(msg, 'properties') else {}
-            if "UserProperty" in properties:
-                properties["UserProperty"] = dict(properties["UserProperty"])
-            if "SubscriptionIdentifier" in properties:
-                sub_id = int(properties["SubscriptionIdentifier"])
+        properties = msg.properties.__dict__ if hasattr(msg, 'properties') else {}
+        if "UserProperty" in properties:
+            properties["UserProperty"] = dict(properties["UserProperty"])
+        if "SubscriptionIdentifier" in properties:
+            sub_ids = properties["SubscriptionIdentifier"] if isinstance(properties["SubscriptionIdentifier"], list) else [properties["SubscriptionIdentifier"]]
+            for sub_id in sub_ids:
                 if sub_id in self._subscription_callbacks:
                     self._subscription_callbacks[sub_id](msg.topic, msg.payload.decode(), properties)
-                    return
+                else:
+                    self._logger.info("No callback registered for SubscriptionIdentifier %d", sub_id)
+                    for callback in self._message_callbacks:
+                        callback(msg.topic, msg.payload.decode(), properties)
+        else:
+            self._logger.info("No SubscriptionIdentifier in message properties")
             for callback in self._message_callbacks:
                 callback(msg.topic, msg.payload.decode(), properties)
 

@@ -14,6 +14,8 @@ import logging
 import asyncio
 import concurrent.futures as futures
 from method_codes import *
+from interface_types import InterfaceInfo
+import threading
 
 from connection import IBrokerConnection
 import interface_types as stinger_types
@@ -448,10 +450,14 @@ class FullClient:
 
 
 class FullClientBuilder:
+    """Using decorators from FullClient doesn't work if you are trying to create multiple instances of FullClient.
+    Instead, use this builder to create a registry of callbacks, and then build clients using the registry.
 
-    def __init__(self, broker: IBrokerConnection):
+    When ready to create a FullClient instance, call the `build(broker, service_instance_id)` method.
+    """
+
+    def __init__(self):
         """Creates a new FullClientBuilder."""
-        self._conn = broker
         self._logger = logging.getLogger("FullClientBuilder")
         self._signal_recv_callbacks_for_today_is = []  # type: List[TodayIsSignalCallbackType]
         self._property_updated_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
@@ -479,10 +485,10 @@ class FullClientBuilder:
         """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_family_name.append(handler)
 
-    def build(self, service_instance_id: str) -> FullClient:
+    def build(self, broker: IBrokerConnection, service_instance_id: str) -> FullClient:
         """Builds a new FullClient."""
         self._logger.debug("Building FullClient for service instance %s", service_instance_id)
-        client = FullClient(self._conn, service_instance_id)
+        client = FullClient(broker, service_instance_id)
 
         for cb in self._signal_recv_callbacks_for_today_is:
             client.receive_today_is(cb)
@@ -504,24 +510,83 @@ class FullClientBuilder:
 
 class FullClientDiscoverer:
 
-    def __init__(self, connection: IBrokerConnection):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[FullClientBuilder] = None):
         """Creates a new FullClientDiscoverer."""
-        self.discovered_services: Dict[str, InterfaceInfo] = {}
         self._conn = connection
+        self._builder = builder
         self._logger = logging.getLogger("FullClientDiscoverer")
         self._logger.setLevel(logging.DEBUG)
-        service_discovery_topic = "full/{}/interface".format(self._instance_id)
+        service_discovery_topic = "full/{}/interface".format("+")
         self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
+        self._mutex = threading.Lock()
+        self._discovered_services: Dict[str, InterfaceInfo] = {}
+        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
+        self._pending_futures: List[futures.Future] = []
+        self._removed_service_callbacks: List[Callable[[str], None]] = []
+
+    def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
+        """Adds a callback to be called when a new service is discovered."""
+        with self._mutex:
+            self._discovered_service_callbacks.append(callback)
+
+    def add_removed_service_callback(self, callback: Callable[[str], None]):
+        """Adds a callback to be called when a service is removed."""
+        with self._mutex:
+            self._removed_service_callbacks.append(callback)
+
+    def get_service_instance_ids(self) -> List[str]:
+        """Returns a list of currently discovered service instance IDs."""
+        with self._mutex:
+            return list(self._discovered_services.keys())
+
+    def get_singleton_client(self) -> futures.Future[FullClient]:
+        """Returns a FullClient for the single discovered service.
+        Raises an exception if there is not exactly one discovered service.
+        """
+        fut = futures.Future()
+        with self._mutex:
+            if len(self._discovered_services) > 0:
+                service_instance_id = next(iter(self._discovered_services))
+                if self._builder is None:
+                    fut.set_result(FullClient(self._conn, service_instance_id))
+                else:
+                    new_client = self._builder.build(self._conn, service_instance_id)
+                    fut.set_result(new_client)
+            else:
+                self._pending_futures.append(fut)
+        return fut
 
     def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """Processes a service discovery message."""
-        self._logger.debug("Received service discovery message on %s: %s", topic, payload)
-        try:
-            service_info = InterfaceInfo.model_validate_json(payload)
-            self.discovered_services[service_info.instance] = service_info
-            self._logger.info("Discovered service: %s", service_info)
-        except Exception as e:
-            self._logger.error("Failed to process service discovery message: %s", e)
+        self._logger.debug("Processing service discovery message on topic %s", topic)
+        if len(payload) > 0:
+            try:
+                service_info = InterfaceInfo.model_validate_json(payload)
+            except Exception as e:
+                self._logger.warning("Failed to process service discovery message: %s", e)
+            with self._mutex:
+                self._discovered_services[service_info.instance] = service_info
+                while self._pending_futures:
+                    fut = self._pending_futures.pop(0)
+                    if not fut.done():
+                        if self._builder is not None:
+                            fut.set_result(self._builder.build(self._conn, service_info.instance))
+                        else:
+                            fut.set_result(FullClient(self._conn, service_info.instance))
+                if not service_info.instance in self._discovered_services:
+                    self._logger.info("Discovered service: %s.instance", service_info.instance)
+                    for cb in self._discovered_service_callbacks:
+                        cb(service_info)
+                else:
+                    self._logger.debug("Updated info for service: %s", service_info.instance)
+        else:  # Empty payload means the service is going away
+            instance_id = topic.split("/")[-2]
+            with self._mutex:
+                if instance_id in self._discovered_services:
+                    self._logger.info("Service %s is going away", instance_id)
+                    del self._discovered_services[instance_id]
+                    for cb in self._removed_service_callbacks:
+                        cb(instance_id)
 
 
 if __name__ == "__main__":
@@ -529,9 +594,9 @@ if __name__ == "__main__":
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    service_id = "1"
     conn = MqttBrokerConnection(transport)
-    client_builder = FullClientBuilder(conn)
+
+    client_builder = FullClientBuilder()
 
     @client_builder.receive_today_is
     def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: stinger_types.DayOfTheWeek | None):
@@ -561,26 +626,32 @@ if __name__ == "__main__":
         """ """
         print(f"Property 'family_name' has been updated to: {value}")
 
-    client = client_builder.build(service_id)
+    discovery = FullClientDiscoverer(conn, client_builder)
+    fut_client = discovery.get_singleton_client()
+    try:
+        client = fut_client.result(10)
+    except futures.TimeoutError:
+        print("Timed out waiting for a service to appear")
+        exit(1)
 
     print("Making call to 'add_numbers'")
-    future = client.add_numbers(first=42, second=42, third=42)
+    future_resp = client.add_numbers(first=42, second=42, third=42)
     try:
-        print(f"RESULT:  {future.result(5)}")
+        print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'add_numbers' call")
 
     print("Making call to 'do_something'")
-    future = client.do_something(aString="apples")
+    future_resp = client.do_something(aString="apples")
     try:
-        print(f"RESULT:  {future.result(5)}")
+        print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'do_something' call")
 
     print("Making call to 'echo'")
-    future = client.echo(message="apples")
+    future_resp = client.echo(message="apples")
     try:
-        print(f"RESULT:  {future.result(5)}")
+        print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'echo' call")
 

@@ -127,11 +127,11 @@ class SignalOnlyServerBuilder:
     This is a builder for the SignalOnlyServer.  It is used to create a server with the desired parameters.
     """
 
-    def __init__(self, connection: IBrokerConnection):
-        self._conn = connection
+    def __init__(self):
+        pass
 
-    def build(self) -> SignalOnlyServer:
-        new_server = SignalOnlyServer(self._conn)
+    def build(self, connection: IBrokerConnection) -> SignalOnlyServer:
+        new_server = SignalOnlyServer(connection)
 
         return new_server
 
@@ -146,9 +146,8 @@ if __name__ == "__main__":
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    service_id = "1"
     conn = MqttBrokerConnection(transport)
-    server = SignalOnlyServer(conn, service_id)
+    server = SignalOnlyServer(conn, "demo")
 
     print("Ctrl-C will stop the program.")
 
