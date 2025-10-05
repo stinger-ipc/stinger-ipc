@@ -25,7 +25,7 @@ async fn main() {
             .build();
         let mut connection = MqttierClient::new(conn_opts).unwrap();
 
-        let mut server = SignalOnlyServer::new(&mut connection).await;
+        let mut server = SignalOnlyServer::new(&mut connection, "demo".to_string()).await;
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'anotherSignal'");

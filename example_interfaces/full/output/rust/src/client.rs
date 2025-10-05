@@ -8,16 +8,15 @@ on the next generation.
 
 This is the Client for the Full interface.
 */
-#[allow(unused_imports)]
-use crate::payloads::{MethodReturnCode, *};
-use base64::prelude::*;
-use iso8601_duration::Duration as IsoDuration;
 use json::JsonValue;
 #[cfg(feature = "client")]
 use mqttier::{MqttierClient, ReceivedMessage};
 use serde_json;
 use std::collections::HashMap;
 use uuid::Uuid;
+
+#[allow(unused_imports)]
+use crate::payloads::{MethodReturnCode, *};
 
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};

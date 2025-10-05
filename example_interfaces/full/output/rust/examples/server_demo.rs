@@ -102,7 +102,8 @@ async fn main() {
 
         let handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>> =
             Arc::new(Mutex::new(Box::new(FullMethodImpl::new())));
-        let mut server = FullServer::new(&mut connection, handlers.clone()).await;
+        let mut server =
+            FullServer::new(&mut connection, handlers.clone(), "demo".to_string()).await;
 
         println!("Setting initial value for property 'favorite_number'");
         let prop_init_future = server.set_favorite_number(42).await;

@@ -1,7 +1,6 @@
 //! Server module for SignalOnly IPC
-//! 
+//!
 //! This module is only available when the "server" feature is enabled.
-
 
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
@@ -16,22 +15,16 @@ use mqttier::{MqttierClient, PublishResult};
 use crate::payloads::{MethodReturnCode, *};
 use std::any::Any;
 
-
-use tokio::task::JoinError;
 use std::future::Future;
 use std::pin::Pin;
+use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 #[cfg(feature = "server")]
-use tracing::{debug, info, warn, error};
-
+use tracing::{debug, error, info, warn};
 
 #[derive(Clone)]
 pub struct SignalOnlyServer {
     mqttier_client: MqttierClient,
-    
-    
-    
-    
 
     /// Copy of MQTT Client ID
     #[allow(dead_code)]
@@ -42,29 +35,18 @@ pub struct SignalOnlyServer {
 
 impl SignalOnlyServer {
     pub async fn new(connection: &mut MqttierClient, instance_id: String) -> Self {
-        
-
-        
-
-        let info = crate::interface::InterfaceInfo::new()
-            .interface_name("SignalOnly".to_string())
-            .title("SignalOnly".to_string())
-            .version("0.0.1".to_string())
-            .instance(instance_id.clone())
-            .connection_topic(connection.connection_topic.clone())
-            .build();
-        let _ = connection.publish_status(format!("signalOnly/{}/interface", connection.client_id), &info, 150).await;
-
         SignalOnlyServer {
             mqttier_client: connection.clone(),
-            
+
             client_id: connection.client_id.to_string(),
             instance_id,
         }
     }
 
     /// Converts a oneshot receiver for the publish result into a Future that resolves to
-    pub async fn oneshot_to_future(publish_oneshot: tokio::sync::oneshot::Receiver<PublishResult>) -> SentMessageFuture {
+    pub async fn oneshot_to_future(
+        publish_oneshot: tokio::sync::oneshot::Receiver<PublishResult>,
+    ) -> SentMessageFuture {
         Box::pin(async move {
             let publish_result = publish_oneshot.await;
             match publish_result {
@@ -98,61 +80,66 @@ impl SignalOnlyServer {
         })
     }
     /// Emits the anotherSignal signal with the given arguments.
-    pub async fn emit_another_signal(&mut self, one: f32, two: bool, three: String) -> SentMessageFuture {
+    pub async fn emit_another_signal(
+        &mut self,
+        one: f32,
+        two: bool,
+        three: String,
+    ) -> SentMessageFuture {
         let data = AnotherSignalSignalPayload {
-            
-        one: one,
-            
-        two: two,
-            
-        three: three,
-            
+            one: one,
+
+            two: two,
+
+            three: three,
         };
-        let published_oneshot = self.mqttier_client.publish_structure("signalOnly/{}/signal/anotherSignal".to_string(), &data).await;
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/{}/signal/anotherSignal".to_string(), &data)
+            .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
     /// Emits the bark signal with the given arguments.
     pub async fn emit_bark(&mut self, word: String) -> SentMessageFuture {
-        let data = BarkSignalPayload {
-            
-        word: word,
-            
-        };
-        let published_oneshot = self.mqttier_client.publish_structure("signalOnly/{}/signal/bark".to_string(), &data).await;
+        let data = BarkSignalPayload { word: word };
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/{}/signal/bark".to_string(), &data)
+            .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
     /// Emits the maybe_number signal with the given arguments.
     pub async fn emit_maybe_number(&mut self, number: Option<i32>) -> SentMessageFuture {
-        let data = MaybeNumberSignalPayload {
-            
-        number: number,
-            
-        };
-        let published_oneshot = self.mqttier_client.publish_structure("signalOnly/{}/signal/maybeNumber".to_string(), &data).await;
+        let data = MaybeNumberSignalPayload { number: number };
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/{}/signal/maybeNumber".to_string(), &data)
+            .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
     /// Emits the maybe_name signal with the given arguments.
     pub async fn emit_maybe_name(&mut self, name: Option<String>) -> SentMessageFuture {
-        let data = MaybeNameSignalPayload {
-            
-        name: name,
-            
-        };
-        let published_oneshot = self.mqttier_client.publish_structure("signalOnly/{}/signal/maybeName".to_string(), &data).await;
+        let data = MaybeNameSignalPayload { name: name };
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/{}/signal/maybeName".to_string(), &data)
+            .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
     /// Emits the now signal with the given arguments.
-    pub async fn emit_now(&mut self, timestamp: chrono::DateTime<chrono::Utc>) -> SentMessageFuture {
+    pub async fn emit_now(
+        &mut self,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    ) -> SentMessageFuture {
         let data = NowSignalPayload {
-            
-        timestamp: timestamp,
-            
+            timestamp: timestamp,
         };
-        let published_oneshot = self.mqttier_client.publish_structure("signalOnly/{}/signal/now".to_string(), &data).await;
+        let published_oneshot = self
+            .mqttier_client
+            .publish_structure("signalOnly/{}/signal/now".to_string(), &data)
+            .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
-    
-    
 
     /// Starts the tasks that process messages received.
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
@@ -162,10 +149,7 @@ impl SignalOnlyServer {
         // Make sure the MqttierClient is connected and running.
         let _ = self.mqttier_client.run_loop().await;
 
-         
-        
         warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())
     }
-
 }

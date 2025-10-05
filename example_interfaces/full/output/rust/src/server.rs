@@ -271,21 +271,6 @@ impl FullServer {
             last_birthdays_tx_channel: watch::channel(None).0,
         };
 
-        let info = crate::interface::InterfaceInfo::new()
-            .interface_name("Full".to_string())
-            .title("Fully Featured Example Interface".to_string())
-            .version("0.0.1".to_string())
-            .instance(instance_id.clone())
-            .connection_topic(connection.connection_topic.clone())
-            .build();
-        let _ = connection
-            .publish_status(
-                format!("full/{}/interface", connection.client_id),
-                &info,
-                150,
-            )
-            .await;
-
         FullServer {
             mqttier_client: connection.clone(),
 
@@ -1393,6 +1378,28 @@ impl FullServer {
 
         let properties = self.properties.clone();
 
+        let interface_publisher = self.mqttier_client.clone();
+        let instance_id = self.instance_id.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(120));
+            loop {
+                interval.tick().await;
+                let info = crate::interface::InterfaceInfo::new()
+                    .interface_name("Full".to_string())
+                    .title("Fully Featured Example Interface".to_string())
+                    .version("0.0.1".to_string())
+                    .instance(instance_id.clone())
+                    .connection_topic(format!("client/{}/online", interface_publisher.client_id))
+                    .build();
+                let _ = interface_publisher
+                    .publish_status(
+                        format!("full/{}/interface", interface_publisher.client_id),
+                        &info,
+                        150,
+                    )
+                    .await;
+            }
+        });
         let loop_task = tokio::spawn(async move {
             while let Some(msg) = message_receiver.recv().await {
                 let opt_resp_topic = msg.response_topic.clone();

@@ -14,11 +14,11 @@ use num_traits::FromPrimitive;
 
 use std::fmt;
 
-use base64::prelude::*;
-use iso8601_duration::Duration as IsoDuration;
 use serde::{Deserialize, Serialize};
 
 pub mod base64_binary_format {
+    use base64::Engine;
+    use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
     use serde::{Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
@@ -92,7 +92,10 @@ pub mod datetime_iso_format {
 }
 
 pub mod duration_iso_format {
-    // Serialization and deserialization for Duration as ISO 8601 string
+    use chrono::Duration;
+    use iso8601_duration::Duration as IsoDuration;
+    use serde::{Deserialize, Deserializer, Serializer};
+
     pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -107,8 +110,13 @@ pub mod duration_iso_format {
         D: Deserializer<'de>,
     {
         let iso_string = String::deserialize(deserializer)?;
-        let iso_dur = iso_string.parse::<IsoDuration>().unwrap();
-        iso_dur.to_chrono()
+        let iso_dur: IsoDuration = iso_string
+            .parse::<IsoDuration>()
+            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
+        let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
+            serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration")
+        })?;
+        chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
     }
 }
 

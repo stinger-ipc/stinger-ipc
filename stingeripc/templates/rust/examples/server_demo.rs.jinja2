@@ -76,9 +76,9 @@ async fn main() {
 
         {%if stinger.methods|length > 0%}
         let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
-        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, handlers.clone()).await;
+        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, handlers.clone(), "demo".to_string()).await;
         {%else%}
-        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection).await;
+        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, "demo".to_string()).await;
         {%endif%}
 
         {%for prop_name, prop in stinger.properties.items()%}
