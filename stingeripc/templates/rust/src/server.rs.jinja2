@@ -29,6 +29,7 @@ use std::future::Future;
 use std::pin::Pin;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 #[cfg(feature = "server")]
+#[allow(unused_imports)]
 use tracing::{debug, info, warn, error};
 
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
@@ -102,11 +103,11 @@ impl {{stinger.rust.server_struct_name}} {
 
         // Create method handler struct
         {%for method_name, method in stinger.methods.items()-%}
-        let subscription_id_{{method_name | snake_case}}_method_req = connection.subscribe("{{method.topic}}".to_string(), 2, message_received_tx.clone()).await;
+        let subscription_id_{{method_name | snake_case}}_method_req = connection.subscribe(format!("{{method.topic}}", instance_id), 2, message_received_tx.clone()).await;
         let subscription_id_{{method_name | snake_case}}_method_req = subscription_id_{{method_name | snake_case}}_method_req.unwrap_or_else(|_| usize::MAX);
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
-        let subscription_id_{{prop_name | snake_case}}_property_update = connection.subscribe("{{prop.update_topic}}".to_string(), 2, message_received_tx.clone()).await;
+        let subscription_id_{{prop_name | snake_case}}_property_update = connection.subscribe(format!("{{prop.update_topic}}", instance_id), 2, message_received_tx.clone()).await;
         let subscription_id_{{prop_name | snake_case}}_property_update = subscription_id_{{prop_name | snake_case}}_property_update.unwrap_or_else(|_| usize::MAX);
         {%else-%}
         {%endif%}{%endfor%}
@@ -125,7 +126,7 @@ impl {{stinger.rust.server_struct_name}} {
         {%if stinger.properties|length > 0%}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
-            {{prop_name | snake_case}}_topic: Arc::new(String::from("{{prop.value_topic}}")),
+            {{prop_name | snake_case}}_topic: Arc::new(format!("{{prop.value_topic}}", instance_id)),
 
             {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
             {{prop_name | snake_case}}_tx_channel: watch::channel(None).0,
@@ -204,7 +205,7 @@ impl {{stinger.rust.server_struct_name}} {
         {{arg.name}}: {{arg.name|snake_case}},
             {%endfor%}
         };
-        let published_oneshot = self.mqttier_client.publish_structure("{{sig.topic}}".to_string(), &data).await;
+        let published_oneshot = self.mqttier_client.publish_structure(format!("{{sig.topic}}", self.instance_id), &data).await;
         {{stinger.rust.server_struct_name}}::oneshot_to_future(published_oneshot).await
     }
     {%endfor%}

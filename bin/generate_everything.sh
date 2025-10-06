@@ -57,7 +57,7 @@ function generate_rust() {
     if [ $RC -eq 0 ]; then
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo update)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo fmt)
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --features client,server,payloads)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_client_demo --features client)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_server_demo --features server)
     fi

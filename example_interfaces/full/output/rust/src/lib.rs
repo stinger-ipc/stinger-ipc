@@ -9,6 +9,9 @@
 
 pub mod interface;
 
+#[cfg(feature = "client")]
+pub mod discovery;
+
 #[cfg(feature = "payloads")]
 pub mod payloads;
 

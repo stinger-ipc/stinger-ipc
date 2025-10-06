@@ -10,6 +10,7 @@ This is the Client for the Full interface.
 */
 
 use full_ipc::client::FullClient;
+use full_ipc::discovery::FullDiscovery;
 #[allow(unused_imports)]
 use full_ipc::payloads::{MethodReturnCode, *};
 use futures::executor::block_on;
@@ -24,7 +25,11 @@ async fn main() {
             .connection(Connection::TcpLocalhost(1883))
             .build();
         let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
-        let mut api_client = FullClient::new(&mut mqttier_client).await;
+
+        let discovery = FullDiscovery::new(&mut mqttier_client).await.unwrap();
+        let singleton_info = discovery.get_singleton_service().await;
+
+        let mut api_client = FullClient::new(&mut mqttier_client, singleton_info.instance).await;
 
         let client_for_loop = api_client.clone();
         tokio::spawn(async move {

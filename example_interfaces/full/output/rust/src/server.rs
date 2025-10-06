@@ -27,6 +27,7 @@ use std::pin::Pin;
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 #[cfg(feature = "server")]
+#[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
@@ -116,7 +117,7 @@ impl FullServer {
         // Create method handler struct
         let subscription_id_add_numbers_method_req = connection
             .subscribe(
-                "full/{}/method/addNumbers".to_string(),
+                format!("full/{}/method/addNumbers", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -125,7 +126,7 @@ impl FullServer {
             subscription_id_add_numbers_method_req.unwrap_or_else(|_| usize::MAX);
         let subscription_id_do_something_method_req = connection
             .subscribe(
-                "full/{}/method/doSomething".to_string(),
+                format!("full/{}/method/doSomething", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -134,7 +135,7 @@ impl FullServer {
             subscription_id_do_something_method_req.unwrap_or_else(|_| usize::MAX);
         let subscription_id_echo_method_req = connection
             .subscribe(
-                "full/{}/method/echo".to_string(),
+                format!("full/{}/method/echo", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -143,7 +144,7 @@ impl FullServer {
             subscription_id_echo_method_req.unwrap_or_else(|_| usize::MAX);
         let subscription_id_what_time_is_it_method_req = connection
             .subscribe(
-                "full/{}/method/whatTimeIsIt".to_string(),
+                format!("full/{}/method/whatTimeIsIt", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -152,7 +153,7 @@ impl FullServer {
             subscription_id_what_time_is_it_method_req.unwrap_or_else(|_| usize::MAX);
         let subscription_id_set_the_time_method_req = connection
             .subscribe(
-                "full/{}/method/setTheTime".to_string(),
+                format!("full/{}/method/setTheTime", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -162,7 +163,7 @@ impl FullServer {
 
         let subscription_id_favorite_number_property_update = connection
             .subscribe(
-                "full/{}/property/favoriteNumber/setValue".to_string(),
+                format!("full/{}/property/favoriteNumber/setValue", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -172,7 +173,7 @@ impl FullServer {
 
         let subscription_id_favorite_foods_property_update = connection
             .subscribe(
-                "full/{}/property/favoriteFoods/setValue".to_string(),
+                format!("full/{}/property/favoriteFoods/setValue", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -182,7 +183,7 @@ impl FullServer {
 
         let subscription_id_lunch_menu_property_update = connection
             .subscribe(
-                "full/{}/property/lunchMenu/setValue".to_string(),
+                format!("full/{}/property/lunchMenu/setValue", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -192,7 +193,7 @@ impl FullServer {
 
         let subscription_id_family_name_property_update = connection
             .subscribe(
-                "full/{}/property/familyName/setValue".to_string(),
+                format!("full/{}/property/familyName/setValue", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -202,7 +203,7 @@ impl FullServer {
 
         let subscription_id_last_breakfast_time_property_update = connection
             .subscribe(
-                "full/{}/property/lastBreakfastTime/setValue".to_string(),
+                format!("full/{}/property/lastBreakfastTime/setValue", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -212,7 +213,7 @@ impl FullServer {
 
         let subscription_id_last_birthdays_property_update = connection
             .subscribe(
-                "full/{}/property/lastBirthdays/setValue".to_string(),
+                format!("full/{}/property/lastBirthdays/setValue", instance_id),
                 2,
                 message_received_tx.clone(),
             )
@@ -243,29 +244,39 @@ impl FullServer {
         };
 
         let property_values = FullProperties {
-            favorite_number_topic: Arc::new(String::from("full/{}/property/favoriteNumber/value")),
+            favorite_number_topic: Arc::new(format!(
+                "full/{}/property/favoriteNumber/value",
+                instance_id
+            )),
 
             favorite_number: Arc::new(Mutex::new(None)),
             favorite_number_tx_channel: watch::channel(None).0,
-            favorite_foods_topic: Arc::new(String::from("full/{}/property/favoriteFoods/value")),
+            favorite_foods_topic: Arc::new(format!(
+                "full/{}/property/favoriteFoods/value",
+                instance_id
+            )),
 
             favorite_foods: Arc::new(Mutex::new(None)),
             favorite_foods_tx_channel: watch::channel(None).0,
-            lunch_menu_topic: Arc::new(String::from("full/{}/property/lunchMenu/value")),
+            lunch_menu_topic: Arc::new(format!("full/{}/property/lunchMenu/value", instance_id)),
 
             lunch_menu: Arc::new(Mutex::new(None)),
             lunch_menu_tx_channel: watch::channel(None).0,
-            family_name_topic: Arc::new(String::from("full/{}/property/familyName/value")),
+            family_name_topic: Arc::new(format!("full/{}/property/familyName/value", instance_id)),
 
             family_name: Arc::new(Mutex::new(None)),
             family_name_tx_channel: watch::channel(None).0,
-            last_breakfast_time_topic: Arc::new(String::from(
+            last_breakfast_time_topic: Arc::new(format!(
                 "full/{}/property/lastBreakfastTime/value",
+                instance_id
             )),
 
             last_breakfast_time: Arc::new(Mutex::new(None)),
             last_breakfast_time_tx_channel: watch::channel(None).0,
-            last_birthdays_topic: Arc::new(String::from("full/{}/property/lastBirthdays/value")),
+            last_birthdays_topic: Arc::new(format!(
+                "full/{}/property/lastBirthdays/value",
+                instance_id
+            )),
 
             last_birthdays: Arc::new(Mutex::new(None)),
             last_birthdays_tx_channel: watch::channel(None).0,
@@ -357,7 +368,7 @@ impl FullServer {
         };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("full/{}/signal/todayIs".to_string(), &data)
+            .publish_structure(format!("full/{}/signal/todayIs", self.instance_id), &data)
             .await;
         FullServer::oneshot_to_future(published_oneshot).await
     }

@@ -95,11 +95,14 @@ pub struct FullClient {
 
     /// Copy of MQTT Client ID
     pub client_id: String,
+
+    /// Instance ID of the server
+    service_instance_id: String,
 }
 
 impl FullClient {
     /// Creates a new FullClient that uses an MqttierClient.
-    pub async fn new(connection: &mut MqttierClient) -> Self {
+    pub async fn new(connection: &mut MqttierClient, service_id: String) -> Self {
         // Create a channel for messages to get from the Connection object to this FullClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
@@ -156,7 +159,7 @@ impl FullClient {
             subscription_id_set_the_time_method_resp.unwrap_or_else(|_| usize::MAX);
 
         // Subscribe to all the topics needed for signals.
-        let topic_today_is_signal = "full/{}/signal/todayIs".to_string();
+        let topic_today_is_signal = format!("full/{}/signal/todayIs", service_id);
         let subscription_id_today_is_signal = connection
             .subscribe(topic_today_is_signal, 2, message_received_tx.clone())
             .await;
@@ -166,7 +169,7 @@ impl FullClient {
         // Subscribe to all the topics needed for properties.
 
         let topic_favorite_number_property_value =
-            "full/{}/property/favoriteNumber/value".to_string();
+            format!("full/{}/property/favoriteNumber/value", service_id);
         let subscription_id_favorite_number_property_value = connection
             .subscribe(
                 topic_favorite_number_property_value,
@@ -178,7 +181,7 @@ impl FullClient {
             subscription_id_favorite_number_property_value.unwrap_or_else(|_| usize::MAX);
 
         let topic_favorite_foods_property_value =
-            "full/{}/property/favoriteFoods/value".to_string();
+            format!("full/{}/property/favoriteFoods/value", service_id);
         let subscription_id_favorite_foods_property_value = connection
             .subscribe(
                 topic_favorite_foods_property_value,
@@ -189,7 +192,8 @@ impl FullClient {
         let subscription_id_favorite_foods_property_value =
             subscription_id_favorite_foods_property_value.unwrap_or_else(|_| usize::MAX);
 
-        let topic_lunch_menu_property_value = "full/{}/property/lunchMenu/value".to_string();
+        let topic_lunch_menu_property_value =
+            format!("full/{}/property/lunchMenu/value", service_id);
         let subscription_id_lunch_menu_property_value = connection
             .subscribe(
                 topic_lunch_menu_property_value,
@@ -200,7 +204,8 @@ impl FullClient {
         let subscription_id_lunch_menu_property_value =
             subscription_id_lunch_menu_property_value.unwrap_or_else(|_| usize::MAX);
 
-        let topic_family_name_property_value = "full/{}/property/familyName/value".to_string();
+        let topic_family_name_property_value =
+            format!("full/{}/property/familyName/value", service_id);
         let subscription_id_family_name_property_value = connection
             .subscribe(
                 topic_family_name_property_value,
@@ -212,7 +217,7 @@ impl FullClient {
             subscription_id_family_name_property_value.unwrap_or_else(|_| usize::MAX);
 
         let topic_last_breakfast_time_property_value =
-            "full/{}/property/lastBreakfastTime/value".to_string();
+            format!("full/{}/property/lastBreakfastTime/value", service_id);
         let subscription_id_last_breakfast_time_property_value = connection
             .subscribe(
                 topic_last_breakfast_time_property_value,
@@ -224,7 +229,7 @@ impl FullClient {
             subscription_id_last_breakfast_time_property_value.unwrap_or_else(|_| usize::MAX);
 
         let topic_last_birthdays_property_value =
-            "full/{}/property/lastBirthdays/value".to_string();
+            format!("full/{}/property/lastBirthdays/value", service_id);
         let subscription_id_last_birthdays_property_value = connection
             .subscribe(
                 topic_last_birthdays_property_value,
@@ -285,6 +290,7 @@ impl FullClient {
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
             client_id: connection.client_id.to_string(),
+            service_instance_id: service_id,
         };
         inst
     }
@@ -324,7 +330,7 @@ impl FullClient {
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/{}/method/addNumbers".to_string(),
+                format!("full/{}/method/addNumbers", self.service_instance_id),
                 &data,
                 response_topic,
                 correlation_data,
@@ -383,7 +389,7 @@ impl FullClient {
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/{}/method/doSomething".to_string(),
+                format!("full/{}/method/doSomething", self.service_instance_id),
                 &data,
                 response_topic,
                 correlation_data,
@@ -444,7 +450,7 @@ impl FullClient {
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/{}/method/echo".to_string(),
+                format!("full/{}/method/echo", self.service_instance_id),
                 &data,
                 response_topic,
                 correlation_data,
@@ -505,7 +511,7 @@ impl FullClient {
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/{}/method/whatTimeIsIt".to_string(),
+                format!("full/{}/method/whatTimeIsIt", self.service_instance_id),
                 &data,
                 response_topic,
                 correlation_data,
@@ -578,7 +584,7 @@ impl FullClient {
         let _ = self
             .mqttier_client
             .publish_request(
-                "full/{}/method/setTheTime".to_string(),
+                format!("full/{}/method/setTheTime", self.service_instance_id),
                 &data,
                 response_topic,
                 correlation_data,

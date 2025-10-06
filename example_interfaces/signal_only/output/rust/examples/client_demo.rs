@@ -12,6 +12,7 @@ This is the Client for the Full interface.
 use futures::executor::block_on;
 use mqttier::{Connection, MqttierClient, MqttierOptions};
 use signal_only_ipc::client::SignalOnlyClient;
+use signal_only_ipc::discovery::SignalOnlyDiscovery;
 #[allow(unused_imports)]
 use signal_only_ipc::payloads::{MethodReturnCode, *};
 use tokio::join;
@@ -24,7 +25,11 @@ async fn main() {
             .connection(Connection::TcpLocalhost(1883))
             .build();
         let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
-        let api_client = SignalOnlyClient::new(&mut mqttier_client).await;
+
+        let discovery = SignalOnlyDiscovery::new(&mut mqttier_client).await.unwrap();
+        let singleton_info = discovery.get_singleton_service().await;
+
+        let api_client = SignalOnlyClient::new(&mut mqttier_client, singleton_info.instance).await;
 
         let client_for_loop = api_client.clone();
         tokio::spawn(async move {

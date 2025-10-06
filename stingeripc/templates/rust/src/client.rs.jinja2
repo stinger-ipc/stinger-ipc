@@ -93,12 +93,15 @@ pub struct {{stinger.rust.client_struct_name}} {
     {%endif%}
     /// Copy of MQTT Client ID
     pub client_id: String,
+
+    /// Instance ID of the server
+    service_instance_id: String,
 }
 
 impl {{stinger.rust.client_struct_name}} {
 
     /// Creates a new {{stinger.rust.client_struct_name}} that uses an MqttierClient.
-    pub async fn new(connection: &mut MqttierClient) -> Self {
+    pub async fn new(connection: &mut MqttierClient, service_id: String) -> Self {
 
         // Create a channel for messages to get from the Connection object to this {{stinger.rust.client_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -112,14 +115,14 @@ impl {{stinger.rust.client_struct_name}} {
 
         // Subscribe to all the topics needed for signals.
         {%for signal_name, signal in stinger.signals.items()-%}
-        let topic_{{signal_name | snake_case}}_signal = "{{signal.topic}}".to_string();
+        let topic_{{signal_name | snake_case}}_signal = format!("{{signal.topic}}", service_id);
         let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(topic_{{signal_name | snake_case}}_signal, 2, message_received_tx.clone()).await;
         let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| usize::MAX);
         {%endfor%}
 
         // Subscribe to all the topics needed for properties.
         {% for prop_name, prop in stinger.properties.items() %}
-        let topic_{{prop_name | snake_case}}_property_value = "{{prop.value_topic}}".to_string();
+        let topic_{{prop_name | snake_case}}_property_value = format!("{{prop.value_topic}}", service_id);
         let subscription_id_{{prop_name | snake_case}}_property_value = connection.subscribe(topic_{{prop_name | snake_case}}_property_value, 1, message_received_tx.clone()).await;
         let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or_else(|_| usize::MAX);
         {% endfor %}
@@ -168,6 +171,7 @@ impl {{stinger.rust.client_struct_name}} {
             subscription_ids: sub_ids,
             {%if stinger.signals | length > 0 %}signal_channels: signal_channels,{%endif%}
             client_id: connection.client_id.to_string(),
+            service_instance_id: service_id,
         };
         inst
     }
@@ -202,7 +206,7 @@ impl {{stinger.rust.client_struct_name}} {
         };
 
         let response_topic: String = format!("{{method.response_topic('{}')}}", self.client_id);
-        let _ = self.mqttier_client.publish_request("{{method.topic}}".to_string(), &data, response_topic, correlation_data).await;
+        let _ = self.mqttier_client.publish_request(format!("{{method.topic}}", self.service_instance_id), &data, response_topic, correlation_data).await;
         let {%if method.return_value_type is false %}_{%endif%}resp_obj = receiver.await.unwrap();
         
         {%-if method.return_value_type == 'primitive' %}

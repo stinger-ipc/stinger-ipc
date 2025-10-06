@@ -20,6 +20,7 @@ use std::pin::Pin;
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 #[cfg(feature = "server")]
+#[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
 #[derive(Clone)]
@@ -95,7 +96,10 @@ impl SignalOnlyServer {
         };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("signalOnly/{}/signal/anotherSignal".to_string(), &data)
+            .publish_structure(
+                format!("signalOnly/{}/signal/anotherSignal", self.instance_id),
+                &data,
+            )
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
@@ -104,7 +108,10 @@ impl SignalOnlyServer {
         let data = BarkSignalPayload { word: word };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("signalOnly/{}/signal/bark".to_string(), &data)
+            .publish_structure(
+                format!("signalOnly/{}/signal/bark", self.instance_id),
+                &data,
+            )
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
@@ -113,7 +120,10 @@ impl SignalOnlyServer {
         let data = MaybeNumberSignalPayload { number: number };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("signalOnly/{}/signal/maybeNumber".to_string(), &data)
+            .publish_structure(
+                format!("signalOnly/{}/signal/maybeNumber", self.instance_id),
+                &data,
+            )
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
@@ -122,7 +132,10 @@ impl SignalOnlyServer {
         let data = MaybeNameSignalPayload { name: name };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("signalOnly/{}/signal/maybeName".to_string(), &data)
+            .publish_structure(
+                format!("signalOnly/{}/signal/maybeName", self.instance_id),
+                &data,
+            )
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }
@@ -136,7 +149,7 @@ impl SignalOnlyServer {
         };
         let published_oneshot = self
             .mqttier_client
-            .publish_structure("signalOnly/{}/signal/now".to_string(), &data)
+            .publish_structure(format!("signalOnly/{}/signal/now", self.instance_id), &data)
             .await;
         SignalOnlyServer::oneshot_to_future(published_oneshot).await
     }

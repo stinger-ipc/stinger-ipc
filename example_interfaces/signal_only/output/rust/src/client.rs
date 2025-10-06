@@ -64,41 +64,44 @@ pub struct SignalOnlyClient {
 
     /// Copy of MQTT Client ID
     pub client_id: String,
+
+    /// Instance ID of the server
+    service_instance_id: String,
 }
 
 impl SignalOnlyClient {
     /// Creates a new SignalOnlyClient that uses an MqttierClient.
-    pub async fn new(connection: &mut MqttierClient) -> Self {
+    pub async fn new(connection: &mut MqttierClient, service_id: String) -> Self {
         // Create a channel for messages to get from the Connection object to this SignalOnlyClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = mpsc::channel(64);
 
         // Subscribe to all the topics needed for signals.
-        let topic_another_signal_signal = "signalOnly/{}/signal/anotherSignal".to_string();
+        let topic_another_signal_signal = format!("signalOnly/{}/signal/anotherSignal", service_id);
         let subscription_id_another_signal_signal = connection
             .subscribe(topic_another_signal_signal, 2, message_received_tx.clone())
             .await;
         let subscription_id_another_signal_signal =
             subscription_id_another_signal_signal.unwrap_or_else(|_| usize::MAX);
-        let topic_bark_signal = "signalOnly/{}/signal/bark".to_string();
+        let topic_bark_signal = format!("signalOnly/{}/signal/bark", service_id);
         let subscription_id_bark_signal = connection
             .subscribe(topic_bark_signal, 2, message_received_tx.clone())
             .await;
         let subscription_id_bark_signal =
             subscription_id_bark_signal.unwrap_or_else(|_| usize::MAX);
-        let topic_maybe_number_signal = "signalOnly/{}/signal/maybeNumber".to_string();
+        let topic_maybe_number_signal = format!("signalOnly/{}/signal/maybeNumber", service_id);
         let subscription_id_maybe_number_signal = connection
             .subscribe(topic_maybe_number_signal, 2, message_received_tx.clone())
             .await;
         let subscription_id_maybe_number_signal =
             subscription_id_maybe_number_signal.unwrap_or_else(|_| usize::MAX);
-        let topic_maybe_name_signal = "signalOnly/{}/signal/maybeName".to_string();
+        let topic_maybe_name_signal = format!("signalOnly/{}/signal/maybeName", service_id);
         let subscription_id_maybe_name_signal = connection
             .subscribe(topic_maybe_name_signal, 2, message_received_tx.clone())
             .await;
         let subscription_id_maybe_name_signal =
             subscription_id_maybe_name_signal.unwrap_or_else(|_| usize::MAX);
-        let topic_now_signal = "signalOnly/{}/signal/now".to_string();
+        let topic_now_signal = format!("signalOnly/{}/signal/now", service_id);
         let subscription_id_now_signal = connection
             .subscribe(topic_now_signal, 2, message_received_tx.clone())
             .await;
@@ -134,6 +137,7 @@ impl SignalOnlyClient {
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
             client_id: connection.client_id.to_string(),
+            service_instance_id: service_id,
         };
         inst
     }

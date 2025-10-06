@@ -10,6 +10,7 @@ This is the Client for the Full interface.
 */
 
 use {{stinger.rust.package_name}}::client::{{stinger.rust.client_struct_name}};
+use {{stinger.rust.package_name}}::discovery::{{stinger.name|UpperCamelCase}}Discovery;
 use futures::{executor::block_on};
 use mqttier::{MqttierClient, MqttierOptions, Connection};
 use tokio::time::{sleep, Duration};
@@ -24,7 +25,11 @@ async fn main() {
             .connection(Connection::TcpLocalhost(1883))
             .build();
         let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
-        let {%if stinger.methods|length > 0%}mut {%endif%}api_client = {{stinger.rust.client_struct_name}}::new(&mut mqttier_client).await;
+
+        let discovery = {{stinger.name|UpperCamelCase}}Discovery::new(&mut mqttier_client).await.unwrap();
+        let singleton_info = discovery.get_singleton_service().await;
+
+        let {%if stinger.methods|length > 0%}mut {%endif%}api_client = {{stinger.rust.client_struct_name}}::new(&mut mqttier_client, singleton_info.instance).await;
 
         let client_for_loop = api_client.clone();
         tokio::spawn(async move {
