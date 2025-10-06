@@ -38,4 +38,6 @@ struct Lunch
     double crackers;
     DayOfTheWeek day;
     boost::optional<int> order_number;
+    std::chrono::time_point<std::chrono::system_clock> time_of_lunch;
+    duration_of_lunch;
 };

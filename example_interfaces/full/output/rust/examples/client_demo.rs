@@ -65,6 +65,7 @@ async fn main() {
             let mut family_name_change_rx = client_for_prop_change.watch_family_name();
             let mut last_breakfast_time_change_rx =
                 client_for_prop_change.watch_last_breakfast_time();
+            let mut breakfast_length_change_rx = client_for_prop_change.watch_breakfast_length();
             let mut last_birthdays_change_rx = client_for_prop_change.watch_last_birthdays();
 
             loop {
@@ -83,6 +84,9 @@ async fn main() {
                     }
                     _ = last_breakfast_time_change_rx.changed() => {
                         println!("Property 'last_breakfast_time' changed to: {:?}", *last_breakfast_time_change_rx.borrow());
+                    }
+                    _ = breakfast_length_change_rx.changed() => {
+                        println!("Property 'breakfast_length' changed to: {:?}", *breakfast_length_change_rx.borrow());
                     }
                     _ = last_birthdays_change_rx.changed() => {
                         println!("Property 'last_birthdays' changed to: {:?}", *last_birthdays_change_rx.borrow());
@@ -126,6 +130,20 @@ async fn main() {
             .expect("Failed to call set_the_time");
         println!("set_the_time response: {:?}", result);
 
+        println!("Calling forward_time with example values...");
+        let result = api_client
+            .forward_time(std::time::Duration::from_secs(3536))
+            .await
+            .expect("Failed to call forward_time");
+        println!("forward_time response: {:?}", result);
+
+        println!("Calling how_off_is_the_clock with example values...");
+        let result = api_client
+            .how_off_is_the_clock(chrono::Utc::now())
+            .await
+            .expect("Failed to call how_off_is_the_clock");
+        println!("how_off_is_the_clock response: {:?}", result);
+
         let _ = api_client.set_favorite_number(42);
 
         let favorite_foods_new_value = FavoriteFoodsProperty {
@@ -140,15 +158,19 @@ async fn main() {
                 drink: true,
                 sandwich: "apples".to_string(),
                 crackers: 3.14,
-                day: DayOfTheWeek::Monday,
+                day: DayOfTheWeek::Saturday,
                 order_number: Some(42),
+                time_of_lunch: chrono::Utc::now(),
+                duration_of_lunch: std::time::Duration::from_secs(3536),
             },
             tuesday: Lunch {
                 drink: true,
                 sandwich: "apples".to_string(),
                 crackers: 3.14,
-                day: DayOfTheWeek::Monday,
+                day: DayOfTheWeek::Saturday,
                 order_number: Some(42),
+                time_of_lunch: chrono::Utc::now(),
+                duration_of_lunch: std::time::Duration::from_secs(3536),
             },
         };
         let _ = api_client.set_lunch_menu(lunch_menu_new_value);
@@ -157,10 +179,13 @@ async fn main() {
 
         let _ = api_client.set_last_breakfast_time(chrono::Utc::now());
 
+        let _ = api_client.set_breakfast_length(std::time::Duration::from_secs(3536));
+
         let last_birthdays_new_value = LastBirthdaysProperty {
             mom: chrono::Utc::now(),
             dad: chrono::Utc::now(),
             sister: chrono::Utc::now(),
+            brothers_age: Some(42),
         };
         let _ = api_client.set_last_birthdays(last_birthdays_new_value);
 

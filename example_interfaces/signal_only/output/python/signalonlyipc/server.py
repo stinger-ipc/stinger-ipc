@@ -10,14 +10,15 @@ import logging
 import threading
 from time import sleep
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, UTC
+import isodate
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import IBrokerConnection
 from method_codes import *
-from interface_types import InterfaceInfo
+from interface_types import *
 import interface_types as stinger_types
 
 
@@ -29,13 +30,13 @@ class PropertyControls(Generic[T]):
     value: T | None = None
     mutex = threading.Lock()
     version: int = -1
-    subscription_id: int | None = None
+    subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
 
 
 @dataclass
 class MethodControls:
-    subscription_id: int | None = None
+    subscription_id: Optional[int] = None
     callback: Optional[Callable] = None
 
 
@@ -65,7 +66,7 @@ class SignalOnlyServer:
             sleep(self._re_advertise_server_interval_seconds)
 
     def _publish_interface_info(self):
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.utcnow().isoformat())
+        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = "signalOnly/{}/interface".format(self._instance_id)
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
@@ -75,59 +76,62 @@ class SignalOnlyServer:
         """This is the callback that is called whenever any message is received on a subscribed topic."""
         self._logger.warning("Received unexpected message to %s", topic)
 
-    def emit_anotherSignal(self, one: float, two: bool, three: str):
-        """Server application code should call this method to emit the 'anotherSignal' signal."""
-        if not isinstance(one, float):
-            raise ValueError(f"The 'one' value must be float.")
-        if not isinstance(two, bool):
-            raise ValueError(f"The 'two' value must be bool.")
-        if not isinstance(three, str):
-            raise ValueError(f"The 'three' value must be str.")
+    def emit_another_signal(self, one: float, two: bool, three: str):
+        """Server application code should call this method to emit the 'anotherSignal' signal.
 
-        payload = {
-            "one": float(one),
-            "two": bool(two),
-            "three": str(three),
-        }
-        self._conn.publish("signalOnly/{}/signal/anotherSignal".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
+        AnotherSignalSignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
+
+        payload = AnotherSignalSignalPayload(
+            one=one,
+            two=two,
+            three=three,
+        )
+        self._conn.publish("signalOnly/{}/signal/anotherSignal".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
 
     def emit_bark(self, word: str):
-        """Server application code should call this method to emit the 'bark' signal."""
-        if not isinstance(word, str):
-            raise ValueError(f"The 'word' value must be str.")
+        """Server application code should call this method to emit the 'bark' signal.
 
-        payload = {
-            "word": str(word),
-        }
-        self._conn.publish("signalOnly/{}/signal/bark".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
+        BarkSignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
+
+        payload = BarkSignalPayload(
+            word=word,
+        )
+        self._conn.publish("signalOnly/{}/signal/bark".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
 
     def emit_maybe_number(self, number: Optional[int]):
-        """Server application code should call this method to emit the 'maybe_number' signal."""
-        if not isinstance(number, int) and number is not None:
-            raise ValueError(f"The 'number' value must be Optional[int].")
+        """Server application code should call this method to emit the 'maybe_number' signal.
 
-        payload = {
-            "number": Optional[int](number) if number is not None else None,
-        }
-        self._conn.publish("signalOnly/{}/signal/maybeNumber".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
+        MaybeNumberSignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
+
+        payload = MaybeNumberSignalPayload(
+            number=number if number is not None else None,
+        )
+        self._conn.publish("signalOnly/{}/signal/maybeNumber".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
 
     def emit_maybe_name(self, name: Optional[str]):
-        """Server application code should call this method to emit the 'maybe_name' signal."""
-        if not isinstance(name, str) and name is not None:
-            raise ValueError(f"The 'name' value must be Optional[str].")
+        """Server application code should call this method to emit the 'maybe_name' signal.
 
-        payload = {
-            "name": Optional[str](name) if name is not None else None,
-        }
-        self._conn.publish("signalOnly/{}/signal/maybeName".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
+        MaybeNameSignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
 
-    def emit_now(self, timestamp: datetime.datetime):
-        """Server application code should call this method to emit the 'now' signal."""
-        if not isinstance(timestamp, datetime.datetime):
-            raise ValueError(f"The 'timestamp' value must be datetime.datetime.")
+        payload = MaybeNameSignalPayload(
+            name=name if name is not None else None,
+        )
+        self._conn.publish("signalOnly/{}/signal/maybeName".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
 
-        payload = {}
-        self._conn.publish("signalOnly/{}/signal/now".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
+    def emit_now(self, timestamp: datetime):
+        """Server application code should call this method to emit the 'now' signal.
+
+        NowSignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
+
+        payload = NowSignalPayload(
+            timestamp=timestamp,
+        )
+        self._conn.publish("signalOnly/{}/signal/now".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
 
 
 class SignalOnlyServerBuilder:
@@ -161,18 +165,18 @@ if __name__ == "__main__":
 
     while True:
         try:
-            server.emit_anotherSignal(3.14, True, "apples")
+            server.emit_another_signal(3.14, True, "apples")
             server.emit_bark("apples")
             server.emit_maybe_number(42)
             server.emit_maybe_name("apples")
-            server.emit_now(datetime.datetime.now())
+            server.emit_now(datetime.now())
 
             sleep(4)
-            server.emit_anotherSignal(one=3.14, two=True, three="apples")
+            server.emit_another_signal(one=3.14, two=True, three="apples")
             server.emit_bark(word="apples")
             server.emit_maybe_number(number=42)
             server.emit_maybe_name(name="apples")
-            server.emit_now(timestamp=datetime.datetime.now())
+            server.emit_now(timestamp=datetime.now())
 
             sleep(6)
         except KeyboardInterrupt:

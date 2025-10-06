@@ -59,11 +59,22 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker)
         responseTopicStringStream << boost::format("client/%1%/set_the_time/response") % _broker->GetClientId();
         _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("client/%1%/forward_time/response") % _broker->GetClientId();
+        _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("client/%1%/how_off_is_the_clock/response") % _broker->GetClientId();
+        _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
     _favoriteNumberPropertySubscriptionId = _broker->Subscribe("full/{}/property/favoriteNumber/value", 1);
     _favoriteFoodsPropertySubscriptionId = _broker->Subscribe("full/{}/property/favoriteFoods/value", 1);
     _lunchMenuPropertySubscriptionId = _broker->Subscribe("full/{}/property/lunchMenu/value", 1);
     _familyNamePropertySubscriptionId = _broker->Subscribe("full/{}/property/familyName/value", 1);
     _lastBreakfastTimePropertySubscriptionId = _broker->Subscribe("full/{}/property/lastBreakfastTime/value", 1);
+    _breakfastLengthPropertySubscriptionId = _broker->Subscribe("full/{}/property/breakfastLength/value", 1);
     _lastBirthdaysPropertySubscriptionId = _broker->Subscribe("full/{}/property/lastBirthdays/value", 1);
 }
 
@@ -119,10 +130,56 @@ void FullClient::_receiveMessage(
                     }
                 }
 
+                std::chrono::time_point<std::chrono::system_clock> tempTimestamp;
+                { // Scoping
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("timestamp");
+                    if (itr != doc.MemberEnd() && itr->value.IsString())
+                    {
+                        std::istringstream ss(itr->value.GetString());
+                        std::tm tm = {};
+                        ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+                        if (ss.fail())
+                        {
+                            throw std::runtime_error("Failed to parse datetime string");
+                        }
+                        tempTimestamp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Received payload doesn't have required value/type");
+                    }
+                }
+
+                tempProcessTime;
+                { // Scoping
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("process_time");
+                    if (itr != doc.MemberEnd() && itr->value.Is())
+                    {
+                        tempProcessTime = parseIsoDuration(itr->value.GetString());
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Received payload doesn't have required value/type");
+                    }
+                }
+
+                tempMemorySegment;
+                { // Scoping
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("memory_segment");
+                    if (itr != doc.MemberEnd() && itr->value.Is())
+                    {
+                        tempMemorySegment = base64Decode(itr->value.GetString());
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Received payload doesn't have required value/type");
+                    }
+                }
+
                 std::lock_guard<std::mutex> lock(_todayIsSignalCallbacksMutex);
                 for (const auto& cb: _todayIsSignalCallbacks)
                 {
-                    cb(tempDayOfMonth, tempDayOfWeek);
+                    cb(tempDayOfMonth, tempDayOfWeek, tempTimestamp, tempProcessTime, tempMemorySegment);
                 }
             }
         }
@@ -158,6 +215,16 @@ void FullClient::_receiveMessage(
         std::cout << "Matched topic for set_the_time response" << std::endl;
         _handleSetTheTimeResponse(topic, payload, *mqttProps.correlationId);
     }
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/forward_time/response") && mqttProps.correlationId)
+    {
+        std::cout << "Matched topic for forward_time response" << std::endl;
+        _handleForwardTimeResponse(topic, payload, *mqttProps.correlationId);
+    }
+    else if (_broker->TopicMatchesSubscription(topic, "client/+/how_off_is_the_clock/response") && mqttProps.correlationId)
+    {
+        std::cout << "Matched topic for how_off_is_the_clock response" << std::endl;
+        _handleHowOffIsTheClockResponse(topic, payload, *mqttProps.correlationId);
+    }
     if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _favoriteNumberPropertySubscriptionId)) || topic == "full/{}/property/favoriteNumber/value")
     {
         _receiveFavoriteNumberPropertyUpdate(topic, payload, mqttProps.propertyVersion);
@@ -178,13 +245,17 @@ void FullClient::_receiveMessage(
     {
         _receiveLastBreakfastTimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
+    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _breakfastLengthPropertySubscriptionId)) || topic == "full/{}/property/breakfastLength/value")
+    {
+        _receiveBreakfastLengthPropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    }
     else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _lastBirthdaysPropertySubscriptionId)) || topic == "full/{}/property/lastBirthdays/value")
     {
         _receiveLastBirthdaysPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 }
 
-void FullClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>)>& cb)
+void FullClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::milliseconds, std::vector<unsigned char>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_todayIsSignalCallbacksMutex);
     _todayIsSignalCallbacks.push_back(cb);
@@ -521,6 +592,126 @@ void FullClient::_handleSetTheTimeResponse(
                                            confirmation_message
         };
         promiseItr->second.set_value(returnValue);
+    }
+
+    std::cout << "End of response handler for " << topic << std::endl;
+}
+
+boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::forwardTime(std::chrono::milliseconds adjustment)
+{
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pendingForwardTimeMethodCalls[correlationId] = boost::promise<std::chrono::time_point<std::chrono::system_clock>>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    std::stringstream responseTopicStringStream;
+    responseTopicStringStream << boost::format("client/%1%/forward_time/response") % _broker->GetClientId();
+    MqttProperties mqttProps;
+    mqttProps.correlationId = correlationIdStr;
+    mqttProps.responseTopic = responseTopicStringStream.str();
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
+    _broker->Publish("full/{}/method/forwardTime", buf.GetString(), 2, false, mqttProps);
+
+    return _pendingForwardTimeMethodCalls[correlationId].get_future();
+}
+
+void FullClient::_handleForwardTimeResponse(
+        const std::string& topic,
+        const std::string& payload,
+        const std::string& correlationId
+)
+{
+    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse forward_time signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+    if (!doc.IsObject())
+    {
+        throw std::runtime_error("Received payload is not an object");
+    }
+
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    auto promiseItr = _pendingForwardTimeMethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pendingForwardTimeMethodCalls.end())
+    {
+        // Response has a single value.
+        rapidjson::Value::ConstMemberIterator newTimeItr = doc.FindMember("new_time");
+
+        std::chrono::time_point<std::chrono::system_clock> new_time;
+        if (newTimeItr != doc.MemberEnd() && newTimeItr->value.IsString())
+        {
+            new_time = parseIsoTimestamp(newTimeItr->value.GetString());
+        }
+
+        promiseItr->second.set_value(new_time);
+    }
+
+    std::cout << "End of response handler for " << topic << std::endl;
+}
+
+boost::future<std::chrono::milliseconds> FullClient::howOffIsTheClock(std::chrono::time_point<std::chrono::system_clock> actual_time)
+{
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pendingHowOffIsTheClockMethodCalls[correlationId] = boost::promise<std::chrono::milliseconds>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    std::stringstream responseTopicStringStream;
+    responseTopicStringStream << boost::format("client/%1%/how_off_is_the_clock/response") % _broker->GetClientId();
+    MqttProperties mqttProps;
+    mqttProps.correlationId = correlationIdStr;
+    mqttProps.responseTopic = responseTopicStringStream.str();
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
+    _broker->Publish("full/{}/method/howOffIsTheClock", buf.GetString(), 2, false, mqttProps);
+
+    return _pendingHowOffIsTheClockMethodCalls[correlationId].get_future();
+}
+
+void FullClient::_handleHowOffIsTheClockResponse(
+        const std::string& topic,
+        const std::string& payload,
+        const std::string& correlationId
+)
+{
+    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse how_off_is_the_clock signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+    if (!doc.IsObject())
+    {
+        throw std::runtime_error("Received payload is not an object");
+    }
+
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    auto promiseItr = _pendingHowOffIsTheClockMethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pendingHowOffIsTheClockMethodCalls.end())
+    {
+        // Response has a single value.
+        rapidjson::Value::ConstMemberIterator differenceItr = doc.FindMember("difference");
+
+        TEMPLATE ERROR with unhandled return value type duration
+
+                promiseItr->second.set_value(difference);
     }
 
     std::cout << "End of response handler for " << topic << std::endl;
@@ -920,6 +1111,72 @@ boost::future<bool> FullClient::updateLastBreakfastTimeProperty(std::chrono::tim
     return _broker->Publish("full/{}/property/lastBreakfastTime/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
+void FullClient::_receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse breakfast_length property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject())
+    {
+        throw std::runtime_error("Received breakfast_length payload is not an object");
+    }
+    BreakfastLengthProperty tempValue;
+
+    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("length");
+    if (itr != doc.MemberEnd() && itr->value.Is())
+    {
+    }
+    else
+    {
+        throw std::runtime_error("Received payload doesn't have required value/type");
+    }
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_breakfastLengthPropertyMutex);
+        _breakfastLengthProperty = tempValue;
+        _lastBreakfastLengthPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+    }
+    // Notify all registered callbacks.
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_breakfastLengthPropertyCallbacksMutex);
+        for (const auto& cb: _breakfastLengthPropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+
+            cb(tempValue);
+        }
+    }
+}
+
+boost::optional<BreakfastLengthProperty> FullClient::getBreakfastLengthProperty() const
+{
+    std::lock_guard<std::mutex> lock(_breakfastLengthPropertyMutex);
+    return _breakfastLengthProperty;
+}
+
+void FullClient::registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::milliseconds length)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_breakfastLengthPropertyCallbacksMutex);
+    _breakfastLengthPropertyCallbacks.push_back(cb);
+}
+
+boost::future<bool> FullClient::updateBreakfastLengthProperty(std::chrono::milliseconds length) const
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("full/{}/property/breakfastLength/setValue", buf.GetString(), 1, false, mqttProps);
+}
+
 void FullClient::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
@@ -966,6 +1223,17 @@ void FullClient::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, c
             tempValue.sister = boost::none;
         }
     }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("brothers_age");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.brothers_age = itr->value.GetInt();
+        }
+        else
+        {
+            tempValue.brothers_age = boost::none;
+        }
+    }
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyMutex);
@@ -979,7 +1247,7 @@ void FullClient::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, c
         {
             // Don't need a mutex since we're using tempValue.
 
-            cb(tempValue.mom, tempValue.dad, tempValue.sister);
+            cb(tempValue.mom, tempValue.dad, tempValue.sister, tempValue.brothers_age);
         }
     }
 }
@@ -990,16 +1258,19 @@ boost::optional<LastBirthdaysProperty> FullClient::getLastBirthdaysProperty() co
     return _lastBirthdaysProperty;
 }
 
-void FullClient::registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister)>& cb)
+void FullClient::registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister, boost::optional<int> brothers_age)>& cb)
 {
     std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyCallbacksMutex);
     _lastBirthdaysPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> FullClient::updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister) const
+boost::future<bool> FullClient::updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister, boost::optional<int> brothers_age) const
 {
     rapidjson::Document doc;
     doc.SetObject();
+
+    if (brothers_age)
+        doc.AddMember("brothers_age", *brothers_age, doc.GetAllocator());
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);

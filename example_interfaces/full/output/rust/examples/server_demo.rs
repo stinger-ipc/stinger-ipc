@@ -52,7 +52,7 @@ impl FullMethodHandlers for FullMethodImpl {
         let rv = DoSomethingReturnValue {
             label: "apples".to_string(),
             identifier: 42,
-            day: DayOfTheWeek::Monday,
+            day: DayOfTheWeek::Saturday,
         };
         Ok(rv)
     }
@@ -81,6 +81,22 @@ impl FullMethodHandlers for FullMethodImpl {
             confirmation_message: "apples".to_string(),
         };
         Ok(rv)
+    }
+
+    async fn handle_forward_time(
+        &self,
+        _adjustment: std::time::Duration,
+    ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
+        println!("Handling forward_time");
+        Ok(chrono::Utc::now())
+    }
+
+    async fn handle_how_off_is_the_clock(
+        &self,
+        _actual_time: chrono::DateTime<chrono::Utc>,
+    ) -> Result<std::time::Duration, MethodReturnCode> {
+        println!("Handling how_off_is_the_clock");
+        Ok(std::time::Duration::from_secs(3536))
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -129,15 +145,19 @@ async fn main() {
                 drink: true,
                 sandwich: "apples".to_string(),
                 crackers: 3.14,
-                day: DayOfTheWeek::Monday,
+                day: DayOfTheWeek::Saturday,
                 order_number: Some(42),
+                time_of_lunch: chrono::Utc::now(),
+                duration_of_lunch: std::time::Duration::from_secs(3536),
             },
             tuesday: Lunch {
                 drink: true,
                 sandwich: "apples".to_string(),
                 crackers: 3.14,
-                day: DayOfTheWeek::Monday,
+                day: DayOfTheWeek::Saturday,
                 order_number: Some(42),
+                time_of_lunch: chrono::Utc::now(),
+                duration_of_lunch: std::time::Duration::from_secs(3536),
             },
         };
         let prop_init_future = server.set_lunch_menu(new_value).await;
@@ -158,11 +178,20 @@ async fn main() {
             eprintln!("Error initializing property 'last_breakfast_time': {:?}", e);
         }
 
+        println!("Setting initial value for property 'breakfast_length'");
+        let prop_init_future = server
+            .set_breakfast_length(std::time::Duration::from_secs(3536))
+            .await;
+        if let Err(e) = prop_init_future.await {
+            eprintln!("Error initializing property 'breakfast_length': {:?}", e);
+        }
+
         println!("Setting initial value for property 'last_birthdays'");
         let new_value = LastBirthdaysProperty {
             mom: chrono::Utc::now(),
             dad: chrono::Utc::now(),
             sister: chrono::Utc::now(),
+            brothers_age: Some(42),
         };
         let prop_init_future = server.set_last_birthdays(new_value).await;
 
@@ -172,7 +201,15 @@ async fn main() {
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'todayIs'");
-        let signal_result_future = server.emit_today_is(42, Some(DayOfTheWeek::Monday)).await;
+        let signal_result_future = server
+            .emit_today_is(
+                42,
+                Some(DayOfTheWeek::Saturday),
+                chrono::Utc::now(),
+                std::time::Duration::from_secs(3536),
+                vec![101, 120, 97, 109, 112, 108, 101],
+            )
+            .await;
         let signal_result = signal_result_future.await;
         println!("Signal 'todayIs' was sent: {:?}", signal_result);
 
@@ -201,6 +238,8 @@ async fn main() {
                 crackers: 1.0,
                 day: DayOfTheWeek::Monday,
                 order_number: Some(2022),
+                time_of_lunch: chrono::Utc::now(),
+                duration_of_lunch: std::time::Duration::from_secs(967),
             },
             tuesday: Lunch {
                 drink: true,
@@ -208,6 +247,8 @@ async fn main() {
                 crackers: 1.0,
                 day: DayOfTheWeek::Monday,
                 order_number: Some(2022),
+                time_of_lunch: chrono::Utc::now(),
+                duration_of_lunch: std::time::Duration::from_secs(967),
             },
         };
         let _ = server.set_lunch_menu(new_value).await;
@@ -227,11 +268,21 @@ async fn main() {
         }
 
         sleep(Duration::from_secs(1)).await;
+        println!("Changing property 'breakfast_length'");
+        let prop_change_future = server
+            .set_breakfast_length(std::time::Duration::from_secs(975))
+            .await;
+        if let Err(e) = prop_change_future.await {
+            eprintln!("Error changing property 'breakfast_length': {:?}", e);
+        }
+
+        sleep(Duration::from_secs(1)).await;
         println!("Changing property 'last_birthdays'");
         let new_value = LastBirthdaysProperty {
             mom: chrono::Utc::now(),
             dad: chrono::Utc::now(),
             sister: chrono::Utc::now(),
+            brothers_age: Some(2022),
         };
         let _ = server.set_last_birthdays(new_value).await;
 

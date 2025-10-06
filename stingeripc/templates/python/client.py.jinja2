@@ -5,16 +5,18 @@ on the next generation.
 This is the Client for the {{stinger.name}} interface.
 """
 
-from typing import Dict, Callable, List, Any
+from typing import Dict, Callable, List, Any, Optional
 from uuid import uuid4
 from functools import partial
 import json
 import logging
+from datetime import datetime, timedelta, UTC
+from isodate import parse_duration
 {%if stinger.methods | length > 0 %}
 import asyncio
 import concurrent.futures as futures
 from method_codes import *
-from interface_types import InterfaceInfo
+from interface_types import *
 import threading
 {%endif%}
 from connection import IBrokerConnection
@@ -26,10 +28,10 @@ logging.basicConfig(level=logging.DEBUG)
 {{sig_name | UpperCamelCase}}SignalCallbackType = Callable[[{%for arg in sig.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]
 {%endfor%}
 {%-for method_name, method in stinger.methods.items()-%}
-{{method_name | UpperCamelCase}}MethodResponseCallbackType = Callable[[{%if method.return_value%}{{method.return_value.python_annotation}}{%endif%}], None]
+{{method_name | UpperCamelCase}}MethodResponseCallbackType = Callable[[{%if method.return_value%}{{method.return_value_python_annotation}}{%endif%}], None]
 {%endfor%}
 {%for prop_name, prop in stinger.properties.items()-%}
-{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Callable[[{{prop.python_class}}], None]
+{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Callable[[{{prop.python_annotation}}], None]
 {%endfor%}
 
 class {{stinger.python.client_class_name}}:
@@ -47,7 +49,7 @@ class {{stinger.python.client_class_name}}:
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
-        self._property_{{prop_name}}: {{prop_spec.python_class}}|None = None
+        self._property_{{prop_name}} = None # type: Optional[{{prop_spec.python_class}}]
         self._conn.subscribe("{{prop_spec.value_topic}}".format(self._service_id), self._receive_{{prop_name | snake_case}}_property_update_message)
         self._changed_value_callbacks_for_{{prop_name}}: list[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
@@ -60,13 +62,13 @@ class {{stinger.python.client_class_name}}:
 
     {%for prop_name, prop_spec in stinger.properties.items()-%}
     @property
-    def {{prop_name}}(self) -> {{prop_spec.python_class}} | None:
+    def {{prop_name}}(self) -> Optional[{{prop_spec.python_annotation}}]:
         """ Property '{{prop_name}}' getter.
         """
         return self._property_{{prop_name}}
     {%if not prop_spec.read_only %}
     @{{prop_name}}.setter
-    def {{prop_name}}(self, value: {{prop_spec.python_class}}):
+    def {{prop_name}}(self, value: {{prop_spec.python_annotation}}):
         """ Serializes and publishes the '{{prop_name}}' property.
         """
         if not isinstance(value, {{prop_spec.python_class}}):
@@ -111,11 +113,10 @@ class {{stinger.python.client_class_name}}:
         if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
             self._logger.warning("Received '{{sig_name}}' signal with non-JSON content type")
             return
-        allowed_args = [{%for arg in sig.arg_list%}"{{arg.name}}", {%endfor%}]
-        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-        {%for arg in sig.arg_list-%}
-        kwargs["{{arg.name}}"] = {{arg.python_class}}(kwargs["{{arg.name}}"]){%if arg.optional %} if kwargs.get("{{arg.name}}") else None {%endif%}
-        {%endfor%}
+
+        model = {{sig_name|UpperCamelCase}}SignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
+
         self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
     {%endfor%}{# end signal loop #}
 
@@ -153,7 +154,15 @@ class {{stinger.python.client_class_name}}:
             prop_value = {{prop_spec.python_class}}.model_validate_json(payload)
             {%else-%}
             payload_obj = json.loads(payload)
-            prop_value = {{prop_spec.arg_list[0].python_class}}(payload_obj["{{prop_spec.arg_list[0].name}}"])
+            {%- if prop_spec.arg_list[0].arg_type.name.lower() == 'datetime'%}
+            prop_value = datetime.fromisoformat(payload_obj["{{prop_spec.arg_list[0].name}}"])
+            {% elif prop_spec.arg_list[0].arg_type.name.lower() == 'duration'%}
+            prop_value = parse_duration(payload_obj["{{prop_spec.arg_list[0].name}}"])
+            {% elif prop_spec.arg_list[0].arg_type.name.lower() == 'binary'%}
+            prop_value = base64.b64decode(payload_obj["{{prop_spec.arg_list[0].name}}"])
+            {%else%}
+            prop_value = {{prop_spec.arg_list[0].python_local_type}}(payload_obj["{{prop_spec.arg_list[0].name}}"])
+            {%endif-%}
             {%endif-%}
             self._property_{{prop_name}} = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name}}, value=self._property_{{prop_name}})
@@ -178,20 +187,16 @@ class {{stinger.python.client_class_name}}:
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
+    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
         """ Calling this initiates a `{{method_name}}` IPC method call.
         """
-        {%for arg in method.arg_list%}
-        if not isinstance({{arg.name}}, {{arg.python_class}}){%- if not arg.optional -%} and {{arg.name}} is not None{%endif-%}:
-            raise ValueError("The '{{arg.name}}' argument wasn't a {{arg.python_annotation}}")
-        {%endfor%}
         fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
-        payload = { {%-for arg in method.arg_list%}
-            "{{arg.name}}": {{arg.name}},{%endfor%}
-        }
-        self._conn.publish("{{method.topic}}".format(self._service_id), json.dumps(payload), qos=2, retain=False,
+        payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}
+            {{arg.name}}={{arg.name|snake_case}},{%endfor%}
+        )
+        self._conn.publish("{{method.topic}}".format(self._service_id), payload.model_dump_json(), qos=2, retain=False,
                            correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._conn.client_id}')}}")
         return fut
 
@@ -207,16 +212,37 @@ class {{stinger.python.client_class_name}}:
             {%elif method.return_value_type == 'struct' %}
             return_args = self._filter_for_args(response_json, [{%for m in method.return_value%}"{{m.name}}", {%endfor%}])
             {%for arg in method.return_value-%}
+            {%if arg.arg_type.name.lower() == 'datetime'%}
+            return_args["{{arg.name}}"] = datetime.fromisoformat(return_args["{{arg.name}}"])
+            {%elif arg.arg_type.name.lower() == 'duration'%}
+            return_args["{{arg.name}}"] = parse_duration(return_args["{{arg.name}}"])
+            {%elif arg.arg_type.name.lower() == 'binary'%}
+            return_args["{{arg.name}}"] = base64.b64decode(return_args["{{arg.name}}"])
+            {%else%}
             return_args["{{arg.name}}"] = {{arg.python_type}}(return_args["{{arg.name}}"])
+            {%endif%}
             {%endfor%}
             return_obj = {{method.return_value_python_type}}(**return_args)
             fut.set_result(return_obj)
             {%else%}
             if "{{method.return_value_property_name}}" in response_json:
-                if not isinstance(response_json["{{method.return_value_property_name}}"], {{method.return_value.python_type}}):
-                    raise ValueError("Return value '{{method.return_value_property_name}}'' had wrong type")
-                self._logger.debug("Setting future result")
+                {%if method.return_value.arg_type.name.lower() == 'datetime'%}
+                if not isinstance(response_json["{{method.return_value_property_name}}"], str):
+                    raise ValueError("Return value '{{method.return_value_property_name}}' had wrong type")
+                fut.set_result(datetime.fromisoformat(response_json["{{method.return_value_property_name}}"]))
+                {%elif method.return_value.arg_type.name.lower() == 'duration'%}
+                if not isinstance(response_json["{{method.return_value_property_name}}"], str):
+                    raise ValueError("Return value '{{method.return_value_property_name}}' had wrong type")
+                fut.set_result(parse_duration(response_json["{{method.return_value_property_name}}"]))
+                {%elif method.return_value.arg_type.name.lower() == 'binary'%}
+                if not isinstance(response_json["{{method.return_value_property_name}}"], str):
+                    raise ValueError("Return value '{{method.return_value_property_name}}' had wrong type")
+                fut.set_result(base64.b64decode(response_json["{{method.return_value_property_name}}"]))
+                {%else%}
+                if not isinstance(response_json["{{method.return_value_property_name}}"], {{method.return_value.python_local_type}}):
+                    raise ValueError("Return value '{{method.return_value_property_name}}' had wrong type")
                 fut.set_result(response_json["{{method.return_value_property_name}}"])
+                {%endif%}
             else:
                 raise Exception("Response message didn't have the return value")
             {%endif%}
@@ -379,7 +405,7 @@ if __name__ == '__main__':
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
     @client_builder.{{prop_name | snake_case}}_updated
-    def print_new_{{prop_name}}_value(value: {{prop.python_class}}):
+    def print_new_{{prop_name}}_value(value: {{prop.python_annotation}}):
         """{{prop.description}}
         """
         print(f"Property '{{prop_name}}' has been updated to: {value}")
@@ -396,7 +422,7 @@ if __name__ == '__main__':
     {%if stinger.methods | length > 0 %}
     {%-for method_name, method in stinger.methods.items()%}
     print("Making call to '{{method_name|snake_case}}'")
-    future_resp = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+    future_resp = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:

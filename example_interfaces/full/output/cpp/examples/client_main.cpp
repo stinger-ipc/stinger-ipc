@@ -11,8 +11,16 @@ int main(int argc, char** argv)
 {
     auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "Full-client-demo");
     FullClient client(conn);
-    client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek)
-                                   { std::cout << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << "None" << std::endl; });
+    client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::milliseconds process_time, std::vector<unsigned char> memory_segment)
+                                   {
+        
+        std::string timestampStr = timePointToIsoString(timestamp);
+        
+        
+        std::string processTimeStr = "[Duration Data]";
+        
+        std::string memorySegmentStr = "[Binary Data]";
+        std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" << "None" << " | " << "timestamp=" <<timestampStr << " | " << "process_time=" <<processTimeStr << " | " << "memory_segment=" <<memorySegmentStr <<  std::endl; });
     client.registerFavoriteNumberPropertyCallback([](int number)
                                                   { std::cout << "Received update for favorite_number property: " << "number=" << number /* unhandled arg type*/ << std::endl; });
 
@@ -35,7 +43,10 @@ int main(int argc, char** argv)
         std::cout << "Received update for last_breakfast_time property: " << "timestamp=" << 
                                 timestampStr <<std::endl; });
 
-    client.registerLastBirthdaysPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister)
+    client.registerBreakfastLengthPropertyCallback([](std::chrono::milliseconds length)
+                                                   { std::cout << "Received update for breakfast_length property: " << "length=" << length /* unhandled arg type*/ << std::endl; });
+
+    client.registerLastBirthdaysPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister, boost::optional<int> brothers_age)
                                                  {
         
         std::string momStr = timePointToIsoString(mom);
@@ -54,7 +65,7 @@ int main(int argc, char** argv)
         
         std::cout << "Received update for last_birthdays property: " << "mom=" << 
                                 momStr << " | " << "dad=" << 
-                                dadStr << " | " << "sister=" <<  "None" <<std::endl; });
+                                dadStr << " | " << "sister=" <<  "None" << " | " << "brothers_age=" <<  "None" <<std::endl; });
 
     std::cout << "Calling addNumbers" << std::endl;
     auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
@@ -111,6 +122,26 @@ int main(int argc, char** argv)
     {
         SetTheTimeReturnValue returnValue = setTheTimeResultFuture.get();
         std::cout << "Results:" << " timestamp=" << timePointToIsoString(returnValue.timestamp) << " confirmation_message=" << returnValue.confirmation_message << std::endl;
+    }
+    std::cout << "Calling forward_time" << std::endl;
+    auto forwardTimeResultFuture = client.forwardTime(None);
+    auto forwardTimeStatus = forwardTimeResultFuture.wait_for(boost::chrono::seconds(5));
+    if (forwardTimeStatus == boost::future_status::timeout)
+    {
+        std::cout << "TIMEOUT after 5 seconds waiting for forward_time response." << std::endl;
+    }
+    else
+    {
+    }
+    std::cout << "Calling how_off_is_the_clock" << std::endl;
+    auto howOffIsTheClockResultFuture = client.howOffIsTheClock(std::chrono::system_clock::now());
+    auto howOffIsTheClockStatus = howOffIsTheClockResultFuture.wait_for(boost::chrono::seconds(5));
+    if (howOffIsTheClockStatus == boost::future_status::timeout)
+    {
+        std::cout << "TIMEOUT after 5 seconds waiting for how_off_is_the_clock response." << std::endl;
+    }
+    else
+    {
     }
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;

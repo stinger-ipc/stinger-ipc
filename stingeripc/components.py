@@ -243,7 +243,7 @@ class ArgEnum(Arg):
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str:
         random_state = random.getstate()
-        random.seed(1)
+        random.seed(seed)
         value = random.choice(self._enum.values)
         if lang == "python":
             retval = f"{self._enum.get_module_alias()}.{self._enum.class_name}.{stringcase.constcase(value) }"
@@ -255,7 +255,7 @@ class ArgEnum(Arg):
             else:
                 retval = f"{self._enum.class_name}::{stringmanip.upper_camel_case(value)}"
         elif lang == "json":
-            retval = 1
+            retval = str(random.randint(1, len(self._enum.values)))
         random.setstate(random_state)
         return retval
 
@@ -452,6 +452,16 @@ class ArgDateTime(Arg):
         return "datetime.datetime"
 
     @property
+    def python_local_type(self) -> str:
+        return "datetime"
+    
+    @property
+    def python_annotation(self) -> str:
+        if self.optional:
+            return "Optional[datetime]"
+        return "datetime"
+
+    @property
     def rust_type(self) -> str:
         return "chrono::DateTime<chrono::Utc>"
 
@@ -461,7 +471,9 @@ class ArgDateTime(Arg):
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":
-            return f"datetime.datetime.now()"
+            if self.optional and random.choice([True, False, False, False]):
+                return "None"
+            return f"datetime.now()"
         elif lang == "rust":
             return "chrono::Utc::now()"
         elif lang in ["c++", "cpp"]:
@@ -490,6 +502,12 @@ class ArgDuration(Arg):
         return "datetime.timedelta"
 
     @property
+    def python_annotation(self) -> str:
+        if self.optional:
+            return "Optional[timedelta]"
+        return "timedelta"
+
+    @property
     def rust_type(self) -> str:
         return "std::time::Duration"
 
@@ -498,11 +516,18 @@ class ArgDuration(Arg):
         return "[Duration](#duration)"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        random_state = random.getstate()
+        random.seed(seed)
+        retval = None
         if lang == "python":
-            return f"datetime.timedelta(seconds=5)"
+            if self.optional and random.choice([True, False, False, False]):
+                retval = "None"
+            else:
+                retval = f"timedelta(seconds={random.randint(1, 3600)})"
         elif lang == "rust":
-            return "std::time::Duration::from_secs(5)"
-        return None
+            retval = f"std::time::Duration::from_secs({random.randint(1, 3600)})"
+        random.setstate(random_state)
+        return retval
 
     def __str__(self) -> str:
         return f"<ArgDuration name={self.name}>"
@@ -747,6 +772,19 @@ class Method(InterfaceComponent):
             raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
 
     @property
+    def return_value_python_annotation(self):
+        if self._return_value is None:
+            return "None"
+        elif isinstance(self._return_value, Arg):
+            return self._return_value.python_annotation
+        elif isinstance(self._return_value, list):
+            return (
+                f"stinger_types.{stringmanip.upper_camel_case(self.return_value_name)}"
+            )
+        else:
+            raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
+
+    @property
     def return_value_python_local_type(self):
         if self._return_value is None:
             return "None"
@@ -875,7 +913,10 @@ class Property(InterfaceComponent):
 
     @property
     def python_annotation(self) -> str:
-        return self.python_class
+        if len(self._arg_list) == 1:
+            return self._arg_list[0].python_annotation
+        else:
+            return f"stinger_types.{stringmanip.upper_camel_case(self.name)}Property"
 
     @property
     def rust_local_type(self) -> str:

@@ -10,14 +10,15 @@ import logging
 import threading
 from time import sleep
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, UTC
+import isodate
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import IBrokerConnection
 from method_codes import *
-from interface_types import InterfaceInfo
+from interface_types import *
 import interface_types as stinger_types
 
 
@@ -29,13 +30,13 @@ class PropertyControls(Generic[T]):
     value: T | None = None
     mutex = threading.Lock()
     version: int = -1
-    subscription_id: int | None = None
+    subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
 
 
 @dataclass
 class MethodControls:
-    subscription_id: int | None = None
+    subscription_id: Optional[int] = None
     callback: Optional[Callable] = None
 
 
@@ -65,12 +66,17 @@ class FullServer:
         self._property_family_name: PropertyControls[str, str] = PropertyControls()
         self._property_family_name.subscription_id = self._conn.subscribe("full/{}/property/familyName/setValue".format(self._instance_id), self._receive_family_name_update_request_message)
 
-        self._property_last_breakfast_time: PropertyControls[datetime.datetime, datetime.datetime] = PropertyControls()
+        self._property_last_breakfast_time: PropertyControls[datetime.datetime, datetime] = PropertyControls()
         self._property_last_breakfast_time.subscription_id = self._conn.subscribe(
             "full/{}/property/lastBreakfastTime/setValue".format(self._instance_id), self._receive_last_breakfast_time_update_request_message
         )
 
-        self._property_last_birthdays: PropertyControls[stinger_types.LastBirthdaysProperty, datetime.datetime, datetime.datetime, datetime.datetime] = PropertyControls()
+        self._property_breakfast_length: PropertyControls[datetime.timedelta, timedelta] = PropertyControls()
+        self._property_breakfast_length.subscription_id = self._conn.subscribe(
+            "full/{}/property/breakfastLength/setValue".format(self._instance_id), self._receive_breakfast_length_update_request_message
+        )
+
+        self._property_last_birthdays: PropertyControls[stinger_types.LastBirthdaysProperty, datetime, datetime, Optional[datetime], Optional[int]] = PropertyControls()
         self._property_last_birthdays.subscription_id = self._conn.subscribe("full/{}/property/lastBirthdays/setValue".format(self._instance_id), self._receive_last_birthdays_update_request_message)
 
         self._method_add_numbers = MethodControls()
@@ -88,6 +94,12 @@ class FullServer:
         self._method_set_the_time = MethodControls()
         self._method_set_the_time.subscription_id = self._conn.subscribe("full/{}/method/setTheTime".format(self._instance_id), self._process_set_the_time_call)
 
+        self._method_forward_time = MethodControls()
+        self._method_forward_time.subscription_id = self._conn.subscribe("full/{}/method/forwardTime".format(self._instance_id), self._process_forward_time_call)
+
+        self._method_how_off_is_the_clock = MethodControls()
+        self._method_how_off_is_the_clock.subscription_id = self._conn.subscribe("full/{}/method/howOffIsTheClock".format(self._instance_id), self._process_how_off_is_the_clock_call)
+
         self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
         self._advertise_thread.start()
 
@@ -102,7 +114,7 @@ class FullServer:
             sleep(self._re_advertise_server_interval_seconds)
 
     def _publish_interface_info(self):
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.utcnow().isoformat())
+        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = "full/{}/interface".format(self._instance_id)
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
@@ -151,30 +163,41 @@ class FullServer:
         for callback in self._property_last_breakfast_time.callbacks:
             callback(prop_value)
 
+    def _receive_breakfast_length_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        payload_obj = json.loads(payload)
+        prop_value = datetime.timedelta(payload_obj["length"])
+        with self._property_breakfast_length.mutex:
+            self._property_breakfast_length.value = prop_value
+            self._property_breakfast_length.version += 1
+        for callback in self._property_breakfast_length.callbacks:
+            callback(prop_value)
+
     def _receive_last_birthdays_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         prop_value = stinger_types.LastBirthdaysProperty.model_validate_json(payload)
         with self._property_last_birthdays.mutex:
             self._property_last_birthdays.value = prop_value
             self._property_last_birthdays.version += 1
         for callback in self._property_last_birthdays.callbacks:
-            callback(prop_value.mom, prop_value.dad, prop_value.sister)
+            callback(prop_value.mom, prop_value.dad, prop_value.sister, prop_value.brothers_age)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
         self._logger.warning("Received unexpected message to %s", topic)
 
-    def emit_todayIs(self, dayOfMonth: int, dayOfWeek: Optional[stinger_types.DayOfTheWeek]):
-        """Server application code should call this method to emit the 'todayIs' signal."""
-        if not isinstance(dayOfMonth, int):
-            raise ValueError(f"The 'dayOfMonth' value must be int.")
-        if not isinstance(dayOfWeek, stinger_types.DayOfTheWeek) and dayOfWeek is not None:
-            raise ValueError(f"The 'dayOfWeek' value must be Optional[stinger_types.DayOfTheWeek].")
+    def emit_today_is(self, dayOfMonth: int, dayOfWeek: Optional[stinger_types.DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
+        """Server application code should call this method to emit the 'todayIs' signal.
 
-        payload = {
-            "dayOfMonth": int(dayOfMonth),
-            "dayOfWeek": stinger_types.DayOfTheWeek(dayOfWeek).value if dayOfWeek is not None else None,
-        }
-        self._conn.publish("full/{}/signal/todayIs".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
+        TodayIsSignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
+
+        payload = TodayIsSignalPayload(
+            dayOfMonth=dayOfMonth,
+            dayOfWeek=dayOfWeek if dayOfWeek is not None else None,
+            timestamp=timestamp,
+            process_time=process_time,
+            memory_segment=memory_segment,
+        )
+        self._conn.publish("full/{}/signal/todayIs".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
 
     def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
         """This is a decorator to decorate a method that will handle the 'addNumbers' method calls."""
@@ -187,48 +210,16 @@ class FullServer:
         """This processes a call to the 'addNumbers' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = json.loads(payload_str)
+        payload = AddNumbersMethodRequest.model_validate_json(payload_str)
         correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
-        self._logger.info("Correlation Data %s", correlation_id)
+        self._logger.debug("Correlation data for 'addNumbers' request: %s", correlation_id)
         if self._method_add_numbers.callback is not None:
-            method_args = []  # type: List[Any]
-            if "first" in payload:
-                if not isinstance(payload["first"], int):
-                    self._logger.warning("The 'first' property in the payload to '%s' wasn't the correct type.  It should have been int.", topic)
-                    # TODO: return an error via MQTT
-                    return
-                else:
-                    method_args.append(payload["first"])
-            else:
-
-                self._logger.warning("The 'first' property in the payload to '%s' wasn't present", topic)
-                # TODO: return an error via MQTT
-                return
-
-            if "second" in payload:
-                if not isinstance(payload["second"], int):
-                    self._logger.warning("The 'second' property in the payload to '%s' wasn't the correct type.  It should have been int.", topic)
-                    # TODO: return an error via MQTT
-                    return
-                else:
-                    method_args.append(payload["second"])
-            else:
-
-                self._logger.warning("The 'second' property in the payload to '%s' wasn't present", topic)
-                # TODO: return an error via MQTT
-                return
-
-            if "third" in payload:
-                if not isinstance(payload["third"], int) or payload["third"] is None:
-                    self._logger.warning("The 'third' property in the payload to '%s' wasn't the correct type.  It should have been Optional[int].", topic)
-                    # TODO: return an error via MQTT
-                    return
-                else:
-                    method_args.append(payload["third"])
-            else:
-
-                method_args.append(None)
+            method_args = [
+                payload.first,
+                payload.second,
+                payload.third,
+            ]
 
             if response_topic is not None:
                 return_json = ""
@@ -258,24 +249,14 @@ class FullServer:
         """This processes a call to the 'doSomething' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = json.loads(payload_str)
+        payload = DoSomethingMethodRequest.model_validate_json(payload_str)
         correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
-        self._logger.info("Correlation Data %s", correlation_id)
+        self._logger.debug("Correlation data for 'doSomething' request: %s", correlation_id)
         if self._method_do_something.callback is not None:
-            method_args = []  # type: List[Any]
-            if "aString" in payload:
-                if not isinstance(payload["aString"], str):
-                    self._logger.warning("The 'aString' property in the payload to '%s' wasn't the correct type.  It should have been str.", topic)
-                    # TODO: return an error via MQTT
-                    return
-                else:
-                    method_args.append(payload["aString"])
-            else:
-
-                self._logger.warning("The 'aString' property in the payload to '%s' wasn't present", topic)
-                # TODO: return an error via MQTT
-                return
+            method_args = [
+                payload.aString,
+            ]
 
             if response_topic is not None:
                 return_json = ""
@@ -306,24 +287,14 @@ class FullServer:
         """This processes a call to the 'echo' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = json.loads(payload_str)
+        payload = EchoMethodRequest.model_validate_json(payload_str)
         correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
-        self._logger.info("Correlation Data %s", correlation_id)
+        self._logger.debug("Correlation data for 'echo' request: %s", correlation_id)
         if self._method_echo.callback is not None:
-            method_args = []  # type: List[Any]
-            if "message" in payload:
-                if not isinstance(payload["message"], str):
-                    self._logger.warning("The 'message' property in the payload to '%s' wasn't the correct type.  It should have been str.", topic)
-                    # TODO: return an error via MQTT
-                    return
-                else:
-                    method_args.append(payload["message"])
-            else:
-
-                self._logger.warning("The 'message' property in the payload to '%s' wasn't present", topic)
-                # TODO: return an error via MQTT
-                return
+            method_args = [
+                payload.message,
+            ]
 
             if response_topic is not None:
                 return_json = ""
@@ -342,7 +313,7 @@ class FullServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_what_time_is_it(self, handler: Callable[[datetime.datetime], datetime.datetime]):
+    def handle_what_time_is_it(self, handler: Callable[[datetime], datetime]):
         """This is a decorator to decorate a method that will handle the 'what_time_is_it' method calls."""
         if self._method_what_time_is_it.callback is None and handler is not None:
             self._method_what_time_is_it.callback = handler
@@ -353,24 +324,14 @@ class FullServer:
         """This processes a call to the 'what_time_is_it' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = json.loads(payload_str)
+        payload = WhatTimeIsItMethodRequest.model_validate_json(payload_str)
         correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
-        self._logger.info("Correlation Data %s", correlation_id)
+        self._logger.debug("Correlation data for 'what_time_is_it' request: %s", correlation_id)
         if self._method_what_time_is_it.callback is not None:
-            method_args = []  # type: List[Any]
-            if "the_first_time" in payload:
-                if not isinstance(payload["the_first_time"], datetime.datetime):
-                    self._logger.warning("The 'the_first_time' property in the payload to '%s' wasn't the correct type.  It should have been datetime.datetime.", topic)
-                    # TODO: return an error via MQTT
-                    return
-                else:
-                    method_args.append(payload["the_first_time"])
-            else:
-
-                self._logger.warning("The 'the_first_time' property in the payload to '%s' wasn't present", topic)
-                # TODO: return an error via MQTT
-                return
+            method_args = [
+                payload.the_first_time,
+            ]
 
             if response_topic is not None:
                 return_json = ""
@@ -380,8 +341,7 @@ class FullServer:
                     self._logger.debug("Return value is %s", return_struct)
 
                     if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
-
+                        return_json = json.dumps({"timestamp": return_struct.isoformat()})
                 except Exception as e:
                     self._logger.exception("Exception while handling what_time_is_it", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -390,7 +350,7 @@ class FullServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_set_the_time(self, handler: Callable[[datetime.datetime, datetime.datetime], stinger_types.SetTheTimeReturnValue]):
+    def handle_set_the_time(self, handler: Callable[[datetime, datetime], stinger_types.SetTheTimeReturnValue]):
         """This is a decorator to decorate a method that will handle the 'set_the_time' method calls."""
         if self._method_set_the_time.callback is None and handler is not None:
             self._method_set_the_time.callback = handler
@@ -401,37 +361,15 @@ class FullServer:
         """This processes a call to the 'set_the_time' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = json.loads(payload_str)
+        payload = SetTheTimeMethodRequest.model_validate_json(payload_str)
         correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
-        self._logger.info("Correlation Data %s", correlation_id)
+        self._logger.debug("Correlation data for 'set_the_time' request: %s", correlation_id)
         if self._method_set_the_time.callback is not None:
-            method_args = []  # type: List[Any]
-            if "the_first_time" in payload:
-                if not isinstance(payload["the_first_time"], datetime.datetime):
-                    self._logger.warning("The 'the_first_time' property in the payload to '%s' wasn't the correct type.  It should have been datetime.datetime.", topic)
-                    # TODO: return an error via MQTT
-                    return
-                else:
-                    method_args.append(payload["the_first_time"])
-            else:
-
-                self._logger.warning("The 'the_first_time' property in the payload to '%s' wasn't present", topic)
-                # TODO: return an error via MQTT
-                return
-
-            if "the_second_time" in payload:
-                if not isinstance(payload["the_second_time"], datetime.datetime):
-                    self._logger.warning("The 'the_second_time' property in the payload to '%s' wasn't the correct type.  It should have been datetime.datetime.", topic)
-                    # TODO: return an error via MQTT
-                    return
-                else:
-                    method_args.append(payload["the_second_time"])
-            else:
-
-                self._logger.warning("The 'the_second_time' property in the payload to '%s' wasn't present", topic)
-                # TODO: return an error via MQTT
-                return
+            method_args = [
+                payload.the_first_time,
+                payload.the_second_time,
+            ]
 
             if response_topic is not None:
                 return_json = ""
@@ -451,8 +389,82 @@ class FullServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
+    def handle_forward_time(self, handler: Callable[[timedelta], datetime]):
+        """This is a decorator to decorate a method that will handle the 'forward_time' method calls."""
+        if self._method_forward_time.callback is None and handler is not None:
+            self._method_forward_time.callback = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def _process_forward_time_call(self, topic: str, payload_str: str, properties: Dict[str, Any]):
+        """This processes a call to the 'forward_time' method.  It deserializes the payload to find the method arguments,
+        then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
+        """
+        payload = ForwardTimeMethodRequest.model_validate_json(payload_str)
+        correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
+        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
+        self._logger.debug("Correlation data for 'forward_time' request: %s", correlation_id)
+        if self._method_forward_time.callback is not None:
+            method_args = [
+                payload.adjustment,
+            ]
+
+            if response_topic is not None:
+                return_json = ""
+                debug_msg = None  # type: Optional[str]
+                try:
+                    return_struct = self._method_forward_time.callback(*method_args)
+                    self._logger.debug("Return value is %s", return_struct)
+
+                    if return_struct is not None:
+                        return_json = json.dumps({"new_time": return_struct.isoformat()})
+                except Exception as e:
+                    self._logger.exception("Exception while handling forward_time", exc_info=e)
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                else:
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
+
+    def handle_how_off_is_the_clock(self, handler: Callable[[datetime], timedelta]):
+        """This is a decorator to decorate a method that will handle the 'how_off_is_the_clock' method calls."""
+        if self._method_how_off_is_the_clock.callback is None and handler is not None:
+            self._method_how_off_is_the_clock.callback = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def _process_how_off_is_the_clock_call(self, topic: str, payload_str: str, properties: Dict[str, Any]):
+        """This processes a call to the 'how_off_is_the_clock' method.  It deserializes the payload to find the method arguments,
+        then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
+        """
+        payload = HowOffIsTheClockMethodRequest.model_validate_json(payload_str)
+        correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
+        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
+        self._logger.debug("Correlation data for 'how_off_is_the_clock' request: %s", correlation_id)
+        if self._method_how_off_is_the_clock.callback is not None:
+            method_args = [
+                payload.actual_time,
+            ]
+
+            if response_topic is not None:
+                return_json = ""
+                debug_msg = None  # type: Optional[str]
+                try:
+                    return_struct = self._method_how_off_is_the_clock.callback(*method_args)
+                    self._logger.debug("Return value is %s", return_struct)
+
+                    if return_struct is not None:
+                        return_json = json.dumps({"difference": isodate.duration_isoformat(return_struct)})
+                except Exception as e:
+                    self._logger.exception("Exception while handling how_off_is_the_clock", exc_info=e)
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                else:
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
+
     @property
-    def favorite_number(self) -> int | None:
+    def favorite_number(self) -> Optional[int]:
         """This property returns the last received value for the 'favorite_number' property."""
         with self._property_favorite_number_mutex:
             return self._property_favorite_number
@@ -489,7 +501,7 @@ class FullServer:
             self._property_favorite_number.callbacks.append(handler)
 
     @property
-    def favorite_foods(self) -> stinger_types.FavoriteFoodsProperty | None:
+    def favorite_foods(self) -> Optional[stinger_types.FavoriteFoodsProperty]:
         """This property returns the last received value for the 'favorite_foods' property."""
         with self._property_favorite_foods_mutex:
             return self._property_favorite_foods
@@ -497,7 +509,7 @@ class FullServer:
     @favorite_foods.setter
     def favorite_foods(self, value: stinger_types.FavoriteFoodsProperty):
         """This property sets (publishes) a new value for the 'favorite_foods' property."""
-        if not isinstance(value, stinger_types.FavoriteFoodsProperty):
+        if not isinstance(value, FavoriteFoodsProperty):
             raise ValueError(f"The value must be stinger_types.FavoriteFoodsProperty.")
 
         payload = value.model_dump_json()
@@ -534,7 +546,7 @@ class FullServer:
             self._property_favorite_foods.callbacks.append(handler)
 
     @property
-    def lunch_menu(self) -> stinger_types.LunchMenuProperty | None:
+    def lunch_menu(self) -> Optional[stinger_types.LunchMenuProperty]:
         """This property returns the last received value for the 'lunch_menu' property."""
         with self._property_lunch_menu_mutex:
             return self._property_lunch_menu
@@ -542,7 +554,7 @@ class FullServer:
     @lunch_menu.setter
     def lunch_menu(self, value: stinger_types.LunchMenuProperty):
         """This property sets (publishes) a new value for the 'lunch_menu' property."""
-        if not isinstance(value, stinger_types.LunchMenuProperty):
+        if not isinstance(value, LunchMenuProperty):
             raise ValueError(f"The value must be stinger_types.LunchMenuProperty.")
 
         payload = value.model_dump_json()
@@ -576,7 +588,7 @@ class FullServer:
             self._property_lunch_menu.callbacks.append(handler)
 
     @property
-    def family_name(self) -> str | None:
+    def family_name(self) -> Optional[str]:
         """This property returns the last received value for the 'family_name' property."""
         with self._property_family_name_mutex:
             return self._property_family_name
@@ -613,18 +625,18 @@ class FullServer:
             self._property_family_name.callbacks.append(handler)
 
     @property
-    def last_breakfast_time(self) -> datetime.datetime | None:
+    def last_breakfast_time(self) -> Optional[datetime]:
         """This property returns the last received value for the 'last_breakfast_time' property."""
         with self._property_last_breakfast_time_mutex:
             return self._property_last_breakfast_time
 
     @last_breakfast_time.setter
-    def last_breakfast_time(self, timestamp: datetime.datetime):
+    def last_breakfast_time(self, timestamp: datetime):
         """This property sets (publishes) a new value for the 'last_breakfast_time' property."""
-        if not isinstance(timestamp, datetime.datetime):
+        if not isinstance(timestamp, datetime):
             raise ValueError(f"The value must be datetime.datetime.")
 
-        payload = json.dumps({"timestamp": timestamp})
+        payload = json.dumps({"timestamp": timestamp.isoformat()})
 
         if timestamp != self._property_last_breakfast_time.value:
             with self._property_last_breakfast_time.mutex:
@@ -634,23 +646,60 @@ class FullServer:
             for callback in self._property_last_breakfast_time.callbacks:
                 callback(timestamp)
 
-    def set_last_breakfast_time(self, timestamp: datetime.datetime):
+    def set_last_breakfast_time(self, timestamp: datetime):
         """This method sets (publishes) a new value for the 'last_breakfast_time' property."""
         if not isinstance(timestamp, datetime.datetime):
-            raise ValueError(f"The 'timestamp' value must be datetime.datetime.")
+            raise ValueError(f"The 'timestamp' value must be datetime.")
 
         obj = timestamp
 
         # Use the property.setter to do that actual work.
         self.last_breakfast_time = obj
 
-    def on_last_breakfast_time_updates(self, handler: Callable[[datetime.datetime], None]):
+    def on_last_breakfast_time_updates(self, handler: Callable[[datetime], None]):
         """This method registers a callback to be called whenever a new 'last_breakfast_time' property update is received."""
         if handler is not None:
             self._property_last_breakfast_time.callbacks.append(handler)
 
     @property
-    def last_birthdays(self) -> stinger_types.LastBirthdaysProperty | None:
+    def breakfast_length(self) -> Optional[timedelta]:
+        """This property returns the last received value for the 'breakfast_length' property."""
+        with self._property_breakfast_length_mutex:
+            return self._property_breakfast_length
+
+    @breakfast_length.setter
+    def breakfast_length(self, length: timedelta):
+        """This property sets (publishes) a new value for the 'breakfast_length' property."""
+        if not isinstance(length, timedelta):
+            raise ValueError(f"The value must be datetime.timedelta.")
+
+        payload = json.dumps({"length": isodate.duration_isoformat(length)})
+
+        if length != self._property_breakfast_length.value:
+            with self._property_breakfast_length.mutex:
+                self._property_breakfast_length.value = length
+                self._property_breakfast_length.version += 1
+            self._conn.publish("full/{}/property/breakfastLength/value".format(self._instance_id), payload, qos=1, retain=True)
+            for callback in self._property_breakfast_length.callbacks:
+                callback(length)
+
+    def set_breakfast_length(self, length: timedelta):
+        """This method sets (publishes) a new value for the 'breakfast_length' property."""
+        if not isinstance(length, datetime.timedelta):
+            raise ValueError(f"The 'length' value must be timedelta.")
+
+        obj = length
+
+        # Use the property.setter to do that actual work.
+        self.breakfast_length = obj
+
+    def on_breakfast_length_updates(self, handler: Callable[[timedelta], None]):
+        """This method registers a callback to be called whenever a new 'breakfast_length' property update is received."""
+        if handler is not None:
+            self._property_breakfast_length.callbacks.append(handler)
+
+    @property
+    def last_birthdays(self) -> Optional[stinger_types.LastBirthdaysProperty]:
         """This property returns the last received value for the 'last_birthdays' property."""
         with self._property_last_birthdays_mutex:
             return self._property_last_birthdays
@@ -658,7 +707,7 @@ class FullServer:
     @last_birthdays.setter
     def last_birthdays(self, value: stinger_types.LastBirthdaysProperty):
         """This property sets (publishes) a new value for the 'last_birthdays' property."""
-        if not isinstance(value, stinger_types.LastBirthdaysProperty):
+        if not isinstance(value, LastBirthdaysProperty):
             raise ValueError(f"The value must be stinger_types.LastBirthdaysProperty.")
 
         payload = value.model_dump_json()
@@ -669,27 +718,30 @@ class FullServer:
                 self._property_last_birthdays.version += 1
             self._conn.publish("full/{}/property/lastBirthdays/value".format(self._instance_id), payload, qos=1, retain=True)
             for callback in self._property_last_birthdays.callbacks:
-                callback(value.mom, value.dad, value.sister)
+                callback(value.mom, value.dad, value.sister, value.brothers_age)
 
-    def set_last_birthdays(self, mom: datetime.datetime, dad: datetime.datetime, sister: datetime.datetime):
+    def set_last_birthdays(self, mom: datetime, dad: datetime, sister: Optional[datetime], brothers_age: Optional[int]):
         """This method sets (publishes) a new value for the 'last_birthdays' property."""
         if not isinstance(mom, datetime.datetime):
-            raise ValueError(f"The 'mom' value must be datetime.datetime.")
+            raise ValueError(f"The 'mom' value must be datetime.")
         if not isinstance(dad, datetime.datetime):
-            raise ValueError(f"The 'dad' value must be datetime.datetime.")
+            raise ValueError(f"The 'dad' value must be datetime.")
         if not isinstance(sister, datetime.datetime) and sister is not None:
-            raise ValueError(f"The 'sister' value must be datetime.datetime.")
+            raise ValueError(f"The 'sister' value must be Optional[datetime].")
+        if not isinstance(brothers_age, int) and brothers_age is not None:
+            raise ValueError(f"The 'brothers_age' value must be Optional[int].")
 
         obj = stinger_types.LastBirthdaysProperty(
             mom=mom,
             dad=dad,
             sister=sister,
+            brothers_age=brothers_age,
         )
 
         # Use the property.setter to do that actual work.
         self.last_birthdays = obj
 
-    def on_last_birthdays_updates(self, handler: Callable[[datetime.datetime, datetime.datetime, datetime.datetime], None]):
+    def on_last_birthdays_updates(self, handler: Callable[[datetime, datetime, Optional[datetime], Optional[int]], None]):
         """This method registers a callback to be called whenever a new 'last_birthdays' property update is received."""
         if handler is not None:
             self._property_last_birthdays.callbacks.append(handler)
@@ -705,15 +757,18 @@ class FullServerBuilder:
         self._add_numbers_method_handler: Optional[Callable[[int, int, Optional[int]], int]] = None
         self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
         self._echo_method_handler: Optional[Callable[[str], str]] = None
-        self._what_time_is_it_method_handler: Optional[Callable[[datetime.datetime], datetime.datetime]] = None
-        self._set_the_time_method_handler: Optional[Callable[[datetime.datetime, datetime.datetime], stinger_types.SetTheTimeReturnValue]] = None
+        self._what_time_is_it_method_handler: Optional[Callable[[datetime], datetime]] = None
+        self._set_the_time_method_handler: Optional[Callable[[datetime, datetime], stinger_types.SetTheTimeReturnValue]] = None
+        self._forward_time_method_handler: Optional[Callable[[timedelta], datetime]] = None
+        self._how_off_is_the_clock_method_handler: Optional[Callable[[datetime], timedelta]] = None
 
         self._favorite_number_property_callbacks: List[Callable[[int], None]] = []
         self._favorite_foods_property_callbacks: List[Callable[[str, int, Optional[str]], None]] = []
         self._lunch_menu_property_callbacks: List[Callable[[stinger_types.Lunch, stinger_types.Lunch], None]] = []
         self._family_name_property_callbacks: List[Callable[[str], None]] = []
-        self._last_breakfast_time_property_callbacks: List[Callable[[datetime.datetime], None]] = []
-        self._last_birthdays_property_callbacks: List[Callable[[datetime.datetime, datetime.datetime, datetime.datetime], None]] = []
+        self._last_breakfast_time_property_callbacks: List[Callable[[datetime], None]] = []
+        self._breakfast_length_property_callbacks: List[Callable[[timedelta], None]] = []
+        self._last_birthdays_property_callbacks: List[Callable[[datetime, datetime, Optional[datetime], Optional[int]], None]] = []
 
     def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
         if self._add_numbers_method_handler is None and handler is not None:
@@ -733,15 +788,27 @@ class FullServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_what_time_is_it(self, handler: Callable[[datetime.datetime], datetime.datetime]):
+    def handle_what_time_is_it(self, handler: Callable[[datetime], datetime]):
         if self._what_time_is_it_method_handler is None and handler is not None:
             self._what_time_is_it_method_handler = handler
         else:
             raise Exception("Method handler already set")
 
-    def handle_set_the_time(self, handler: Callable[[datetime.datetime, datetime.datetime], stinger_types.SetTheTimeReturnValue]):
+    def handle_set_the_time(self, handler: Callable[[datetime, datetime], stinger_types.SetTheTimeReturnValue]):
         if self._set_the_time_method_handler is None and handler is not None:
             self._set_the_time_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def handle_forward_time(self, handler: Callable[[timedelta], datetime]):
+        if self._forward_time_method_handler is None and handler is not None:
+            self._forward_time_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def handle_how_off_is_the_clock(self, handler: Callable[[datetime], timedelta]):
+        if self._how_off_is_the_clock_method_handler is None and handler is not None:
+            self._how_off_is_the_clock_method_handler = handler
         else:
             raise Exception("Method handler already set")
 
@@ -761,11 +828,15 @@ class FullServerBuilder:
         """This method registers a callback to be called whenever a new 'family_name' property update is received."""
         self._family_name_property_callbacks.append(handler)
 
-    def on_last_breakfast_time_updates(self, handler: Callable[[datetime.datetime], None]):
+    def on_last_breakfast_time_updates(self, handler: Callable[[datetime], None]):
         """This method registers a callback to be called whenever a new 'last_breakfast_time' property update is received."""
         self._last_breakfast_time_property_callbacks.append(handler)
 
-    def on_last_birthdays_updates(self, handler: Callable[[datetime.datetime, datetime.datetime, datetime.datetime], None]):
+    def on_breakfast_length_updates(self, handler: Callable[[timedelta], None]):
+        """This method registers a callback to be called whenever a new 'breakfast_length' property update is received."""
+        self._breakfast_length_property_callbacks.append(handler)
+
+    def on_last_birthdays_updates(self, handler: Callable[[datetime, datetime, Optional[datetime], Optional[int]], None]):
         """This method registers a callback to be called whenever a new 'last_birthdays' property update is received."""
         self._last_birthdays_property_callbacks.append(handler)
 
@@ -782,6 +853,10 @@ class FullServerBuilder:
             new_server.handle_what_time_is_it(self._what_time_is_it_method_handler)
         if self._set_the_time_method_handler is not None:
             new_server.handle_set_the_time(self._set_the_time_method_handler)
+        if self._forward_time_method_handler is not None:
+            new_server.handle_forward_time(self._forward_time_method_handler)
+        if self._how_off_is_the_clock_method_handler is not None:
+            new_server.handle_how_off_is_the_clock(self._how_off_is_the_clock_method_handler)
 
         for callback in self._favorite_number_property_callbacks:
             new_server.on_favorite_number_updates(callback)
@@ -797,6 +872,9 @@ class FullServerBuilder:
 
         for callback in self._last_breakfast_time_property_callbacks:
             new_server.on_last_breakfast_time_updates(callback)
+
+        for callback in self._breakfast_length_property_callbacks:
+            new_server.on_breakfast_length_updates(callback)
 
         for callback in self._last_birthdays_property_callbacks:
             new_server.on_last_birthdays_updates(callback)
@@ -826,18 +904,25 @@ if __name__ == "__main__":
     )
 
     server.lunch_menu = stinger_types.LunchMenuProperty(
-        monday=stinger_types.Lunch(drink=True, sandwich="apples", crackers=3.14, day=stinger_types.DayOfTheWeek.MONDAY, order_number=42),
-        tuesday=stinger_types.Lunch(drink=True, sandwich="apples", crackers=3.14, day=stinger_types.DayOfTheWeek.MONDAY, order_number=42),
+        monday=stinger_types.Lunch(
+            drink=True, sandwich="apples", crackers=3.14, day=stinger_types.DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(), duration_of_lunch=timedelta(seconds=3536)
+        ),
+        tuesday=stinger_types.Lunch(
+            drink=True, sandwich="apples", crackers=3.14, day=stinger_types.DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(), duration_of_lunch=timedelta(seconds=3536)
+        ),
     )
 
     server.family_name = "apples"
 
-    server.last_breakfast_time = datetime.datetime.now()
+    server.last_breakfast_time = datetime.now()
+
+    server.breakfast_length = timedelta(seconds=3536)
 
     server.last_birthdays = stinger_types.LastBirthdaysProperty(
-        mom=datetime.datetime.now(),
-        dad=datetime.datetime.now(),
-        sister=datetime.datetime.now(),
+        mom=datetime.now(),
+        dad=datetime.now(),
+        sister=None,
+        brothers_age=42,
     )
 
     @server.handle_add_numbers
@@ -850,7 +935,7 @@ if __name__ == "__main__":
     def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
         """This is an example handler for the 'doSomething' method."""
         print(f"Running do_something'({aString})'")
-        return stinger_types.DoSomethingReturnValue(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.MONDAY)
+        return stinger_types.DoSomethingReturnValue(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.SATURDAY)
 
     @server.handle_echo
     def echo(message: str) -> str:
@@ -859,16 +944,28 @@ if __name__ == "__main__":
         return "apples"
 
     @server.handle_what_time_is_it
-    def what_time_is_it(the_first_time: datetime.datetime) -> datetime.datetime:
+    def what_time_is_it(the_first_time: datetime) -> datetime:
         """This is an example handler for the 'what_time_is_it' method."""
         print(f"Running what_time_is_it'({the_first_time})'")
-        return datetime.datetime.now()
+        return datetime.now()
 
     @server.handle_set_the_time
-    def set_the_time(the_first_time: datetime.datetime, the_second_time: datetime.datetime) -> stinger_types.SetTheTimeReturnValue:
+    def set_the_time(the_first_time: datetime, the_second_time: datetime) -> stinger_types.SetTheTimeReturnValue:
         """This is an example handler for the 'set_the_time' method."""
         print(f"Running set_the_time'({the_first_time}, {the_second_time})'")
-        return stinger_types.SetTheTimeReturnValue(timestamp=datetime.datetime.now(), confirmation_message="apples")
+        return stinger_types.SetTheTimeReturnValue(timestamp=datetime.now(), confirmation_message="apples")
+
+    @server.handle_forward_time
+    def forward_time(adjustment: timedelta) -> datetime:
+        """This is an example handler for the 'forward_time' method."""
+        print(f"Running forward_time'({adjustment})'")
+        return datetime.now()
+
+    @server.handle_how_off_is_the_clock
+    def how_off_is_the_clock(actual_time: datetime) -> timedelta:
+        """This is an example handler for the 'how_off_is_the_clock' method."""
+        print(f"Running how_off_is_the_clock'({actual_time})'")
+        return timedelta(seconds=3536)
 
     @server.on_favorite_number_updates
     def on_favorite_number_update(number: int):
@@ -887,21 +984,25 @@ if __name__ == "__main__":
         print(f"Received update for 'family_name' property: { family_name= }")
 
     @server.on_last_breakfast_time_updates
-    def on_last_breakfast_time_update(timestamp: datetime.datetime):
+    def on_last_breakfast_time_update(timestamp: datetime):
         print(f"Received update for 'last_breakfast_time' property: { timestamp= }")
 
+    @server.on_breakfast_length_updates
+    def on_breakfast_length_update(length: timedelta):
+        print(f"Received update for 'breakfast_length' property: { length= }")
+
     @server.on_last_birthdays_updates
-    def on_last_birthdays_update(mom: datetime.datetime, dad: datetime.datetime, sister: datetime.datetime):
-        print(f"Received update for 'last_birthdays' property: { mom= }, { dad= }, { sister= }")
+    def on_last_birthdays_update(mom: datetime, dad: datetime, sister: Optional[datetime], brothers_age: Optional[int]):
+        print(f"Received update for 'last_birthdays' property: { mom= }, { dad= }, { sister= }, { brothers_age= }")
 
     print("Ctrl-C will stop the program.")
 
     while True:
         try:
-            server.emit_todayIs(42, stinger_types.DayOfTheWeek.MONDAY)
+            server.emit_today_is(42, stinger_types.DayOfTheWeek.SATURDAY, datetime.now(), timedelta(seconds=3536), b"example binary data")
 
             sleep(4)
-            server.emit_todayIs(dayOfMonth=42, dayOfWeek=stinger_types.DayOfTheWeek.MONDAY)
+            server.emit_today_is(dayOfMonth=42, dayOfWeek=stinger_types.DayOfTheWeek.SATURDAY, timestamp=datetime.now(), process_time=timedelta(seconds=3536), memory_segment=b"example binary data")
 
             sleep(6)
         except KeyboardInterrupt:

@@ -32,6 +32,12 @@ structures:
       - name: order_number
         type: integer
         optional: true
+      - name: time_of_lunch
+        type: datetime
+        documentation: The time when lunch is served.
+      - name: duration_of_lunch
+        type: duration
+        documentation: The amount of time lunch lasts.
 
 enums:
 
@@ -58,6 +64,15 @@ signals:
         type: enum
         enumName: dayOfTheWeek
         optional: true
+      - name: timestamp
+        type: datetime
+        documentation: The date and time when this signal was emitted.
+      - name: process_time
+        type: duration
+        documentation: The amount of time it took to process this signal.
+      - name: memory_segment
+        type: binary
+        documentation: A binary blob of data.
 
 methods:
 
@@ -117,6 +132,24 @@ methods:
       - name: confirmation_message
         type: string
 
+  forward_time:
+    documentation: This method takes a time and a duration, and returns the time plus the duration.
+    arguments:
+      - name: adjustment
+        type: duration
+    returnValues:
+      - name: new_time
+        type: datetime
+
+  how_off_is_the_clock:
+    documentation: Returns how far off the clock is from the actual time.
+    arguments:
+      - name: actual_time
+        type: datetime
+    returnValues:
+      - name: difference
+        type: duration
+
 properties:
 
   favorite_number:
@@ -144,6 +177,7 @@ properties:
       - name: tuesday
         type: struct
         structName: lunch
+        description: Tuesday's lunch menu.
   
   family_name:
     documentation: This is to test a property with a single string value.
@@ -157,6 +191,12 @@ properties:
       - name: timestamp
         type: datetime
   
+  breakfast_length:
+    documentation: This is to test a property with a single duration value.
+    values:
+      - name: length
+        type: duration
+
   last_birthdays:
     documentation: This is to test a property with multiple datetime values.
     values:
@@ -167,3 +207,7 @@ properties:
       - name: sister
         type: datetime
         optional: true
+      - name: brothers_age
+        type: integer
+        optional: true
+        documentation: The age of my brothers in years.

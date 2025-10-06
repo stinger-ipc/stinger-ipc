@@ -89,7 +89,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "day": "",
                 
-                    "order_number": ""
+                    "order_number": "",
+                
+                    "time_of_lunch": "",
+                
+                    "duration_of_lunch": ""
                  },
             
                 "tuesday": { 
@@ -101,7 +105,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "day": "",
                 
-                    "order_number": ""
+                    "order_number": "",
+                
+                    "time_of_lunch": "",
+                
+                    "duration_of_lunch": ""
                  }
              },
             "mqtt_topic": "full/{}/property/lunchMenu/value",
@@ -128,6 +136,16 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "update_topic": "full/{}/property/lastBreakfastTime/setValue"
         },
     
+        "breakfast_length": {
+            "subscription_id": null,
+            "name": "breakfast_length",
+            "received": { 
+                "length": {  }
+             },
+            "mqtt_topic": "full/{}/property/breakfastLength/value",
+            "update_topic": "full/{}/property/breakfastLength/setValue"
+        },
+    
         "last_birthdays": {
             "subscription_id": null,
             "name": "last_birthdays",
@@ -136,7 +154,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "dad": {  },
             
-                "sister": {  }
+                "sister": {  },
+            
+                "brothers_age": {  }
              },
             "mqtt_topic": "full/{}/property/lastBirthdays/value",
             "update_topic": "full/{}/property/lastBirthdays/setValue"
@@ -222,6 +242,34 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 },
             
                 "the_second_time": {
+                    "type": "",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
+        },
+        "forward_time": {
+            "name": "forward_time",
+            "mqtt_topic": "full/{}/method/forwardTime",
+            "response_topic": "client/"+clientId+"/forward_time/response",
+            "pending_correlation_id": null,
+            "args": {
+                "adjustment": {
+                    "type": "",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
+        },
+        "how_off_is_the_clock": {
+            "name": "how_off_is_the_clock",
+            "mqtt_topic": "full/{}/method/howOffIsTheClock",
+            "response_topic": "client/"+clientId+"/how_off_is_the_clock/response",
+            "pending_correlation_id": null,
+            "args": {
+                "actual_time": {
                     "type": "",
                     "value": null
                 }

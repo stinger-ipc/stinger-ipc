@@ -34,7 +34,7 @@ public:
 
     virtual ~FullServer() = default;
 
-    boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>);
+    boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::milliseconds, std::vector<unsigned char>);
 
     void registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func);
 
@@ -45,6 +45,10 @@ public:
     void registerWhatTimeIsItHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> func);
 
     void registerSetTheTimeHandler(std::function<SetTheTimeReturnValue(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>)> func);
+
+    void registerForwardTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::milliseconds)> func);
+
+    void registerHowOffIsTheClockHandler(std::function<std::chrono::milliseconds(std::chrono::time_point<std::chrono::system_clock>)> func);
 
     // ---favorite_number Property---
 
@@ -116,6 +120,20 @@ public:
 
     void republishLastBreakfastTimeProperty() const;
 
+    // ---breakfast_length Property---
+
+    // Gets the latest value of the `breakfast_length` property, if one has been received.
+    // If no value has been received yet, an empty optional is returned.
+    boost::optional<BreakfastLengthProperty> getBreakfastLengthProperty() const;
+
+    // Add a callback that will be called whenever the `breakfast_length` property is updated.
+    // The provided method will be called whenever a new value for the `breakfast_length` property is received.
+    void registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::milliseconds)>& cb);
+
+    void updateBreakfastLengthProperty(std::chrono::milliseconds);
+
+    void republishBreakfastLengthProperty() const;
+
     // ---last_birthdays Property---
 
     // Gets the latest value of the `last_birthdays` property, if one has been received.
@@ -124,9 +142,9 @@ public:
 
     // Add a callback that will be called whenever the `last_birthdays` property is updated.
     // The provided method will be called whenever a new value for the `last_birthdays` property is received.
-    void registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)>& cb);
+    void registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>, boost::optional<int>)>& cb);
 
-    void updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>);
+    void updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>, boost::optional<int>);
 
     void republishLastBirthdaysProperty() const;
 
@@ -157,6 +175,14 @@ private:
     void _callSetTheTimeHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<SetTheTimeReturnValue(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>)> _setTheTimeHandler;
     int _setTheTimeMethodSubscriptionId;
+
+    void _callForwardTimeHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::milliseconds)> _forwardTimeHandler;
+    int _forwardTimeMethodSubscriptionId;
+
+    void _callHowOffIsTheClockHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    std::function<std::chrono::milliseconds(std::chrono::time_point<std::chrono::system_clock>)> _howOffIsTheClockHandler;
+    int _howOffIsTheClockMethodSubscriptionId;
 
     // ---------------- PROPERTIES ------------------
 
@@ -265,6 +291,27 @@ private:
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _lastBreakfastTimePropertyCallbacks;
     std::mutex _lastBreakfastTimePropertyCallbacksMutex;
 
+    // ---breakfast_length Property---
+
+    // Current value for the `breakfast_length` property.
+    boost::optional<BreakfastLengthProperty> _breakfastLengthProperty;
+
+    // This is the property version  of `breakfast_length`.
+    int _lastBreakfastLengthPropertyVersion = -1;
+
+    // Mutex for protecting access to the `breakfast_length` property and its version.
+    mutable std::mutex _breakfastLengthPropertyMutex;
+
+    // MQTT Subscription ID for `breakfast_length` property update requests.
+    int _breakfastLengthPropertySubscriptionId;
+
+    // Method for parsing a JSON payload that updates the `breakfast_length` property.
+    void _receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+    // Callbacks registered for changes to the `breakfast_length` property.
+    std::vector<std::function<void(std::chrono::milliseconds)>> _breakfastLengthPropertyCallbacks;
+    std::mutex _breakfastLengthPropertyCallbacksMutex;
+
     // ---last_birthdays Property---
 
     // Current values for the `last_birthdays` property.
@@ -283,6 +330,6 @@ private:
     void _receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `last_birthdays` property.
-    std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)>> _lastBirthdaysPropertyCallbacks;
+    std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>, boost::optional<int>)>> _lastBirthdaysPropertyCallbacks;
     std::mutex _lastBirthdaysPropertyCallbacksMutex;
 };

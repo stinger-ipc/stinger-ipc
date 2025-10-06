@@ -278,7 +278,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_refresh_daily_forecast 
-def refresh_daily_forecast() -> :
+def refresh_daily_forecast() -> None:
     """ This is an example handler for the 'refresh_daily_forecast' method.  """
     print(f"Running refresh_daily_forecast'()'")
     return None
@@ -344,7 +344,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_refresh_hourly_forecast 
-def refresh_hourly_forecast() -> :
+def refresh_hourly_forecast() -> None:
     """ This is an example handler for the 'refresh_hourly_forecast' method.  """
     print(f"Running refresh_hourly_forecast'()'")
     return None
@@ -412,7 +412,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_refresh_current_conditions 
-def refresh_current_conditions() -> :
+def refresh_current_conditions() -> None:
     """ This is an example handler for the 'refresh_current_conditions' method.  """
     print(f"Running refresh_current_conditions'()'")
     return None
@@ -537,7 +537,7 @@ This property is **read-only**.  It can only be modified by the server.
 A server hold the "source of truth" for the value of `current_condition`.  The value can be changed by calling the server's `set_current_condition` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_current_condition(WeatherCondition::Sunny).await;
+let property_set_future: SentMessageFuture = server.set_current_condition(WeatherCondition::Snowy).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -572,7 +572,7 @@ This property is **read-only**.  It can only be modified by the server.
 A server hold the "source of truth" for the value of `daily_forecast`.  The value can be changed by calling the server's `set_daily_forecast` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_daily_forecast(ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Sunny, start_time: "apples".to_string(), end_time: "apples".to_string()}).await;
+let property_set_future: SentMessageFuture = server.set_daily_forecast(ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -607,7 +607,7 @@ This property is **read-only**.  It can only be modified by the server.
 A server hold the "source of truth" for the value of `hourly_forecast`.  The value can be changed by calling the server's `set_hourly_forecast` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_hourly_forecast(ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Sunny}).await;
+let property_set_future: SentMessageFuture = server.set_hourly_forecast(ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 

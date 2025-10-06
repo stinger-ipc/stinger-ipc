@@ -53,6 +53,42 @@
               </td>
             </tr>
           
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">timestamp</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.today_is.received.timestamp" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">process_time</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.today_is.received.process_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">memory_segment</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.today_is.received.memory_segment" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
           </table>
         </div>
     </div>
@@ -221,6 +257,30 @@
               </td>
             </tr>
           
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_of_lunch</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.monday.time_of_lunch" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">duration_of_lunch</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.monday.duration_of_lunch" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
           </table>
                 </div>
                  
@@ -230,6 +290,8 @@
             <tr class="argrow">
               <td class="arg-name-cell">
                 <div class="arg-name">tuesday</div>
+                
+                <div class="arg-description">Tuesday's lunch menu.</div>
                 
               </td>
               <td class="arg-value-cell">
@@ -296,6 +358,30 @@
               <td class="arg-value-cell">
                 
                 <input type="text" ng-model="properties.lunch_menu.received.tuesday.order_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_of_lunch</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.tuesday.time_of_lunch" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">duration_of_lunch</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.lunch_menu.received.tuesday.duration_of_lunch" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -371,6 +457,35 @@
         
     </div>
     
+    <div class="component-box prop-box" id="prop-box-breakfast_length">
+        <h3 class="component-title prop-title">Property: breakfast_length</h3>
+        <div class="component-doc prop-doc">
+<p>This is to test a property with a single duration value.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">length</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.breakfast_length.received.length" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.breakfast_length)" />
+        
+    </div>
+    
     <div class="component-box prop-box" id="prop-box-last_birthdays">
         <h3 class="component-title prop-title">Property: last_birthdays</h3>
         <div class="component-doc prop-doc">
@@ -413,6 +528,18 @@
               <td class="arg-value-cell">
                 
                 <input type="text" ng-model="properties.last_birthdays.received.sister" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">brothers_age</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.last_birthdays.received.brothers_age" />
                  
               </td>
             </tr>
@@ -625,6 +752,76 @@
             </form>
         </div>
         <div class="last-received method-response" ng-bind="methods['set_the_time'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-forward_time">
+        <h3 class="component-title method-title">Method: forward_time</h3>
+        <div class="component-doc method-doc">
+<p>This method takes a time and a duration, and returns the time plus the duration.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.forward_time)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">adjustment</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.forward_time.args.adjustment" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call forward_time</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['forward_time'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-how_off_is_the_clock">
+        <h3 class="component-title method-title">Method: how_off_is_the_clock</h3>
+        <div class="component-doc method-doc">
+<p>Returns how far off the clock is from the actual time.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.how_off_is_the_clock)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">actual_time</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.how_off_is_the_clock.args.actual_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call how_off_is_the_clock</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['how_off_is_the_clock'].received">
         
           <table class="arglist">
           

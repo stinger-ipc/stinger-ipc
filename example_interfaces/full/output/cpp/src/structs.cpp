@@ -202,6 +202,26 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
             lunch.order_number = boost::none;
         }
     }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("time_of_lunch");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
+        {
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("duration_of_lunch");
+        if (itr != jsonObj.MemberEnd() && itr->value.Is())
+        {
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
 
     return lunch;
 };

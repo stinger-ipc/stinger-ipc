@@ -10,15 +10,16 @@ import logging
 import threading
 from time import sleep
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, UTC
+import isodate
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import IBrokerConnection
 from method_codes import *
-from interface_types import InterfaceInfo
+from interface_types import *
 import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
-{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_type}}]{%endmacro%}
+{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
 
 T = TypeVar('T')
 
@@ -27,12 +28,12 @@ class PropertyControls(Generic[T]):
     value: T | None = None
     mutex = threading.Lock()
     version: int = -1
-    subscription_id: int | None = None
+    subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
 
 @dataclass
 class MethodControls:
-    subscription_id: int | None = None
+    subscription_id: Optional[int] = None
     callback: Optional[Callable] = None
 
 class {{stinger.python.server_class_name}}:
@@ -71,7 +72,7 @@ class {{stinger.python.server_class_name}}:
         data = InterfaceInfo(
             instance=self._instance_id,
             connection_topic=self._conn.online_topic,
-            timestamp=datetime.utcnow().isoformat()
+            timestamp=datetime.now(UTC).isoformat()
         )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
         topic = "{{stinger.interface_info_topic}}".format(self._instance_id)
@@ -103,19 +104,16 @@ class {{stinger.python.server_class_name}}:
         self._logger.warning("Received unexpected message to %s", topic)
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    def emit_{{sig_name}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def emit_{{sig_name|snake_case}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ Server application code should call this method to emit the '{{sig_name}}' signal.
+
+        {{sig_name|UpperCamelCase}}SignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-        {%-for arg in sig.arg_list%}
-        if not isinstance({{arg.name}}, {{arg.python_class}}){%if arg.optional%} and {{arg.name}} is not None{%endif%}:
-            raise ValueError(f"The '{{arg.name}}' value must be {{arg.python_annotation}}.")
-        {%-endfor%}
         
-        payload = { {%-for arg in sig.arg_list%}
-            {%if arg.arg_type.name.lower() == 'primitive'%}"{{arg.name}}": {{arg.python_annotation}}({{arg.name}}){%if arg.optional%} if {{arg.name}} is not None else None{%endif%},{%endif-%}
-            {%if arg.arg_type.name.lower() == 'enum'%}"{{arg.name}}": {{arg.python_class}}({{arg.name}}).value{%if arg.optional%} if {{arg.name}} is not None else None{%endif%},{%endif%}{%endfor%}
-        }
-        self._conn.publish("{{sig.topic}}".format(self._instance_id), json.dumps(payload), qos=1, retain=False)
+        payload = {{sig_name|UpperCamelCase}}SignalPayload({%-for arg in sig.arg_list%}
+            {{arg.name}}={{arg.name}}{%if arg.optional%} if {{arg.name}} is not None else None{%endif%},
+        {%endfor%})
+        self._conn.publish("{{sig.topic}}".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
 
     {%endfor%}
 
@@ -132,29 +130,12 @@ class {{stinger.python.server_class_name}}:
         """ This processes a call to the '{{method_name}}' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = json.loads(payload_str)
+        payload = {{method_name|UpperCamelCase}}MethodRequest.model_validate_json(payload_str)
         correlation_id = properties.get('CorrelationData') # type: Optional[bytes]
         response_topic = properties.get('ResponseTopic') # type: Optional[str]
-        self._logger.info("Correlation Data %s", correlation_id)
+        self._logger.debug("Correlation data for '{{method_name}}' request: %s", correlation_id)
         if self._method_{{method_name|snake_case}}.callback is not None:
-            method_args = [] # type: List[Any]
-            {%for arg in method.arg_list -%}
-            if "{{arg.name}}" in payload:
-                if not isinstance(payload["{{arg.name}}"], {{arg.python_type}}){%if arg.optional%} or payload["{{arg.name}}"] is None{%endif%}:
-                    self._logger.warning("The '{{arg.name}}' property in the payload to '%s' wasn't the correct type.  It should have been {{arg.python_annotation}}.", topic)
-                    # TODO: return an error via MQTT
-                    return
-                else:
-                    method_args.append(payload["{{arg.name}}"])
-            else:
-                {%if arg.optional%}
-                method_args.append(None)
-                {%else%}
-                self._logger.warning("The '{{arg.name}}' property in the payload to '%s' wasn't present", topic)
-                # TODO: return an error via MQTT
-                return
-                {%endif%}
-            {%endfor%}
+            method_args = [{%for arg in method.arg_list %}payload.{{arg.name}}, {%endfor%}]
             
             if response_topic is not None:
                 return_json = ""
@@ -174,7 +155,20 @@ class {{stinger.python.server_class_name}}:
                         return_json = json.dumps({
                             "{{method.return_value_property_name}}": return_struct.value
                         })
-                        {%else%}                        
+                        {%-elif method.return_value_type == "datetime" %}
+                        return_json = json.dumps({
+                            "{{method.return_value_property_name}}": return_struct.isoformat()
+                        })
+                        {%-elif method.return_value_type == "duration" %}
+                        return_json = json.dumps({
+                            "{{method.return_value_property_name}}": isodate.duration_isoformat(return_struct)
+                        })
+                        {%-elif method.return_value_type == "binary" %}
+                        import base64
+                        return_json = json.dumps({
+                            "{{method.return_value_property_name}}": base64.b64encode(return_struct).decode('utf-8')
+                        })
+                        {%else%}
                         return_json = return_struct.model_dump_json()
                         {%endif%}
                     {%-endif%}
@@ -190,23 +184,27 @@ class {{stinger.python.server_class_name}}:
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
     @property
-    def {{prop_name | snake_case}}(self) -> {{prop.python_class}}|None:
+    def {{prop_name | snake_case}}(self) -> Optional[{{prop.python_annotation}}]:
         """ This property returns the last received value for the '{{prop_name}}' property.
         """
         with self._property_{{prop_name|snake_case}}_mutex:
             return self._property_{{prop_name|snake_case}}
 
     @{{prop_name | snake_case}}.setter
-    def {{prop_name | snake_case}}(self, {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}: {{prop.python_class}}):
+    def {{prop_name | snake_case}}(self, {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}: {{prop.python_annotation}}):
         """ This property sets (publishes) a new value for the '{{prop_name}}' property.
         """
-        if not isinstance({%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}, {{prop.python_class}}):
+        if not isinstance({%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}, {{prop.python_local_type}}):
             raise ValueError(f"The value must be {{prop.python_class}}.")
 
         {%if prop.arg_list | length > 1%}
         payload = value.model_dump_json()
+        {%elif prop.arg_list[0].arg_type.name.lower() == "datetime" %}
+        payload = json.dumps({ "{{prop.arg_list[0].name}}": {{prop.arg_list[0].name|snake_case}}.isoformat() })
+        {%elif prop.arg_list[0].arg_type.name.lower() == "duration" %}
+        payload = json.dumps({ "{{prop.arg_list[0].name}}": isodate.duration_isoformat({{prop.arg_list[0].name|snake_case}}) })
         {%else%}
-        payload = json.dumps({ "{{prop.arg_list[0].name}}": {{prop.arg_list[0].name|snake_case}} })
+        payload = json.dumps({ "{{prop.arg_list[0].name}}": {{prop.arg_list[0].name|snake_case}} }) 
         {%endif%}
 
         if {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%} != self._property_{{prop_name|snake_case}}.value:
@@ -313,7 +311,7 @@ if __name__ == '__main__':
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}} 
-    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_type}}:
+    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
         """ This is an example handler for the '{{method_name}}' method.  """
         print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
         return {{method.get_return_value_random_example_value('python')}}
@@ -330,11 +328,11 @@ if __name__ == '__main__':
     while True:
         try:
             {%for sig_name, sig in stinger.signals.items()-%}
-            server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+            server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
             {%endfor%}
             sleep(4)
             {%for sig_name, sig in stinger.signals.items()-%}
-            server.emit_{{sig_name}}({%for arg in sig.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+            server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
             {%endfor%}
             sleep(6)
         except KeyboardInterrupt:

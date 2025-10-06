@@ -505,7 +505,7 @@ The `now` signal can be subscribed to by using the client's `receive_now` decora
 
 ```python
 @client.receive_now
-def on_now(timestamp: datetime.datetime):
+def on_now(timestamp: datetime):
     print(f"Got a 'now' signal: timestamp={ timestamp } ")
 ```
 
@@ -517,7 +517,7 @@ def on_now(timestamp: datetime.datetime):
 A server can emit a `now` signal simply by calling the server's `emit_now` method.
 
 ```python
-server.emit_now(datetime.datetime.now())
+server.emit_now(datetime.now())
 ```
 
 </details>

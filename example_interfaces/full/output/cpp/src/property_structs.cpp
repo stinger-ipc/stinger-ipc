@@ -130,10 +130,23 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
             lastBirthdays.sister = boost::none;
         }
     }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("brothers_age");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
+        {
+            lastBirthdays.brothers_age = itr->value.GetInt();
+        }
+        else
+        {
+            lastBirthdays.brothers_age = boost::none;
+        }
+    }
 
     return lastBirthdays;
 };
 
 void LastBirthdaysProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    if (brothers_age)
+        parent.AddMember("brothers_age", *brothers_age, allocator);
 }

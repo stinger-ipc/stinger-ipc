@@ -5,11 +5,13 @@ on the next generation.
 This is the Client for the SignalOnly interface.
 """
 
-from typing import Dict, Callable, List, Any
+from typing import Dict, Callable, List, Any, Optional
 from uuid import uuid4
 from functools import partial
 import json
 import logging
+from datetime import datetime, timedelta, UTC
+from isodate import parse_duration
 
 from connection import IBrokerConnection
 
@@ -20,7 +22,7 @@ AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]
 BarkSignalCallbackType = Callable[[str], None]
 MaybeNumberSignalCallbackType = Callable[[Optional[int]], None]
 MaybeNameSignalCallbackType = Callable[[Optional[str]], None]
-NowSignalCallbackType = Callable[[datetime.datetime], None]
+NowSignalCallbackType = Callable[[datetime], None]
 
 
 class SignalOnlyClient:
@@ -58,15 +60,9 @@ class SignalOnlyClient:
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'anotherSignal' signal with non-JSON content type")
             return
-        allowed_args = [
-            "one",
-            "two",
-            "three",
-        ]
-        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-        kwargs["one"] = float(kwargs["one"])
-        kwargs["two"] = bool(kwargs["two"])
-        kwargs["three"] = str(kwargs["three"])
+
+        model = AnotherSignalSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
 
@@ -74,11 +70,9 @@ class SignalOnlyClient:
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'bark' signal with non-JSON content type")
             return
-        allowed_args = [
-            "word",
-        ]
-        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-        kwargs["word"] = str(kwargs["word"])
+
+        model = BarkSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_bark, **kwargs)
 
@@ -86,11 +80,9 @@ class SignalOnlyClient:
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'maybe_number' signal with non-JSON content type")
             return
-        allowed_args = [
-            "number",
-        ]
-        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-        kwargs["number"] = int(kwargs["number"]) if kwargs.get("number") else None
+
+        model = MaybeNumberSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_number, **kwargs)
 
@@ -98,11 +90,9 @@ class SignalOnlyClient:
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'maybe_name' signal with non-JSON content type")
             return
-        allowed_args = [
-            "name",
-        ]
-        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-        kwargs["name"] = str(kwargs["name"]) if kwargs.get("name") else None
+
+        model = MaybeNameSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_name, **kwargs)
 
@@ -110,11 +100,9 @@ class SignalOnlyClient:
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'now' signal with non-JSON content type")
             return
-        allowed_args = [
-            "timestamp",
-        ]
-        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-        kwargs["timestamp"] = datetime.datetime(kwargs["timestamp"])
+
+        model = NowSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_now, **kwargs)
 
@@ -340,9 +328,9 @@ if __name__ == "__main__":
         print(f"Got a 'maybe_name' signal: name={ name } ")
 
     @client_builder.receive_now
-    def print_now_receipt(timestamp: datetime.datetime):
+    def print_now_receipt(timestamp: datetime):
         """
-        @param timestamp datetime.datetime
+        @param timestamp datetime
         """
         print(f"Got a 'now' signal: timestamp={ timestamp } ")
 
