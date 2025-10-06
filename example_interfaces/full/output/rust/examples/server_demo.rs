@@ -85,7 +85,7 @@ impl FullMethodHandlers for FullMethodImpl {
 
     async fn handle_forward_time(
         &self,
-        _adjustment: std::time::Duration,
+        _adjustment: chrono::Duration,
     ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
         println!("Handling forward_time");
         Ok(chrono::Utc::now())
@@ -94,9 +94,9 @@ impl FullMethodHandlers for FullMethodImpl {
     async fn handle_how_off_is_the_clock(
         &self,
         _actual_time: chrono::DateTime<chrono::Utc>,
-    ) -> Result<std::time::Duration, MethodReturnCode> {
+    ) -> Result<chrono::Duration, MethodReturnCode> {
         println!("Handling how_off_is_the_clock");
-        Ok(std::time::Duration::from_secs(3536))
+        Ok(chrono::Duration::from_secs(3536))
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -148,7 +148,7 @@ async fn main() {
                 day: DayOfTheWeek::Saturday,
                 order_number: Some(42),
                 time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: std::time::Duration::from_secs(3536),
+                duration_of_lunch: chrono::Duration::from_secs(3536),
             },
             tuesday: Lunch {
                 drink: true,
@@ -157,7 +157,7 @@ async fn main() {
                 day: DayOfTheWeek::Saturday,
                 order_number: Some(42),
                 time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: std::time::Duration::from_secs(3536),
+                duration_of_lunch: chrono::Duration::from_secs(3536),
             },
         };
         let prop_init_future = server.set_lunch_menu(new_value).await;
@@ -180,7 +180,7 @@ async fn main() {
 
         println!("Setting initial value for property 'breakfast_length'");
         let prop_init_future = server
-            .set_breakfast_length(std::time::Duration::from_secs(3536))
+            .set_breakfast_length(chrono::Duration::from_secs(3536))
             .await;
         if let Err(e) = prop_init_future.await {
             eprintln!("Error initializing property 'breakfast_length': {:?}", e);
@@ -206,7 +206,7 @@ async fn main() {
                 42,
                 Some(DayOfTheWeek::Saturday),
                 chrono::Utc::now(),
-                std::time::Duration::from_secs(3536),
+                chrono::Duration::from_secs(3536),
                 vec![101, 120, 97, 109, 112, 108, 101],
             )
             .await;
@@ -239,7 +239,7 @@ async fn main() {
                 day: DayOfTheWeek::Monday,
                 order_number: Some(2022),
                 time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: std::time::Duration::from_secs(967),
+                duration_of_lunch: chrono::Duration::from_secs(967),
             },
             tuesday: Lunch {
                 drink: true,
@@ -248,7 +248,7 @@ async fn main() {
                 day: DayOfTheWeek::Monday,
                 order_number: Some(2022),
                 time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: std::time::Duration::from_secs(967),
+                duration_of_lunch: chrono::Duration::from_secs(967),
             },
         };
         let _ = server.set_lunch_menu(new_value).await;
@@ -270,7 +270,7 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Changing property 'breakfast_length'");
         let prop_change_future = server
-            .set_breakfast_length(std::time::Duration::from_secs(975))
+            .set_breakfast_length(chrono::Duration::from_secs(975))
             .await;
         if let Err(e) = prop_change_future.await {
             eprintln!("Error changing property 'breakfast_length': {:?}", e);

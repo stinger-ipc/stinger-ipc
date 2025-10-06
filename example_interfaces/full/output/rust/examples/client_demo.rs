@@ -132,7 +132,7 @@ async fn main() {
 
         println!("Calling forward_time with example values...");
         let result = api_client
-            .forward_time(std::time::Duration::from_secs(3536))
+            .forward_time(chrono::Duration::from_secs(3536))
             .await
             .expect("Failed to call forward_time");
         println!("forward_time response: {:?}", result);
@@ -161,7 +161,7 @@ async fn main() {
                 day: DayOfTheWeek::Saturday,
                 order_number: Some(42),
                 time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: std::time::Duration::from_secs(3536),
+                duration_of_lunch: chrono::Duration::from_secs(3536),
             },
             tuesday: Lunch {
                 drink: true,
@@ -170,7 +170,7 @@ async fn main() {
                 day: DayOfTheWeek::Saturday,
                 order_number: Some(42),
                 time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: std::time::Duration::from_secs(3536),
+                duration_of_lunch: chrono::Duration::from_secs(3536),
             },
         };
         let _ = api_client.set_lunch_menu(lunch_menu_new_value);
@@ -179,7 +179,7 @@ async fn main() {
 
         let _ = api_client.set_last_breakfast_time(chrono::Utc::now());
 
-        let _ = api_client.set_breakfast_length(std::time::Duration::from_secs(3536));
+        let _ = api_client.set_breakfast_length(chrono::Duration::from_secs(3536));
 
         let last_birthdays_new_value = LastBirthdaysProperty {
             mom: chrono::Utc::now(),

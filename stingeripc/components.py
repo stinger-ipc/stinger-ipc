@@ -509,7 +509,7 @@ class ArgDuration(Arg):
 
     @property
     def rust_type(self) -> str:
-        return "std::time::Duration"
+        return "chrono::Duration"
 
     @property
     def markdown_type(self) -> str:
@@ -525,7 +525,7 @@ class ArgDuration(Arg):
             else:
                 retval = f"timedelta(seconds={random.randint(1, 3600)})"
         elif lang == "rust":
-            retval = f"std::time::Duration::from_secs({random.randint(1, 3600)})"
+            retval = f"chrono::Duration::from_secs({random.randint(1, 3600)})"
         random.setstate(random_state)
         return retval
 

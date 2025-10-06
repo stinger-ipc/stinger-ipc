@@ -215,6 +215,12 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
     {%elif arg.arg_type.name.lower() == 'datetime'%}
     #[serde(with = "datetime_iso_format")]
     pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
+    {%elif arg.arg_type.name.lower() == 'duration'%}
+    #[serde(with = "duration_iso_format")]
+    pub {{arg.name}}: chrono::Duration,
+    {%elif arg.arg_type.name.lower() == 'binary'%}
+    #[serde(with = "binary_format")]
+    pub {{arg.name}}: Vec<u8>,
     {%else%}
     TEMPLATE ERROR CASE NOT HANDLED for {{arg.arg_type.name}} - please report a bug.
     {%endif-%}
@@ -227,7 +233,9 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
 /// Return Object for `{{method_name}}` method.
 pub struct {{method.return_value_name | UpperCamelCase}} {
 {%-for arg in method.return_value %}{%if arg.arg_type.name.lower() == 'datetime'%}
-    #[serde(with = "datetime_iso_format")]{%endif%}
+    #[serde(with = "datetime_iso_format")]{%elif arg.arg_type.name.lower() == 'duration'-%}
+    #[serde(with = "duration_iso_format")]{%elif arg.arg_type.name.lower() == 'binary'-%}
+    #[serde(with = "base64_binary_format")]{%endif%}
     pub {{arg.name}}: {{arg.rust_local_type}},
 {%-endfor%}
 }
@@ -241,6 +249,18 @@ pub struct {{method.return_value_name | UpperCamelCase}} {
 pub struct {{method.return_value_name | UpperCamelCase}} {
     #[serde(with = "datetime_iso_format")]
     pub {{method.return_value_property_name}}: chrono::DateTime<chrono::Utc>,
+}
+{%elif method.return_value_type == 'duration'%}
+#[derive(Debug, Clone, Serialize)]
+pub struct {{method.return_value_name | UpperCamelCase}} {
+    #[serde(with = "duration_iso_format")]
+    pub {{method.return_value_property_name}}: chrono::Duration,
+}
+{%elif method.return_value_type == 'binary'%}
+#[derive(Debug, Clone, Serialize)]
+pub struct {{method.return_value_name | UpperCamelCase}} {
+    #[serde(with = "base64_binary_format")]
+    pub {{method.return_value_property_name}}: Vec<u8>,
 }
 {%else%}
 #[derive(Debug, Clone, Serialize)]
@@ -262,6 +282,12 @@ pub struct {{sig_name | UpperCamelCase}}SignalPayload {
     {%elif arg.arg_type.name.lower() == 'datetime'%}
     #[serde(with = "datetime_iso_format")]
     pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
+    {%elif arg.arg_type.name.lower() == 'duration'%}
+    #[serde(with = "duration_iso_format")]
+    pub {{arg.name}}: chrono::Duration,
+    {%elif arg.arg_type.name.lower() == 'binary'%}
+    #[serde(with = "base64_binary_format")]
+    pub {{arg.name}}: Vec<u8>,
     {%endif-%}
     {%endfor%}
 }
@@ -282,6 +308,12 @@ pub struct {{prop_name | UpperCamelCase}}Property {
     {%elif arg.arg_type.name.lower() == 'datetime'%}
     #[serde(with = "datetime_iso_format")]
     pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
+    {%elif arg.arg_type.name.lower() == 'duration'%}
+    #[serde(with = "duration_iso_format")]
+    pub {{arg.name}}: chrono::Duration,
+    {%elif arg.arg_type.name.lower() == 'binary'%}
+    #[serde(with = "base64_binary_format")]
+    pub {{arg.name}}: Vec<u8>,
     {%endif-%}
     {%endfor%}
 }
