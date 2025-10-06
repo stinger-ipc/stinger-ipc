@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
-
+use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
 use tokio::task::JoinError;
@@ -791,7 +791,8 @@ impl FullClient {
         {
             let dur_str = resp_obj["difference"].as_str().unwrap();
             let iso_dur = dur_str.parse::<IsoDuration>().unwrap();
-            iso_dur.to_chrono().unwrap()
+            let std_dur = iso_dur.to_std().unwrap();
+            Ok(chrono::Duration::from_std(std_dur).unwrap())
         }
     }
 

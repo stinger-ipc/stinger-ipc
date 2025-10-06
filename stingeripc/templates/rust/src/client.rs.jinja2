@@ -19,7 +19,7 @@ use serde_json;
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
-
+use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc{%if stinger.methods|length > 0 -%}, oneshot{%endif-%}{%if stinger.properties|length > 0 -%}, watch{%endif-%}};
 use tokio::task::JoinError;
@@ -239,7 +239,8 @@ impl {{stinger.rust.client_struct_name}} {
             {{member.name|snake_case}}:{
                 let dur_str = resp_obj["{{member.name}}"].as_str().unwrap();
                 let iso_dur = dur_str.parse::<IsoDuration>().unwrap();
-                iso_dur.to_chrono().unwrap()
+                let std_dur = iso_dur.to_std().unwrap();
+                chrono::Duration::from_std(std_dur).unwrap()
             },
             {%elif member.arg_type.name.lower() == 'binary'%}
             {{member.name|snake_case}}:{
@@ -262,7 +263,8 @@ impl {{stinger.rust.client_struct_name}} {
         {
             let dur_str = resp_obj["{{method.return_value_property_name}}"].as_str().unwrap();
             let iso_dur = dur_str.parse::<IsoDuration>().unwrap();
-            iso_dur.to_chrono().unwrap()
+            let std_dur = iso_dur.to_std().unwrap();
+            Ok(chrono::Duration::from_std(std_dur).unwrap())
         }
         {%elif method.return_value_type == 'binary' %}
         {

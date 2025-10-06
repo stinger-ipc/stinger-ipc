@@ -190,7 +190,7 @@ print("Got a 'todayIs' signal: {:?}", today_is_signal_rx.recv().await);
 A server can emit a `todayIs` signal simply by calling the server's `emit_today_is` method.
 
 ```rust
-let publish_result = server.emit_today_is(42, Some(DayOfTheWeek::Saturday), chrono::Utc::now(), chrono::Duration::from_secs(3536), vec![101, 120, 97, 109, 112, 108, 101]).await;
+let publish_result = server.emit_today_is(42, Some(DayOfTheWeek::Saturday), chrono::Utc::now(), chrono::Duration::seconds(3536), vec![101, 120, 97, 109, 112, 108, 101]).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -606,7 +606,7 @@ def forward_time(adjustment: timedelta) -> datetime:
 The `FullClient` provides an implementation for the `forward_time` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.forward_time(chrono::Duration::from_secs(3536)).await.expect("Failed to call forward_time");
+let result = api_client.forward_time(chrono::Duration::seconds(3536)).await.expect("Failed to call forward_time");
 println!("forward_time response: {:?}", result);
 ```
 
@@ -781,7 +781,7 @@ _No documentation is available for this property_
 A server hold the "source of truth" for the value of `lunch_menu`.  The value can be changed by calling the server's `set_lunch_menu` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_lunch_menu(Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::from_secs(3536)}).await;
+let property_set_future: SentMessageFuture = server.set_lunch_menu(Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -895,7 +895,7 @@ This is to test a property with a single duration value.
 A server hold the "source of truth" for the value of `breakfast_length`.  The value can be changed by calling the server's `set_breakfast_length` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_breakfast_length(chrono::Duration::from_secs(3536)).await;
+let property_set_future: SentMessageFuture = server.set_breakfast_length(chrono::Duration::seconds(3536)).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 

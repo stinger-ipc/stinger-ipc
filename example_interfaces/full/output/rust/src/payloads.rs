@@ -226,6 +226,9 @@ pub struct Lunch {
     pub order_number: Option<i32>,
     #[serde(with = "datetime_iso_format")]
     pub time_of_lunch: chrono::DateTime<chrono::Utc>,
+
+    #[serde(with = "duration_iso_format")]
+    pub duration_of_lunch: chrono::Duration,
 }
 
 // Structures for `addNumbers` method

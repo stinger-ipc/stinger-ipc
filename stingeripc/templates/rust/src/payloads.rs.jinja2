@@ -195,6 +195,12 @@ pub struct {{struct_name | UpperCamelCase}} {
     {%elif arg.arg_type.name.lower() == 'datetime'%}
     #[serde(with = "datetime_iso_format")]
     pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
+    {%elif arg.arg_type.name.lower() == 'duration'%}
+    #[serde(with = "duration_iso_format")]
+    pub {{arg.name}}: chrono::Duration,
+    {%elif arg.arg_type.name.lower() == 'binary'%}
+    #[serde(with = "base64_binary_format")]
+    pub {{arg.name}}: Vec<u8>,
     {%endif-%}
     {%endfor%}
 }

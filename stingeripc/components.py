@@ -525,7 +525,7 @@ class ArgDuration(Arg):
             else:
                 retval = f"timedelta(seconds={random.randint(1, 3600)})"
         elif lang == "rust":
-            retval = f"chrono::Duration::from_secs({random.randint(1, 3600)})"
+            retval = f"chrono::Duration::seconds({random.randint(1, 3600)})"
         random.setstate(random_state)
         return retval
 
