@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, UTC
 import isodate
 
 logging.basicConfig(level=logging.DEBUG)
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import IBrokerConnection
 from method_codes import *
@@ -120,6 +120,12 @@ class FullServer:
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
         self._conn.publish_status(topic, data, expiry)
 
+    def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
+        correlation_id = request_properties.get("CorrelationData")  # type: Optional[bytes]
+        response_topic = request_properties.get("ResponseTopic")  # type: Optional[str]
+        if response_topic is not None:
+            self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
+
     def _receive_favorite_number_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         payload_obj = json.loads(payload)
         prop_value = int(payload_obj["number"])
@@ -130,7 +136,12 @@ class FullServer:
             callback(prop_value)
 
     def _receive_favorite_foods_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        prop_value = stinger_types.FavoriteFoodsProperty.model_validate_json(payload)
+        try:
+            prop_value = stinger_types.FavoriteFoodsProperty.model_validate_json(payload)
+        except ValidationError as e:
+            self._logger.error("Failed to validate payload for %s: %s", topic, e)
+            self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
+            return
         with self._property_favorite_foods.mutex:
             self._property_favorite_foods.value = prop_value
             self._property_favorite_foods.version += 1
@@ -138,7 +149,12 @@ class FullServer:
             callback(prop_value.drink, prop_value.slices_of_pizza, prop_value.breakfast)
 
     def _receive_lunch_menu_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        prop_value = stinger_types.LunchMenuProperty.model_validate_json(payload)
+        try:
+            prop_value = stinger_types.LunchMenuProperty.model_validate_json(payload)
+        except ValidationError as e:
+            self._logger.error("Failed to validate payload for %s: %s", topic, e)
+            self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
+            return
         with self._property_lunch_menu.mutex:
             self._property_lunch_menu.value = prop_value
             self._property_lunch_menu.version += 1
@@ -173,7 +189,12 @@ class FullServer:
             callback(prop_value)
 
     def _receive_last_birthdays_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        prop_value = stinger_types.LastBirthdaysProperty.model_validate_json(payload)
+        try:
+            prop_value = stinger_types.LastBirthdaysProperty.model_validate_json(payload)
+        except ValidationError as e:
+            self._logger.error("Failed to validate payload for %s: %s", topic, e)
+            self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
+            return
         with self._property_last_birthdays.mutex:
             self._property_last_birthdays.value = prop_value
             self._property_last_birthdays.version += 1
@@ -921,7 +942,7 @@ if __name__ == "__main__":
     server.last_birthdays = stinger_types.LastBirthdaysProperty(
         mom=datetime.now(),
         dad=datetime.now(),
-        sister=None,
+        sister=datetime.now(),
         brothers_age=42,
     )
 

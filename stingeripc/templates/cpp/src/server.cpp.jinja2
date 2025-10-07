@@ -4,6 +4,7 @@
 {% import "partials/args.jinja2" as ar %}
 #include <vector>
 #include <iostream>
+#include <syslog.h>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -12,7 +13,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
 #include <rapidjson/document.h>
-
+#include "structs.hpp"
 #include "server.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include "ibrokerconnection.hpp"
@@ -22,7 +23,7 @@ constexpr const char {{stinger.cpp.server_class_name}}::NAME[];
 constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
 
 {{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
-    _broker->AddMessageCallback([this](
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
             const MqttProperties& mqttProps)
@@ -37,14 +38,24 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
     {%-endfor%}
 }
 
+{{stinger.cpp.server_class_name}}::~{{stinger.cpp.server_class_name}}()
+{
+    if (_broker && _brokerMessageCallbackHandle != 0)
+    {
+        _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
+        _brokerMessageCallbackHandle = 0;
+    }
+}
+
 void {{stinger.cpp.server_class_name}}::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
         const MqttProperties& mqttProps)
 {
-    int subscriptionId = mqttProps.subscriptionId.value_or(-1);
+    const int noSubId = -1;
+    int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
     {%for method_name, method in stinger.methods.items()%}
-    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | camelCase}}MethodSubscriptionId) || _broker->TopicMatchesSubscription(topic, "{{method.topic}}"))
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | camelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{method.topic}}")))
     {
         std::cout << "Message matched topic {{method.topic}}\n";
         rapidjson::Document doc;
@@ -74,7 +85,7 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(
     }
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
-    {%if not loop.first%}else {%endif%}if (subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId || _broker->TopicMatchesSubscription(topic, "{{prop.update_topic}}"))
+    {%if not loop.first%}else {%endif%}if (subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{prop.update_topic}}")))
     {
         std::cout << "Message matched topic {{prop.update_topic}}\n";
         _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, mqttProps.propertyVersion);

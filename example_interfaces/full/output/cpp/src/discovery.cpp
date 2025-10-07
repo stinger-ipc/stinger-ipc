@@ -6,31 +6,41 @@
 #include <sstream>
 #include <boost/format.hpp>
 
-Discovery::Discovery(std::shared_ptr<IBrokerConnection> broker, const std::string& service_id)
+FullDiscovery::FullDiscovery(std::shared_ptr<IBrokerConnection> broker)
     : _broker(broker)
-    , _service_id(service_id)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;
-    topicStream << boost::format("myservice/%1%/interface") % service_id;
+    topicStream << boost::format("full/%1%/interface") % "+";
     _broker->Subscribe(topicStream.str(), 2);
 
     // Register message callback
-    _broker->AddMessageCallback([this](
-                                        const std::string& topic,
-                                        const std::string& payload,
-                                        const MqttProperties& mqttProps
-                                )
-                                { _onMessage(topic, payload, mqttProps); });
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
+                                                                       const std::string& topic,
+                                                                       const std::string& payload,
+                                                                       const MqttProperties& mqttProps
+                                                               )
+                                                               {
+                                                                   _onMessage(topic, payload, mqttProps);
+                                                               });
 }
 
-void Discovery::setDiscoveryCallback(const std::function<void(const std::string&)>& cb)
+FullDiscovery::~FullDiscovery()
+{
+    if (_broker && _brokerMessageCallbackHandle != 0)
+    {
+        _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
+        _brokerMessageCallbackHandle = 0;
+    }
+}
+
+void FullDiscovery::SetDiscoveryCallback(const std::function<void(const std::string&)>& cb)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     _discovery_callback = cb;
 }
 
-boost::future<std::string> Discovery::get_singleton()
+boost::future<std::string> FullDiscovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
@@ -47,17 +57,17 @@ boost::future<std::string> Discovery::get_singleton()
     return _pending_promises.back().get_future();
 }
 
-std::vector<std::string> Discovery::getInstanceIds() const
+std::vector<std::string> FullDiscovery::GetInstanceIds() const
 {
     std::lock_guard<std::mutex> lock(_mutex);
     return _instance_ids;
 }
 
-void Discovery::_onMessage(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps)
+void FullDiscovery::_onMessage(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps)
 {
     // Check if this message is for our discovery topic
     std::stringstream topicPattern;
-    topicPattern << boost::format("myservice/%1%/interface") % _service_id;
+    topicPattern << boost::format("full/%1%/interface") % "+";
 
     if (!_broker->TopicMatchesSubscription(topic, topicPattern.str()))
     {

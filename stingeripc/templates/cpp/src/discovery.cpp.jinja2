@@ -6,17 +6,16 @@
 #include <sstream>
 #include <boost/format.hpp>
 
-Discovery::Discovery(std::shared_ptr<IBrokerConnection> broker, const std::string& service_id)
+{{stinger.name|UpperCamelCase}}Discovery::{{stinger.name|UpperCamelCase}}Discovery(std::shared_ptr<IBrokerConnection> broker)
     : _broker(broker)
-    , _service_id(service_id)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;
-    topicStream << boost::format("myservice/%1%/interface") % service_id;
+    topicStream << boost::format("{{stinger.interface_info_topic}}") % "+";
     _broker->Subscribe(topicStream.str(), 2);
 
     // Register message callback
-    _broker->AddMessageCallback([this](
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                         const std::string& topic,
                                         const std::string& payload,
                                         const MqttProperties& mqttProps
@@ -24,13 +23,22 @@ Discovery::Discovery(std::shared_ptr<IBrokerConnection> broker, const std::strin
                                 { _onMessage(topic, payload, mqttProps); });
 }
 
-void Discovery::setDiscoveryCallback(const std::function<void(const std::string&)>& cb)
+{{stinger.name|UpperCamelCase}}Discovery::~{{stinger.name|UpperCamelCase}}Discovery()
+{
+    if (_broker && _brokerMessageCallbackHandle != 0)
+    {
+        _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
+        _brokerMessageCallbackHandle = 0;
+    }
+}
+
+void {{stinger.name|UpperCamelCase}}Discovery::SetDiscoveryCallback(const std::function<void(const std::string&)>& cb)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     _discovery_callback = cb;
 }
 
-boost::future<std::string> Discovery::get_singleton()
+boost::future<std::string> {{stinger.name|UpperCamelCase}}Discovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
     
@@ -47,17 +55,17 @@ boost::future<std::string> Discovery::get_singleton()
     return _pending_promises.back().get_future();
 }
 
-std::vector<std::string> Discovery::getInstanceIds() const
+std::vector<std::string> {{stinger.name|UpperCamelCase}}Discovery::GetInstanceIds() const
 {
     std::lock_guard<std::mutex> lock(_mutex);
     return _instance_ids;
 }
 
-void Discovery::_onMessage(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps)
+void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps)
 {
     // Check if this message is for our discovery topic
     std::stringstream topicPattern;
-    topicPattern << boost::format("myservice/%1%/interface") % _service_id;
+    topicPattern << boost::format("{{stinger.interface_info_topic}}") % "+";
     
     if (!_broker->TopicMatchesSubscription(topic, topicPattern.str()))
     {

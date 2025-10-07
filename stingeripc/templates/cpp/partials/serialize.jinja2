@@ -14,5 +14,26 @@
 {%-endif%}
 {%elif arg.arg_type.name.lower() == 'enum'%}
 {{value}}.AddMember("{{arg.name}}", static_cast<int>({%if arg.optional %}*{%endif-%}{{arg.name}}), {{allocator}});
+{%elif arg.arg_type.name.lower() == 'datetime'%}
+{ // Restrict Scope
+    rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+    std::string {{arg.name|lowerCamelCase}}IsoString = timePointToIsoString({%if arg.optional %}*{%endif-%}{{arg.name}});
+    temp{{arg.name|UpperCamelCase}}StringValue.SetString({{arg.name|lowerCamelCase}}IsoString.c_str(), {{arg.name|lowerCamelCase}}IsoString.size(), {{allocator}});
+    {{value}}.AddMember("{{arg.name}}", temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+}
+{%elif arg.arg_type.name.lower() == 'duration'%}
+{ // Restrict Scope
+    rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+    std::string {{arg.name|lowerCamelCase}}IsoString = durationToIsoString({%if arg.optional %}*{%endif-%}{{arg.name}});
+    temp{{arg.name|UpperCamelCase}}StringValue.SetString({{arg.name|lowerCamelCase}}IsoString.c_str(), {{arg.name|lowerCamelCase}}IsoString.size(), {{allocator}});
+    {{value}}.AddMember("{{arg.name}}", temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+}
+{%elif arg.arg_type.name.lower() == 'binary'%}
+{ // Restrict Scope
+    rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+    std::string {{arg.name|lowerCamelCase}}B64String = base64Encode({%if arg.optional %}*{%endif-%}{{arg.name}});
+    temp{{arg.name|UpperCamelCase}}StringValue.SetString({{arg.name|lowerCamelCase}}B64String.c_str(), {{arg.name|lowerCamelCase}}B64String.size(), {{allocator}});
+    {{value}}.AddMember("{{arg.name}}", temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+}
 {%-endif-%}
 {%endmacro%}

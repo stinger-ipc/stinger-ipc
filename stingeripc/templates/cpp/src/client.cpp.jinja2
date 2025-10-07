@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iomanip>
 #include <ctime>
+#include <syslog.h>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -27,9 +28,9 @@
 constexpr const char {{stinger.cpp.client_class_name}}::NAME[];
 constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
 
-{{stinger.cpp.client_class_name}}::{{stinger.cpp.client_class_name}}(std::shared_ptr<IBrokerConnection> broker) : _broker(broker)
+{{stinger.cpp.client_class_name}}::{{stinger.cpp.client_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId) : _broker(broker), _instanceId(instanceId)
 {
-    _broker->AddMessageCallback([this](
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
             const MqttProperties& mqttProps)
@@ -38,19 +39,28 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     });
 
     {%-for sig_name, sig in stinger.signals.items() %}
-    _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe("{{sig.topic}}", 2);
+    _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe((boost::format("{{sig.topic}}") % _instanceId).str(), 2);
     {%-endfor%}
     {%-for method_name, method in stinger.methods.items() %}
     { // Restrict scope
         std::stringstream responseTopicStringStream;
         responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
-        _broker->Subscribe(responseTopicStringStream.str(), 2);
+        _{{method_name | lowerCamelCase}}MethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     {%-endfor%}
 
     {%-for prop_name, prop in stinger.properties.items() %}
-    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe("{{prop.value_topic}}", 1);
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe((boost::format("{{prop.value_topic}}") % _instanceId).str(), 1);
     {%-endfor%}
+}
+
+{{stinger.cpp.client_class_name}}::~{{stinger.cpp.client_class_name}}()
+{
+    if (_broker && _brokerMessageCallbackHandle != 0)
+    {
+        _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
+        _brokerMessageCallbackHandle = 0;
+    }
 }
 
 void {{stinger.cpp.client_class_name}}::_receiveMessage(
@@ -58,10 +68,12 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
         const std::string& payload, 
         const MqttProperties& mqttProps)
 {
+    const int noSubId = -1;
+    int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
     {%-for sig_name, sig in stinger.signals.items() %}
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "{{sig.topic}}"))
+    if ((subscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{sig.topic}}")))
     {
-        //Log("Handling {{sig_name}} signal");
+        _broker->Log(LOG_INFO, "Handling {{sig_name}} signal");
         rapidjson::Document doc;
         try {
             if (_{{sig_name | camelCase}}SignalCallbacks.size() > 0)
@@ -69,12 +81,13 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
                 {
-                    //Log("Could not JSON parse {{sig_name}} signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                    _broker->Log(LOG_WARNING, "Could not JSON parse {{sig_name}} signal payload.");
+                    return;
                 }
 
                 if (!doc.IsObject()) {
-                    throw std::runtime_error("Received payload is not an object");
+                    _broker->Log(LOG_WARNING, "Received payload is not an object");
+                    return;
                 }
 
                 {%for arg in sig.arg_list%}
@@ -125,15 +138,15 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
     {%-endfor%}{# for signals #}
 
     {%-for method_name, method in stinger.methods.items() %}
-    {%if not loop.first%}else {%endif%}if (_broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && mqttProps.correlationId)
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | lowerCamelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && mqttProps.correlationId))
     {
-        std::cout << "Matched topic for {{method_name}} response" << std::endl;
+        _broker->Log(LOG_DEBUG, "Matched topic for {{method_name}} response");
         _handle{{method_name|UpperCamelCase}}Response(topic, payload, *mqttProps.correlationId);
     }
     {%-endfor%}{# for methods #}
 
     {%-for prop_name, prop in stinger.properties.items() %}
-    {%if not loop.first%}else {%endif%}if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId)) || topic == "{{prop.value_topic}}")
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId) || (subscriptionId == noSubId && topic == "{{prop.value_topic}}"))
     {
         _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
@@ -171,7 +184,7 @@ boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish("{{method.topic}}", buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((boost::format("{{method.topic}}") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
 }
@@ -181,7 +194,8 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         const std::string& payload, 
         const std::string &correlationId) 
 {
-    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+    _broker->Log(LOG_DEBUG, "In response handler for {{method_name}} with correlationId=%s", correlationId);
+    
     {%if method.return_value_type is not false%}
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -242,7 +256,7 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         {%-endif%}
     }
 
-    std::cout << "End of response handler for " << topic << std::endl;
+    _broker->Log(LOG_DEBUG, "End of response handler for {{method_name}}");
 }
 {%endfor%}{# end for each method #}
 {%for prop_name, prop in stinger.properties.items()%}

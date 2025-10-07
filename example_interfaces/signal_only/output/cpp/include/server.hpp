@@ -30,7 +30,7 @@ public:
 
     SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual ~SignalOnlyServer() = default;
+    virtual ~SignalOnlyServer();
 
     boost::future<bool> emitAnotherSignalSignal(double, bool, const std::string&);
 
@@ -44,6 +44,7 @@ public:
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;
+    CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(
             const std::string& topic,
             const std::string& payload,

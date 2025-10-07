@@ -115,6 +115,40 @@ A full example can be viewed by looking at the generated `examples/client_main.c
 
 </details>
 
+## Logging
+
+Each generated language has different ways of handling logging.  
+
+### Python
+
+Python uses the standard Python `logging` module.  
+
+### Rust
+
+Rust uses the `tracing` crate for logging.
+
+### C++
+
+C++ uses a user-provided logging function.  The function should take two parameters: an integer log level and a string message. 
+
+Log levels are re-used from the `syslog.h` header file, although no other syslog mechanisms are used.  Client and server classes use the logging provided by the `MqttBrokerConnection` object.
+
+<details>
+  <summary>Example C++ Code</summary>
+
+```c++
+#include <syslog.h>
+
+auto connnection = std::make_shared<MqttBrokerConnection>(...);
+connnection->SetLogLevel(LOG_DEBUG);
+connnection->SetLogFunction([](int level, const char* msg)
+{
+    std::cout << "[" << level << "] " << msg << std::endl;
+});
+```
+
+</details>
+
 
 
 

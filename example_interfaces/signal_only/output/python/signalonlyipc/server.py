@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, UTC
 import isodate
 
 logging.basicConfig(level=logging.DEBUG)
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import IBrokerConnection
 from method_codes import *
@@ -71,6 +71,12 @@ class SignalOnlyServer:
         topic = "signalOnly/{}/interface".format(self._instance_id)
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
         self._conn.publish_status(topic, data, expiry)
+
+    def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
+        correlation_id = request_properties.get("CorrelationData")  # type: Optional[bytes]
+        response_topic = request_properties.get("ResponseTopic")  # type: Optional[str]
+        if response_topic is not None:
+            self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""

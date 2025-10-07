@@ -33,7 +33,7 @@ public:
 
     {{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual ~{{stinger.cpp.server_class_name}}() = default;
+    virtual ~{{stinger.cpp.server_class_name}}();
 
     {%for sig_name, sig in stinger.signals.items()%}
     boost::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%});
@@ -50,6 +50,7 @@ public:
     {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
+    CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 

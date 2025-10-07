@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <iostream>
+#include <syslog.h>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -10,7 +11,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
 #include <rapidjson/document.h>
-
+#include "structs.hpp"
 #include "server.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
@@ -21,12 +22,23 @@ constexpr const char SignalOnlyServer::INTERFACE_VERSION[];
 SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker)
     : _broker(broker)
 {
-    _broker->AddMessageCallback([this](
-                                        const std::string& topic,
-                                        const std::string& payload,
-                                        const MqttProperties& mqttProps
-                                )
-                                { _receiveMessage(topic, payload, mqttProps); });
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
+                                                                       const std::string& topic,
+                                                                       const std::string& payload,
+                                                                       const MqttProperties& mqttProps
+                                                               )
+                                                               {
+                                                                   _receiveMessage(topic, payload, mqttProps);
+                                                               });
+}
+
+SignalOnlyServer::~SignalOnlyServer()
+{
+    if (_broker && _brokerMessageCallbackHandle != 0)
+    {
+        _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
+        _brokerMessageCallbackHandle = 0;
+    }
 }
 
 void SignalOnlyServer::_receiveMessage(
@@ -35,7 +47,8 @@ void SignalOnlyServer::_receiveMessage(
         const MqttProperties& mqttProps
 )
 {
-    int subscriptionId = mqttProps.subscriptionId.value_or(-1);
+    const int noSubId = -1;
+    int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
 }
 
 boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, const std::string& three)
@@ -57,7 +70,7 @@ boost::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool t
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/{}/signal/anotherSignal", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/%1%/signal/anotherSignal", buf.GetString(), 1, false, mqttProps);
 }
 
 boost::future<bool> SignalOnlyServer::emitBarkSignal(const std::string& word)
@@ -75,7 +88,7 @@ boost::future<bool> SignalOnlyServer::emitBarkSignal(const std::string& word)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/{}/signal/bark", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/%1%/signal/bark", buf.GetString(), 1, false, mqttProps);
 }
 
 boost::future<bool> SignalOnlyServer::emitMaybeNumberSignal(boost::optional<int> number)
@@ -89,7 +102,7 @@ boost::future<bool> SignalOnlyServer::emitMaybeNumberSignal(boost::optional<int>
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/{}/signal/maybeNumber", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/%1%/signal/maybeNumber", buf.GetString(), 1, false, mqttProps);
 }
 
 boost::future<bool> SignalOnlyServer::emitMaybeNameSignal(boost::optional<std::string> name)
@@ -107,7 +120,7 @@ boost::future<bool> SignalOnlyServer::emitMaybeNameSignal(boost::optional<std::s
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/{}/signal/maybeName", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/%1%/signal/maybeName", buf.GetString(), 1, false, mqttProps);
 }
 
 boost::future<bool> SignalOnlyServer::emitNowSignal(std::chrono::time_point<std::chrono::system_clock> timestamp)
@@ -115,9 +128,16 @@ boost::future<bool> SignalOnlyServer::emitNowSignal(std::chrono::time_point<std:
     rapidjson::Document doc;
     doc.SetObject();
 
+    { // Restrict Scope
+        rapidjson::Value tempTimestampStringValue;
+        std::string timestampIsoString = timePointToIsoString(timestamp);
+        tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), doc.GetAllocator());
+        doc.AddMember("timestamp", tempTimestampStringValue, doc.GetAllocator());
+    }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("signalOnly/{}/signal/now", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("signalOnly/%1%/signal/now", buf.GetString(), 1, false, mqttProps);
 }

@@ -10,15 +10,17 @@ int main(int argc, char** argv)
     auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "Discovery-example");
 
     // Create a Discovery instance for service "myapp"
-    Discovery discovery(conn, "myapp");
+    SignalOnlyDiscovery discovery(conn);
 
     // Set up a callback for when new services are discovered
-    discovery.setDiscoveryCallback([](const std::string& instance_id)
-                                   { std::cout << "New service instance discovered: " << instance_id << std::endl; });
+    discovery.SetDiscoveryCallback([](const std::string& instance_id)
+                                   {
+                                       std::cout << "New service instance discovered: " << instance_id << std::endl;
+                                   });
 
     // Try to get a singleton instance
     std::cout << "Waiting for a service instance..." << std::endl;
-    auto future = discovery.get_singleton();
+    auto future = discovery.GetSingleton();
 
     // Wait for the future to resolve (with a timeout)
     auto status = future.wait_for(boost::chrono::seconds(10));
@@ -29,7 +31,7 @@ int main(int argc, char** argv)
         std::cout << "Got singleton instance: " << instance_id << std::endl;
 
         // Get all discovered instances
-        auto all_instances = discovery.getInstanceIds();
+        auto all_instances = discovery.GetInstanceIds();
         std::cout << "Total instances discovered: " << all_instances.size() << std::endl;
         for (const auto& id: all_instances)
         {

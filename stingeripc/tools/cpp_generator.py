@@ -16,7 +16,7 @@ def main(
     """Generate C++ output for a Stinger interface."""
 
     with inname.open(mode="r") as f:
-        stinger = StingerInterface.from_yaml(f)
+        stinger = StingerInterface.from_yaml(f, placeholder="%1%")
 
     params = {
         "stinger": stinger,

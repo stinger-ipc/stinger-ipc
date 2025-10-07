@@ -2,24 +2,48 @@
 
 #include <iostream>
 #include <sstream>
+#include <syslog.h>
 #include <boost/chrono/chrono.hpp>
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
+#include "discovery.hpp"
 
-int main(int argc, char** argv) {
-
+int main(int argc, char** argv)
+{
+    // Create a connection to the broker
     auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "{{stinger.name}}-client-demo");
-    {{stinger.cpp.client_class_name}} client(conn);
+    conn->SetLogLevel(LOG_DEBUG);
+    conn->SetLogFunction([](int level, const char* msg) {
+        std::cout << "[" << level << "] " << msg << std::endl;
+    });
 
+    // Discover a service ID for a {{stinger.name}} service.
+    std::string serviceId;
+    { // restrict scope
+        {{stinger.name|UpperCamelCase}}Discovery discovery(conn);
+        auto serviceIdFut = discovery.GetSingleton();
+        auto serviceIdFutStatus = serviceIdFut.wait_for(boost::chrono::seconds(15));
+        if (serviceIdFutStatus == boost::future_status::timeout) {
+            std::cerr << "Failed to discover service instance within timeout." << std::endl;
+            return 1;
+        }
+        serviceId = serviceIdFut.get();
+    }
+
+    // Create the client object.
+    {{stinger.cpp.client_class_name}} client(conn, serviceId);
+
+    // Register callbacks for signals.
     {%-for sig_name, sig in stinger.signals.items() %}
-    client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+    client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+    {
         {%-for arg in sig.arg_list-%}{%if arg.arg_type.name.lower() == 'datetime'%}
         {%if arg.optional%}
         if ({{arg.name}}) {
             std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString(*{{arg.name}});
         } else {
-            std::string {{arg.name|lowerCamelCase}}Str = "None";
+        std::string {{arg.name|lowerCamelCase}}Str = "None";
         }
         {%else%}
         std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString({{arg.name}});
@@ -27,16 +51,17 @@ int main(int argc, char** argv) {
         {%elif arg.arg_type.name.lower() == 'binary'%}
         std::string {{arg.name|lowerCamelCase}}Str = "[Binary Data]";
         {%elif arg.arg_type.name.lower() == 'duration'%}
-        std::string {{arg.name|lowerCamelCase}}Str = "[Duration Data]";
-        {%endif%}{%endfor-%}
-        std::cout << {%for arg in sig.arg_list%}"{{arg.name}}=" << 
+        std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString({{arg.name}});
+        {%endif%}{%endfor%}
+        std::cout << "Received {{sig_name|CONST_CASE}} signal: " << {%for arg in sig.arg_list%}"{{arg.name}}=" << 
         {%-if arg.optional%} "None"{%else%}
         {%-if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]
         {%-elif arg.arg_type.name.lower() == 'datetime' or arg.arg_type.name.lower() == 'duration' or arg.arg_type.name.lower() == 'binary'%}{{arg.name|lowerCamelCase}}Str
         {%-else%}{{arg.name}}{%endif%}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
     });
-    {%-endfor%}
+    {%endfor%}
 
+    // Register callbacks for property updates.
     {%- for prop_name, prop in stinger.properties.items() %}
     client.register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.methodParams(prop.arg_list)}}) {
         {%-for arg in prop.arg_list-%}{%if arg.arg_type.name.lower() == 'datetime'%}
@@ -79,6 +104,7 @@ int main(int argc, char** argv) {
     });
     {%endfor%}
 
+    // Call each method with example values.
     {%-for method_name, method in stinger.methods.items() %}
     std::cout << "Calling {{method_name}}" << std::endl;
     auto {{method_name|camelCase}}ResultFuture = client.{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});

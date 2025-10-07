@@ -2,79 +2,111 @@
 
 #include <iostream>
 #include <sstream>
+#include <syslog.h>
 #include <boost/chrono/chrono.hpp>
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
+#include "discovery.hpp"
 
 int main(int argc, char** argv)
 {
+    // Create a connection to the broker
     auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "Full-client-demo");
-    FullClient client(conn);
+    conn->SetLogLevel(LOG_DEBUG);
+    conn->SetLogFunction([](int level, const char* msg)
+                         {
+                             std::cout << "[" << level << "] " << msg << std::endl;
+                         });
+
+    // Discover a service ID for a Full service.
+    std::string serviceId;
+    { // restrict scope
+        FullDiscovery discovery(conn);
+        auto serviceIdFut = discovery.GetSingleton();
+        auto serviceIdFutStatus = serviceIdFut.wait_for(boost::chrono::seconds(15));
+        if (serviceIdFutStatus == boost::future_status::timeout)
+        {
+            std::cerr << "Failed to discover service instance within timeout." << std::endl;
+            return 1;
+        }
+        serviceId = serviceIdFut.get();
+    }
+
+    // Create the client object.
+    FullClient client(conn, serviceId);
+
+    // Register callbacks for signals.
     client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> process_time, std::vector<uint8_t> memory_segment)
                                    {
-        
-        std::string timestampStr = timePointToIsoString(timestamp);
-        
-        
-        std::string processTimeStr = "[Duration Data]";
-        
-        std::string memorySegmentStr = "[Binary Data]";
-        std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" << "None" << " | " << "timestamp=" <<timestampStr << " | " << "process_time=" <<processTimeStr << " | " << "memory_segment=" <<memorySegmentStr <<  std::endl; });
+                                       std::string timestampStr = timePointToIsoString(timestamp);
+
+                                       std::string processTimeStr = durationToIsoString(process_time);
+
+                                       std::string memorySegmentStr = "[Binary Data]";
+
+                                       std::cout << "Received TODAY_IS signal: " << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << "None" << " | " << "timestamp=" << timestampStr << " | " << "process_time=" << processTimeStr << " | " << "memory_segment=" << memorySegmentStr << std::endl;
+                                   });
+
+    // Register callbacks for property updates.
     client.registerFavoriteNumberPropertyCallback([](int number)
-                                                  { std::cout << "Received update for favorite_number property: " << "number=" << number /* unhandled arg type*/ << std::endl; });
+                                                  {
+                                                      std::cout << "Received update for favorite_number property: " << "number=" << number /* unhandled arg type*/ << std::endl;
+                                                  });
 
     client.registerFavoriteFoodsPropertyCallback([](const std::string& drink, int slices_of_pizza, boost::optional<std::string> breakfast)
-                                                 { std::cout << "Received update for favorite_foods property: " << "drink=" << drink /* unhandled arg type*/ << " | " << "slices_of_pizza=" << slices_of_pizza /* unhandled arg type*/ << " | " << "breakfast=" << "None" << std::endl; });
+                                                 {
+                                                     std::cout << "Received update for favorite_foods property: " << "drink=" << drink /* unhandled arg type*/ << " | " << "slices_of_pizza=" << slices_of_pizza /* unhandled arg type*/ << " | " << "breakfast=" << "None" << std::endl;
+                                                 });
 
     client.registerLunchMenuPropertyCallback([](Lunch monday, Lunch tuesday)
-                                             { std::cout << "Received update for lunch_menu property: " << "monday=" << "[Lunch object]"
-                                                         << " | " << "tuesday=" << "[Lunch object]"
-                                                         << std::endl; });
+                                             {
+                                                 std::cout << "Received update for lunch_menu property: " << "monday=" << "[Lunch object]"
+                                                           << " | " << "tuesday=" << "[Lunch object]"
+                                                           << std::endl;
+                                             });
 
     client.registerFamilyNamePropertyCallback([](const std::string& family_name)
-                                              { std::cout << "Received update for family_name property: " << "family_name=" << family_name /* unhandled arg type*/ << std::endl; });
+                                              {
+                                                  std::cout << "Received update for family_name property: " << "family_name=" << family_name /* unhandled arg type*/ << std::endl;
+                                              });
 
     client.registerLastBreakfastTimePropertyCallback([](std::chrono::time_point<std::chrono::system_clock> timestamp)
                                                      {
-         
-        std::string timestampStr = timePointToIsoString(timestamp);
-         
-        std::cout << "Received update for last_breakfast_time property: " << "timestamp=" << 
-                                timestampStr
-                             <<std::endl; });
+                                                         std::string timestampStr = timePointToIsoString(timestamp);
+
+                                                         std::cout << "Received update for last_breakfast_time property: " << "timestamp=" << timestampStr
+                                                                   << std::endl;
+                                                     });
 
     client.registerBreakfastLengthPropertyCallback([](std::chrono::duration<double> length)
                                                    {
-        
-        std::string lengthStr = durationToIsoString(length);
-        
-        std::cout << "Received update for breakfast_length property: " << "length=" << 
-                                lengthStr <<std::endl; });
+                                                       std::string lengthStr = durationToIsoString(length);
+
+                                                       std::cout << "Received update for breakfast_length property: " << "length=" << lengthStr << std::endl;
+                                                   });
 
     client.registerLastBirthdaysPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister, boost::optional<int> brothers_age)
                                                  {
-         
-        std::string momStr = timePointToIsoString(mom);
-         
-        
-         
-        std::string dadStr = timePointToIsoString(dad);
-         
-        
-        
-        if (sister) {
-            std::string sisterStr = timePointToIsoString(*sister);
-        } else {
-            std::string sisterStr = "None";
-        }
-         
-        std::cout << "Received update for last_birthdays property: " << "mom=" << 
-                                momStr
-                             << " | " << "dad=" << 
-                                dadStr
-                             << " | " << "sister=" <<  "None" << " | " << "brothers_age=" <<  "None" <<std::endl; });
+                                                     std::string momStr = timePointToIsoString(mom);
 
+                                                     std::string dadStr = timePointToIsoString(dad);
+
+                                                     if (sister)
+                                                     {
+                                                         std::string sisterStr = timePointToIsoString(*sister);
+                                                     }
+                                                     else
+                                                     {
+                                                         std::string sisterStr = "None";
+                                                     }
+
+                                                     std::cout << "Received update for last_birthdays property: " << "mom=" << momStr
+                                                               << " | " << "dad=" << dadStr
+                                                               << " | " << "sister=" << "None" << " | " << "brothers_age=" << "None" << std::endl;
+                                                 });
+
+    // Call each method with example values.
     std::cout << "Calling addNumbers" << std::endl;
     auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
     auto addNumbersStatus = addNumbersResultFuture.wait_for(boost::chrono::seconds(5));

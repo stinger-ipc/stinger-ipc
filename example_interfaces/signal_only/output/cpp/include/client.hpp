@@ -30,9 +30,9 @@ public:
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
     // Constructor taking a connection object.
-    SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker);
+    SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
 
-    virtual ~SignalOnlyClient() = default;
+    virtual ~SignalOnlyClient();
     // ------------------ SIGNALS --------------------
 
     // Register a callback for the `anotherSignal` signal.
@@ -59,6 +59,11 @@ private:
     // Pointer to the broker connection.
     std::shared_ptr<IBrokerConnection> _broker;
 
+    // Service Instance ID that this client is connected to.
+    std::string _instanceId;
+
+    CallbackHandleType _brokerMessageCallbackHandle = 0;
+
     // Internal method for receiving messages from the broker.
     void _receiveMessage(
             const std::string& topic,
@@ -73,33 +78,33 @@ private:
     std::mutex _anotherSignalSignalCallbacksMutex;
 
     // MQTT Subscription ID for `anotherSignal` signal receptions.
-    int _anotherSignalSignalSubscriptionId;
+    int _anotherSignalSignalSubscriptionId = -1;
 
     // List of callbacks to be called whenever the `bark` signal is received.
     std::vector<std::function<void(const std::string&)>> _barkSignalCallbacks;
     std::mutex _barkSignalCallbacksMutex;
 
     // MQTT Subscription ID for `bark` signal receptions.
-    int _barkSignalSubscriptionId;
+    int _barkSignalSubscriptionId = -1;
 
     // List of callbacks to be called whenever the `maybe_number` signal is received.
     std::vector<std::function<void(boost::optional<int>)>> _maybeNumberSignalCallbacks;
     std::mutex _maybeNumberSignalCallbacksMutex;
 
     // MQTT Subscription ID for `maybe_number` signal receptions.
-    int _maybeNumberSignalSubscriptionId;
+    int _maybeNumberSignalSubscriptionId = -1;
 
     // List of callbacks to be called whenever the `maybe_name` signal is received.
     std::vector<std::function<void(boost::optional<std::string>)>> _maybeNameSignalCallbacks;
     std::mutex _maybeNameSignalCallbacksMutex;
 
     // MQTT Subscription ID for `maybe_name` signal receptions.
-    int _maybeNameSignalSubscriptionId;
+    int _maybeNameSignalSubscriptionId = -1;
 
     // List of callbacks to be called whenever the `now` signal is received.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _nowSignalCallbacks;
     std::mutex _nowSignalCallbacksMutex;
 
     // MQTT Subscription ID for `now` signal receptions.
-    int _nowSignalSubscriptionId;
+    int _nowSignalSubscriptionId = -1;
 };

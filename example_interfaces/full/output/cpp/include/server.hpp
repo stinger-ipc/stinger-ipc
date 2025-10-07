@@ -32,7 +32,7 @@ public:
 
     FullServer(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual ~FullServer() = default;
+    virtual ~FullServer();
 
     boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>);
 
@@ -150,6 +150,7 @@ public:
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;
+    CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(
             const std::string& topic,
             const std::string& payload,

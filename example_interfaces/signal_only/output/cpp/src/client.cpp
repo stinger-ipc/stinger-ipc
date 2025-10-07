@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iomanip>
 #include <ctime>
+#include <syslog.h>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -24,20 +25,32 @@
 constexpr const char SignalOnlyClient::NAME[];
 constexpr const char SignalOnlyClient::INTERFACE_VERSION[];
 
-SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker)
+SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId)
     : _broker(broker)
+    , _instanceId(instanceId)
 {
-    _broker->AddMessageCallback([this](
-                                        const std::string& topic,
-                                        const std::string& payload,
-                                        const MqttProperties& mqttProps
-                                )
-                                { _receiveMessage(topic, payload, mqttProps); });
-    _anotherSignalSignalSubscriptionId = _broker->Subscribe("signalOnly/{}/signal/anotherSignal", 2);
-    _barkSignalSubscriptionId = _broker->Subscribe("signalOnly/{}/signal/bark", 2);
-    _maybeNumberSignalSubscriptionId = _broker->Subscribe("signalOnly/{}/signal/maybeNumber", 2);
-    _maybeNameSignalSubscriptionId = _broker->Subscribe("signalOnly/{}/signal/maybeName", 2);
-    _nowSignalSubscriptionId = _broker->Subscribe("signalOnly/{}/signal/now", 2);
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
+                                                                       const std::string& topic,
+                                                                       const std::string& payload,
+                                                                       const MqttProperties& mqttProps
+                                                               )
+                                                               {
+                                                                   _receiveMessage(topic, payload, mqttProps);
+                                                               });
+    _anotherSignalSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/anotherSignal") % _instanceId).str(), 2);
+    _barkSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/bark") % _instanceId).str(), 2);
+    _maybeNumberSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/maybeNumber") % _instanceId).str(), 2);
+    _maybeNameSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/maybeName") % _instanceId).str(), 2);
+    _nowSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/now") % _instanceId).str(), 2);
+}
+
+SignalOnlyClient::~SignalOnlyClient()
+{
+    if (_broker && _brokerMessageCallbackHandle != 0)
+    {
+        _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
+        _brokerMessageCallbackHandle = 0;
+    }
 }
 
 void SignalOnlyClient::_receiveMessage(
@@ -46,9 +59,11 @@ void SignalOnlyClient::_receiveMessage(
         const MqttProperties& mqttProps
 )
 {
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _anotherSignalSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/{}/signal/anotherSignal"))
+    const int noSubId = -1;
+    int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
+    if ((subscriptionId == _anotherSignalSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/anotherSignal")))
     {
-        //Log("Handling anotherSignal signal");
+        _broker->Log(LOG_INFO, "Handling anotherSignal signal");
         rapidjson::Document doc;
         try
         {
@@ -57,13 +72,14 @@ void SignalOnlyClient::_receiveMessage(
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
                 {
-                    //Log("Could not JSON parse anotherSignal signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                    _broker->Log(LOG_WARNING, "Could not JSON parse anotherSignal signal payload.");
+                    return;
                 }
 
                 if (!doc.IsObject())
                 {
-                    throw std::runtime_error("Received payload is not an object");
+                    _broker->Log(LOG_WARNING, "Received payload is not an object");
+                    return;
                 }
 
                 double tempOne;
@@ -119,9 +135,9 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _barkSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/{}/signal/bark"))
+    if ((subscriptionId == _barkSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/bark")))
     {
-        //Log("Handling bark signal");
+        _broker->Log(LOG_INFO, "Handling bark signal");
         rapidjson::Document doc;
         try
         {
@@ -130,13 +146,14 @@ void SignalOnlyClient::_receiveMessage(
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
                 {
-                    //Log("Could not JSON parse bark signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                    _broker->Log(LOG_WARNING, "Could not JSON parse bark signal payload.");
+                    return;
                 }
 
                 if (!doc.IsObject())
                 {
-                    throw std::runtime_error("Received payload is not an object");
+                    _broker->Log(LOG_WARNING, "Received payload is not an object");
+                    return;
                 }
 
                 std::string tempWord;
@@ -166,9 +183,9 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _maybeNumberSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/{}/signal/maybeNumber"))
+    if ((subscriptionId == _maybeNumberSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/maybeNumber")))
     {
-        //Log("Handling maybe_number signal");
+        _broker->Log(LOG_INFO, "Handling maybe_number signal");
         rapidjson::Document doc;
         try
         {
@@ -177,13 +194,14 @@ void SignalOnlyClient::_receiveMessage(
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
                 {
-                    //Log("Could not JSON parse maybe_number signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                    _broker->Log(LOG_WARNING, "Could not JSON parse maybe_number signal payload.");
+                    return;
                 }
 
                 if (!doc.IsObject())
                 {
-                    throw std::runtime_error("Received payload is not an object");
+                    _broker->Log(LOG_WARNING, "Received payload is not an object");
+                    return;
                 }
 
                 boost::optional<int> tempNumber;
@@ -213,9 +231,9 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _maybeNameSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/{}/signal/maybeName"))
+    if ((subscriptionId == _maybeNameSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/maybeName")))
     {
-        //Log("Handling maybe_name signal");
+        _broker->Log(LOG_INFO, "Handling maybe_name signal");
         rapidjson::Document doc;
         try
         {
@@ -224,13 +242,14 @@ void SignalOnlyClient::_receiveMessage(
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
                 {
-                    //Log("Could not JSON parse maybe_name signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                    _broker->Log(LOG_WARNING, "Could not JSON parse maybe_name signal payload.");
+                    return;
                 }
 
                 if (!doc.IsObject())
                 {
-                    throw std::runtime_error("Received payload is not an object");
+                    _broker->Log(LOG_WARNING, "Received payload is not an object");
+                    return;
                 }
 
                 boost::optional<std::string> tempName;
@@ -260,9 +279,9 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _nowSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "signalOnly/{}/signal/now"))
+    if ((subscriptionId == _nowSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/now")))
     {
-        //Log("Handling now signal");
+        _broker->Log(LOG_INFO, "Handling now signal");
         rapidjson::Document doc;
         try
         {
@@ -271,13 +290,14 @@ void SignalOnlyClient::_receiveMessage(
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
                 {
-                    //Log("Could not JSON parse now signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                    _broker->Log(LOG_WARNING, "Could not JSON parse now signal payload.");
+                    return;
                 }
 
                 if (!doc.IsObject())
                 {
-                    throw std::runtime_error("Received payload is not an object");
+                    _broker->Log(LOG_WARNING, "Received payload is not an object");
+                    return;
                 }
 
                 std::chrono::time_point<std::chrono::system_clock> tempTimestamp;

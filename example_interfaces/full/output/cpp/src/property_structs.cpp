@@ -147,6 +147,27 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
 
 void LastBirthdaysProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempMomStringValue;
+        std::string momIsoString = timePointToIsoString(mom);
+        tempMomStringValue.SetString(momIsoString.c_str(), momIsoString.size(), allocator);
+        parent.AddMember("mom", tempMomStringValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempDadStringValue;
+        std::string dadIsoString = timePointToIsoString(dad);
+        tempDadStringValue.SetString(dadIsoString.c_str(), dadIsoString.size(), allocator);
+        parent.AddMember("dad", tempDadStringValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempSisterStringValue;
+        std::string sisterIsoString = timePointToIsoString(*sister);
+        tempSisterStringValue.SetString(sisterIsoString.c_str(), sisterIsoString.size(), allocator);
+        parent.AddMember("sister", tempSisterStringValue, allocator);
+    }
+
     if (brothers_age)
         parent.AddMember("brothers_age", *brothers_age, allocator);
 }
