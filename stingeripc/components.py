@@ -495,7 +495,11 @@ class ArgDuration(Arg):
 
     @property
     def cpp_type(self) -> str:
-        return "std::chrono::milliseconds"
+        return "std::chrono::duration<double>"
+
+    @property
+    def cpp_temp_type(self) -> str:
+        return self.cpp_type
 
     @property
     def python_type(self) -> str:
@@ -515,6 +519,10 @@ class ArgDuration(Arg):
     def markdown_type(self) -> str:
         return "[Duration](#duration)"
 
+    @property
+    def cpp_rapidjson_type(self) -> str:
+        return "String"
+
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         random_state = random.getstate()
         random.seed(seed)
@@ -526,6 +534,8 @@ class ArgDuration(Arg):
                 retval = f"timedelta(seconds={random.randint(1, 3600)})"
         elif lang == "rust":
             retval = f"chrono::Duration::seconds({random.randint(1, 3600)})"
+        elif lang in ["c++", "cpp"]:
+            retval = f"std::chrono::duration<double>({random.randint(1, 3600)})"
         random.setstate(random_state)
         return retval
 
@@ -556,6 +566,18 @@ class ArgBinary(Arg):
     @property
     def markdown_type(self) -> str:
         return "[Binary](#binary)"
+
+    @property
+    def cpp_rapidjson_type(self) -> str:
+        return "String"
+    
+    @property
+    def cpp_type(self) -> str:
+        return "std::vector<uint8_t>"
+    
+    @property
+    def cpp_temp_type(self) -> str:
+        return self.cpp_type
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":

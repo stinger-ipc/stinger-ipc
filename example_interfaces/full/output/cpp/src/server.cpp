@@ -313,7 +313,7 @@ void FullServer::_receiveMessage(
     }
 }
 
-boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::milliseconds process_time, std::vector<unsigned char> memory_segment)
+boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> process_time, std::vector<uint8_t> memory_segment)
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -359,13 +359,13 @@ void FullServer::registerSetTheTimeHandler(std::function<SetTheTimeReturnValue(s
     _setTheTimeHandler = func;
 }
 
-void FullServer::registerForwardTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::milliseconds)> func)
+void FullServer::registerForwardTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::duration<double>)> func)
 {
     std::cout << "Registered method to handle full/{}/method/forwardTime\n";
     _forwardTimeHandler = func;
 }
 
-void FullServer::registerHowOffIsTheClockHandler(std::function<std::chrono::milliseconds(std::chrono::time_point<std::chrono::system_clock>)> func)
+void FullServer::registerHowOffIsTheClockHandler(std::function<std::chrono::duration<double>(std::chrono::time_point<std::chrono::system_clock>)> func)
 {
     std::cout << "Registered method to handle full/{}/method/howOffIsTheClock\n";
     _howOffIsTheClockHandler = func;
@@ -670,10 +670,10 @@ void FullServer::_callForwardTimeHandler(
     std::cout << "Handling call to forward_time\n";
     if (_forwardTimeHandler)
     {
-        tempAdjustment;
+        std::chrono::duration<double> tempAdjustment;
         { // Scoping
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("adjustment");
-            if (itr != doc.MemberEnd() && itr->value.Is())
+            if (itr != doc.MemberEnd() && itr->value.IsString())
             {
             }
             else
@@ -728,7 +728,7 @@ void FullServer::_callHowOffIsTheClockHandler(
             }
         }
 
-        std::chrono::milliseconds ret = _howOffIsTheClockHandler(tempActualTime);
+        std::chrono::duration<double> ret = _howOffIsTheClockHandler(tempActualTime);
 
         if (optResponseTopic)
         {
@@ -1189,13 +1189,13 @@ boost::optional<BreakfastLengthProperty> FullServer::getBreakfastLengthProperty(
     return _breakfastLengthProperty;
 }
 
-void FullServer::registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::milliseconds length)>& cb)
+void FullServer::registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::duration<double> length)>& cb)
 {
     std::lock_guard<std::mutex> lock(_breakfastLengthPropertyCallbacksMutex);
     _breakfastLengthPropertyCallbacks.push_back(cb);
 }
 
-void FullServer::updateBreakfastLengthProperty(std::chrono::milliseconds length)
+void FullServer::updateBreakfastLengthProperty(std::chrono::duration<double> length)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_breakfastLengthPropertyMutex);
@@ -1255,9 +1255,9 @@ void FullServer::_receiveBreakfastLengthPropertyUpdate(const std::string& topic,
     // TODO: Check _lastBreakfastLengthPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    tempLength;
+    std::chrono::duration<double> tempLength;
     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("length");
-    if (itr != doc.MemberEnd() && itr->value.Is())
+    if (itr != doc.MemberEnd() && itr->value.IsString())
     {
     }
     else

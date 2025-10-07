@@ -61,13 +61,13 @@ typedef std::chrono::time_point<std::chrono::system_clock> LastBreakfastTimeProp
 
 /**
  * The `breakfast_length` property contains a single field:
- *    length;
+ *   std::chrono::duration<double> length;
  *
  * Because there is only one field, no outer-structure is needed. 
  *
  * This is to test a property with a single duration value.
  */
-typedef BreakfastLengthProperty;
+typedef std::chrono::duration<double> BreakfastLengthProperty;
 
 /**
  * This is to test a property with multiple datetime values.

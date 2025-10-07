@@ -203,7 +203,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `todayIs` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::milliseconds process_time, std::vector<unsigned char> memory_segment) {
+client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> process_time, std::vector<uint8_t> memory_segment) {
     std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" << "None" << " | " << "timestamp=" <<timestamp << " | " << "process_time=" <<process_time << " | " << "memory_segment=" <<memory_segment <<  std::endl;
 });
 ```
@@ -216,7 +216,7 @@ client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> 
 A `todayIs` signal can be emitted by calling the server's `emitTodayIsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
 ```cpp
-auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), None, {101, 120, 97, 109, 112, 108, 101});
+auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), {101, 120, 97, 109, 112, 108, 101});
 todayIsFuture.wait(); // Optional, to block until signal is sent.
 ```
 

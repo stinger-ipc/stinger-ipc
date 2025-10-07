@@ -46,8 +46,18 @@ int main(int argc, char** argv) {
         } else {
             std::string {{arg.name|lowerCamelCase}}Str = "None";
         }
-        {%else%}
+        {%else%} {# not optional #}
         std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString({{arg.name}});
+        {%endif%} {# optionality #}
+        {%elif arg.arg_type.name.lower() == 'duration'%}
+        {%if arg.optional%}
+        if ({{arg.name}}) {
+            std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString(*{{arg.name}});
+        } else {
+            std::string {{arg.name|lowerCamelCase}}Str = "None";
+        }
+        {%else%}
+        std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString({{arg.name}});
         {%endif%}
         {%endif%}{%endfor-%}
         std::cout << "Received update for {{prop_name}} property: " << {# #}
@@ -58,6 +68,8 @@ int main(int argc, char** argv) {
                             {%elif arg.arg_type.name.lower() == 'struct'-%}
                                 "[{{arg.cpp_type}} object]"
                             {%elif arg.arg_type.name.lower() == 'datetime'%}
+                                {{arg.name|lowerCamelCase}}Str
+                            {%elif arg.arg_type.name.lower() == 'duration'%}
                                 {{arg.name|lowerCamelCase}}Str
                             {%-else%}{{arg.name}} /* unhandled arg type*/ {%endif%}
                             {%-endif%} <<

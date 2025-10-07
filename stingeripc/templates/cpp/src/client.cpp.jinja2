@@ -212,6 +212,11 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         {%elif method.return_value_type == 'struct'%}{%for arg2 in method.return_value%}
         // {{arg2}}
         {%endfor%}
+        {%elif method.return_value_type == 'duration'%}
+        {{arg.cpp_type}} {{arg.name}};
+        if ({{arg.name|lowerCamelCase}}Itr != doc.MemberEnd() && {{arg.name|lowerCamelCase}}Itr->value.IsString()) {
+            {{arg.name}} = parseIsoDuration({{arg.name|lowerCamelCase}}Itr->value.Get{{arg.cpp_rapidjson_type}}());
+        }
         {%else%}
         TEMPLATE ERROR with unhandled return value type {{method.return_value_type}}
         {%endif-%}

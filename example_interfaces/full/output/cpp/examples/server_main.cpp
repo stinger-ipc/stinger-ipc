@@ -9,7 +9,7 @@ int main(int argc, char** argv)
 {
     auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "Full-server-demo");
     FullServer server(conn);
-    auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), None, { 101, 120, 97, 109, 112, 108, 101 });
+    auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 });
     todayIsFuture.wait();
     server.registerAddNumbersHandler([](int unused1, int unused2, boost::optional<int> unused3) -> int
                                      {
@@ -36,15 +36,15 @@ int main(int argc, char** argv)
         std::cout << "Received call for set_the_time\n";
         return SetTheTimeReturnValue{ std::chrono::system_clock::now(), "apples" }; });
 
-    server.registerForwardTimeHandler([](std::chrono::milliseconds unused1) -> std::chrono::time_point<std::chrono::system_clock>
+    server.registerForwardTimeHandler([](std::chrono::duration<double> unused1) -> std::chrono::time_point<std::chrono::system_clock>
                                       {
         std::cout << "Received call for forward_time\n";
         return std::chrono::system_clock::now(); });
 
-    server.registerHowOffIsTheClockHandler([](std::chrono::time_point<std::chrono::system_clock> unused1) -> std::chrono::milliseconds
+    server.registerHowOffIsTheClockHandler([](std::chrono::time_point<std::chrono::system_clock> unused1) -> std::chrono::duration<double>
                                            {
         std::cout << "Received call for how_off_is_the_clock\n";
-        return None; });
+        return std::chrono::duration<double>(3536); });
 
     std::cout << "Press Enter to exit\n";
     std::cin.ignore();

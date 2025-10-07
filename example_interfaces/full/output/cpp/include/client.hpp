@@ -39,7 +39,7 @@ public:
 
     // Register a callback for the `todayIs` signal.
     // The provided method will be called whenever a `todayIs` is received.
-    void registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::milliseconds, std::vector<unsigned char>)>& cb);
+    void registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>)>& cb);
 
     // ------------------- METHODS --------------------
 
@@ -65,11 +65,11 @@ public:
 
     // Calls the `forward_time` method.
     // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<std::chrono::time_point<std::chrono::system_clock>> forwardTime(std::chrono::milliseconds adjustment);
+    boost::future<std::chrono::time_point<std::chrono::system_clock>> forwardTime(std::chrono::duration<double> adjustment);
 
     // Calls the `how_off_is_the_clock` method.
     // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<std::chrono::milliseconds> howOffIsTheClock(std::chrono::time_point<std::chrono::system_clock> actual_time);
+    boost::future<std::chrono::duration<double>> howOffIsTheClock(std::chrono::time_point<std::chrono::system_clock> actual_time);
 
     // ---------------- PROPERTIES ------------------
 
@@ -141,9 +141,9 @@ public:
 
     // Add a callback that will be called whenever the `breakfast_length` property is updated.
     // The provided method will be called whenever a new value for the `breakfast_length` property is received.
-    void registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::milliseconds)>& cb);
+    void registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::duration<double>)>& cb);
 
-    boost::future<bool> updateBreakfastLengthProperty(std::chrono::milliseconds) const;
+    boost::future<bool> updateBreakfastLengthProperty(std::chrono::duration<double>) const;
 
     // ---last_birthdays Property---
 
@@ -171,7 +171,7 @@ private:
     // ------------------ SIGNALS --------------------
 
     // List of callbacks to be called whenever the `todayIs` signal is received.
-    std::vector<std::function<void(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::milliseconds, std::vector<unsigned char>)>> _todayIsSignalCallbacks;
+    std::vector<std::function<void(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>)>> _todayIsSignalCallbacks;
     std::mutex _todayIsSignalCallbacksMutex;
 
     // MQTT Subscription ID for `todayIs` signal receptions.
@@ -209,7 +209,7 @@ private:
     // This is called internally to process responses to `forward_time` method calls.
     void _handleForwardTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
     // Holds promises for pending `how_off_is_the_clock` method calls.
-    std::map<boost::uuids::uuid, boost::promise<std::chrono::milliseconds>> _pendingHowOffIsTheClockMethodCalls;
+    std::map<boost::uuids::uuid, boost::promise<std::chrono::duration<double>>> _pendingHowOffIsTheClockMethodCalls;
 
     // This is called internally to process responses to `how_off_is_the_clock` method calls.
     void _handleHowOffIsTheClockResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
@@ -339,7 +339,7 @@ private:
     void _receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `breakfast_length` property.
-    std::vector<std::function<void(std::chrono::milliseconds)>> _breakfastLengthPropertyCallbacks;
+    std::vector<std::function<void(std::chrono::duration<double>)>> _breakfastLengthPropertyCallbacks;
     std::mutex _breakfastLengthPropertyCallbacksMutex;
 
     // ---last_birthdays Property---

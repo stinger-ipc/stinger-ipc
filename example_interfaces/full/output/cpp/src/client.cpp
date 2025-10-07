@@ -150,10 +150,10 @@ void FullClient::_receiveMessage(
                     }
                 }
 
-                tempProcessTime;
+                std::chrono::duration<double> tempProcessTime;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("process_time");
-                    if (itr != doc.MemberEnd() && itr->value.Is())
+                    if (itr != doc.MemberEnd() && itr->value.IsString())
                     {
                         tempProcessTime = parseIsoDuration(itr->value.GetString());
                     }
@@ -163,10 +163,10 @@ void FullClient::_receiveMessage(
                     }
                 }
 
-                tempMemorySegment;
+                std::vector<uint8_t> tempMemorySegment;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("memory_segment");
-                    if (itr != doc.MemberEnd() && itr->value.Is())
+                    if (itr != doc.MemberEnd() && itr->value.IsString())
                     {
                         tempMemorySegment = base64Decode(itr->value.GetString());
                     }
@@ -255,7 +255,7 @@ void FullClient::_receiveMessage(
     }
 }
 
-void FullClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::milliseconds, std::vector<unsigned char>)>& cb)
+void FullClient::registerTodayIsCallback(const std::function<void(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_todayIsSignalCallbacksMutex);
     _todayIsSignalCallbacks.push_back(cb);
@@ -597,7 +597,7 @@ void FullClient::_handleSetTheTimeResponse(
     std::cout << "End of response handler for " << topic << std::endl;
 }
 
-boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::forwardTime(std::chrono::milliseconds adjustment)
+boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::forwardTime(std::chrono::duration<double> adjustment)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -659,11 +659,11 @@ void FullClient::_handleForwardTimeResponse(
     std::cout << "End of response handler for " << topic << std::endl;
 }
 
-boost::future<std::chrono::milliseconds> FullClient::howOffIsTheClock(std::chrono::time_point<std::chrono::system_clock> actual_time)
+boost::future<std::chrono::duration<double>> FullClient::howOffIsTheClock(std::chrono::time_point<std::chrono::system_clock> actual_time)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingHowOffIsTheClockMethodCalls[correlationId] = boost::promise<std::chrono::milliseconds>();
+    _pendingHowOffIsTheClockMethodCalls[correlationId] = boost::promise<std::chrono::duration<double>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -709,9 +709,13 @@ void FullClient::_handleHowOffIsTheClockResponse(
         // Response has a single value.
         rapidjson::Value::ConstMemberIterator differenceItr = doc.FindMember("difference");
 
-        TEMPLATE ERROR with unhandled return value type duration
+        std::chrono::duration<double> difference;
+        if (differenceItr != doc.MemberEnd() && differenceItr->value.IsString())
+        {
+            difference = parseIsoDuration(differenceItr->value.GetString());
+        }
 
-                promiseItr->second.set_value(difference);
+        promiseItr->second.set_value(difference);
     }
 
     std::cout << "End of response handler for " << topic << std::endl;
@@ -1128,7 +1132,7 @@ void FullClient::_receiveBreakfastLengthPropertyUpdate(const std::string& topic,
     BreakfastLengthProperty tempValue;
 
     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("length");
-    if (itr != doc.MemberEnd() && itr->value.Is())
+    if (itr != doc.MemberEnd() && itr->value.IsString())
     {
     }
     else
@@ -1159,13 +1163,13 @@ boost::optional<BreakfastLengthProperty> FullClient::getBreakfastLengthProperty(
     return _breakfastLengthProperty;
 }
 
-void FullClient::registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::milliseconds length)>& cb)
+void FullClient::registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::duration<double> length)>& cb)
 {
     std::lock_guard<std::mutex> lock(_breakfastLengthPropertyCallbacksMutex);
     _breakfastLengthPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> FullClient::updateBreakfastLengthProperty(std::chrono::milliseconds length) const
+boost::future<bool> FullClient::updateBreakfastLengthProperty(std::chrono::duration<double> length) const
 {
     rapidjson::Document doc;
     doc.SetObject();

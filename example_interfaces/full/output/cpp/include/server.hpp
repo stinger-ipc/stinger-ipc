@@ -34,7 +34,7 @@ public:
 
     virtual ~FullServer() = default;
 
-    boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::milliseconds, std::vector<unsigned char>);
+    boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>);
 
     void registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func);
 
@@ -46,9 +46,9 @@ public:
 
     void registerSetTheTimeHandler(std::function<SetTheTimeReturnValue(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>)> func);
 
-    void registerForwardTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::milliseconds)> func);
+    void registerForwardTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::duration<double>)> func);
 
-    void registerHowOffIsTheClockHandler(std::function<std::chrono::milliseconds(std::chrono::time_point<std::chrono::system_clock>)> func);
+    void registerHowOffIsTheClockHandler(std::function<std::chrono::duration<double>(std::chrono::time_point<std::chrono::system_clock>)> func);
 
     // ---favorite_number Property---
 
@@ -128,9 +128,9 @@ public:
 
     // Add a callback that will be called whenever the `breakfast_length` property is updated.
     // The provided method will be called whenever a new value for the `breakfast_length` property is received.
-    void registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::milliseconds)>& cb);
+    void registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::duration<double>)>& cb);
 
-    void updateBreakfastLengthProperty(std::chrono::milliseconds);
+    void updateBreakfastLengthProperty(std::chrono::duration<double>);
 
     void republishBreakfastLengthProperty() const;
 
@@ -177,11 +177,11 @@ private:
     int _setTheTimeMethodSubscriptionId;
 
     void _callForwardTimeHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::milliseconds)> _forwardTimeHandler;
+    std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::duration<double>)> _forwardTimeHandler;
     int _forwardTimeMethodSubscriptionId;
 
     void _callHowOffIsTheClockHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<std::chrono::milliseconds(std::chrono::time_point<std::chrono::system_clock>)> _howOffIsTheClockHandler;
+    std::function<std::chrono::duration<double>(std::chrono::time_point<std::chrono::system_clock>)> _howOffIsTheClockHandler;
     int _howOffIsTheClockMethodSubscriptionId;
 
     // ---------------- PROPERTIES ------------------
@@ -309,7 +309,7 @@ private:
     void _receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `breakfast_length` property.
-    std::vector<std::function<void(std::chrono::milliseconds)>> _breakfastLengthPropertyCallbacks;
+    std::vector<std::function<void(std::chrono::duration<double>)>> _breakfastLengthPropertyCallbacks;
     std::mutex _breakfastLengthPropertyCallbacksMutex;
 
     // ---last_birthdays Property---

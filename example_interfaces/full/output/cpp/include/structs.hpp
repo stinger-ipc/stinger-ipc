@@ -39,5 +39,5 @@ struct Lunch
     DayOfTheWeek day;
     boost::optional<int> order_number;
     std::chrono::time_point<std::chrono::system_clock> time_of_lunch;
-    duration_of_lunch;
+    std::chrono::duration<double> duration_of_lunch;
 };
