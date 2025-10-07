@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(include)
  
-set(CLIENT_SOURCE_FILES src/broker.cpp src/client.cpp src/property_structs.cpp src/structs.cpp )
-set(SERVER_SOURCE_FILES src/broker.cpp src/property_structs.cpp src/server.cpp src/structs.cpp )
+set(CLIENT_SOURCE_FILES src/broker.cpp src/client.cpp src/discovery.cpp src/property_structs.cpp src/structs.cpp )
+set(SERVER_SOURCE_FILES src/broker.cpp src/discovery.cpp src/property_structs.cpp src/server.cpp src/structs.cpp )
 
 add_library(lib-SignalOnly-server ${SERVER_SOURCE_FILES})
 add_library(lib-SignalOnly-client ${CLIENT_SOURCE_FILES})
@@ -26,6 +26,20 @@ target_link_libraries(SignalOnly-server-demo PUBLIC lib-SignalOnly-server)
 target_link_libraries(SignalOnly-server-demo PUBLIC mosquitto)
 target_link_libraries(SignalOnly-server-demo PUBLIC boost_thread)
 target_link_libraries(SignalOnly-server-demo PRIVATE Threads::Threads)
+
+add_executable(SignalOnly-discovery-example examples/discovery_example.cpp)
+target_link_libraries(SignalOnly-discovery-example PUBLIC lib-SignalOnly-client)
+target_link_libraries(SignalOnly-discovery-example PUBLIC mosquitto)
+target_link_libraries(SignalOnly-discovery-example PUBLIC boost_thread)
+target_link_libraries(SignalOnly-discovery-example PUBLIC boost_chrono)
+target_link_libraries(SignalOnly-discovery-example PRIVATE Threads::Threads)
+
+add_executable(SignalOnly-discovery-publisher examples/discovery_publisher.cpp)
+target_link_libraries(SignalOnly-discovery-publisher PUBLIC lib-SignalOnly-client)
+target_link_libraries(SignalOnly-discovery-publisher PUBLIC mosquitto)
+target_link_libraries(SignalOnly-discovery-publisher PUBLIC boost_thread)
+target_link_libraries(SignalOnly-discovery-publisher PUBLIC boost_chrono)
+target_link_libraries(SignalOnly-discovery-publisher PRIVATE Threads::Threads)
 
 # Install rules
 install(TARGETS lib-SignalOnly-server lib-SignalOnly-client

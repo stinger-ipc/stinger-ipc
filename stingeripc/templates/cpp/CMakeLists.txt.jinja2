@@ -27,6 +27,20 @@ target_link_libraries({{stinger.name}}-server-demo PUBLIC mosquitto)
 target_link_libraries({{stinger.name}}-server-demo PUBLIC boost_thread)
 target_link_libraries({{stinger.name}}-server-demo PRIVATE Threads::Threads)
 
+add_executable({{stinger.name}}-discovery-example examples/discovery_example.cpp)
+target_link_libraries({{stinger.name}}-discovery-example PUBLIC lib-{{stinger.name}}-client)
+target_link_libraries({{stinger.name}}-discovery-example PUBLIC mosquitto)
+target_link_libraries({{stinger.name}}-discovery-example PUBLIC boost_thread)
+target_link_libraries({{stinger.name}}-discovery-example PUBLIC boost_chrono)
+target_link_libraries({{stinger.name}}-discovery-example PRIVATE Threads::Threads)
+
+add_executable({{stinger.name}}-discovery-publisher examples/discovery_publisher.cpp)
+target_link_libraries({{stinger.name}}-discovery-publisher PUBLIC lib-{{stinger.name}}-client)
+target_link_libraries({{stinger.name}}-discovery-publisher PUBLIC mosquitto)
+target_link_libraries({{stinger.name}}-discovery-publisher PUBLIC boost_thread)
+target_link_libraries({{stinger.name}}-discovery-publisher PUBLIC boost_chrono)
+target_link_libraries({{stinger.name}}-discovery-publisher PRIVATE Threads::Threads)
+
 # Install rules
 install(TARGETS lib-{{stinger.name}}-server lib-{{stinger.name}}-client
 	ARCHIVE DESTINATION lib

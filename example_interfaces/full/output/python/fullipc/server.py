@@ -921,7 +921,7 @@ if __name__ == "__main__":
     server.last_birthdays = stinger_types.LastBirthdaysProperty(
         mom=datetime.now(),
         dad=datetime.now(),
-        sister=datetime.now(),
+        sister=None,
         brothers_age=42,
     )
 
