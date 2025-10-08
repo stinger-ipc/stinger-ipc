@@ -28,7 +28,7 @@ public:
     static constexpr const char NAME[] = "SignalOnly";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
-    SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker);
+    SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
 
     virtual ~SignalOnlyServer();
 
@@ -44,6 +44,7 @@ public:
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;
+    std::string _instanceId;
     CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(
             const std::string& topic,

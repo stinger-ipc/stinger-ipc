@@ -47,7 +47,6 @@ MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, co
                                           const mosquitto_property *prop;
                                           for (prop = props; prop != NULL; prop = mosquitto_property_next(prop))
                                           {
-                                              thisClient->Log(LOG_INFO, "Found connect property %s", mosquitto_property_identifier_to_string(mosquitto_property_identifier(prop)));
                                               if (mosquitto_property_identifier(prop) == MQTT_PROP_REASON_STRING)
                                               {
                                                   char *reasonString = NULL;

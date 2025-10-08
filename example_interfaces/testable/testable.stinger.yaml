@@ -38,23 +38,173 @@ structs:
         description: An enum type
       - name: date and time
         type: datetime
+        description: A date and time type.
       - name: time_duration
         type: duration
+        description: A duration type.
       - name: data
         type: binary
+        description: A binary type.
       - name: OptionalInteger
         type: integer
         optional: true
+        description: An optional integer type.
       - name: OptionalString
         type: string
         optional: true
+        description: An optional string type.
       - name: OptionalEnum
         type: enum
         enumName: Numbers
         optional: true
+        description: An optional enum type, one of the numbers.
       - name: OptionalDateTime
         type: datetime
         optional: true
+        description: An optional date and time type.
       - name: OptionalDuration
         type: duration
         optional: true
+        description: An optional duration type.
+      - name: OptionalBinary
+        type: binary
+        optional: true
+        description: An optional binary type.
+
+signals:
+
+  singleInt:
+    documentation: A signal with a single integer parameter.
+    payload:
+      - name: value
+        type: integer
+        description: The integer value.
+  
+  singleOptionalInt:
+    documentation: A signal with a single optional integer parameter.
+    payload:
+      - name: value
+        type: integer
+        optional: true
+        description: The integer value.
+
+  threeIntegers:
+    documentation: A signal with three integer parameters, the third is optional.
+    payload:
+      - name: first
+        type: integer
+        description: The first integer value.
+      - name: second
+        type: integer
+        description: The second integer value.
+      - name: third
+        type: integer
+        description: The third integer value.
+        optional: true
+
+  singleString:
+    documentation: A signal with a single string parameter.
+    payload:
+      - name: value
+        type: string
+        description: The string value.
+  
+  singleOptionalString:
+    documentation: A signal with a single optional string parameter.
+    payload:
+      - name: value
+        type: string
+        optional: true
+        description: The string value.
+  
+  threeStrings:
+    documentation: A signal with three string parameters, the third is optional.
+    payload:
+      - name: first
+        type: string
+        description: The first string value.
+      - name: second
+        type: string
+        description: The second string value.
+      - name: third
+        type: string
+        description: The third string value.
+        optional: true
+
+  singleEnum:
+    documentation: A signal with a single enum parameter.
+    payload:
+      - name: value
+        type: enum
+        enumName: Numbers
+        description: The enum value.
+        optional: true
+
+  singleOptionalEnum:
+    documentation: A signal with a single optional enum parameter.
+    payload:
+      - name: value
+        type: enum
+        enumName: Numbers
+        optional: true
+        description: The enum value.
+
+  threeEnums:
+    documentation: A signal with three enum parameters, the third is optional.
+    payload:
+      - name: first
+        type: enum
+        enumName: Numbers
+        description: The first enum value.
+      - name: second
+        type: enum
+        enumName: Numbers
+        description: The second enum value.
+      - name: third
+        type: enum
+        enumName: Numbers
+        description: The third enum value.
+        optional: true
+  
+  singleStruct:
+    documentation: A signal with a single struct parameter.
+    payload:
+      - name: value
+        type: struct
+        structName: AllTypes
+        description: The struct value.
+  
+  singleOptionalStruct:
+    documentation: A signal with a single optional struct parameter.
+    payload:
+      - name: value
+        type: struct
+        structName: AllTypes
+        optional: true
+        description: The struct value.
+
+  threeStructs:
+    documentation: A signal with three struct parameters, the third is optional.
+    payload:
+      - name: first
+        type: struct
+        structName: AllTypes
+        description: The first struct value.
+      - name: second
+        type: struct
+        structName: AllTypes
+        description: The second struct value.
+      - name: third
+        type: struct
+        structName: AllTypes
+        description: The third struct value.
+        optional: true
+  
+  singleDateTime:
+    documentation: A signal with a single date and time parameter.
+    payload:
+      - name: value
+        type: datetime
+        description: The date and time value.
+  
+  

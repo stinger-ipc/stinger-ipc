@@ -31,7 +31,7 @@ public:
     static constexpr const char NAME[] = "{{stinger.name}}";
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
-    {{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker);
+    {{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
 
     virtual ~{{stinger.cpp.server_class_name}}();
 
@@ -50,6 +50,7 @@ public:
     {%endfor%}
 private: 
     std::shared_ptr<IBrokerConnection> _broker;
+    std::string _instanceId;
     CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(
             const std::string& topic, 

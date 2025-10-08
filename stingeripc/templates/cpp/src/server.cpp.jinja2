@@ -22,7 +22,7 @@
 constexpr const char {{stinger.cpp.server_class_name}}::NAME[];
 constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
 
-{{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker) : _broker(broker) {
+{{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId) : _broker(broker), _instanceId(instanceId) {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
@@ -31,10 +31,10 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
         _receiveMessage(topic, payload, mqttProps);
     });
     {%for method in stinger.methods.values()%}
-    _{{method.name | camelCase}}MethodSubscriptionId = _broker->Subscribe("{{method.topic}}", 2);
+    _{{method.name | camelCase}}MethodSubscriptionId = _broker->Subscribe((boost::format("{{method.topic}}") % _instanceId).str(), 2);
     {%-endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
-    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe("{{prop.update_topic}}", 1);
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe((boost::format("{{prop.update_topic}}") % _instanceId).str(), 1);
     {%-endfor%}
 }
 
@@ -45,6 +45,12 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
         _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
         _brokerMessageCallbackHandle = 0;
     }
+    {%for method in stinger.methods.values()%}
+    _broker->Unsubscribe((boost::format("{{method.topic}}") % _instanceId).str());
+    {%-endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    _broker->Unsubscribe((boost::format("{{prop.update_topic}}") % _instanceId).str());
+    {%-endfor%}
 }
 
 void {{stinger.cpp.server_class_name}}::_receiveMessage(
@@ -55,9 +61,9 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
     {%for method_name, method in stinger.methods.items()%}
-    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | camelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{method.topic}}")))
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | camelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("{{method.topic}}") % _instanceId).str())))
     {
-        std::cout << "Message matched topic {{method.topic}}\n";
+        _broker->Log(LOG_INFO,"Message to `%s` matched as {{method_name}} method request.", topic.c_str());
         rapidjson::Document doc;
         try {
             if (_{{method_name | camelCase}}Handler)
@@ -85,9 +91,9 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(
     }
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
-    {%if not loop.first%}else {%endif%}if (subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{prop.update_topic}}")))
+    {%if not loop.first%}else {%endif%}if (subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("{{prop.update_topic}}") % _instanceId).str())))
     {
-        std::cout << "Message matched topic {{prop.update_topic}}\n";
+        _broker->Log(LOG_INFO,"Message to `%s` matched as {{prop_name}} property update.", topic.c_str());
         _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
     {%endfor%}
@@ -105,14 +111,14 @@ boost::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCam
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("{{sig.topic}}", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish((boost::format("{{sig.topic}}") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
 void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
 {
-    std::cout << "Registered method to handle {{method.topic}}\n";
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle {{method.topic | replace('%1%', '+') }} method requests.");
     _{{method_name | camelCase}}Handler = func;
 }
 {%endfor%}
@@ -124,7 +130,7 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         const boost::optional<std::string> optCorrelationId,
         const boost::optional<std::string> optResponseTopic) const
 {
-    std::cout << "Handling call to {{method_name}}\n";
+    _broker->Log(LOG_INFO, "Handling call to {{method_name}}");
     if (_{{method_name | camelCase}}Handler) {
         {%for arg in method.arg_list%}
         {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}};
@@ -254,7 +260,7 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
     doc.Accept(writer);
     MqttProperties mqttProps;
     mqttProps.propertyVersion = _last{{prop_name | UpperCamelCase}}PropertyVersion;
-    _broker->Publish("{{prop.value_topic}}", buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((boost::format("{{prop.value_topic}}") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
