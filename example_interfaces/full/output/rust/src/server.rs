@@ -131,6 +131,7 @@ impl FullServer {
             .await;
         let subscription_id_add_numbers_method_req =
             subscription_id_add_numbers_method_req.unwrap_or_else(|_| usize::MAX);
+
         let subscription_id_do_something_method_req = connection
             .subscribe(
                 format!("full/{}/method/doSomething", instance_id),
@@ -140,6 +141,7 @@ impl FullServer {
             .await;
         let subscription_id_do_something_method_req =
             subscription_id_do_something_method_req.unwrap_or_else(|_| usize::MAX);
+
         let subscription_id_echo_method_req = connection
             .subscribe(
                 format!("full/{}/method/echo", instance_id),
@@ -149,6 +151,7 @@ impl FullServer {
             .await;
         let subscription_id_echo_method_req =
             subscription_id_echo_method_req.unwrap_or_else(|_| usize::MAX);
+
         let subscription_id_what_time_is_it_method_req = connection
             .subscribe(
                 format!("full/{}/method/whatTimeIsIt", instance_id),
@@ -158,6 +161,7 @@ impl FullServer {
             .await;
         let subscription_id_what_time_is_it_method_req =
             subscription_id_what_time_is_it_method_req.unwrap_or_else(|_| usize::MAX);
+
         let subscription_id_set_the_time_method_req = connection
             .subscribe(
                 format!("full/{}/method/setTheTime", instance_id),
@@ -167,6 +171,7 @@ impl FullServer {
             .await;
         let subscription_id_set_the_time_method_req =
             subscription_id_set_the_time_method_req.unwrap_or_else(|_| usize::MAX);
+
         let subscription_id_forward_time_method_req = connection
             .subscribe(
                 format!("full/{}/method/forwardTime", instance_id),
@@ -176,6 +181,7 @@ impl FullServer {
             .await;
         let subscription_id_forward_time_method_req =
             subscription_id_forward_time_method_req.unwrap_or_else(|_| usize::MAX);
+
         let subscription_id_how_off_is_the_clock_method_req = connection
             .subscribe(
                 format!("full/{}/method/howOffIsTheClock", instance_id),
@@ -189,7 +195,7 @@ impl FullServer {
         let subscription_id_favorite_number_property_update = connection
             .subscribe(
                 format!("full/{}/property/favoriteNumber/setValue", instance_id),
-                2,
+                1,
                 message_received_tx.clone(),
             )
             .await;
@@ -199,7 +205,7 @@ impl FullServer {
         let subscription_id_favorite_foods_property_update = connection
             .subscribe(
                 format!("full/{}/property/favoriteFoods/setValue", instance_id),
-                2,
+                1,
                 message_received_tx.clone(),
             )
             .await;
@@ -209,7 +215,7 @@ impl FullServer {
         let subscription_id_lunch_menu_property_update = connection
             .subscribe(
                 format!("full/{}/property/lunchMenu/setValue", instance_id),
-                2,
+                1,
                 message_received_tx.clone(),
             )
             .await;
@@ -219,7 +225,7 @@ impl FullServer {
         let subscription_id_family_name_property_update = connection
             .subscribe(
                 format!("full/{}/property/familyName/setValue", instance_id),
-                2,
+                1,
                 message_received_tx.clone(),
             )
             .await;
@@ -229,7 +235,7 @@ impl FullServer {
         let subscription_id_last_breakfast_time_property_update = connection
             .subscribe(
                 format!("full/{}/property/lastBreakfastTime/setValue", instance_id),
-                2,
+                1,
                 message_received_tx.clone(),
             )
             .await;
@@ -239,7 +245,7 @@ impl FullServer {
         let subscription_id_breakfast_length_property_update = connection
             .subscribe(
                 format!("full/{}/property/breakfastLength/setValue", instance_id),
-                2,
+                1,
                 message_received_tx.clone(),
             )
             .await;
@@ -249,7 +255,7 @@ impl FullServer {
         let subscription_id_last_birthdays_property_update = connection
             .subscribe(
                 format!("full/{}/property/lastBirthdays/setValue", instance_id),
-                2,
+                1,
                 message_received_tx.clone(),
             )
             .await;
@@ -267,18 +273,12 @@ impl FullServer {
             how_off_is_the_clock_method_req: subscription_id_how_off_is_the_clock_method_req,
 
             favorite_number_property_update: subscription_id_favorite_number_property_update,
-
             favorite_foods_property_update: subscription_id_favorite_foods_property_update,
-
             lunch_menu_property_update: subscription_id_lunch_menu_property_update,
-
             family_name_property_update: subscription_id_family_name_property_update,
-
             last_breakfast_time_property_update:
                 subscription_id_last_breakfast_time_property_update,
-
             breakfast_length_property_update: subscription_id_breakfast_length_property_update,
-
             last_birthdays_property_update: subscription_id_last_birthdays_property_update,
         };
 
@@ -287,43 +287,36 @@ impl FullServer {
                 "full/{}/property/favoriteNumber/value",
                 instance_id
             )),
-
             favorite_number: Arc::new(Mutex::new(None)),
             favorite_number_tx_channel: watch::channel(None).0,
             favorite_foods_topic: Arc::new(format!(
                 "full/{}/property/favoriteFoods/value",
                 instance_id
             )),
-
             favorite_foods: Arc::new(Mutex::new(None)),
             favorite_foods_tx_channel: watch::channel(None).0,
             lunch_menu_topic: Arc::new(format!("full/{}/property/lunchMenu/value", instance_id)),
-
             lunch_menu: Arc::new(Mutex::new(None)),
             lunch_menu_tx_channel: watch::channel(None).0,
             family_name_topic: Arc::new(format!("full/{}/property/familyName/value", instance_id)),
-
             family_name: Arc::new(Mutex::new(None)),
             family_name_tx_channel: watch::channel(None).0,
             last_breakfast_time_topic: Arc::new(format!(
                 "full/{}/property/lastBreakfastTime/value",
                 instance_id
             )),
-
             last_breakfast_time: Arc::new(Mutex::new(None)),
             last_breakfast_time_tx_channel: watch::channel(None).0,
             breakfast_length_topic: Arc::new(format!(
                 "full/{}/property/breakfastLength/value",
                 instance_id
             )),
-
             breakfast_length: Arc::new(Mutex::new(None)),
             breakfast_length_tx_channel: watch::channel(None).0,
             last_birthdays_topic: Arc::new(format!(
                 "full/{}/property/lastBirthdays/value",
                 instance_id
             )),
-
             last_birthdays: Arc::new(Mutex::new(None)),
             last_birthdays_tx_channel: watch::channel(None).0,
         };
@@ -1703,11 +1696,7 @@ impl FullServer {
                     .connection_topic(format!("client/{}/online", interface_publisher.client_id))
                     .build();
                 let _ = interface_publisher
-                    .publish_status(
-                        format!("full/{}/interface", interface_publisher.client_id),
-                        &info,
-                        150,
-                    )
+                    .publish_status(format!("full/{}/interface", instance_id), &info, 150)
                     .await;
             }
         });

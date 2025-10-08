@@ -913,8 +913,8 @@ if __name__ == "__main__":
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport)
-    server = FullServer(conn, "demo")
+    conn = MqttBrokerConnection(transport, client_id="py-server-demo")
+    server = FullServer(conn, "py-server-demo:1")
 
     server.favorite_number = 42
 

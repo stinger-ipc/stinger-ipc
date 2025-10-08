@@ -105,10 +105,12 @@ impl {{stinger.rust.server_struct_name}} {
         {%for method_name, method in stinger.methods.items()-%}
         let subscription_id_{{method_name | snake_case}}_method_req = connection.subscribe(format!("{{method.topic}}", instance_id), 2, message_received_tx.clone()).await;
         let subscription_id_{{method_name | snake_case}}_method_req = subscription_id_{{method_name | snake_case}}_method_req.unwrap_or_else(|_| usize::MAX);
+
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
-        let subscription_id_{{prop_name | snake_case}}_property_update = connection.subscribe(format!("{{prop.update_topic}}", instance_id), 2, message_received_tx.clone()).await;
+        let subscription_id_{{prop_name | snake_case}}_property_update = connection.subscribe(format!("{{prop.update_topic}}", instance_id), 1, message_received_tx.clone()).await;
         let subscription_id_{{prop_name | snake_case}}_property_update = subscription_id_{{prop_name | snake_case}}_property_update.unwrap_or_else(|_| usize::MAX);
+
         {%else-%}
         {%endif%}{%endfor%}
         
@@ -117,7 +119,7 @@ impl {{stinger.rust.server_struct_name}} {
             {%for method_name, method in stinger.methods.items()-%}
             {{method_name | snake_case}}_method_req: subscription_id_{{method_name | snake_case}}_method_req,
             {%endfor%}
-            {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
+            {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only -%}
             {{prop_name | snake_case}}_property_update: subscription_id_{{prop_name | snake_case}}_property_update,
             {%endif%}{%endfor%}
         };
@@ -127,7 +129,6 @@ impl {{stinger.rust.server_struct_name}} {
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
             {{prop_name | snake_case}}_topic: Arc::new(format!("{{prop.value_topic}}", instance_id)),
-
             {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
             {{prop_name | snake_case}}_tx_channel: watch::channel(None).0,
 
@@ -416,7 +417,7 @@ impl {{stinger.rust.server_struct_name}} {
                     .instance(instance_id.clone())
                     .connection_topic(format!("client/{}/online", interface_publisher.client_id))
                     .build();
-                let _ = interface_publisher.publish_status(format!("{{stinger.interface_info_topic}}", interface_publisher.client_id), &info, 150).await;
+                let _ = interface_publisher.publish_status(format!("{{stinger.interface_info_topic}}", instance_id), &info, 150).await;
             }
         });
         let loop_task = tokio::spawn(async move {

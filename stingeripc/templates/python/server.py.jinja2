@@ -305,8 +305,8 @@ if __name__ == '__main__':
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport)
-    server = {{stinger.python.server_class_name}}(conn, "demo")
+    conn = MqttBrokerConnection(transport, client_id="py-server-demo")
+    server = {{stinger.python.server_class_name}}(conn, "py-server-demo:1")
 
     {%for prop_name, prop in stinger.properties.items()-%}
     {%if prop.arg_list | length > 1%}

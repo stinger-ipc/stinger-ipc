@@ -106,20 +106,28 @@ impl FullMethodHandlers for FullMethodImpl {
 
 #[tokio::main]
 async fn main() {
-    env_logger::Builder::from_default_env()
-        .target(env_logger::Target::Stdout)
-        .init();
-
     block_on(async {
-        let conn_opts = MqttierOptions::new()
+        let mqttier_options = MqttierOptions::new()
             .connection(Connection::TcpLocalhost(1883))
+            .client_id("rust-server-demo".to_string())
             .build();
-        let mut connection = MqttierClient::new(conn_opts).unwrap();
+        let mut connection = MqttierClient::new(mqttier_options).unwrap();
 
         let handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>> =
             Arc::new(Mutex::new(Box::new(FullMethodImpl::new())));
-        let mut server =
-            FullServer::new(&mut connection, handlers.clone(), "demo".to_string()).await;
+
+        let mut server = FullServer::new(
+            &mut connection,
+            handlers.clone(),
+            "rust-server-demo:1".to_string(),
+        )
+        .await;
+
+        let mut looping_server = server.clone();
+        tokio::spawn(async move {
+            println!("Starting connection loop");
+            let _conn_loop = looping_server.run_loop().await;
+        });
 
         println!("Setting initial value for property 'favorite_number'");
         let prop_init_future = server.set_favorite_number(42).await;
@@ -285,8 +293,6 @@ async fn main() {
             brothers_age: Some(2022),
         };
         let _ = server.set_last_birthdays(new_value).await;
-
-        let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop
 }

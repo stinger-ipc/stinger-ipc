@@ -164,8 +164,8 @@ if __name__ == "__main__":
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport)
-    server = SignalOnlyServer(conn, "demo")
+    conn = MqttBrokerConnection(transport, client_id="py-server-demo")
+    server = SignalOnlyServer(conn, "py-server-demo:1")
 
     print("Ctrl-C will stop the program.")
 

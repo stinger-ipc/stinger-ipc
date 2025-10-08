@@ -15,17 +15,21 @@ use signal_only_ipc::payloads::{MethodReturnCode, *};
 
 #[tokio::main]
 async fn main() {
-    env_logger::Builder::from_default_env()
-        .target(env_logger::Target::Stdout)
-        .init();
-
     block_on(async {
-        let conn_opts = MqttierOptions::new()
+        let mqttier_options = MqttierOptions::new()
             .connection(Connection::TcpLocalhost(1883))
+            .client_id("rust-server-demo".to_string())
             .build();
-        let mut connection = MqttierClient::new(conn_opts).unwrap();
+        let mut connection = MqttierClient::new(mqttier_options).unwrap();
 
-        let mut server = SignalOnlyServer::new(&mut connection, "demo".to_string()).await;
+        let mut server =
+            SignalOnlyServer::new(&mut connection, "rust-server-demo:1".to_string()).await;
+
+        let mut looping_server = server.clone();
+        tokio::spawn(async move {
+            println!("Starting connection loop");
+            let _conn_loop = looping_server.run_loop().await;
+        });
 
         sleep(Duration::from_secs(1)).await;
         println!("Emitting signal 'anotherSignal'");
@@ -58,8 +62,6 @@ async fn main() {
         let signal_result_future = server.emit_now(chrono::Utc::now()).await;
         let signal_result = signal_result_future.await;
         println!("Signal 'now' was sent: {:?}", signal_result);
-
-        let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop
 }

@@ -314,7 +314,7 @@ void FullClient::_handleAddNumbersResponse(
         const std::string& correlationId
 )
 {
-    _broker->Log(LOG_DEBUG, "In response handler for addNumbers with correlationId=%s", correlationId);
+    _broker->Log(LOG_DEBUG, "In response handler for addNumbers");
 
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -377,7 +377,7 @@ void FullClient::_handleDoSomethingResponse(
         const std::string& correlationId
 )
 {
-    _broker->Log(LOG_DEBUG, "In response handler for doSomething with correlationId=%s", correlationId);
+    _broker->Log(LOG_DEBUG, "In response handler for doSomething");
 
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -453,7 +453,7 @@ void FullClient::_handleEchoResponse(
         const std::string& correlationId
 )
 {
-    _broker->Log(LOG_DEBUG, "In response handler for echo with correlationId=%s", correlationId);
+    _broker->Log(LOG_DEBUG, "In response handler for echo");
 
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -517,7 +517,7 @@ void FullClient::_handleWhatTimeIsItResponse(
         const std::string& correlationId
 )
 {
-    _broker->Log(LOG_DEBUG, "In response handler for what_time_is_it with correlationId=%s", correlationId);
+    _broker->Log(LOG_DEBUG, "In response handler for what_time_is_it");
 
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -593,7 +593,7 @@ void FullClient::_handleSetTheTimeResponse(
         const std::string& correlationId
 )
 {
-    _broker->Log(LOG_DEBUG, "In response handler for set_the_time with correlationId=%s", correlationId);
+    _broker->Log(LOG_DEBUG, "In response handler for set_the_time");
 
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -671,7 +671,7 @@ void FullClient::_handleForwardTimeResponse(
         const std::string& correlationId
 )
 {
-    _broker->Log(LOG_DEBUG, "In response handler for forward_time with correlationId=%s", correlationId);
+    _broker->Log(LOG_DEBUG, "In response handler for forward_time");
 
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -740,7 +740,7 @@ void FullClient::_handleHowOffIsTheClockResponse(
         const std::string& correlationId
 )
 {
-    _broker->Log(LOG_DEBUG, "In response handler for how_off_is_the_clock with correlationId=%s", correlationId);
+    _broker->Log(LOG_DEBUG, "In response handler for how_off_is_the_clock");
 
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());

@@ -23,6 +23,7 @@ async fn main() {
     block_on(async {
         let mqttier_options = MqttierOptions::new()
             .connection(Connection::TcpLocalhost(1883))
+            .client_id("rust-client-demo".to_string())
             .build();
         let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
 
