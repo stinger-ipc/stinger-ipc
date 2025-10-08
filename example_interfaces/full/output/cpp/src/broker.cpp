@@ -16,12 +16,8 @@
 
 using namespace std;
 
-MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, const std::string &clientId)
-    : _mosq(NULL)
-    , _host(host)
-    , _port(port)
-    , _clientId(clientId)
-    , _logLevel(LOG_NOTICE)
+MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, const std::string &clientId):
+    _mosq(NULL), _host(host), _port(port), _clientId(clientId), _logLevel(LOG_NOTICE)
 {
     boost::mutex::scoped_lock lock(_mutex);
 
@@ -83,6 +79,10 @@ MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, co
                                               if (msg._optResponseTopic)
                                               {
                                                   mosquitto_property_add_string(&propList, MQTT_PROP_RESPONSE_TOPIC, msg._optResponseTopic->c_str());
+                                              }
+                                              if (msg._optMessageExpiryInterval)
+                                              {
+                                                  mosquitto_property_add_int32(&propList, MQTT_PROP_MESSAGE_EXPIRY_INTERVAL, *msg._optMessageExpiryInterval);
                                               }
                                               mosquitto_publish_v5(mosq, &mid, msg._topic.c_str(), msg._payload.size(), msg._payload.c_str(), msg._qos, msg._retain, propList);
                                               mosquitto_property_free_all(&propList);
@@ -272,6 +272,10 @@ boost::future<bool> MqttBrokerConnection::Publish(
         std::string returnCodeStr = std::to_string(static_cast<int>(*mqttProps.returnCode));
         mosquitto_property_add_string_pair(&propList, MQTT_PROP_USER_PROPERTY, "ReturnValue", returnCodeStr.c_str());
     }
+    if (mqttProps.messageExpiryInterval)
+    {
+        mosquitto_property_add_int32(&propList, MQTT_PROP_MESSAGE_EXPIRY_INTERVAL, *mqttProps.messageExpiryInterval);
+    }
     int rc = mosquitto_publish_v5(_mosq, &mid, topic.c_str(), payload.size(), payload.c_str(), qos, retain, propList);
     if (propList)
     {
@@ -280,7 +284,7 @@ boost::future<bool> MqttBrokerConnection::Publish(
     if (rc == MOSQ_ERR_NO_CONN)
     {
         Log(LOG_DEBUG, "Delayed published queued to: %s", topic.c_str());
-        MqttBrokerConnection::MqttMessage msg(topic, payload, qos, retain, mqttProps.correlationId, mqttProps.responseTopic);
+        MqttBrokerConnection::MqttMessage msg(topic, payload, qos, retain, mqttProps.correlationId, mqttProps.responseTopic, mqttProps.messageExpiryInterval);
         auto future = msg.getFuture();
         boost::mutex::scoped_lock lock(_mutex);
         _msgQueue.push(std::move(msg));

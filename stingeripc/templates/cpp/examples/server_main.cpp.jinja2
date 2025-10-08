@@ -1,6 +1,9 @@
 
 #include <iostream>
 #include <syslog.h>
+#include <thread>
+#include <atomic>
+
 #include "broker.hpp"
 #include "server.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
@@ -14,6 +17,11 @@ int main(int argc, char** argv) {
     });
 
     auto server = std::make_shared<{{stinger.cpp.server_class_name}}>(conn, "cpp-server-demo:1");
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    std::cout << "Setting initial value for property '{{prop_name}}'.\n";
+    server->update{{prop_name | UpperCamelCase}}Property({%-for arg in prop.arg_list %}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {%endfor%}{# property initialization -#}
 
     {%-for sig_name, sig in stinger.signals.items() %}
     auto {{sig_name}}Future = server->emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
@@ -33,7 +41,52 @@ int main(int argc, char** argv) {
         {%-endif%}
     });
     {%endfor%}
-    std::cout << "Press ANY KEY to exit\n"; 
+
+    // Start a background thread that emits signals every 60 seconds.
+    std::atomic<bool> keepRunning{true};
+    std::thread periodicEmitter([server, &keepRunning]() {
+        int loopCount = 0;
+        while (keepRunning)
+        {
+            loopCount++;
+            // Call emitTodayIsSignal; do not block forever waiting for publish
+            try
+            {
+                {%-for sig_name, sig in stinger.signals.items() %}
+                auto {{sig_name}}Future = server->emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                {%-endfor%}
+                {%-for sig_name in stinger.signals.keys() %}
+                {{sig_name}}Future.wait();
+                {%-endfor%}
+            }
+            catch (...) { }
+
+            // Sleep in 1-second increments so we can stop quickly
+            for (int i = 0; i < {{ 60 - stinger.signals | length }} && keepRunning; ++i)
+            {
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+
+            if (loopCount % 3 == 0) {
+                {%for prop_name, prop in stinger.properties.items()%}
+                std::cout << "Updating value for property '{{prop_name}}'.\n";
+                server->update{{prop_name | UpperCamelCase}}Property({%-for arg in prop.arg_list %}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+                {%endfor%}
+            }
+        }
+    });
+
+
+    std::cout << "Press ENTER to exit\n"; 
     std::cin.ignore();
+
+    // Signal the emitter thread to stop and join it
+    keepRunning = false;
+    if (periodicEmitter.joinable())
+    {
+        periodicEmitter.join();
+    }
+
     return 0;
 }

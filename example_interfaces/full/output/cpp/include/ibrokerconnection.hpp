@@ -33,12 +33,13 @@ enum class MethodReturnCode
 
 struct MqttProperties
 {
-    MqttProperties()
-        : correlationId(boost::none)
-        , responseTopic(boost::none)
-        , returnCode(boost::none)
-        , subscriptionId(boost::none)
-        , propertyVersion(boost::none)
+    MqttProperties():
+        correlationId(boost::none),
+        responseTopic(boost::none),
+        returnCode(boost::none),
+        subscriptionId(boost::none),
+        propertyVersion(boost::none),
+        messageExpiryInterval(boost::none)
     {
     }
 
@@ -47,6 +48,7 @@ struct MqttProperties
     boost::optional<MethodReturnCode> returnCode;
     boost::optional<int> subscriptionId;
     boost::optional<int> propertyVersion;
+    boost::optional<int> messageExpiryInterval;
 };
 
 typedef std::function<void(int, const char*)> LogFunctionType;
@@ -80,6 +82,8 @@ public:
     virtual bool TopicMatchesSubscription(const std::string& topic, const std::string& subscr) const = 0;
 
     virtual std::string GetClientId() const = 0;
+
+    virtual std::string GetOnlineTopic() const = 0;
 
     virtual void SetLogFunction(const LogFunctionType& logFunc) = 0;
 

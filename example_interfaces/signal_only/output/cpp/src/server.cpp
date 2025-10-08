@@ -19,9 +19,8 @@
 constexpr const char SignalOnlyServer::NAME[];
 constexpr const char SignalOnlyServer::INTERFACE_VERSION[];
 
-SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId)
-    : _broker(broker)
-    , _instanceId(instanceId)
+SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
+    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,
@@ -31,15 +30,30 @@ SignalOnlyServer::SignalOnlyServer(std::shared_ptr<IBrokerConnection> broker, co
                                                                {
                                                                    _receiveMessage(topic, payload, mqttProps);
                                                                });
+
+    // Start the service advertisement thread
+    _advertisementThreadRunning = true;
+    _advertisementThread = std::thread(&SignalOnlyServer::_advertisementThreadLoop, this);
 }
 
 SignalOnlyServer::~SignalOnlyServer()
 {
+    // Unregister the message callback from the broker.
     if (_broker && _brokerMessageCallbackHandle != 0)
     {
         _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
         _brokerMessageCallbackHandle = 0;
     }
+
+    // Stop the advertisement thread
+    _advertisementThreadRunning = false;
+    if (_advertisementThread.joinable())
+    {
+        _advertisementThread.join();
+    }
+
+    std::string topic = (boost::format("signalOnly/%1%/interface") % _instanceId).str();
+    _broker->Publish(topic, "", 1, true, MqttProperties());
 }
 
 void SignalOnlyServer::_receiveMessage(
@@ -141,4 +155,47 @@ boost::future<bool> SignalOnlyServer::emitNowSignal(std::chrono::time_point<std:
     doc.Accept(writer);
     MqttProperties mqttProps;
     return _broker->Publish((boost::format("signalOnly/%1%/signal/now") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+}
+
+void SignalOnlyServer::_advertisementThreadLoop()
+{
+    while (_advertisementThreadRunning)
+    {
+        // Get current timestamp
+        auto now = std::chrono::system_clock::now();
+        std::string timestamp = timePointToIsoString(now);
+
+        // Build JSON message
+        rapidjson::Document doc;
+        doc.SetObject();
+        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+
+        doc.AddMember("instance", rapidjson::Value(_instanceId.c_str(), allocator), allocator);
+        doc.AddMember("title", rapidjson::Value("SignalOnly", allocator), allocator);
+        doc.AddMember("version", rapidjson::Value("0.0.1", allocator), allocator);
+        doc.AddMember("connection_topic", rapidjson::Value(_broker->GetOnlineTopic().c_str(), allocator), allocator);
+        doc.AddMember("timestamp", rapidjson::Value(timestamp.c_str(), allocator), allocator);
+
+        // Convert to JSON string
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        doc.Accept(writer);
+
+        // Create MQTT properties with message expiry interval of 150 seconds
+        MqttProperties mqttProps;
+        mqttProps.messageExpiryInterval = 150;
+
+        // Publish to signalOnly/<instance_id>/interface
+        std::string topic = (boost::format("signalOnly/%1%/interface") % _instanceId).str();
+        _broker->Publish(topic, buf.GetString(), 1, true, mqttProps);
+
+        _broker->Log(LOG_INFO, "Published service advertisement to %s", topic.c_str());
+
+        // Wait for 120 seconds or until thread should stop
+        // Use smaller sleep intervals to allow quick shutdown
+        for (int i = 0; i < 120 && _advertisementThreadRunning; ++i)
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    }
 }

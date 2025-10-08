@@ -15,6 +15,8 @@ It contains enumerations used by the SignalOnly interface.
 #include <exception>
 #include <mutex>
 #include <chrono>
+#include <thread>
+#include <atomic>
 #include <boost/optional.hpp>
 #include <rapidjson/document.h>
 
@@ -51,4 +53,15 @@ private:
             const std::string& payload,
             const MqttProperties& mqttProps
     );
+
+    // ---------------- SERVICE ADVERTISEMENT ------------------
+
+    // Thread for publishing service advertisement messages
+    std::thread _advertisementThread;
+
+    // Flag to signal the advertisement thread to stop
+    std::atomic<bool> _advertisementThreadRunning;
+
+    // Method that runs in the advertisement thread
+    void _advertisementThreadLoop();
 };

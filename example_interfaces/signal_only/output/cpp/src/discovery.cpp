@@ -6,8 +6,8 @@
 #include <sstream>
 #include <boost/format.hpp>
 
-SignalOnlyDiscovery::SignalOnlyDiscovery(std::shared_ptr<IBrokerConnection> broker)
-    : _broker(broker)
+SignalOnlyDiscovery::SignalOnlyDiscovery(std::shared_ptr<IBrokerConnection> broker):
+    _broker(broker)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;

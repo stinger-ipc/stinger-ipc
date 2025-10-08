@@ -15,6 +15,8 @@ It contains enumerations used by the Full interface.
 #include <exception>
 #include <mutex>
 #include <chrono>
+#include <thread>
+#include <atomic>
 #include <boost/optional.hpp>
 #include <rapidjson/document.h>
 
@@ -334,4 +336,15 @@ private:
     // Callbacks registered for changes to the `last_birthdays` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>, boost::optional<int>)>> _lastBirthdaysPropertyCallbacks;
     std::mutex _lastBirthdaysPropertyCallbacksMutex;
+
+    // ---------------- SERVICE ADVERTISEMENT ------------------
+
+    // Thread for publishing service advertisement messages
+    std::thread _advertisementThread;
+
+    // Flag to signal the advertisement thread to stop
+    std::atomic<bool> _advertisementThreadRunning;
+
+    // Method that runs in the advertisement thread
+    void _advertisementThreadLoop();
 };

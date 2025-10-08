@@ -78,7 +78,7 @@ public:
 
     virtual std::string GetClientId() const;
 
-    std::string GetOnlineTopic() const;
+    virtual std::string GetOnlineTopic() const;
 
     virtual void SetLogFunction(const LogFunctionType& logFunc);
     virtual void SetLogLevel(int level);
@@ -93,24 +93,11 @@ private:
     class MqttMessage: private boost::noncopyable
     {
     public:
-        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic)
-            : _topic(topic)
-            , _payload(payload)
-            , _qos(qos)
-            , _retain(retain)
-            , _optCorrelationId(optCorrelationId)
-            , _optResponseTopic(optResponseTopic)
-        {
-        }
+        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic, boost::optional<int> optMessageExpiryInterval):
+            _topic(topic), _payload(payload), _qos(qos), _retain(retain), _optCorrelationId(optCorrelationId), _optResponseTopic(optResponseTopic), _optMessageExpiryInterval(optMessageExpiryInterval) { }
 
-        MqttMessage(const MqttMessage& other)
-            : _topic(other._topic)
-            , _payload(other._payload)
-            , _qos(other._qos)
-            , _retain(other._retain)
-            , _pSentPromise(other._pSentPromise)
-        {
-        }
+        MqttMessage(const MqttMessage& other):
+            _topic(other._topic), _payload(other._payload), _qos(other._qos), _retain(other._retain), _pSentPromise(other._pSentPromise), _optCorrelationId(other._optCorrelationId), _optResponseTopic(other._optResponseTopic), _optMessageExpiryInterval(other._optMessageExpiryInterval) { }
 
         virtual ~MqttMessage() = default;
 
@@ -123,16 +110,13 @@ private:
         std::shared_ptr<boost::promise<bool>> _pSentPromise;
         boost::optional<std::string> _optCorrelationId;
         boost::optional<std::string> _optResponseTopic;
+        boost::optional<int> _optMessageExpiryInterval;
     };
 
     struct MqttSubscription
     {
-        MqttSubscription(const std::string& topic, int qos, int subscriptionId)
-            : topic(topic)
-            , qos(qos)
-            , subscriptionId(subscriptionId)
-        {
-        }
+        MqttSubscription(const std::string& topic, int qos, int subscriptionId):
+            topic(topic), qos(qos), subscriptionId(subscriptionId) { }
 
         ~MqttSubscription() = default;
         std::string topic;

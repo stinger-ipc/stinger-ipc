@@ -22,7 +22,9 @@
 constexpr const char {{stinger.cpp.server_class_name}}::NAME[];
 constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
 
-{{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId) : _broker(broker), _instanceId(instanceId) {
+{{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId)
+        : _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
+{
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
@@ -36,15 +38,31 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
     {%for prop_name, prop in stinger.properties.items()%}
     _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe((boost::format("{{prop.update_topic}}") % _instanceId).str(), 1);
     {%-endfor%}
+
+    // Start the service advertisement thread
+    _advertisementThreadRunning = true;
+    _advertisementThread = std::thread(&{{stinger.cpp.server_class_name}}::_advertisementThreadLoop, this);
 }
 
 {{stinger.cpp.server_class_name}}::~{{stinger.cpp.server_class_name}}()
 {
+    // Unregister the message callback from the broker.
     if (_broker && _brokerMessageCallbackHandle != 0)
     {
         _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
         _brokerMessageCallbackHandle = 0;
     }
+
+    // Stop the advertisement thread
+    _advertisementThreadRunning = false;
+    if (_advertisementThread.joinable())
+    {
+        _advertisementThread.join();
+    }
+
+    std::string topic = (boost::format("{{stinger.interface_info_topic}}") % _instanceId).str();
+    _broker->Publish(topic, "", 1, true, MqttProperties());
+
     {%for method in stinger.methods.values()%}
     _broker->Unsubscribe((boost::format("{{method.topic}}") % _instanceId).str());
     {%-endfor%}
@@ -307,3 +325,47 @@ void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     republish{{prop_name | UpperCamelCase}}Property();
 }
 {%endfor%}
+
+void {{stinger.cpp.server_class_name}}::_advertisementThreadLoop()
+{
+    while (_advertisementThreadRunning)
+    {
+        // Get current timestamp
+        auto now = std::chrono::system_clock::now();
+        std::string timestamp = timePointToIsoString(now);
+
+        // Build JSON message
+        rapidjson::Document doc;
+        doc.SetObject();
+        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+
+        doc.AddMember("instance", rapidjson::Value(_instanceId.c_str(), allocator), allocator);
+        doc.AddMember("title", rapidjson::Value("{{stinger.title}}", allocator), allocator);
+        doc.AddMember("version", rapidjson::Value("{{stinger.version}}", allocator), allocator);
+        doc.AddMember("connection_topic", rapidjson::Value(_broker->GetOnlineTopic().c_str(), allocator), allocator);
+        doc.AddMember("timestamp", rapidjson::Value(timestamp.c_str(), allocator), allocator);
+
+        // Convert to JSON string
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        doc.Accept(writer);
+
+        // Create MQTT properties with message expiry interval of 150 seconds
+        MqttProperties mqttProps;
+        mqttProps.messageExpiryInterval = 150;
+
+        // Publish to {{stinger.interface_info_topic | replace('%1%', '<instance_id>') }}
+        std::string topic = (boost::format("{{stinger.interface_info_topic}}") % _instanceId).str();
+        _broker->Publish(topic, buf.GetString(), 1, true, mqttProps);
+
+        _broker->Log(LOG_INFO, "Published service advertisement to %s", topic.c_str());
+
+        // Wait for 120 seconds or until thread should stop
+        // Use smaller sleep intervals to allow quick shutdown
+        for (int i = 0; i < 120 && _advertisementThreadRunning; ++i)
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    }
+}
+
