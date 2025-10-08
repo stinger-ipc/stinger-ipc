@@ -147,6 +147,7 @@ private:
     int _nextSubscriptionId = 1;
     std::queue<MqttSubscription> _subscriptions;
     boost::mutex _mutex;
+    CallbackHandleType _nextCallbackHandle = 1;
     std::map<CallbackHandleType, std::function<void(const std::string&, const std::string&, const MqttProperties&)>> _messageCallbacks;
     std::queue<MqttMessage> _msgQueue;
     std::map<int, std::shared_ptr<boost::promise<bool>>> _sendMessages;

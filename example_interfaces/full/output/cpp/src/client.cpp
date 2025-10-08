@@ -99,7 +99,8 @@ void FullClient::_receiveMessage(
 {
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
-    if ((subscriptionId == _todayIsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "full/%1%/signal/todayIs")))
+    _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", topic.c_str(), subscriptionId);
+    if ((subscriptionId == _todayIsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/signal/todayIs") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling todayIs signal");
         rapidjson::Document doc;
@@ -241,31 +242,31 @@ void FullClient::_receiveMessage(
         _broker->Log(LOG_DEBUG, "Matched topic for how_off_is_the_clock response");
         _handleHowOffIsTheClockResponse(topic, payload, *mqttProps.correlationId);
     }
-    if ((subscriptionId == _favoriteNumberPropertySubscriptionId) || (subscriptionId == noSubId && topic == "full/%1%/property/favoriteNumber/value"))
+    if ((subscriptionId == _favoriteNumberPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("full/%1%/property/favoriteNumber/value") % _instanceId).str()))
     {
         _receiveFavoriteNumberPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _favoriteFoodsPropertySubscriptionId) || (subscriptionId == noSubId && topic == "full/%1%/property/favoriteFoods/value"))
+    else if ((subscriptionId == _favoriteFoodsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("full/%1%/property/favoriteFoods/value") % _instanceId).str()))
     {
         _receiveFavoriteFoodsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _lunchMenuPropertySubscriptionId) || (subscriptionId == noSubId && topic == "full/%1%/property/lunchMenu/value"))
+    else if ((subscriptionId == _lunchMenuPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("full/%1%/property/lunchMenu/value") % _instanceId).str()))
     {
         _receiveLunchMenuPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _familyNamePropertySubscriptionId) || (subscriptionId == noSubId && topic == "full/%1%/property/familyName/value"))
+    else if ((subscriptionId == _familyNamePropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("full/%1%/property/familyName/value") % _instanceId).str()))
     {
         _receiveFamilyNamePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _lastBreakfastTimePropertySubscriptionId) || (subscriptionId == noSubId && topic == "full/%1%/property/lastBreakfastTime/value"))
+    else if ((subscriptionId == _lastBreakfastTimePropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("full/%1%/property/lastBreakfastTime/value") % _instanceId).str()))
     {
         _receiveLastBreakfastTimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _breakfastLengthPropertySubscriptionId) || (subscriptionId == noSubId && topic == "full/%1%/property/breakfastLength/value"))
+    else if ((subscriptionId == _breakfastLengthPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("full/%1%/property/breakfastLength/value") % _instanceId).str()))
     {
         _receiveBreakfastLengthPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _lastBirthdaysPropertySubscriptionId) || (subscriptionId == noSubId && topic == "full/%1%/property/lastBirthdays/value"))
+    else if ((subscriptionId == _lastBirthdaysPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("full/%1%/property/lastBirthdays/value") % _instanceId).str()))
     {
         _receiveLastBirthdaysPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }

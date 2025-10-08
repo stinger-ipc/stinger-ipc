@@ -61,7 +61,8 @@ void SignalOnlyClient::_receiveMessage(
 {
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
-    if ((subscriptionId == _anotherSignalSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/anotherSignal")))
+    _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", topic.c_str(), subscriptionId);
+    if ((subscriptionId == _anotherSignalSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/anotherSignal") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling anotherSignal signal");
         rapidjson::Document doc;
@@ -135,7 +136,7 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _barkSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/bark")))
+    if ((subscriptionId == _barkSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/bark") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling bark signal");
         rapidjson::Document doc;
@@ -183,7 +184,7 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _maybeNumberSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/maybeNumber")))
+    if ((subscriptionId == _maybeNumberSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/maybeNumber") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling maybe_number signal");
         rapidjson::Document doc;
@@ -231,7 +232,7 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _maybeNameSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/maybeName")))
+    if ((subscriptionId == _maybeNameSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/maybeName") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling maybe_name signal");
         rapidjson::Document doc;
@@ -279,7 +280,7 @@ void SignalOnlyClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _nowSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "signalOnly/%1%/signal/now")))
+    if ((subscriptionId == _nowSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/now") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling now signal");
         rapidjson::Document doc;

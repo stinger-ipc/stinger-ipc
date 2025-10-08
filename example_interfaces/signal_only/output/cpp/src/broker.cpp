@@ -9,6 +9,7 @@
 #include <mosquitto.h>
 #include <mqtt_protocol.h>
 #include <iostream>
+#include <cstdarg>
 #include <syslog.h>
 
 #include "broker.hpp"
@@ -37,52 +38,90 @@ MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, co
                                    thisClient->Log(level, str);
                                });
 
-    mosquitto_connect_callback_set(_mosq, [](struct mosquitto *mosq, void *user, int i)
-                                   {
-                                       MqttBrokerConnection *thisClient = static_cast<MqttBrokerConnection *>(user);
-                                       cout << "Connected to " << thisClient->_host << endl;
-                                       boost::mutex::scoped_lock lock(thisClient->_mutex);
-                                       while (!thisClient->_subscriptions.empty())
-                                       {
-                                           auto sub = thisClient->_subscriptions.front();
-                                           thisClient->Log(LOG_INFO, "Subscribing to %s", sub.topic.c_str());
-                                           mosquitto_property *propList = NULL;
-                                           mosquitto_property_add_int16(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, sub.subscriptionId);
-                                           int rc = mosquitto_subscribe_v5(mosq, NULL, sub.topic.c_str(), sub.qos, 0, propList);
-                                           mosquitto_property_free_all(&propList);
-                                           thisClient->_subscriptions.pop();
-                                       }
-                                       while (!thisClient->_msgQueue.empty())
-                                       {
-                                           MqttMessage &msg = thisClient->_msgQueue.front();
-                                           thisClient->Log(LOG_INFO, "Publishing queued message to %s", msg._topic.c_str());
-                                           int mid;
-                                           mosquitto_property *propList = NULL;
-                                           mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
-                                           if (msg._optCorrelationId)
-                                           {
-                                               mosquitto_property_add_string(&propList, MQTT_PROP_CORRELATION_DATA, msg._optCorrelationId->c_str());
-                                           }
-                                           if (msg._optResponseTopic)
-                                           {
-                                               mosquitto_property_add_string(&propList, MQTT_PROP_RESPONSE_TOPIC, msg._optResponseTopic->c_str());
-                                           }
-                                           mosquitto_publish_v5(mosq, &mid, msg._topic.c_str(), msg._payload.size(), msg._payload.c_str(), msg._qos, msg._retain, propList);
-                                           mosquitto_property_free_all(&propList);
-                                           thisClient->_sendMessages[mid] = msg._pSentPromise;
-                                           thisClient->_msgQueue.pop();
-                                       }
+    mosquitto_connect_v5_callback_set(_mosq, [](struct mosquitto *mosq, void *user, int rc, int flags, const mosquitto_property *props)
+                                      {
+                                          MqttBrokerConnection *thisClient = static_cast<MqttBrokerConnection *>(user);
 
-                                       { // Send online message
-                                           auto onlineTopic = thisClient->GetOnlineTopic();
-                                           int mid;
-                                           mosquitto_property *propList = NULL;
-                                           mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
-                                           const char *onlinePayload = "{\"status\":\"online\"}";
-                                           mosquitto_publish_v5(mosq, &mid, onlineTopic.c_str(), sizeof(onlinePayload), onlinePayload, 1, true, propList);
-                                           mosquitto_property_free_all(&propList);
-                                       }
-                                   });
+                                          cout << "Connected to " << thisClient->_host << endl;
+
+                                          const mosquitto_property *prop;
+                                          for (prop = props; prop != NULL; prop = mosquitto_property_next(prop))
+                                          {
+                                              thisClient->Log(LOG_INFO, "Found connect property %s", mosquitto_property_identifier_to_string(mosquitto_property_identifier(prop)));
+                                              if (mosquitto_property_identifier(prop) == MQTT_PROP_REASON_STRING)
+                                              {
+                                                  char *reasonString = NULL;
+                                                  if (mosquitto_property_read_string(prop, MQTT_PROP_REASON_STRING, &reasonString, false))
+                                                  {
+                                                      thisClient->Log(LOG_INFO, "Connect reason: %s", reasonString);
+                                                      free(reasonString);
+                                                  }
+                                              }
+                                          }
+
+                                          boost::mutex::scoped_lock lock(thisClient->_mutex);
+                                          while (!thisClient->_subscriptions.empty())
+                                          {
+                                              auto sub = thisClient->_subscriptions.front();
+                                              thisClient->Log(LOG_INFO, "Delayed Subscribing to %s as %d", sub.topic.c_str(), sub.subscriptionId);
+                                              mosquitto_property *propList = NULL;
+                                              mosquitto_property_add_varint(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, sub.subscriptionId);
+                                              int rc = mosquitto_subscribe_v5(mosq, NULL, sub.topic.c_str(), sub.qos, MQTT_SUB_OPT_NO_LOCAL, propList);
+                                              mosquitto_property_free_all(&propList);
+                                              thisClient->_subscriptions.pop();
+                                          }
+                                          while (!thisClient->_msgQueue.empty())
+                                          {
+                                              MqttMessage &msg = thisClient->_msgQueue.front();
+                                              thisClient->Log(LOG_INFO, "Publishing queued message to %s", msg._topic.c_str());
+                                              int mid;
+                                              mosquitto_property *propList = NULL;
+                                              mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
+                                              if (msg._optCorrelationId)
+                                              {
+                                                  mosquitto_property_add_string(&propList, MQTT_PROP_CORRELATION_DATA, msg._optCorrelationId->c_str());
+                                              }
+                                              if (msg._optResponseTopic)
+                                              {
+                                                  mosquitto_property_add_string(&propList, MQTT_PROP_RESPONSE_TOPIC, msg._optResponseTopic->c_str());
+                                              }
+                                              mosquitto_publish_v5(mosq, &mid, msg._topic.c_str(), msg._payload.size(), msg._payload.c_str(), msg._qos, msg._retain, propList);
+                                              mosquitto_property_free_all(&propList);
+                                              thisClient->_sendMessages[mid] = msg._pSentPromise;
+                                              thisClient->_msgQueue.pop();
+                                          }
+
+                                          { // Send online message
+                                              auto onlineTopic = thisClient->GetOnlineTopic();
+                                              int mid;
+                                              mosquitto_property *propList = NULL;
+                                              mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
+                                              const char *onlinePayload = "{\"status\":\"online\"}";
+                                              mosquitto_publish_v5(mosq, &mid, onlineTopic.c_str(), sizeof(onlinePayload), onlinePayload, 1, true, propList);
+                                              mosquitto_property_free_all(&propList);
+                                          }
+                                      });
+
+    mosquitto_disconnect_v5_callback_set(_mosq, [](struct mosquitto *mosq, void *user, int rc, const mosquitto_property *props)
+                                         {
+                                             MqttBrokerConnection *thisClient = static_cast<MqttBrokerConnection *>(user);
+                                             thisClient->Log(LOG_WARNING, "Disconnected from %s with reason code: %d", thisClient->_host.c_str(), rc);
+
+                                             // Log any disconnect reason from MQTT v5 properties
+                                             const mosquitto_property *prop;
+                                             for (prop = props; prop != NULL; prop = mosquitto_property_next(prop))
+                                             {
+                                                 if (mosquitto_property_identifier(prop) == MQTT_PROP_REASON_STRING)
+                                                 {
+                                                     char *reasonString = NULL;
+                                                     if (mosquitto_property_read_string(prop, MQTT_PROP_REASON_STRING, &reasonString, false))
+                                                     {
+                                                         thisClient->Log(LOG_WARNING, "Disconnect reason: %s", reasonString);
+                                                         free(reasonString);
+                                                     }
+                                                 }
+                                             }
+                                         });
 
     mosquitto_message_v5_callback_set(_mosq, [](struct mosquitto *mosq, void *user, const struct mosquitto_message *mmsg, const mosquitto_property *props)
                                       {
@@ -136,7 +175,7 @@ MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, co
                                               else if (mosquitto_property_identifier(prop) == MQTT_PROP_SUBSCRIPTION_IDENTIFIER)
                                               {
                                                   uint32_t subscriptionId;
-                                                  if (mosquitto_property_read_int32(prop, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, &subscriptionId, false))
+                                                  if (mosquitto_property_read_varint(prop, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, &subscriptionId, false))
                                                   {
                                                       mqttProps.subscriptionId = static_cast<int>(subscriptionId);
                                                   }
@@ -150,16 +189,17 @@ MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, co
                                           }
                                       });
 
-    mosquitto_publish_callback_set(_mosq, [](struct mosquitto *mosq, void *user, int mid)
-                                   {
-                                       MqttBrokerConnection *thisClient = static_cast<MqttBrokerConnection *>(user);
-                                       auto found = thisClient->_sendMessages.find(mid);
-                                       if (found != thisClient->_sendMessages.end())
-                                       {
-                                           found->second->set_value(true);
-                                           thisClient->_sendMessages.erase(found);
-                                       }
-                                   });
+    mosquitto_publish_v5_callback_set(_mosq, [](struct mosquitto *mosq, void *user, int mid, int reason_code, const mosquitto_property *props)
+                                      {
+                                          MqttBrokerConnection *thisClient = static_cast<MqttBrokerConnection *>(user);
+                                          auto found = thisClient->_sendMessages.find(mid);
+                                          if (found != thisClient->_sendMessages.end())
+                                          {
+                                              found->second->set_value(true);
+                                              thisClient->_sendMessages.erase(found);
+                                          }
+                                          thisClient->Log(LOG_DEBUG, "Publish completed for mid=%d, reason_code=%d", mid, reason_code);
+                                      });
 
     Connect();
     mosquitto_loop_start(_mosq);
@@ -180,7 +220,7 @@ void MqttBrokerConnection::Connect()
     mosquitto_property *propList = NULL;
     mosquitto_property_add_string(&propList, MQTT_PROP_CONTENT_TYPE, "application/json");
     const char *offlinePayload = "{\"status\":\"offline\"}";
-    mosquitto_will_set_v5(
+    int will_rc = mosquitto_will_set_v5(
             _mosq,
             onlineTopic.c_str(),
             sizeof(offlinePayload),
@@ -190,12 +230,23 @@ void MqttBrokerConnection::Connect()
             propList
     );
 
+    // If will_set failed, free the properties we created. On success the
+    // mosquitto library takes ownership of the property list, so do not free it.
+    if (will_rc != MOSQ_ERR_SUCCESS)
+    {
+        Log(LOG_ERR, "Failed to set will message: %d", will_rc);
+        if (propList)
+        {
+            mosquitto_property_free_all(&propList);
+            propList = NULL;
+        }
+    }
+
     int rc = mosquitto_connect_bind_v5(_mosq, _host.c_str(), _port, 120, NULL, NULL);
     if (rc != MOSQ_ERR_SUCCESS)
     {
-        std::cerr << "Failed to connect to MQTT broker: " << rc << std::endl;
+        Log(LOG_ERR, "Failed to connect to MQTT broker: %d", rc);
     }
-    mosquitto_property_free_all(&propList);
 }
 
 boost::future<bool> MqttBrokerConnection::Publish(
@@ -223,7 +274,10 @@ boost::future<bool> MqttBrokerConnection::Publish(
         mosquitto_property_add_string_pair(&propList, MQTT_PROP_USER_PROPERTY, "ReturnValue", returnCodeStr.c_str());
     }
     int rc = mosquitto_publish_v5(_mosq, &mid, topic.c_str(), payload.size(), payload.c_str(), qos, retain, propList);
-    mosquitto_property_free_all(&propList);
+    if (propList)
+    {
+        mosquitto_property_free_all(&propList);
+    }
     if (rc == MOSQ_ERR_NO_CONN)
     {
         Log(LOG_DEBUG, "Delayed published queued to: %s", topic.c_str());
@@ -266,12 +320,13 @@ int MqttBrokerConnection::Subscribe(const std::string &topic, int qos)
     // New subscription - create it
     int subscriptionId = _nextSubscriptionId++;
     mosquitto_property *propList = NULL;
-    mosquitto_property_add_int16(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, subscriptionId);
-    int rc = mosquitto_subscribe_v5(_mosq, NULL, topic.c_str(), qos, 0, propList);
+    mosquitto_property_add_varint(&propList, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, subscriptionId);
+    int rc = mosquitto_subscribe_v5(_mosq, NULL, topic.c_str(), qos, MQTT_SUB_OPT_NO_LOCAL, propList);
     mosquitto_property_free_all(&propList);
 
     if (rc == MOSQ_ERR_NO_CONN)
     {
+        Log(LOG_DEBUG, "Subscription %d queued for: %s", subscriptionId, topic.c_str());
         MqttBrokerConnection::MqttSubscription sub(topic, qos, subscriptionId);
         _subscriptions.push(sub);
         // Store ref count as 1 for queued subscription
@@ -279,7 +334,7 @@ int MqttBrokerConnection::Subscribe(const std::string &topic, int qos)
     }
     else if (rc == MOSQ_ERR_SUCCESS)
     {
-        Log(LOG_INFO, "Subscribed to %s", topic.c_str());
+        Log(LOG_INFO, "Online Subscribed to %s as %d", topic.c_str(), subscriptionId);
         // Store ref count as 1 for active subscription
         _subscriptionRefCounts[topic] = std::make_pair(1, subscriptionId);
     }
@@ -330,7 +385,7 @@ CallbackHandleType MqttBrokerConnection::AddMessageCallback(
 )
 {
     boost::mutex::scoped_lock lock(_mutex);
-    CallbackHandleType handle = _messageCallbacks.size() + 1;
+    CallbackHandleType handle = _nextCallbackHandle++;
     _messageCallbacks[handle] = cb;
     Log(LOG_DEBUG, "Message callback set with handle %d", handle);
     return handle;

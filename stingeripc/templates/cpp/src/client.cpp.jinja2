@@ -70,8 +70,9 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
 {
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
+    _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", topic.c_str(), subscriptionId);
     {%-for sig_name, sig in stinger.signals.items() %}
-    if ((subscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{sig.topic}}")))
+    if ((subscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("{{sig.topic}}") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling {{sig_name}} signal");
         rapidjson::Document doc;
@@ -146,7 +147,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
     {%-endfor%}{# for methods #}
 
     {%-for prop_name, prop in stinger.properties.items() %}
-    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId) || (subscriptionId == noSubId && topic == "{{prop.value_topic}}"))
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("{{prop.value_topic}}") % _instanceId).str()))
     {
         _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
@@ -194,7 +195,7 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         const std::string& payload, 
         const std::string &correlationId) 
 {
-    _broker->Log(LOG_DEBUG, "In response handler for {{method_name}} with correlationId=%s", correlationId);
+    _broker->Log(LOG_DEBUG, "In response handler for {{method_name}}");
     
     {%if method.return_value_type is not false%}
     rapidjson::Document doc;
