@@ -1,0 +1,60 @@
+stingeripc:
+  version: 0.0.7
+
+interface:
+  name: Test Able
+  version: 0.0.1
+  title: Interface for testing
+  summary: This tries to capture most variants of features.
+
+enums:
+  - name: Numbers
+    values:
+      - name: one
+        value: 1
+        description: The number one
+      - name: two
+        value: 2
+      - name: three
+        value: 3
+        description: Value two has no description.
+
+structs:
+  - name: AllTypes
+    members:
+      - name: bool
+        type: boolean
+      - name: int
+        type: integer
+      - name: number
+        type: float
+        description: A floating point number.  Bool and int do not have descriptions.
+      - name: str
+        type: string
+        description: A string type.
+      - name: enum
+        type: enum
+        enumName: Numbers
+        description: An enum type
+      - name: date and time
+        type: datetime
+      - name: time_duration
+        type: duration
+      - name: data
+        type: binary
+      - name: OptionalInteger
+        type: integer
+        optional: true
+      - name: OptionalString
+        type: string
+        optional: true
+      - name: OptionalEnum
+        type: enum
+        enumName: Numbers
+        optional: true
+      - name: OptionalDateTime
+        type: datetime
+        optional: true
+      - name: OptionalDuration
+        type: duration
+        optional: true
