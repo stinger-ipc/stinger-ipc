@@ -5,16 +5,18 @@ on the next generation.
 This is the Client for the weather interface.
 """
 
-from typing import Dict, Callable, List, Any
+from typing import Dict, Callable, List, Any, Optional
 from uuid import uuid4
 from functools import partial
 import json
 import logging
+from datetime import datetime, timedelta, UTC
+from isodate import parse_duration
 
 import asyncio
 import concurrent.futures as futures
 from method_codes import *
-from interface_types import InterfaceInfo
+from interface_types import *
 import threading
 
 from connection import IBrokerConnection
@@ -50,28 +52,28 @@ class WeatherClient:
 
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
 
-        self._property_location: stinger_types.LocationProperty | None = None
+        self._property_location = None  # type: Optional[stinger_types.LocationProperty]
         self._conn.subscribe("weather/{}/property/location/value".format(self._service_id), self._receive_location_property_update_message)
         self._changed_value_callbacks_for_location: list[LocationPropertyUpdatedCallbackType] = []
-        self._property_current_temperature: float | None = None
+        self._property_current_temperature = None  # type: Optional[float]
         self._conn.subscribe("weather/{}/property/currentTemperature/value".format(self._service_id), self._receive_current_temperature_property_update_message)
         self._changed_value_callbacks_for_current_temperature: list[CurrentTemperaturePropertyUpdatedCallbackType] = []
-        self._property_current_condition: stinger_types.CurrentConditionProperty | None = None
+        self._property_current_condition = None  # type: Optional[stinger_types.CurrentConditionProperty]
         self._conn.subscribe("weather/{}/property/currentCondition/value".format(self._service_id), self._receive_current_condition_property_update_message)
         self._changed_value_callbacks_for_current_condition: list[CurrentConditionPropertyUpdatedCallbackType] = []
-        self._property_daily_forecast: stinger_types.DailyForecastProperty | None = None
+        self._property_daily_forecast = None  # type: Optional[stinger_types.DailyForecastProperty]
         self._conn.subscribe("weather/{}/property/dailyForecast/value".format(self._service_id), self._receive_daily_forecast_property_update_message)
         self._changed_value_callbacks_for_daily_forecast: list[DailyForecastPropertyUpdatedCallbackType] = []
-        self._property_hourly_forecast: stinger_types.HourlyForecastProperty | None = None
+        self._property_hourly_forecast = None  # type: Optional[stinger_types.HourlyForecastProperty]
         self._conn.subscribe("weather/{}/property/hourlyForecast/value".format(self._service_id), self._receive_hourly_forecast_property_update_message)
         self._changed_value_callbacks_for_hourly_forecast: list[HourlyForecastPropertyUpdatedCallbackType] = []
-        self._property_current_condition_refresh_interval: int | None = None
+        self._property_current_condition_refresh_interval = None  # type: Optional[int]
         self._conn.subscribe("weather/{}/property/currentConditionRefreshInterval/value".format(self._service_id), self._receive_current_condition_refresh_interval_property_update_message)
         self._changed_value_callbacks_for_current_condition_refresh_interval: list[CurrentConditionRefreshIntervalPropertyUpdatedCallbackType] = []
-        self._property_hourly_forecast_refresh_interval: int | None = None
+        self._property_hourly_forecast_refresh_interval = None  # type: Optional[int]
         self._conn.subscribe("weather/{}/property/hourlyForecastRefreshInterval/value".format(self._service_id), self._receive_hourly_forecast_refresh_interval_property_update_message)
         self._changed_value_callbacks_for_hourly_forecast_refresh_interval: list[HourlyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
-        self._property_daily_forecast_refresh_interval: int | None = None
+        self._property_daily_forecast_refresh_interval = None  # type: Optional[int]
         self._conn.subscribe("weather/{}/property/dailyForecastRefreshInterval/value".format(self._service_id), self._receive_daily_forecast_refresh_interval_property_update_message)
         self._changed_value_callbacks_for_daily_forecast_refresh_interval: list[DailyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_current_time: list[CurrentTimeSignalCallbackType] = []
@@ -80,7 +82,7 @@ class WeatherClient:
         self._conn.subscribe(f"client/{self._conn.client_id}/refresh_current_conditions/response", self._receive_refresh_current_conditions_response_message)
 
     @property
-    def location(self) -> stinger_types.LocationProperty | None:
+    def location(self) -> Optional[stinger_types.LocationProperty]:
         """Property 'location' getter."""
         return self._property_location
 
@@ -103,7 +105,7 @@ class WeatherClient:
         return handler
 
     @property
-    def current_temperature(self) -> float | None:
+    def current_temperature(self) -> Optional[float]:
         """Property 'current_temperature' getter."""
         return self._property_current_temperature
 
@@ -117,7 +119,7 @@ class WeatherClient:
         return handler
 
     @property
-    def current_condition(self) -> stinger_types.CurrentConditionProperty | None:
+    def current_condition(self) -> Optional[stinger_types.CurrentConditionProperty]:
         """Property 'current_condition' getter."""
         return self._property_current_condition
 
@@ -131,7 +133,7 @@ class WeatherClient:
         return handler
 
     @property
-    def daily_forecast(self) -> stinger_types.DailyForecastProperty | None:
+    def daily_forecast(self) -> Optional[stinger_types.DailyForecastProperty]:
         """Property 'daily_forecast' getter."""
         return self._property_daily_forecast
 
@@ -145,7 +147,7 @@ class WeatherClient:
         return handler
 
     @property
-    def hourly_forecast(self) -> stinger_types.HourlyForecastProperty | None:
+    def hourly_forecast(self) -> Optional[stinger_types.HourlyForecastProperty]:
         """Property 'hourly_forecast' getter."""
         return self._property_hourly_forecast
 
@@ -159,7 +161,7 @@ class WeatherClient:
         return handler
 
     @property
-    def current_condition_refresh_interval(self) -> int | None:
+    def current_condition_refresh_interval(self) -> Optional[int]:
         """Property 'current_condition_refresh_interval' getter."""
         return self._property_current_condition_refresh_interval
 
@@ -182,7 +184,7 @@ class WeatherClient:
         return handler
 
     @property
-    def hourly_forecast_refresh_interval(self) -> int | None:
+    def hourly_forecast_refresh_interval(self) -> Optional[int]:
         """Property 'hourly_forecast_refresh_interval' getter."""
         return self._property_hourly_forecast_refresh_interval
 
@@ -205,7 +207,7 @@ class WeatherClient:
         return handler
 
     @property
-    def daily_forecast_refresh_interval(self) -> int | None:
+    def daily_forecast_refresh_interval(self) -> Optional[int]:
         """Property 'daily_forecast_refresh_interval' getter."""
         return self._property_daily_forecast_refresh_interval
 
@@ -245,11 +247,9 @@ class WeatherClient:
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'current_time' signal with non-JSON content type")
             return
-        allowed_args = [
-            "current_time",
-        ]
-        kwargs = self._filter_for_args(json.loads(payload), allowed_args)
-        kwargs["current_time"] = str(kwargs["current_time"])
+
+        model = CurrentTimeSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_current_time, **kwargs)
 
@@ -433,14 +433,13 @@ class WeatherClient:
         self,
     ) -> futures.Future:
         """Calling this initiates a `refresh_daily_forecast` IPC method call."""
-
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_daily_forecast_response, fut)
-        payload = {}
+        payload = RefreshDailyForecastMethodRequest()
         self._conn.publish(
             "weather/{}/method/refreshDailyForecast".format(self._service_id),
-            json.dumps(payload),
+            payload.model_dump_json(),
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -467,14 +466,13 @@ class WeatherClient:
         self,
     ) -> futures.Future:
         """Calling this initiates a `refresh_hourly_forecast` IPC method call."""
-
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_hourly_forecast_response, fut)
-        payload = {}
+        payload = RefreshHourlyForecastMethodRequest()
         self._conn.publish(
             "weather/{}/method/refreshHourlyForecast".format(self._service_id),
-            json.dumps(payload),
+            payload.model_dump_json(),
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -501,14 +499,13 @@ class WeatherClient:
         self,
     ) -> futures.Future:
         """Calling this initiates a `refresh_current_conditions` IPC method call."""
-
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_current_conditions_response, fut)
-        payload = {}
+        payload = RefreshCurrentConditionsMethodRequest()
         self._conn.publish(
             "weather/{}/method/refreshCurrentConditions".format(self._service_id),
-            json.dumps(payload),
+            payload.model_dump_json(),
             qos=2,
             retain=False,
             correlation_id=correlation_id,

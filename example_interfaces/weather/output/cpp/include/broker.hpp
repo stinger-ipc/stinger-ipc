@@ -59,11 +59,15 @@ public:
      */
     virtual int Subscribe(const std::string& topic, int qos);
 
+    virtual void Unsubscribe(const std::string& topic);
+
     /*! Add a function that is called on the receipt of a message.
      * Many callbacks can be added, and each will be called in the order in which the callbacks were added.
      * \param cb the callback function.
      */
-    virtual void AddMessageCallback(const std::function<void(const std::string&, const std::string&, const MqttProperties&)>& cb);
+    virtual CallbackHandleType AddMessageCallback(const std::function<void(const std::string&, const std::string&, const MqttProperties&)>& cb);
+
+    virtual void RemoveMessageCallback(CallbackHandleType handle);
 
     /*! Determines if a topic string matches a subscription topic.
      * \param topic a topic to match against a subscription.
@@ -74,7 +78,11 @@ public:
 
     virtual std::string GetClientId() const;
 
-    std::string GetOnlineTopic() const;
+    virtual std::string GetOnlineTopic() const;
+
+    virtual void SetLogFunction(const LogFunctionType& logFunc);
+    virtual void SetLogLevel(int level);
+    virtual void Log(int level, const char* fmt, ...) const;
 
 protected:
     /*! Establishes the connection to the broker.
@@ -85,24 +93,11 @@ private:
     class MqttMessage: private boost::noncopyable
     {
     public:
-        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic)
-            : _topic(topic)
-            , _payload(payload)
-            , _qos(qos)
-            , _retain(retain)
-            , _optCorrelationId(optCorrelationId)
-            , _optResponseTopic(optResponseTopic)
-        {
-        }
+        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic, boost::optional<int> optMessageExpiryInterval):
+            _topic(topic), _payload(payload), _qos(qos), _retain(retain), _optCorrelationId(optCorrelationId), _optResponseTopic(optResponseTopic), _optMessageExpiryInterval(optMessageExpiryInterval) { }
 
-        MqttMessage(const MqttMessage& other)
-            : _topic(other._topic)
-            , _payload(other._payload)
-            , _qos(other._qos)
-            , _retain(other._retain)
-            , _pSentPromise(other._pSentPromise)
-        {
-        }
+        MqttMessage(const MqttMessage& other):
+            _topic(other._topic), _payload(other._payload), _qos(other._qos), _retain(other._retain), _pSentPromise(other._pSentPromise), _optCorrelationId(other._optCorrelationId), _optResponseTopic(other._optResponseTopic), _optMessageExpiryInterval(other._optMessageExpiryInterval) { }
 
         virtual ~MqttMessage() = default;
 
@@ -115,16 +110,13 @@ private:
         std::shared_ptr<boost::promise<bool>> _pSentPromise;
         boost::optional<std::string> _optCorrelationId;
         boost::optional<std::string> _optResponseTopic;
+        boost::optional<int> _optMessageExpiryInterval;
     };
 
     struct MqttSubscription
     {
-        MqttSubscription(const std::string& topic, int qos, int subscriptionId)
-            : topic(topic)
-            , qos(qos)
-            , subscriptionId(subscriptionId)
-        {
-        }
+        MqttSubscription(const std::string& topic, int qos, int subscriptionId):
+            topic(topic), qos(qos), subscriptionId(subscriptionId) { }
 
         ~MqttSubscription() = default;
         std::string topic;
@@ -139,12 +131,14 @@ private:
     int _nextSubscriptionId = 1;
     std::queue<MqttSubscription> _subscriptions;
     boost::mutex _mutex;
-    std::vector<std::function<void(
-            const std::string&,
-            const std::string&,
-            const MqttProperties&
-    )>>
-            _messageCallbacks;
+    CallbackHandleType _nextCallbackHandle = 1;
+    std::map<CallbackHandleType, std::function<void(const std::string&, const std::string&, const MqttProperties&)>> _messageCallbacks;
     std::queue<MqttMessage> _msgQueue;
     std::map<int, std::shared_ptr<boost::promise<bool>>> _sendMessages;
+
+    // Track subscription reference counts: topic -> (count, subscriptionId)
+    std::map<std::string, std::pair<int, int>> _subscriptionRefCounts;
+
+    LogFunctionType _logger;
+    int _logLevel = 0;
 };

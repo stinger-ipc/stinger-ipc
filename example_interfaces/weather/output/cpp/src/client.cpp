@@ -3,6 +3,10 @@
 #include <vector>
 #include <iostream>
 #include <chrono>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
+#include <syslog.h>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -13,7 +17,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
 #include <rapidjson/document.h>
-
+#include "structs.hpp"
 #include "client.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
@@ -21,39 +25,50 @@
 constexpr const char WeatherClient::NAME[];
 constexpr const char WeatherClient::INTERFACE_VERSION[];
 
-WeatherClient::WeatherClient(std::shared_ptr<IBrokerConnection> broker)
-    : _broker(broker)
+WeatherClient::WeatherClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
+    _broker(broker), _instanceId(instanceId)
 {
-    _broker->AddMessageCallback([this](
-                                        const std::string& topic,
-                                        const std::string& payload,
-                                        const MqttProperties& mqttProps
-                                )
-                                { _receiveMessage(topic, payload, mqttProps); });
-    _currentTimeSignalSubscriptionId = _broker->Subscribe("weather/{}/signal/currentTime", 2);
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
+                                                                       const std::string& topic,
+                                                                       const std::string& payload,
+                                                                       const MqttProperties& mqttProps
+                                                               )
+                                                               {
+                                                                   _receiveMessage(topic, payload, mqttProps);
+                                                               });
+    _currentTimeSignalSubscriptionId = _broker->Subscribe((boost::format("weather/%1%/signal/currentTime") % _instanceId).str(), 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
         responseTopicStringStream << boost::format("client/%1%/refresh_daily_forecast/response") % _broker->GetClientId();
-        _broker->Subscribe(responseTopicStringStream.str(), 2);
+        _refreshDailyForecastMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
         responseTopicStringStream << boost::format("client/%1%/refresh_hourly_forecast/response") % _broker->GetClientId();
-        _broker->Subscribe(responseTopicStringStream.str(), 2);
+        _refreshHourlyForecastMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
         responseTopicStringStream << boost::format("client/%1%/refresh_current_conditions/response") % _broker->GetClientId();
-        _broker->Subscribe(responseTopicStringStream.str(), 2);
+        _refreshCurrentConditionsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
-    _locationPropertySubscriptionId = _broker->Subscribe("weather/{}/property/location/value", 1);
-    _currentTemperaturePropertySubscriptionId = _broker->Subscribe("weather/{}/property/currentTemperature/value", 1);
-    _currentConditionPropertySubscriptionId = _broker->Subscribe("weather/{}/property/currentCondition/value", 1);
-    _dailyForecastPropertySubscriptionId = _broker->Subscribe("weather/{}/property/dailyForecast/value", 1);
-    _hourlyForecastPropertySubscriptionId = _broker->Subscribe("weather/{}/property/hourlyForecast/value", 1);
-    _currentConditionRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/{}/property/currentConditionRefreshInterval/value", 1);
-    _hourlyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/{}/property/hourlyForecastRefreshInterval/value", 1);
-    _dailyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe("weather/{}/property/dailyForecastRefreshInterval/value", 1);
+    _locationPropertySubscriptionId = _broker->Subscribe((boost::format("weather/%1%/property/location/value") % _instanceId).str(), 1);
+    _currentTemperaturePropertySubscriptionId = _broker->Subscribe((boost::format("weather/%1%/property/currentTemperature/value") % _instanceId).str(), 1);
+    _currentConditionPropertySubscriptionId = _broker->Subscribe((boost::format("weather/%1%/property/currentCondition/value") % _instanceId).str(), 1);
+    _dailyForecastPropertySubscriptionId = _broker->Subscribe((boost::format("weather/%1%/property/dailyForecast/value") % _instanceId).str(), 1);
+    _hourlyForecastPropertySubscriptionId = _broker->Subscribe((boost::format("weather/%1%/property/hourlyForecast/value") % _instanceId).str(), 1);
+    _currentConditionRefreshIntervalPropertySubscriptionId = _broker->Subscribe((boost::format("weather/%1%/property/currentConditionRefreshInterval/value") % _instanceId).str(), 1);
+    _hourlyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe((boost::format("weather/%1%/property/hourlyForecastRefreshInterval/value") % _instanceId).str(), 1);
+    _dailyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe((boost::format("weather/%1%/property/dailyForecastRefreshInterval/value") % _instanceId).str(), 1);
+}
+
+WeatherClient::~WeatherClient()
+{
+    if (_broker && _brokerMessageCallbackHandle != 0)
+    {
+        _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
+        _brokerMessageCallbackHandle = 0;
+    }
 }
 
 void WeatherClient::_receiveMessage(
@@ -62,9 +77,12 @@ void WeatherClient::_receiveMessage(
         const MqttProperties& mqttProps
 )
 {
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentTimeSignalSubscriptionId)) || _broker->TopicMatchesSubscription(topic, "weather/{}/signal/currentTime"))
+    const int noSubId = -1;
+    int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
+    _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", topic.c_str(), subscriptionId);
+    if ((subscriptionId == _currentTimeSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("weather/%1%/signal/currentTime") % _instanceId).str())))
     {
-        //Log("Handling current_time signal");
+        _broker->Log(LOG_INFO, "Handling current_time signal");
         rapidjson::Document doc;
         try
         {
@@ -73,13 +91,14 @@ void WeatherClient::_receiveMessage(
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
                 {
-                    //Log("Could not JSON parse current_time signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                    _broker->Log(LOG_WARNING, "Could not JSON parse current_time signal payload.");
+                    return;
                 }
 
                 if (!doc.IsObject())
                 {
-                    throw std::runtime_error("Received payload is not an object");
+                    _broker->Log(LOG_WARNING, "Received payload is not an object");
+                    return;
                 }
 
                 std::string tempCurrentTime;
@@ -109,56 +128,56 @@ void WeatherClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if (_broker->TopicMatchesSubscription(topic, "client/+/refresh_daily_forecast/response") && mqttProps.correlationId)
+    if ((subscriptionId == _refreshDailyForecastMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refresh_daily_forecast/response") && mqttProps.correlationId))
     {
-        std::cout << "Matched topic for refresh_daily_forecast response" << std::endl;
+        _broker->Log(LOG_DEBUG, "Matched topic for refresh_daily_forecast response");
         _handleRefreshDailyForecastResponse(topic, payload, *mqttProps.correlationId);
     }
-    else if (_broker->TopicMatchesSubscription(topic, "client/+/refresh_hourly_forecast/response") && mqttProps.correlationId)
+    else if ((subscriptionId == _refreshHourlyForecastMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refresh_hourly_forecast/response") && mqttProps.correlationId))
     {
-        std::cout << "Matched topic for refresh_hourly_forecast response" << std::endl;
+        _broker->Log(LOG_DEBUG, "Matched topic for refresh_hourly_forecast response");
         _handleRefreshHourlyForecastResponse(topic, payload, *mqttProps.correlationId);
     }
-    else if (_broker->TopicMatchesSubscription(topic, "client/+/refresh_current_conditions/response") && mqttProps.correlationId)
+    else if ((subscriptionId == _refreshCurrentConditionsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refresh_current_conditions/response") && mqttProps.correlationId))
     {
-        std::cout << "Matched topic for refresh_current_conditions response" << std::endl;
+        _broker->Log(LOG_DEBUG, "Matched topic for refresh_current_conditions response");
         _handleRefreshCurrentConditionsResponse(topic, payload, *mqttProps.correlationId);
     }
-    if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _locationPropertySubscriptionId)) || topic == "weather/{}/property/location/value")
+    if ((subscriptionId == _locationPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("weather/%1%/property/location/value") % _instanceId).str()))
     {
         _receiveLocationPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentTemperaturePropertySubscriptionId)) || topic == "weather/{}/property/currentTemperature/value")
+    else if ((subscriptionId == _currentTemperaturePropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("weather/%1%/property/currentTemperature/value") % _instanceId).str()))
     {
         _receiveCurrentTemperaturePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentConditionPropertySubscriptionId)) || topic == "weather/{}/property/currentCondition/value")
+    else if ((subscriptionId == _currentConditionPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("weather/%1%/property/currentCondition/value") % _instanceId).str()))
     {
         _receiveCurrentConditionPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _dailyForecastPropertySubscriptionId)) || topic == "weather/{}/property/dailyForecast/value")
+    else if ((subscriptionId == _dailyForecastPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("weather/%1%/property/dailyForecast/value") % _instanceId).str()))
     {
         _receiveDailyForecastPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _hourlyForecastPropertySubscriptionId)) || topic == "weather/{}/property/hourlyForecast/value")
+    else if ((subscriptionId == _hourlyForecastPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("weather/%1%/property/hourlyForecast/value") % _instanceId).str()))
     {
         _receiveHourlyForecastPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _currentConditionRefreshIntervalPropertySubscriptionId)) || topic == "weather/{}/property/currentConditionRefreshInterval/value")
+    else if ((subscriptionId == _currentConditionRefreshIntervalPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("weather/%1%/property/currentConditionRefreshInterval/value") % _instanceId).str()))
     {
         _receiveCurrentConditionRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _hourlyForecastRefreshIntervalPropertySubscriptionId)) || topic == "weather/{}/property/hourlyForecastRefreshInterval/value")
+    else if ((subscriptionId == _hourlyForecastRefreshIntervalPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("weather/%1%/property/hourlyForecastRefreshInterval/value") % _instanceId).str()))
     {
         _receiveHourlyForecastRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((mqttProps.subscriptionId && (*mqttProps.subscriptionId == _dailyForecastRefreshIntervalPropertySubscriptionId)) || topic == "weather/{}/property/dailyForecastRefreshInterval/value")
+    else if ((subscriptionId == _dailyForecastRefreshIntervalPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("weather/%1%/property/dailyForecastRefreshInterval/value") % _instanceId).str()))
     {
         _receiveDailyForecastRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 }
 
-void WeatherClient::registerCurrentTimeCallback(const std::function<void(const std::string&)>& cb)
+void WeatherClient::registerCurrentTimeCallback(const std::function<void(std::string)>& cb)
 {
     std::lock_guard<std::mutex> lock(_currentTimeSignalCallbacksMutex);
     _currentTimeSignalCallbacks.push_back(cb);
@@ -182,7 +201,7 @@ boost::future<void> WeatherClient::refreshDailyForecast()
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish("weather/{}/method/refreshDailyForecast", buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((boost::format("weather/%1%/method/refreshDailyForecast") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingRefreshDailyForecastMethodCalls[correlationId].get_future();
 }
@@ -193,7 +212,7 @@ void WeatherClient::_handleRefreshDailyForecastResponse(
         const std::string& correlationId
 )
 {
-    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+    _broker->Log(LOG_DEBUG, "In response handler for refresh_daily_forecast");
 
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingRefreshDailyForecastMethodCalls.find(correlationIdUuid);
@@ -203,7 +222,7 @@ void WeatherClient::_handleRefreshDailyForecastResponse(
         promiseItr->second.set_value();
     }
 
-    std::cout << "End of response handler for " << topic << std::endl;
+    _broker->Log(LOG_DEBUG, "End of response handler for refresh_daily_forecast");
 }
 
 boost::future<void> WeatherClient::refreshHourlyForecast()
@@ -224,7 +243,7 @@ boost::future<void> WeatherClient::refreshHourlyForecast()
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish("weather/{}/method/refreshHourlyForecast", buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((boost::format("weather/%1%/method/refreshHourlyForecast") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingRefreshHourlyForecastMethodCalls[correlationId].get_future();
 }
@@ -235,7 +254,7 @@ void WeatherClient::_handleRefreshHourlyForecastResponse(
         const std::string& correlationId
 )
 {
-    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+    _broker->Log(LOG_DEBUG, "In response handler for refresh_hourly_forecast");
 
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingRefreshHourlyForecastMethodCalls.find(correlationIdUuid);
@@ -245,7 +264,7 @@ void WeatherClient::_handleRefreshHourlyForecastResponse(
         promiseItr->second.set_value();
     }
 
-    std::cout << "End of response handler for " << topic << std::endl;
+    _broker->Log(LOG_DEBUG, "End of response handler for refresh_hourly_forecast");
 }
 
 boost::future<void> WeatherClient::refreshCurrentConditions()
@@ -266,7 +285,7 @@ boost::future<void> WeatherClient::refreshCurrentConditions()
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish("weather/{}/method/refreshCurrentConditions", buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((boost::format("weather/%1%/method/refreshCurrentConditions") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingRefreshCurrentConditionsMethodCalls[correlationId].get_future();
 }
@@ -277,7 +296,7 @@ void WeatherClient::_handleRefreshCurrentConditionsResponse(
         const std::string& correlationId
 )
 {
-    std::cout << "In response handler for " << topic << " with correlationId=" << correlationId << std::endl;
+    _broker->Log(LOG_DEBUG, "In response handler for refresh_current_conditions");
 
     boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
     auto promiseItr = _pendingRefreshCurrentConditionsMethodCalls.find(correlationIdUuid);
@@ -287,7 +306,7 @@ void WeatherClient::_handleRefreshCurrentConditionsResponse(
         promiseItr->second.set_value();
     }
 
-    std::cout << "End of response handler for " << topic << std::endl;
+    _broker->Log(LOG_DEBUG, "End of response handler for refresh_current_conditions");
 }
 
 void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
@@ -371,7 +390,7 @@ boost::future<bool> WeatherClient::updateLocationProperty(double latitude, doubl
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("weather/{}/property/location/setValue", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("weather/%1%/property/location/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
 void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
@@ -732,7 +751,7 @@ boost::future<bool> WeatherClient::updateCurrentConditionRefreshIntervalProperty
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("weather/{}/property/currentConditionRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("weather/%1%/property/currentConditionRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
 void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
@@ -801,7 +820,7 @@ boost::future<bool> WeatherClient::updateHourlyForecastRefreshIntervalProperty(i
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("weather/{}/property/hourlyForecastRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("weather/%1%/property/hourlyForecastRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
 void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
@@ -870,5 +889,5 @@ boost::future<bool> WeatherClient::updateDailyForecastRefreshIntervalProperty(in
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish("weather/{}/property/dailyForecastRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish("weather/%1%/property/dailyForecastRefreshInterval/setValue", buf.GetString(), 1, false, mqttProps);
 }

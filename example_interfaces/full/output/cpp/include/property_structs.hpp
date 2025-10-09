@@ -5,11 +5,14 @@ on the next generation.
 It contains enumerations used by the Full interface.
 */
 
+
 #pragma once
 #include <string>
 #include <rapidjson/document.h>
 #include "enums.hpp"
 #include "structs.hpp"
+
+
 
 /**
  * The `favorite_number` property contains a single field:
@@ -22,8 +25,8 @@ It contains enumerations used by the Full interface.
  */
 typedef int FavoriteNumberProperty;
 
-struct FavoriteFoodsProperty
-{
+
+struct FavoriteFoodsProperty {
     static FavoriteFoodsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::string drink;
@@ -31,13 +34,15 @@ struct FavoriteFoodsProperty
     boost::optional<std::string> breakfast;
 };
 
-struct LunchMenuProperty
-{
+
+struct LunchMenuProperty {
     static LunchMenuProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     Lunch monday;
-    Lunch tuesday; ///< Tuesday's lunch menu.
+    Lunch tuesday;  ///< Tuesday's lunch menu.
 };
+
+
 
 /**
  * The `family_name` property contains a single field:
@@ -49,6 +54,8 @@ struct LunchMenuProperty
  */
 typedef std::string FamilyNameProperty;
 
+
+
 /**
  * The `last_breakfast_time` property contains a single field:
  *   std::chrono::time_point<std::chrono::system_clock> timestamp;
@@ -58,6 +65,8 @@ typedef std::string FamilyNameProperty;
  * This is to test a property with a single datetime value.
  */
 typedef std::chrono::time_point<std::chrono::system_clock> LastBreakfastTimeProperty;
+
+
 
 /**
  * The `breakfast_length` property contains a single field:
@@ -72,8 +81,7 @@ typedef std::chrono::duration<double> BreakfastLengthProperty;
 /**
  * This is to test a property with multiple datetime values.
  */
-struct LastBirthdaysProperty
-{
+struct LastBirthdaysProperty {
     static LastBirthdaysProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::chrono::time_point<std::chrono::system_clock> mom;
@@ -81,3 +89,4 @@ struct LastBirthdaysProperty
     boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister;
     boost::optional<int> brothers_age;
 };
+

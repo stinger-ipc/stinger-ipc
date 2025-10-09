@@ -336,13 +336,13 @@ void SignalOnlyClient::_receiveMessage(
     }
 }
 
-void SignalOnlyClient::registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb)
+void SignalOnlyClient::registerAnotherSignalCallback(const std::function<void(double, bool, std::string)>& cb)
 {
     std::lock_guard<std::mutex> lock(_anotherSignalSignalCallbacksMutex);
     _anotherSignalSignalCallbacks.push_back(cb);
 }
 
-void SignalOnlyClient::registerBarkCallback(const std::function<void(const std::string&)>& cb)
+void SignalOnlyClient::registerBarkCallback(const std::function<void(std::string)>& cb)
 {
     std::lock_guard<std::mutex> lock(_barkSignalCallbacksMutex);
     _barkSignalCallbacks.push_back(cb);

@@ -7,8 +7,8 @@ It contains enumerations used by the Full interface.
 
 #pragma once
 
-enum class DayOfTheWeek
-{
+
+enum class DayOfTheWeek {
     SUNDAY = 1,
     MONDAY = 2,
     TUESDAY = 3,
@@ -17,4 +17,4 @@ enum class DayOfTheWeek
     FRIDAY = 6,
     SATURDAY = 7
 };
-static const char *dayOfTheWeekStrings[] = { "DayOfTheWeek", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+static const char *dayOfTheWeekStrings[] = {"DayOfTheWeek", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };

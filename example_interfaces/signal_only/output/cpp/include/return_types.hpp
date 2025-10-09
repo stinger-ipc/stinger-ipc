@@ -8,4 +8,6 @@ It contains enumerations used by the SignalOnly interface.
 #pragma once
 #include <string>
 #include <chrono>
+#include <vector>
+#include <boost/optional.hpp>
 #include "enums.hpp"

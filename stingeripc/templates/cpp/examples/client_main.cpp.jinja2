@@ -121,10 +121,25 @@ int main(int argc, char** argv)
         std::cout << "Result: {{method.return_value.name | UpperCamelCase}}=" << {{method.return_value.enum.name | camelCase }}Strings[{{method_name|camelCase}}ResultFuture.get()] << std::endl;
         {%elif method.return_value_type == 'struct'-%}
         {{method.return_value_cpp_class}} returnValue = {{method_name|camelCase}}ResultFuture.get();
+        std::cout << "Results:"{%for m in method.return_value.members%} << " {{m.name}}=" << 
+        {%-if m.arg_type.name.lower() == 'enum'%}{{m.enum.name | camelCase }}Strings[static_cast<int>(returnValue.{{m.name}})]
+        {%-elif m.arg_type.name.lower() == 'datetime'%}
+        timePointToIsoString(returnValue.{{m.name}})
+        {%-elif m.arg_type.name.lower() == 'duration'%}
+        durationToIsoString(returnValue.{{m.name}})
+        {%-elif m.arg_type.name.lower() == 'binary'%}
+        binaryToString(returnValue.{{m.name}})
+        {%-else%}returnValue.{{m.name}}{%endif%} {%endfor%} << std::endl;
+        {%elif method.return_value_type == 'multiple'-%}
+        {{method.return_value_cpp_class}} returnValue = {{method_name|camelCase}}ResultFuture.get();
         std::cout << "Results:"{%for m in method.return_value%} << " {{m.name}}=" << 
         {%-if m.arg_type.name.lower() == 'enum'%}{{m.enum.name | camelCase }}Strings[static_cast<int>(returnValue.{{m.name}})]
         {%-elif m.arg_type.name.lower() == 'datetime'%}
         timePointToIsoString(returnValue.{{m.name}})
+        {%-elif m.arg_type.name.lower() == 'duration'%}
+        durationToIsoString(returnValue.{{m.name}})
+        {%-elif m.arg_type.name.lower() == 'binary'%}
+        binaryToString(returnValue.{{m.name}})
         {%-else%}returnValue.{{m.name}}{%endif%} {%endfor%} << std::endl;
         {%endif%}
     }

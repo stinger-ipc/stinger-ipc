@@ -1,0 +1,98 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the Test Able interface.
+*/
+
+#pragma once
+#include <string>
+#include <chrono>
+#include <vector>
+#include <boost/optional.hpp>
+#include "enums.hpp"
+
+struct CallThreeIntegersReturnValue
+{
+    int output1;
+    int output2;
+    boost::optional<int> output3;
+};
+
+struct CallThreeStringsReturnValue
+{
+    std::string output1;
+    std::string output2;
+    boost::optional<std::string> output3;
+};
+
+struct CallThreeEnumsReturnValue
+{
+    Numbers output1;
+    Numbers output2;
+    boost::optional<Numbers> output3;
+};
+
+struct CallOneStructReturnValue
+{
+    bool bool_;
+    int int_;
+    double number;
+    std::string str;
+    Numbers enum_;
+    std::chrono::time_point<std::chrono::system_clock> date_and_time;
+    std::chrono::duration<double> time_duration;
+    std::vector<uint8_t> data;
+    boost::optional<int> OptionalInteger;
+    boost::optional<std::string> OptionalString;
+    boost::optional<Numbers> OptionalEnum;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> OptionalDateTime;
+    boost::optional<std::chrono::duration<double>> OptionalDuration;
+    boost::optional<std::vector<uint8_t>> OptionalBinary;
+};
+
+struct CallOptionalStructReturnValue
+{
+    bool bool_;
+    int int_;
+    double number;
+    std::string str;
+    Numbers enum_;
+    std::chrono::time_point<std::chrono::system_clock> date_and_time;
+    std::chrono::duration<double> time_duration;
+    std::vector<uint8_t> data;
+    boost::optional<int> OptionalInteger;
+    boost::optional<std::string> OptionalString;
+    boost::optional<Numbers> OptionalEnum;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> OptionalDateTime;
+    boost::optional<std::chrono::duration<double>> OptionalDuration;
+    boost::optional<std::vector<uint8_t>> OptionalBinary;
+};
+
+struct CallThreeStructsReturnValue
+{
+    AllTypes output1;
+    AllTypes output2;
+    boost::optional<AllTypes> output3;
+};
+
+struct CallThreeDateTimesReturnValue
+{
+    std::chrono::time_point<std::chrono::system_clock> output1;
+    std::chrono::time_point<std::chrono::system_clock> output2;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> output3;
+};
+
+struct CallThreeDurationsReturnValue
+{
+    std::chrono::duration<double> output1;
+    std::chrono::duration<double> output2;
+    boost::optional<std::chrono::duration<double>> output3;
+};
+
+struct CallThreeBinariesReturnValue
+{
+    std::vector<uint8_t> output1;
+    std::vector<uint8_t> output2;
+    boost::optional<std::vector<uint8_t>> output3;
+};

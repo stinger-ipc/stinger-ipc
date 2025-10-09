@@ -43,7 +43,7 @@ public:
     {%for sig_name, sig in stinger.signals.items()%}
     // Register a callback for the `{{sig_name}}` signal.
     // The provided method will be called whenever a `{{sig_name}}` is received.
-    void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
+    void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
     {%endfor%}
     {%endif%}
     {%if stinger.methods|length > 0 -%}
@@ -78,7 +78,7 @@ private:
     // ------------------ SIGNALS --------------------
     {%for sig_name, sig in stinger.signals.items()%}
     // List of callbacks to be called whenever the `{{sig_name}}` signal is received.
-    std::vector<std::function<void({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> _{{sig_name | lowerCamelCase}}SignalCallbacks;
+    std::vector<std::function<void({%for arg in sig.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> _{{sig_name | lowerCamelCase}}SignalCallbacks;
     std::mutex _{{sig_name | lowerCamelCase}}SignalCallbacksMutex;
 
     // MQTT Subscription ID for `{{sig_name}}` signal receptions.

@@ -394,8 +394,6 @@ void FullClient::_handleDoSomethingResponse(
     auto promiseItr = _pendingDoSomethingMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingDoSomethingMethodCalls.end())
     {
-        // Response has multiple values.
-
         rapidjson::Value::ConstMemberIterator labelItr = doc.FindMember("label");
         const std::string& label = labelItr->value.GetString();
 
@@ -610,8 +608,6 @@ void FullClient::_handleSetTheTimeResponse(
     auto promiseItr = _pendingSetTheTimeMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingSetTheTimeMethodCalls.end())
     {
-        // Response has multiple values.
-
         rapidjson::Value::ConstMemberIterator timestampItr = doc.FindMember("timestamp");
 
         std::chrono::time_point<std::chrono::system_clock> timestamp;

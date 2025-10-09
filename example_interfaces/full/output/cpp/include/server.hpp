@@ -5,6 +5,7 @@ on the next generation.
 It contains enumerations used by the Full interface.
 */
 
+
 #pragma once
 
 #include <cstdint>
@@ -26,8 +27,8 @@ It contains enumerations used by the Full interface.
 #include "enums.hpp"
 #include "return_types.hpp"
 
-class FullServer
-{
+class FullServer {
+
 public:
     static constexpr const char NAME[] = "Full";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
@@ -36,22 +37,29 @@ public:
 
     virtual ~FullServer();
 
+    
     boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>);
 
+    
+
+    
     void registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func);
-
+    
     void registerDoSomethingHandler(std::function<DoSomethingReturnValue(const std::string&)> func);
-
+    
     void registerEchoHandler(std::function<std::string(const std::string&)> func);
-
+    
     void registerWhatTimeIsItHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> func);
-
+    
     void registerSetTheTimeHandler(std::function<SetTheTimeReturnValue(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>)> func);
-
+    
     void registerForwardTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::duration<double>)> func);
-
+    
     void registerHowOffIsTheClockHandler(std::function<std::chrono::duration<double>(std::chrono::time_point<std::chrono::system_clock>)> func);
+    
 
+    
+    
     // ---favorite_number Property---
 
     // Gets the latest value of the `favorite_number` property, if one has been received.
@@ -64,8 +72,10 @@ public:
 
     void updateFavoriteNumberProperty(int);
 
-    void republishFavoriteNumberProperty() const;
 
+    void republishFavoriteNumberProperty() const;
+    
+    
     // ---favorite_foods Property---
 
     // Gets the latest value of the `favorite_foods` property, if one has been received.
@@ -78,8 +88,10 @@ public:
 
     void updateFavoriteFoodsProperty(const std::string&, int, boost::optional<std::string>);
 
-    void republishFavoriteFoodsProperty() const;
 
+    void republishFavoriteFoodsProperty() const;
+    
+    
     // ---lunch_menu Property---
 
     // Gets the latest value of the `lunch_menu` property, if one has been received.
@@ -92,8 +104,10 @@ public:
 
     void updateLunchMenuProperty(Lunch, Lunch);
 
-    void republishLunchMenuProperty() const;
 
+    void republishLunchMenuProperty() const;
+    
+    
     // ---family_name Property---
 
     // Gets the latest value of the `family_name` property, if one has been received.
@@ -106,8 +120,10 @@ public:
 
     void updateFamilyNameProperty(const std::string&);
 
-    void republishFamilyNameProperty() const;
 
+    void republishFamilyNameProperty() const;
+    
+    
     // ---last_breakfast_time Property---
 
     // Gets the latest value of the `last_breakfast_time` property, if one has been received.
@@ -120,8 +136,10 @@ public:
 
     void updateLastBreakfastTimeProperty(std::chrono::time_point<std::chrono::system_clock>);
 
-    void republishLastBreakfastTimeProperty() const;
 
+    void republishLastBreakfastTimeProperty() const;
+    
+    
     // ---breakfast_length Property---
 
     // Gets the latest value of the `breakfast_length` property, if one has been received.
@@ -134,8 +152,10 @@ public:
 
     void updateBreakfastLengthProperty(std::chrono::duration<double>);
 
-    void republishBreakfastLengthProperty() const;
 
+    void republishBreakfastLengthProperty() const;
+    
+    
     // ---last_birthdays Property---
 
     // Gets the latest value of the `last_birthdays` property, if one has been received.
@@ -148,48 +168,52 @@ public:
 
     void updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>, boost::optional<int>);
 
-    void republishLastBirthdaysProperty() const;
 
-private:
+    void republishLastBirthdaysProperty() const;
+    
+private: 
     std::shared_ptr<IBrokerConnection> _broker;
     std::string _instanceId;
     CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
+            const std::string& topic, 
+            const std::string& payload, 
             const MqttProperties& mqttProps
     );
 
+    
     void _callAddNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<int(int, int, boost::optional<int>)> _addNumbersHandler;
     int _addNumbersMethodSubscriptionId;
-
+    
     void _callDoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<DoSomethingReturnValue(const std::string&)> _doSomethingHandler;
     int _doSomethingMethodSubscriptionId;
-
+    
     void _callEchoHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<std::string(const std::string&)> _echoHandler;
     int _echoMethodSubscriptionId;
-
+    
     void _callWhatTimeIsItHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> _whatTimeIsItHandler;
     int _whatTimeIsItMethodSubscriptionId;
-
+    
     void _callSetTheTimeHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<SetTheTimeReturnValue(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>)> _setTheTimeHandler;
     int _setTheTimeMethodSubscriptionId;
-
+    
     void _callForwardTimeHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::duration<double>)> _forwardTimeHandler;
     int _forwardTimeMethodSubscriptionId;
-
+    
     void _callHowOffIsTheClockHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<std::chrono::duration<double>(std::chrono::time_point<std::chrono::system_clock>)> _howOffIsTheClockHandler;
     int _howOffIsTheClockMethodSubscriptionId;
+    
 
     // ---------------- PROPERTIES ------------------
-
+    
+    
     // ---favorite_number Property---
 
     // Current value for the `favorite_number` property.
@@ -211,6 +235,8 @@ private:
     std::vector<std::function<void(int)>> _favoriteNumberPropertyCallbacks;
     std::mutex _favoriteNumberPropertyCallbacksMutex;
 
+    
+    
     // ---favorite_foods Property---
 
     // Current values for the `favorite_foods` property.
@@ -232,6 +258,8 @@ private:
     std::vector<std::function<void(const std::string&, int, boost::optional<std::string>)>> _favoriteFoodsPropertyCallbacks;
     std::mutex _favoriteFoodsPropertyCallbacksMutex;
 
+    
+    
     // ---lunch_menu Property---
 
     // Current values for the `lunch_menu` property.
@@ -253,6 +281,8 @@ private:
     std::vector<std::function<void(Lunch, Lunch)>> _lunchMenuPropertyCallbacks;
     std::mutex _lunchMenuPropertyCallbacksMutex;
 
+    
+    
     // ---family_name Property---
 
     // Current value for the `family_name` property.
@@ -274,6 +304,8 @@ private:
     std::vector<std::function<void(const std::string&)>> _familyNamePropertyCallbacks;
     std::mutex _familyNamePropertyCallbacksMutex;
 
+    
+    
     // ---last_breakfast_time Property---
 
     // Current value for the `last_breakfast_time` property.
@@ -295,6 +327,8 @@ private:
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _lastBreakfastTimePropertyCallbacks;
     std::mutex _lastBreakfastTimePropertyCallbacksMutex;
 
+    
+    
     // ---breakfast_length Property---
 
     // Current value for the `breakfast_length` property.
@@ -316,6 +350,8 @@ private:
     std::vector<std::function<void(std::chrono::duration<double>)>> _breakfastLengthPropertyCallbacks;
     std::mutex _breakfastLengthPropertyCallbacksMutex;
 
+    
+    
     // ---last_birthdays Property---
 
     // Current values for the `last_birthdays` property.
@@ -336,6 +372,9 @@ private:
     // Callbacks registered for changes to the `last_birthdays` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>, boost::optional<int>)>> _lastBirthdaysPropertyCallbacks;
     std::mutex _lastBirthdaysPropertyCallbacksMutex;
+
+    
+    
 
     // ---------------- SERVICE ADVERTISEMENT ------------------
 

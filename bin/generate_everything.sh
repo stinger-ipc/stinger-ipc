@@ -16,9 +16,10 @@ function generate_python() {
     return 0
 }
 
-generate_python signal_only || exit 1
-generate_python full || exit 1
+#generate_python signal_only || exit 1
+#generate_python full || exit 1
 #generate_python weather || exit 1
+#generate_python testable || exit 1
 
 #### C++
 
@@ -41,9 +42,11 @@ function generate_cpp() {
     return 0
 }
 
+generate_cpp testable || exit 1
 generate_cpp full || exit 1
 generate_cpp signal_only || exit 1
-#generate_cpp weather || exit 1
+generate_cpp weather || exit 1
+
 
 #### Rust
 

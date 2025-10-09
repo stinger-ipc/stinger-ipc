@@ -13,6 +13,7 @@ It contains enumerations used by the weather interface.
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <chrono>
 #include <rapidjson/document.h>
 #include <boost/uuid/uuid.hpp>
 #include <boost/optional.hpp>
@@ -31,14 +32,14 @@ public:
     static constexpr const char INTERFACE_VERSION[] = "0.1.2";
 
     // Constructor taking a connection object.
-    WeatherClient(std::shared_ptr<IBrokerConnection> broker);
+    WeatherClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
 
-    virtual ~WeatherClient() = default;
+    virtual ~WeatherClient();
     // ------------------ SIGNALS --------------------
 
     // Register a callback for the `current_time` signal.
     // The provided method will be called whenever a `current_time` is received.
-    void registerCurrentTimeCallback(const std::function<void(const std::string&)>& cb);
+    void registerCurrentTimeCallback(const std::function<void(std::string)>& cb);
 
     // ------------------- METHODS --------------------
 
@@ -148,6 +149,11 @@ private:
     // Pointer to the broker connection.
     std::shared_ptr<IBrokerConnection> _broker;
 
+    // Service Instance ID that this client is connected to.
+    std::string _instanceId;
+
+    CallbackHandleType _brokerMessageCallbackHandle = 0;
+
     // Internal method for receiving messages from the broker.
     void _receiveMessage(
             const std::string& topic,
@@ -158,26 +164,26 @@ private:
     // ------------------ SIGNALS --------------------
 
     // List of callbacks to be called whenever the `current_time` signal is received.
-    std::vector<std::function<void(const std::string&)>> _currentTimeSignalCallbacks;
+    std::vector<std::function<void(std::string)>> _currentTimeSignalCallbacks;
     std::mutex _currentTimeSignalCallbacksMutex;
 
     // MQTT Subscription ID for `current_time` signal receptions.
-    int _currentTimeSignalSubscriptionId;
+    int _currentTimeSignalSubscriptionId = -1;
 
     // ------------------- METHODS --------------------
     // Holds promises for pending `refresh_daily_forecast` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshDailyForecastMethodCalls;
-
+    int _refreshDailyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_daily_forecast` method calls.
     void _handleRefreshDailyForecastResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
     // Holds promises for pending `refresh_hourly_forecast` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshHourlyForecastMethodCalls;
-
+    int _refreshHourlyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_hourly_forecast` method calls.
     void _handleRefreshHourlyForecastResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
     // Holds promises for pending `refresh_current_conditions` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshCurrentConditionsMethodCalls;
-
+    int _refreshCurrentConditionsMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_current_conditions` method calls.
     void _handleRefreshCurrentConditionsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
 

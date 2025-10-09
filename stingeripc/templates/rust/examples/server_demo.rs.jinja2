@@ -43,6 +43,13 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | Upper
         println!("Handling {{method_name}}");
         {%-if method.return_value_type == 'struct'%}
         let rv = {{method.return_value_rust_type}} {
+            {%for arg in method.return_value.members-%}
+            {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
+            {%endfor%}
+        };
+        Ok(rv)
+        {%-elif method.return_value_type == 'multiple'%}
+        let rv = {{method.return_value_rust_type}} {
             {%for arg in method.return_value-%}
             {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
             {%endfor%}

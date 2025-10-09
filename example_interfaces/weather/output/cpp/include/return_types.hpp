@@ -7,4 +7,7 @@ It contains enumerations used by the weather interface.
 
 #pragma once
 #include <string>
+#include <chrono>
+#include <vector>
+#include <boost/optional.hpp>
 #include "enums.hpp"

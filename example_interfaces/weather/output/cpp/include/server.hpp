@@ -14,6 +14,9 @@ It contains enumerations used by the weather interface.
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <chrono>
+#include <thread>
+#include <atomic>
 #include <boost/optional.hpp>
 #include <rapidjson/document.h>
 
@@ -29,9 +32,9 @@ public:
     static constexpr const char NAME[] = "weather";
     static constexpr const char INTERFACE_VERSION[] = "0.1.2";
 
-    WeatherServer(std::shared_ptr<IBrokerConnection> broker);
+    WeatherServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
 
-    virtual ~WeatherServer() = default;
+    virtual ~WeatherServer();
 
     boost::future<bool> emitCurrentTimeSignal(const std::string&);
 
@@ -155,6 +158,8 @@ public:
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;
+    std::string _instanceId;
+    CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(
             const std::string& topic,
             const std::string& payload,
@@ -342,4 +347,15 @@ private:
     // Callbacks registered for changes to the `daily_forecast_refresh_interval` property.
     std::vector<std::function<void(int)>> _dailyForecastRefreshIntervalPropertyCallbacks;
     std::mutex _dailyForecastRefreshIntervalPropertyCallbacksMutex;
+
+    // ---------------- SERVICE ADVERTISEMENT ------------------
+
+    // Thread for publishing service advertisement messages
+    std::thread _advertisementThread;
+
+    // Flag to signal the advertisement thread to stop
+    std::atomic<bool> _advertisementThreadRunning;
+
+    // Method that runs in the advertisement thread
+    void _advertisementThreadLoop();
 };

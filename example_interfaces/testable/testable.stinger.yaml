@@ -8,7 +8,8 @@ interface:
   summary: This tries to capture most variants of features.
 
 enums:
-  - name: Numbers
+
+  Numbers:
     values:
       - name: one
         value: 1
@@ -19,8 +20,9 @@ enums:
         value: 3
         description: Value two has no description.
 
-structs:
-  - name: AllTypes
+structures:
+
+  AllTypes:
     members:
       - name: bool
         type: boolean
@@ -36,7 +38,7 @@ structs:
         type: enum
         enumName: Numbers
         description: An enum type
-      - name: date and time
+      - name: date_and_time
         type: datetime
         description: A date and time type.
       - name: time_duration
@@ -72,6 +74,10 @@ structs:
         description: An optional binary type.
 
 signals:
+
+  empty:
+    documentation: A signal with no parameters.
+    payload: []
 
   singleInt:
     documentation: A signal with a single integer parameter.
@@ -289,6 +295,11 @@ signals:
 
 methods:
 
+  callWithNothing:
+    documentation: Method that takes no arguments and returns nothing.
+    arguments: []
+    returnValues: []
+
   callOneInteger:
     documentation: Method that takes one integer argument and returns one integer value.
     arguments:
@@ -380,7 +391,7 @@ methods:
     returnValues:
       - name: output1 
         type: enum
-        enumName: numbers.
+        enumName: Numbers
 
   callOptionalEnum:
     documentation: Method that takes one optional enum argument and returns one optional enum value.
@@ -427,23 +438,23 @@ methods:
     arguments:
       - name: input1
         type: struct
-        structName: MyStruct
+        structName: AllTypes
     returnValues:
       - name: output1
         type: struct
-        structName: MyStruct
+        structName: AllTypes
 
   callOptionalStruct:
     documentation: Method that takes one optional struct argument and returns one optional struct value.
     arguments:
       - name: input1
         type: struct
-        structName: MyStruct
+        structName: AllTypes
         optional: true
     returnValues:
       - name: output1 
         type: struct
-        structName: MyStruct
+        structName: AllTypes
         optional: true
 
   callThreeStructs:
@@ -451,26 +462,26 @@ methods:
     arguments:
       - name: input1
         type: struct
-        structName: MyStruct
+        structName: AllTypes
         description: The first struct input.  The other two don't have descriptions.
       - name: input2
         type: struct
-        structName: MyStruct
+        structName: AllTypes
       - name: input3
         type: struct
-        structName: MyStruct
+        structName: AllTypes
         optional: true
     returnValues:
       - name: output1 
         type: struct
-        structName: MyStruct
+        structName: AllTypes
         description: The first struct output.  The other two don't have descriptions.
       - name: output2 
         type: struct
-        structName: MyStruct
+        structName: AllTypes
       - name: output3 
         type: struct
-        structName: MyStruct
+        structName: AllTypes
         optional: true
   
   callOneDateTime:
@@ -619,7 +630,7 @@ properties:
         optional: true
 
   read_write_two_integers:
-    documentation: A read-write property with two integer values.
+    documentation: A read-write property with two integer values. The second is optional.
     values:
       - name: first
         type: integer
@@ -649,7 +660,7 @@ properties:
         optional: true
 
   read_write_two_strings:
-    documentation: A read-write property with two string values.
+    documentation: A read-write property with two string values. The second is optional.
     values:
       - name: first
         type: string
@@ -674,7 +685,7 @@ properties:
         optional: true
   
   read_write_two_structs:
-    documentation: A read-write property with two struct values.
+    documentation: A read-write property with two struct values. The second is optional.
     values:
       - name: first
         type: struct
@@ -709,7 +720,7 @@ properties:
         optional: true
 
   read_write_two_enums:
-    documentation: A read-write property with two enum values.
+    documentation: A read-write property with two enum values. The second is optional.
     values:
       - name: first
         type: enum
@@ -734,7 +745,7 @@ properties:
         optional: true
   
   read_write_two_datetimes:
-    documentation: A read-write property with two datetime values.
+    documentation: A read-write property with two datetime values. The second is optional.
     values:
       - name: first
         type: datetime
@@ -757,7 +768,7 @@ properties:
         optional: true
 
   read_write_two_durations:
-    documentation: A read-write property with two duration values.
+    documentation: A read-write property with two duration values. The second is optional.
     values:
       - name: first
         type: duration
@@ -780,7 +791,7 @@ properties:
         optional: true
   
   read_write_two_binaries:
-    documentation: A read-write property with two binary values.
+    documentation: A read-write property with two binary values.  The second is optional.
     values:
       - name: first
         type: binary

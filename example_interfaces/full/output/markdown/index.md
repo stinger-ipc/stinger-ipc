@@ -343,12 +343,7 @@ _No documentation for this method_
 
 #### Return Parameters
 
-
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-|     label     |  string  ||
-|   identifier  | integer  ||
-|      day      |[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
+The return value type is ``.
 #### Code Examples
 
 <details>
@@ -532,11 +527,7 @@ _No documentation for this method_
 
 #### Return Parameters
 
-
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-|   timestamp   |          ||
-|confirmation_message|  string  ||
+The return value type is ``.
 #### Code Examples
 
 <details>

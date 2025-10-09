@@ -210,8 +210,23 @@ class {{stinger.python.client_class_name}}:
             {%if method.return_value is none%}
             fut.set_result(None)
             {%elif method.return_value_type == 'struct' %}
+            return_args = self._filter_for_args(response_json, [{%for m in method.return_value.members%}"{{m.name}}", {%endfor%}])
+            {%for arg in method.return_value.members-%}
+            {%if arg.arg_type.name.lower() == 'datetime'%}
+            return_args["{{arg.name}}"] = datetime.fromisoformat(return_args["{{arg.name}}"])
+            {%elif arg.arg_type.name.lower() == 'duration'%}
+            return_args["{{arg.name}}"] = parse_duration(return_args["{{arg.name}}"])
+            {%elif arg.arg_type.name.lower() == 'binary'%}
+            return_args["{{arg.name}}"] = base64.b64decode(return_args["{{arg.name}}"])
+            {%else%}
+            return_args["{{arg.name}}"] = {{arg.python_type}}(return_args["{{arg.name}}"])
+            {%endif%}
+            {%endfor%}
+            return_obj = {{method.return_value_python_type}}(**return_args)
+            fut.set_result(return_obj)
+            {%elif method.return_value_type == 'multiple' %}
             return_args = self._filter_for_args(response_json, [{%for m in method.return_value%}"{{m.name}}", {%endfor%}])
-            {%for arg in method.return_value-%}
+            {%for arg in method.return_value%}
             {%if arg.arg_type.name.lower() == 'datetime'%}
             return_args["{{arg.name}}"] = datetime.fromisoformat(return_args["{{arg.name}}"])
             {%elif arg.arg_type.name.lower() == 'duration'%}

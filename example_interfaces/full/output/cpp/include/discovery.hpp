@@ -36,7 +36,7 @@ private:
     std::shared_ptr<IBrokerConnection> _broker;
     std::vector<std::string> _instance_ids;
     std::function<void(const std::string&)> _discovery_callback;
-
+    
     mutable std::mutex _mutex;
     std::vector<boost::promise<std::string>> _pending_promises;
 };

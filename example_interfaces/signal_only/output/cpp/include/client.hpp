@@ -37,11 +37,11 @@ public:
 
     // Register a callback for the `anotherSignal` signal.
     // The provided method will be called whenever a `anotherSignal` is received.
-    void registerAnotherSignalCallback(const std::function<void(double, bool, const std::string&)>& cb);
+    void registerAnotherSignalCallback(const std::function<void(double, bool, std::string)>& cb);
 
     // Register a callback for the `bark` signal.
     // The provided method will be called whenever a `bark` is received.
-    void registerBarkCallback(const std::function<void(const std::string&)>& cb);
+    void registerBarkCallback(const std::function<void(std::string)>& cb);
 
     // Register a callback for the `maybe_number` signal.
     // The provided method will be called whenever a `maybe_number` is received.
@@ -74,14 +74,14 @@ private:
     // ------------------ SIGNALS --------------------
 
     // List of callbacks to be called whenever the `anotherSignal` signal is received.
-    std::vector<std::function<void(double, bool, const std::string&)>> _anotherSignalSignalCallbacks;
+    std::vector<std::function<void(double, bool, std::string)>> _anotherSignalSignalCallbacks;
     std::mutex _anotherSignalSignalCallbacksMutex;
 
     // MQTT Subscription ID for `anotherSignal` signal receptions.
     int _anotherSignalSignalSubscriptionId = -1;
 
     // List of callbacks to be called whenever the `bark` signal is received.
-    std::vector<std::function<void(const std::string&)>> _barkSignalCallbacks;
+    std::vector<std::function<void(std::string)>> _barkSignalCallbacks;
     std::mutex _barkSignalCallbacksMutex;
 
     // MQTT Subscription ID for `bark` signal receptions.

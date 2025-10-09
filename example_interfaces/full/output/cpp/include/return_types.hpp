@@ -8,6 +8,8 @@ It contains enumerations used by the Full interface.
 #pragma once
 #include <string>
 #include <chrono>
+#include <vector>
+#include <boost/optional.hpp>
 #include "enums.hpp"
 
 struct DoSomethingReturnValue

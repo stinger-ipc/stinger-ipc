@@ -9,12 +9,20 @@ It contains enumerations used by the {{stinger.name}} interface.
 #pragma once
 #include <string>
 #include <chrono>
+#include <vector>
+#include <boost/optional.hpp>
 #include "{{stinger.cpp.enum_header_file}}"
 
 {%for method_name, method in stinger.methods.items()%}
-{%-if method.return_value_type == 'struct'%}
+{%-if method.return_value_type == 'multiple'%}
 struct {{method.return_value_name | UpperCamelCase}} {
 {%-for rv in method.return_value %}
+    {{rv.cpp_temp_type}} {{rv.name}};
+{%-endfor%}
+};
+{%-elif method.return_value_type == 'struct'%}
+struct {{method.return_value_name | UpperCamelCase}} {
+{%-for rv in method.return_value.members %}
     {{rv.cpp_temp_type}} {{rv.name}};
 {%-endfor%}
 };

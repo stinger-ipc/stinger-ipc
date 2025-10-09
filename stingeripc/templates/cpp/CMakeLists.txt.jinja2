@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-
-project ({{stinger.name}})
+{% set project_name %}{{stinger.name|snake_case|replace('_', '-')|replace('--', '-')}}-ipc{% endset %}
+project ({{project_name}})
 set(CMAKE_CXX_STANDARD 11) 
 
 include_directories(include)
@@ -8,50 +8,50 @@ include_directories(include)
 set(CLIENT_SOURCE_FILES {%for src_file in client_source_files|sort%}{{src_file}} {%endfor%})
 set(SERVER_SOURCE_FILES {%for src_file in server_source_files|sort%}{{src_file}} {%endfor%})
 
-add_library(lib-{{stinger.name}}-server ${SERVER_SOURCE_FILES})
-add_library(lib-{{stinger.name}}-client ${CLIENT_SOURCE_FILES})
+add_library(lib-{{project_name}}-server ${SERVER_SOURCE_FILES})
+add_library(lib-{{project_name}}-client ${CLIENT_SOURCE_FILES})
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_executable({{stinger.name}}-client-demo examples/client_main.cpp)
-target_link_libraries({{stinger.name}}-client-demo PUBLIC lib-{{stinger.name}}-client)
-target_link_libraries({{stinger.name}}-client-demo PUBLIC mosquitto)
-target_link_libraries({{stinger.name}}-client-demo PUBLIC boost_thread)
-target_link_libraries({{stinger.name}}-client-demo PUBLIC boost_chrono)
-target_link_libraries({{stinger.name}}-client-demo PRIVATE Threads::Threads)
+add_executable({{project_name}}-client-demo examples/client_main.cpp)
+target_link_libraries({{project_name}}-client-demo PUBLIC lib-{{project_name}}-client)
+target_link_libraries({{project_name}}-client-demo PUBLIC mosquitto)
+target_link_libraries({{project_name}}-client-demo PUBLIC boost_thread)
+target_link_libraries({{project_name}}-client-demo PUBLIC boost_chrono)
+target_link_libraries({{project_name}}-client-demo PRIVATE Threads::Threads)
 
-add_executable({{stinger.name}}-server-demo examples/server_main.cpp)
-target_link_libraries({{stinger.name}}-server-demo PUBLIC lib-{{stinger.name}}-server)
-target_link_libraries({{stinger.name}}-server-demo PUBLIC mosquitto)
-target_link_libraries({{stinger.name}}-server-demo PUBLIC boost_thread)
-target_link_libraries({{stinger.name}}-server-demo PRIVATE Threads::Threads)
+add_executable({{project_name}}-server-demo examples/server_main.cpp)
+target_link_libraries({{project_name}}-server-demo PUBLIC lib-{{project_name}}-server)
+target_link_libraries({{project_name}}-server-demo PUBLIC mosquitto)
+target_link_libraries({{project_name}}-server-demo PUBLIC boost_thread)
+target_link_libraries({{project_name}}-server-demo PRIVATE Threads::Threads)
 
-add_executable({{stinger.name}}-discovery-example examples/discovery_example.cpp)
-target_link_libraries({{stinger.name}}-discovery-example PUBLIC lib-{{stinger.name}}-client)
-target_link_libraries({{stinger.name}}-discovery-example PUBLIC mosquitto)
-target_link_libraries({{stinger.name}}-discovery-example PUBLIC boost_thread)
-target_link_libraries({{stinger.name}}-discovery-example PUBLIC boost_chrono)
-target_link_libraries({{stinger.name}}-discovery-example PRIVATE Threads::Threads)
+add_executable({{project_name}}-discovery-example examples/discovery_example.cpp)
+target_link_libraries({{project_name}}-discovery-example PUBLIC lib-{{project_name}}-client)
+target_link_libraries({{project_name}}-discovery-example PUBLIC mosquitto)
+target_link_libraries({{project_name}}-discovery-example PUBLIC boost_thread)
+target_link_libraries({{project_name}}-discovery-example PUBLIC boost_chrono)
+target_link_libraries({{project_name}}-discovery-example PRIVATE Threads::Threads)
 
-add_executable({{stinger.name}}-discovery-publisher examples/discovery_publisher.cpp)
-target_link_libraries({{stinger.name}}-discovery-publisher PUBLIC lib-{{stinger.name}}-client)
-target_link_libraries({{stinger.name}}-discovery-publisher PUBLIC mosquitto)
-target_link_libraries({{stinger.name}}-discovery-publisher PUBLIC boost_thread)
-target_link_libraries({{stinger.name}}-discovery-publisher PUBLIC boost_chrono)
-target_link_libraries({{stinger.name}}-discovery-publisher PRIVATE Threads::Threads)
+add_executable({{project_name}}-discovery-publisher examples/discovery_publisher.cpp)
+target_link_libraries({{project_name}}-discovery-publisher PUBLIC lib-{{project_name}}-client)
+target_link_libraries({{project_name}}-discovery-publisher PUBLIC mosquitto)
+target_link_libraries({{project_name}}-discovery-publisher PUBLIC boost_thread)
+target_link_libraries({{project_name}}-discovery-publisher PUBLIC boost_chrono)
+target_link_libraries({{project_name}}-discovery-publisher PRIVATE Threads::Threads)
 
 # Install rules
-install(TARGETS lib-{{stinger.name}}-server lib-{{stinger.name}}-client
+install(TARGETS lib-{{project_name}}-server lib-{{project_name}}-client
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	RUNTIME DESTINATION bin)
-install(TARGETS {{stinger.name}}-client-demo {{stinger.name}}-server-demo
+install(TARGETS {{project_name}}-client-demo {{project_name}}-server-demo
 	RUNTIME DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include)
 
 # CPack configuration
-set(CPACK_PACKAGE_NAME "{{stinger.name}}-${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_PACKAGE_NAME "{{project_name}}-${CMAKE_SYSTEM_PROCESSOR}")
 set(CPACK_PACKAGE_VERSION "{{stinger.version}}")
 set(CPACK_GENERATOR "TGZ")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "{{stinger.summary}}")

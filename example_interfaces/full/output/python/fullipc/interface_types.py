@@ -54,21 +54,6 @@ class TodayIsSignalPayload(BaseModel):
     memory_segment: bytes
 
 
-class DoSomethingReturnValue(BaseModel):
-    """Interface method `doSomething` return value struct."""
-
-    label: str
-    identifier: int
-    day: DayOfTheWeek
-
-
-class SetTheTimeReturnValue(BaseModel):
-    """Interface method `set_the_time` return value struct."""
-
-    timestamp: datetime
-    confirmation_message: str
-
-
 class FavoriteFoodsProperty(BaseModel):
     """Interface property `favorite_foods` (multi-value struct)."""
 

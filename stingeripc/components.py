@@ -21,6 +21,8 @@ YamlIfaceEnum = dict[str, str | YamlArgList]
 YamlIfaceEnums = dict[str, YamlIfaceEnum]
 YamlIfaceProperty = dict[str, str | bool | YamlArgList]
 
+RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
+
 
 class Arg:
     def __init__(self, name: str, description: Optional[str] = None):
@@ -95,6 +97,8 @@ class Arg:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in arg_spec:
             raise InvalidStingerStructure("No 'name' in arg structure")
+        elif arg_spec["name"] in RESTRICTED_NAMES:
+            arg_spec["name"] = f"{arg_spec['name']}_"
         if not isinstance(arg_spec["type"], str):
             raise InvalidStingerStructure("'type' in arg structure must be a string")
         if not isinstance(arg_spec["name"], str):
@@ -380,6 +384,12 @@ class ArgStruct(Arg):
         return self._interface_struct.cpp_type
 
     @property
+    def cpp_temp_type(self) -> str:
+        if self.optional:
+            return f"boost::optional<{self._interface_struct.cpp_type}>"
+        return self._interface_struct.cpp_type
+
+    @property
     def python_type(self) -> str:
         return f"stinger_types.{self._interface_struct.python_local_type}"
 
@@ -495,6 +505,8 @@ class ArgDuration(Arg):
 
     @property
     def cpp_type(self) -> str:
+        if self.optional:
+            return "boost::optional<std::chrono::duration<double>>"
         return "std::chrono::duration<double>"
 
     @property
@@ -552,10 +564,6 @@ class ArgBinary(Arg):
         self._type = ArgType.BINARY
 
     @property
-    def cpp_type(self) -> str:
-        return "std::vector<unsigned char>"
-
-    @property
     def python_type(self) -> str:
         return "bytes"
 
@@ -573,6 +581,8 @@ class ArgBinary(Arg):
     
     @property
     def cpp_type(self) -> str:
+        if self.optional:
+            return "boost::optional<std::vector<uint8_t>>"
         return "std::vector<uint8_t>"
     
     @property
@@ -829,7 +839,7 @@ class Method(InterfaceComponent):
         elif isinstance(self._return_value, Arg):
             return self._return_value.arg_type.name.lower()
         elif isinstance(self._return_value, list):
-            return "struct"
+            return "multiple"
         raise RuntimeError("Method return value type was not recognized")
 
     def get_return_value_random_example_value(

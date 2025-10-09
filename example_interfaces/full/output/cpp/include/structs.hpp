@@ -30,8 +30,8 @@ std::string base64Encode(const std::vector<unsigned char>& data);
 // Decode a base64 encoded string into a vector of bytes
 std::vector<unsigned char> base64Decode(const std::string& b64input);
 
-struct Lunch
-{
+
+struct Lunch {
     static Lunch FromRapidJsonObject(const rapidjson::Value& jsonObj);
     bool drink;
     std::string sandwich;

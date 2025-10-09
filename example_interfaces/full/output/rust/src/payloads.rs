@@ -1,5 +1,5 @@
 //! Payloads module for Full IPC
-//!
+//! 
 //! Contains all the data structures, enums, and return codes used by the Full IPC system.
 
 /*
@@ -16,10 +16,11 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+
 pub mod base64_binary_format {
-    use base64::Engine;
-    use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
     use serde::{Deserialize, Deserializer, Serializer};
+    use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+    use base64::Engine;
 
     pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -94,7 +95,7 @@ pub mod datetime_iso_format {
 pub mod duration_iso_format {
     use chrono::Duration;
     use iso8601_duration::Duration as IsoDuration;
-    use serde::{Deserialize, Deserializer, Serializer};
+    use serde::{Deserializer, Serializer, Deserialize};
 
     pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -110,15 +111,14 @@ pub mod duration_iso_format {
         D: Deserializer<'de>,
     {
         let iso_string = String::deserialize(deserializer)?;
-        let iso_dur: IsoDuration = iso_string
-            .parse::<IsoDuration>()
+        let iso_dur: IsoDuration = iso_string.parse::<IsoDuration>()
             .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
-        let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
-            serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration")
-        })?;
+        let std_duration: std::time::Duration = iso_dur.to_std()
+            .ok_or_else(|| serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration"))?;
         chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
     }
 }
+
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -177,6 +177,8 @@ impl MethodReturnCode {
     }
 }
 
+
+
 #[repr(u32)]
 #[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(into = "u32", try_from = "u32")]
@@ -187,7 +189,7 @@ pub enum DayOfTheWeek {
     Wednesday = 4,
     Thursday = 5,
     Friday = 6,
-    Saturday = 7,
+    Saturday = 7
 }
 
 #[allow(dead_code)]
@@ -211,9 +213,11 @@ impl From<u32> for DayOfTheWeek {
 
 impl fmt::Display for DayOfTheWeek {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+       write!(f, "{:?}", self)
     }
 }
+
+
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -222,14 +226,16 @@ pub struct Lunch {
     pub sandwich: String,
     pub crackers: f32,
     pub day: DayOfTheWeek,
-
+    
     pub order_number: Option<i32>,
     #[serde(with = "datetime_iso_format")]
     pub time_of_lunch: chrono::DateTime<chrono::Utc>,
-
+    
     #[serde(with = "duration_iso_format")]
     pub duration_of_lunch: chrono::Duration,
+    
 }
+
 
 // Structures for `addNumbers` method
 
@@ -241,6 +247,7 @@ pub struct AddNumbersRequestObject {
     pub second: i32,
     pub third: Option<i32>,
 }
+
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AddNumbersReturnValue {
@@ -256,13 +263,10 @@ pub struct DoSomethingRequestObject {
     pub aString: String,
 }
 
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-/// Return Object for `doSomething` method.
+
+#[derive(Debug, Clone, Serialize)]
+/// Empty (no parameters) return structure for the `doSomething` method.
 pub struct DoSomethingReturnValue {
-    pub label: String,
-    pub identifier: i32,
-    pub day: DayOfTheWeek,
 }
 
 // Structures for `echo` method
@@ -273,6 +277,7 @@ pub struct DoSomethingReturnValue {
 pub struct EchoRequestObject {
     pub message: String,
 }
+
 
 #[derive(Debug, Clone, Serialize)]
 pub struct EchoReturnValue {
@@ -287,7 +292,9 @@ pub struct EchoReturnValue {
 pub struct WhatTimeIsItRequestObject {
     #[serde(with = "datetime_iso_format")]
     pub the_first_time: chrono::DateTime<chrono::Utc>,
+    
 }
+
 
 #[derive(Debug, Clone, Serialize)]
 pub struct WhatTimeIsItReturnValue {
@@ -303,18 +310,16 @@ pub struct WhatTimeIsItReturnValue {
 pub struct SetTheTimeRequestObject {
     #[serde(with = "datetime_iso_format")]
     pub the_first_time: chrono::DateTime<chrono::Utc>,
-
+    
     #[serde(with = "datetime_iso_format")]
     pub the_second_time: chrono::DateTime<chrono::Utc>,
+    
 }
 
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-/// Return Object for `set_the_time` method.
+
+#[derive(Debug, Clone, Serialize)]
+/// Empty (no parameters) return structure for the `set_the_time` method.
 pub struct SetTheTimeReturnValue {
-    #[serde(with = "datetime_iso_format")]
-    pub timestamp: chrono::DateTime<chrono::Utc>,
-    pub confirmation_message: String,
 }
 
 // Structures for `forward_time` method
@@ -325,7 +330,9 @@ pub struct SetTheTimeReturnValue {
 pub struct ForwardTimeRequestObject {
     #[serde(with = "duration_iso_format")]
     pub adjustment: chrono::Duration,
+    
 }
+
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ForwardTimeReturnValue {
@@ -341,7 +348,9 @@ pub struct ForwardTimeReturnValue {
 pub struct HowOffIsTheClockRequestObject {
     #[serde(with = "datetime_iso_format")]
     pub actual_time: chrono::DateTime<chrono::Utc>,
+    
 }
+
 
 #[derive(Debug, Clone, Serialize)]
 pub struct HowOffIsTheClockReturnValue {
@@ -349,28 +358,33 @@ pub struct HowOffIsTheClockReturnValue {
     pub difference: chrono::Duration,
 }
 
+
 // Structures for `todayIs` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TodayIsSignalPayload {
     pub dayOfMonth: i32,
     pub dayOfWeek: Option<DayOfTheWeek>,
-
+    
     #[serde(with = "datetime_iso_format")]
     pub timestamp: chrono::DateTime<chrono::Utc>,
-
+    
     #[serde(with = "duration_iso_format")]
     pub process_time: chrono::Duration,
-
+    
     #[serde(with = "base64_binary_format")]
     pub memory_segment: Vec<u8>,
+    
 }
+
+
 
 // `favorite_number` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FavoriteNumberProperty {
     pub number: i32,
+    
 }
 
 // `favorite_foods` property structure.
@@ -380,6 +394,7 @@ pub struct FavoriteFoodsProperty {
     pub drink: String,
     pub slices_of_pizza: i32,
     pub breakfast: Option<String>,
+    
 }
 
 // `lunch_menu` property structure.
@@ -388,6 +403,7 @@ pub struct FavoriteFoodsProperty {
 pub struct LunchMenuProperty {
     pub monday: Lunch,
     pub tuesday: Lunch,
+    
 }
 
 // `family_name` property structure.
@@ -395,44 +411,54 @@ pub struct LunchMenuProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FamilyNameProperty {
     pub family_name: String,
+    
 }
 
 // `last_breakfast_time` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct LastBreakfastTimeProperty {
+    
     #[serde(with = "datetime_iso_format")]
     pub timestamp: chrono::DateTime<chrono::Utc>,
+    
 }
 
 // `breakfast_length` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct BreakfastLengthProperty {
+    
     #[serde(with = "duration_iso_format")]
     pub length: chrono::Duration,
+    
 }
 
 // `last_birthdays` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct LastBirthdaysProperty {
+    
     #[serde(with = "datetime_iso_format")]
     pub mom: chrono::DateTime<chrono::Utc>,
-
+    
     #[serde(with = "datetime_iso_format")]
     pub dad: chrono::DateTime<chrono::Utc>,
-
+    
     #[serde(with = "datetime_iso_format")]
     pub sister: chrono::DateTime<chrono::Utc>,
     pub brothers_age: Option<i32>,
+    
 }
+
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::{DateTime, Utc};
 
+    
     #[test]
     fn test_favorite_number_property_json_format() {
         // Test deserializing from a known JSON string
@@ -442,7 +468,7 @@ mod tests {
 
         let parsed: FavoriteNumberProperty = serde_json::from_str(json_str).unwrap();
     }
-
+    
     #[test]
     fn test_favorite_foods_property_json_format() {
         // Test deserializing from a known JSON string
@@ -456,7 +482,7 @@ mod tests {
 
         let parsed: FavoriteFoodsProperty = serde_json::from_str(json_str).unwrap();
     }
-
+    
     #[test]
     fn test_lunch_menu_property_json_format() {
         // Test deserializing from a known JSON string
@@ -468,7 +494,7 @@ mod tests {
 
         let parsed: LunchMenuProperty = serde_json::from_str(json_str).unwrap();
     }
-
+    
     #[test]
     fn test_family_name_property_json_format() {
         // Test deserializing from a known JSON string
@@ -478,7 +504,7 @@ mod tests {
 
         let parsed: FamilyNameProperty = serde_json::from_str(json_str).unwrap();
     }
-
+    
     #[test]
     fn test_last_breakfast_time_property_json_format() {
         // Test deserializing from a known JSON string
@@ -488,7 +514,7 @@ mod tests {
 
         let parsed: LastBreakfastTimeProperty = serde_json::from_str(json_str).unwrap();
     }
-
+    
     #[test]
     fn test_breakfast_length_property_json_format() {
         // Test deserializing from a known JSON string
@@ -498,7 +524,7 @@ mod tests {
 
         let parsed: BreakfastLengthProperty = serde_json::from_str(json_str).unwrap();
     }
-
+    
     #[test]
     fn test_last_birthdays_property_json_format() {
         // Test deserializing from a known JSON string
@@ -514,11 +540,12 @@ mod tests {
 
         let parsed: LastBirthdaysProperty = serde_json::from_str(json_str).unwrap();
     }
+    
 
     #[test]
     fn test_base64_binary_format_serialization() {
         use serde::{Deserialize, Serialize};
-
+        
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct TestStruct {
             #[serde(with = "base64_binary_format")]
@@ -527,13 +554,11 @@ mod tests {
 
         // Test with various binary data
         let test_data = vec![0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37];
-        let test_struct = TestStruct {
-            data: test_data.clone(),
-        };
+        let test_struct = TestStruct { data: test_data.clone() };
 
         // Test serialization
         let serialized = serde_json::to_string(&test_struct).unwrap();
-
+        
         // The base64 encoded value of [0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37] should be "AAEC//5CEzc="
         assert!(serialized.contains("AAEC//5CEzc="));
 
@@ -545,7 +570,7 @@ mod tests {
     #[test]
     fn test_base64_binary_format_option_serialization() {
         use serde::{Deserialize, Serialize};
-
+        
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct TestStruct {
             #[serde(with = "base64_binary_format")]
@@ -556,9 +581,7 @@ mod tests {
 
         // Test with Some data
         let test_data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F]; // "Hello" in bytes
-        let test_struct_some = TestStruct {
-            data: Some(test_data.clone()),
-        };
+        let test_struct_some = TestStruct { data: Some(test_data.clone()) };
 
         let serialized_some = serde_json::to_string(&test_struct_some).unwrap();
         let deserialized_some: TestStruct = serde_json::from_str(&serialized_some).unwrap();
@@ -574,7 +597,7 @@ mod tests {
     #[test]
     fn test_base64_binary_format_round_trip() {
         use serde::{Deserialize, Serialize};
-
+        
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct BinaryData {
             #[serde(with = "base64_binary_format")]

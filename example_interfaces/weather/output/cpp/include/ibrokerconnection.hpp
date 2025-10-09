@@ -33,12 +33,13 @@ enum class MethodReturnCode
 
 struct MqttProperties
 {
-    MqttProperties()
-        : correlationId(boost::none)
-        , responseTopic(boost::none)
-        , returnCode(boost::none)
-        , subscriptionId(boost::none)
-        , propertyVersion(boost::none)
+    MqttProperties():
+        correlationId(boost::none),
+        responseTopic(boost::none),
+        returnCode(boost::none),
+        subscriptionId(boost::none),
+        propertyVersion(boost::none),
+        messageExpiryInterval(boost::none)
     {
     }
 
@@ -47,7 +48,11 @@ struct MqttProperties
     boost::optional<MethodReturnCode> returnCode;
     boost::optional<int> subscriptionId;
     boost::optional<int> propertyVersion;
+    boost::optional<int> messageExpiryInterval;
 };
+
+typedef std::function<void(int, const char*)> LogFunctionType;
+typedef int CallbackHandleType;
 
 class IBrokerConnection
 {
@@ -62,10 +67,14 @@ public:
      */
     virtual int Subscribe(const std::string& topic, int qos) = 0;
 
+    virtual void Unsubscribe(const std::string& topic) = 0;
+
     /*! Provide a callback to be called on an incoming message.
      * Implementation should accept this at any time, even when not connected.
      */
-    virtual void AddMessageCallback(const std::function<void(const std::string&, const std::string&, const MqttProperties&)>& cb) = 0;
+    virtual CallbackHandleType AddMessageCallback(const std::function<void(const std::string&, const std::string&, const MqttProperties&)>& cb) = 0;
+
+    virtual void RemoveMessageCallback(CallbackHandleType handle) = 0;
 
     /*! Utility for matching topics.
      * This probably should be a wrapper around `mosquitto_topic_matches_sub` or similar
@@ -73,4 +82,12 @@ public:
     virtual bool TopicMatchesSubscription(const std::string& topic, const std::string& subscr) const = 0;
 
     virtual std::string GetClientId() const = 0;
+
+    virtual std::string GetOnlineTopic() const = 0;
+
+    virtual void SetLogFunction(const LogFunctionType& logFunc) = 0;
+
+    virtual void SetLogLevel(int level) = 0;
+
+    virtual void Log(int level, const char* fmt, ...) const = 0;
 };
