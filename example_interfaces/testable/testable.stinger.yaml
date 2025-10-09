@@ -207,4 +207,584 @@ signals:
         type: datetime
         description: The date and time value.
   
+  singleOptionalDatetime:
+    documentation: A signal with a single optional date and time parameter.
+    payload:
+      - name: value
+        type: datetime
+        optional: true
+        description: The date and time value.
   
+  threeDateTimes:
+    documentation: A signal with three date and time parameters, the third is optional.
+    payload:
+      - name: first
+        type: datetime
+        description: The first date and time value.
+      - name: second
+        type: datetime
+        description: The second date and time value.
+      - name: third
+        type: datetime
+        description: The third date and time value.
+        optional: true
+  
+  singleDuration:
+    documentation: A signal with a single duration parameter.
+    payload:
+      - name: value
+        type: duration
+        description: The duration value.
+
+  singleOptionalDuration:
+    documentation: A signal with a single optional duration parameter.
+    payload:
+      - name: value
+        type: duration
+        optional: true
+        description: The duration value.
+
+  threeDurations:
+    documentation: A signal with three duration parameters, the third is optional.
+    payload:
+      - name: first
+        type: duration
+        description: The first duration value.
+      - name: second
+        type: duration
+        description: The second duration value.
+      - name: third
+        type: duration
+        description: The third duration value.
+        optional: true
+  
+  singleBinary:
+    documentation: A signal with a single binary parameter.
+    payload:
+      - name: value
+        type: binary
+        description: The binary value.
+
+  singleOptionalBinary:
+    documentation: A signal with a single optional binary parameter.
+    payload:
+      - name: value
+        type: binary
+        optional: true
+        description: The binary value.
+
+  threeBinaries:
+    documentation: A signal with three binary parameters, the third is optional.
+    payload:
+      - name: first
+        type: binary
+        description: The first binary value.
+      - name: second
+        type: binary
+        description: The second binary value.
+      - name: third   
+        type: binary
+        description: The third binary value.
+        optional: true
+
+methods:
+
+  callOneInteger:
+    documentation: Method that takes one integer argument and returns one integer value.
+    arguments:
+      - name: input1
+        type: integer
+    returnValues:
+      - name: output1
+        type: integer
+
+  callOptionalInteger:
+    documentation: Method that takes one optional integer argument and returns one optional integer value.
+    arguments:
+      - name: input1
+        type: integer
+        optional: true
+    returnValues:
+      - name: output1
+        type: integer
+        optional: true
+  
+  callThreeIntegers:
+    documentation: Method that takes three integer arguments, the third is optional, and returns three integer values, the third is optional.
+    arguments:
+      - name: input1
+        type: integer
+        description: The first integer input.  The other two don't have descriptions.
+      - name: input2
+        type: integer
+      - name: input3
+        type: integer
+        optional: true
+    returnValues:
+      - name: output1
+        type: integer
+        description: The first integer output.  The other two don't have descriptions.
+      - name: output2
+        type: integer
+      - name: output3
+        type: integer
+        optional: true
+
+  callOneString:
+    documentation: Method that takes one string argument and returns one string value.
+    arguments:
+      - name: input1
+        type: string
+    returnValues:
+      - name: output1 
+        type: string
+
+  callOptionalString:
+    documentation: Method that takes one optional string argument and returns one optional string value.
+    arguments:
+      - name: input1
+        type: string
+        optional: true
+    returnValues:
+      - name: output1 
+        type: string
+        optional: true
+
+  callThreeStrings:
+    documentation: Method that takes three string arguments, the third is optional, and returns three string values, the third is optional.
+    arguments:
+      - name: input1
+        type: string
+        description: The first string input.  The other two don't have descriptions.
+      - name: input2
+        type: string
+      - name: input3
+        type: string
+        optional: true
+    returnValues:
+      - name: output1 
+        type: string
+        description: The first string output.  The other two don't have descriptions.
+      - name: output2 
+        type: string
+      - name: output3 
+        type: string
+        optional: true
+
+  callOneEnum:
+    documentation: Method that takes one enum argument and returns one enum value.
+    arguments:
+      - name: input1
+        type: enum
+        enumName: Numbers
+    returnValues:
+      - name: output1 
+        type: enum
+        enumName: numbers.
+
+  callOptionalEnum:
+    documentation: Method that takes one optional enum argument and returns one optional enum value.
+    arguments:
+      - name: input1
+        type: enum
+        enumName: Numbers
+        optional: true
+    returnValues:
+      - name: output1 
+        type: enum
+        enumName: Numbers
+        optional: true 
+
+  callThreeEnums:
+    documentation: Method that takes three enum arguments, the third is optional, and returns three enum values, the third is optional.
+    arguments:
+      - name: input1
+        type: enum
+        enumName: Numbers
+        description: The first enum input.  The other two don't have descriptions.
+      - name: input2
+        type: enum
+        enumName: Numbers
+      - name: input3
+        type: enum
+        enumName: Numbers
+        optional: true
+    returnValues:
+      - name: output1 
+        type: enum
+        enumName: Numbers
+        description: The first enum output.  The other two don't have descriptions.
+      - name: output2 
+        type: enum
+        enumName: Numbers
+      - name: output3 
+        type: enum
+        enumName: Numbers
+        optional: true
+
+  callOneStruct:
+    documentation: Method that takes one struct argument and returns one struct value.
+    arguments:
+      - name: input1
+        type: struct
+        structName: MyStruct
+    returnValues:
+      - name: output1
+        type: struct
+        structName: MyStruct
+
+  callOptionalStruct:
+    documentation: Method that takes one optional struct argument and returns one optional struct value.
+    arguments:
+      - name: input1
+        type: struct
+        structName: MyStruct
+        optional: true
+    returnValues:
+      - name: output1 
+        type: struct
+        structName: MyStruct
+        optional: true
+
+  callThreeStructs:
+    documentation: Method that takes three struct arguments, the third is optional, and returns three struct values, the third is optional.
+    arguments:
+      - name: input1
+        type: struct
+        structName: MyStruct
+        description: The first struct input.  The other two don't have descriptions.
+      - name: input2
+        type: struct
+        structName: MyStruct
+      - name: input3
+        type: struct
+        structName: MyStruct
+        optional: true
+    returnValues:
+      - name: output1 
+        type: struct
+        structName: MyStruct
+        description: The first struct output.  The other two don't have descriptions.
+      - name: output2 
+        type: struct
+        structName: MyStruct
+      - name: output3 
+        type: struct
+        structName: MyStruct
+        optional: true
+  
+  callOneDateTime:
+    documentation: Method that takes one date and time argument and returns one date and time value.
+    arguments:
+      - name: input1
+        type: datetime
+    returnValues:
+      - name: output1
+        type: datetime
+
+  callOptionalDateTime:
+    documentation: Method that takes one optional date and time argument and returns one optional date and time value.
+    arguments:
+      - name: input1  
+        type: datetime
+        optional: true
+    returnValues:
+      - name: output1
+        type: datetime
+        optional: true
+  
+  callThreeDateTimes:
+    documentation: Method that takes three date and time arguments, the third is optional, and returns three date and time values, the third is optional.
+    arguments:
+      - name: input1
+        type: datetime
+        description: The first date and time input.  The other two don't have descriptions.
+      - name: input2
+        type: datetime
+      - name: input3
+        type: datetime
+        optional: true
+    returnValues:
+      - name: output1
+        type: datetime
+        description: The first date and time output.  The other two don't have descriptions.
+      - name: output2
+        type: datetime
+      - name: output3
+        type: datetime
+        optional: true
+
+  callOneDuration:
+    documentation: Method that takes one duration argument and returns one duration value.
+    arguments:
+      - name: input1
+        type: duration
+    returnValues:
+      - name: output1
+        type: duration
+
+  callOptionalDuration:
+    documentation: Method that takes one optional duration argument and returns one optional duration value.
+    arguments:
+      - name: input1
+        type: duration
+        optional: true
+    returnValues:
+      - name: output1
+        type: duration
+        optional: true
+        
+  callThreeDurations:
+    documentation: Method that takes three duration arguments, the third is optional, and returns three duration values, the third is optional.
+    arguments:
+      - name: input1
+        type: duration
+        description: The first duration input.  The other two don't have descriptions.
+      - name: input2
+        type: duration
+      - name: input3
+        type: duration
+        optional: true
+    returnValues:
+      - name: output1
+        type: duration
+        description: The first duration output.  The other two don't have descriptions.
+      - name: output2
+        type: duration
+      - name: output3
+        type: duration
+        optional: true
+
+  callOneBinary:
+    documentation: Method that takes one binary argument and returns one binary value.
+    arguments:
+      - name: input1
+        type: binary
+    returnValues:
+      - name: output1
+        type: binary
+  
+  callOptionalBinary:
+    documentation: Method that takes one optional binary argument and returns one optional binary value.
+    arguments:
+      - name: input1
+        type: binary
+        optional: true
+    returnValues:
+      - name: output1
+        type: binary
+        optional: true
+        
+  callThreeBinaries:
+    documentation: Method that takes three binary arguments, the third is optional, and returns three binary values, the third is optional.
+    arguments:
+      - name: input1
+        type: binary
+        description: The first binary input.  The other two don't have descriptions.
+      - name: input2
+        type: binary
+      - name: input3
+        type: binary
+        optional: true
+    returnValues:
+      - name: output1
+        type: binary
+        description: The first binary output.  The other two don't have descriptions.
+      - name: output2
+        type: binary
+      - name: output3
+        type: binary
+        optional: true
+
+properties:
+
+  read_write_integer:
+    documentation: A read-write integer property.
+    values:
+      - name: value
+        type: integer
+
+  read_only_integer:
+    documentation: A read-only integer property.
+    readOnly: true
+    values:
+      - name: value
+        type: integer
+
+  read_write_optional_integer:
+    documentation: A read-write optional integer property.
+    values:
+      - name: value
+        type: integer
+        optional: true
+
+  read_write_two_integers:
+    documentation: A read-write property with two integer values.
+    values:
+      - name: first
+        type: integer
+        description: An integer value.
+      - name: second
+        type: integer
+        optional: true
+
+  read_only_string:
+    documentation: A read-only string property.
+    readOnly: true
+    values:
+      - name: value
+        type: string
+
+  read_write_string:
+    documentation: A read-write string property.
+    values:
+      - name: value
+        type: string
+
+  read_write_optional_string:
+    documentation: A read-write optional string property.
+    values:
+      - name: value
+        type: string
+        optional: true
+
+  read_write_two_strings:
+    documentation: A read-write property with two string values.
+    values:
+      - name: first
+        type: string
+        description: A string value.
+      - name: second
+        type: string
+        optional: true
+
+  read_write_struct:
+    documentation: A read-write struct property.
+    values:
+      - name: value
+        type: struct
+        structName: AllTypes
+
+  read_write_optional_struct:
+    documentation: A read-write optional struct property.
+    values:
+      - name: value
+        type: struct
+        structName: AllTypes
+        optional: true
+  
+  read_write_two_structs:
+    documentation: A read-write property with two struct values.
+    values:
+      - name: first
+        type: struct
+        structName: AllTypes
+        description: A struct value.
+      - name: second
+        type: struct
+        structName: AllTypes
+        optional: true
+
+  read_only_enum:
+    documentation: A read-only enum property.
+    readOnly: true
+    values:
+      - name: value
+        type: enum
+        enumName: Numbers
+
+  read_write_enum:
+    documentation: A read-write enum property.
+    values:
+      - name: value
+        type: enum
+        enumName: Numbers
+
+  read_write_optional_enum:
+    documentation: A read-write optional enum property.
+    values:
+      - name: value
+        type: enum
+        enumName: Numbers
+        optional: true
+
+  read_write_two_enums:
+    documentation: A read-write property with two enum values.
+    values:
+      - name: first
+        type: enum
+        enumName: Numbers
+        description: An enum value.
+      - name: second
+        type: enum
+        enumName: Numbers
+        optional: true
+  
+  read_write_datetime:
+    documentation: A read-write datetime property.
+    values:
+      - name: value
+        type: datetime
+
+  read_write_optional_datetime:
+    documentation: A read-write optional datetime property.
+    values:
+      - name: value
+        type: datetime
+        optional: true
+  
+  read_write_two_datetimes:
+    documentation: A read-write property with two datetime values.
+    values:
+      - name: first
+        type: datetime
+        description: A date and time value.
+      - name: second
+        type: datetime
+        optional: true
+  
+  read_write_duration:
+    documentation: A read-write duration property.
+    values:
+      - name: value
+        type: duration
+
+  read_write_optional_duration:
+    documentation: A read-write optional duration property.
+    values:
+      - name: value
+        type: duration
+        optional: true
+
+  read_write_two_durations:
+    documentation: A read-write property with two duration values.
+    values:
+      - name: first
+        type: duration
+        description: A duration of time.
+      - name: second
+        type: duration
+        optional: true
+  
+  read_write_binary:
+    documentation: A read-write binary property.
+    values:
+      - name: value
+        type: binary
+  
+  read_write_optional_binary:
+    documentation: A read-write optional binary property.
+    values:
+      - name: value
+        type: binary
+        optional: true
+  
+  read_write_two_binaries:
+    documentation: A read-write property with two binary values.
+    values:
+      - name: first
+        type: binary
+        description: A binary blob of data.
+      - name: second
+        type: binary
+        optional: true
