@@ -1,0 +1,25 @@
+
+#include "return_types.hpp"
+{% import "partials/deserialize.jinja2"  as deser %}
+{% import "partials/serialize.jinja2" as ser %}
+#include "property_structs.hpp"
+#include <rapidjson/document.h>
+
+{%for method_name, method in stinger.methods.items()%}
+{%- if method.arg_list| length > 1 %}
+{{method_name | UpperCamelCase}}ReturnValues {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    {{method_name | UpperCamelCase}}ReturnValues {{method.name | lowerCamelCase }}Rc;
+    {{deser.deserialize((method.name|lowerCamelCase)+"Rc", method.return_arg_list, 'jsonObj') | indent(4)}}
+
+    return {{method.name | lowerCamelCase }}Rc;
+};
+
+void {{method_name | UpperCamelCase}}ReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    {%for arg in method.return_arg_list%}
+    {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
+    {%- endfor %}
+}
+{%- endif %}
+{% endfor %}

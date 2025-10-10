@@ -730,6 +730,7 @@ class Method(InterfaceComponent):
         self._topic_creator = topic_creator
         self._arg_list: list[Arg] = []
         self._return_value: Arg | list[Arg] | None = None
+        self._return_arg_list: list[Arg] = []
 
     @property
     def python(self) -> PythonMethodSymbols:
@@ -742,6 +743,7 @@ class Method(InterfaceComponent):
         return self
 
     def add_return_value(self, value: Arg) -> Method:
+        self._return_arg_list.append(value)
         if self._return_value is None:
             self._return_value = value
         elif isinstance(self._return_value, list):
@@ -761,6 +763,10 @@ class Method(InterfaceComponent):
     @property
     def arg_list(self) -> list[Arg]:
         return self._arg_list
+
+    @property
+    def return_arg_list(self) -> list[Arg]:
+        return self._return_arg_list
 
     @property
     def return_value(self) -> Arg | list[Arg] | None:

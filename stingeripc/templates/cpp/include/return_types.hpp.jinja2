@@ -12,6 +12,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include <vector>
 #include <boost/optional.hpp>
 #include "{{stinger.cpp.enum_header_file}}"
+#include "structs.hpp"
 
 {%for method_name, method in stinger.methods.items()%}
 {%-if method.return_value_type == 'multiple'%}
@@ -27,4 +28,17 @@ struct {{method.return_value_name | UpperCamelCase}} {
 {%-endfor%}
 };
 {%endif%}
+{%-endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+struct {{method_name | UpperCamelCase}}ReturnValues {
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static {{method_name | UpperCamelCase}}ReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    {%-if method.return_arg_list | length > 0 %}
+    // Values...
+    {%-for arg in method.return_arg_list %}
+    {{arg.cpp_temp_type}} {{arg.name}};
+    {%-endfor%}
+    {%endif%}
+};
 {%-endfor%}
