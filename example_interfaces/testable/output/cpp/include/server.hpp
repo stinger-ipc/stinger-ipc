@@ -50,7 +50,7 @@ public:
 
     boost::future<bool> emitThreeStringsSignal(const std::string&, const std::string&, boost::optional<std::string>);
 
-    boost::future<bool> emitSingleEnumSignal(boost::optional<Numbers>);
+    boost::future<bool> emitSingleEnumSignal(Numbers);
 
     boost::future<bool> emitSingleOptionalEnumSignal(boost::optional<Numbers>);
 
@@ -88,11 +88,11 @@ public:
 
     void registerCallThreeIntegersHandler(std::function<CallThreeIntegersReturnValue(int, int, boost::optional<int>)> func);
 
-    void registerCallOneStringHandler(std::function<std::string(const std::string&)> func);
+    void registerCallOneStringHandler(std::function<std::string(std::string)> func);
 
-    void registerCallOptionalStringHandler(std::function<std::string(boost::optional<std::string>)> func);
+    void registerCallOptionalStringHandler(std::function<boost::optional<std::string>(boost::optional<std::string>)> func);
 
-    void registerCallThreeStringsHandler(std::function<CallThreeStringsReturnValue(const std::string&, const std::string&, boost::optional<std::string>)> func);
+    void registerCallThreeStringsHandler(std::function<CallThreeStringsReturnValue(std::string, std::string, boost::optional<std::string>)> func);
 
     void registerCallOneEnumHandler(std::function<Numbers(Numbers)> func);
 
@@ -102,9 +102,9 @@ public:
 
     void registerCallOneStructHandler(std::function<AllTypes(AllTypes)> func);
 
-    void registerCallOptionalStructHandler(std::function<AllTypes(AllTypes)> func);
+    void registerCallOptionalStructHandler(std::function<boost::optional<AllTypes>(boost::optional<AllTypes>)> func);
 
-    void registerCallThreeStructsHandler(std::function<CallThreeStructsReturnValue(AllTypes, AllTypes, AllTypes)> func);
+    void registerCallThreeStructsHandler(std::function<CallThreeStructsReturnValue(AllTypes, AllTypes, boost::optional<AllTypes>)> func);
 
     void registerCallOneDateTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> func);
 
@@ -156,7 +156,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_integer` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalIntegerProperty> getReadWriteOptionalIntegerProperty() const;
+    boost::optional<int> getReadWriteOptionalIntegerProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_integer` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_integer` property is received.
@@ -212,7 +212,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_string` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalStringProperty> getReadWriteOptionalStringProperty() const;
+    boost::optional<std::string> getReadWriteOptionalStringProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_string` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_string` property is received.
@@ -254,7 +254,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_struct` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalStructProperty> getReadWriteOptionalStructProperty() const;
+    ReadWriteOptionalStructProperty getReadWriteOptionalStructProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_struct` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_struct` property is received.
@@ -310,7 +310,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_enum` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalEnumProperty> getReadWriteOptionalEnumProperty() const;
+    boost::optional<Numbers> getReadWriteOptionalEnumProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_enum` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_enum` property is received.
@@ -352,7 +352,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_datetime` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalDatetimeProperty> getReadWriteOptionalDatetimeProperty() const;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> getReadWriteOptionalDatetimeProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_datetime` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_datetime` property is received.
@@ -394,7 +394,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_duration` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalDurationProperty> getReadWriteOptionalDurationProperty() const;
+    boost::optional<std::chrono::duration<double>> getReadWriteOptionalDurationProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_duration` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_duration` property is received.
@@ -436,7 +436,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_binary` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalBinaryProperty> getReadWriteOptionalBinaryProperty() const;
+    boost::optional<std::vector<uint8_t>> getReadWriteOptionalBinaryProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_binary` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_binary` property is received.
@@ -487,15 +487,15 @@ private:
     int _callThreeIntegersMethodSubscriptionId;
 
     void _callCallOneStringHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<std::string(const std::string&)> _callOneStringHandler;
+    std::function<std::string(std::string)> _callOneStringHandler;
     int _callOneStringMethodSubscriptionId;
 
     void _callCallOptionalStringHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<std::string(boost::optional<std::string>)> _callOptionalStringHandler;
+    std::function<boost::optional<std::string>(boost::optional<std::string>)> _callOptionalStringHandler;
     int _callOptionalStringMethodSubscriptionId;
 
     void _callCallThreeStringsHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<CallThreeStringsReturnValue(const std::string&, const std::string&, boost::optional<std::string>)> _callThreeStringsHandler;
+    std::function<CallThreeStringsReturnValue(std::string, std::string, boost::optional<std::string>)> _callThreeStringsHandler;
     int _callThreeStringsMethodSubscriptionId;
 
     void _callCallOneEnumHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
@@ -515,11 +515,11 @@ private:
     int _callOneStructMethodSubscriptionId;
 
     void _callCallOptionalStructHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<AllTypes(AllTypes)> _callOptionalStructHandler;
+    std::function<boost::optional<AllTypes>(boost::optional<AllTypes>)> _callOptionalStructHandler;
     int _callOptionalStructMethodSubscriptionId;
 
     void _callCallThreeStructsHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<CallThreeStructsReturnValue(AllTypes, AllTypes, AllTypes)> _callThreeStructsHandler;
+    std::function<CallThreeStructsReturnValue(AllTypes, AllTypes, boost::optional<AllTypes>)> _callThreeStructsHandler;
     int _callThreeStructsMethodSubscriptionId;
 
     void _callCallOneDateTimeHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
@@ -605,7 +605,7 @@ private:
     // ---read_write_optional_integer Property---
 
     // Current value for the `read_write_optional_integer` property.
-    boost::optional<ReadWriteOptionalIntegerProperty> _readWriteOptionalIntegerProperty;
+    boost::optional<int> _readWriteOptionalIntegerProperty;
 
     // This is the property version  of `read_write_optional_integer`.
     int _lastReadWriteOptionalIntegerPropertyVersion = -1;
@@ -689,7 +689,7 @@ private:
     // ---read_write_optional_string Property---
 
     // Current value for the `read_write_optional_string` property.
-    boost::optional<ReadWriteOptionalStringProperty> _readWriteOptionalStringProperty;
+    boost::optional<std::string> _readWriteOptionalStringProperty;
 
     // This is the property version  of `read_write_optional_string`.
     int _lastReadWriteOptionalStringPropertyVersion = -1;
@@ -752,7 +752,7 @@ private:
     // ---read_write_optional_struct Property---
 
     // Current value for the `read_write_optional_struct` property.
-    boost::optional<ReadWriteOptionalStructProperty> _readWriteOptionalStructProperty;
+    ReadWriteOptionalStructProperty _readWriteOptionalStructProperty;
 
     // This is the property version  of `read_write_optional_struct`.
     int _lastReadWriteOptionalStructPropertyVersion = -1;
@@ -836,7 +836,7 @@ private:
     // ---read_write_optional_enum Property---
 
     // Current value for the `read_write_optional_enum` property.
-    boost::optional<ReadWriteOptionalEnumProperty> _readWriteOptionalEnumProperty;
+    boost::optional<Numbers> _readWriteOptionalEnumProperty;
 
     // This is the property version  of `read_write_optional_enum`.
     int _lastReadWriteOptionalEnumPropertyVersion = -1;
@@ -899,7 +899,7 @@ private:
     // ---read_write_optional_datetime Property---
 
     // Current value for the `read_write_optional_datetime` property.
-    boost::optional<ReadWriteOptionalDatetimeProperty> _readWriteOptionalDatetimeProperty;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> _readWriteOptionalDatetimeProperty;
 
     // This is the property version  of `read_write_optional_datetime`.
     int _lastReadWriteOptionalDatetimePropertyVersion = -1;
@@ -962,7 +962,7 @@ private:
     // ---read_write_optional_duration Property---
 
     // Current value for the `read_write_optional_duration` property.
-    boost::optional<ReadWriteOptionalDurationProperty> _readWriteOptionalDurationProperty;
+    boost::optional<std::chrono::duration<double>> _readWriteOptionalDurationProperty;
 
     // This is the property version  of `read_write_optional_duration`.
     int _lastReadWriteOptionalDurationPropertyVersion = -1;
@@ -1025,7 +1025,7 @@ private:
     // ---read_write_optional_binary Property---
 
     // Current value for the `read_write_optional_binary` property.
-    boost::optional<ReadWriteOptionalBinaryProperty> _readWriteOptionalBinaryProperty;
+    boost::optional<std::vector<uint8_t>> _readWriteOptionalBinaryProperty;
 
     // This is the property version  of `read_write_optional_binary`.
     int _lastReadWriteOptionalBinaryPropertyVersion = -1;

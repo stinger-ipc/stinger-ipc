@@ -43,6 +43,6 @@ struct {{prop.name | UpperCamelCase}}Property {
  *
 {{prop.documentation |commentblock(' * ')}}
  */{%endif%}
-typedef {%if arg.arg_type.name.lower() == "struct"%}{{arg.cpp_type}}{%else%}{{arg.cpp_temp_type}}{%endif%} {{prop.name | UpperCamelCase}}Property;
+typedef {{arg.cpp_temp_type}} {{prop.name | UpperCamelCase}}Property;
 {%endif%}
 {%endfor%}

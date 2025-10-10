@@ -164,7 +164,7 @@ int main(int argc, char** argv)
                                              return "apples";
                                          });
 
-    server->registerCallOptionalStringHandler([](boost::optional<std::string> unused1) -> std::string
+    server->registerCallOptionalStringHandler([](boost::optional<std::string> unused1) -> boost::optional<std::string>
                                               {
                                                   std::cout << "Received call for callOptionalString\n";
                                                   return boost::make_optional(std::string("apples"));
@@ -200,7 +200,7 @@ int main(int argc, char** argv)
                                              return CallOneStructReturnValue{ { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } } };
                                          });
 
-    server->registerCallOptionalStructHandler([](AllTypes unused1) -> AllTypes
+    server->registerCallOptionalStructHandler([](AllTypes unused1) -> boost::optional<AllTypes>
                                               {
                                                   std::cout << "Received call for callOptionalStruct\n";
                                                   return CallOptionalStructReturnValue{ { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } } };

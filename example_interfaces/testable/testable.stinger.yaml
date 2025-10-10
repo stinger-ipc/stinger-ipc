@@ -144,7 +144,6 @@ signals:
         type: enum
         enumName: Numbers
         description: The enum value.
-        optional: true
 
   singleOptionalEnum:
     documentation: A signal with a single optional enum parameter.

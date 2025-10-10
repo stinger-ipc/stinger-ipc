@@ -608,7 +608,7 @@ void TestAbleClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<Numbers> tempValue;
+                Numbers tempValue;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
                     if (itr != doc.MemberEnd() && itr->value.IsInt())
@@ -617,7 +617,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        tempValue = boost::none;
+                        throw std::runtime_error("Received payload doesn't have required value/type");
                     }
                 }
 
@@ -1717,7 +1717,7 @@ void TestAbleClient::registerThreeStringsCallback(const std::function<void(std::
     _threeStringsSignalCallbacks.push_back(cb);
 }
 
-void TestAbleClient::registerSingleEnumCallback(const std::function<void(boost::optional<Numbers>)>& cb)
+void TestAbleClient::registerSingleEnumCallback(const std::function<void(Numbers)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleEnumSignalCallbacksMutex);
     _singleEnumSignalCallbacks.push_back(cb);
@@ -2122,11 +2122,11 @@ void TestAbleClient::_handleCallOneStringResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneString");
 }
 
-boost::future<std::string> TestAbleClient::callOptionalString(boost::optional<std::string> input1)
+boost::future<boost::optional<std::string>> TestAbleClient::callOptionalString(boost::optional<std::string> input1)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalStringMethodCalls[correlationId] = boost::promise<std::string>();
+    _pendingCallOptionalStringMethodCalls[correlationId] = boost::promise<boost::optional<std::string>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2764,11 +2764,11 @@ void TestAbleClient::_handleCallOneStructResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneStruct");
 }
 
-boost::future<AllTypes> TestAbleClient::callOptionalStruct(AllTypes input1)
+boost::future<boost::optional<AllTypes>> TestAbleClient::callOptionalStruct(AllTypes input1)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalStructMethodCalls[correlationId] = boost::promise<AllTypes>();
+    _pendingCallOptionalStructMethodCalls[correlationId] = boost::promise<boost::optional<AllTypes>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3011,22 +3011,22 @@ void TestAbleClient::_handleCallOptionalStructResponse(
             // <ArgBinary name=OptionalBinary>
         }
 
-        AllTypes returnValue{ //initializer list
+        boost::optional<AllTypes> returnValue{ //initializer list
 
-                              bool_,
-                              int_,
-                              number,
-                              str,
-                              enum_,
-                              date_and_time,
-                              time_duration,
-                              data,
-                              OptionalInteger,
-                              OptionalString,
-                              OptionalEnum,
-                              OptionalDateTime,
-                              OptionalDuration,
-                              OptionalBinary
+                                               bool_,
+                                               int_,
+                                               number,
+                                               str,
+                                               enum_,
+                                               date_and_time,
+                                               time_duration,
+                                               data,
+                                               OptionalInteger,
+                                               OptionalString,
+                                               OptionalEnum,
+                                               OptionalDateTime,
+                                               OptionalDuration,
+                                               OptionalBinary
         };
         promiseItr->second.set_value(returnValue);
     }
@@ -4037,7 +4037,7 @@ void TestAbleClient::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
     }
 }
 
-boost::optional<ReadWriteOptionalIntegerProperty> TestAbleClient::getReadWriteOptionalIntegerProperty() const
+boost::optional<int> TestAbleClient::getReadWriteOptionalIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyMutex);
     return _readWriteOptionalIntegerProperty;
@@ -4320,7 +4320,7 @@ void TestAbleClient::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
     }
 }
 
-boost::optional<ReadWriteOptionalStringProperty> TestAbleClient::getReadWriteOptionalStringProperty() const
+boost::optional<std::string> TestAbleClient::getReadWriteOptionalStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyMutex);
     return _readWriteOptionalStringProperty;
@@ -4554,7 +4554,7 @@ void TestAbleClient::_receiveReadWriteOptionalStructPropertyUpdate(const std::st
     }
 }
 
-boost::optional<ReadWriteOptionalStructProperty> TestAbleClient::getReadWriteOptionalStructProperty() const
+ReadWriteOptionalStructProperty TestAbleClient::getReadWriteOptionalStructProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyMutex);
     return _readWriteOptionalStructProperty;
@@ -4825,7 +4825,7 @@ void TestAbleClient::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
     }
 }
 
-boost::optional<ReadWriteOptionalEnumProperty> TestAbleClient::getReadWriteOptionalEnumProperty() const
+boost::optional<Numbers> TestAbleClient::getReadWriteOptionalEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyMutex);
     return _readWriteOptionalEnumProperty;
@@ -5050,7 +5050,7 @@ void TestAbleClient::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
     }
 }
 
-boost::optional<ReadWriteOptionalDatetimeProperty> TestAbleClient::getReadWriteOptionalDatetimeProperty() const
+boost::optional<std::chrono::time_point<std::chrono::system_clock>> TestAbleClient::getReadWriteOptionalDatetimeProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyMutex);
     return _readWriteOptionalDatetimeProperty;
@@ -5288,7 +5288,7 @@ void TestAbleClient::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
     }
 }
 
-boost::optional<ReadWriteOptionalDurationProperty> TestAbleClient::getReadWriteOptionalDurationProperty() const
+boost::optional<std::chrono::duration<double>> TestAbleClient::getReadWriteOptionalDurationProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyMutex);
     return _readWriteOptionalDurationProperty;
@@ -5526,7 +5526,7 @@ void TestAbleClient::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
     }
 }
 
-boost::optional<ReadWriteOptionalBinaryProperty> TestAbleClient::getReadWriteOptionalBinaryProperty() const
+boost::optional<std::vector<uint8_t>> TestAbleClient::getReadWriteOptionalBinaryProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyMutex);
     return _readWriteOptionalBinaryProperty;

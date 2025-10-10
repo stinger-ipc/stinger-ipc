@@ -37,15 +37,15 @@ function generate_cpp() {
         clang-format --style=file:${BASE_DIR}/../clang-format-config.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/include/*.hpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/src/*.cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/examples/*.cpp -i
     fi
     if [ $? -eq 0 ]; then
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j4)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
     fi
     return 0
 }
 
 generate_cpp testable || exit 1
-generate_cpp full || exit 1
-generate_cpp signal_only || exit 1
-generate_cpp weather || exit 1
+#generate_cpp full || exit 1
+#generate_cpp signal_only || exit 1
+#generate_cpp weather || exit 1
 
 
 #### Rust
@@ -67,8 +67,8 @@ function generate_rust() {
     return $RC
 }
 
-generate_rust signal_only || exit 1
-generate_rust full || exit 1
+#generate_rust signal_only || exit 1
+#generate_rust full || exit 1
 #generate_rust weather || exit 1
 
 (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example full_connection_demo --features payloads)

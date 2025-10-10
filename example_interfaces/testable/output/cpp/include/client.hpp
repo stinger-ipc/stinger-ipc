@@ -45,7 +45,7 @@ public:
     // The provided method will be called whenever a `singleInt` is received.
     void registerSingleIntCallback(const std::function<void(int)>& cb);
 
-    // Register a callback for the `singleOptionalInt` signal.
+    // Register a callback for the `singleOptionalInt` signal.  The argument is optional.
     // The provided method will be called whenever a `singleOptionalInt` is received.
     void registerSingleOptionalIntCallback(const std::function<void(boost::optional<int>)>& cb);
 
@@ -57,7 +57,7 @@ public:
     // The provided method will be called whenever a `singleString` is received.
     void registerSingleStringCallback(const std::function<void(std::string)>& cb);
 
-    // Register a callback for the `singleOptionalString` signal.
+    // Register a callback for the `singleOptionalString` signal.  The argument is optional.
     // The provided method will be called whenever a `singleOptionalString` is received.
     void registerSingleOptionalStringCallback(const std::function<void(boost::optional<std::string>)>& cb);
 
@@ -67,9 +67,9 @@ public:
 
     // Register a callback for the `singleEnum` signal.
     // The provided method will be called whenever a `singleEnum` is received.
-    void registerSingleEnumCallback(const std::function<void(boost::optional<Numbers>)>& cb);
+    void registerSingleEnumCallback(const std::function<void(Numbers)>& cb);
 
-    // Register a callback for the `singleOptionalEnum` signal.
+    // Register a callback for the `singleOptionalEnum` signal.  The argument is optional.
     // The provided method will be called whenever a `singleOptionalEnum` is received.
     void registerSingleOptionalEnumCallback(const std::function<void(boost::optional<Numbers>)>& cb);
 
@@ -81,7 +81,7 @@ public:
     // The provided method will be called whenever a `singleStruct` is received.
     void registerSingleStructCallback(const std::function<void(AllTypes)>& cb);
 
-    // Register a callback for the `singleOptionalStruct` signal.
+    // Register a callback for the `singleOptionalStruct` signal.  The argument is optional.
     // The provided method will be called whenever a `singleOptionalStruct` is received.
     void registerSingleOptionalStructCallback(const std::function<void(boost::optional<AllTypes>)>& cb);
 
@@ -93,7 +93,7 @@ public:
     // The provided method will be called whenever a `singleDateTime` is received.
     void registerSingleDateTimeCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>)>& cb);
 
-    // Register a callback for the `singleOptionalDatetime` signal.
+    // Register a callback for the `singleOptionalDatetime` signal.  The argument is optional.
     // The provided method will be called whenever a `singleOptionalDatetime` is received.
     void registerSingleOptionalDatetimeCallback(const std::function<void(boost::optional<std::chrono::time_point<std::chrono::system_clock>>)>& cb);
 
@@ -105,7 +105,7 @@ public:
     // The provided method will be called whenever a `singleDuration` is received.
     void registerSingleDurationCallback(const std::function<void(std::chrono::duration<double>)>& cb);
 
-    // Register a callback for the `singleOptionalDuration` signal.
+    // Register a callback for the `singleOptionalDuration` signal.  The argument is optional.
     // The provided method will be called whenever a `singleOptionalDuration` is received.
     void registerSingleOptionalDurationCallback(const std::function<void(boost::optional<std::chrono::duration<double>>)>& cb);
 
@@ -117,7 +117,7 @@ public:
     // The provided method will be called whenever a `singleBinary` is received.
     void registerSingleBinaryCallback(const std::function<void(std::vector<uint8_t>)>& cb);
 
-    // Register a callback for the `singleOptionalBinary` signal.
+    // Register a callback for the `singleOptionalBinary` signal.  The argument is optional.
     // The provided method will be called whenever a `singleOptionalBinary` is received.
     void registerSingleOptionalBinaryCallback(const std::function<void(boost::optional<std::vector<uint8_t>>)>& cb);
 
@@ -128,91 +128,91 @@ public:
     // ------------------- METHODS --------------------
 
     // Calls the `callWithNothing` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. None
     boost::future<void> callWithNothing();
 
     // Calls the `callOneInteger` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgPrimitive name=output1 type=int>
     boost::future<int> callOneInteger(int input1);
 
     // Calls the `callOptionalInteger` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgPrimitive name=output1 type=int>
     boost::future<boost::optional<int>> callOptionalInteger(boost::optional<int> input1);
 
     // Calls the `callThreeIntegers` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. [<ArgPrimitive name=output1 type=int>, <ArgPrimitive name=output2 type=int>, <ArgPrimitive name=output3 type=int>]
     boost::future<CallThreeIntegersReturnValue> callThreeIntegers(int input1, int input2, boost::optional<int> input3);
 
     // Calls the `callOneString` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<std::string> callOneString(const std::string& input1);
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgPrimitive name=output1 type=str>
+    boost::future<std::string> callOneString(std::string input1);
 
     // Calls the `callOptionalString` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<std::string> callOptionalString(boost::optional<std::string> input1);
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgPrimitive name=output1 type=str>
+    boost::future<boost::optional<std::string>> callOptionalString(boost::optional<std::string> input1);
 
     // Calls the `callThreeStrings` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<CallThreeStringsReturnValue> callThreeStrings(const std::string& input1, const std::string& input2, boost::optional<std::string> input3);
+    // Returns a future.  When that future resolves, it will have the returned value. [<ArgPrimitive name=output1 type=str>, <ArgPrimitive name=output2 type=str>, <ArgPrimitive name=output3 type=str>]
+    boost::future<CallThreeStringsReturnValue> callThreeStrings(std::string input1, std::string input2, boost::optional<std::string> input3);
 
     // Calls the `callOneEnum` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgEnum name=output1>
     boost::future<Numbers> callOneEnum(Numbers input1);
 
     // Calls the `callOptionalEnum` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgEnum name=output1>
     boost::future<boost::optional<Numbers>> callOptionalEnum(boost::optional<Numbers> input1);
 
     // Calls the `callThreeEnums` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. [<ArgEnum name=output1>, <ArgEnum name=output2>, <ArgEnum name=output3>]
     boost::future<CallThreeEnumsReturnValue> callThreeEnums(Numbers input1, Numbers input2, boost::optional<Numbers> input3);
 
     // Calls the `callOneStruct` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgStruct name=output1>
     boost::future<AllTypes> callOneStruct(AllTypes input1);
 
     // Calls the `callOptionalStruct` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<AllTypes> callOptionalStruct(AllTypes input1);
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgStruct name=output1>
+    boost::future<boost::optional<AllTypes>> callOptionalStruct(boost::optional<AllTypes> input1);
 
     // Calls the `callThreeStructs` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<CallThreeStructsReturnValue> callThreeStructs(AllTypes input1, AllTypes input2, AllTypes input3);
+    // Returns a future.  When that future resolves, it will have the returned value. [ArgStruct(name=output1, iface_struct=<InterfaceStruct members=['bool_', 'int_', 'number', 'str', 'enum_', 'date_and_time', 'time_duration', 'data', 'OptionalInteger', 'OptionalString', 'OptionalEnum', 'OptionalDateTime', 'OptionalDuration', 'OptionalBinary']>), ArgStruct(name=output2, iface_struct=<InterfaceStruct members=['bool_', 'int_', 'number', 'str', 'enum_', 'date_and_time', 'time_duration', 'data', 'OptionalInteger', 'OptionalString', 'OptionalEnum', 'OptionalDateTime', 'OptionalDuration', 'OptionalBinary']>), ArgStruct(name=output3, iface_struct=<InterfaceStruct members=['bool_', 'int_', 'number', 'str', 'enum_', 'date_and_time', 'time_duration', 'data', 'OptionalInteger', 'OptionalString', 'OptionalEnum', 'OptionalDateTime', 'OptionalDuration', 'OptionalBinary']>)]
+    boost::future<CallThreeStructsReturnValue> callThreeStructs(AllTypes input1, AllTypes input2, boost::optional<AllTypes> input3);
 
     // Calls the `callOneDateTime` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgDateTime name=output1>
     boost::future<std::chrono::time_point<std::chrono::system_clock>> callOneDateTime(std::chrono::time_point<std::chrono::system_clock> input1);
 
     // Calls the `callOptionalDateTime` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgDateTime name=output1>
     boost::future<boost::optional<std::chrono::time_point<std::chrono::system_clock>>> callOptionalDateTime(boost::optional<std::chrono::time_point<std::chrono::system_clock>> input1);
 
     // Calls the `callThreeDateTimes` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. [ArgDateTime(name=output1), ArgDateTime(name=output2), ArgDateTime(name=output3)]
     boost::future<CallThreeDateTimesReturnValue> callThreeDateTimes(std::chrono::time_point<std::chrono::system_clock> input1, std::chrono::time_point<std::chrono::system_clock> input2, boost::optional<std::chrono::time_point<std::chrono::system_clock>> input3);
 
     // Calls the `callOneDuration` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgDuration name=output1>
     boost::future<std::chrono::duration<double>> callOneDuration(std::chrono::duration<double> input1);
 
     // Calls the `callOptionalDuration` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgDuration name=output1>
     boost::future<boost::optional<std::chrono::duration<double>>> callOptionalDuration(boost::optional<std::chrono::duration<double>> input1);
 
     // Calls the `callThreeDurations` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. [ArgDuration(name=output1), ArgDuration(name=output2), ArgDuration(name=output3)]
     boost::future<CallThreeDurationsReturnValue> callThreeDurations(std::chrono::duration<double> input1, std::chrono::duration<double> input2, boost::optional<std::chrono::duration<double>> input3);
 
     // Calls the `callOneBinary` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgBinary name=output1>
     boost::future<std::vector<uint8_t>> callOneBinary(std::vector<uint8_t> input1);
 
     // Calls the `callOptionalBinary` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgBinary name=output1>
     boost::future<boost::optional<std::vector<uint8_t>>> callOptionalBinary(boost::optional<std::vector<uint8_t>> input1);
 
     // Calls the `callThreeBinaries` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. [ArgBinary(name=output1), ArgBinary(name=output2), ArgBinary(name=output3)]
     boost::future<CallThreeBinariesReturnValue> callThreeBinaries(std::vector<uint8_t> input1, std::vector<uint8_t> input2, boost::optional<std::vector<uint8_t>> input3);
 
     // ---------------- PROPERTIES ------------------
@@ -243,7 +243,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_integer` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalIntegerProperty> getReadWriteOptionalIntegerProperty() const;
+    boost::optional<int> getReadWriteOptionalIntegerProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_integer` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_integer` property is received.
@@ -289,7 +289,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_string` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalStringProperty> getReadWriteOptionalStringProperty() const;
+    boost::optional<std::string> getReadWriteOptionalStringProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_string` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_string` property is received.
@@ -325,7 +325,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_struct` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalStructProperty> getReadWriteOptionalStructProperty() const;
+    ReadWriteOptionalStructProperty getReadWriteOptionalStructProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_struct` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_struct` property is received.
@@ -371,7 +371,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_enum` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalEnumProperty> getReadWriteOptionalEnumProperty() const;
+    boost::optional<Numbers> getReadWriteOptionalEnumProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_enum` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_enum` property is received.
@@ -407,7 +407,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_datetime` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalDatetimeProperty> getReadWriteOptionalDatetimeProperty() const;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> getReadWriteOptionalDatetimeProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_datetime` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_datetime` property is received.
@@ -443,7 +443,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_duration` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalDurationProperty> getReadWriteOptionalDurationProperty() const;
+    boost::optional<std::chrono::duration<double>> getReadWriteOptionalDurationProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_duration` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_duration` property is received.
@@ -479,7 +479,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_binary` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteOptionalBinaryProperty> getReadWriteOptionalBinaryProperty() const;
+    boost::optional<std::vector<uint8_t>> getReadWriteOptionalBinaryProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_binary` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_binary` property is received.
@@ -567,7 +567,7 @@ private:
     int _threeStringsSignalSubscriptionId = -1;
 
     // List of callbacks to be called whenever the `singleEnum` signal is received.
-    std::vector<std::function<void(boost::optional<Numbers>)>> _singleEnumSignalCallbacks;
+    std::vector<std::function<void(Numbers)>> _singleEnumSignalCallbacks;
     std::mutex _singleEnumSignalCallbacksMutex;
 
     // MQTT Subscription ID for `singleEnum` signal receptions.
@@ -677,106 +677,127 @@ private:
     int _callWithNothingMethodSubscriptionId = -1;
     // This is called internally to process responses to `callWithNothing` method calls.
     void _handleCallWithNothingResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOneInteger` method calls.
     std::map<boost::uuids::uuid, boost::promise<int>> _pendingCallOneIntegerMethodCalls;
     int _callOneIntegerMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneInteger` method calls.
     void _handleCallOneIntegerResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOptionalInteger` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<int>>> _pendingCallOptionalIntegerMethodCalls;
     int _callOptionalIntegerMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalInteger` method calls.
     void _handleCallOptionalIntegerResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callThreeIntegers` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeIntegersReturnValue>> _pendingCallThreeIntegersMethodCalls;
     int _callThreeIntegersMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeIntegers` method calls.
     void _handleCallThreeIntegersResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOneString` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::string>> _pendingCallOneStringMethodCalls;
     int _callOneStringMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneString` method calls.
     void _handleCallOneStringResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOptionalString` method calls.
-    std::map<boost::uuids::uuid, boost::promise<std::string>> _pendingCallOptionalStringMethodCalls;
+    std::map<boost::uuids::uuid, boost::promise<boost::optional<std::string>>> _pendingCallOptionalStringMethodCalls;
     int _callOptionalStringMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalString` method calls.
     void _handleCallOptionalStringResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callThreeStrings` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeStringsReturnValue>> _pendingCallThreeStringsMethodCalls;
     int _callThreeStringsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeStrings` method calls.
     void _handleCallThreeStringsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOneEnum` method calls.
     std::map<boost::uuids::uuid, boost::promise<Numbers>> _pendingCallOneEnumMethodCalls;
     int _callOneEnumMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneEnum` method calls.
     void _handleCallOneEnumResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOptionalEnum` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<Numbers>>> _pendingCallOptionalEnumMethodCalls;
     int _callOptionalEnumMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalEnum` method calls.
     void _handleCallOptionalEnumResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callThreeEnums` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeEnumsReturnValue>> _pendingCallThreeEnumsMethodCalls;
     int _callThreeEnumsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeEnums` method calls.
     void _handleCallThreeEnumsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOneStruct` method calls.
     std::map<boost::uuids::uuid, boost::promise<AllTypes>> _pendingCallOneStructMethodCalls;
     int _callOneStructMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneStruct` method calls.
     void _handleCallOneStructResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOptionalStruct` method calls.
-    std::map<boost::uuids::uuid, boost::promise<AllTypes>> _pendingCallOptionalStructMethodCalls;
+    std::map<boost::uuids::uuid, boost::promise<boost::optional<AllTypes>>> _pendingCallOptionalStructMethodCalls;
     int _callOptionalStructMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalStruct` method calls.
     void _handleCallOptionalStructResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callThreeStructs` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeStructsReturnValue>> _pendingCallThreeStructsMethodCalls;
     int _callThreeStructsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeStructs` method calls.
     void _handleCallThreeStructsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOneDateTime` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingCallOneDateTimeMethodCalls;
     int _callOneDateTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneDateTime` method calls.
     void _handleCallOneDateTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOptionalDateTime` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<std::chrono::time_point<std::chrono::system_clock>>>> _pendingCallOptionalDateTimeMethodCalls;
     int _callOptionalDateTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalDateTime` method calls.
     void _handleCallOptionalDateTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callThreeDateTimes` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeDateTimesReturnValue>> _pendingCallThreeDateTimesMethodCalls;
     int _callThreeDateTimesMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeDateTimes` method calls.
     void _handleCallThreeDateTimesResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOneDuration` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::duration<double>>> _pendingCallOneDurationMethodCalls;
     int _callOneDurationMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneDuration` method calls.
     void _handleCallOneDurationResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOptionalDuration` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<std::chrono::duration<double>>>> _pendingCallOptionalDurationMethodCalls;
     int _callOptionalDurationMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalDuration` method calls.
     void _handleCallOptionalDurationResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callThreeDurations` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeDurationsReturnValue>> _pendingCallThreeDurationsMethodCalls;
     int _callThreeDurationsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeDurations` method calls.
     void _handleCallThreeDurationsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOneBinary` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::vector<uint8_t>>> _pendingCallOneBinaryMethodCalls;
     int _callOneBinaryMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneBinary` method calls.
     void _handleCallOneBinaryResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callOptionalBinary` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<std::vector<uint8_t>>>> _pendingCallOptionalBinaryMethodCalls;
     int _callOptionalBinaryMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalBinary` method calls.
     void _handleCallOptionalBinaryResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `callThreeBinaries` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeBinariesReturnValue>> _pendingCallThreeBinariesMethodCalls;
     int _callThreeBinariesMethodSubscriptionId = -1;
@@ -830,7 +851,7 @@ private:
     // ---read_write_optional_integer Property---
 
     // Last received value for the `read_write_optional_integer` property.
-    boost::optional<ReadWriteOptionalIntegerProperty> _readWriteOptionalIntegerProperty;
+    boost::optional<int> _readWriteOptionalIntegerProperty;
 
     // This is the property version of the last received `read_write_optional_integer` property update.
     int _lastReadWriteOptionalIntegerPropertyVersion = -1;
@@ -914,7 +935,7 @@ private:
     // ---read_write_optional_string Property---
 
     // Last received value for the `read_write_optional_string` property.
-    boost::optional<ReadWriteOptionalStringProperty> _readWriteOptionalStringProperty;
+    boost::optional<std::string> _readWriteOptionalStringProperty;
 
     // This is the property version of the last received `read_write_optional_string` property update.
     int _lastReadWriteOptionalStringPropertyVersion = -1;
@@ -977,7 +998,7 @@ private:
     // ---read_write_optional_struct Property---
 
     // Last received value for the `read_write_optional_struct` property.
-    boost::optional<ReadWriteOptionalStructProperty> _readWriteOptionalStructProperty;
+    ReadWriteOptionalStructProperty _readWriteOptionalStructProperty;
 
     // This is the property version of the last received `read_write_optional_struct` property update.
     int _lastReadWriteOptionalStructPropertyVersion = -1;
@@ -1061,7 +1082,7 @@ private:
     // ---read_write_optional_enum Property---
 
     // Last received value for the `read_write_optional_enum` property.
-    boost::optional<ReadWriteOptionalEnumProperty> _readWriteOptionalEnumProperty;
+    boost::optional<Numbers> _readWriteOptionalEnumProperty;
 
     // This is the property version of the last received `read_write_optional_enum` property update.
     int _lastReadWriteOptionalEnumPropertyVersion = -1;
@@ -1124,7 +1145,7 @@ private:
     // ---read_write_optional_datetime Property---
 
     // Last received value for the `read_write_optional_datetime` property.
-    boost::optional<ReadWriteOptionalDatetimeProperty> _readWriteOptionalDatetimeProperty;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> _readWriteOptionalDatetimeProperty;
 
     // This is the property version of the last received `read_write_optional_datetime` property update.
     int _lastReadWriteOptionalDatetimePropertyVersion = -1;
@@ -1187,7 +1208,7 @@ private:
     // ---read_write_optional_duration Property---
 
     // Last received value for the `read_write_optional_duration` property.
-    boost::optional<ReadWriteOptionalDurationProperty> _readWriteOptionalDurationProperty;
+    boost::optional<std::chrono::duration<double>> _readWriteOptionalDurationProperty;
 
     // This is the property version of the last received `read_write_optional_duration` property update.
     int _lastReadWriteOptionalDurationPropertyVersion = -1;
@@ -1250,7 +1271,7 @@ private:
     // ---read_write_optional_binary Property---
 
     // Last received value for the `read_write_optional_binary` property.
-    boost::optional<ReadWriteOptionalBinaryProperty> _readWriteOptionalBinaryProperty;
+    boost::optional<std::vector<uint8_t>> _readWriteOptionalBinaryProperty;
 
     // This is the property version of the last received `read_write_optional_binary` property update.
     int _lastReadWriteOptionalBinaryPropertyVersion = -1;

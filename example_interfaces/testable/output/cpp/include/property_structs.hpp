@@ -111,7 +111,7 @@ typedef AllTypes ReadWriteStructProperty;
  *
  * A read-write optional struct property.
  */
-typedef AllTypes ReadWriteOptionalStructProperty;
+typedef boost::optional<AllTypes> ReadWriteOptionalStructProperty;
 
 /**
  * A read-write property with two struct values. The second is optional.

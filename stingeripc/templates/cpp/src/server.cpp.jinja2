@@ -134,7 +134,7 @@ boost::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCam
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
+void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle {{method.topic | replace('%1%', '+') }} method requests.");
     _{{method_name | camelCase}}Handler = func;
@@ -160,6 +160,11 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
                 {%elif arg.arg_type.name.lower() == 'enum'%}
                 // Convert the json integer into the enum type.
                 temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                {%elif arg.arg_type.name.lower() == 'struct'%}
+                // Convert the json object into the struct type.
+                if (itr->value.IsObject()) {
+                    temp{{arg.name|UpperCamelCase}} = {{arg.cpp_type}}::FromRapidJsonObject(itr->value);
+                }
                 {%endif%}
             } else {
                 throw std::runtime_error("Received payload doesn't have required value/type");
@@ -174,9 +179,6 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         {%elif method.return_value_type == "multiple" %}
         // Return value has multiple values.
         {{method.return_value_cpp_class}} ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
-        {%elif method.return_value.optional and (method.return_value_type == "struct" or (method.return_value_type == "primitive" and method.return_value.type.name.lower() == "string"))%}
-        // Return value is optional
-        boost::optional<{{method.return_value_cpp_class}}> ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
         {%else%}
         // Return value is a single value.
         {{method.return_value_cpp_class}} ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
@@ -188,23 +190,38 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
             responseJson.SetObject();
             
             {%macro add_arg_to_json(arg, value) %}
-            // add the {{arg.name}} ({{arg.arg_type.name}}) to the json
+            // add the '{{value}}' value to the json as '{{arg.name}}'.
             rapidjson::Value returnValue{{arg.name|UpperCamelCase}};
             {%-if arg.arg_type.name.lower() == 'primitive' %}
             {%-if arg.type.name.lower() == 'string' %}
             returnValue{{arg.name|UpperCamelCase}}.SetString({{value}}{%if arg.optional%}->{%else%}.{%endif%}c_str(), {{value}}{%if arg.optional%}->{%else%}.{%endif%}size(), responseJson.GetAllocator());
             {%-else%}
-            returnValue{{arg.name|UpperCamelCase}}.Set{{method.return_value.cpp_rapidjson_type | UpperCamelCase}}({%if arg.optional%}*{%endif%}{{value}});
+            returnValue{{arg.name|UpperCamelCase}}.Set{{arg.cpp_rapidjson_type | UpperCamelCase}}({%if arg.optional%}*{%endif%}{{value}}); // Rapid Json type for {{arg.arg_type}} is {{arg.cpp_rapidjson_type}}
             {%-endif%} {# value type string/primitive #}
             {%-elif arg.arg_type.name.lower() == 'enum'%}
+            {%if arg.optional%}
+            if ({{value}})
+            {
+                returnValue{{arg.name|UpperCamelCase}}.SetInt(static_cast<int>(*{{value}}));
+            }
+            else
+            {
+                returnValue{{arg.name|UpperCamelCase}}.SetNull();
+            }
+            {%else%}
             returnValue{{arg.name|UpperCamelCase}}.SetInt(static_cast<int>({{value}}));
+            {%endif%}
             {%-endif%} {# value or enum#}
             responseJson.AddMember("{{arg.name}}", returnValue{{arg.name|UpperCamelCase}}, responseJson.GetAllocator());
             {%endmacro%}
             {%-if method.return_value_type == 'struct'%}
             // Return type is a struct of values that need added to json
             {%for member in method.return_value.members-%}
+            {%if method.return_value.optional%}
+            {{add_arg_to_json(member, "ret->"+member.name)}}
+            {%else%}
             {{add_arg_to_json(member, "ret."+member.name)}}
+            {%endif%}
             {%endfor%}
 
             {%-elif method.return_value_type == 'multiple'%}
@@ -327,7 +344,7 @@ void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
         {%if arg.arg_type.name.lower() == 'primitive'%}
         temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
         {%elif arg.arg_type.name.lower() == 'enum'%}
-        temp{{arg.name|UpperCamelCase}} = static_cast<{{cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+        temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
         {%endif%}
     } else {
         throw std::runtime_error("Received payload doesn't have required value/type");

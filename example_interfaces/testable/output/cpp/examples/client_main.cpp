@@ -72,9 +72,9 @@ int main(int argc, char** argv)
                                             std::cout << "Received THREE_STRINGS signal: " << "first=" << first << " | " << "second=" << second << " | " << "third=" << "None" << std::endl;
                                         });
 
-    client.registerSingleEnumCallback([](boost::optional<Numbers> value)
+    client.registerSingleEnumCallback([](Numbers value)
                                       {
-                                          std::cout << "Received SINGLE_ENUM signal: " << "value=" << "None" << std::endl;
+                                          std::cout << "Received SINGLE_ENUM signal: " << "value=" << numbersStrings[static_cast<int>(value)] << std::endl;
                                       });
 
     client.registerSingleOptionalEnumCallback([](boost::optional<Numbers> value)
@@ -497,7 +497,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        AllTypes returnValue = callOptionalStructResultFuture.get();
+        boost::optional<AllTypes> returnValue = callOptionalStructResultFuture.get();
         std::cout << "Results:" << " bool_=" << returnValue.bool_ << " int_=" << returnValue.int_ << " number=" << returnValue.number << " str=" << returnValue.str << " enum_=" << numbersStrings[static_cast<int>(returnValue.enum_)] << " date_and_time=" << timePointToIsoString(returnValue.date_and_time) << " time_duration=" << durationToIsoString(returnValue.time_duration) << " data=" << binaryToString(returnValue.data) << " OptionalInteger=" << returnValue.OptionalInteger << " OptionalString=" << returnValue.OptionalString << " OptionalEnum=" << numbersStrings[static_cast<int>(returnValue.OptionalEnum)] << " OptionalDateTime=" << timePointToIsoString(returnValue.OptionalDateTime) << " OptionalDuration=" << durationToIsoString(returnValue.OptionalDuration) << " OptionalBinary=" << binaryToString(returnValue.OptionalBinary) << std::endl;
     }
     std::cout << "Calling callThreeStructs" << std::endl;

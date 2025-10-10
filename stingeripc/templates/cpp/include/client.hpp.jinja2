@@ -41,7 +41,7 @@ public:
     {%if stinger.signals|length > 0 -%}
     // ------------------ SIGNALS --------------------
     {%for sig_name, sig in stinger.signals.items()%}
-    // Register a callback for the `{{sig_name}}` signal.
+    // Register a callback for the `{{sig_name}}` signal.  {%if sig.arg_list|length > 0 and sig.arg_list[0].optional %}The argument is optional.{%endif%}
     // The provided method will be called whenever a `{{sig_name}}` is received.
     void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
     {%endfor%}
@@ -50,8 +50,8 @@ public:
     // ------------------- METHODS --------------------
     {%for method_name, method in stinger.methods.items()%}
     // Calls the `{{method_name}}` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<{{method.return_value_cpp_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+    // Returns a future.  When that future resolves, it will have the returned value. {{method.return_value}}
+    boost::future<{{method.return_value_cpp_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}
@@ -94,7 +94,7 @@ private:
     int _{{method_name | lowerCamelCase}}MethodSubscriptionId = -1;
     // This is called internally to process responses to `{{method_name}}` method calls.
     void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const std::string& correlationId);
-    {%-endfor%}
+    {%endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------

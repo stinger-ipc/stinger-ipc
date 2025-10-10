@@ -1113,12 +1113,12 @@ boost::future<bool> TestAbleServer::emitThreeStringsSignal(const std::string& fi
     return _broker->Publish((boost::format("testAble/%1%/signal/threeStrings") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-boost::future<bool> TestAbleServer::emitSingleEnumSignal(boost::optional<Numbers> value)
+boost::future<bool> TestAbleServer::emitSingleEnumSignal(Numbers value)
 {
     rapidjson::Document doc;
     doc.SetObject();
 
-    doc.AddMember("value", static_cast<int>(*value), doc.GetAllocator());
+    doc.AddMember("value", static_cast<int>(value), doc.GetAllocator());
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
@@ -1429,19 +1429,19 @@ void TestAbleServer::registerCallThreeIntegersHandler(std::function<CallThreeInt
     _callThreeIntegersHandler = func;
 }
 
-void TestAbleServer::registerCallOneStringHandler(std::function<std::string(const std::string&)> func)
+void TestAbleServer::registerCallOneStringHandler(std::function<std::string(std::string)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callOneString method requests.");
     _callOneStringHandler = func;
 }
 
-void TestAbleServer::registerCallOptionalStringHandler(std::function<std::string(boost::optional<std::string>)> func)
+void TestAbleServer::registerCallOptionalStringHandler(std::function<boost::optional<std::string>(boost::optional<std::string>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callOptionalString method requests.");
     _callOptionalStringHandler = func;
 }
 
-void TestAbleServer::registerCallThreeStringsHandler(std::function<CallThreeStringsReturnValue(const std::string&, const std::string&, boost::optional<std::string>)> func)
+void TestAbleServer::registerCallThreeStringsHandler(std::function<CallThreeStringsReturnValue(std::string, std::string, boost::optional<std::string>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeStrings method requests.");
     _callThreeStringsHandler = func;
@@ -1471,13 +1471,13 @@ void TestAbleServer::registerCallOneStructHandler(std::function<AllTypes(AllType
     _callOneStructHandler = func;
 }
 
-void TestAbleServer::registerCallOptionalStructHandler(std::function<AllTypes(AllTypes)> func)
+void TestAbleServer::registerCallOptionalStructHandler(std::function<boost::optional<AllTypes>(boost::optional<AllTypes>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callOptionalStruct method requests.");
     _callOptionalStructHandler = func;
 }
 
-void TestAbleServer::registerCallThreeStructsHandler(std::function<CallThreeStructsReturnValue(AllTypes, AllTypes, AllTypes)> func)
+void TestAbleServer::registerCallThreeStructsHandler(std::function<CallThreeStructsReturnValue(AllTypes, AllTypes, boost::optional<AllTypes>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeStructs method requests.");
     _callThreeStructsHandler = func;
@@ -1599,9 +1599,9 @@ void TestAbleServer::_callCallOneIntegerHandler(
 
             // Return type is a single value
 
-            // add the output1 (PRIMITIVE) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
-            returnValueOutput1.SetInt(ret);
+            returnValueOutput1.SetInt(ret); // Rapid Json type for ArgType.PRIMITIVE is Int
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
             rapidjson::StringBuffer buf;
@@ -1648,9 +1648,9 @@ void TestAbleServer::_callCallOptionalIntegerHandler(
 
             // Return type is a single value
 
-            // add the output1 (PRIMITIVE) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
-            returnValueOutput1.SetInt(*ret);
+            returnValueOutput1.SetInt(*ret); // Rapid Json type for ArgType.PRIMITIVE is Int
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
             rapidjson::StringBuffer buf;
@@ -1723,19 +1723,19 @@ void TestAbleServer::_callCallThreeIntegersHandler(
 
             // Return type is a struct of values that need added to json
 
-            // add the output1 (PRIMITIVE) to the json
+            // add the 'ret.output1' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
-            returnValueOutput1.Set(ret.output1);
+            returnValueOutput1.SetInt(ret.output1); // Rapid Json type for ArgType.PRIMITIVE is Int
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
-            // add the output2 (PRIMITIVE) to the json
+            // add the 'ret.output2' value to the json as 'output2'.
             rapidjson::Value returnValueOutput2;
-            returnValueOutput2.Set(ret.output2);
+            returnValueOutput2.SetInt(ret.output2); // Rapid Json type for ArgType.PRIMITIVE is Int
             responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
 
-            // add the output3 (PRIMITIVE) to the json
+            // add the 'ret.output3' value to the json as 'output3'.
             rapidjson::Value returnValueOutput3;
-            returnValueOutput3.Set(*ret.output3);
+            returnValueOutput3.SetInt(*ret.output3); // Rapid Json type for ArgType.PRIMITIVE is Int
             responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
 
             rapidjson::StringBuffer buf;
@@ -1782,7 +1782,7 @@ void TestAbleServer::_callCallOneStringHandler(
 
             // Return type is a single value
 
-            // add the output1 (PRIMITIVE) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             returnValueOutput1.SetString(ret.c_str(), ret.size(), responseJson.GetAllocator());
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
@@ -1821,7 +1821,7 @@ void TestAbleServer::_callCallOptionalStringHandler(
             }
         }
 
-        // Return value is optional
+        // Return value is a single value.
         boost::optional<std::string> ret = _callOptionalStringHandler(tempInput1);
 
         if (optResponseTopic)
@@ -1831,7 +1831,7 @@ void TestAbleServer::_callCallOptionalStringHandler(
 
             // Return type is a single value
 
-            // add the output1 (PRIMITIVE) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             returnValueOutput1.SetString(ret->c_str(), ret->size(), responseJson.GetAllocator());
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
@@ -1906,17 +1906,17 @@ void TestAbleServer::_callCallThreeStringsHandler(
 
             // Return type is a struct of values that need added to json
 
-            // add the output1 (PRIMITIVE) to the json
+            // add the 'ret.output1' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             returnValueOutput1.SetString(ret.output1.c_str(), ret.output1.size(), responseJson.GetAllocator());
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
-            // add the output2 (PRIMITIVE) to the json
+            // add the 'ret.output2' value to the json as 'output2'.
             rapidjson::Value returnValueOutput2;
             returnValueOutput2.SetString(ret.output2.c_str(), ret.output2.size(), responseJson.GetAllocator());
             responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
 
-            // add the output3 (PRIMITIVE) to the json
+            // add the 'ret.output3' value to the json as 'output3'.
             rapidjson::Value returnValueOutput3;
             returnValueOutput3.SetString(ret.output3->c_str(), ret.output3->size(), responseJson.GetAllocator());
             responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
@@ -1966,9 +1966,11 @@ void TestAbleServer::_callCallOneEnumHandler(
 
             // Return type is a single value
 
-            // add the output1 (ENUM) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
+
             returnValueOutput1.SetInt(static_cast<int>(ret));
+
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
             rapidjson::StringBuffer buf;
@@ -2016,9 +2018,18 @@ void TestAbleServer::_callCallOptionalEnumHandler(
 
             // Return type is a single value
 
-            // add the output1 (ENUM) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
-            returnValueOutput1.SetInt(static_cast<int>(ret));
+
+            if (ret)
+            {
+                returnValueOutput1.SetInt(static_cast<int>(*ret));
+            }
+            else
+            {
+                returnValueOutput1.SetNull();
+            }
+
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
             rapidjson::StringBuffer buf;
@@ -2094,19 +2105,32 @@ void TestAbleServer::_callCallThreeEnumsHandler(
 
             // Return type is a struct of values that need added to json
 
-            // add the output1 (ENUM) to the json
+            // add the 'ret.output1' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
+
             returnValueOutput1.SetInt(static_cast<int>(ret.output1));
+
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
-            // add the output2 (ENUM) to the json
+            // add the 'ret.output2' value to the json as 'output2'.
             rapidjson::Value returnValueOutput2;
+
             returnValueOutput2.SetInt(static_cast<int>(ret.output2));
+
             responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
 
-            // add the output3 (ENUM) to the json
+            // add the 'ret.output3' value to the json as 'output3'.
             rapidjson::Value returnValueOutput3;
-            returnValueOutput3.SetInt(static_cast<int>(ret.output3));
+
+            if (ret.output3)
+            {
+                returnValueOutput3.SetInt(static_cast<int>(*ret.output3));
+            }
+            else
+            {
+                returnValueOutput3.SetNull();
+            }
+
             responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
 
             rapidjson::StringBuffer buf;
@@ -2135,6 +2159,11 @@ void TestAbleServer::_callCallOneStructHandler(
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
             if (itr != doc.MemberEnd() && itr->value.IsObject())
             {
+                // Convert the json object into the struct type.
+                if (itr->value.IsObject())
+                {
+                    tempInput1 = AllTypes::FromRapidJsonObject(itr->value);
+                }
             }
             else
             {
@@ -2152,67 +2181,78 @@ void TestAbleServer::_callCallOneStructHandler(
 
             // Return type is a struct of values that need added to json
 
-            // add the bool_ (PRIMITIVE) to the json
+            // add the 'ret.bool_' value to the json as 'bool_'.
             rapidjson::Value returnValueBool;
-            returnValueBool.SetObject(ret.bool_);
+            returnValueBool.SetBool(ret.bool_); // Rapid Json type for ArgType.PRIMITIVE is Bool
             responseJson.AddMember("bool_", returnValueBool, responseJson.GetAllocator());
 
-            // add the int_ (PRIMITIVE) to the json
+            // add the 'ret.int_' value to the json as 'int_'.
             rapidjson::Value returnValueInt;
-            returnValueInt.SetObject(ret.int_);
+            returnValueInt.SetInt(ret.int_); // Rapid Json type for ArgType.PRIMITIVE is Int
             responseJson.AddMember("int_", returnValueInt, responseJson.GetAllocator());
 
-            // add the number (PRIMITIVE) to the json
+            // add the 'ret.number' value to the json as 'number'.
             rapidjson::Value returnValueNumber;
-            returnValueNumber.SetObject(ret.number);
+            returnValueNumber.SetDouble(ret.number); // Rapid Json type for ArgType.PRIMITIVE is Double
             responseJson.AddMember("number", returnValueNumber, responseJson.GetAllocator());
 
-            // add the str (PRIMITIVE) to the json
+            // add the 'ret.str' value to the json as 'str'.
             rapidjson::Value returnValueStr;
             returnValueStr.SetString(ret.str.c_str(), ret.str.size(), responseJson.GetAllocator());
             responseJson.AddMember("str", returnValueStr, responseJson.GetAllocator());
 
-            // add the enum_ (ENUM) to the json
+            // add the 'ret.enum_' value to the json as 'enum_'.
             rapidjson::Value returnValueEnum;
+
             returnValueEnum.SetInt(static_cast<int>(ret.enum_));
+
             responseJson.AddMember("enum_", returnValueEnum, responseJson.GetAllocator());
 
-            // add the date_and_time (DATETIME) to the json
+            // add the 'ret.date_and_time' value to the json as 'date_and_time'.
             rapidjson::Value returnValueDateAndTime;
             responseJson.AddMember("date_and_time", returnValueDateAndTime, responseJson.GetAllocator());
 
-            // add the time_duration (DURATION) to the json
+            // add the 'ret.time_duration' value to the json as 'time_duration'.
             rapidjson::Value returnValueTimeDuration;
             responseJson.AddMember("time_duration", returnValueTimeDuration, responseJson.GetAllocator());
 
-            // add the data (BINARY) to the json
+            // add the 'ret.data' value to the json as 'data'.
             rapidjson::Value returnValueData;
             responseJson.AddMember("data", returnValueData, responseJson.GetAllocator());
 
-            // add the OptionalInteger (PRIMITIVE) to the json
+            // add the 'ret.OptionalInteger' value to the json as 'OptionalInteger'.
             rapidjson::Value returnValueOptionalInteger;
-            returnValueOptionalInteger.SetObject(*ret.OptionalInteger);
+            returnValueOptionalInteger.SetInt(*ret.OptionalInteger); // Rapid Json type for ArgType.PRIMITIVE is Int
             responseJson.AddMember("OptionalInteger", returnValueOptionalInteger, responseJson.GetAllocator());
 
-            // add the OptionalString (PRIMITIVE) to the json
+            // add the 'ret.OptionalString' value to the json as 'OptionalString'.
             rapidjson::Value returnValueOptionalString;
             returnValueOptionalString.SetString(ret.OptionalString->c_str(), ret.OptionalString->size(), responseJson.GetAllocator());
             responseJson.AddMember("OptionalString", returnValueOptionalString, responseJson.GetAllocator());
 
-            // add the OptionalEnum (ENUM) to the json
+            // add the 'ret.OptionalEnum' value to the json as 'OptionalEnum'.
             rapidjson::Value returnValueOptionalEnum;
-            returnValueOptionalEnum.SetInt(static_cast<int>(ret.OptionalEnum));
+
+            if (ret.OptionalEnum)
+            {
+                returnValueOptionalEnum.SetInt(static_cast<int>(*ret.OptionalEnum));
+            }
+            else
+            {
+                returnValueOptionalEnum.SetNull();
+            }
+
             responseJson.AddMember("OptionalEnum", returnValueOptionalEnum, responseJson.GetAllocator());
 
-            // add the OptionalDateTime (DATETIME) to the json
+            // add the 'ret.OptionalDateTime' value to the json as 'OptionalDateTime'.
             rapidjson::Value returnValueOptionalDateTime;
             responseJson.AddMember("OptionalDateTime", returnValueOptionalDateTime, responseJson.GetAllocator());
 
-            // add the OptionalDuration (DURATION) to the json
+            // add the 'ret.OptionalDuration' value to the json as 'OptionalDuration'.
             rapidjson::Value returnValueOptionalDuration;
             responseJson.AddMember("OptionalDuration", returnValueOptionalDuration, responseJson.GetAllocator());
 
-            // add the OptionalBinary (BINARY) to the json
+            // add the 'ret.OptionalBinary' value to the json as 'OptionalBinary'.
             rapidjson::Value returnValueOptionalBinary;
             responseJson.AddMember("OptionalBinary", returnValueOptionalBinary, responseJson.GetAllocator());
 
@@ -2242,6 +2282,11 @@ void TestAbleServer::_callCallOptionalStructHandler(
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
             if (itr != doc.MemberEnd() && itr->value.IsObject())
             {
+                // Convert the json object into the struct type.
+                if (itr->value.IsObject())
+                {
+                    tempInput1 = AllTypes::FromRapidJsonObject(itr->value);
+                }
             }
             else
             {
@@ -2249,7 +2294,7 @@ void TestAbleServer::_callCallOptionalStructHandler(
             }
         }
 
-        // Return value is optional
+        // Return value is a single value.
         boost::optional<AllTypes> ret = _callOptionalStructHandler(tempInput1);
 
         if (optResponseTopic)
@@ -2259,67 +2304,78 @@ void TestAbleServer::_callCallOptionalStructHandler(
 
             // Return type is a struct of values that need added to json
 
-            // add the bool_ (PRIMITIVE) to the json
+            // add the 'ret->bool_' value to the json as 'bool_'.
             rapidjson::Value returnValueBool;
-            returnValueBool.SetObject(ret.bool_);
+            returnValueBool.SetBool(ret->bool_); // Rapid Json type for ArgType.PRIMITIVE is Bool
             responseJson.AddMember("bool_", returnValueBool, responseJson.GetAllocator());
 
-            // add the int_ (PRIMITIVE) to the json
+            // add the 'ret->int_' value to the json as 'int_'.
             rapidjson::Value returnValueInt;
-            returnValueInt.SetObject(ret.int_);
+            returnValueInt.SetInt(ret->int_); // Rapid Json type for ArgType.PRIMITIVE is Int
             responseJson.AddMember("int_", returnValueInt, responseJson.GetAllocator());
 
-            // add the number (PRIMITIVE) to the json
+            // add the 'ret->number' value to the json as 'number'.
             rapidjson::Value returnValueNumber;
-            returnValueNumber.SetObject(ret.number);
+            returnValueNumber.SetDouble(ret->number); // Rapid Json type for ArgType.PRIMITIVE is Double
             responseJson.AddMember("number", returnValueNumber, responseJson.GetAllocator());
 
-            // add the str (PRIMITIVE) to the json
+            // add the 'ret->str' value to the json as 'str'.
             rapidjson::Value returnValueStr;
-            returnValueStr.SetString(ret.str.c_str(), ret.str.size(), responseJson.GetAllocator());
+            returnValueStr.SetString(ret->str.c_str(), ret->str.size(), responseJson.GetAllocator());
             responseJson.AddMember("str", returnValueStr, responseJson.GetAllocator());
 
-            // add the enum_ (ENUM) to the json
+            // add the 'ret->enum_' value to the json as 'enum_'.
             rapidjson::Value returnValueEnum;
-            returnValueEnum.SetInt(static_cast<int>(ret.enum_));
+
+            returnValueEnum.SetInt(static_cast<int>(ret->enum_));
+
             responseJson.AddMember("enum_", returnValueEnum, responseJson.GetAllocator());
 
-            // add the date_and_time (DATETIME) to the json
+            // add the 'ret->date_and_time' value to the json as 'date_and_time'.
             rapidjson::Value returnValueDateAndTime;
             responseJson.AddMember("date_and_time", returnValueDateAndTime, responseJson.GetAllocator());
 
-            // add the time_duration (DURATION) to the json
+            // add the 'ret->time_duration' value to the json as 'time_duration'.
             rapidjson::Value returnValueTimeDuration;
             responseJson.AddMember("time_duration", returnValueTimeDuration, responseJson.GetAllocator());
 
-            // add the data (BINARY) to the json
+            // add the 'ret->data' value to the json as 'data'.
             rapidjson::Value returnValueData;
             responseJson.AddMember("data", returnValueData, responseJson.GetAllocator());
 
-            // add the OptionalInteger (PRIMITIVE) to the json
+            // add the 'ret->OptionalInteger' value to the json as 'OptionalInteger'.
             rapidjson::Value returnValueOptionalInteger;
-            returnValueOptionalInteger.SetObject(*ret.OptionalInteger);
+            returnValueOptionalInteger.SetInt(*ret->OptionalInteger); // Rapid Json type for ArgType.PRIMITIVE is Int
             responseJson.AddMember("OptionalInteger", returnValueOptionalInteger, responseJson.GetAllocator());
 
-            // add the OptionalString (PRIMITIVE) to the json
+            // add the 'ret->OptionalString' value to the json as 'OptionalString'.
             rapidjson::Value returnValueOptionalString;
-            returnValueOptionalString.SetString(ret.OptionalString->c_str(), ret.OptionalString->size(), responseJson.GetAllocator());
+            returnValueOptionalString.SetString(ret->OptionalString->c_str(), ret->OptionalString->size(), responseJson.GetAllocator());
             responseJson.AddMember("OptionalString", returnValueOptionalString, responseJson.GetAllocator());
 
-            // add the OptionalEnum (ENUM) to the json
+            // add the 'ret->OptionalEnum' value to the json as 'OptionalEnum'.
             rapidjson::Value returnValueOptionalEnum;
-            returnValueOptionalEnum.SetInt(static_cast<int>(ret.OptionalEnum));
+
+            if (ret->OptionalEnum)
+            {
+                returnValueOptionalEnum.SetInt(static_cast<int>(*ret->OptionalEnum));
+            }
+            else
+            {
+                returnValueOptionalEnum.SetNull();
+            }
+
             responseJson.AddMember("OptionalEnum", returnValueOptionalEnum, responseJson.GetAllocator());
 
-            // add the OptionalDateTime (DATETIME) to the json
+            // add the 'ret->OptionalDateTime' value to the json as 'OptionalDateTime'.
             rapidjson::Value returnValueOptionalDateTime;
             responseJson.AddMember("OptionalDateTime", returnValueOptionalDateTime, responseJson.GetAllocator());
 
-            // add the OptionalDuration (DURATION) to the json
+            // add the 'ret->OptionalDuration' value to the json as 'OptionalDuration'.
             rapidjson::Value returnValueOptionalDuration;
             responseJson.AddMember("OptionalDuration", returnValueOptionalDuration, responseJson.GetAllocator());
 
-            // add the OptionalBinary (BINARY) to the json
+            // add the 'ret->OptionalBinary' value to the json as 'OptionalBinary'.
             rapidjson::Value returnValueOptionalBinary;
             responseJson.AddMember("OptionalBinary", returnValueOptionalBinary, responseJson.GetAllocator());
 
@@ -2349,6 +2405,11 @@ void TestAbleServer::_callCallThreeStructsHandler(
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
             if (itr != doc.MemberEnd() && itr->value.IsObject())
             {
+                // Convert the json object into the struct type.
+                if (itr->value.IsObject())
+                {
+                    tempInput1 = AllTypes::FromRapidJsonObject(itr->value);
+                }
             }
             else
             {
@@ -2361,6 +2422,11 @@ void TestAbleServer::_callCallThreeStructsHandler(
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input2");
             if (itr != doc.MemberEnd() && itr->value.IsObject())
             {
+                // Convert the json object into the struct type.
+                if (itr->value.IsObject())
+                {
+                    tempInput2 = AllTypes::FromRapidJsonObject(itr->value);
+                }
             }
             else
             {
@@ -2373,6 +2439,11 @@ void TestAbleServer::_callCallThreeStructsHandler(
             rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input3");
             if (itr != doc.MemberEnd() && itr->value.IsObject())
             {
+                // Convert the json object into the struct type.
+                if (itr->value.IsObject())
+                {
+                    tempInput3 = AllTypes::FromRapidJsonObject(itr->value);
+                }
             }
             else
             {
@@ -2390,15 +2461,15 @@ void TestAbleServer::_callCallThreeStructsHandler(
 
             // Return type is a struct of values that need added to json
 
-            // add the output1 (STRUCT) to the json
+            // add the 'ret.output1' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
-            // add the output2 (STRUCT) to the json
+            // add the 'ret.output2' value to the json as 'output2'.
             rapidjson::Value returnValueOutput2;
             responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
 
-            // add the output3 (STRUCT) to the json
+            // add the 'ret.output3' value to the json as 'output3'.
             rapidjson::Value returnValueOutput3;
             responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
 
@@ -2445,7 +2516,7 @@ void TestAbleServer::_callCallOneDateTimeHandler(
 
             // Return type is a single value
 
-            // add the output1 (DATETIME) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
@@ -2492,7 +2563,7 @@ void TestAbleServer::_callCallOptionalDateTimeHandler(
 
             // Return type is a single value
 
-            // add the output1 (DATETIME) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
@@ -2563,15 +2634,15 @@ void TestAbleServer::_callCallThreeDateTimesHandler(
 
             // Return type is a struct of values that need added to json
 
-            // add the output1 (DATETIME) to the json
+            // add the 'ret.output1' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
-            // add the output2 (DATETIME) to the json
+            // add the 'ret.output2' value to the json as 'output2'.
             rapidjson::Value returnValueOutput2;
             responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
 
-            // add the output3 (DATETIME) to the json
+            // add the 'ret.output3' value to the json as 'output3'.
             rapidjson::Value returnValueOutput3;
             responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
 
@@ -2618,7 +2689,7 @@ void TestAbleServer::_callCallOneDurationHandler(
 
             // Return type is a single value
 
-            // add the output1 (DURATION) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
@@ -2665,7 +2736,7 @@ void TestAbleServer::_callCallOptionalDurationHandler(
 
             // Return type is a single value
 
-            // add the output1 (DURATION) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
@@ -2736,15 +2807,15 @@ void TestAbleServer::_callCallThreeDurationsHandler(
 
             // Return type is a struct of values that need added to json
 
-            // add the output1 (DURATION) to the json
+            // add the 'ret.output1' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
-            // add the output2 (DURATION) to the json
+            // add the 'ret.output2' value to the json as 'output2'.
             rapidjson::Value returnValueOutput2;
             responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
 
-            // add the output3 (DURATION) to the json
+            // add the 'ret.output3' value to the json as 'output3'.
             rapidjson::Value returnValueOutput3;
             responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
 
@@ -2791,7 +2862,7 @@ void TestAbleServer::_callCallOneBinaryHandler(
 
             // Return type is a single value
 
-            // add the output1 (BINARY) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
@@ -2838,7 +2909,7 @@ void TestAbleServer::_callCallOptionalBinaryHandler(
 
             // Return type is a single value
 
-            // add the output1 (BINARY) to the json
+            // add the 'ret' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
@@ -2909,15 +2980,15 @@ void TestAbleServer::_callCallThreeBinariesHandler(
 
             // Return type is a struct of values that need added to json
 
-            // add the output1 (BINARY) to the json
+            // add the 'ret.output1' value to the json as 'output1'.
             rapidjson::Value returnValueOutput1;
             responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
 
-            // add the output2 (BINARY) to the json
+            // add the 'ret.output2' value to the json as 'output2'.
             rapidjson::Value returnValueOutput2;
             responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
 
-            // add the output3 (BINARY) to the json
+            // add the 'ret.output3' value to the json as 'output3'.
             rapidjson::Value returnValueOutput3;
             responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
 
@@ -3110,7 +3181,7 @@ void TestAbleServer::_receiveReadOnlyIntegerPropertyUpdate(const std::string& to
     republishReadOnlyIntegerProperty();
 }
 
-boost::optional<ReadWriteOptionalIntegerProperty> TestAbleServer::getReadWriteOptionalIntegerProperty() const
+boost::optional<int> TestAbleServer::getReadWriteOptionalIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyMutex);
     return _readWriteOptionalIntegerProperty;
@@ -3460,7 +3531,7 @@ void TestAbleServer::_receiveReadWriteStringPropertyUpdate(const std::string& to
     republishReadWriteStringProperty();
 }
 
-boost::optional<ReadWriteOptionalStringProperty> TestAbleServer::getReadWriteOptionalStringProperty() const
+boost::optional<std::string> TestAbleServer::getReadWriteOptionalStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyMutex);
     return _readWriteOptionalStringProperty;
@@ -3719,7 +3790,7 @@ void TestAbleServer::_receiveReadWriteStructPropertyUpdate(const std::string& to
     republishReadWriteStructProperty();
 }
 
-boost::optional<ReadWriteOptionalStructProperty> TestAbleServer::getReadWriteOptionalStructProperty() const
+ReadWriteOptionalStructProperty TestAbleServer::getReadWriteOptionalStructProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyMutex);
     return _readWriteOptionalStructProperty;
@@ -3962,7 +4033,7 @@ void TestAbleServer::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic
     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
     if (itr != doc.MemberEnd() && itr->value.IsInt())
     {
-        tempValue = static_cast<>(itr->value.GetInt());
+        tempValue = static_cast<Numbers>(itr->value.GetInt());
     }
     else
     {
@@ -4051,7 +4122,7 @@ void TestAbleServer::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
     if (itr != doc.MemberEnd() && itr->value.IsInt())
     {
-        tempValue = static_cast<>(itr->value.GetInt());
+        tempValue = static_cast<Numbers>(itr->value.GetInt());
     }
     else
     {
@@ -4066,7 +4137,7 @@ void TestAbleServer::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
     republishReadWriteEnumProperty();
 }
 
-boost::optional<ReadWriteOptionalEnumProperty> TestAbleServer::getReadWriteOptionalEnumProperty() const
+boost::optional<Numbers> TestAbleServer::getReadWriteOptionalEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyMutex);
     return _readWriteOptionalEnumProperty;
@@ -4140,7 +4211,7 @@ void TestAbleServer::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
     if (itr != doc.MemberEnd() && itr->value.IsInt())
     {
-        tempValue = static_cast<>(itr->value.GetInt());
+        tempValue = static_cast<Numbers>(itr->value.GetInt());
     }
     else
     {
@@ -4326,7 +4397,7 @@ void TestAbleServer::_receiveReadWriteDatetimePropertyUpdate(const std::string& 
     republishReadWriteDatetimeProperty();
 }
 
-boost::optional<ReadWriteOptionalDatetimeProperty> TestAbleServer::getReadWriteOptionalDatetimeProperty() const
+boost::optional<std::chrono::time_point<std::chrono::system_clock>> TestAbleServer::getReadWriteOptionalDatetimeProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyMutex);
     return _readWriteOptionalDatetimeProperty;
@@ -4587,7 +4658,7 @@ void TestAbleServer::_receiveReadWriteDurationPropertyUpdate(const std::string& 
     republishReadWriteDurationProperty();
 }
 
-boost::optional<ReadWriteOptionalDurationProperty> TestAbleServer::getReadWriteOptionalDurationProperty() const
+boost::optional<std::chrono::duration<double>> TestAbleServer::getReadWriteOptionalDurationProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyMutex);
     return _readWriteOptionalDurationProperty;
@@ -4848,7 +4919,7 @@ void TestAbleServer::_receiveReadWriteBinaryPropertyUpdate(const std::string& to
     republishReadWriteBinaryProperty();
 }
 
-boost::optional<ReadWriteOptionalBinaryProperty> TestAbleServer::getReadWriteOptionalBinaryProperty() const
+boost::optional<std::vector<uint8_t>> TestAbleServer::getReadWriteOptionalBinaryProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyMutex);
     return _readWriteOptionalBinaryProperty;
