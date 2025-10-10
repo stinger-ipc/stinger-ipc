@@ -5,7 +5,6 @@ on the next generation.
 It contains enumerations used by the Full interface.
 */
 
-
 #pragma once
 
 #include <mosquitto.h>
@@ -24,10 +23,9 @@ It contains enumerations used by the Full interface.
 
 /*! This class presents a connection to a MQTT broker.
  */
-class MqttBrokerConnection : public IBrokerConnection
+class MqttBrokerConnection: public IBrokerConnection
 {
 public:
-
     /*! Constructor for a MqttBrokerConnection.
      * \param hostname IP address or hostname of the MQTT broker server.
      * \param port Port where the MQTT broker is running (often 1883).
@@ -47,11 +45,12 @@ public:
      * \return A future which is resolved to true when the message has been published to the MQTT broker.
      */
     virtual boost::future<bool> Publish(
-            const std::string& topic, 
-            const std::string& payload, 
-            unsigned qos, 
-            bool retain, 
-            const MqttProperties& properties);
+            const std::string& topic,
+            const std::string& payload,
+            unsigned qos,
+            bool retain,
+            const MqttProperties& properties
+    );
 
     /*! Subscribe to a topic.
      * \param topic the subscription topic.
@@ -66,11 +65,7 @@ public:
      * Many callbacks can be added, and each will be called in the order in which the callbacks were added.
      * \param cb the callback function.
      */
-    virtual CallbackHandleType AddMessageCallback(const std::function<void(
-            const std::string&, 
-            const std::string&, 
-            const MqttProperties&
-        )>& cb);
+    virtual CallbackHandleType AddMessageCallback(const std::function<void(const std::string&, const std::string&, const MqttProperties&)>& cb);
 
     virtual void RemoveMessageCallback(CallbackHandleType handle);
 
@@ -87,7 +82,7 @@ public:
 
     virtual void SetLogFunction(const LogFunctionType& logFunc);
     virtual void SetLogLevel(int level);
-    virtual void Log(int level, const char *fmt, ...) const;
+    virtual void Log(int level, const char* fmt, ...) const;
 
 protected:
     /*! Establishes the connection to the broker.
@@ -95,14 +90,19 @@ protected:
     virtual void Connect();
 
 private:
-    class MqttMessage : private boost::noncopyable
+    class MqttMessage: private boost::noncopyable
     {
     public:
-        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic, boost::optional<int> optMessageExpiryInterval)
-                : _topic(topic), _payload(payload), _qos(qos), _retain(retain), _optCorrelationId(optCorrelationId), _optResponseTopic(optResponseTopic), _optMessageExpiryInterval(optMessageExpiryInterval) {}
-        MqttMessage(const MqttMessage& other) : _topic(other._topic), _payload(other._payload), _qos(other._qos), _retain(other._retain), _pSentPromise(other._pSentPromise), _optCorrelationId(other._optCorrelationId), _optResponseTopic(other._optResponseTopic), _optMessageExpiryInterval(other._optMessageExpiryInterval) {}
+        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic, boost::optional<int> optMessageExpiryInterval):
+            _topic(topic), _payload(payload), _qos(qos), _retain(retain), _optCorrelationId(optCorrelationId), _optResponseTopic(optResponseTopic), _optMessageExpiryInterval(optMessageExpiryInterval) { }
+
+        MqttMessage(const MqttMessage& other):
+            _topic(other._topic), _payload(other._payload), _qos(other._qos), _retain(other._retain), _pSentPromise(other._pSentPromise), _optCorrelationId(other._optCorrelationId), _optResponseTopic(other._optResponseTopic), _optMessageExpiryInterval(other._optMessageExpiryInterval) { }
+
         virtual ~MqttMessage() = default;
+
         boost::future<bool> getFuture() { return _pSentPromise->get_future(); };
+
         std::string _topic;
         std::string _payload;
         int _qos;
@@ -115,14 +115,16 @@ private:
 
     struct MqttSubscription
     {
-        MqttSubscription(const std::string& topic, int qos, int subscriptionId) : topic(topic), qos(qos), subscriptionId(subscriptionId) {}
+        MqttSubscription(const std::string& topic, int qos, int subscriptionId):
+            topic(topic), qos(qos), subscriptionId(subscriptionId) { }
+
         ~MqttSubscription() = default;
         std::string topic;
         int qos;
         int subscriptionId;
     };
 
-    mosquitto *_mosq;
+    mosquitto* _mosq;
     std::string _host;
     int _port;
     std::string _clientId;
@@ -130,17 +132,13 @@ private:
     std::queue<MqttSubscription> _subscriptions;
     boost::mutex _mutex;
     CallbackHandleType _nextCallbackHandle = 1;
-    std::map<CallbackHandleType, std::function<void(
-            const std::string&, 
-            const std::string&, 
-            const MqttProperties&
-    )>> _messageCallbacks;
+    std::map<CallbackHandleType, std::function<void(const std::string&, const std::string&, const MqttProperties&)>> _messageCallbacks;
     std::queue<MqttMessage> _msgQueue;
     std::map<int, std::shared_ptr<boost::promise<bool>>> _sendMessages;
 
     // Track subscription reference counts: topic -> (count, subscriptionId)
     std::map<std::string, std::pair<int, int>> _subscriptionRefCounts;
-    
+
     LogFunctionType _logger;
     int _logLevel = 0;
 };

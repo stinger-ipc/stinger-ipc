@@ -22,7 +22,6 @@ It contains enumerations used by the SignalOnly interface.
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
-#include "return_types.hpp"
 
 class SignalOnlyServer
 {

@@ -5,7 +5,15 @@
 
 // Gets the latest value of the `{{prop_name}}` property, if one has been received.
 // If no value has been received yet, an empty optional is returned.
-{%if prop.arg_list|length == 1 and prop.arg_list[0].optional%}{{prop_value_type(prop)}}{%else%}boost::optional<{{prop_value_type(prop)}}>{%endif%} get{{prop_name | UpperCamelCase}}Property() const;
+{%if prop.arg_list|length == 1%}
+{%if prop.arg_list[0].optional%}
+{{prop.arg_list[0].cpp_temp_type}} get{{prop_name | UpperCamelCase}}Property() const;
+{%-else%}
+boost::optional<{{prop.arg_list[0].cpp_type}}> get{{prop_name | UpperCamelCase}}Property() const;
+{%-endif%}
+{%-else%}
+boost::optional<{{prop_value_type(prop)}}> get{{prop_name | UpperCamelCase}}Property() const;
+{%-endif%}
 
 // Add a callback that will be called whenever the `{{prop_name}}` property is updated.
 // The provided method will be called whenever a new value for the `{{prop_name}}` property is received.
@@ -19,7 +27,7 @@ void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<
 // ---{{prop_name}} Property---
 
 // {%if client %}Last received{%else%}Current{%endif%} value{%if prop.arg_list|length > 1%}s{%endif%} for the `{{prop_name}}` property.
-{%if prop.arg_list|length == 1 and prop.arg_list[0].optional%}{{prop_value_type(prop)}}{%else%}boost::optional<{{prop_value_type(prop)}}>{%endif%} _{{prop_name | lowerCamelCase}}Property;
+boost::optional<{{prop_name|UpperCamelCase}}Property> _{{prop_name | lowerCamelCase}}Property;
 
 // This is the property version {% if client %}of the last received `{{prop_name}}` property update.{%else%} of `{{prop_name}}`.{%endif%}
 int _last{{prop_name | UpperCamelCase}}PropertyVersion = -1;
@@ -39,10 +47,26 @@ std::mutex _{{prop_name | lowerCamelCase}}PropertyCallbacksMutex;
 {%endmacro%}
 
 {%macro get_property_definition(class_name, prop_name, prop)%}
-{%if prop.arg_list|length == 1 and prop.arg_list[0].optional%}{{prop_value_type(prop)}}{%else%}boost::optional<{{prop_value_type(prop)}}>{%endif%} {{class_name}}::get{{prop_name | UpperCamelCase}}Property() const
+{%if prop.arg_list|length == 1%}
+{%if prop.arg_list[0].optional%}
+{{prop.arg_list[0].cpp_temp_type}} {{class_name}}::get{{prop_name | UpperCamelCase}}Property() const
+{%-else%}
+boost::optional<{{prop.arg_list[0].cpp_type}}> {{class_name}}::get{{prop_name | UpperCamelCase}}Property() const
+{%-endif%}
+{%-else%}
+boost::optional<{{prop_value_type(prop)}}> {{class_name}}::get{{prop_name | UpperCamelCase}}Property() const
+{%-endif%}
 {
     std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
-    return _{{prop_name | lowerCamelCase}}Property;
+    if (_{{prop_name | lowerCamelCase}}Property)
+    {
+        {%if prop.arg_list | length == 1%}
+            return _{{prop_name | lowerCamelCase}}Property->{{prop.arg_list[0].name|lowerCamelCase}};
+        {%else%}
+            return *_{{prop_name | lowerCamelCase}}Property;
+        {%endif%}
+    }
+    return boost::none;
 }
 {%endmacro%}
 

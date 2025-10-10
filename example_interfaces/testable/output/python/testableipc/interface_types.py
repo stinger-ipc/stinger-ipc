@@ -31,11 +31,11 @@ class Numbers(IntEnum):
 class AllTypes(BaseModel):
     """Interface struct `AllTypes`."""
 
-    bool_: bool
-    int_: int
-    number: float
-    str: str
-    enum_: Numbers
+    the_bool: bool
+    the_int: int
+    the_number: float
+    the_str: str
+    the_enum: Numbers
     date_and_time: datetime
     time_duration: timedelta
     data: bytes
@@ -118,7 +118,7 @@ class SingleEnumSignalPayload(BaseModel):
     A signal with a single enum parameter.
     """
 
-    value: Optional[Numbers] = Field(description="The enum value.")
+    value: Numbers = Field(description="The enum value.")
 
 
 class SingleOptionalEnumSignalPayload(BaseModel):
@@ -260,11 +260,11 @@ class ThreeBinariesSignalPayload(BaseModel):
 class AllTypes(BaseModel):
     """Interface method `callOneStruct` return value struct."""
 
-    bool_: bool
-    int_: int
-    number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
-    str: str = Field(description="A string type.")
-    enum_: Numbers = Field(description="An enum type")
+    the_bool: bool
+    the_int: int
+    the_number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
+    the_str: str = Field(description="A string type.")
+    the_enum: Numbers = Field(description="An enum type")
     date_and_time: datetime = Field(description="A date and time type.")
     time_duration: timedelta = Field(description="A duration type.")
     data: bytes = Field(description="A binary type.")
@@ -279,11 +279,11 @@ class AllTypes(BaseModel):
 class AllTypes(BaseModel):
     """Interface method `callOptionalStruct` return value struct."""
 
-    bool_: bool
-    int_: int
-    number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
-    str: str = Field(description="A string type.")
-    enum_: Numbers = Field(description="An enum type")
+    the_bool: bool
+    the_int: int
+    the_number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
+    the_str: str = Field(description="A string type.")
+    the_enum: Numbers = Field(description="An enum type")
     date_and_time: datetime = Field(description="A date and time type.")
     time_duration: timedelta = Field(description="A duration type.")
     data: bytes = Field(description="A binary type.")
@@ -480,23 +480,23 @@ class CallOptionalStringMethodResponse(BaseModel):
 class CallThreeStringsMethodRequest(BaseModel):
     """Interface method `callThreeStrings` request object.
 
-    Method that takes three string arguments, the third is optional, and returns three string values, the third is optional.
+    Method that takes three string arguments, the 2nd is optional, and returns three string values, the 2nd is optional.
     """
 
     input1: str = Field(description="The first string input.  The other two don't have descriptions.")
-    input2: str
-    input3: Optional[str]
+    input2: Optional[str]
+    input3: str
 
 
 class CallThreeStringsMethodResponse(BaseModel):
     """Interface method `callThreeStrings` response object.
 
-    Method that takes three string arguments, the third is optional, and returns three string values, the third is optional.
+    Method that takes three string arguments, the 2nd is optional, and returns three string values, the 2nd is optional.
     """
 
     output1: str = Field(description="The first string output.  The other two don't have descriptions.")
-    output2: str
-    output3: Optional[str]
+    output2: Optional[str]
+    output3: str
 
 
 class CallOneEnumMethodRequest(BaseModel):
@@ -572,11 +572,11 @@ class CallOneStructMethodResponse(BaseModel):
     Method that takes one struct argument and returns one struct value.
     """
 
-    bool_: bool
-    int_: int
-    number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
-    str: str = Field(description="A string type.")
-    enum_: Numbers = Field(description="An enum type")
+    the_bool: bool
+    the_int: int
+    the_number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
+    the_str: str = Field(description="A string type.")
+    the_enum: Numbers = Field(description="An enum type")
     date_and_time: datetime = Field(description="A date and time type.")
     time_duration: timedelta = Field(description="A duration type.")
     data: bytes = Field(description="A binary type.")
@@ -603,11 +603,11 @@ class CallOptionalStructMethodResponse(BaseModel):
     Method that takes one optional struct argument and returns one optional struct value.
     """
 
-    bool_: bool
-    int_: int
-    number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
-    str: str = Field(description="A string type.")
-    enum_: Numbers = Field(description="An enum type")
+    the_bool: bool
+    the_int: int
+    the_number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
+    the_str: str = Field(description="A string type.")
+    the_enum: Numbers = Field(description="An enum type")
     date_and_time: datetime = Field(description="A date and time type.")
     time_duration: timedelta = Field(description="A duration type.")
     data: bytes = Field(description="A binary type.")
@@ -622,23 +622,23 @@ class CallOptionalStructMethodResponse(BaseModel):
 class CallThreeStructsMethodRequest(BaseModel):
     """Interface method `callThreeStructs` request object.
 
-    Method that takes three struct arguments, the third is optional, and returns three struct values, the third is optional.
+    Method that takes three struct arguments, the first is optional, and returns three struct values, the first is optional.
     """
 
-    input1: AllTypes = Field(description="The first struct input.  The other two don't have descriptions.")
+    input1: Optional[AllTypes] = Field(description="The first struct input.  The other two don't have descriptions.")
     input2: AllTypes
-    input3: Optional[AllTypes]
+    input3: AllTypes
 
 
 class CallThreeStructsMethodResponse(BaseModel):
     """Interface method `callThreeStructs` response object.
 
-    Method that takes three struct arguments, the third is optional, and returns three struct values, the third is optional.
+    Method that takes three struct arguments, the first is optional, and returns three struct values, the first is optional.
     """
 
-    output1: AllTypes = Field(description="The first struct output.  The other two don't have descriptions.")
+    output1: Optional[AllTypes] = Field(description="The first struct output.  The other two don't have descriptions.")
     output2: AllTypes
-    output3: Optional[AllTypes]
+    output3: AllTypes
 
 
 class CallOneDateTimeMethodRequest(BaseModel):

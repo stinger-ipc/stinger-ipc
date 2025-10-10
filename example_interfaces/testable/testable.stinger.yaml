@@ -24,17 +24,17 @@ structures:
 
   AllTypes:
     members:
-      - name: bool
+      - name: the_bool
         type: boolean
-      - name: int
+      - name: the_int
         type: integer
-      - name: number
+      - name: the_number
         type: float
         description: A floating point number.  Bool and int do not have descriptions.
-      - name: str
+      - name: the_str
         type: string
         description: A string type.
-      - name: enum
+      - name: the_enum
         type: enum
         enumName: Numbers
         description: An enum type
@@ -361,25 +361,25 @@ methods:
         optional: true
 
   callThreeStrings:
-    documentation: Method that takes three string arguments, the third is optional, and returns three string values, the third is optional.
+    documentation: Method that takes three string arguments, the 2nd is optional, and returns three string values, the 2nd is optional.
     arguments:
       - name: input1
         type: string
         description: The first string input.  The other two don't have descriptions.
       - name: input2
         type: string
+        optional: true
       - name: input3
         type: string
-        optional: true
     returnValues:
       - name: output1 
         type: string
         description: The first string output.  The other two don't have descriptions.
       - name: output2 
         type: string
+        optional: true
       - name: output3 
         type: string
-        optional: true
 
   callOneEnum:
     documentation: Method that takes one enum argument and returns one enum value.
@@ -457,31 +457,31 @@ methods:
         optional: true
 
   callThreeStructs:
-    documentation: Method that takes three struct arguments, the third is optional, and returns three struct values, the third is optional.
+    documentation: Method that takes three struct arguments, the first is optional, and returns three struct values, the first is optional.
     arguments:
       - name: input1
         type: struct
         structName: AllTypes
         description: The first struct input.  The other two don't have descriptions.
+        optional: true
       - name: input2
         type: struct
         structName: AllTypes
       - name: input3
         type: struct
         structName: AllTypes
-        optional: true
     returnValues:
       - name: output1 
         type: struct
         structName: AllTypes
         description: The first struct output.  The other two don't have descriptions.
+        optional: true
       - name: output2 
         type: struct
         structName: AllTypes
       - name: output3 
         type: struct
         structName: AllTypes
-        optional: true
   
   callOneDateTime:
     documentation: Method that takes one date and time argument and returns one date and time value.

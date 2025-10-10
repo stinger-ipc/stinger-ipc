@@ -37,15 +37,15 @@ int main(int argc, char** argv)
     FullClient client(conn, serviceId);
 
     // Register callbacks for signals.
-    client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> process_time, std::vector<uint8_t> memory_segment)
+    client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> processTime, std::vector<uint8_t> memorySegment)
                                    {
                                        std::string timestampStr = timePointToIsoString(timestamp);
 
-                                       std::string processTimeStr = durationToIsoString(process_time);
-
+                                       std::string processTimeStr = durationToIsoString(processTime);
                                        std::string memorySegmentStr = "[Binary Data]";
 
-                                       std::cout << "Received TODAY_IS signal: " << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << "None" << " | " << "timestamp=" << timestampStr << " | " << "process_time=" << processTimeStr << " | " << "memory_segment=" << memorySegmentStr << std::endl;
+                                       std::cout << "Received TODAY_IS signal: "
+                                                 << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << dayOfTheWeekStrings[static_cast<int>(*dayOfWeek)] << " | " << "timestamp=" << timestampStr << " | " << "process_time=" << processTimeStr << " | " << "memory_segment=" << memorySegmentStr << std::endl;
                                    });
 
     // Register callbacks for property updates.
@@ -54,9 +54,9 @@ int main(int argc, char** argv)
                                                       std::cout << "Received update for favorite_number property: " << "number=" << number /* unhandled arg type*/ << std::endl;
                                                   });
 
-    client.registerFavoriteFoodsPropertyCallback([](const std::string& drink, int slices_of_pizza, boost::optional<std::string> breakfast)
+    client.registerFavoriteFoodsPropertyCallback([](std::string drink, int slicesOfPizza, boost::optional<std::string> breakfast)
                                                  {
-                                                     std::cout << "Received update for favorite_foods property: " << "drink=" << drink /* unhandled arg type*/ << " | " << "slices_of_pizza=" << slices_of_pizza /* unhandled arg type*/ << " | " << "breakfast=" << "None" << std::endl;
+                                                     std::cout << "Received update for favorite_foods property: " << "drink=" << drink /* unhandled arg type*/ << " | " << "slices_of_pizza=" << slicesOfPizza /* unhandled arg type*/ << " | " << "breakfast=" << "None" << std::endl;
                                                  });
 
     client.registerLunchMenuPropertyCallback([](Lunch monday, Lunch tuesday)
@@ -66,9 +66,9 @@ int main(int argc, char** argv)
                                                            << std::endl;
                                              });
 
-    client.registerFamilyNamePropertyCallback([](const std::string& family_name)
+    client.registerFamilyNamePropertyCallback([](std::string familyName)
                                               {
-                                                  std::cout << "Received update for family_name property: " << "family_name=" << family_name /* unhandled arg type*/ << std::endl;
+                                                  std::cout << "Received update for family_name property: " << "family_name=" << familyName /* unhandled arg type*/ << std::endl;
                                               });
 
     client.registerLastBreakfastTimePropertyCallback([](std::chrono::time_point<std::chrono::system_clock> timestamp)
@@ -83,22 +83,20 @@ int main(int argc, char** argv)
                                                    {
                                                        std::string lengthStr = durationToIsoString(length);
 
-                                                       std::cout << "Received update for breakfast_length property: " << "length=" << lengthStr << std::endl;
+                                                       std::cout << "Received update for breakfast_length property: " << "length=" << lengthStr
+                                                                 << std::endl;
                                                    });
 
-    client.registerLastBirthdaysPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister, boost::optional<int> brothers_age)
+    client.registerLastBirthdaysPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister, boost::optional<int> brothersAge)
                                                  {
                                                      std::string momStr = timePointToIsoString(mom);
 
                                                      std::string dadStr = timePointToIsoString(dad);
 
+                                                     std::string sisterStr = "None";
                                                      if (sister)
                                                      {
                                                          std::string sisterStr = timePointToIsoString(*sister);
-                                                     }
-                                                     else
-                                                     {
-                                                         std::string sisterStr = "None";
                                                      }
 
                                                      std::cout << "Received update for last_birthdays property: " << "mom=" << momStr
@@ -107,81 +105,124 @@ int main(int argc, char** argv)
                                                  });
 
     // Call each method with example values.
-    std::cout << "Calling addNumbers" << std::endl;
-    auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
-    auto addNumbersStatus = addNumbersResultFuture.wait_for(boost::chrono::seconds(5));
-    if (addNumbersStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for addNumbers response." << std::endl;
+
+    // ----------------------METHOD ADD_NUMBERS-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING ADD_NUMBERS" << std::endl;
+        auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
+        auto addNumbersStatus = addNumbersResultFuture.wait_for(boost::chrono::seconds(5));
+        if (addNumbersStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for ADD_NUMBERS response." << std::endl;
+        }
+        else
+        {
+            int returnValue = addNumbersResultFuture.get();
+            std::cout << "ADD_NUMBERS Response: "
+                      << " sum=" << returnValue << std::endl;
+        }
     }
-    else
-    {
-        std::cout << "Result: Sum=" << addNumbersResultFuture.get() << std::endl;
+
+    // ----------------------METHOD DO_SOMETHING-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING DO_SOMETHING" << std::endl;
+        auto doSomethingResultFuture = client.doSomething("apples");
+        auto doSomethingStatus = doSomethingResultFuture.wait_for(boost::chrono::seconds(5));
+        if (doSomethingStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for DO_SOMETHING response." << std::endl;
+        }
+        else
+        {
+            DoSomethingReturnValues returnValue = doSomethingResultFuture.get();
+            std::cout << "DO_SOMETHING Response: "
+                      << " label=" << returnValue.label << " identifier=" << returnValue.identifier << " day=" << dayOfTheWeekStrings[static_cast<int>(returnValue.day)] << std::endl;
+        }
     }
-    std::cout << "Calling doSomething" << std::endl;
-    auto doSomethingResultFuture = client.doSomething("apples");
-    auto doSomethingStatus = doSomethingResultFuture.wait_for(boost::chrono::seconds(5));
-    if (doSomethingStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for doSomething response." << std::endl;
+
+    // ----------------------METHOD ECHO-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING ECHO" << std::endl;
+        auto echoResultFuture = client.echo("apples");
+        auto echoStatus = echoResultFuture.wait_for(boost::chrono::seconds(5));
+        if (echoStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for ECHO response." << std::endl;
+        }
+        else
+        {
+            std::string returnValue = echoResultFuture.get();
+            std::cout << "ECHO Response: "
+                      << " message=" << returnValue << std::endl;
+        }
     }
-    else
-    {
-        DoSomethingReturnValue returnValue = doSomethingResultFuture.get();
-        std::cout << "Results:" << " label=" << returnValue.label << " identifier=" << returnValue.identifier << " day=" << dayOfTheWeekStrings[static_cast<int>(returnValue.day)] << std::endl;
+
+    // ----------------------METHOD WHAT_TIME_IS_IT-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING WHAT_TIME_IS_IT" << std::endl;
+        auto whatTimeIsItResultFuture = client.whatTimeIsIt(std::chrono::system_clock::now());
+        auto whatTimeIsItStatus = whatTimeIsItResultFuture.wait_for(boost::chrono::seconds(5));
+        if (whatTimeIsItStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for WHAT_TIME_IS_IT response." << std::endl;
+        }
+        else
+        {
+            std::chrono::time_point<std::chrono::system_clock> returnValue = whatTimeIsItResultFuture.get();
+            std::cout << "WHAT_TIME_IS_IT Response: "
+                      << " timestamp=" << timePointToIsoString(returnValue) << std::endl;
+        }
     }
-    std::cout << "Calling echo" << std::endl;
-    auto echoResultFuture = client.echo("apples");
-    auto echoStatus = echoResultFuture.wait_for(boost::chrono::seconds(5));
-    if (echoStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for echo response." << std::endl;
+
+    // ----------------------METHOD SET_THE_TIME-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING SET_THE_TIME" << std::endl;
+        auto setTheTimeResultFuture = client.setTheTime(std::chrono::system_clock::now(), std::chrono::system_clock::now());
+        auto setTheTimeStatus = setTheTimeResultFuture.wait_for(boost::chrono::seconds(5));
+        if (setTheTimeStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for SET_THE_TIME response." << std::endl;
+        }
+        else
+        {
+            SetTheTimeReturnValues returnValue = setTheTimeResultFuture.get();
+            std::cout << "SET_THE_TIME Response: "
+                      << " timestamp=" << timePointToIsoString(returnValue.timestamp) << " confirmation_message=" << returnValue.confirmationMessage << std::endl;
+        }
     }
-    else
-    {
-        std::cout << "Result: Message=" << echoResultFuture.get() << std::endl;
+
+    // ----------------------METHOD FORWARD_TIME-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING FORWARD_TIME" << std::endl;
+        auto forwardTimeResultFuture = client.forwardTime(std::chrono::duration<double>(3536));
+        auto forwardTimeStatus = forwardTimeResultFuture.wait_for(boost::chrono::seconds(5));
+        if (forwardTimeStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for FORWARD_TIME response." << std::endl;
+        }
+        else
+        {
+            std::chrono::time_point<std::chrono::system_clock> returnValue = forwardTimeResultFuture.get();
+            std::cout << "FORWARD_TIME Response: "
+                      << " new_time=" << timePointToIsoString(returnValue) << std::endl;
+        }
     }
-    std::cout << "Calling what_time_is_it" << std::endl;
-    auto whatTimeIsItResultFuture = client.whatTimeIsIt(std::chrono::system_clock::now());
-    auto whatTimeIsItStatus = whatTimeIsItResultFuture.wait_for(boost::chrono::seconds(5));
-    if (whatTimeIsItStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for what_time_is_it response." << std::endl;
-    }
-    else
-    {
-    }
-    std::cout << "Calling set_the_time" << std::endl;
-    auto setTheTimeResultFuture = client.setTheTime(std::chrono::system_clock::now(), std::chrono::system_clock::now());
-    auto setTheTimeStatus = setTheTimeResultFuture.wait_for(boost::chrono::seconds(5));
-    if (setTheTimeStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for set_the_time response." << std::endl;
-    }
-    else
-    {
-        SetTheTimeReturnValue returnValue = setTheTimeResultFuture.get();
-        std::cout << "Results:" << " timestamp=" << timePointToIsoString(returnValue.timestamp) << " confirmation_message=" << returnValue.confirmation_message << std::endl;
-    }
-    std::cout << "Calling forward_time" << std::endl;
-    auto forwardTimeResultFuture = client.forwardTime(std::chrono::duration<double>(3536));
-    auto forwardTimeStatus = forwardTimeResultFuture.wait_for(boost::chrono::seconds(5));
-    if (forwardTimeStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for forward_time response." << std::endl;
-    }
-    else
-    {
-    }
-    std::cout << "Calling how_off_is_the_clock" << std::endl;
-    auto howOffIsTheClockResultFuture = client.howOffIsTheClock(std::chrono::system_clock::now());
-    auto howOffIsTheClockStatus = howOffIsTheClockResultFuture.wait_for(boost::chrono::seconds(5));
-    if (howOffIsTheClockStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for how_off_is_the_clock response." << std::endl;
-    }
-    else
-    {
+
+    // ----------------------METHOD HOW_OFF_IS_THE_CLOCK-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING HOW_OFF_IS_THE_CLOCK" << std::endl;
+        auto howOffIsTheClockResultFuture = client.howOffIsTheClock(std::chrono::system_clock::now());
+        auto howOffIsTheClockStatus = howOffIsTheClockResultFuture.wait_for(boost::chrono::seconds(5));
+        if (howOffIsTheClockStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for HOW_OFF_IS_THE_CLOCK response." << std::endl;
+        }
+        else
+        {
+            std::chrono::duration<double> returnValue = howOffIsTheClockResultFuture.get();
+            std::cout << "HOW_OFF_IS_THE_CLOCK Response: "
+                      << " difference=" << durationToIsoString(returnValue) << std::endl;
+        }
     }
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;

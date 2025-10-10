@@ -37,31 +37,36 @@ int main(int argc, char** argv)
     SignalOnlyClient client(conn, serviceId);
 
     // Register callbacks for signals.
-    client.registerAnotherSignalCallback([](double one, bool two, const std::string& three)
+    client.registerAnotherSignalCallback([](double one, bool two, std::string three)
                                          {
-                                             std::cout << "Received ANOTHER_SIGNAL signal: " << "one=" << one << " | " << "two=" << two << " | " << "three=" << three << std::endl;
+                                             std::cout << "Received ANOTHER_SIGNAL signal: "
+                                                       << "one=" << one << " | " << "two=" << two << " | " << "three=" << three << std::endl;
                                          });
 
-    client.registerBarkCallback([](const std::string& word)
+    client.registerBarkCallback([](std::string word)
                                 {
-                                    std::cout << "Received BARK signal: " << "word=" << word << std::endl;
+                                    std::cout << "Received BARK signal: "
+                                              << "word=" << word << std::endl;
                                 });
 
     client.registerMaybeNumberCallback([](boost::optional<int> number)
                                        {
-                                           std::cout << "Received MAYBE_NUMBER signal: " << "number=" << "None" << std::endl;
+                                           std::cout << "Received MAYBE_NUMBER signal: "
+                                                     << "number=" << *number << std::endl;
                                        });
 
     client.registerMaybeNameCallback([](boost::optional<std::string> name)
                                      {
-                                         std::cout << "Received MAYBE_NAME signal: " << "name=" << "None" << std::endl;
+                                         std::cout << "Received MAYBE_NAME signal: "
+                                                   << "name=" << *name << std::endl;
                                      });
 
     client.registerNowCallback([](std::chrono::time_point<std::chrono::system_clock> timestamp)
                                {
                                    std::string timestampStr = timePointToIsoString(timestamp);
 
-                                   std::cout << "Received NOW signal: " << "timestamp=" << timestampStr << std::endl;
+                                   std::cout << "Received NOW signal: "
+                                             << "timestamp=" << timestampStr << std::endl;
                                });
 
     // Register callbacks for property updates.

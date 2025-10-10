@@ -14,30 +14,27 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include "{{stinger.cpp.enum_header_file}}"
 #include "structs.hpp"
 
-{%for method_name, method in stinger.methods.items()%}
-{%-if method.return_value_type == 'multiple'%}
-struct {{method.return_value_name | UpperCamelCase}} {
-{%-for rv in method.return_value %}
-    {{rv.cpp_temp_type}} {{rv.name}};
-{%-endfor%}
-};
-{%-elif method.return_value_type == 'struct'%}
-struct {{method.return_value_name | UpperCamelCase}} {
-{%-for rv in method.return_value.members %}
-    {{rv.cpp_temp_type}} {{rv.name}};
-{%-endfor%}
-};
-{%endif%}
-{%-endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
+
+struct {{method_name | UpperCamelCase}}RequestArguments {
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static {{method_name | UpperCamelCase}}RequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    {%-if method.arg_list | length > 0 %}
+    // Values...
+    {%-for arg in method.arg_list %}
+    {{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}};
+    {%-endfor%}
+    {%endif%}
+};
+
 struct {{method_name | UpperCamelCase}}ReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static {{method_name | UpperCamelCase}}ReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     {%-if method.return_arg_list | length > 0 %}
     // Values...
     {%-for arg in method.return_arg_list %}
-    {{arg.cpp_temp_type}} {{arg.name}};
+    {{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}};
     {%-endfor%}
     {%endif%}
 };

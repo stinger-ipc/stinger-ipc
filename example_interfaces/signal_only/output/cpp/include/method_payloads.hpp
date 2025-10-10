@@ -11,3 +11,4 @@ It contains enumerations used by the SignalOnly interface.
 #include <vector>
 #include <boost/optional.hpp>
 #include "enums.hpp"
+#include "structs.hpp"

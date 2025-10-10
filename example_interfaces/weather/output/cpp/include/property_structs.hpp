@@ -24,17 +24,17 @@ struct LocationProperty
 };
 
 /**
- * The `current_temperature` property contains a single field:
- *   double temperature_f;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * This is the current (estimated) temperature in degrees fahrenheit.  This values
  * is regularly updated.  The value is extrapolated from the hourly forecast, but
  * adjusted based on the latest conditions at the nearest weather station.
  * 
  */
-typedef double CurrentTemperatureProperty;
+struct CurrentTemperatureProperty
+{
+    static CurrentTemperatureProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    double temperatureF;
+};
 
 /**
  * This is the current weather outside.  This comes from the hourly forecast and is
@@ -75,42 +75,42 @@ struct HourlyForecastProperty
 {
     static HourlyForecastProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    ForecastForHour hour_0; ///< This is the forecast for the current hour.
-    ForecastForHour hour_1; ///< This is the forecast for the next hour.
-    ForecastForHour hour_2;
-    ForecastForHour hour_3;
+    ForecastForHour hour0; ///< This is the forecast for the current hour.
+    ForecastForHour hour1; ///< This is the forecast for the next hour.
+    ForecastForHour hour2;
+    ForecastForHour hour3;
 };
 
 /**
- * The `current_condition_refresh_interval` property contains a single field:
- *   int seconds;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * This is the maximum interval, in seconds, that the latest weather conditions at the nearest weather
  * station are retrieved.
  * 
  */
-typedef int CurrentConditionRefreshIntervalProperty;
+struct CurrentConditionRefreshIntervalProperty
+{
+    static CurrentConditionRefreshIntervalProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    int seconds;
+};
 
 /**
- * The `hourly_forecast_refresh_interval` property contains a single field:
- *   int seconds;  ///< Interval duration in seconds.
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * This is the maximum interval, in seconds, that the hourly forecast data is retrieved.
  * 
  */
-typedef int HourlyForecastRefreshIntervalProperty;
+struct HourlyForecastRefreshIntervalProperty
+{
+    static HourlyForecastRefreshIntervalProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    int seconds; ///< Interval duration in seconds.
+};
 
 /**
- * The `daily_forecast_refresh_interval` property contains a single field:
- *   int seconds;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * This is the maximum interval, in seconds, that the daily forecast data is retrieved.
  * 
  */
-typedef int DailyForecastRefreshIntervalProperty;
+struct DailyForecastRefreshIntervalProperty
+{
+    static DailyForecastRefreshIntervalProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    int seconds;
+};

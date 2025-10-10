@@ -19,7 +19,8 @@ It contains enumerations used by the weather interface.
 #include <boost/optional.hpp>
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
-#include "return_types.hpp"
+#include "method_payloads.hpp"
+#include "signal_payloads.hpp"
 
 #include "property_structs.hpp"
 
@@ -44,15 +45,15 @@ public:
     // ------------------- METHODS --------------------
 
     // Calls the `refresh_daily_forecast` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. None
     boost::future<void> refreshDailyForecast();
 
     // Calls the `refresh_hourly_forecast` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. None
     boost::future<void> refreshHourlyForecast();
 
     // Calls the `refresh_current_conditions` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. None
     boost::future<void> refreshCurrentConditions();
 
     // ---------------- PROPERTIES ------------------
@@ -61,6 +62,7 @@ public:
 
     // Gets the latest value of the `location` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<LocationProperty> getLocationProperty() const;
 
     // Add a callback that will be called whenever the `location` property is updated.
@@ -73,7 +75,8 @@ public:
 
     // Gets the latest value of the `current_temperature` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<CurrentTemperatureProperty> getCurrentTemperatureProperty() const;
+
+    boost::optional<double> getCurrentTemperatureProperty() const;
 
     // Add a callback that will be called whenever the `current_temperature` property is updated.
     // The provided method will be called whenever a new value for the `current_temperature` property is received.
@@ -83,16 +86,18 @@ public:
 
     // Gets the latest value of the `current_condition` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<CurrentConditionProperty> getCurrentConditionProperty() const;
 
     // Add a callback that will be called whenever the `current_condition` property is updated.
     // The provided method will be called whenever a new value for the `current_condition` property is received.
-    void registerCurrentConditionPropertyCallback(const std::function<void(WeatherCondition, const std::string&)>& cb);
+    void registerCurrentConditionPropertyCallback(const std::function<void(WeatherCondition, std::string)>& cb);
 
     // ---daily_forecast Property---
 
     // Gets the latest value of the `daily_forecast` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<DailyForecastProperty> getDailyForecastProperty() const;
 
     // Add a callback that will be called whenever the `daily_forecast` property is updated.
@@ -103,6 +108,7 @@ public:
 
     // Gets the latest value of the `hourly_forecast` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<HourlyForecastProperty> getHourlyForecastProperty() const;
 
     // Add a callback that will be called whenever the `hourly_forecast` property is updated.
@@ -113,7 +119,8 @@ public:
 
     // Gets the latest value of the `current_condition_refresh_interval` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<CurrentConditionRefreshIntervalProperty> getCurrentConditionRefreshIntervalProperty() const;
+
+    boost::optional<int> getCurrentConditionRefreshIntervalProperty() const;
 
     // Add a callback that will be called whenever the `current_condition_refresh_interval` property is updated.
     // The provided method will be called whenever a new value for the `current_condition_refresh_interval` property is received.
@@ -125,7 +132,8 @@ public:
 
     // Gets the latest value of the `hourly_forecast_refresh_interval` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<HourlyForecastRefreshIntervalProperty> getHourlyForecastRefreshIntervalProperty() const;
+
+    boost::optional<int> getHourlyForecastRefreshIntervalProperty() const;
 
     // Add a callback that will be called whenever the `hourly_forecast_refresh_interval` property is updated.
     // The provided method will be called whenever a new value for the `hourly_forecast_refresh_interval` property is received.
@@ -137,7 +145,8 @@ public:
 
     // Gets the latest value of the `daily_forecast_refresh_interval` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<DailyForecastRefreshIntervalProperty> getDailyForecastRefreshIntervalProperty() const;
+
+    boost::optional<int> getDailyForecastRefreshIntervalProperty() const;
 
     // Add a callback that will be called whenever the `daily_forecast_refresh_interval` property is updated.
     // The provided method will be called whenever a new value for the `daily_forecast_refresh_interval` property is received.
@@ -176,11 +185,13 @@ private:
     int _refreshDailyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_daily_forecast` method calls.
     void _handleRefreshDailyForecastResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `refresh_hourly_forecast` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshHourlyForecastMethodCalls;
     int _refreshHourlyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_hourly_forecast` method calls.
     void _handleRefreshHourlyForecastResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `refresh_current_conditions` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshCurrentConditionsMethodCalls;
     int _refreshCurrentConditionsMethodSubscriptionId = -1;
@@ -249,7 +260,7 @@ private:
     void _receiveCurrentConditionPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `current_condition` property.
-    std::vector<std::function<void(WeatherCondition, const std::string&)>> _currentConditionPropertyCallbacks;
+    std::vector<std::function<void(WeatherCondition, std::string)>> _currentConditionPropertyCallbacks;
     std::mutex _currentConditionPropertyCallbacksMutex;
 
     // ---daily_forecast Property---

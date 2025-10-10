@@ -5,26 +5,22 @@
 {{target}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
 {%-elif arg.arg_type.name.lower() == 'struct'%}
 {{target}} = {{arg.cpp_type}}::FromRapidJsonObject(itr->value);
+{%-elif arg.arg_type.name.lower() == 'datetime'%}
+auto temp{{arg.name|UpperCamelCase}}IsoString = itr->value.GetString();
+{{target}} = parseIsoTimestamp(temp{{arg.name|UpperCamelCase}}IsoString);
+{%-elif arg.arg_type.name.lower() == 'duration'%}
+auto temp{{arg.name|UpperCamelCase}}IsoString = itr->value.GetString();
+{{target}} = parseIsoDuration(temp{{arg.name|UpperCamelCase}}IsoString);
+{%-elif arg.arg_type.name.lower() == 'binary'%}
+auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
+{{target}} = base64Decode(temp{{arg.name|UpperCamelCase}}B64String);
 {%endif%}
 {%endmacro%}
 
 
 {%-macro deserialize(target, arglist, json_obj)%}
-{%-if arglist|length == 1%}
-{%-set arg = arglist[0]%}
-rapidjson::Value::ConstMemberIterator itr = {{json_obj}}.FindMember("{{arg.name}}");
-if (itr != {{json_obj}}.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
-    {{deserialize_value(target, arg)}}
-} else {
-{%-if arg.optional%}
-    {{target}} = boost::none;
-{%-else%}
-    throw std::runtime_error("Received payload doesn't have required value/type");
-{%-endif%}
-}
-{%-elif arglist|length > 1%}
 {%-for arg in arglist%}
-{%-set arg_target %}{{target}}.{{arg.name}}{%endset%}
+{%-set arg_target %}{{target}}.{{arg.name|lowerCamelCase}}{%endset%}
 { // Scoping
     rapidjson::Value::ConstMemberIterator itr = {{json_obj}}.FindMember("{{arg.name}}");
     if (itr != {{json_obj}}.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
@@ -38,5 +34,4 @@ if (itr != {{json_obj}}.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()
     }
 }
 {%-endfor%}
-{%-endif%}
 {%-endmacro%}

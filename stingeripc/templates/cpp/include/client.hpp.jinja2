@@ -20,7 +20,8 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include <boost/optional.hpp>
 #include "ibrokerconnection.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
-#include "return_types.hpp"
+#include "method_payloads.hpp"
+#include "signal_payloads.hpp"
 
 {%macro prop_value_type(prop) -%}{%if prop.arg_list|length > 1%}struct {%endif%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
 

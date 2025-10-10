@@ -3,6 +3,30 @@
 #include "property_structs.hpp"
 #include <rapidjson/document.h>
 
+FavoriteNumberProperty FavoriteNumberProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    FavoriteNumberProperty favoriteNumber;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("number");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
+        {
+            favoriteNumber.number = itr->value.GetInt();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return favoriteNumber;
+};
+
+void FavoriteNumberProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    parent.AddMember("number", number, allocator);
+}
+
 FavoriteFoodsProperty FavoriteFoodsProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     FavoriteFoodsProperty favoriteFoods;
@@ -22,7 +46,7 @@ FavoriteFoodsProperty FavoriteFoodsProperty::FromRapidJsonObject(const rapidjson
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("slices_of_pizza");
         if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
         {
-            favoriteFoods.slices_of_pizza = itr->value.GetInt();
+            favoriteFoods.slicesOfPizza = itr->value.GetInt();
         }
         else
         {
@@ -52,7 +76,7 @@ void FavoriteFoodsProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapid
         parent.AddMember("drink", tempStringValue, allocator);
     }
 
-    parent.AddMember("slices_of_pizza", slices_of_pizza, allocator);
+    parent.AddMember("slices_of_pizza", slicesOfPizza, allocator);
 
     if (breakfast)
     {
@@ -96,6 +120,94 @@ void LunchMenuProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson
 {
 }
 
+FamilyNameProperty FamilyNameProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    FamilyNameProperty familyName;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("family_name");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
+        {
+            familyName.familyName = itr->value.GetString();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return familyName;
+};
+
+void FamilyNameProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(familyName.c_str(), familyName.size(), allocator);
+        parent.AddMember("family_name", tempStringValue, allocator);
+    }
+}
+
+LastBreakfastTimeProperty LastBreakfastTimeProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    LastBreakfastTimeProperty lastBreakfastTime;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("timestamp");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
+        {
+            auto tempTimestampIsoString = itr->value.GetString();
+            lastBreakfastTime.timestamp = parseIsoTimestamp(tempTimestampIsoString);
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return lastBreakfastTime;
+};
+
+void LastBreakfastTimeProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope
+        rapidjson::Value tempTimestampStringValue;
+        std::string timestampIsoString = timePointToIsoString(timestamp);
+        tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), allocator);
+        parent.AddMember("timestamp", tempTimestampStringValue, allocator);
+    }
+}
+
+BreakfastLengthProperty BreakfastLengthProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    BreakfastLengthProperty breakfastLength;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("length");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
+        {
+            auto tempLengthIsoString = itr->value.GetString();
+            breakfastLength.length = parseIsoDuration(tempLengthIsoString);
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return breakfastLength;
+};
+
+void BreakfastLengthProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope
+        rapidjson::Value tempLengthStringValue;
+        std::string lengthIsoString = durationToIsoString(length);
+        tempLengthStringValue.SetString(lengthIsoString.c_str(), lengthIsoString.size(), allocator);
+        parent.AddMember("length", tempLengthStringValue, allocator);
+    }
+}
+
 LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     LastBirthdaysProperty lastBirthdays;
@@ -104,6 +216,8 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("mom");
         if (itr != jsonObj.MemberEnd() && itr->value.IsString())
         {
+            auto tempMomIsoString = itr->value.GetString();
+            lastBirthdays.mom = parseIsoTimestamp(tempMomIsoString);
         }
         else
         {
@@ -114,6 +228,8 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("dad");
         if (itr != jsonObj.MemberEnd() && itr->value.IsString())
         {
+            auto tempDadIsoString = itr->value.GetString();
+            lastBirthdays.dad = parseIsoTimestamp(tempDadIsoString);
         }
         else
         {
@@ -124,6 +240,8 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("sister");
         if (itr != jsonObj.MemberEnd() && itr->value.IsString())
         {
+            auto tempSisterIsoString = itr->value.GetString();
+            lastBirthdays.sister = parseIsoTimestamp(tempSisterIsoString);
         }
         else
         {
@@ -134,11 +252,11 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("brothers_age");
         if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
         {
-            lastBirthdays.brothers_age = itr->value.GetInt();
+            lastBirthdays.brothersAge = itr->value.GetInt();
         }
         else
         {
-            lastBirthdays.brothers_age = boost::none;
+            lastBirthdays.brothersAge = boost::none;
         }
     }
 
@@ -168,6 +286,6 @@ void LastBirthdaysProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapid
         parent.AddMember("sister", tempSisterStringValue, allocator);
     }
 
-    if (brothers_age)
-        parent.AddMember("brothers_age", *brothers_age, allocator);
+    if (brothersAge)
+        parent.AddMember("brothers_age", *brothersAge, allocator);
 }

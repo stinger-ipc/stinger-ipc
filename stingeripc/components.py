@@ -419,7 +419,7 @@ class ArgStruct(Arg):
             for a in self.members
         }
         if lang == "c++":
-            return "{" + ", ".join(example_list.values()) + "}"
+            return self.cpp_type + "{" + ", ".join(example_list.values()) + "}"
         elif lang == "python":
             init_list = ", ".join([f"{k}={v}" for k, v in example_list.items()])
             return f"{self.python_type}({init_list})"
@@ -595,7 +595,7 @@ class ArgBinary(Arg):
         elif lang == "rust":
             return 'vec![101, 120, 97, 109, 112, 108, 101]'  # "example" in ASCII bytes
         elif lang in ["c++", "cpp"]:
-            return '{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
+            return 'std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
         return None
 
     def __str__(self) -> str:
@@ -774,7 +774,7 @@ class Method(InterfaceComponent):
 
     @property
     def return_value_name(self) -> str:
-        return f"{self.name} return value"
+        return f"{self.name} return values"
 
     @property
     def return_value_cpp_class(self) -> str:

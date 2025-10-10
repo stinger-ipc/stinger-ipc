@@ -12,34 +12,34 @@ It contains enumerations used by the Test Able interface.
 #include "structs.hpp"
 
 /**
- * The `read_write_integer` property contains a single field:
- *   int value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write integer property.
  */
-typedef int ReadWriteIntegerProperty;
+struct ReadWriteIntegerProperty
+{
+    static ReadWriteIntegerProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    int value;
+};
 
 /**
- * The `read_only_integer` property contains a single field:
- *   int value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-only integer property.
  */
-typedef int ReadOnlyIntegerProperty;
+struct ReadOnlyIntegerProperty
+{
+    static ReadOnlyIntegerProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    int value;
+};
 
 /**
- * The `read_write_optional_integer` property contains a single field:
- *   boost::optional<int> value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write optional integer property.
  */
-typedef boost::optional<int> ReadWriteOptionalIntegerProperty;
+struct ReadWriteOptionalIntegerProperty
+{
+    static ReadWriteOptionalIntegerProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    boost::optional<int> value;
+};
 
 /**
  * A read-write property with two integer values. The second is optional.
@@ -53,34 +53,34 @@ struct ReadWriteTwoIntegersProperty
 };
 
 /**
- * The `read_only_string` property contains a single field:
- *   std::string value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-only string property.
  */
-typedef std::string ReadOnlyStringProperty;
+struct ReadOnlyStringProperty
+{
+    static ReadOnlyStringProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::string value;
+};
 
 /**
- * The `read_write_string` property contains a single field:
- *   std::string value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write string property.
  */
-typedef std::string ReadWriteStringProperty;
+struct ReadWriteStringProperty
+{
+    static ReadWriteStringProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::string value;
+};
 
 /**
- * The `read_write_optional_string` property contains a single field:
- *   boost::optional<std::string> value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write optional string property.
  */
-typedef boost::optional<std::string> ReadWriteOptionalStringProperty;
+struct ReadWriteOptionalStringProperty
+{
+    static ReadWriteOptionalStringProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    boost::optional<std::string> value;
+};
 
 /**
  * A read-write property with two string values. The second is optional.
@@ -94,24 +94,24 @@ struct ReadWriteTwoStringsProperty
 };
 
 /**
- * The `read_write_struct` property contains a single field:
- *   AllTypes value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write struct property.
  */
-typedef AllTypes ReadWriteStructProperty;
+struct ReadWriteStructProperty
+{
+    static ReadWriteStructProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    AllTypes value;
+};
 
 /**
- * The `read_write_optional_struct` property contains a single field:
- *   AllTypes value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write optional struct property.
  */
-typedef boost::optional<AllTypes> ReadWriteOptionalStructProperty;
+struct ReadWriteOptionalStructProperty
+{
+    static ReadWriteOptionalStructProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    boost::optional<AllTypes> value;
+};
 
 /**
  * A read-write property with two struct values. The second is optional.
@@ -125,34 +125,34 @@ struct ReadWriteTwoStructsProperty
 };
 
 /**
- * The `read_only_enum` property contains a single field:
- *   Numbers value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-only enum property.
  */
-typedef Numbers ReadOnlyEnumProperty;
+struct ReadOnlyEnumProperty
+{
+    static ReadOnlyEnumProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    Numbers value;
+};
 
 /**
- * The `read_write_enum` property contains a single field:
- *   Numbers value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write enum property.
  */
-typedef Numbers ReadWriteEnumProperty;
+struct ReadWriteEnumProperty
+{
+    static ReadWriteEnumProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    Numbers value;
+};
 
 /**
- * The `read_write_optional_enum` property contains a single field:
- *   boost::optional<Numbers> value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write optional enum property.
  */
-typedef boost::optional<Numbers> ReadWriteOptionalEnumProperty;
+struct ReadWriteOptionalEnumProperty
+{
+    static ReadWriteOptionalEnumProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    boost::optional<Numbers> value;
+};
 
 /**
  * A read-write property with two enum values. The second is optional.
@@ -166,24 +166,24 @@ struct ReadWriteTwoEnumsProperty
 };
 
 /**
- * The `read_write_datetime` property contains a single field:
- *   std::chrono::time_point<std::chrono::system_clock> value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write datetime property.
  */
-typedef std::chrono::time_point<std::chrono::system_clock> ReadWriteDatetimeProperty;
+struct ReadWriteDatetimeProperty
+{
+    static ReadWriteDatetimeProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::chrono::time_point<std::chrono::system_clock> value;
+};
 
 /**
- * The `read_write_optional_datetime` property contains a single field:
- *   boost::optional<std::chrono::time_point<std::chrono::system_clock>> value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write optional datetime property.
  */
-typedef boost::optional<std::chrono::time_point<std::chrono::system_clock>> ReadWriteOptionalDatetimeProperty;
+struct ReadWriteOptionalDatetimeProperty
+{
+    static ReadWriteOptionalDatetimeProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> value;
+};
 
 /**
  * A read-write property with two datetime values. The second is optional.
@@ -197,24 +197,24 @@ struct ReadWriteTwoDatetimesProperty
 };
 
 /**
- * The `read_write_duration` property contains a single field:
- *   std::chrono::duration<double> value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write duration property.
  */
-typedef std::chrono::duration<double> ReadWriteDurationProperty;
+struct ReadWriteDurationProperty
+{
+    static ReadWriteDurationProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::chrono::duration<double> value;
+};
 
 /**
- * The `read_write_optional_duration` property contains a single field:
- *   boost::optional<std::chrono::duration<double>> value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write optional duration property.
  */
-typedef boost::optional<std::chrono::duration<double>> ReadWriteOptionalDurationProperty;
+struct ReadWriteOptionalDurationProperty
+{
+    static ReadWriteOptionalDurationProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    boost::optional<std::chrono::duration<double>> value;
+};
 
 /**
  * A read-write property with two duration values. The second is optional.
@@ -228,24 +228,24 @@ struct ReadWriteTwoDurationsProperty
 };
 
 /**
- * The `read_write_binary` property contains a single field:
- *   std::vector<uint8_t> value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write binary property.
  */
-typedef std::vector<uint8_t> ReadWriteBinaryProperty;
+struct ReadWriteBinaryProperty
+{
+    static ReadWriteBinaryProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::vector<uint8_t> value;
+};
 
 /**
- * The `read_write_optional_binary` property contains a single field:
- *   boost::optional<std::vector<uint8_t>> value;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * A read-write optional binary property.
  */
-typedef boost::optional<std::vector<uint8_t>> ReadWriteOptionalBinaryProperty;
+struct ReadWriteOptionalBinaryProperty
+{
+    static ReadWriteOptionalBinaryProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    boost::optional<std::vector<uint8_t>> value;
+};
 
 /**
  * A read-write property with two binary values.  The second is optional.

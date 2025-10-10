@@ -11,3 +11,12 @@ It contains enumerations used by the weather interface.
 #include <vector>
 #include <boost/optional.hpp>
 #include "enums.hpp"
+#include "structs.hpp"
+
+struct CurrentTimePayload
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static CurrentTimePayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    std::string currentTime;
+};

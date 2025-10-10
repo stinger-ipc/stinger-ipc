@@ -1,0 +1,40 @@
+
+#include "method_payloads.hpp"
+{% import "partials/deserialize.jinja2"  as deser %}
+{% import "partials/serialize.jinja2" as ser %}
+#include <rapidjson/document.h>
+#include "conversions.hpp"
+
+{%for method_name, method in stinger.methods.items()%}
+// --- (De-)Serialization for {{method_name}} method request arguments ---
+{{method_name | UpperCamelCase}}RequestArguments {{method_name | UpperCamelCase}}RequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    {{method_name | UpperCamelCase}}RequestArguments {{method.name | lowerCamelCase }}Args;
+    {{deser.deserialize((method.name|lowerCamelCase)+"Args", method.arg_list, 'jsonObj') | indent(4)}}
+
+    return {{method.name | lowerCamelCase }}Args;
+};
+
+void {{method_name | UpperCamelCase}}RequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    {%for arg in method.arg_list%}
+    {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
+    {%- endfor %}
+}
+
+// --- (De-)Serialization for {{method_name}} method return type ---
+{{method_name | UpperCamelCase}}ReturnValues {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    {{method_name | UpperCamelCase}}ReturnValues {{method.name | lowerCamelCase }}Rc;
+    {{deser.deserialize((method.name|lowerCamelCase)+"Rc", method.return_arg_list, 'jsonObj') | indent(4)}}
+
+    return {{method.name | lowerCamelCase }}Rc;
+};
+
+void {{method_name | UpperCamelCase}}ReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    {%for arg in method.return_arg_list%}
+    {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
+    {%- endfor %}
+}
+{% endfor %}

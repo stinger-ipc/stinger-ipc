@@ -1,147 +1,6 @@
 
+
 #include "structs.hpp"
-#include <sstream>
-#include <iomanip>
-#include <boost/archive/iterators/base64_from_binary.hpp>
-#include <boost/archive/iterators/transform_width.hpp>
-#include <boost/archive/iterators/binary_from_base64.hpp>
-#include <boost/algorithm/string.hpp>
-#include <algorithm>
-#include <iterator>
-
-// Utility function to convert ISO timestamp string to time_point
-std::chrono::time_point<std::chrono::system_clock> parseIsoTimestamp(const std::string& isoTimestamp)
-{
-    std::tm tm = {};
-    std::istringstream ss(isoTimestamp);
-
-    // Parse ISO 8601 format (e.g., "2023-12-01T15:30:45Z" or "2023-12-01T15:30:45.123Z")
-    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
-
-    if (ss.fail())
-    {
-        throw std::runtime_error("Failed to parse ISO timestamp: " + isoTimestamp);
-    }
-
-    // Convert to time_t and then to time_point
-    std::time_t time = std::mktime(&tm);
-    return std::chrono::system_clock::from_time_t(time);
-}
-
-// Utility function to convert time_point to ISO timestamp string
-std::string timePointToIsoString(const std::chrono::time_point<std::chrono::system_clock>& timePoint)
-{
-    std::time_t time = std::chrono::system_clock::to_time_t(timePoint);
-    std::tm* tm = std::gmtime(&time);
-
-    std::ostringstream ss;
-    ss << std::put_time(tm, "%Y-%m-%dT%H:%M:%SZ");
-    return ss.str();
-}
-
-std::string durationToIsoString(const std::chrono::duration<double>& duration)
-{
-    using namespace std::chrono;
-    auto secs = duration_cast<seconds>(duration);
-    auto millis = duration_cast<milliseconds>(duration - secs);
-
-    std::ostringstream ss;
-    ss << "PT";
-    ss << secs.count();
-    if (millis.count() > 0)
-    {
-        ss << "." << std::setw(3) << std::setfill('0') << millis.count();
-    }
-    ss << "S";
-    return ss.str();
-}
-
-std::chrono::duration<double> parseIsoDuration(const std::string& isoDuration)
-{
-    // Only supports simple "PTnS" or "PTn.mS" (seconds, optional milliseconds)
-    if (isoDuration.size() < 3 || isoDuration.substr(0, 2) != "PT" || isoDuration.back() != 'S')
-    {
-        throw std::runtime_error("Unsupported ISO 8601 duration format: " + isoDuration);
-    }
-    std::string numberPart = isoDuration.substr(2, isoDuration.size() - 3); // between PT and S
-    double seconds = 0.0;
-    try
-    {
-        seconds = std::stod(numberPart);
-    }
-    catch (const std::exception&)
-    {
-        throw std::runtime_error("Failed to parse ISO 8601 duration: " + isoDuration);
-    }
-    return std::chrono::duration<double>(seconds);
-}
-
-// Base64 encode binary data using Boost iterators
-std::string base64Encode(const std::vector<unsigned char>& data)
-{
-    if (data.empty())
-        return std::string();
-
-    const unsigned char* begin = data.data();
-    const unsigned char* end = begin + data.size();
-
-    using namespace boost::archive::iterators;
-    using It = transform_width<const unsigned char*, 6, 8>;
-    using Base64EncIt = base64_from_binary<It>;
-
-    std::string tmp;
-    try
-    {
-        tmp.assign(Base64EncIt(begin), Base64EncIt(end));
-    }
-    catch (...)
-    {
-        return std::string();
-    }
-
-    // padding
-    std::size_t padding = (3 - (data.size() % 3)) % 3;
-    tmp.append(padding, '=');
-    return tmp;
-}
-
-// Decode base64 string into a vector of bytes using Boost iterators
-std::vector<unsigned char> base64Decode(const std::string& b64input)
-{
-    using namespace boost::archive::iterators;
-    using Base64DecIt = transform_width<binary_from_base64<std::string::const_iterator>, 8, 6>;
-
-    std::string input = b64input;
-    // Remove padding characters
-    size_t padding = 0;
-    if (!input.empty())
-    {
-        if (input.back() == '=')
-        {
-            padding = 1;
-            if (input.size() > 1 && input[input.size() - 2] == '=')
-                padding = 2;
-        }
-    }
-
-    try
-    {
-        // Create iterator range (binary_from_base64 will throw on invalid input)
-        auto first = Base64DecIt(input.begin());
-        auto last = Base64DecIt(input.end());
-        std::vector<unsigned char> result;
-        result.reserve((input.size() * 3) / 4 - padding);
-        std::copy(first, last, std::back_inserter(result));
-        // Remove extra bytes added by the transform for padding
-        if (padding)
-            result.resize(result.size() - padding);
-        return result;
-    }
-    catch (...)
-    {
-        return std::vector<unsigned char>();
-    }
-}
 
 Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
@@ -195,17 +54,19 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("order_number");
         if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
         {
-            lunch.order_number = itr->value.GetInt();
+            lunch.orderNumber = itr->value.GetInt();
         }
         else
         {
-            lunch.order_number = boost::none;
+            lunch.orderNumber = boost::none;
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("time_of_lunch");
         if (itr != jsonObj.MemberEnd() && itr->value.IsString())
         {
+            auto tempTimeOfLunchIsoString = itr->value.GetString();
+            lunch.timeOfLunch = parseIsoTimestamp(tempTimeOfLunchIsoString);
         }
         else
         {
@@ -216,6 +77,8 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("duration_of_lunch");
         if (itr != jsonObj.MemberEnd() && itr->value.IsString())
         {
+            auto tempDurationOfLunchIsoString = itr->value.GetString();
+            lunch.durationOfLunch = parseIsoDuration(tempDurationOfLunchIsoString);
         }
         else
         {
@@ -225,3 +88,35 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 
     return lunch;
 };
+
+void Lunch::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    parent.AddMember("drink", drink, allocator);
+
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(sandwich.c_str(), sandwich.size(), allocator);
+        parent.AddMember("sandwich", tempStringValue, allocator);
+    }
+
+    parent.AddMember("crackers", crackers, allocator);
+
+    parent.AddMember("day", static_cast<int>(day), allocator);
+
+    if (orderNumber)
+        parent.AddMember("order_number", *orderNumber, allocator);
+
+    { // Restrict Scope
+        rapidjson::Value tempTimeOfLunchStringValue;
+        std::string timeOfLunchIsoString = timePointToIsoString(timeOfLunch);
+        tempTimeOfLunchStringValue.SetString(timeOfLunchIsoString.c_str(), timeOfLunchIsoString.size(), allocator);
+        parent.AddMember("time_of_lunch", tempTimeOfLunchStringValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempDurationOfLunchStringValue;
+        std::string durationOfLunchIsoString = durationToIsoString(durationOfLunch);
+        tempDurationOfLunchStringValue.SetString(durationOfLunchIsoString.c_str(), durationOfLunchIsoString.size(), allocator);
+        parent.AddMember("duration_of_lunch", tempDurationOfLunchStringValue, allocator);
+    }
+}

@@ -4,7 +4,6 @@
 #include <rapidjson/document.h>
 
 {%for prop_name, prop in stinger.properties.items()%}
-{%- if prop.arg_list| length > 1 %}
 {{prop.name | UpperCamelCase}}Property {{prop.name | UpperCamelCase}}Property::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     {{prop.name | UpperCamelCase}}Property {{prop.name | lowerCamelCase }};
@@ -19,5 +18,4 @@ void {{prop.name | UpperCamelCase}}Property::AddToRapidJsonObject(rapidjson::Val
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }
-{%- endif %}
 {% endfor %}

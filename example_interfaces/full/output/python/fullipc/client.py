@@ -26,10 +26,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 TodayIsSignalCallbackType = Callable[[int, Optional[stinger_types.DayOfTheWeek], datetime, timedelta, bytes], None]
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
-DoSomethingMethodResponseCallbackType = Callable[[stinger_types.DoSomethingReturnValue], None]
+DoSomethingMethodResponseCallbackType = Callable[[stinger_types.DoSomethingReturnValues], None]
 EchoMethodResponseCallbackType = Callable[[str], None]
 WhatTimeIsItMethodResponseCallbackType = Callable[[datetime], None]
-SetTheTimeMethodResponseCallbackType = Callable[[stinger_types.SetTheTimeReturnValue], None]
+SetTheTimeMethodResponseCallbackType = Callable[[stinger_types.SetTheTimeReturnValues], None]
 ForwardTimeMethodResponseCallbackType = Callable[[datetime], None]
 HowOffIsTheClockMethodResponseCallbackType = Callable[[timedelta], None]
 
@@ -600,7 +600,7 @@ class FullClient:
 
             return_args["day"] = stinger_types.DayOfTheWeek(return_args["day"])
 
-            return_obj = stinger_types.DoSomethingReturnValue(**return_args)
+            return_obj = stinger_types.DoSomethingReturnValues(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -722,7 +722,7 @@ class FullClient:
 
             return_args["confirmation_message"] = str(return_args["confirmation_message"])
 
-            return_obj = stinger_types.SetTheTimeReturnValue(**return_args)
+            return_obj = stinger_types.SetTheTimeReturnValues(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:

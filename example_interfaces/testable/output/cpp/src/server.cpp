@@ -13,6 +13,7 @@
 #include <rapidjson/document.h>
 #include "structs.hpp"
 #include "server.hpp"
+#include "method_payloads.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
 
@@ -1423,7 +1424,7 @@ void TestAbleServer::registerCallOptionalIntegerHandler(std::function<boost::opt
     _callOptionalIntegerHandler = func;
 }
 
-void TestAbleServer::registerCallThreeIntegersHandler(std::function<CallThreeIntegersReturnValue(int, int, boost::optional<int>)> func)
+void TestAbleServer::registerCallThreeIntegersHandler(std::function<CallThreeIntegersReturnValues(int, int, boost::optional<int>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeIntegers method requests.");
     _callThreeIntegersHandler = func;
@@ -1441,7 +1442,7 @@ void TestAbleServer::registerCallOptionalStringHandler(std::function<boost::opti
     _callOptionalStringHandler = func;
 }
 
-void TestAbleServer::registerCallThreeStringsHandler(std::function<CallThreeStringsReturnValue(std::string, std::string, boost::optional<std::string>)> func)
+void TestAbleServer::registerCallThreeStringsHandler(std::function<CallThreeStringsReturnValues(std::string, boost::optional<std::string>, std::string)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeStrings method requests.");
     _callThreeStringsHandler = func;
@@ -1459,7 +1460,7 @@ void TestAbleServer::registerCallOptionalEnumHandler(std::function<boost::option
     _callOptionalEnumHandler = func;
 }
 
-void TestAbleServer::registerCallThreeEnumsHandler(std::function<CallThreeEnumsReturnValue(Numbers, Numbers, boost::optional<Numbers>)> func)
+void TestAbleServer::registerCallThreeEnumsHandler(std::function<CallThreeEnumsReturnValues(Numbers, Numbers, boost::optional<Numbers>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeEnums method requests.");
     _callThreeEnumsHandler = func;
@@ -1477,7 +1478,7 @@ void TestAbleServer::registerCallOptionalStructHandler(std::function<boost::opti
     _callOptionalStructHandler = func;
 }
 
-void TestAbleServer::registerCallThreeStructsHandler(std::function<CallThreeStructsReturnValue(AllTypes, AllTypes, boost::optional<AllTypes>)> func)
+void TestAbleServer::registerCallThreeStructsHandler(std::function<CallThreeStructsReturnValues(boost::optional<AllTypes>, AllTypes, AllTypes)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeStructs method requests.");
     _callThreeStructsHandler = func;
@@ -1495,7 +1496,7 @@ void TestAbleServer::registerCallOptionalDateTimeHandler(std::function<boost::op
     _callOptionalDateTimeHandler = func;
 }
 
-void TestAbleServer::registerCallThreeDateTimesHandler(std::function<CallThreeDateTimesReturnValue(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)> func)
+void TestAbleServer::registerCallThreeDateTimesHandler(std::function<CallThreeDateTimesReturnValues(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeDateTimes method requests.");
     _callThreeDateTimesHandler = func;
@@ -1513,7 +1514,7 @@ void TestAbleServer::registerCallOptionalDurationHandler(std::function<boost::op
     _callOptionalDurationHandler = func;
 }
 
-void TestAbleServer::registerCallThreeDurationsHandler(std::function<CallThreeDurationsReturnValue(std::chrono::duration<double>, std::chrono::duration<double>, boost::optional<std::chrono::duration<double>>)> func)
+void TestAbleServer::registerCallThreeDurationsHandler(std::function<CallThreeDurationsReturnValues(std::chrono::duration<double>, std::chrono::duration<double>, boost::optional<std::chrono::duration<double>>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeDurations method requests.");
     _callThreeDurationsHandler = func;
@@ -1531,7 +1532,7 @@ void TestAbleServer::registerCallOptionalBinaryHandler(std::function<boost::opti
     _callOptionalBinaryHandler = func;
 }
 
-void TestAbleServer::registerCallThreeBinariesHandler(std::function<CallThreeBinariesReturnValue(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)> func)
+void TestAbleServer::registerCallThreeBinariesHandler(std::function<CallThreeBinariesReturnValues(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeBinaries method requests.");
     _callThreeBinariesHandler = func;
@@ -1545,24 +1546,30 @@ void TestAbleServer::_callCallWithNothingHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callWithNothing");
-    if (_callWithNothingHandler)
+    if (!_callWithNothingHandler)
     {
-        // No Return Value.
-        _callWithNothingHandler();
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method doesn't have any return values.
+    _callWithNothingHandler();
+    auto returnValues = CallWithNothingReturnValues();
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -1574,44 +1581,32 @@ void TestAbleServer::_callCallOneIntegerHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneInteger");
-    if (_callOneIntegerHandler)
+    if (!_callOneIntegerHandler)
     {
-        int tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                tempInput1 = itr->value.GetInt();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        int ret = _callOneIntegerHandler(tempInput1);
+    auto requestArgs = CallOneIntegerRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOneIntegerHandler(requestArgs.input1);
+    CallOneIntegerReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            returnValueOutput1.SetInt(ret); // Rapid Json type for ArgType.PRIMITIVE is Int
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -1623,44 +1618,32 @@ void TestAbleServer::_callCallOptionalIntegerHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalInteger");
-    if (_callOptionalIntegerHandler)
+    if (!_callOptionalIntegerHandler)
     {
-        boost::optional<int> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                tempInput1 = itr->value.GetInt();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        boost::optional<int> ret = _callOptionalIntegerHandler(tempInput1);
+    auto requestArgs = CallOptionalIntegerRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOptionalIntegerHandler(requestArgs.input1);
+    CallOptionalIntegerReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            returnValueOutput1.SetInt(*ret); // Rapid Json type for ArgType.PRIMITIVE is Int
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -1672,80 +1655,31 @@ void TestAbleServer::_callCallThreeIntegersHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeIntegers");
-    if (_callThreeIntegersHandler)
+    if (!_callThreeIntegersHandler)
     {
-        int tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                tempInput1 = itr->value.GetInt();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        int tempInput2;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input2");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                tempInput2 = itr->value.GetInt();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    auto requestArgs = CallThreeIntegersRequestArguments::FromRapidJsonObject(doc);
 
-        boost::optional<int> tempInput3;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input3");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                tempInput3 = itr->value.GetInt();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    // Method has multiple return values.
+    auto returnValues = _callThreeIntegersHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-        // Return value has multiple values.
-        CallThreeIntegersReturnValue ret = _callThreeIntegersHandler(tempInput1, tempInput2, tempInput3);
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            // Return type is a struct of values that need added to json
-
-            // add the 'ret.output1' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            returnValueOutput1.SetInt(ret.output1); // Rapid Json type for ArgType.PRIMITIVE is Int
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
-
-            // add the 'ret.output2' value to the json as 'output2'.
-            rapidjson::Value returnValueOutput2;
-            returnValueOutput2.SetInt(ret.output2); // Rapid Json type for ArgType.PRIMITIVE is Int
-            responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
-
-            // add the 'ret.output3' value to the json as 'output3'.
-            rapidjson::Value returnValueOutput3;
-            returnValueOutput3.SetInt(*ret.output3); // Rapid Json type for ArgType.PRIMITIVE is Int
-            responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -1757,44 +1691,32 @@ void TestAbleServer::_callCallOneStringHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneString");
-    if (_callOneStringHandler)
+    if (!_callOneStringHandler)
     {
-        std::string tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-                tempInput1 = itr->value.GetString();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        std::string ret = _callOneStringHandler(tempInput1);
+    auto requestArgs = CallOneStringRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOneStringHandler(requestArgs.input1);
+    CallOneStringReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            returnValueOutput1.SetString(ret.c_str(), ret.size(), responseJson.GetAllocator());
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -1806,44 +1728,32 @@ void TestAbleServer::_callCallOptionalStringHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalString");
-    if (_callOptionalStringHandler)
+    if (!_callOptionalStringHandler)
     {
-        boost::optional<std::string> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-                tempInput1 = itr->value.GetString();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        boost::optional<std::string> ret = _callOptionalStringHandler(tempInput1);
+    auto requestArgs = CallOptionalStringRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOptionalStringHandler(requestArgs.input1);
+    CallOptionalStringReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            returnValueOutput1.SetString(ret->c_str(), ret->size(), responseJson.GetAllocator());
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -1855,80 +1765,31 @@ void TestAbleServer::_callCallThreeStringsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeStrings");
-    if (_callThreeStringsHandler)
+    if (!_callThreeStringsHandler)
     {
-        std::string tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-                tempInput1 = itr->value.GetString();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        std::string tempInput2;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input2");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-                tempInput2 = itr->value.GetString();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    auto requestArgs = CallThreeStringsRequestArguments::FromRapidJsonObject(doc);
 
-        boost::optional<std::string> tempInput3;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input3");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-                tempInput3 = itr->value.GetString();
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    // Method has multiple return values.
+    auto returnValues = _callThreeStringsHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-        // Return value has multiple values.
-        CallThreeStringsReturnValue ret = _callThreeStringsHandler(tempInput1, tempInput2, tempInput3);
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            // Return type is a struct of values that need added to json
-
-            // add the 'ret.output1' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            returnValueOutput1.SetString(ret.output1.c_str(), ret.output1.size(), responseJson.GetAllocator());
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
-
-            // add the 'ret.output2' value to the json as 'output2'.
-            rapidjson::Value returnValueOutput2;
-            returnValueOutput2.SetString(ret.output2.c_str(), ret.output2.size(), responseJson.GetAllocator());
-            responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
-
-            // add the 'ret.output3' value to the json as 'output3'.
-            rapidjson::Value returnValueOutput3;
-            returnValueOutput3.SetString(ret.output3->c_str(), ret.output3->size(), responseJson.GetAllocator());
-            responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -1940,47 +1801,32 @@ void TestAbleServer::_callCallOneEnumHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneEnum");
-    if (_callOneEnumHandler)
+    if (!_callOneEnumHandler)
     {
-        Numbers tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                // Convert the json integer into the enum type.
-                tempInput1 = static_cast<Numbers>(itr->value.GetInt());
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        Numbers ret = _callOneEnumHandler(tempInput1);
+    auto requestArgs = CallOneEnumRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOneEnumHandler(requestArgs.input1);
+    CallOneEnumReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            returnValueOutput1.SetInt(static_cast<int>(ret));
-
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -1992,54 +1838,32 @@ void TestAbleServer::_callCallOptionalEnumHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalEnum");
-    if (_callOptionalEnumHandler)
+    if (!_callOptionalEnumHandler)
     {
-        boost::optional<Numbers> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                // Convert the json integer into the enum type.
-                tempInput1 = static_cast<Numbers>(itr->value.GetInt());
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        boost::optional<Numbers> ret = _callOptionalEnumHandler(tempInput1);
+    auto requestArgs = CallOptionalEnumRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOptionalEnumHandler(requestArgs.input1);
+    CallOptionalEnumReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            if (ret)
-            {
-                returnValueOutput1.SetInt(static_cast<int>(*ret));
-            }
-            else
-            {
-                returnValueOutput1.SetNull();
-            }
-
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2051,96 +1875,31 @@ void TestAbleServer::_callCallThreeEnumsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeEnums");
-    if (_callThreeEnumsHandler)
+    if (!_callThreeEnumsHandler)
     {
-        Numbers tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                // Convert the json integer into the enum type.
-                tempInput1 = static_cast<Numbers>(itr->value.GetInt());
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        Numbers tempInput2;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input2");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                // Convert the json integer into the enum type.
-                tempInput2 = static_cast<Numbers>(itr->value.GetInt());
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    auto requestArgs = CallThreeEnumsRequestArguments::FromRapidJsonObject(doc);
 
-        boost::optional<Numbers> tempInput3;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input3");
-            if (itr != doc.MemberEnd() && itr->value.IsInt())
-            {
-                // Convert the json integer into the enum type.
-                tempInput3 = static_cast<Numbers>(itr->value.GetInt());
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    // Method has multiple return values.
+    auto returnValues = _callThreeEnumsHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-        // Return value has multiple values.
-        CallThreeEnumsReturnValue ret = _callThreeEnumsHandler(tempInput1, tempInput2, tempInput3);
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            // Return type is a struct of values that need added to json
-
-            // add the 'ret.output1' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-
-            returnValueOutput1.SetInt(static_cast<int>(ret.output1));
-
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
-
-            // add the 'ret.output2' value to the json as 'output2'.
-            rapidjson::Value returnValueOutput2;
-
-            returnValueOutput2.SetInt(static_cast<int>(ret.output2));
-
-            responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
-
-            // add the 'ret.output3' value to the json as 'output3'.
-            rapidjson::Value returnValueOutput3;
-
-            if (ret.output3)
-            {
-                returnValueOutput3.SetInt(static_cast<int>(*ret.output3));
-            }
-            else
-            {
-                returnValueOutput3.SetNull();
-            }
-
-            responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2152,118 +1911,32 @@ void TestAbleServer::_callCallOneStructHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneStruct");
-    if (_callOneStructHandler)
+    if (!_callOneStructHandler)
     {
-        AllTypes tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsObject())
-            {
-                // Convert the json object into the struct type.
-                if (itr->value.IsObject())
-                {
-                    tempInput1 = AllTypes::FromRapidJsonObject(itr->value);
-                }
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        AllTypes ret = _callOneStructHandler(tempInput1);
+    auto requestArgs = CallOneStructRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOneStructHandler(requestArgs.input1);
+    CallOneStructReturnValues returnValues = { returnValue };
 
-            // Return type is a struct of values that need added to json
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret.bool_' value to the json as 'bool_'.
-            rapidjson::Value returnValueBool;
-            returnValueBool.SetBool(ret.bool_); // Rapid Json type for ArgType.PRIMITIVE is Bool
-            responseJson.AddMember("bool_", returnValueBool, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            // add the 'ret.int_' value to the json as 'int_'.
-            rapidjson::Value returnValueInt;
-            returnValueInt.SetInt(ret.int_); // Rapid Json type for ArgType.PRIMITIVE is Int
-            responseJson.AddMember("int_", returnValueInt, responseJson.GetAllocator());
-
-            // add the 'ret.number' value to the json as 'number'.
-            rapidjson::Value returnValueNumber;
-            returnValueNumber.SetDouble(ret.number); // Rapid Json type for ArgType.PRIMITIVE is Double
-            responseJson.AddMember("number", returnValueNumber, responseJson.GetAllocator());
-
-            // add the 'ret.str' value to the json as 'str'.
-            rapidjson::Value returnValueStr;
-            returnValueStr.SetString(ret.str.c_str(), ret.str.size(), responseJson.GetAllocator());
-            responseJson.AddMember("str", returnValueStr, responseJson.GetAllocator());
-
-            // add the 'ret.enum_' value to the json as 'enum_'.
-            rapidjson::Value returnValueEnum;
-
-            returnValueEnum.SetInt(static_cast<int>(ret.enum_));
-
-            responseJson.AddMember("enum_", returnValueEnum, responseJson.GetAllocator());
-
-            // add the 'ret.date_and_time' value to the json as 'date_and_time'.
-            rapidjson::Value returnValueDateAndTime;
-            responseJson.AddMember("date_and_time", returnValueDateAndTime, responseJson.GetAllocator());
-
-            // add the 'ret.time_duration' value to the json as 'time_duration'.
-            rapidjson::Value returnValueTimeDuration;
-            responseJson.AddMember("time_duration", returnValueTimeDuration, responseJson.GetAllocator());
-
-            // add the 'ret.data' value to the json as 'data'.
-            rapidjson::Value returnValueData;
-            responseJson.AddMember("data", returnValueData, responseJson.GetAllocator());
-
-            // add the 'ret.OptionalInteger' value to the json as 'OptionalInteger'.
-            rapidjson::Value returnValueOptionalInteger;
-            returnValueOptionalInteger.SetInt(*ret.OptionalInteger); // Rapid Json type for ArgType.PRIMITIVE is Int
-            responseJson.AddMember("OptionalInteger", returnValueOptionalInteger, responseJson.GetAllocator());
-
-            // add the 'ret.OptionalString' value to the json as 'OptionalString'.
-            rapidjson::Value returnValueOptionalString;
-            returnValueOptionalString.SetString(ret.OptionalString->c_str(), ret.OptionalString->size(), responseJson.GetAllocator());
-            responseJson.AddMember("OptionalString", returnValueOptionalString, responseJson.GetAllocator());
-
-            // add the 'ret.OptionalEnum' value to the json as 'OptionalEnum'.
-            rapidjson::Value returnValueOptionalEnum;
-
-            if (ret.OptionalEnum)
-            {
-                returnValueOptionalEnum.SetInt(static_cast<int>(*ret.OptionalEnum));
-            }
-            else
-            {
-                returnValueOptionalEnum.SetNull();
-            }
-
-            responseJson.AddMember("OptionalEnum", returnValueOptionalEnum, responseJson.GetAllocator());
-
-            // add the 'ret.OptionalDateTime' value to the json as 'OptionalDateTime'.
-            rapidjson::Value returnValueOptionalDateTime;
-            responseJson.AddMember("OptionalDateTime", returnValueOptionalDateTime, responseJson.GetAllocator());
-
-            // add the 'ret.OptionalDuration' value to the json as 'OptionalDuration'.
-            rapidjson::Value returnValueOptionalDuration;
-            responseJson.AddMember("OptionalDuration", returnValueOptionalDuration, responseJson.GetAllocator());
-
-            // add the 'ret.OptionalBinary' value to the json as 'OptionalBinary'.
-            rapidjson::Value returnValueOptionalBinary;
-            responseJson.AddMember("OptionalBinary", returnValueOptionalBinary, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2275,118 +1948,32 @@ void TestAbleServer::_callCallOptionalStructHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalStruct");
-    if (_callOptionalStructHandler)
+    if (!_callOptionalStructHandler)
     {
-        boost::optional<AllTypes> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsObject())
-            {
-                // Convert the json object into the struct type.
-                if (itr->value.IsObject())
-                {
-                    tempInput1 = AllTypes::FromRapidJsonObject(itr->value);
-                }
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        boost::optional<AllTypes> ret = _callOptionalStructHandler(tempInput1);
+    auto requestArgs = CallOptionalStructRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOptionalStructHandler(requestArgs.input1);
+    CallOptionalStructReturnValues returnValues = { returnValue };
 
-            // Return type is a struct of values that need added to json
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret->bool_' value to the json as 'bool_'.
-            rapidjson::Value returnValueBool;
-            returnValueBool.SetBool(ret->bool_); // Rapid Json type for ArgType.PRIMITIVE is Bool
-            responseJson.AddMember("bool_", returnValueBool, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            // add the 'ret->int_' value to the json as 'int_'.
-            rapidjson::Value returnValueInt;
-            returnValueInt.SetInt(ret->int_); // Rapid Json type for ArgType.PRIMITIVE is Int
-            responseJson.AddMember("int_", returnValueInt, responseJson.GetAllocator());
-
-            // add the 'ret->number' value to the json as 'number'.
-            rapidjson::Value returnValueNumber;
-            returnValueNumber.SetDouble(ret->number); // Rapid Json type for ArgType.PRIMITIVE is Double
-            responseJson.AddMember("number", returnValueNumber, responseJson.GetAllocator());
-
-            // add the 'ret->str' value to the json as 'str'.
-            rapidjson::Value returnValueStr;
-            returnValueStr.SetString(ret->str.c_str(), ret->str.size(), responseJson.GetAllocator());
-            responseJson.AddMember("str", returnValueStr, responseJson.GetAllocator());
-
-            // add the 'ret->enum_' value to the json as 'enum_'.
-            rapidjson::Value returnValueEnum;
-
-            returnValueEnum.SetInt(static_cast<int>(ret->enum_));
-
-            responseJson.AddMember("enum_", returnValueEnum, responseJson.GetAllocator());
-
-            // add the 'ret->date_and_time' value to the json as 'date_and_time'.
-            rapidjson::Value returnValueDateAndTime;
-            responseJson.AddMember("date_and_time", returnValueDateAndTime, responseJson.GetAllocator());
-
-            // add the 'ret->time_duration' value to the json as 'time_duration'.
-            rapidjson::Value returnValueTimeDuration;
-            responseJson.AddMember("time_duration", returnValueTimeDuration, responseJson.GetAllocator());
-
-            // add the 'ret->data' value to the json as 'data'.
-            rapidjson::Value returnValueData;
-            responseJson.AddMember("data", returnValueData, responseJson.GetAllocator());
-
-            // add the 'ret->OptionalInteger' value to the json as 'OptionalInteger'.
-            rapidjson::Value returnValueOptionalInteger;
-            returnValueOptionalInteger.SetInt(*ret->OptionalInteger); // Rapid Json type for ArgType.PRIMITIVE is Int
-            responseJson.AddMember("OptionalInteger", returnValueOptionalInteger, responseJson.GetAllocator());
-
-            // add the 'ret->OptionalString' value to the json as 'OptionalString'.
-            rapidjson::Value returnValueOptionalString;
-            returnValueOptionalString.SetString(ret->OptionalString->c_str(), ret->OptionalString->size(), responseJson.GetAllocator());
-            responseJson.AddMember("OptionalString", returnValueOptionalString, responseJson.GetAllocator());
-
-            // add the 'ret->OptionalEnum' value to the json as 'OptionalEnum'.
-            rapidjson::Value returnValueOptionalEnum;
-
-            if (ret->OptionalEnum)
-            {
-                returnValueOptionalEnum.SetInt(static_cast<int>(*ret->OptionalEnum));
-            }
-            else
-            {
-                returnValueOptionalEnum.SetNull();
-            }
-
-            responseJson.AddMember("OptionalEnum", returnValueOptionalEnum, responseJson.GetAllocator());
-
-            // add the 'ret->OptionalDateTime' value to the json as 'OptionalDateTime'.
-            rapidjson::Value returnValueOptionalDateTime;
-            responseJson.AddMember("OptionalDateTime", returnValueOptionalDateTime, responseJson.GetAllocator());
-
-            // add the 'ret->OptionalDuration' value to the json as 'OptionalDuration'.
-            rapidjson::Value returnValueOptionalDuration;
-            responseJson.AddMember("OptionalDuration", returnValueOptionalDuration, responseJson.GetAllocator());
-
-            // add the 'ret->OptionalBinary' value to the json as 'OptionalBinary'.
-            rapidjson::Value returnValueOptionalBinary;
-            responseJson.AddMember("OptionalBinary", returnValueOptionalBinary, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2398,89 +1985,31 @@ void TestAbleServer::_callCallThreeStructsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeStructs");
-    if (_callThreeStructsHandler)
+    if (!_callThreeStructsHandler)
     {
-        AllTypes tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsObject())
-            {
-                // Convert the json object into the struct type.
-                if (itr->value.IsObject())
-                {
-                    tempInput1 = AllTypes::FromRapidJsonObject(itr->value);
-                }
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        AllTypes tempInput2;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input2");
-            if (itr != doc.MemberEnd() && itr->value.IsObject())
-            {
-                // Convert the json object into the struct type.
-                if (itr->value.IsObject())
-                {
-                    tempInput2 = AllTypes::FromRapidJsonObject(itr->value);
-                }
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    auto requestArgs = CallThreeStructsRequestArguments::FromRapidJsonObject(doc);
 
-        boost::optional<AllTypes> tempInput3;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input3");
-            if (itr != doc.MemberEnd() && itr->value.IsObject())
-            {
-                // Convert the json object into the struct type.
-                if (itr->value.IsObject())
-                {
-                    tempInput3 = AllTypes::FromRapidJsonObject(itr->value);
-                }
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    // Method has multiple return values.
+    auto returnValues = _callThreeStructsHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-        // Return value has multiple values.
-        CallThreeStructsReturnValue ret = _callThreeStructsHandler(tempInput1, tempInput2, tempInput3);
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            // Return type is a struct of values that need added to json
-
-            // add the 'ret.output1' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
-
-            // add the 'ret.output2' value to the json as 'output2'.
-            rapidjson::Value returnValueOutput2;
-            responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
-
-            // add the 'ret.output3' value to the json as 'output3'.
-            rapidjson::Value returnValueOutput3;
-            responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2492,42 +2021,32 @@ void TestAbleServer::_callCallOneDateTimeHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneDateTime");
-    if (_callOneDateTimeHandler)
+    if (!_callOneDateTimeHandler)
     {
-        std::chrono::time_point<std::chrono::system_clock> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        std::chrono::time_point<std::chrono::system_clock> ret = _callOneDateTimeHandler(tempInput1);
+    auto requestArgs = CallOneDateTimeRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOneDateTimeHandler(requestArgs.input1);
+    CallOneDateTimeReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2539,42 +2058,32 @@ void TestAbleServer::_callCallOptionalDateTimeHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalDateTime");
-    if (_callOptionalDateTimeHandler)
+    if (!_callOptionalDateTimeHandler)
     {
-        boost::optional<std::chrono::time_point<std::chrono::system_clock>> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        boost::optional<std::chrono::time_point<std::chrono::system_clock>> ret = _callOptionalDateTimeHandler(tempInput1);
+    auto requestArgs = CallOptionalDateTimeRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOptionalDateTimeHandler(requestArgs.input1);
+    CallOptionalDateTimeReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2586,74 +2095,31 @@ void TestAbleServer::_callCallThreeDateTimesHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeDateTimes");
-    if (_callThreeDateTimesHandler)
+    if (!_callThreeDateTimesHandler)
     {
-        std::chrono::time_point<std::chrono::system_clock> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        std::chrono::time_point<std::chrono::system_clock> tempInput2;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input2");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    auto requestArgs = CallThreeDateTimesRequestArguments::FromRapidJsonObject(doc);
 
-        boost::optional<std::chrono::time_point<std::chrono::system_clock>> tempInput3;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input3");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    // Method has multiple return values.
+    auto returnValues = _callThreeDateTimesHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-        // Return value has multiple values.
-        CallThreeDateTimesReturnValue ret = _callThreeDateTimesHandler(tempInput1, tempInput2, tempInput3);
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            // Return type is a struct of values that need added to json
-
-            // add the 'ret.output1' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
-
-            // add the 'ret.output2' value to the json as 'output2'.
-            rapidjson::Value returnValueOutput2;
-            responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
-
-            // add the 'ret.output3' value to the json as 'output3'.
-            rapidjson::Value returnValueOutput3;
-            responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2665,42 +2131,32 @@ void TestAbleServer::_callCallOneDurationHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneDuration");
-    if (_callOneDurationHandler)
+    if (!_callOneDurationHandler)
     {
-        std::chrono::duration<double> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        std::chrono::duration<double> ret = _callOneDurationHandler(tempInput1);
+    auto requestArgs = CallOneDurationRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOneDurationHandler(requestArgs.input1);
+    CallOneDurationReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2712,42 +2168,32 @@ void TestAbleServer::_callCallOptionalDurationHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalDuration");
-    if (_callOptionalDurationHandler)
+    if (!_callOptionalDurationHandler)
     {
-        boost::optional<std::chrono::duration<double>> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        boost::optional<std::chrono::duration<double>> ret = _callOptionalDurationHandler(tempInput1);
+    auto requestArgs = CallOptionalDurationRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOptionalDurationHandler(requestArgs.input1);
+    CallOptionalDurationReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2759,74 +2205,31 @@ void TestAbleServer::_callCallThreeDurationsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeDurations");
-    if (_callThreeDurationsHandler)
+    if (!_callThreeDurationsHandler)
     {
-        std::chrono::duration<double> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        std::chrono::duration<double> tempInput2;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input2");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    auto requestArgs = CallThreeDurationsRequestArguments::FromRapidJsonObject(doc);
 
-        boost::optional<std::chrono::duration<double>> tempInput3;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input3");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    // Method has multiple return values.
+    auto returnValues = _callThreeDurationsHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-        // Return value has multiple values.
-        CallThreeDurationsReturnValue ret = _callThreeDurationsHandler(tempInput1, tempInput2, tempInput3);
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            // Return type is a struct of values that need added to json
-
-            // add the 'ret.output1' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
-
-            // add the 'ret.output2' value to the json as 'output2'.
-            rapidjson::Value returnValueOutput2;
-            responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
-
-            // add the 'ret.output3' value to the json as 'output3'.
-            rapidjson::Value returnValueOutput3;
-            responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2838,42 +2241,32 @@ void TestAbleServer::_callCallOneBinaryHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneBinary");
-    if (_callOneBinaryHandler)
+    if (!_callOneBinaryHandler)
     {
-        std::vector<uint8_t> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        std::vector<uint8_t> ret = _callOneBinaryHandler(tempInput1);
+    auto requestArgs = CallOneBinaryRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOneBinaryHandler(requestArgs.input1);
+    CallOneBinaryReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2885,42 +2278,32 @@ void TestAbleServer::_callCallOptionalBinaryHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalBinary");
-    if (_callOptionalBinaryHandler)
+    if (!_callOptionalBinaryHandler)
     {
-        boost::optional<std::vector<uint8_t>> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        // Return value is a single value.
-        boost::optional<std::vector<uint8_t>> ret = _callOptionalBinaryHandler(tempInput1);
+    auto requestArgs = CallOptionalBinaryRequestArguments::FromRapidJsonObject(doc);
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method has a single return value.
+    auto returnValue = _callOptionalBinaryHandler(requestArgs.input1);
+    CallOptionalBinaryReturnValues returnValues = { returnValue };
 
-            // Return type is a single value
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-            // add the 'ret' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -2932,81 +2315,42 @@ void TestAbleServer::_callCallThreeBinariesHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeBinaries");
-    if (_callThreeBinariesHandler)
+    if (!_callThreeBinariesHandler)
     {
-        std::vector<uint8_t> tempInput1;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input1");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        std::vector<uint8_t> tempInput2;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input2");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    auto requestArgs = CallThreeBinariesRequestArguments::FromRapidJsonObject(doc);
 
-        boost::optional<std::vector<uint8_t>> tempInput3;
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("input3");
-            if (itr != doc.MemberEnd() && itr->value.IsString())
-            {
-            }
-            else
-            {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
+    // Method has multiple return values.
+    auto returnValues = _callThreeBinariesHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-        // Return value has multiple values.
-        CallThreeBinariesReturnValue ret = _callThreeBinariesHandler(tempInput1, tempInput2, tempInput3);
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-            // Return type is a struct of values that need added to json
-
-            // add the 'ret.output1' value to the json as 'output1'.
-            rapidjson::Value returnValueOutput1;
-            responseJson.AddMember("output1", returnValueOutput1, responseJson.GetAllocator());
-
-            // add the 'ret.output2' value to the json as 'output2'.
-            rapidjson::Value returnValueOutput2;
-            responseJson.AddMember("output2", returnValueOutput2, responseJson.GetAllocator());
-
-            // add the 'ret.output3' value to the json as 'output3'.
-            rapidjson::Value returnValueOutput3;
-            responseJson.AddMember("output3", returnValueOutput3, responseJson.GetAllocator());
-
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
-boost::optional<ReadWriteIntegerProperty> TestAbleServer::getReadWriteIntegerProperty() const
+boost::optional<int> TestAbleServer::getReadWriteIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteIntegerPropertyMutex);
-    return _readWriteIntegerProperty;
+    if (_readWriteIntegerProperty)
+    {
+        return _readWriteIntegerProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteIntegerPropertyCallback(const std::function<void(int value)>& cb)
@@ -3019,7 +2363,7 @@ void TestAbleServer::updateReadWriteIntegerProperty(int value)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteIntegerPropertyMutex);
-        _readWriteIntegerProperty = value;
+        _readWriteIntegerProperty = ReadWriteIntegerProperty{ value };
         _lastReadWriteIntegerPropertyVersion++;
     }
     { // Scope lock
@@ -3039,8 +2383,7 @@ void TestAbleServer::republishReadWriteIntegerProperty() const
     if (_readWriteIntegerProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("value", *_readWriteIntegerProperty, doc.GetAllocator());
+        _readWriteIntegerProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -3073,16 +2416,8 @@ void TestAbleServer::_receiveReadWriteIntegerPropertyUpdate(const std::string& t
     // TODO: Check _lastReadWriteIntegerPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    int tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteIntegerProperty tempValue = ReadWriteIntegerProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteIntegerPropertyMutex);
@@ -3092,10 +2427,14 @@ void TestAbleServer::_receiveReadWriteIntegerPropertyUpdate(const std::string& t
     republishReadWriteIntegerProperty();
 }
 
-boost::optional<ReadOnlyIntegerProperty> TestAbleServer::getReadOnlyIntegerProperty() const
+boost::optional<int> TestAbleServer::getReadOnlyIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readOnlyIntegerPropertyMutex);
-    return _readOnlyIntegerProperty;
+    if (_readOnlyIntegerProperty)
+    {
+        return _readOnlyIntegerProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadOnlyIntegerPropertyCallback(const std::function<void(int value)>& cb)
@@ -3108,7 +2447,7 @@ void TestAbleServer::updateReadOnlyIntegerProperty(int value)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readOnlyIntegerPropertyMutex);
-        _readOnlyIntegerProperty = value;
+        _readOnlyIntegerProperty = ReadOnlyIntegerProperty{ value };
         _lastReadOnlyIntegerPropertyVersion++;
     }
     { // Scope lock
@@ -3128,8 +2467,7 @@ void TestAbleServer::republishReadOnlyIntegerProperty() const
     if (_readOnlyIntegerProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("value", *_readOnlyIntegerProperty, doc.GetAllocator());
+        _readOnlyIntegerProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -3162,16 +2500,8 @@ void TestAbleServer::_receiveReadOnlyIntegerPropertyUpdate(const std::string& to
     // TODO: Check _lastReadOnlyIntegerPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    int tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadOnlyIntegerProperty tempValue = ReadOnlyIntegerProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readOnlyIntegerPropertyMutex);
@@ -3184,7 +2514,11 @@ void TestAbleServer::_receiveReadOnlyIntegerPropertyUpdate(const std::string& to
 boost::optional<int> TestAbleServer::getReadWriteOptionalIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyMutex);
-    return _readWriteOptionalIntegerProperty;
+    if (_readWriteOptionalIntegerProperty)
+    {
+        return _readWriteOptionalIntegerProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteOptionalIntegerPropertyCallback(const std::function<void(boost::optional<int> value)>& cb)
@@ -3197,7 +2531,7 @@ void TestAbleServer::updateReadWriteOptionalIntegerProperty(boost::optional<int>
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyMutex);
-        _readWriteOptionalIntegerProperty = value;
+        _readWriteOptionalIntegerProperty = ReadWriteOptionalIntegerProperty{ value };
         _lastReadWriteOptionalIntegerPropertyVersion++;
     }
     { // Scope lock
@@ -3217,8 +2551,7 @@ void TestAbleServer::republishReadWriteOptionalIntegerProperty() const
     if (_readWriteOptionalIntegerProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("value", *_readWriteOptionalIntegerProperty, doc.GetAllocator());
+        _readWriteOptionalIntegerProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -3251,16 +2584,8 @@ void TestAbleServer::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
     // TODO: Check _lastReadWriteOptionalIntegerPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    boost::optional<int> tempValue = boost::none;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteOptionalIntegerProperty tempValue = ReadWriteOptionalIntegerProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyMutex);
@@ -3273,7 +2598,11 @@ void TestAbleServer::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
 boost::optional<ReadWriteTwoIntegersProperty> TestAbleServer::getReadWriteTwoIntegersProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoIntegersPropertyMutex);
-    return _readWriteTwoIntegersProperty;
+    if (_readWriteTwoIntegersProperty)
+    {
+        return *_readWriteTwoIntegersProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteTwoIntegersPropertyCallback(const std::function<void(int first, boost::optional<int> second)>& cb)
@@ -3306,7 +2635,6 @@ void TestAbleServer::republishReadWriteTwoIntegersProperty() const
     if (_readWriteTwoIntegersProperty)
     {
         doc.SetObject();
-
         _readWriteTwoIntegersProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -3351,23 +2679,27 @@ void TestAbleServer::_receiveReadWriteTwoIntegersPropertyUpdate(const std::strin
     republishReadWriteTwoIntegersProperty();
 }
 
-boost::optional<ReadOnlyStringProperty> TestAbleServer::getReadOnlyStringProperty() const
+boost::optional<const std::string&> TestAbleServer::getReadOnlyStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readOnlyStringPropertyMutex);
-    return _readOnlyStringProperty;
+    if (_readOnlyStringProperty)
+    {
+        return _readOnlyStringProperty->value;
+    }
+    return boost::none;
 }
 
-void TestAbleServer::registerReadOnlyStringPropertyCallback(const std::function<void(const std::string& value)>& cb)
+void TestAbleServer::registerReadOnlyStringPropertyCallback(const std::function<void(std::string value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readOnlyStringPropertyCallbacksMutex);
     _readOnlyStringPropertyCallbacks.push_back(cb);
 }
 
-void TestAbleServer::updateReadOnlyStringProperty(const std::string& value)
+void TestAbleServer::updateReadOnlyStringProperty(std::string value)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readOnlyStringPropertyMutex);
-        _readOnlyStringProperty = value;
+        _readOnlyStringProperty = ReadOnlyStringProperty{ value };
         _lastReadOnlyStringPropertyVersion++;
     }
     { // Scope lock
@@ -3387,9 +2719,7 @@ void TestAbleServer::republishReadOnlyStringProperty() const
     if (_readOnlyStringProperty)
     {
         doc.SetObject();
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString(_readOnlyStringProperty->c_str(), _readOnlyStringProperty->size(), doc.GetAllocator());
-        doc.AddMember("value", tempStringValue, doc.GetAllocator());
+        _readOnlyStringProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -3422,16 +2752,8 @@ void TestAbleServer::_receiveReadOnlyStringPropertyUpdate(const std::string& top
     // TODO: Check _lastReadOnlyStringPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    std::string tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-        tempValue = itr->value.GetString();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadOnlyStringProperty tempValue = ReadOnlyStringProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readOnlyStringPropertyMutex);
@@ -3441,23 +2763,27 @@ void TestAbleServer::_receiveReadOnlyStringPropertyUpdate(const std::string& top
     republishReadOnlyStringProperty();
 }
 
-boost::optional<ReadWriteStringProperty> TestAbleServer::getReadWriteStringProperty() const
+boost::optional<const std::string&> TestAbleServer::getReadWriteStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteStringPropertyMutex);
-    return _readWriteStringProperty;
+    if (_readWriteStringProperty)
+    {
+        return _readWriteStringProperty->value;
+    }
+    return boost::none;
 }
 
-void TestAbleServer::registerReadWriteStringPropertyCallback(const std::function<void(const std::string& value)>& cb)
+void TestAbleServer::registerReadWriteStringPropertyCallback(const std::function<void(std::string value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteStringPropertyCallbacksMutex);
     _readWriteStringPropertyCallbacks.push_back(cb);
 }
 
-void TestAbleServer::updateReadWriteStringProperty(const std::string& value)
+void TestAbleServer::updateReadWriteStringProperty(std::string value)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteStringPropertyMutex);
-        _readWriteStringProperty = value;
+        _readWriteStringProperty = ReadWriteStringProperty{ value };
         _lastReadWriteStringPropertyVersion++;
     }
     { // Scope lock
@@ -3477,9 +2803,7 @@ void TestAbleServer::republishReadWriteStringProperty() const
     if (_readWriteStringProperty)
     {
         doc.SetObject();
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString(_readWriteStringProperty->c_str(), _readWriteStringProperty->size(), doc.GetAllocator());
-        doc.AddMember("value", tempStringValue, doc.GetAllocator());
+        _readWriteStringProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -3512,16 +2836,8 @@ void TestAbleServer::_receiveReadWriteStringPropertyUpdate(const std::string& to
     // TODO: Check _lastReadWriteStringPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    std::string tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-        tempValue = itr->value.GetString();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteStringProperty tempValue = ReadWriteStringProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteStringPropertyMutex);
@@ -3534,7 +2850,11 @@ void TestAbleServer::_receiveReadWriteStringPropertyUpdate(const std::string& to
 boost::optional<std::string> TestAbleServer::getReadWriteOptionalStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyMutex);
-    return _readWriteOptionalStringProperty;
+    if (_readWriteOptionalStringProperty)
+    {
+        return _readWriteOptionalStringProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteOptionalStringPropertyCallback(const std::function<void(boost::optional<std::string> value)>& cb)
@@ -3547,7 +2867,7 @@ void TestAbleServer::updateReadWriteOptionalStringProperty(boost::optional<std::
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyMutex);
-        _readWriteOptionalStringProperty = value;
+        _readWriteOptionalStringProperty = ReadWriteOptionalStringProperty{ value };
         _lastReadWriteOptionalStringPropertyVersion++;
     }
     { // Scope lock
@@ -3567,9 +2887,7 @@ void TestAbleServer::republishReadWriteOptionalStringProperty() const
     if (_readWriteOptionalStringProperty)
     {
         doc.SetObject();
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString(_readWriteOptionalStringProperty->c_str(), _readWriteOptionalStringProperty->size(), doc.GetAllocator());
-        doc.AddMember("value", tempStringValue, doc.GetAllocator());
+        _readWriteOptionalStringProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -3602,16 +2920,8 @@ void TestAbleServer::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
     // TODO: Check _lastReadWriteOptionalStringPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    boost::optional<std::string> tempValue = boost::none;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-        tempValue = itr->value.GetString();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteOptionalStringProperty tempValue = ReadWriteOptionalStringProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyMutex);
@@ -3624,16 +2934,20 @@ void TestAbleServer::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
 boost::optional<ReadWriteTwoStringsProperty> TestAbleServer::getReadWriteTwoStringsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyMutex);
-    return _readWriteTwoStringsProperty;
+    if (_readWriteTwoStringsProperty)
+    {
+        return *_readWriteTwoStringsProperty;
+    }
+    return boost::none;
 }
 
-void TestAbleServer::registerReadWriteTwoStringsPropertyCallback(const std::function<void(const std::string& first, boost::optional<std::string> second)>& cb)
+void TestAbleServer::registerReadWriteTwoStringsPropertyCallback(const std::function<void(std::string first, boost::optional<std::string> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyCallbacksMutex);
     _readWriteTwoStringsPropertyCallbacks.push_back(cb);
 }
 
-void TestAbleServer::updateReadWriteTwoStringsProperty(const std::string& first, boost::optional<std::string> second)
+void TestAbleServer::updateReadWriteTwoStringsProperty(std::string first, boost::optional<std::string> second)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyMutex);
@@ -3657,7 +2971,6 @@ void TestAbleServer::republishReadWriteTwoStringsProperty() const
     if (_readWriteTwoStringsProperty)
     {
         doc.SetObject();
-
         _readWriteTwoStringsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -3702,10 +3015,14 @@ void TestAbleServer::_receiveReadWriteTwoStringsPropertyUpdate(const std::string
     republishReadWriteTwoStringsProperty();
 }
 
-boost::optional<ReadWriteStructProperty> TestAbleServer::getReadWriteStructProperty() const
+boost::optional<AllTypes> TestAbleServer::getReadWriteStructProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteStructPropertyMutex);
-    return _readWriteStructProperty;
+    if (_readWriteStructProperty)
+    {
+        return _readWriteStructProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteStructPropertyCallback(const std::function<void(AllTypes value)>& cb)
@@ -3718,7 +3035,7 @@ void TestAbleServer::updateReadWriteStructProperty(AllTypes value)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteStructPropertyMutex);
-        _readWriteStructProperty = value;
+        _readWriteStructProperty = ReadWriteStructProperty{ value };
         _lastReadWriteStructPropertyVersion++;
     }
     { // Scope lock
@@ -3738,7 +3055,6 @@ void TestAbleServer::republishReadWriteStructProperty() const
     if (_readWriteStructProperty)
     {
         doc.SetObject();
-        // structure
         _readWriteStructProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -3772,15 +3088,8 @@ void TestAbleServer::_receiveReadWriteStructPropertyUpdate(const std::string& to
     // TODO: Check _lastReadWriteStructPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    AllTypes tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsObject())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteStructProperty tempValue = ReadWriteStructProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteStructPropertyMutex);
@@ -3790,23 +3099,27 @@ void TestAbleServer::_receiveReadWriteStructPropertyUpdate(const std::string& to
     republishReadWriteStructProperty();
 }
 
-ReadWriteOptionalStructProperty TestAbleServer::getReadWriteOptionalStructProperty() const
+boost::optional<AllTypes> TestAbleServer::getReadWriteOptionalStructProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyMutex);
-    return _readWriteOptionalStructProperty;
+    if (_readWriteOptionalStructProperty)
+    {
+        return _readWriteOptionalStructProperty->value;
+    }
+    return boost::none;
 }
 
-void TestAbleServer::registerReadWriteOptionalStructPropertyCallback(const std::function<void(AllTypes value)>& cb)
+void TestAbleServer::registerReadWriteOptionalStructPropertyCallback(const std::function<void(boost::optional<AllTypes> value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyCallbacksMutex);
     _readWriteOptionalStructPropertyCallbacks.push_back(cb);
 }
 
-void TestAbleServer::updateReadWriteOptionalStructProperty(AllTypes value)
+void TestAbleServer::updateReadWriteOptionalStructProperty(boost::optional<AllTypes> value)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyMutex);
-        _readWriteOptionalStructProperty = value;
+        _readWriteOptionalStructProperty = ReadWriteOptionalStructProperty{ value };
         _lastReadWriteOptionalStructPropertyVersion++;
     }
     { // Scope lock
@@ -3826,7 +3139,6 @@ void TestAbleServer::republishReadWriteOptionalStructProperty() const
     if (_readWriteOptionalStructProperty)
     {
         doc.SetObject();
-        // structure
         _readWriteOptionalStructProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -3860,15 +3172,8 @@ void TestAbleServer::_receiveReadWriteOptionalStructPropertyUpdate(const std::st
     // TODO: Check _lastReadWriteOptionalStructPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    boost::optional<AllTypes> tempValue = boost::none;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsObject())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteOptionalStructProperty tempValue = ReadWriteOptionalStructProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyMutex);
@@ -3881,16 +3186,20 @@ void TestAbleServer::_receiveReadWriteOptionalStructPropertyUpdate(const std::st
 boost::optional<ReadWriteTwoStructsProperty> TestAbleServer::getReadWriteTwoStructsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyMutex);
-    return _readWriteTwoStructsProperty;
+    if (_readWriteTwoStructsProperty)
+    {
+        return *_readWriteTwoStructsProperty;
+    }
+    return boost::none;
 }
 
-void TestAbleServer::registerReadWriteTwoStructsPropertyCallback(const std::function<void(AllTypes first, AllTypes second)>& cb)
+void TestAbleServer::registerReadWriteTwoStructsPropertyCallback(const std::function<void(AllTypes first, boost::optional<AllTypes> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyCallbacksMutex);
     _readWriteTwoStructsPropertyCallbacks.push_back(cb);
 }
 
-void TestAbleServer::updateReadWriteTwoStructsProperty(AllTypes first, AllTypes second)
+void TestAbleServer::updateReadWriteTwoStructsProperty(AllTypes first, boost::optional<AllTypes> second)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyMutex);
@@ -3914,7 +3223,6 @@ void TestAbleServer::republishReadWriteTwoStructsProperty() const
     if (_readWriteTwoStructsProperty)
     {
         doc.SetObject();
-
         _readWriteTwoStructsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -3959,10 +3267,14 @@ void TestAbleServer::_receiveReadWriteTwoStructsPropertyUpdate(const std::string
     republishReadWriteTwoStructsProperty();
 }
 
-boost::optional<ReadOnlyEnumProperty> TestAbleServer::getReadOnlyEnumProperty() const
+boost::optional<Numbers> TestAbleServer::getReadOnlyEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readOnlyEnumPropertyMutex);
-    return _readOnlyEnumProperty;
+    if (_readOnlyEnumProperty)
+    {
+        return _readOnlyEnumProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadOnlyEnumPropertyCallback(const std::function<void(Numbers value)>& cb)
@@ -3975,7 +3287,7 @@ void TestAbleServer::updateReadOnlyEnumProperty(Numbers value)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readOnlyEnumPropertyMutex);
-        _readOnlyEnumProperty = value;
+        _readOnlyEnumProperty = ReadOnlyEnumProperty{ value };
         _lastReadOnlyEnumPropertyVersion++;
     }
     { // Scope lock
@@ -3995,8 +3307,7 @@ void TestAbleServer::republishReadOnlyEnumProperty() const
     if (_readOnlyEnumProperty)
     {
         doc.SetObject();
-        // enumeration
-        doc.AddMember("value", static_cast<int>(*_readOnlyEnumProperty), doc.GetAllocator());
+        _readOnlyEnumProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -4029,16 +3340,8 @@ void TestAbleServer::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic
     // TODO: Check _lastReadOnlyEnumPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    Numbers tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = static_cast<Numbers>(itr->value.GetInt());
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadOnlyEnumProperty tempValue = ReadOnlyEnumProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readOnlyEnumPropertyMutex);
@@ -4048,10 +3351,14 @@ void TestAbleServer::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic
     republishReadOnlyEnumProperty();
 }
 
-boost::optional<ReadWriteEnumProperty> TestAbleServer::getReadWriteEnumProperty() const
+boost::optional<Numbers> TestAbleServer::getReadWriteEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteEnumPropertyMutex);
-    return _readWriteEnumProperty;
+    if (_readWriteEnumProperty)
+    {
+        return _readWriteEnumProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteEnumPropertyCallback(const std::function<void(Numbers value)>& cb)
@@ -4064,7 +3371,7 @@ void TestAbleServer::updateReadWriteEnumProperty(Numbers value)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteEnumPropertyMutex);
-        _readWriteEnumProperty = value;
+        _readWriteEnumProperty = ReadWriteEnumProperty{ value };
         _lastReadWriteEnumPropertyVersion++;
     }
     { // Scope lock
@@ -4084,8 +3391,7 @@ void TestAbleServer::republishReadWriteEnumProperty() const
     if (_readWriteEnumProperty)
     {
         doc.SetObject();
-        // enumeration
-        doc.AddMember("value", static_cast<int>(*_readWriteEnumProperty), doc.GetAllocator());
+        _readWriteEnumProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -4118,16 +3424,8 @@ void TestAbleServer::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
     // TODO: Check _lastReadWriteEnumPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    Numbers tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = static_cast<Numbers>(itr->value.GetInt());
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteEnumProperty tempValue = ReadWriteEnumProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteEnumPropertyMutex);
@@ -4140,7 +3438,11 @@ void TestAbleServer::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
 boost::optional<Numbers> TestAbleServer::getReadWriteOptionalEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyMutex);
-    return _readWriteOptionalEnumProperty;
+    if (_readWriteOptionalEnumProperty)
+    {
+        return _readWriteOptionalEnumProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteOptionalEnumPropertyCallback(const std::function<void(boost::optional<Numbers> value)>& cb)
@@ -4153,7 +3455,7 @@ void TestAbleServer::updateReadWriteOptionalEnumProperty(boost::optional<Numbers
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyMutex);
-        _readWriteOptionalEnumProperty = value;
+        _readWriteOptionalEnumProperty = ReadWriteOptionalEnumProperty{ value };
         _lastReadWriteOptionalEnumPropertyVersion++;
     }
     { // Scope lock
@@ -4173,8 +3475,7 @@ void TestAbleServer::republishReadWriteOptionalEnumProperty() const
     if (_readWriteOptionalEnumProperty)
     {
         doc.SetObject();
-        // enumeration
-        doc.AddMember("value", static_cast<int>(*_readWriteOptionalEnumProperty), doc.GetAllocator());
+        _readWriteOptionalEnumProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -4207,16 +3508,8 @@ void TestAbleServer::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
     // TODO: Check _lastReadWriteOptionalEnumPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    boost::optional<Numbers> tempValue = boost::none;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = static_cast<Numbers>(itr->value.GetInt());
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteOptionalEnumProperty tempValue = ReadWriteOptionalEnumProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyMutex);
@@ -4229,7 +3522,11 @@ void TestAbleServer::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
 boost::optional<ReadWriteTwoEnumsProperty> TestAbleServer::getReadWriteTwoEnumsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoEnumsPropertyMutex);
-    return _readWriteTwoEnumsProperty;
+    if (_readWriteTwoEnumsProperty)
+    {
+        return *_readWriteTwoEnumsProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteTwoEnumsPropertyCallback(const std::function<void(Numbers first, boost::optional<Numbers> second)>& cb)
@@ -4262,7 +3559,6 @@ void TestAbleServer::republishReadWriteTwoEnumsProperty() const
     if (_readWriteTwoEnumsProperty)
     {
         doc.SetObject();
-
         _readWriteTwoEnumsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -4307,10 +3603,14 @@ void TestAbleServer::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& 
     republishReadWriteTwoEnumsProperty();
 }
 
-boost::optional<ReadWriteDatetimeProperty> TestAbleServer::getReadWriteDatetimeProperty() const
+boost::optional<std::chrono::time_point<std::chrono::system_clock>> TestAbleServer::getReadWriteDatetimeProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteDatetimePropertyMutex);
-    return _readWriteDatetimeProperty;
+    if (_readWriteDatetimeProperty)
+    {
+        return _readWriteDatetimeProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteDatetimePropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> value)>& cb)
@@ -4323,7 +3623,7 @@ void TestAbleServer::updateReadWriteDatetimeProperty(std::chrono::time_point<std
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteDatetimePropertyMutex);
-        _readWriteDatetimeProperty = value;
+        _readWriteDatetimeProperty = ReadWriteDatetimeProperty{ value };
         _lastReadWriteDatetimePropertyVersion++;
     }
     { // Scope lock
@@ -4343,10 +3643,7 @@ void TestAbleServer::republishReadWriteDatetimeProperty() const
     if (_readWriteDatetimeProperty)
     {
         doc.SetObject();
-        // Datetime field
-        std::string valueStr = timePointToIsoString(*_readWriteDatetimeProperty);
-        rapidjson::Value valueValue(valueStr.c_str(), doc.GetAllocator());
-        doc.AddMember("value", valueValue, doc.GetAllocator());
+        _readWriteDatetimeProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -4379,15 +3676,8 @@ void TestAbleServer::_receiveReadWriteDatetimePropertyUpdate(const std::string& 
     // TODO: Check _lastReadWriteDatetimePropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    std::chrono::time_point<std::chrono::system_clock> tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteDatetimeProperty tempValue = ReadWriteDatetimeProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteDatetimePropertyMutex);
@@ -4400,7 +3690,11 @@ void TestAbleServer::_receiveReadWriteDatetimePropertyUpdate(const std::string& 
 boost::optional<std::chrono::time_point<std::chrono::system_clock>> TestAbleServer::getReadWriteOptionalDatetimeProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyMutex);
-    return _readWriteOptionalDatetimeProperty;
+    if (_readWriteOptionalDatetimeProperty)
+    {
+        return _readWriteOptionalDatetimeProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteOptionalDatetimePropertyCallback(const std::function<void(boost::optional<std::chrono::time_point<std::chrono::system_clock>> value)>& cb)
@@ -4413,7 +3707,7 @@ void TestAbleServer::updateReadWriteOptionalDatetimeProperty(boost::optional<std
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyMutex);
-        _readWriteOptionalDatetimeProperty = value;
+        _readWriteOptionalDatetimeProperty = ReadWriteOptionalDatetimeProperty{ value };
         _lastReadWriteOptionalDatetimePropertyVersion++;
     }
     { // Scope lock
@@ -4433,10 +3727,7 @@ void TestAbleServer::republishReadWriteOptionalDatetimeProperty() const
     if (_readWriteOptionalDatetimeProperty)
     {
         doc.SetObject();
-        // Datetime field
-        std::string valueStr = timePointToIsoString(*_readWriteOptionalDatetimeProperty);
-        rapidjson::Value valueValue(valueStr.c_str(), doc.GetAllocator());
-        doc.AddMember("value", valueValue, doc.GetAllocator());
+        _readWriteOptionalDatetimeProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -4469,15 +3760,8 @@ void TestAbleServer::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
     // TODO: Check _lastReadWriteOptionalDatetimePropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> tempValue = boost::none;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteOptionalDatetimeProperty tempValue = ReadWriteOptionalDatetimeProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyMutex);
@@ -4490,7 +3774,11 @@ void TestAbleServer::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
 boost::optional<ReadWriteTwoDatetimesProperty> TestAbleServer::getReadWriteTwoDatetimesProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDatetimesPropertyMutex);
-    return _readWriteTwoDatetimesProperty;
+    if (_readWriteTwoDatetimesProperty)
+    {
+        return *_readWriteTwoDatetimesProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteTwoDatetimesPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> first, boost::optional<std::chrono::time_point<std::chrono::system_clock>> second)>& cb)
@@ -4523,7 +3811,6 @@ void TestAbleServer::republishReadWriteTwoDatetimesProperty() const
     if (_readWriteTwoDatetimesProperty)
     {
         doc.SetObject();
-
         _readWriteTwoDatetimesProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -4568,10 +3855,14 @@ void TestAbleServer::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
     republishReadWriteTwoDatetimesProperty();
 }
 
-boost::optional<ReadWriteDurationProperty> TestAbleServer::getReadWriteDurationProperty() const
+boost::optional<std::chrono::duration<double>> TestAbleServer::getReadWriteDurationProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteDurationPropertyMutex);
-    return _readWriteDurationProperty;
+    if (_readWriteDurationProperty)
+    {
+        return _readWriteDurationProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteDurationPropertyCallback(const std::function<void(std::chrono::duration<double> value)>& cb)
@@ -4584,7 +3875,7 @@ void TestAbleServer::updateReadWriteDurationProperty(std::chrono::duration<doubl
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteDurationPropertyMutex);
-        _readWriteDurationProperty = value;
+        _readWriteDurationProperty = ReadWriteDurationProperty{ value };
         _lastReadWriteDurationPropertyVersion++;
     }
     { // Scope lock
@@ -4604,10 +3895,7 @@ void TestAbleServer::republishReadWriteDurationProperty() const
     if (_readWriteDurationProperty)
     {
         doc.SetObject();
-        // duration field
-        std::string valueStr = durationToIsoString(*_readWriteDurationProperty);
-        rapidjson::Value valueValue(valueStr.c_str(), doc.GetAllocator());
-        doc.AddMember("value", valueValue, doc.GetAllocator());
+        _readWriteDurationProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -4640,15 +3928,8 @@ void TestAbleServer::_receiveReadWriteDurationPropertyUpdate(const std::string& 
     // TODO: Check _lastReadWriteDurationPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    std::chrono::duration<double> tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteDurationProperty tempValue = ReadWriteDurationProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteDurationPropertyMutex);
@@ -4661,7 +3942,11 @@ void TestAbleServer::_receiveReadWriteDurationPropertyUpdate(const std::string& 
 boost::optional<std::chrono::duration<double>> TestAbleServer::getReadWriteOptionalDurationProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyMutex);
-    return _readWriteOptionalDurationProperty;
+    if (_readWriteOptionalDurationProperty)
+    {
+        return _readWriteOptionalDurationProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteOptionalDurationPropertyCallback(const std::function<void(boost::optional<std::chrono::duration<double>> value)>& cb)
@@ -4674,7 +3959,7 @@ void TestAbleServer::updateReadWriteOptionalDurationProperty(boost::optional<std
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyMutex);
-        _readWriteOptionalDurationProperty = value;
+        _readWriteOptionalDurationProperty = ReadWriteOptionalDurationProperty{ value };
         _lastReadWriteOptionalDurationPropertyVersion++;
     }
     { // Scope lock
@@ -4694,10 +3979,7 @@ void TestAbleServer::republishReadWriteOptionalDurationProperty() const
     if (_readWriteOptionalDurationProperty)
     {
         doc.SetObject();
-        // duration field
-        std::string valueStr = durationToIsoString(*_readWriteOptionalDurationProperty);
-        rapidjson::Value valueValue(valueStr.c_str(), doc.GetAllocator());
-        doc.AddMember("value", valueValue, doc.GetAllocator());
+        _readWriteOptionalDurationProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -4730,15 +4012,8 @@ void TestAbleServer::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
     // TODO: Check _lastReadWriteOptionalDurationPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    boost::optional<std::chrono::duration<double>> tempValue = boost::none;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteOptionalDurationProperty tempValue = ReadWriteOptionalDurationProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyMutex);
@@ -4751,7 +4026,11 @@ void TestAbleServer::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
 boost::optional<ReadWriteTwoDurationsProperty> TestAbleServer::getReadWriteTwoDurationsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDurationsPropertyMutex);
-    return _readWriteTwoDurationsProperty;
+    if (_readWriteTwoDurationsProperty)
+    {
+        return *_readWriteTwoDurationsProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteTwoDurationsPropertyCallback(const std::function<void(std::chrono::duration<double> first, boost::optional<std::chrono::duration<double>> second)>& cb)
@@ -4784,7 +4063,6 @@ void TestAbleServer::republishReadWriteTwoDurationsProperty() const
     if (_readWriteTwoDurationsProperty)
     {
         doc.SetObject();
-
         _readWriteTwoDurationsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -4829,10 +4107,14 @@ void TestAbleServer::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
     republishReadWriteTwoDurationsProperty();
 }
 
-boost::optional<ReadWriteBinaryProperty> TestAbleServer::getReadWriteBinaryProperty() const
+boost::optional<std::vector<uint8_t>> TestAbleServer::getReadWriteBinaryProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteBinaryPropertyMutex);
-    return _readWriteBinaryProperty;
+    if (_readWriteBinaryProperty)
+    {
+        return _readWriteBinaryProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteBinaryPropertyCallback(const std::function<void(std::vector<uint8_t> value)>& cb)
@@ -4845,7 +4127,7 @@ void TestAbleServer::updateReadWriteBinaryProperty(std::vector<uint8_t> value)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteBinaryPropertyMutex);
-        _readWriteBinaryProperty = value;
+        _readWriteBinaryProperty = ReadWriteBinaryProperty{ value };
         _lastReadWriteBinaryPropertyVersion++;
     }
     { // Scope lock
@@ -4865,10 +4147,7 @@ void TestAbleServer::republishReadWriteBinaryProperty() const
     if (_readWriteBinaryProperty)
     {
         doc.SetObject();
-        // binary field
-        std::string valueStr = base64Encode(*_readWriteBinaryProperty);
-        rapidjson::Value valueValue(valueStr.c_str(), doc.GetAllocator());
-        doc.AddMember("value", valueValue, doc.GetAllocator());
+        _readWriteBinaryProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -4901,15 +4180,8 @@ void TestAbleServer::_receiveReadWriteBinaryPropertyUpdate(const std::string& to
     // TODO: Check _lastReadWriteBinaryPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    std::vector<uint8_t> tempValue;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteBinaryProperty tempValue = ReadWriteBinaryProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteBinaryPropertyMutex);
@@ -4922,7 +4194,11 @@ void TestAbleServer::_receiveReadWriteBinaryPropertyUpdate(const std::string& to
 boost::optional<std::vector<uint8_t>> TestAbleServer::getReadWriteOptionalBinaryProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyMutex);
-    return _readWriteOptionalBinaryProperty;
+    if (_readWriteOptionalBinaryProperty)
+    {
+        return _readWriteOptionalBinaryProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteOptionalBinaryPropertyCallback(const std::function<void(boost::optional<std::vector<uint8_t>> value)>& cb)
@@ -4935,7 +4211,7 @@ void TestAbleServer::updateReadWriteOptionalBinaryProperty(boost::optional<std::
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyMutex);
-        _readWriteOptionalBinaryProperty = value;
+        _readWriteOptionalBinaryProperty = ReadWriteOptionalBinaryProperty{ value };
         _lastReadWriteOptionalBinaryPropertyVersion++;
     }
     { // Scope lock
@@ -4955,10 +4231,7 @@ void TestAbleServer::republishReadWriteOptionalBinaryProperty() const
     if (_readWriteOptionalBinaryProperty)
     {
         doc.SetObject();
-        // binary field
-        std::string valueStr = base64Encode(*_readWriteOptionalBinaryProperty);
-        rapidjson::Value valueValue(valueStr.c_str(), doc.GetAllocator());
-        doc.AddMember("value", valueValue, doc.GetAllocator());
+        _readWriteOptionalBinaryProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -4991,15 +4264,8 @@ void TestAbleServer::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
     // TODO: Check _lastReadWriteOptionalBinaryPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    boost::optional<std::vector<uint8_t>> tempValue = boost::none;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    ReadWriteOptionalBinaryProperty tempValue = ReadWriteOptionalBinaryProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyMutex);
@@ -5012,7 +4278,11 @@ void TestAbleServer::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
 boost::optional<ReadWriteTwoBinariesProperty> TestAbleServer::getReadWriteTwoBinariesProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoBinariesPropertyMutex);
-    return _readWriteTwoBinariesProperty;
+    if (_readWriteTwoBinariesProperty)
+    {
+        return *_readWriteTwoBinariesProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleServer::registerReadWriteTwoBinariesPropertyCallback(const std::function<void(std::vector<uint8_t> first, boost::optional<std::vector<uint8_t>> second)>& cb)
@@ -5045,7 +4315,6 @@ void TestAbleServer::republishReadWriteTwoBinariesProperty() const
     if (_readWriteTwoBinariesProperty)
     {
         doc.SetObject();
-
         _readWriteTwoBinariesProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else

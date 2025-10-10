@@ -364,7 +364,7 @@ impl FullServer {
         let payload = payload_obj.unwrap();
          
         // call the method handler
-        let rc: Result<DoSomethingReturnValue, MethodReturnCode> = {
+        let rc: Result<DoSomethingReturnValues, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_do_something(payload.aString).await
         };
@@ -483,7 +483,7 @@ impl FullServer {
         let payload = payload_obj.unwrap();
          
         // call the method handler
-        let rc: Result<SetTheTimeReturnValue, MethodReturnCode> = {
+        let rc: Result<SetTheTimeReturnValues, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_set_the_time(payload.the_first_time, payload.the_second_time).await
         };
@@ -1363,7 +1363,7 @@ pub trait FullMethodHandlers: Send + Sync {
     async fn handle_add_numbers(&self, first: i32, second: i32, third: Option<i32>) -> Result<i32, MethodReturnCode>;
     
     /// Pointer to a function to handle the doSomething method request.
-    async fn handle_do_something(&self, a_string: String) -> Result<DoSomethingReturnValue, MethodReturnCode>;
+    async fn handle_do_something(&self, a_string: String) -> Result<DoSomethingReturnValues, MethodReturnCode>;
     
     /// Pointer to a function to handle the echo method request.
     async fn handle_echo(&self, message: String) -> Result<String, MethodReturnCode>;
@@ -1372,7 +1372,7 @@ pub trait FullMethodHandlers: Send + Sync {
     async fn handle_what_time_is_it(&self, the_first_time: chrono::DateTime<chrono::Utc>) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode>;
     
     /// Pointer to a function to handle the set_the_time method request.
-    async fn handle_set_the_time(&self, the_first_time: chrono::DateTime<chrono::Utc>, the_second_time: chrono::DateTime<chrono::Utc>) -> Result<SetTheTimeReturnValue, MethodReturnCode>;
+    async fn handle_set_the_time(&self, the_first_time: chrono::DateTime<chrono::Utc>, the_second_time: chrono::DateTime<chrono::Utc>) -> Result<SetTheTimeReturnValues, MethodReturnCode>;
     
     /// Pointer to a function to handle the forward_time method request.
     async fn handle_forward_time(&self, adjustment: chrono::Duration) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode>;

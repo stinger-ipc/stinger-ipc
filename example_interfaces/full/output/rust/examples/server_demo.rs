@@ -47,9 +47,9 @@ impl FullMethodHandlers for FullMethodImpl {
     async fn handle_do_something(
         &self,
         _a_string: String,
-    ) -> Result<DoSomethingReturnValue, MethodReturnCode> {
+    ) -> Result<DoSomethingReturnValues, MethodReturnCode> {
         println!("Handling doSomething");
-        let rv = DoSomethingReturnValue {
+        let rv = DoSomethingReturnValues {
             label: "apples".to_string(),
             identifier: 42,
             day: DayOfTheWeek::Saturday,
@@ -74,9 +74,9 @@ impl FullMethodHandlers for FullMethodImpl {
         &self,
         _the_first_time: chrono::DateTime<chrono::Utc>,
         _the_second_time: chrono::DateTime<chrono::Utc>,
-    ) -> Result<SetTheTimeReturnValue, MethodReturnCode> {
+    ) -> Result<SetTheTimeReturnValues, MethodReturnCode> {
         println!("Handling set_the_time");
-        let rv = SetTheTimeReturnValue {
+        let rv = SetTheTimeReturnValues {
             timestamp: chrono::Utc::now(),
             confirmation_message: "apples".to_string(),
         };

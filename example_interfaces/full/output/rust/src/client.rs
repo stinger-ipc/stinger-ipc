@@ -302,7 +302,7 @@ impl FullClient {
     /// and published to the `full/{}/method/doSomething` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn do_something(&mut self, a_string: String)->Result<DoSomethingReturnValue, MethodReturnCode> {
+    pub async fn do_something(&mut self, a_string: String)->Result<DoSomethingReturnValues, MethodReturnCode> {
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -452,7 +452,7 @@ impl FullClient {
     /// and published to the `full/{}/method/setTheTime` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn set_the_time(&mut self, the_first_time: chrono::DateTime<chrono::Utc>, the_second_time: chrono::DateTime<chrono::Utc>)->Result<SetTheTimeReturnValue, MethodReturnCode> {
+    pub async fn set_the_time(&mut self, the_first_time: chrono::DateTime<chrono::Utc>, the_second_time: chrono::DateTime<chrono::Utc>)->Result<SetTheTimeReturnValues, MethodReturnCode> {
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();

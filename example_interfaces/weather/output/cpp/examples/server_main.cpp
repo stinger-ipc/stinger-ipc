@@ -29,10 +29,10 @@ int main(int argc, char** argv)
     server->updateCurrentConditionProperty(WeatherCondition::SNOWY, "apples");
 
     std::cout << "Setting initial value for property 'daily_forecast'.\n";
-    server->updateDailyForecastProperty({ 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" }, { 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" }, { 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" });
+    server->updateDailyForecastProperty(ForecastForDay{ 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" }, ForecastForDay{ 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" }, ForecastForDay{ 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" });
 
     std::cout << "Setting initial value for property 'hourly_forecast'.\n";
-    server->updateHourlyForecastProperty({ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, { 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, { 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, { 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY });
+    server->updateHourlyForecastProperty(ForecastForHour{ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, ForecastForHour{ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, ForecastForHour{ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, ForecastForHour{ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY });
 
     std::cout << "Setting initial value for property 'current_condition_refresh_interval'.\n";
     server->updateCurrentConditionRefreshIntervalProperty(42);
@@ -97,10 +97,10 @@ int main(int argc, char** argv)
                                             server->updateCurrentConditionProperty(WeatherCondition::SNOWY, "apples");
 
                                             std::cout << "Updating value for property 'daily_forecast'.\n";
-                                            server->updateDailyForecastProperty({ 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" }, { 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" }, { 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" });
+                                            server->updateDailyForecastProperty(ForecastForDay{ 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" }, ForecastForDay{ 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" }, ForecastForDay{ 3.14, 3.14, WeatherCondition::SNOWY, "apples", "apples" });
 
                                             std::cout << "Updating value for property 'hourly_forecast'.\n";
-                                            server->updateHourlyForecastProperty({ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, { 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, { 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, { 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY });
+                                            server->updateHourlyForecastProperty(ForecastForHour{ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, ForecastForHour{ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, ForecastForHour{ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY }, ForecastForHour{ 3.14, std::chrono::system_clock::now(), WeatherCondition::SNOWY });
 
                                             std::cout << "Updating value for property 'current_condition_refresh_interval'.\n";
                                             server->updateCurrentConditionRefreshIntervalProperty(42);

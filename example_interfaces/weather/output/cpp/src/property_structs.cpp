@@ -40,6 +40,30 @@ void LocationProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson:
     parent.AddMember("longitude", longitude, allocator);
 }
 
+CurrentTemperatureProperty CurrentTemperatureProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    CurrentTemperatureProperty currentTemperature;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("temperature_f");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble())
+        {
+            currentTemperature.temperatureF = itr->value.GetDouble();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return currentTemperature;
+};
+
+void CurrentTemperatureProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    parent.AddMember("temperature_f", temperatureF, allocator);
+}
+
 CurrentConditionProperty CurrentConditionProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     CurrentConditionProperty currentCondition;
@@ -134,7 +158,7 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("hour_0");
         if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
         {
-            hourlyForecast.hour_0 = ForecastForHour::FromRapidJsonObject(itr->value);
+            hourlyForecast.hour0 = ForecastForHour::FromRapidJsonObject(itr->value);
         }
         else
         {
@@ -145,7 +169,7 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("hour_1");
         if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
         {
-            hourlyForecast.hour_1 = ForecastForHour::FromRapidJsonObject(itr->value);
+            hourlyForecast.hour1 = ForecastForHour::FromRapidJsonObject(itr->value);
         }
         else
         {
@@ -156,7 +180,7 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("hour_2");
         if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
         {
-            hourlyForecast.hour_2 = ForecastForHour::FromRapidJsonObject(itr->value);
+            hourlyForecast.hour2 = ForecastForHour::FromRapidJsonObject(itr->value);
         }
         else
         {
@@ -167,7 +191,7 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("hour_3");
         if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
         {
-            hourlyForecast.hour_3 = ForecastForHour::FromRapidJsonObject(itr->value);
+            hourlyForecast.hour3 = ForecastForHour::FromRapidJsonObject(itr->value);
         }
         else
         {
@@ -180,4 +204,76 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
 
 void HourlyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+}
+
+CurrentConditionRefreshIntervalProperty CurrentConditionRefreshIntervalProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    CurrentConditionRefreshIntervalProperty currentConditionRefreshInterval;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("seconds");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
+        {
+            currentConditionRefreshInterval.seconds = itr->value.GetInt();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return currentConditionRefreshInterval;
+};
+
+void CurrentConditionRefreshIntervalProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    parent.AddMember("seconds", seconds, allocator);
+}
+
+HourlyForecastRefreshIntervalProperty HourlyForecastRefreshIntervalProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    HourlyForecastRefreshIntervalProperty hourlyForecastRefreshInterval;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("seconds");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
+        {
+            hourlyForecastRefreshInterval.seconds = itr->value.GetInt();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return hourlyForecastRefreshInterval;
+};
+
+void HourlyForecastRefreshIntervalProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    parent.AddMember("seconds", seconds, allocator);
+}
+
+DailyForecastRefreshIntervalProperty DailyForecastRefreshIntervalProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    DailyForecastRefreshIntervalProperty dailyForecastRefreshInterval;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("seconds");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
+        {
+            dailyForecastRefreshInterval.seconds = itr->value.GetInt();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return dailyForecastRefreshInterval;
+};
+
+void DailyForecastRefreshIntervalProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    parent.AddMember("seconds", seconds, allocator);
 }

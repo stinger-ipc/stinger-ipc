@@ -25,7 +25,9 @@ It contains enumerations used by the {{stinger.name}} interface.
 {%endif%}
 #include "ibrokerconnection.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
-#include "return_types.hpp"
+{%if stinger.methods | length > 0%}
+#include "method_payloads.hpp"
+{%endif%}
 
 class {{stinger.cpp.server_class_name}} {
 
@@ -39,7 +41,6 @@ public:
 
     {%for sig_name, sig in stinger.signals.items()%}
     boost::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%});
-
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}

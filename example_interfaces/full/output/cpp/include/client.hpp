@@ -19,7 +19,8 @@ It contains enumerations used by the Full interface.
 #include <boost/optional.hpp>
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
-#include "return_types.hpp"
+#include "method_payloads.hpp"
+#include "signal_payloads.hpp"
 
 #include "property_structs.hpp"
 
@@ -44,31 +45,31 @@ public:
     // ------------------- METHODS --------------------
 
     // Calls the `addNumbers` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgPrimitive name=sum type=int>
     boost::future<int> addNumbers(int first, int second, boost::optional<int> third);
 
     // Calls the `doSomething` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<DoSomethingReturnValue> doSomething(const std::string& aString);
+    // Returns a future.  When that future resolves, it will have the returned value. [<ArgPrimitive name=label type=str>, <ArgPrimitive name=identifier type=int>, <ArgEnum name=day>]
+    boost::future<DoSomethingReturnValues> doSomething(std::string aString);
 
     // Calls the `echo` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<std::string> echo(const std::string& message);
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgPrimitive name=message type=str>
+    boost::future<std::string> echo(std::string message);
 
     // Calls the `what_time_is_it` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgDateTime name=timestamp>
     boost::future<std::chrono::time_point<std::chrono::system_clock>> whatTimeIsIt(std::chrono::time_point<std::chrono::system_clock> the_first_time);
 
     // Calls the `set_the_time` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
-    boost::future<SetTheTimeReturnValue> setTheTime(std::chrono::time_point<std::chrono::system_clock> the_first_time, std::chrono::time_point<std::chrono::system_clock> the_second_time);
+    // Returns a future.  When that future resolves, it will have the returned value. [ArgDateTime(name=timestamp), <ArgPrimitive name=confirmation_message type=str>]
+    boost::future<SetTheTimeReturnValues> setTheTime(std::chrono::time_point<std::chrono::system_clock> the_first_time, std::chrono::time_point<std::chrono::system_clock> the_second_time);
 
     // Calls the `forward_time` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgDateTime name=new_time>
     boost::future<std::chrono::time_point<std::chrono::system_clock>> forwardTime(std::chrono::duration<double> adjustment);
 
     // Calls the `how_off_is_the_clock` method.
-    // Returns a future.  When that future resolves, it will have the returned value.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgDuration name=difference>
     boost::future<std::chrono::duration<double>> howOffIsTheClock(std::chrono::time_point<std::chrono::system_clock> actual_time);
 
     // ---------------- PROPERTIES ------------------
@@ -77,7 +78,8 @@ public:
 
     // Gets the latest value of the `favorite_number` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<FavoriteNumberProperty> getFavoriteNumberProperty() const;
+
+    boost::optional<int> getFavoriteNumberProperty() const;
 
     // Add a callback that will be called whenever the `favorite_number` property is updated.
     // The provided method will be called whenever a new value for the `favorite_number` property is received.
@@ -89,18 +91,20 @@ public:
 
     // Gets the latest value of the `favorite_foods` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<FavoriteFoodsProperty> getFavoriteFoodsProperty() const;
 
     // Add a callback that will be called whenever the `favorite_foods` property is updated.
     // The provided method will be called whenever a new value for the `favorite_foods` property is received.
-    void registerFavoriteFoodsPropertyCallback(const std::function<void(const std::string&, int, boost::optional<std::string>)>& cb);
+    void registerFavoriteFoodsPropertyCallback(const std::function<void(std::string, int, boost::optional<std::string>)>& cb);
 
-    boost::future<bool> updateFavoriteFoodsProperty(const std::string&, int, boost::optional<std::string>) const;
+    boost::future<bool> updateFavoriteFoodsProperty(std::string, int, boost::optional<std::string>) const;
 
     // ---lunch_menu Property---
 
     // Gets the latest value of the `lunch_menu` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<LunchMenuProperty> getLunchMenuProperty() const;
 
     // Add a callback that will be called whenever the `lunch_menu` property is updated.
@@ -113,19 +117,21 @@ public:
 
     // Gets the latest value of the `family_name` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<FamilyNameProperty> getFamilyNameProperty() const;
+
+    boost::optional<const std::string&> getFamilyNameProperty() const;
 
     // Add a callback that will be called whenever the `family_name` property is updated.
     // The provided method will be called whenever a new value for the `family_name` property is received.
-    void registerFamilyNamePropertyCallback(const std::function<void(const std::string&)>& cb);
+    void registerFamilyNamePropertyCallback(const std::function<void(std::string)>& cb);
 
-    boost::future<bool> updateFamilyNameProperty(const std::string&) const;
+    boost::future<bool> updateFamilyNameProperty(std::string) const;
 
     // ---last_breakfast_time Property---
 
     // Gets the latest value of the `last_breakfast_time` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<LastBreakfastTimeProperty> getLastBreakfastTimeProperty() const;
+
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> getLastBreakfastTimeProperty() const;
 
     // Add a callback that will be called whenever the `last_breakfast_time` property is updated.
     // The provided method will be called whenever a new value for the `last_breakfast_time` property is received.
@@ -137,7 +143,8 @@ public:
 
     // Gets the latest value of the `breakfast_length` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<BreakfastLengthProperty> getBreakfastLengthProperty() const;
+
+    boost::optional<std::chrono::duration<double>> getBreakfastLengthProperty() const;
 
     // Add a callback that will be called whenever the `breakfast_length` property is updated.
     // The provided method will be called whenever a new value for the `breakfast_length` property is received.
@@ -149,6 +156,7 @@ public:
 
     // Gets the latest value of the `last_birthdays` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<LastBirthdaysProperty> getLastBirthdaysProperty() const;
 
     // Add a callback that will be called whenever the `last_birthdays` property is updated.
@@ -188,31 +196,37 @@ private:
     int _addNumbersMethodSubscriptionId = -1;
     // This is called internally to process responses to `addNumbers` method calls.
     void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `doSomething` method calls.
-    std::map<boost::uuids::uuid, boost::promise<DoSomethingReturnValue>> _pendingDoSomethingMethodCalls;
+    std::map<boost::uuids::uuid, boost::promise<DoSomethingReturnValues>> _pendingDoSomethingMethodCalls;
     int _doSomethingMethodSubscriptionId = -1;
     // This is called internally to process responses to `doSomething` method calls.
     void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `echo` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::string>> _pendingEchoMethodCalls;
     int _echoMethodSubscriptionId = -1;
     // This is called internally to process responses to `echo` method calls.
     void _handleEchoResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `what_time_is_it` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingWhatTimeIsItMethodCalls;
     int _whatTimeIsItMethodSubscriptionId = -1;
     // This is called internally to process responses to `what_time_is_it` method calls.
     void _handleWhatTimeIsItResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `set_the_time` method calls.
-    std::map<boost::uuids::uuid, boost::promise<SetTheTimeReturnValue>> _pendingSetTheTimeMethodCalls;
+    std::map<boost::uuids::uuid, boost::promise<SetTheTimeReturnValues>> _pendingSetTheTimeMethodCalls;
     int _setTheTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `set_the_time` method calls.
     void _handleSetTheTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `forward_time` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingForwardTimeMethodCalls;
     int _forwardTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `forward_time` method calls.
     void _handleForwardTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
     // Holds promises for pending `how_off_is_the_clock` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::duration<double>>> _pendingHowOffIsTheClockMethodCalls;
     int _howOffIsTheClockMethodSubscriptionId = -1;
@@ -260,7 +274,7 @@ private:
     void _receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `favorite_foods` property.
-    std::vector<std::function<void(const std::string&, int, boost::optional<std::string>)>> _favoriteFoodsPropertyCallbacks;
+    std::vector<std::function<void(std::string, int, boost::optional<std::string>)>> _favoriteFoodsPropertyCallbacks;
     std::mutex _favoriteFoodsPropertyCallbacksMutex;
 
     // ---lunch_menu Property---
@@ -302,7 +316,7 @@ private:
     void _receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `family_name` property.
-    std::vector<std::function<void(const std::string&)>> _familyNamePropertyCallbacks;
+    std::vector<std::function<void(std::string)>> _familyNamePropertyCallbacks;
     std::mutex _familyNamePropertyCallbacksMutex;
 
     // ---last_breakfast_time Property---

@@ -164,7 +164,7 @@ void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Cal
 {%-endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -213,75 +213,19 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
     auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationIdUuid);
     if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())
     {
-        {%macro unpack_rv(arg)-%}
-        rapidjson::Value::ConstMemberIterator {{arg.name|lowerCamelCase}}Itr = doc.FindMember("{{arg.name}}");
-        {%if arg.optional%}
-        // arg is optional, so check if it is set
-        {{arg.cpp_type}} {{arg.name}} = boost::none;
-        if ({{arg.name|lowerCamelCase}}Itr != doc.MemberEnd())
-        {
-        {%endif%}
-        {%if arg.arg_type.name.lower() == 'primitive'-%}
-        {%if arg.type.name.lower() == 'string'%}
-        {{arg.cpp_type}} {{arg.name}} = std::string({{arg.name|lowerCamelCase}}Itr->value.Get{{arg.cpp_rapidjson_type}}());
-        {%else%}
-        {{arg.cpp_type}} {{arg.name}} = {{arg.name|lowerCamelCase}}Itr->value.Get{{arg.cpp_rapidjson_type}}();
-        {%endif%}
-        {%elif arg.arg_type.name.lower() == 'enum'-%}
-        {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_data_type}}>({{arg.name|lowerCamelCase}}Itr->value.GetInt());
-        {%elif arg.arg_type.name.lower() == 'datetime'%}
-        {{arg.cpp_type}} {{arg.name}};
-        if ({{arg.name|lowerCamelCase}}Itr != doc.MemberEnd() && {{arg.name|lowerCamelCase}}Itr->value.IsString()) {
-            {{arg.name}} = parseIsoTimestamp({{arg.name|lowerCamelCase}}Itr->value.Get{{arg.cpp_rapidjson_type}}());
-        }
-        {%elif method.return_value_type == 'struct'%}{%for arg2 in method.return_value.members%}
-        // struct {{arg2}}
-        {%endfor%}
-        {%elif method.return_value_type == 'multiple'%}{%for arg2 in method.return_value%}
-        // multiple {{arg2}}
-        {%endfor%}
-        {%elif method.return_value_type == 'duration'%}
-        {{arg.cpp_type}} {{arg.name}};
-        if ({{arg.name|lowerCamelCase}}Itr != doc.MemberEnd() && {{arg.name|lowerCamelCase}}Itr->value.IsString()) {
-            {{arg.name}} = parseIsoDuration({{arg.name|lowerCamelCase}}Itr->value.Get{{arg.cpp_rapidjson_type}}());
-        }
-        {%else%}
-        TEMPLATE ERROR with unhandled return value type {{method.return_value_type}}
-        {%endif-%}
-        {%if arg.optional%}
-        }
-        {%endif %}
-        {%endmacro-%}
-        {%if method.return_value_type == 'struct'-%}
-        // Response has multiple values.
-        {%for item in method.return_value.members%}
-        {{unpack_rv(item)}}
-        {%-endfor%} {# for each member of the struct #}
-        {{method.return_value_cpp_class}} returnValue { //initializer list
-        {%for item in method.return_value.members%}
-            {{item.name}}{%if not loop.last%},{%endif%}
-        {%-endfor%}
-        };
-        promiseItr->second.set_value(returnValue);
-
-        {%-elif method.return_value_type is false %}
-        // There are no values in the response.
+        // Found the promise for this correlation ID.
+        {%if method.return_arg_list | length == 0 %}
+        // Method doesn't have any return values.
         promiseItr->second.set_value();
-        {%-elif method.return_value_type == 'multiple'%} {# is multiple value response #}
-        {%for item in method.return_value%}
-        {{unpack_rv(item)}}
-        {%-endfor%} {# for each member of the struct #}
-        {{method.return_value_cpp_class}} returnValue { //initializer list
-        {%for item in method.return_value%}
-            {{item.name}}{%if not loop.last%},{%endif%}
-        {%-endfor%}
-        };
+        {%elif method.return_arg_list | length == 1%}
+        // Method has a single return value.
+        auto returnValue = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc).{{method.return_arg_list[0].name|lowerCamelCase}};
         promiseItr->second.set_value(returnValue);
-        {%-else%} {# is single value response #}
-        // Response has a single value.
-        {{unpack_rv(method.return_value)}}
-        promiseItr->second.set_value({{method.return_value_property_name}});
-        {%-endif%}
+        {%else%}
+        // Method has multiple return values.
+        auto returnValues = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc);
+        promiseItr->second.set_value(returnValues);
+        {%endif%}
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for {{method_name}}");
@@ -315,11 +259,7 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
         for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            {%if prop.arg_list | length > 1 %}
-            cb({%for arg in prop.arg_list %}tempValue.{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
-            {%else %}
-            cb(tempValue);
-            {%endif %}
+            cb({%for arg in prop.arg_list %}tempValue.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
         }
     }
 }

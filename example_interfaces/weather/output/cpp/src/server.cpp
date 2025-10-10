@@ -13,6 +13,7 @@
 #include <rapidjson/document.h>
 #include "structs.hpp"
 #include "server.hpp"
+#include "method_payloads.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
 
@@ -233,14 +234,14 @@ void WeatherServer::_receiveMessage(
     }
 }
 
-boost::future<bool> WeatherServer::emitCurrentTimeSignal(const std::string& current_time)
+boost::future<bool> WeatherServer::emitCurrentTimeSignal(const std::string& currentTime)
 {
     rapidjson::Document doc;
     doc.SetObject();
 
     { // restrict scope
         rapidjson::Value tempStringValue;
-        tempStringValue.SetString(current_time.c_str(), current_time.size(), doc.GetAllocator());
+        tempStringValue.SetString(currentTime.c_str(), currentTime.size(), doc.GetAllocator());
         doc.AddMember("current_time", tempStringValue, doc.GetAllocator());
     }
 
@@ -277,23 +278,30 @@ void WeatherServer::_callRefreshDailyForecastHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to refresh_daily_forecast");
-    if (_refreshDailyForecastHandler)
+    if (!_refreshDailyForecastHandler)
     {
-        _refreshDailyForecastHandler();
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method doesn't have any return values.
+    _refreshDailyForecastHandler();
+    auto returnValues = RefreshDailyForecastReturnValues();
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -305,23 +313,30 @@ void WeatherServer::_callRefreshHourlyForecastHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to refresh_hourly_forecast");
-    if (_refreshHourlyForecastHandler)
+    if (!_refreshHourlyForecastHandler)
     {
-        _refreshHourlyForecastHandler();
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method doesn't have any return values.
+    _refreshHourlyForecastHandler();
+    auto returnValues = RefreshHourlyForecastReturnValues();
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
@@ -333,30 +348,41 @@ void WeatherServer::_callRefreshCurrentConditionsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to refresh_current_conditions");
-    if (_refreshCurrentConditionsHandler)
+    if (!_refreshCurrentConditionsHandler)
     {
-        _refreshCurrentConditionsHandler();
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
 
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
+    // Method doesn't have any return values.
+    _refreshCurrentConditionsHandler();
+    auto returnValues = RefreshCurrentConditionsReturnValues();
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 
 boost::optional<LocationProperty> WeatherServer::getLocationProperty() const
 {
     std::lock_guard<std::mutex> lock(_locationPropertyMutex);
-    return _locationProperty;
+    if (_locationProperty)
+    {
+        return *_locationProperty;
+    }
+    return boost::none;
 }
 
 void WeatherServer::registerLocationPropertyCallback(const std::function<void(double latitude, double longitude)>& cb)
@@ -389,7 +415,6 @@ void WeatherServer::republishLocationProperty() const
     if (_locationProperty)
     {
         doc.SetObject();
-
         _locationProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -434,30 +459,34 @@ void WeatherServer::_receiveLocationPropertyUpdate(const std::string& topic, con
     republishLocationProperty();
 }
 
-boost::optional<CurrentTemperatureProperty> WeatherServer::getCurrentTemperatureProperty() const
+boost::optional<double> WeatherServer::getCurrentTemperatureProperty() const
 {
     std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
-    return _currentTemperatureProperty;
+    if (_currentTemperatureProperty)
+    {
+        return _currentTemperatureProperty->temperatureF;
+    }
+    return boost::none;
 }
 
-void WeatherServer::registerCurrentTemperaturePropertyCallback(const std::function<void(double temperature_f)>& cb)
+void WeatherServer::registerCurrentTemperaturePropertyCallback(const std::function<void(double temperatureF)>& cb)
 {
     std::lock_guard<std::mutex> lock(_currentTemperaturePropertyCallbacksMutex);
     _currentTemperaturePropertyCallbacks.push_back(cb);
 }
 
-void WeatherServer::updateCurrentTemperatureProperty(double temperature_f)
+void WeatherServer::updateCurrentTemperatureProperty(double temperatureF)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
-        _currentTemperatureProperty = temperature_f;
+        _currentTemperatureProperty = CurrentTemperatureProperty{ temperatureF };
         _lastCurrentTemperaturePropertyVersion++;
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentTemperaturePropertyCallbacksMutex);
         for (const auto& cb: _currentTemperaturePropertyCallbacks)
         {
-            cb(temperature_f);
+            cb(temperatureF);
         }
     }
     republishCurrentTemperatureProperty();
@@ -470,8 +499,7 @@ void WeatherServer::republishCurrentTemperatureProperty() const
     if (_currentTemperatureProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("temperature_f", *_currentTemperatureProperty, doc.GetAllocator());
+        _currentTemperatureProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -504,20 +532,12 @@ void WeatherServer::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
     // TODO: Check _lastCurrentTemperaturePropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    double tempTemperatureF;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("temperature_f");
-    if (itr != doc.MemberEnd() && itr->value.IsDouble())
-    {
-        tempTemperatureF = itr->value.GetDouble();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    CurrentTemperatureProperty tempValue = CurrentTemperatureProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
-        _currentTemperatureProperty = tempTemperatureF;
+        _currentTemperatureProperty = tempValue;
         _lastCurrentTemperaturePropertyVersion++;
     }
     republishCurrentTemperatureProperty();
@@ -526,16 +546,20 @@ void WeatherServer::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
 boost::optional<CurrentConditionProperty> WeatherServer::getCurrentConditionProperty() const
 {
     std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
-    return _currentConditionProperty;
+    if (_currentConditionProperty)
+    {
+        return *_currentConditionProperty;
+    }
+    return boost::none;
 }
 
-void WeatherServer::registerCurrentConditionPropertyCallback(const std::function<void(WeatherCondition condition, const std::string& description)>& cb)
+void WeatherServer::registerCurrentConditionPropertyCallback(const std::function<void(WeatherCondition condition, std::string description)>& cb)
 {
     std::lock_guard<std::mutex> lock(_currentConditionPropertyCallbacksMutex);
     _currentConditionPropertyCallbacks.push_back(cb);
 }
 
-void WeatherServer::updateCurrentConditionProperty(WeatherCondition condition, const std::string& description)
+void WeatherServer::updateCurrentConditionProperty(WeatherCondition condition, std::string description)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
@@ -559,7 +583,6 @@ void WeatherServer::republishCurrentConditionProperty() const
     if (_currentConditionProperty)
     {
         doc.SetObject();
-
         _currentConditionProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -607,7 +630,11 @@ void WeatherServer::_receiveCurrentConditionPropertyUpdate(const std::string& to
 boost::optional<DailyForecastProperty> WeatherServer::getDailyForecastProperty() const
 {
     std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
-    return _dailyForecastProperty;
+    if (_dailyForecastProperty)
+    {
+        return *_dailyForecastProperty;
+    }
+    return boost::none;
 }
 
 void WeatherServer::registerDailyForecastPropertyCallback(const std::function<void(ForecastForDay monday, ForecastForDay tuesday, ForecastForDay wednesday)>& cb)
@@ -640,7 +667,6 @@ void WeatherServer::republishDailyForecastProperty() const
     if (_dailyForecastProperty)
     {
         doc.SetObject();
-
         _dailyForecastProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -688,27 +714,31 @@ void WeatherServer::_receiveDailyForecastPropertyUpdate(const std::string& topic
 boost::optional<HourlyForecastProperty> WeatherServer::getHourlyForecastProperty() const
 {
     std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
-    return _hourlyForecastProperty;
+    if (_hourlyForecastProperty)
+    {
+        return *_hourlyForecastProperty;
+    }
+    return boost::none;
 }
 
-void WeatherServer::registerHourlyForecastPropertyCallback(const std::function<void(ForecastForHour hour_0, ForecastForHour hour_1, ForecastForHour hour_2, ForecastForHour hour_3)>& cb)
+void WeatherServer::registerHourlyForecastPropertyCallback(const std::function<void(ForecastForHour hour0, ForecastForHour hour1, ForecastForHour hour2, ForecastForHour hour3)>& cb)
 {
     std::lock_guard<std::mutex> lock(_hourlyForecastPropertyCallbacksMutex);
     _hourlyForecastPropertyCallbacks.push_back(cb);
 }
 
-void WeatherServer::updateHourlyForecastProperty(ForecastForHour hour_0, ForecastForHour hour_1, ForecastForHour hour_2, ForecastForHour hour_3)
+void WeatherServer::updateHourlyForecastProperty(ForecastForHour hour0, ForecastForHour hour1, ForecastForHour hour2, ForecastForHour hour3)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
-        _hourlyForecastProperty = HourlyForecastProperty{ hour_0, hour_1, hour_2, hour_3 };
+        _hourlyForecastProperty = HourlyForecastProperty{ hour0, hour1, hour2, hour3 };
         _lastHourlyForecastPropertyVersion++;
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_hourlyForecastPropertyCallbacksMutex);
         for (const auto& cb: _hourlyForecastPropertyCallbacks)
         {
-            cb(hour_0, hour_1, hour_2, hour_3);
+            cb(hour0, hour1, hour2, hour3);
         }
     }
     republishHourlyForecastProperty();
@@ -721,7 +751,6 @@ void WeatherServer::republishHourlyForecastProperty() const
     if (_hourlyForecastProperty)
     {
         doc.SetObject();
-
         _hourlyForecastProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
@@ -766,10 +795,14 @@ void WeatherServer::_receiveHourlyForecastPropertyUpdate(const std::string& topi
     republishHourlyForecastProperty();
 }
 
-boost::optional<CurrentConditionRefreshIntervalProperty> WeatherServer::getCurrentConditionRefreshIntervalProperty() const
+boost::optional<int> WeatherServer::getCurrentConditionRefreshIntervalProperty() const
 {
     std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
-    return _currentConditionRefreshIntervalProperty;
+    if (_currentConditionRefreshIntervalProperty)
+    {
+        return _currentConditionRefreshIntervalProperty->seconds;
+    }
+    return boost::none;
 }
 
 void WeatherServer::registerCurrentConditionRefreshIntervalPropertyCallback(const std::function<void(int seconds)>& cb)
@@ -782,7 +815,7 @@ void WeatherServer::updateCurrentConditionRefreshIntervalProperty(int seconds)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
-        _currentConditionRefreshIntervalProperty = seconds;
+        _currentConditionRefreshIntervalProperty = CurrentConditionRefreshIntervalProperty{ seconds };
         _lastCurrentConditionRefreshIntervalPropertyVersion++;
     }
     { // Scope lock
@@ -802,8 +835,7 @@ void WeatherServer::republishCurrentConditionRefreshIntervalProperty() const
     if (_currentConditionRefreshIntervalProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("seconds", *_currentConditionRefreshIntervalProperty, doc.GetAllocator());
+        _currentConditionRefreshIntervalProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -836,29 +868,25 @@ void WeatherServer::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const 
     // TODO: Check _lastCurrentConditionRefreshIntervalPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    int tempSeconds;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempSeconds = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    CurrentConditionRefreshIntervalProperty tempValue = CurrentConditionRefreshIntervalProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
-        _currentConditionRefreshIntervalProperty = tempSeconds;
+        _currentConditionRefreshIntervalProperty = tempValue;
         _lastCurrentConditionRefreshIntervalPropertyVersion++;
     }
     republishCurrentConditionRefreshIntervalProperty();
 }
 
-boost::optional<HourlyForecastRefreshIntervalProperty> WeatherServer::getHourlyForecastRefreshIntervalProperty() const
+boost::optional<int> WeatherServer::getHourlyForecastRefreshIntervalProperty() const
 {
     std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
-    return _hourlyForecastRefreshIntervalProperty;
+    if (_hourlyForecastRefreshIntervalProperty)
+    {
+        return _hourlyForecastRefreshIntervalProperty->seconds;
+    }
+    return boost::none;
 }
 
 void WeatherServer::registerHourlyForecastRefreshIntervalPropertyCallback(const std::function<void(int seconds)>& cb)
@@ -871,7 +899,7 @@ void WeatherServer::updateHourlyForecastRefreshIntervalProperty(int seconds)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
-        _hourlyForecastRefreshIntervalProperty = seconds;
+        _hourlyForecastRefreshIntervalProperty = HourlyForecastRefreshIntervalProperty{ seconds };
         _lastHourlyForecastRefreshIntervalPropertyVersion++;
     }
     { // Scope lock
@@ -891,8 +919,7 @@ void WeatherServer::republishHourlyForecastRefreshIntervalProperty() const
     if (_hourlyForecastRefreshIntervalProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("seconds", *_hourlyForecastRefreshIntervalProperty, doc.GetAllocator());
+        _hourlyForecastRefreshIntervalProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -925,29 +952,25 @@ void WeatherServer::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const st
     // TODO: Check _lastHourlyForecastRefreshIntervalPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    int tempSeconds;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempSeconds = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    HourlyForecastRefreshIntervalProperty tempValue = HourlyForecastRefreshIntervalProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
-        _hourlyForecastRefreshIntervalProperty = tempSeconds;
+        _hourlyForecastRefreshIntervalProperty = tempValue;
         _lastHourlyForecastRefreshIntervalPropertyVersion++;
     }
     republishHourlyForecastRefreshIntervalProperty();
 }
 
-boost::optional<DailyForecastRefreshIntervalProperty> WeatherServer::getDailyForecastRefreshIntervalProperty() const
+boost::optional<int> WeatherServer::getDailyForecastRefreshIntervalProperty() const
 {
     std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
-    return _dailyForecastRefreshIntervalProperty;
+    if (_dailyForecastRefreshIntervalProperty)
+    {
+        return _dailyForecastRefreshIntervalProperty->seconds;
+    }
+    return boost::none;
 }
 
 void WeatherServer::registerDailyForecastRefreshIntervalPropertyCallback(const std::function<void(int seconds)>& cb)
@@ -960,7 +983,7 @@ void WeatherServer::updateDailyForecastRefreshIntervalProperty(int seconds)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
-        _dailyForecastRefreshIntervalProperty = seconds;
+        _dailyForecastRefreshIntervalProperty = DailyForecastRefreshIntervalProperty{ seconds };
         _lastDailyForecastRefreshIntervalPropertyVersion++;
     }
     { // Scope lock
@@ -980,8 +1003,7 @@ void WeatherServer::republishDailyForecastRefreshIntervalProperty() const
     if (_dailyForecastRefreshIntervalProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("seconds", *_dailyForecastRefreshIntervalProperty, doc.GetAllocator());
+        _dailyForecastRefreshIntervalProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -1014,20 +1036,12 @@ void WeatherServer::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std
     // TODO: Check _lastDailyForecastRefreshIntervalPropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    int tempSeconds;
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempSeconds = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
+    // Deserialize 1 values into struct.
+    DailyForecastRefreshIntervalProperty tempValue = DailyForecastRefreshIntervalProperty::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
-        _dailyForecastRefreshIntervalProperty = tempSeconds;
+        _dailyForecastRefreshIntervalProperty = tempValue;
         _lastDailyForecastRefreshIntervalPropertyVersion++;
     }
     republishDailyForecastRefreshIntervalProperty();

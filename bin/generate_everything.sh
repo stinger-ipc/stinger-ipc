@@ -16,10 +16,10 @@ function generate_python() {
     return 0
 }
 
-#generate_python signal_only || exit 1
-#generate_python full || exit 1
-#generate_python weather || exit 1
-#generate_python testable || exit 1
+generate_python signal_only || exit 1
+generate_python full || exit 1
+generate_python weather || exit 1
+generate_python testable || exit 1
 
 #### C++
 
@@ -37,15 +37,15 @@ function generate_cpp() {
         clang-format --style=file:${BASE_DIR}/../clang-format-config.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/include/*.hpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/src/*.cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/examples/*.cpp -i
     fi
     if [ $? -eq 0 ]; then
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j8)
     fi
     return 0
 }
 
 generate_cpp testable || exit 1
-#generate_cpp full || exit 1
-#generate_cpp signal_only || exit 1
-#generate_cpp weather || exit 1
+generate_cpp full || exit 1
+generate_cpp signal_only || exit 1
+generate_cpp weather || exit 1
 
 
 #### Rust
@@ -67,9 +67,10 @@ function generate_rust() {
     return $RC
 }
 
-#generate_rust signal_only || exit 1
-#generate_rust full || exit 1
-#generate_rust weather || exit 1
+generate_rust signal_only || exit 1
+generate_rust full || exit 1
+generate_rust weather || exit 1
+generate_rust testable || exit 1
 
 (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example full_connection_demo --features payloads)
 
@@ -96,6 +97,7 @@ function generate_markdown() {
 generate_markdown full
 generate_markdown weather
 generate_markdown signal_only
+generate_markdown testable
 
 #### HTML/JS/CSS
 
@@ -111,3 +113,4 @@ function generate_web() {
 generate_web full
 generate_web weather
 generate_web signal_only
+generate_web testable

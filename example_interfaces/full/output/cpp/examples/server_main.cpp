@@ -26,7 +26,7 @@ int main(int argc, char** argv)
     server->updateFavoriteFoodsProperty("apples", 42, boost::make_optional(std::string("apples")));
 
     std::cout << "Setting initial value for property 'lunch_menu'.\n";
-    server->updateLunchMenuProperty({ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) }, { true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) });
+    server->updateLunchMenuProperty(Lunch{ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) }, Lunch{ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) });
 
     std::cout << "Setting initial value for property 'family_name'.\n";
     server->updateFamilyNameProperty("apples");
@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     std::cout << "Setting initial value for property 'last_birthdays'.\n";
     server->updateLastBirthdaysProperty(std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now(), 42);
 
-    auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 });
+    auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
     todayIsFuture.wait();
     server->registerAddNumbersHandler([](int unused1, int unused2, boost::optional<int> unused3) -> int
                                       {
@@ -48,13 +48,13 @@ int main(int argc, char** argv)
                                           return 42;
                                       });
 
-    server->registerDoSomethingHandler([](const std::string& unused1) -> DoSomethingReturnValue
+    server->registerDoSomethingHandler([](std::string unused1) -> DoSomethingReturnValues
                                        {
                                            std::cout << "Received call for doSomething\n";
-                                           return DoSomethingReturnValue{ "apples", 42, DayOfTheWeek::SATURDAY };
+                                           return DoSomethingReturnValues{ "apples", 42, DayOfTheWeek::SATURDAY };
                                        });
 
-    server->registerEchoHandler([](const std::string& unused1) -> std::string
+    server->registerEchoHandler([](std::string unused1) -> std::string
                                 {
                                     std::cout << "Received call for echo\n";
                                     return "apples";
@@ -66,10 +66,10 @@ int main(int argc, char** argv)
                                             return std::chrono::system_clock::now();
                                         });
 
-    server->registerSetTheTimeHandler([](std::chrono::time_point<std::chrono::system_clock> unused1, std::chrono::time_point<std::chrono::system_clock> unused2) -> SetTheTimeReturnValue
+    server->registerSetTheTimeHandler([](std::chrono::time_point<std::chrono::system_clock> unused1, std::chrono::time_point<std::chrono::system_clock> unused2) -> SetTheTimeReturnValues
                                       {
                                           std::cout << "Received call for set_the_time\n";
-                                          return SetTheTimeReturnValue{ std::chrono::system_clock::now(), "apples" };
+                                          return SetTheTimeReturnValues{ std::chrono::system_clock::now(), "apples" };
                                       });
 
     server->registerForwardTimeHandler([](std::chrono::duration<double> unused1) -> std::chrono::time_point<std::chrono::system_clock>
@@ -95,7 +95,7 @@ int main(int argc, char** argv)
                                         // Call emitTodayIsSignal; do not block forever waiting for publish
                                         try
                                         {
-                                            auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 });
+                                            auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             todayIsFuture.wait();
                                         }
@@ -118,7 +118,7 @@ int main(int argc, char** argv)
                                             server->updateFavoriteFoodsProperty("apples", 42, boost::make_optional(std::string("apples")));
 
                                             std::cout << "Updating value for property 'lunch_menu'.\n";
-                                            server->updateLunchMenuProperty({ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) }, { true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) });
+                                            server->updateLunchMenuProperty(Lunch{ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) }, Lunch{ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) });
 
                                             std::cout << "Updating value for property 'family_name'.\n";
                                             server->updateFamilyNameProperty("apples");

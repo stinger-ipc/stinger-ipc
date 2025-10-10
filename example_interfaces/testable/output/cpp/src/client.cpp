@@ -1842,7 +1842,9 @@ void TestAbleClient::_handleCallWithNothingResponse(
     auto promiseItr = _pendingCallWithNothingMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallWithNothingMethodCalls.end())
     {
-        // There are no values in the response.
+        // Found the promise for this correlation ID.
+
+        // Method doesn't have any return values.
         promiseItr->second.set_value();
     }
 
@@ -1898,12 +1900,11 @@ void TestAbleClient::_handleCallOneIntegerResponse(
     auto promiseItr = _pendingCallOneIntegerMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneIntegerMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        int output1 = output1Itr->value.GetInt();
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOneIntegerReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOneInteger");
@@ -1959,27 +1960,21 @@ void TestAbleClient::_handleCallOptionalIntegerResponse(
     auto promiseItr = _pendingCallOptionalIntegerMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalIntegerMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        // arg is optional, so check if it is set
-        boost::optional<int> output1 = boost::none;
-        if (output1Itr != doc.MemberEnd())
-        {
-            boost::optional<int> output1 = output1Itr->value.GetInt();
-        }
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOptionalIntegerReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalInteger");
 }
 
-boost::future<CallThreeIntegersReturnValue> TestAbleClient::callThreeIntegers(int input1, int input2, boost::optional<int> input3)
+boost::future<CallThreeIntegersReturnValues> TestAbleClient::callThreeIntegers(int input1, int input2, boost::optional<int> input3)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeIntegersMethodCalls[correlationId] = boost::promise<CallThreeIntegersReturnValue>();
+    _pendingCallThreeIntegersMethodCalls[correlationId] = boost::promise<CallThreeIntegersReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2029,30 +2024,11 @@ void TestAbleClient::_handleCallThreeIntegersResponse(
     auto promiseItr = _pendingCallThreeIntegersMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeIntegersMethodCalls.end())
     {
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        int output1 = output1Itr->value.GetInt();
-
-        rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
-
-        int output2 = output2Itr->value.GetInt();
-
-        rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
-
-        // arg is optional, so check if it is set
-        boost::optional<int> output3 = boost::none;
-        if (output3Itr != doc.MemberEnd())
-        {
-            boost::optional<int> output3 = output3Itr->value.GetInt();
-        }
-
-        CallThreeIntegersReturnValue returnValue{ //initializer list
-
-                                                  output1,
-                                                  output2,
-                                                  output3
-        };
-        promiseItr->second.set_value(returnValue);
+        // Method has multiple return values.
+        auto returnValues = CallThreeIntegersReturnValues::FromRapidJsonObject(doc);
+        promiseItr->second.set_value(returnValues);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeIntegers");
@@ -2111,12 +2087,11 @@ void TestAbleClient::_handleCallOneStringResponse(
     auto promiseItr = _pendingCallOneStringMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneStringMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        const std::string& output1 = std::string(output1Itr->value.GetString());
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOneStringReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOneString");
@@ -2176,27 +2151,21 @@ void TestAbleClient::_handleCallOptionalStringResponse(
     auto promiseItr = _pendingCallOptionalStringMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalStringMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        // arg is optional, so check if it is set
-        boost::optional<std::string> output1 = boost::none;
-        if (output1Itr != doc.MemberEnd())
-        {
-            boost::optional<std::string> output1 = std::string(output1Itr->value.GetString());
-        }
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOptionalStringReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalString");
 }
 
-boost::future<CallThreeStringsReturnValue> TestAbleClient::callThreeStrings(std::string input1, std::string input2, boost::optional<std::string> input3)
+boost::future<CallThreeStringsReturnValues> TestAbleClient::callThreeStrings(std::string input1, boost::optional<std::string> input2, std::string input3)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeStringsMethodCalls[correlationId] = boost::promise<CallThreeStringsReturnValue>();
+    _pendingCallThreeStringsMethodCalls[correlationId] = boost::promise<CallThreeStringsReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2207,16 +2176,16 @@ boost::future<CallThreeStringsReturnValue> TestAbleClient::callThreeStrings(std:
         doc.AddMember("input1", tempStringValue, doc.GetAllocator());
     }
 
-    { // restrict scope
+    if (input2)
+    {
         rapidjson::Value tempStringValue;
-        tempStringValue.SetString(input2.c_str(), input2.size(), doc.GetAllocator());
+        tempStringValue.SetString(input2->c_str(), input2->size(), doc.GetAllocator());
         doc.AddMember("input2", tempStringValue, doc.GetAllocator());
     }
 
-    if (input3)
-    {
+    { // restrict scope
         rapidjson::Value tempStringValue;
-        tempStringValue.SetString(input3->c_str(), input3->size(), doc.GetAllocator());
+        tempStringValue.SetString(input3.c_str(), input3.size(), doc.GetAllocator());
         doc.AddMember("input3", tempStringValue, doc.GetAllocator());
     }
 
@@ -2258,30 +2227,11 @@ void TestAbleClient::_handleCallThreeStringsResponse(
     auto promiseItr = _pendingCallThreeStringsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeStringsMethodCalls.end())
     {
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        const std::string& output1 = std::string(output1Itr->value.GetString());
-
-        rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
-
-        const std::string& output2 = std::string(output2Itr->value.GetString());
-
-        rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::string> output3 = boost::none;
-        if (output3Itr != doc.MemberEnd())
-        {
-            boost::optional<std::string> output3 = std::string(output3Itr->value.GetString());
-        }
-
-        CallThreeStringsReturnValue returnValue{ //initializer list
-
-                                                 output1,
-                                                 output2,
-                                                 output3
-        };
-        promiseItr->second.set_value(returnValue);
+        // Method has multiple return values.
+        auto returnValues = CallThreeStringsReturnValues::FromRapidJsonObject(doc);
+        promiseItr->second.set_value(returnValues);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeStrings");
@@ -2336,12 +2286,11 @@ void TestAbleClient::_handleCallOneEnumResponse(
     auto promiseItr = _pendingCallOneEnumMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneEnumMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        Numbers output1 = static_cast<Numbers>(output1Itr->value.GetInt());
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOneEnumReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOneEnum");
@@ -2396,27 +2345,21 @@ void TestAbleClient::_handleCallOptionalEnumResponse(
     auto promiseItr = _pendingCallOptionalEnumMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalEnumMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        // arg is optional, so check if it is set
-        boost::optional<Numbers> output1 = boost::none;
-        if (output1Itr != doc.MemberEnd())
-        {
-            boost::optional<Numbers> output1 = static_cast<Numbers>(output1Itr->value.GetInt());
-        }
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOptionalEnumReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalEnum");
 }
 
-boost::future<CallThreeEnumsReturnValue> TestAbleClient::callThreeEnums(Numbers input1, Numbers input2, boost::optional<Numbers> input3)
+boost::future<CallThreeEnumsReturnValues> TestAbleClient::callThreeEnums(Numbers input1, Numbers input2, boost::optional<Numbers> input3)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeEnumsMethodCalls[correlationId] = boost::promise<CallThreeEnumsReturnValue>();
+    _pendingCallThreeEnumsMethodCalls[correlationId] = boost::promise<CallThreeEnumsReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2465,30 +2408,11 @@ void TestAbleClient::_handleCallThreeEnumsResponse(
     auto promiseItr = _pendingCallThreeEnumsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeEnumsMethodCalls.end())
     {
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        Numbers output1 = static_cast<Numbers>(output1Itr->value.GetInt());
-
-        rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
-
-        Numbers output2 = static_cast<Numbers>(output2Itr->value.GetInt());
-
-        rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
-
-        // arg is optional, so check if it is set
-        boost::optional<Numbers> output3 = boost::none;
-        if (output3Itr != doc.MemberEnd())
-        {
-            boost::optional<Numbers> output3 = static_cast<Numbers>(output3Itr->value.GetInt());
-        }
-
-        CallThreeEnumsReturnValue returnValue{ //initializer list
-
-                                               output1,
-                                               output2,
-                                               output3
-        };
-        promiseItr->second.set_value(returnValue);
+        // Method has multiple return values.
+        auto returnValues = CallThreeEnumsReturnValues::FromRapidJsonObject(doc);
+        promiseItr->second.set_value(returnValues);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeEnums");
@@ -2541,223 +2465,10 @@ void TestAbleClient::_handleCallOneStructResponse(
     auto promiseItr = _pendingCallOneStructMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneStructMethodCalls.end())
     {
-        // Response has multiple values.
+        // Found the promise for this correlation ID.
 
-        rapidjson::Value::ConstMemberIterator boolItr = doc.FindMember("bool_");
-
-        bool bool_ = boolItr->value.GetBool();
-
-        rapidjson::Value::ConstMemberIterator intItr = doc.FindMember("int_");
-
-        int int_ = intItr->value.GetInt();
-
-        rapidjson::Value::ConstMemberIterator numberItr = doc.FindMember("number");
-
-        double number = numberItr->value.GetDouble();
-
-        rapidjson::Value::ConstMemberIterator strItr = doc.FindMember("str");
-
-        const std::string& str = std::string(strItr->value.GetString());
-
-        rapidjson::Value::ConstMemberIterator enumItr = doc.FindMember("enum_");
-
-        Numbers enum_ = static_cast<Numbers>(enumItr->value.GetInt());
-
-        rapidjson::Value::ConstMemberIterator dateAndTimeItr = doc.FindMember("date_and_time");
-
-        std::chrono::time_point<std::chrono::system_clock> date_and_time;
-        if (dateAndTimeItr != doc.MemberEnd() && dateAndTimeItr->value.IsString())
-        {
-            date_and_time = parseIsoTimestamp(dateAndTimeItr->value.GetString());
-        }
-
-        rapidjson::Value::ConstMemberIterator timeDurationItr = doc.FindMember("time_duration");
-
-        // struct <ArgPrimitive name=bool_ type=bool>
-
-        // struct <ArgPrimitive name=int_ type=int>
-
-        // struct <ArgPrimitive name=number type=float>
-
-        // struct <ArgPrimitive name=str type=str>
-
-        // struct <ArgEnum name=enum_>
-
-        // struct <ArgDateTime name=date_and_time>
-
-        // struct <ArgDuration name=time_duration>
-
-        // struct <ArgBinary name=data>
-
-        // struct <ArgPrimitive name=OptionalInteger type=int>
-
-        // struct <ArgPrimitive name=OptionalString type=str>
-
-        // struct <ArgEnum name=OptionalEnum>
-
-        // struct <ArgDateTime name=OptionalDateTime>
-
-        // struct <ArgDuration name=OptionalDuration>
-
-        // struct <ArgBinary name=OptionalBinary>
-
-        rapidjson::Value::ConstMemberIterator dataItr = doc.FindMember("data");
-
-        // struct <ArgPrimitive name=bool_ type=bool>
-
-        // struct <ArgPrimitive name=int_ type=int>
-
-        // struct <ArgPrimitive name=number type=float>
-
-        // struct <ArgPrimitive name=str type=str>
-
-        // struct <ArgEnum name=enum_>
-
-        // struct <ArgDateTime name=date_and_time>
-
-        // struct <ArgDuration name=time_duration>
-
-        // struct <ArgBinary name=data>
-
-        // struct <ArgPrimitive name=OptionalInteger type=int>
-
-        // struct <ArgPrimitive name=OptionalString type=str>
-
-        // struct <ArgEnum name=OptionalEnum>
-
-        // struct <ArgDateTime name=OptionalDateTime>
-
-        // struct <ArgDuration name=OptionalDuration>
-
-        // struct <ArgBinary name=OptionalBinary>
-
-        rapidjson::Value::ConstMemberIterator optionalIntegerItr = doc.FindMember("OptionalInteger");
-
-        // arg is optional, so check if it is set
-        boost::optional<int> OptionalInteger = boost::none;
-        if (optionalIntegerItr != doc.MemberEnd())
-        {
-            boost::optional<int> OptionalInteger = optionalIntegerItr->value.GetInt();
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalStringItr = doc.FindMember("OptionalString");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::string> OptionalString = boost::none;
-        if (optionalStringItr != doc.MemberEnd())
-        {
-            boost::optional<std::string> OptionalString = std::string(optionalStringItr->value.GetString());
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalEnumItr = doc.FindMember("OptionalEnum");
-
-        // arg is optional, so check if it is set
-        boost::optional<Numbers> OptionalEnum = boost::none;
-        if (optionalEnumItr != doc.MemberEnd())
-        {
-            boost::optional<Numbers> OptionalEnum = static_cast<Numbers>(optionalEnumItr->value.GetInt());
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalDateTimeItr = doc.FindMember("OptionalDateTime");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::chrono::time_point<std::chrono::system_clock>> OptionalDateTime = boost::none;
-        if (optionalDateTimeItr != doc.MemberEnd())
-        {
-            boost::optional<std::chrono::time_point<std::chrono::system_clock>> OptionalDateTime;
-            if (optionalDateTimeItr != doc.MemberEnd() && optionalDateTimeItr->value.IsString())
-            {
-                OptionalDateTime = parseIsoTimestamp(optionalDateTimeItr->value.GetString());
-            }
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalDurationItr = doc.FindMember("OptionalDuration");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::chrono::duration<double>> OptionalDuration = boost::none;
-        if (optionalDurationItr != doc.MemberEnd())
-        {
-            // struct <ArgPrimitive name=bool_ type=bool>
-
-            // struct <ArgPrimitive name=int_ type=int>
-
-            // struct <ArgPrimitive name=number type=float>
-
-            // struct <ArgPrimitive name=str type=str>
-
-            // struct <ArgEnum name=enum_>
-
-            // struct <ArgDateTime name=date_and_time>
-
-            // struct <ArgDuration name=time_duration>
-
-            // struct <ArgBinary name=data>
-
-            // struct <ArgPrimitive name=OptionalInteger type=int>
-
-            // struct <ArgPrimitive name=OptionalString type=str>
-
-            // struct <ArgEnum name=OptionalEnum>
-
-            // struct <ArgDateTime name=OptionalDateTime>
-
-            // struct <ArgDuration name=OptionalDuration>
-
-            // struct <ArgBinary name=OptionalBinary>
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalBinaryItr = doc.FindMember("OptionalBinary");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::vector<uint8_t>> OptionalBinary = boost::none;
-        if (optionalBinaryItr != doc.MemberEnd())
-        {
-            // struct <ArgPrimitive name=bool_ type=bool>
-
-            // struct <ArgPrimitive name=int_ type=int>
-
-            // struct <ArgPrimitive name=number type=float>
-
-            // struct <ArgPrimitive name=str type=str>
-
-            // struct <ArgEnum name=enum_>
-
-            // struct <ArgDateTime name=date_and_time>
-
-            // struct <ArgDuration name=time_duration>
-
-            // struct <ArgBinary name=data>
-
-            // struct <ArgPrimitive name=OptionalInteger type=int>
-
-            // struct <ArgPrimitive name=OptionalString type=str>
-
-            // struct <ArgEnum name=OptionalEnum>
-
-            // struct <ArgDateTime name=OptionalDateTime>
-
-            // struct <ArgDuration name=OptionalDuration>
-
-            // struct <ArgBinary name=OptionalBinary>
-        }
-
-        AllTypes returnValue{ //initializer list
-
-                              bool_,
-                              int_,
-                              number,
-                              str,
-                              enum_,
-                              date_and_time,
-                              time_duration,
-                              data,
-                              OptionalInteger,
-                              OptionalString,
-                              OptionalEnum,
-                              OptionalDateTime,
-                              OptionalDuration,
-                              OptionalBinary
-        };
+        // Method has a single return value.
+        auto returnValue = CallOneStructReturnValues::FromRapidJsonObject(doc).output1;
         promiseItr->second.set_value(returnValue);
     }
 
@@ -2811,234 +2522,21 @@ void TestAbleClient::_handleCallOptionalStructResponse(
     auto promiseItr = _pendingCallOptionalStructMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalStructMethodCalls.end())
     {
-        // Response has multiple values.
+        // Found the promise for this correlation ID.
 
-        rapidjson::Value::ConstMemberIterator boolItr = doc.FindMember("bool_");
-
-        bool bool_ = boolItr->value.GetBool();
-
-        rapidjson::Value::ConstMemberIterator intItr = doc.FindMember("int_");
-
-        int int_ = intItr->value.GetInt();
-
-        rapidjson::Value::ConstMemberIterator numberItr = doc.FindMember("number");
-
-        double number = numberItr->value.GetDouble();
-
-        rapidjson::Value::ConstMemberIterator strItr = doc.FindMember("str");
-
-        const std::string& str = std::string(strItr->value.GetString());
-
-        rapidjson::Value::ConstMemberIterator enumItr = doc.FindMember("enum_");
-
-        Numbers enum_ = static_cast<Numbers>(enumItr->value.GetInt());
-
-        rapidjson::Value::ConstMemberIterator dateAndTimeItr = doc.FindMember("date_and_time");
-
-        std::chrono::time_point<std::chrono::system_clock> date_and_time;
-        if (dateAndTimeItr != doc.MemberEnd() && dateAndTimeItr->value.IsString())
-        {
-            date_and_time = parseIsoTimestamp(dateAndTimeItr->value.GetString());
-        }
-
-        rapidjson::Value::ConstMemberIterator timeDurationItr = doc.FindMember("time_duration");
-
-        // struct <ArgPrimitive name=bool_ type=bool>
-
-        // struct <ArgPrimitive name=int_ type=int>
-
-        // struct <ArgPrimitive name=number type=float>
-
-        // struct <ArgPrimitive name=str type=str>
-
-        // struct <ArgEnum name=enum_>
-
-        // struct <ArgDateTime name=date_and_time>
-
-        // struct <ArgDuration name=time_duration>
-
-        // struct <ArgBinary name=data>
-
-        // struct <ArgPrimitive name=OptionalInteger type=int>
-
-        // struct <ArgPrimitive name=OptionalString type=str>
-
-        // struct <ArgEnum name=OptionalEnum>
-
-        // struct <ArgDateTime name=OptionalDateTime>
-
-        // struct <ArgDuration name=OptionalDuration>
-
-        // struct <ArgBinary name=OptionalBinary>
-
-        rapidjson::Value::ConstMemberIterator dataItr = doc.FindMember("data");
-
-        // struct <ArgPrimitive name=bool_ type=bool>
-
-        // struct <ArgPrimitive name=int_ type=int>
-
-        // struct <ArgPrimitive name=number type=float>
-
-        // struct <ArgPrimitive name=str type=str>
-
-        // struct <ArgEnum name=enum_>
-
-        // struct <ArgDateTime name=date_and_time>
-
-        // struct <ArgDuration name=time_duration>
-
-        // struct <ArgBinary name=data>
-
-        // struct <ArgPrimitive name=OptionalInteger type=int>
-
-        // struct <ArgPrimitive name=OptionalString type=str>
-
-        // struct <ArgEnum name=OptionalEnum>
-
-        // struct <ArgDateTime name=OptionalDateTime>
-
-        // struct <ArgDuration name=OptionalDuration>
-
-        // struct <ArgBinary name=OptionalBinary>
-
-        rapidjson::Value::ConstMemberIterator optionalIntegerItr = doc.FindMember("OptionalInteger");
-
-        // arg is optional, so check if it is set
-        boost::optional<int> OptionalInteger = boost::none;
-        if (optionalIntegerItr != doc.MemberEnd())
-        {
-            boost::optional<int> OptionalInteger = optionalIntegerItr->value.GetInt();
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalStringItr = doc.FindMember("OptionalString");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::string> OptionalString = boost::none;
-        if (optionalStringItr != doc.MemberEnd())
-        {
-            boost::optional<std::string> OptionalString = std::string(optionalStringItr->value.GetString());
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalEnumItr = doc.FindMember("OptionalEnum");
-
-        // arg is optional, so check if it is set
-        boost::optional<Numbers> OptionalEnum = boost::none;
-        if (optionalEnumItr != doc.MemberEnd())
-        {
-            boost::optional<Numbers> OptionalEnum = static_cast<Numbers>(optionalEnumItr->value.GetInt());
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalDateTimeItr = doc.FindMember("OptionalDateTime");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::chrono::time_point<std::chrono::system_clock>> OptionalDateTime = boost::none;
-        if (optionalDateTimeItr != doc.MemberEnd())
-        {
-            boost::optional<std::chrono::time_point<std::chrono::system_clock>> OptionalDateTime;
-            if (optionalDateTimeItr != doc.MemberEnd() && optionalDateTimeItr->value.IsString())
-            {
-                OptionalDateTime = parseIsoTimestamp(optionalDateTimeItr->value.GetString());
-            }
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalDurationItr = doc.FindMember("OptionalDuration");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::chrono::duration<double>> OptionalDuration = boost::none;
-        if (optionalDurationItr != doc.MemberEnd())
-        {
-            // struct <ArgPrimitive name=bool_ type=bool>
-
-            // struct <ArgPrimitive name=int_ type=int>
-
-            // struct <ArgPrimitive name=number type=float>
-
-            // struct <ArgPrimitive name=str type=str>
-
-            // struct <ArgEnum name=enum_>
-
-            // struct <ArgDateTime name=date_and_time>
-
-            // struct <ArgDuration name=time_duration>
-
-            // struct <ArgBinary name=data>
-
-            // struct <ArgPrimitive name=OptionalInteger type=int>
-
-            // struct <ArgPrimitive name=OptionalString type=str>
-
-            // struct <ArgEnum name=OptionalEnum>
-
-            // struct <ArgDateTime name=OptionalDateTime>
-
-            // struct <ArgDuration name=OptionalDuration>
-
-            // struct <ArgBinary name=OptionalBinary>
-        }
-
-        rapidjson::Value::ConstMemberIterator optionalBinaryItr = doc.FindMember("OptionalBinary");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::vector<uint8_t>> OptionalBinary = boost::none;
-        if (optionalBinaryItr != doc.MemberEnd())
-        {
-            // struct <ArgPrimitive name=bool_ type=bool>
-
-            // struct <ArgPrimitive name=int_ type=int>
-
-            // struct <ArgPrimitive name=number type=float>
-
-            // struct <ArgPrimitive name=str type=str>
-
-            // struct <ArgEnum name=enum_>
-
-            // struct <ArgDateTime name=date_and_time>
-
-            // struct <ArgDuration name=time_duration>
-
-            // struct <ArgBinary name=data>
-
-            // struct <ArgPrimitive name=OptionalInteger type=int>
-
-            // struct <ArgPrimitive name=OptionalString type=str>
-
-            // struct <ArgEnum name=OptionalEnum>
-
-            // struct <ArgDateTime name=OptionalDateTime>
-
-            // struct <ArgDuration name=OptionalDuration>
-
-            // struct <ArgBinary name=OptionalBinary>
-        }
-
-        boost::optional<AllTypes> returnValue{ //initializer list
-
-                                               bool_,
-                                               int_,
-                                               number,
-                                               str,
-                                               enum_,
-                                               date_and_time,
-                                               time_duration,
-                                               data,
-                                               OptionalInteger,
-                                               OptionalString,
-                                               OptionalEnum,
-                                               OptionalDateTime,
-                                               OptionalDuration,
-                                               OptionalBinary
-        };
+        // Method has a single return value.
+        auto returnValue = CallOptionalStructReturnValues::FromRapidJsonObject(doc).output1;
         promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalStruct");
 }
 
-boost::future<CallThreeStructsReturnValue> TestAbleClient::callThreeStructs(AllTypes input1, AllTypes input2, boost::optional<AllTypes> input3)
+boost::future<CallThreeStructsReturnValues> TestAbleClient::callThreeStructs(boost::optional<AllTypes> input1, AllTypes input2, AllTypes input3)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeStructsMethodCalls[correlationId] = boost::promise<CallThreeStructsReturnValue>();
+    _pendingCallThreeStructsMethodCalls[correlationId] = boost::promise<CallThreeStructsReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3081,42 +2579,11 @@ void TestAbleClient::_handleCallThreeStructsResponse(
     auto promiseItr = _pendingCallThreeStructsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeStructsMethodCalls.end())
     {
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        // multiple <ArgStruct name=output1>
-
-        // multiple <ArgStruct name=output2>
-
-        // multiple <ArgStruct name=output3>
-
-        rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
-
-        // multiple <ArgStruct name=output1>
-
-        // multiple <ArgStruct name=output2>
-
-        // multiple <ArgStruct name=output3>
-
-        rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
-
-        // arg is optional, so check if it is set
-        AllTypes output3 = boost::none;
-        if (output3Itr != doc.MemberEnd())
-        {
-            // multiple <ArgStruct name=output1>
-
-            // multiple <ArgStruct name=output2>
-
-            // multiple <ArgStruct name=output3>
-        }
-
-        CallThreeStructsReturnValue returnValue{ //initializer list
-
-                                                 output1,
-                                                 output2,
-                                                 output3
-        };
-        promiseItr->second.set_value(returnValue);
+        // Method has multiple return values.
+        auto returnValues = CallThreeStructsReturnValues::FromRapidJsonObject(doc);
+        promiseItr->second.set_value(returnValues);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeStructs");
@@ -3176,16 +2643,11 @@ void TestAbleClient::_handleCallOneDateTimeResponse(
     auto promiseItr = _pendingCallOneDateTimeMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneDateTimeMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        std::chrono::time_point<std::chrono::system_clock> output1;
-        if (output1Itr != doc.MemberEnd() && output1Itr->value.IsString())
-        {
-            output1 = parseIsoTimestamp(output1Itr->value.GetString());
-        }
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOneDateTimeReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOneDateTime");
@@ -3245,31 +2707,21 @@ void TestAbleClient::_handleCallOptionalDateTimeResponse(
     auto promiseItr = _pendingCallOptionalDateTimeMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalDateTimeMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        // arg is optional, so check if it is set
-        boost::optional<std::chrono::time_point<std::chrono::system_clock>> output1 = boost::none;
-        if (output1Itr != doc.MemberEnd())
-        {
-            boost::optional<std::chrono::time_point<std::chrono::system_clock>> output1;
-            if (output1Itr != doc.MemberEnd() && output1Itr->value.IsString())
-            {
-                output1 = parseIsoTimestamp(output1Itr->value.GetString());
-            }
-        }
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOptionalDateTimeReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalDateTime");
 }
 
-boost::future<CallThreeDateTimesReturnValue> TestAbleClient::callThreeDateTimes(std::chrono::time_point<std::chrono::system_clock> input1, std::chrono::time_point<std::chrono::system_clock> input2, boost::optional<std::chrono::time_point<std::chrono::system_clock>> input3)
+boost::future<CallThreeDateTimesReturnValues> TestAbleClient::callThreeDateTimes(std::chrono::time_point<std::chrono::system_clock> input1, std::chrono::time_point<std::chrono::system_clock> input2, boost::optional<std::chrono::time_point<std::chrono::system_clock>> input3)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeDateTimesMethodCalls[correlationId] = boost::promise<CallThreeDateTimesReturnValue>();
+    _pendingCallThreeDateTimesMethodCalls[correlationId] = boost::promise<CallThreeDateTimesReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3333,42 +2785,11 @@ void TestAbleClient::_handleCallThreeDateTimesResponse(
     auto promiseItr = _pendingCallThreeDateTimesMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeDateTimesMethodCalls.end())
     {
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        std::chrono::time_point<std::chrono::system_clock> output1;
-        if (output1Itr != doc.MemberEnd() && output1Itr->value.IsString())
-        {
-            output1 = parseIsoTimestamp(output1Itr->value.GetString());
-        }
-
-        rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
-
-        std::chrono::time_point<std::chrono::system_clock> output2;
-        if (output2Itr != doc.MemberEnd() && output2Itr->value.IsString())
-        {
-            output2 = parseIsoTimestamp(output2Itr->value.GetString());
-        }
-
-        rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::chrono::time_point<std::chrono::system_clock>> output3 = boost::none;
-        if (output3Itr != doc.MemberEnd())
-        {
-            boost::optional<std::chrono::time_point<std::chrono::system_clock>> output3;
-            if (output3Itr != doc.MemberEnd() && output3Itr->value.IsString())
-            {
-                output3 = parseIsoTimestamp(output3Itr->value.GetString());
-            }
-        }
-
-        CallThreeDateTimesReturnValue returnValue{ //initializer list
-
-                                                   output1,
-                                                   output2,
-                                                   output3
-        };
-        promiseItr->second.set_value(returnValue);
+        // Method has multiple return values.
+        auto returnValues = CallThreeDateTimesReturnValues::FromRapidJsonObject(doc);
+        promiseItr->second.set_value(returnValues);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeDateTimes");
@@ -3428,16 +2849,11 @@ void TestAbleClient::_handleCallOneDurationResponse(
     auto promiseItr = _pendingCallOneDurationMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneDurationMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        std::chrono::duration<double> output1;
-        if (output1Itr != doc.MemberEnd() && output1Itr->value.IsString())
-        {
-            output1 = parseIsoDuration(output1Itr->value.GetString());
-        }
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOneDurationReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOneDuration");
@@ -3497,31 +2913,21 @@ void TestAbleClient::_handleCallOptionalDurationResponse(
     auto promiseItr = _pendingCallOptionalDurationMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalDurationMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        // arg is optional, so check if it is set
-        boost::optional<std::chrono::duration<double>> output1 = boost::none;
-        if (output1Itr != doc.MemberEnd())
-        {
-            boost::optional<std::chrono::duration<double>> output1;
-            if (output1Itr != doc.MemberEnd() && output1Itr->value.IsString())
-            {
-                output1 = parseIsoDuration(output1Itr->value.GetString());
-            }
-        }
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOptionalDurationReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalDuration");
 }
 
-boost::future<CallThreeDurationsReturnValue> TestAbleClient::callThreeDurations(std::chrono::duration<double> input1, std::chrono::duration<double> input2, boost::optional<std::chrono::duration<double>> input3)
+boost::future<CallThreeDurationsReturnValues> TestAbleClient::callThreeDurations(std::chrono::duration<double> input1, std::chrono::duration<double> input2, boost::optional<std::chrono::duration<double>> input3)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeDurationsMethodCalls[correlationId] = boost::promise<CallThreeDurationsReturnValue>();
+    _pendingCallThreeDurationsMethodCalls[correlationId] = boost::promise<CallThreeDurationsReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3585,42 +2991,11 @@ void TestAbleClient::_handleCallThreeDurationsResponse(
     auto promiseItr = _pendingCallThreeDurationsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeDurationsMethodCalls.end())
     {
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        // multiple <ArgDuration name=output1>
-
-        // multiple <ArgDuration name=output2>
-
-        // multiple <ArgDuration name=output3>
-
-        rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
-
-        // multiple <ArgDuration name=output1>
-
-        // multiple <ArgDuration name=output2>
-
-        // multiple <ArgDuration name=output3>
-
-        rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::chrono::duration<double>> output3 = boost::none;
-        if (output3Itr != doc.MemberEnd())
-        {
-            // multiple <ArgDuration name=output1>
-
-            // multiple <ArgDuration name=output2>
-
-            // multiple <ArgDuration name=output3>
-        }
-
-        CallThreeDurationsReturnValue returnValue{ //initializer list
-
-                                                   output1,
-                                                   output2,
-                                                   output3
-        };
-        promiseItr->second.set_value(returnValue);
+        // Method has multiple return values.
+        auto returnValues = CallThreeDurationsReturnValues::FromRapidJsonObject(doc);
+        promiseItr->second.set_value(returnValues);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeDurations");
@@ -3680,12 +3055,11 @@ void TestAbleClient::_handleCallOneBinaryResponse(
     auto promiseItr = _pendingCallOneBinaryMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneBinaryMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        TEMPLATE ERROR with unhandled return value type binary
-
-                promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOneBinaryReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOneBinary");
@@ -3745,27 +3119,21 @@ void TestAbleClient::_handleCallOptionalBinaryResponse(
     auto promiseItr = _pendingCallOptionalBinaryMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalBinaryMethodCalls.end())
     {
-        // Response has a single value.
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        // arg is optional, so check if it is set
-        boost::optional<std::vector<uint8_t>> output1 = boost::none;
-        if (output1Itr != doc.MemberEnd())
-        {
-            TEMPLATE ERROR with unhandled return value type binary
-        }
-
-        promiseItr->second.set_value(output1);
+        // Method has a single return value.
+        auto returnValue = CallOptionalBinaryReturnValues::FromRapidJsonObject(doc).output1;
+        promiseItr->second.set_value(returnValue);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalBinary");
 }
 
-boost::future<CallThreeBinariesReturnValue> TestAbleClient::callThreeBinaries(std::vector<uint8_t> input1, std::vector<uint8_t> input2, boost::optional<std::vector<uint8_t>> input3)
+boost::future<CallThreeBinariesReturnValues> TestAbleClient::callThreeBinaries(std::vector<uint8_t> input1, std::vector<uint8_t> input2, boost::optional<std::vector<uint8_t>> input3)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeBinariesMethodCalls[correlationId] = boost::promise<CallThreeBinariesReturnValue>();
+    _pendingCallThreeBinariesMethodCalls[correlationId] = boost::promise<CallThreeBinariesReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3829,42 +3197,11 @@ void TestAbleClient::_handleCallThreeBinariesResponse(
     auto promiseItr = _pendingCallThreeBinariesMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeBinariesMethodCalls.end())
     {
-        rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
+        // Found the promise for this correlation ID.
 
-        // multiple <ArgBinary name=output1>
-
-        // multiple <ArgBinary name=output2>
-
-        // multiple <ArgBinary name=output3>
-
-        rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
-
-        // multiple <ArgBinary name=output1>
-
-        // multiple <ArgBinary name=output2>
-
-        // multiple <ArgBinary name=output3>
-
-        rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
-
-        // arg is optional, so check if it is set
-        boost::optional<std::vector<uint8_t>> output3 = boost::none;
-        if (output3Itr != doc.MemberEnd())
-        {
-            // multiple <ArgBinary name=output1>
-
-            // multiple <ArgBinary name=output2>
-
-            // multiple <ArgBinary name=output3>
-        }
-
-        CallThreeBinariesReturnValue returnValue{ //initializer list
-
-                                                  output1,
-                                                  output2,
-                                                  output3
-        };
-        promiseItr->second.set_value(returnValue);
+        // Method has multiple return values.
+        auto returnValues = CallThreeBinariesReturnValues::FromRapidJsonObject(doc);
+        promiseItr->second.set_value(returnValues);
     }
 
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeBinaries");
@@ -3886,14 +3223,16 @@ void TestAbleClient::_receiveReadWriteIntegerPropertyUpdate(const std::string& t
     }
     ReadWriteIntegerProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.value = itr->value.GetInt();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -3907,16 +3246,19 @@ void TestAbleClient::_receiveReadWriteIntegerPropertyUpdate(const std::string& t
         for (const auto& cb: _readWriteIntegerPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadWriteIntegerProperty> TestAbleClient::getReadWriteIntegerProperty() const
+boost::optional<int> TestAbleClient::getReadWriteIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteIntegerPropertyMutex);
-    return _readWriteIntegerProperty;
+    if (_readWriteIntegerProperty)
+    {
+        return _readWriteIntegerProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteIntegerPropertyCallback(const std::function<void(int value)>& cb)
@@ -3955,14 +3297,16 @@ void TestAbleClient::_receiveReadOnlyIntegerPropertyUpdate(const std::string& to
     }
     ReadOnlyIntegerProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.value = itr->value.GetInt();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -3976,16 +3320,19 @@ void TestAbleClient::_receiveReadOnlyIntegerPropertyUpdate(const std::string& to
         for (const auto& cb: _readOnlyIntegerPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadOnlyIntegerProperty> TestAbleClient::getReadOnlyIntegerProperty() const
+boost::optional<int> TestAbleClient::getReadOnlyIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readOnlyIntegerPropertyMutex);
-    return _readOnlyIntegerProperty;
+    if (_readOnlyIntegerProperty)
+    {
+        return _readOnlyIntegerProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadOnlyIntegerPropertyCallback(const std::function<void(int value)>& cb)
@@ -4010,14 +3357,16 @@ void TestAbleClient::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
     }
     ReadWriteOptionalIntegerProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = itr->value.GetInt();
-    }
-    else
-    {
-        tempValue = boost::none;
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.value = itr->value.GetInt();
+        }
+        else
+        {
+            tempValue.value = boost::none;
+        }
     }
 
     { // Scope lock
@@ -4031,8 +3380,7 @@ void TestAbleClient::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
         for (const auto& cb: _readWriteOptionalIntegerPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
@@ -4040,7 +3388,11 @@ void TestAbleClient::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
 boost::optional<int> TestAbleClient::getReadWriteOptionalIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyMutex);
-    return _readWriteOptionalIntegerProperty;
+    if (_readWriteOptionalIntegerProperty)
+    {
+        return _readWriteOptionalIntegerProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteOptionalIntegerPropertyCallback(const std::function<void(boost::optional<int> value)>& cb)
@@ -4114,7 +3466,6 @@ void TestAbleClient::_receiveReadWriteTwoIntegersPropertyUpdate(const std::strin
         for (const auto& cb: _readWriteTwoIntegersPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.first, tempValue.second);
         }
     }
@@ -4123,7 +3474,11 @@ void TestAbleClient::_receiveReadWriteTwoIntegersPropertyUpdate(const std::strin
 boost::optional<ReadWriteTwoIntegersProperty> TestAbleClient::getReadWriteTwoIntegersProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoIntegersPropertyMutex);
-    return _readWriteTwoIntegersProperty;
+    if (_readWriteTwoIntegersProperty)
+    {
+        return *_readWriteTwoIntegersProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteTwoIntegersPropertyCallback(const std::function<void(int first, boost::optional<int> second)>& cb)
@@ -4165,14 +3520,16 @@ void TestAbleClient::_receiveReadOnlyStringPropertyUpdate(const std::string& top
     }
     ReadOnlyStringProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-        tempValue = itr->value.GetString();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+            tempValue.value = itr->value.GetString();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -4186,19 +3543,22 @@ void TestAbleClient::_receiveReadOnlyStringPropertyUpdate(const std::string& top
         for (const auto& cb: _readOnlyStringPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadOnlyStringProperty> TestAbleClient::getReadOnlyStringProperty() const
+boost::optional<const std::string&> TestAbleClient::getReadOnlyStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readOnlyStringPropertyMutex);
-    return _readOnlyStringProperty;
+    if (_readOnlyStringProperty)
+    {
+        return _readOnlyStringProperty->value;
+    }
+    return boost::none;
 }
 
-void TestAbleClient::registerReadOnlyStringPropertyCallback(const std::function<void(const std::string& value)>& cb)
+void TestAbleClient::registerReadOnlyStringPropertyCallback(const std::function<void(std::string value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readOnlyStringPropertyCallbacksMutex);
     _readOnlyStringPropertyCallbacks.push_back(cb);
@@ -4220,14 +3580,16 @@ void TestAbleClient::_receiveReadWriteStringPropertyUpdate(const std::string& to
     }
     ReadWriteStringProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-        tempValue = itr->value.GetString();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+            tempValue.value = itr->value.GetString();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -4241,25 +3603,28 @@ void TestAbleClient::_receiveReadWriteStringPropertyUpdate(const std::string& to
         for (const auto& cb: _readWriteStringPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadWriteStringProperty> TestAbleClient::getReadWriteStringProperty() const
+boost::optional<const std::string&> TestAbleClient::getReadWriteStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteStringPropertyMutex);
-    return _readWriteStringProperty;
+    if (_readWriteStringProperty)
+    {
+        return _readWriteStringProperty->value;
+    }
+    return boost::none;
 }
 
-void TestAbleClient::registerReadWriteStringPropertyCallback(const std::function<void(const std::string& value)>& cb)
+void TestAbleClient::registerReadWriteStringPropertyCallback(const std::function<void(std::string value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteStringPropertyCallbacksMutex);
     _readWriteStringPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestAbleClient::updateReadWriteStringProperty(const std::string& value) const
+boost::future<bool> TestAbleClient::updateReadWriteStringProperty(std::string value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4293,14 +3658,16 @@ void TestAbleClient::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
     }
     ReadWriteOptionalStringProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-        tempValue = itr->value.GetString();
-    }
-    else
-    {
-        tempValue = boost::none;
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+            tempValue.value = itr->value.GetString();
+        }
+        else
+        {
+            tempValue.value = boost::none;
+        }
     }
 
     { // Scope lock
@@ -4314,8 +3681,7 @@ void TestAbleClient::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
         for (const auto& cb: _readWriteOptionalStringPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
@@ -4323,7 +3689,11 @@ void TestAbleClient::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
 boost::optional<std::string> TestAbleClient::getReadWriteOptionalStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyMutex);
-    return _readWriteOptionalStringProperty;
+    if (_readWriteOptionalStringProperty)
+    {
+        return _readWriteOptionalStringProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteOptionalStringPropertyCallback(const std::function<void(boost::optional<std::string> value)>& cb)
@@ -4401,7 +3771,6 @@ void TestAbleClient::_receiveReadWriteTwoStringsPropertyUpdate(const std::string
         for (const auto& cb: _readWriteTwoStringsPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.first, tempValue.second);
         }
     }
@@ -4410,16 +3779,20 @@ void TestAbleClient::_receiveReadWriteTwoStringsPropertyUpdate(const std::string
 boost::optional<ReadWriteTwoStringsProperty> TestAbleClient::getReadWriteTwoStringsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyMutex);
-    return _readWriteTwoStringsProperty;
+    if (_readWriteTwoStringsProperty)
+    {
+        return *_readWriteTwoStringsProperty;
+    }
+    return boost::none;
 }
 
-void TestAbleClient::registerReadWriteTwoStringsPropertyCallback(const std::function<void(const std::string& first, boost::optional<std::string> second)>& cb)
+void TestAbleClient::registerReadWriteTwoStringsPropertyCallback(const std::function<void(std::string first, boost::optional<std::string> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyCallbacksMutex);
     _readWriteTwoStringsPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestAbleClient::updateReadWriteTwoStringsProperty(const std::string& first, boost::optional<std::string> second) const
+boost::future<bool> TestAbleClient::updateReadWriteTwoStringsProperty(std::string first, boost::optional<std::string> second) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4460,14 +3833,16 @@ void TestAbleClient::_receiveReadWriteStructPropertyUpdate(const std::string& to
     }
     ReadWriteStructProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsObject())
-    {
-        tempValue = AllTypes::FromRapidJsonObject(itr->value);
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsObject())
+        {
+            tempValue.value = AllTypes::FromRapidJsonObject(itr->value);
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -4481,16 +3856,19 @@ void TestAbleClient::_receiveReadWriteStructPropertyUpdate(const std::string& to
         for (const auto& cb: _readWriteStructPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadWriteStructProperty> TestAbleClient::getReadWriteStructProperty() const
+boost::optional<AllTypes> TestAbleClient::getReadWriteStructProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteStructPropertyMutex);
-    return _readWriteStructProperty;
+    if (_readWriteStructProperty)
+    {
+        return _readWriteStructProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteStructPropertyCallback(const std::function<void(AllTypes value)>& cb)
@@ -4527,14 +3905,16 @@ void TestAbleClient::_receiveReadWriteOptionalStructPropertyUpdate(const std::st
     }
     ReadWriteOptionalStructProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsObject())
-    {
-        tempValue = AllTypes::FromRapidJsonObject(itr->value);
-    }
-    else
-    {
-        tempValue = boost::none;
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsObject())
+        {
+            tempValue.value = AllTypes::FromRapidJsonObject(itr->value);
+        }
+        else
+        {
+            tempValue.value = boost::none;
+        }
     }
 
     { // Scope lock
@@ -4548,25 +3928,28 @@ void TestAbleClient::_receiveReadWriteOptionalStructPropertyUpdate(const std::st
         for (const auto& cb: _readWriteOptionalStructPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-ReadWriteOptionalStructProperty TestAbleClient::getReadWriteOptionalStructProperty() const
+boost::optional<AllTypes> TestAbleClient::getReadWriteOptionalStructProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyMutex);
-    return _readWriteOptionalStructProperty;
+    if (_readWriteOptionalStructProperty)
+    {
+        return _readWriteOptionalStructProperty->value;
+    }
+    return boost::none;
 }
 
-void TestAbleClient::registerReadWriteOptionalStructPropertyCallback(const std::function<void(AllTypes value)>& cb)
+void TestAbleClient::registerReadWriteOptionalStructPropertyCallback(const std::function<void(boost::optional<AllTypes> value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyCallbacksMutex);
     _readWriteOptionalStructPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestAbleClient::updateReadWriteOptionalStructProperty(AllTypes value) const
+boost::future<bool> TestAbleClient::updateReadWriteOptionalStructProperty(boost::optional<AllTypes> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4628,7 +4011,6 @@ void TestAbleClient::_receiveReadWriteTwoStructsPropertyUpdate(const std::string
         for (const auto& cb: _readWriteTwoStructsPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.first, tempValue.second);
         }
     }
@@ -4637,16 +4019,20 @@ void TestAbleClient::_receiveReadWriteTwoStructsPropertyUpdate(const std::string
 boost::optional<ReadWriteTwoStructsProperty> TestAbleClient::getReadWriteTwoStructsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyMutex);
-    return _readWriteTwoStructsProperty;
+    if (_readWriteTwoStructsProperty)
+    {
+        return *_readWriteTwoStructsProperty;
+    }
+    return boost::none;
 }
 
-void TestAbleClient::registerReadWriteTwoStructsPropertyCallback(const std::function<void(AllTypes first, AllTypes second)>& cb)
+void TestAbleClient::registerReadWriteTwoStructsPropertyCallback(const std::function<void(AllTypes first, boost::optional<AllTypes> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyCallbacksMutex);
     _readWriteTwoStructsPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestAbleClient::updateReadWriteTwoStructsProperty(AllTypes first, AllTypes second) const
+boost::future<bool> TestAbleClient::updateReadWriteTwoStructsProperty(AllTypes first, boost::optional<AllTypes> second) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4674,14 +4060,16 @@ void TestAbleClient::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic
     }
     ReadOnlyEnumProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = static_cast<Numbers>(itr->value.GetInt());
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.value = static_cast<Numbers>(itr->value.GetInt());
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -4695,16 +4083,19 @@ void TestAbleClient::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic
         for (const auto& cb: _readOnlyEnumPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadOnlyEnumProperty> TestAbleClient::getReadOnlyEnumProperty() const
+boost::optional<Numbers> TestAbleClient::getReadOnlyEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readOnlyEnumPropertyMutex);
-    return _readOnlyEnumProperty;
+    if (_readOnlyEnumProperty)
+    {
+        return _readOnlyEnumProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadOnlyEnumPropertyCallback(const std::function<void(Numbers value)>& cb)
@@ -4729,14 +4120,16 @@ void TestAbleClient::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
     }
     ReadWriteEnumProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = static_cast<Numbers>(itr->value.GetInt());
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.value = static_cast<Numbers>(itr->value.GetInt());
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -4750,16 +4143,19 @@ void TestAbleClient::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
         for (const auto& cb: _readWriteEnumPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadWriteEnumProperty> TestAbleClient::getReadWriteEnumProperty() const
+boost::optional<Numbers> TestAbleClient::getReadWriteEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteEnumPropertyMutex);
-    return _readWriteEnumProperty;
+    if (_readWriteEnumProperty)
+    {
+        return _readWriteEnumProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteEnumPropertyCallback(const std::function<void(Numbers value)>& cb)
@@ -4798,14 +4194,16 @@ void TestAbleClient::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
     }
     ReadWriteOptionalEnumProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = static_cast<Numbers>(itr->value.GetInt());
-    }
-    else
-    {
-        tempValue = boost::none;
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.value = static_cast<Numbers>(itr->value.GetInt());
+        }
+        else
+        {
+            tempValue.value = boost::none;
+        }
     }
 
     { // Scope lock
@@ -4819,8 +4217,7 @@ void TestAbleClient::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
         for (const auto& cb: _readWriteOptionalEnumPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
@@ -4828,7 +4225,11 @@ void TestAbleClient::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
 boost::optional<Numbers> TestAbleClient::getReadWriteOptionalEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyMutex);
-    return _readWriteOptionalEnumProperty;
+    if (_readWriteOptionalEnumProperty)
+    {
+        return _readWriteOptionalEnumProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteOptionalEnumPropertyCallback(const std::function<void(boost::optional<Numbers> value)>& cb)
@@ -4901,7 +4302,6 @@ void TestAbleClient::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& 
         for (const auto& cb: _readWriteTwoEnumsPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.first, tempValue.second);
         }
     }
@@ -4910,7 +4310,11 @@ void TestAbleClient::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& 
 boost::optional<ReadWriteTwoEnumsProperty> TestAbleClient::getReadWriteTwoEnumsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoEnumsPropertyMutex);
-    return _readWriteTwoEnumsProperty;
+    if (_readWriteTwoEnumsProperty)
+    {
+        return *_readWriteTwoEnumsProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteTwoEnumsPropertyCallback(const std::function<void(Numbers first, boost::optional<Numbers> second)>& cb)
@@ -4951,13 +4355,17 @@ void TestAbleClient::_receiveReadWriteDatetimePropertyUpdate(const std::string& 
     }
     ReadWriteDatetimeProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+            auto tempValueIsoString = itr->value.GetString();
+            tempValue.value = parseIsoTimestamp(tempValueIsoString);
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -4971,16 +4379,19 @@ void TestAbleClient::_receiveReadWriteDatetimePropertyUpdate(const std::string& 
         for (const auto& cb: _readWriteDatetimePropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadWriteDatetimeProperty> TestAbleClient::getReadWriteDatetimeProperty() const
+boost::optional<std::chrono::time_point<std::chrono::system_clock>> TestAbleClient::getReadWriteDatetimeProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteDatetimePropertyMutex);
-    return _readWriteDatetimeProperty;
+    if (_readWriteDatetimeProperty)
+    {
+        return _readWriteDatetimeProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteDatetimePropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> value)>& cb)
@@ -5024,13 +4435,17 @@ void TestAbleClient::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
     }
     ReadWriteOptionalDatetimeProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        tempValue = boost::none;
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+            auto tempValueIsoString = itr->value.GetString();
+            tempValue.value = parseIsoTimestamp(tempValueIsoString);
+        }
+        else
+        {
+            tempValue.value = boost::none;
+        }
     }
 
     { // Scope lock
@@ -5044,8 +4459,7 @@ void TestAbleClient::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
         for (const auto& cb: _readWriteOptionalDatetimePropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
@@ -5053,7 +4467,11 @@ void TestAbleClient::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
 boost::optional<std::chrono::time_point<std::chrono::system_clock>> TestAbleClient::getReadWriteOptionalDatetimeProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyMutex);
-    return _readWriteOptionalDatetimeProperty;
+    if (_readWriteOptionalDatetimeProperty)
+    {
+        return _readWriteOptionalDatetimeProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteOptionalDatetimePropertyCallback(const std::function<void(boost::optional<std::chrono::time_point<std::chrono::system_clock>> value)>& cb)
@@ -5101,6 +4519,8 @@ void TestAbleClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("first");
         if (itr != doc.MemberEnd() && itr->value.IsString())
         {
+            auto tempFirstIsoString = itr->value.GetString();
+            tempValue.first = parseIsoTimestamp(tempFirstIsoString);
         }
         else
         {
@@ -5111,6 +4531,8 @@ void TestAbleClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("second");
         if (itr != doc.MemberEnd() && itr->value.IsString())
         {
+            auto tempSecondIsoString = itr->value.GetString();
+            tempValue.second = parseIsoTimestamp(tempSecondIsoString);
         }
         else
         {
@@ -5129,7 +4551,6 @@ void TestAbleClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
         for (const auto& cb: _readWriteTwoDatetimesPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.first, tempValue.second);
         }
     }
@@ -5138,7 +4559,11 @@ void TestAbleClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
 boost::optional<ReadWriteTwoDatetimesProperty> TestAbleClient::getReadWriteTwoDatetimesProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDatetimesPropertyMutex);
-    return _readWriteTwoDatetimesProperty;
+    if (_readWriteTwoDatetimesProperty)
+    {
+        return *_readWriteTwoDatetimesProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteTwoDatetimesPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> first, boost::optional<std::chrono::time_point<std::chrono::system_clock>> second)>& cb)
@@ -5189,13 +4614,17 @@ void TestAbleClient::_receiveReadWriteDurationPropertyUpdate(const std::string& 
     }
     ReadWriteDurationProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+            auto tempValueIsoString = itr->value.GetString();
+            tempValue.value = parseIsoDuration(tempValueIsoString);
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -5209,16 +4638,19 @@ void TestAbleClient::_receiveReadWriteDurationPropertyUpdate(const std::string& 
         for (const auto& cb: _readWriteDurationPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadWriteDurationProperty> TestAbleClient::getReadWriteDurationProperty() const
+boost::optional<std::chrono::duration<double>> TestAbleClient::getReadWriteDurationProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteDurationPropertyMutex);
-    return _readWriteDurationProperty;
+    if (_readWriteDurationProperty)
+    {
+        return _readWriteDurationProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteDurationPropertyCallback(const std::function<void(std::chrono::duration<double> value)>& cb)
@@ -5262,13 +4694,17 @@ void TestAbleClient::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
     }
     ReadWriteOptionalDurationProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        tempValue = boost::none;
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+            auto tempValueIsoString = itr->value.GetString();
+            tempValue.value = parseIsoDuration(tempValueIsoString);
+        }
+        else
+        {
+            tempValue.value = boost::none;
+        }
     }
 
     { // Scope lock
@@ -5282,8 +4718,7 @@ void TestAbleClient::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
         for (const auto& cb: _readWriteOptionalDurationPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
@@ -5291,7 +4726,11 @@ void TestAbleClient::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
 boost::optional<std::chrono::duration<double>> TestAbleClient::getReadWriteOptionalDurationProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyMutex);
-    return _readWriteOptionalDurationProperty;
+    if (_readWriteOptionalDurationProperty)
+    {
+        return _readWriteOptionalDurationProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteOptionalDurationPropertyCallback(const std::function<void(boost::optional<std::chrono::duration<double>> value)>& cb)
@@ -5339,6 +4778,8 @@ void TestAbleClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("first");
         if (itr != doc.MemberEnd() && itr->value.IsString())
         {
+            auto tempFirstIsoString = itr->value.GetString();
+            tempValue.first = parseIsoDuration(tempFirstIsoString);
         }
         else
         {
@@ -5349,6 +4790,8 @@ void TestAbleClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("second");
         if (itr != doc.MemberEnd() && itr->value.IsString())
         {
+            auto tempSecondIsoString = itr->value.GetString();
+            tempValue.second = parseIsoDuration(tempSecondIsoString);
         }
         else
         {
@@ -5367,7 +4810,6 @@ void TestAbleClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
         for (const auto& cb: _readWriteTwoDurationsPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.first, tempValue.second);
         }
     }
@@ -5376,7 +4818,11 @@ void TestAbleClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
 boost::optional<ReadWriteTwoDurationsProperty> TestAbleClient::getReadWriteTwoDurationsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDurationsPropertyMutex);
-    return _readWriteTwoDurationsProperty;
+    if (_readWriteTwoDurationsProperty)
+    {
+        return *_readWriteTwoDurationsProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteTwoDurationsPropertyCallback(const std::function<void(std::chrono::duration<double> first, boost::optional<std::chrono::duration<double>> second)>& cb)
@@ -5427,13 +4873,17 @@ void TestAbleClient::_receiveReadWriteBinaryPropertyUpdate(const std::string& to
     }
     ReadWriteBinaryProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+            auto tempValueB64String = itr->value.GetString();
+            tempValue.value = base64Decode(tempValueB64String);
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -5447,16 +4897,19 @@ void TestAbleClient::_receiveReadWriteBinaryPropertyUpdate(const std::string& to
         for (const auto& cb: _readWriteBinaryPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
 
-boost::optional<ReadWriteBinaryProperty> TestAbleClient::getReadWriteBinaryProperty() const
+boost::optional<std::vector<uint8_t>> TestAbleClient::getReadWriteBinaryProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteBinaryPropertyMutex);
-    return _readWriteBinaryProperty;
+    if (_readWriteBinaryProperty)
+    {
+        return _readWriteBinaryProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteBinaryPropertyCallback(const std::function<void(std::vector<uint8_t> value)>& cb)
@@ -5500,13 +4953,17 @@ void TestAbleClient::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
     }
     ReadWriteOptionalBinaryProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
-    if (itr != doc.MemberEnd() && itr->value.IsString())
-    {
-    }
-    else
-    {
-        tempValue = boost::none;
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
+        if (itr != doc.MemberEnd() && itr->value.IsString())
+        {
+            auto tempValueB64String = itr->value.GetString();
+            tempValue.value = base64Decode(tempValueB64String);
+        }
+        else
+        {
+            tempValue.value = boost::none;
+        }
     }
 
     { // Scope lock
@@ -5520,8 +4977,7 @@ void TestAbleClient::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
         for (const auto& cb: _readWriteOptionalBinaryPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.value);
         }
     }
 }
@@ -5529,7 +4985,11 @@ void TestAbleClient::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
 boost::optional<std::vector<uint8_t>> TestAbleClient::getReadWriteOptionalBinaryProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyMutex);
-    return _readWriteOptionalBinaryProperty;
+    if (_readWriteOptionalBinaryProperty)
+    {
+        return _readWriteOptionalBinaryProperty->value;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteOptionalBinaryPropertyCallback(const std::function<void(boost::optional<std::vector<uint8_t>> value)>& cb)
@@ -5577,6 +5037,8 @@ void TestAbleClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("first");
         if (itr != doc.MemberEnd() && itr->value.IsString())
         {
+            auto tempFirstB64String = itr->value.GetString();
+            tempValue.first = base64Decode(tempFirstB64String);
         }
         else
         {
@@ -5587,6 +5049,8 @@ void TestAbleClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("second");
         if (itr != doc.MemberEnd() && itr->value.IsString())
         {
+            auto tempSecondB64String = itr->value.GetString();
+            tempValue.second = base64Decode(tempSecondB64String);
         }
         else
         {
@@ -5605,7 +5069,6 @@ void TestAbleClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
         for (const auto& cb: _readWriteTwoBinariesPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.first, tempValue.second);
         }
     }
@@ -5614,7 +5077,11 @@ void TestAbleClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
 boost::optional<ReadWriteTwoBinariesProperty> TestAbleClient::getReadWriteTwoBinariesProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoBinariesPropertyMutex);
-    return _readWriteTwoBinariesProperty;
+    if (_readWriteTwoBinariesProperty)
+    {
+        return *_readWriteTwoBinariesProperty;
+    }
+    return boost::none;
 }
 
 void TestAbleClient::registerReadWriteTwoBinariesPropertyCallback(const std::function<void(std::vector<uint8_t> first, boost::optional<std::vector<uint8_t>> second)>& cb)

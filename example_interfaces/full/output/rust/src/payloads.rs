@@ -250,7 +250,7 @@ pub struct AddNumbersRequestObject {
 
 
 #[derive(Debug, Clone, Serialize)]
-pub struct AddNumbersReturnValue {
+pub struct AddNumbersReturnValues {
     pub sum: i32,
 }
 
@@ -266,7 +266,7 @@ pub struct DoSomethingRequestObject {
 
 #[derive(Debug, Clone, Serialize)]
 /// Empty (no parameters) return structure for the `doSomething` method.
-pub struct DoSomethingReturnValue {
+pub struct DoSomethingReturnValues {
 }
 
 // Structures for `echo` method
@@ -280,7 +280,7 @@ pub struct EchoRequestObject {
 
 
 #[derive(Debug, Clone, Serialize)]
-pub struct EchoReturnValue {
+pub struct EchoReturnValues {
     pub message: String,
 }
 
@@ -297,7 +297,7 @@ pub struct WhatTimeIsItRequestObject {
 
 
 #[derive(Debug, Clone, Serialize)]
-pub struct WhatTimeIsItReturnValue {
+pub struct WhatTimeIsItReturnValues {
     #[serde(with = "datetime_iso_format")]
     pub timestamp: chrono::DateTime<chrono::Utc>,
 }
@@ -319,7 +319,7 @@ pub struct SetTheTimeRequestObject {
 
 #[derive(Debug, Clone, Serialize)]
 /// Empty (no parameters) return structure for the `set_the_time` method.
-pub struct SetTheTimeReturnValue {
+pub struct SetTheTimeReturnValues {
 }
 
 // Structures for `forward_time` method
@@ -335,7 +335,7 @@ pub struct ForwardTimeRequestObject {
 
 
 #[derive(Debug, Clone, Serialize)]
-pub struct ForwardTimeReturnValue {
+pub struct ForwardTimeReturnValues {
     #[serde(with = "datetime_iso_format")]
     pub new_time: chrono::DateTime<chrono::Utc>,
 }
@@ -353,7 +353,7 @@ pub struct HowOffIsTheClockRequestObject {
 
 
 #[derive(Debug, Clone, Serialize)]
-pub struct HowOffIsTheClockReturnValue {
+pub struct HowOffIsTheClockReturnValues {
     #[serde(with = "duration_iso_format")]
     pub difference: chrono::Duration,
 }

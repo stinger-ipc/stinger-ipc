@@ -31,7 +31,7 @@ ThreeIntegersSignalCallbackType = Callable[[int, int, Optional[int]], None]
 SingleStringSignalCallbackType = Callable[[str], None]
 SingleOptionalStringSignalCallbackType = Callable[[Optional[str]], None]
 ThreeStringsSignalCallbackType = Callable[[str, str, Optional[str]], None]
-SingleEnumSignalCallbackType = Callable[[Optional[stinger_types.Numbers]], None]
+SingleEnumSignalCallbackType = Callable[[stinger_types.Numbers], None]
 SingleOptionalEnumSignalCallbackType = Callable[[Optional[stinger_types.Numbers]], None]
 ThreeEnumsSignalCallbackType = Callable[[stinger_types.Numbers, stinger_types.Numbers, Optional[stinger_types.Numbers]], None]
 SingleStructSignalCallbackType = Callable[[stinger_types.AllTypes], None]
@@ -49,25 +49,25 @@ ThreeBinariesSignalCallbackType = Callable[[bytes, bytes, bytes], None]
 CallWithNothingMethodResponseCallbackType = Callable[[], None]
 CallOneIntegerMethodResponseCallbackType = Callable[[int], None]
 CallOptionalIntegerMethodResponseCallbackType = Callable[[Optional[int]], None]
-CallThreeIntegersMethodResponseCallbackType = Callable[[stinger_types.CallThreeIntegersReturnValue], None]
+CallThreeIntegersMethodResponseCallbackType = Callable[[stinger_types.CallThreeIntegersReturnValues], None]
 CallOneStringMethodResponseCallbackType = Callable[[str], None]
 CallOptionalStringMethodResponseCallbackType = Callable[[Optional[str]], None]
-CallThreeStringsMethodResponseCallbackType = Callable[[stinger_types.CallThreeStringsReturnValue], None]
+CallThreeStringsMethodResponseCallbackType = Callable[[stinger_types.CallThreeStringsReturnValues], None]
 CallOneEnumMethodResponseCallbackType = Callable[[stinger_types.Numbers], None]
 CallOptionalEnumMethodResponseCallbackType = Callable[[Optional[stinger_types.Numbers]], None]
-CallThreeEnumsMethodResponseCallbackType = Callable[[stinger_types.CallThreeEnumsReturnValue], None]
+CallThreeEnumsMethodResponseCallbackType = Callable[[stinger_types.CallThreeEnumsReturnValues], None]
 CallOneStructMethodResponseCallbackType = Callable[[stinger_types.AllTypes], None]
 CallOptionalStructMethodResponseCallbackType = Callable[[stinger_types.AllTypes], None]
-CallThreeStructsMethodResponseCallbackType = Callable[[stinger_types.CallThreeStructsReturnValue], None]
+CallThreeStructsMethodResponseCallbackType = Callable[[stinger_types.CallThreeStructsReturnValues], None]
 CallOneDateTimeMethodResponseCallbackType = Callable[[datetime], None]
 CallOptionalDateTimeMethodResponseCallbackType = Callable[[Optional[datetime]], None]
-CallThreeDateTimesMethodResponseCallbackType = Callable[[stinger_types.CallThreeDateTimesReturnValue], None]
+CallThreeDateTimesMethodResponseCallbackType = Callable[[stinger_types.CallThreeDateTimesReturnValues], None]
 CallOneDurationMethodResponseCallbackType = Callable[[timedelta], None]
 CallOptionalDurationMethodResponseCallbackType = Callable[[Optional[timedelta]], None]
-CallThreeDurationsMethodResponseCallbackType = Callable[[stinger_types.CallThreeDurationsReturnValue], None]
+CallThreeDurationsMethodResponseCallbackType = Callable[[stinger_types.CallThreeDurationsReturnValues], None]
 CallOneBinaryMethodResponseCallbackType = Callable[[bytes], None]
 CallOptionalBinaryMethodResponseCallbackType = Callable[[bytes], None]
-CallThreeBinariesMethodResponseCallbackType = Callable[[stinger_types.CallThreeBinariesReturnValue], None]
+CallThreeBinariesMethodResponseCallbackType = Callable[[stinger_types.CallThreeBinariesReturnValues], None]
 
 ReadWriteIntegerPropertyUpdatedCallbackType = Callable[[int], None]
 ReadOnlyIntegerPropertyUpdatedCallbackType = Callable[[int], None]
@@ -2066,7 +2066,7 @@ class TestAbleClient:
 
             return_args["output3"] = int(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeIntegersReturnValue(**return_args)
+            return_obj = stinger_types.CallThreeIntegersReturnValues(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2155,7 +2155,7 @@ class TestAbleClient:
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
 
-    def call_three_strings(self, input1: str, input2: str, input3: Optional[str]) -> futures.Future:
+    def call_three_strings(self, input1: str, input2: Optional[str], input3: str) -> futures.Future:
         """Calling this initiates a `callThreeStrings` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2197,7 +2197,7 @@ class TestAbleClient:
 
             return_args["output3"] = str(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeStringsReturnValue(**return_args)
+            return_obj = stinger_types.CallThreeStringsReturnValues(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2328,7 +2328,7 @@ class TestAbleClient:
 
             return_args["output3"] = stinger_types.Numbers(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeEnumsReturnValue(**return_args)
+            return_obj = stinger_types.CallThreeEnumsReturnValues(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2365,11 +2365,11 @@ class TestAbleClient:
             return_args = self._filter_for_args(
                 response_json,
                 [
-                    "bool_",
-                    "int_",
-                    "number",
-                    "str",
-                    "enum_",
+                    "the_bool",
+                    "the_int",
+                    "the_number",
+                    "the_str",
+                    "the_enum",
                     "date_and_time",
                     "time_duration",
                     "data",
@@ -2382,15 +2382,15 @@ class TestAbleClient:
                 ],
             )
 
-            return_args["bool_"] = bool(return_args["bool_"])
+            return_args["the_bool"] = bool(return_args["the_bool"])
 
-            return_args["int_"] = int(return_args["int_"])
+            return_args["the_int"] = int(return_args["the_int"])
 
-            return_args["number"] = float(return_args["number"])
+            return_args["the_number"] = float(return_args["the_number"])
 
-            return_args["str"] = str(return_args["str"])
+            return_args["the_str"] = str(return_args["the_str"])
 
-            return_args["enum_"] = stinger_types.Numbers(return_args["enum_"])
+            return_args["the_enum"] = stinger_types.Numbers(return_args["the_enum"])
 
             return_args["date_and_time"] = datetime.fromisoformat(return_args["date_and_time"])
 
@@ -2447,11 +2447,11 @@ class TestAbleClient:
             return_args = self._filter_for_args(
                 response_json,
                 [
-                    "bool_",
-                    "int_",
-                    "number",
-                    "str",
-                    "enum_",
+                    "the_bool",
+                    "the_int",
+                    "the_number",
+                    "the_str",
+                    "the_enum",
                     "date_and_time",
                     "time_duration",
                     "data",
@@ -2464,15 +2464,15 @@ class TestAbleClient:
                 ],
             )
 
-            return_args["bool_"] = bool(return_args["bool_"])
+            return_args["the_bool"] = bool(return_args["the_bool"])
 
-            return_args["int_"] = int(return_args["int_"])
+            return_args["the_int"] = int(return_args["the_int"])
 
-            return_args["number"] = float(return_args["number"])
+            return_args["the_number"] = float(return_args["the_number"])
 
-            return_args["str"] = str(return_args["str"])
+            return_args["the_str"] = str(return_args["the_str"])
 
-            return_args["enum_"] = stinger_types.Numbers(return_args["enum_"])
+            return_args["the_enum"] = stinger_types.Numbers(return_args["the_enum"])
 
             return_args["date_and_time"] = datetime.fromisoformat(return_args["date_and_time"])
 
@@ -2543,7 +2543,7 @@ class TestAbleClient:
 
             return_args["output3"] = stinger_types.AllTypes(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeStructsReturnValue(**return_args)
+            return_obj = stinger_types.CallThreeStructsReturnValues(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2674,7 +2674,7 @@ class TestAbleClient:
 
             return_args["output3"] = datetime.fromisoformat(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeDateTimesReturnValue(**return_args)
+            return_obj = stinger_types.CallThreeDateTimesReturnValues(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2805,7 +2805,7 @@ class TestAbleClient:
 
             return_args["output3"] = parse_duration(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeDurationsReturnValue(**return_args)
+            return_obj = stinger_types.CallThreeDurationsReturnValues(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2936,7 +2936,7 @@ class TestAbleClient:
 
             return_args["output3"] = base64.b64decode(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeBinariesReturnValue(**return_args)
+            return_obj = stinger_types.CallThreeBinariesReturnValues(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -3475,9 +3475,9 @@ if __name__ == "__main__":
         print(f"Got a 'threeStrings' signal: first={ first } second={ second } third={ third } ")
 
     @client_builder.receive_single_enum
-    def print_singleEnum_receipt(value: Optional[stinger_types.Numbers]):
+    def print_singleEnum_receipt(value: stinger_types.Numbers):
         """
-        @param value Optional[stinger_types.Numbers] The enum value.
+        @param value stinger_types.Numbers The enum value.
         """
         print(f"Got a 'singleEnum' signal: value={ value } ")
 
@@ -3790,35 +3790,11 @@ if __name__ == "__main__":
     print("Making call to 'call_one_struct'")
     future_resp = client.call_one_struct(
         input1=stinger_types.AllTypes(
-            bool_=True,
-            int_=42,
-            number=3.14,
-            str="apples",
-            enum_=stinger_types.Numbers.ONE,
-            date_and_time=datetime.now(),
-            time_duration=timedelta(seconds=3536),
-            data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
-        )
-    )
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_one_struct' call")
-
-    print("Making call to 'call_optional_struct'")
-    future_resp = client.call_optional_struct(
-        input1=stinger_types.AllTypes(
-            bool_=True,
-            int_=42,
-            number=3.14,
-            str="apples",
-            enum_=stinger_types.Numbers.ONE,
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=stinger_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
@@ -3833,48 +3809,72 @@ if __name__ == "__main__":
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'call_one_struct' call")
+
+    print("Making call to 'call_optional_struct'")
+    future_resp = client.call_optional_struct(
+        input1=stinger_types.AllTypes(
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=stinger_types.Numbers.ONE,
+            date_and_time=datetime.now(),
+            time_duration=timedelta(seconds=3536),
+            data=b"example binary data",
+            OptionalInteger=42,
+            OptionalString="apples",
+            OptionalEnum=stinger_types.Numbers.ONE,
+            OptionalDateTime=datetime.now(),
+            OptionalDuration=None,
+            OptionalBinary=b"example binary data",
+        )
+    )
+    try:
+        print(f"RESULT:  {future_resp.result(5)}")
+    except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_struct' call")
 
     print("Making call to 'call_three_structs'")
     future_resp = client.call_three_structs(
         input1=stinger_types.AllTypes(
-            bool_=True,
-            int_=42,
-            number=3.14,
-            str="apples",
-            enum_=stinger_types.Numbers.ONE,
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=stinger_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             OptionalInteger=42,
             OptionalString="apples",
             OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
+            OptionalDateTime=None,
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         ),
         input2=stinger_types.AllTypes(
-            bool_=True,
-            int_=42,
-            number=3.14,
-            str="apples",
-            enum_=stinger_types.Numbers.ONE,
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=stinger_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             OptionalInteger=42,
             OptionalString="apples",
             OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
+            OptionalDateTime=None,
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         ),
         input3=stinger_types.AllTypes(
-            bool_=True,
-            int_=42,
-            number=3.14,
-            str="apples",
-            enum_=stinger_types.Numbers.ONE,
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=stinger_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
@@ -3899,14 +3899,14 @@ if __name__ == "__main__":
         print(f"Timed out waiting for response to 'call_one_date_time' call")
 
     print("Making call to 'call_optional_date_time'")
-    future_resp = client.call_optional_date_time(input1=datetime.now())
+    future_resp = client.call_optional_date_time(input1=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_date_time' call")
 
     print("Making call to 'call_three_date_times'")
-    future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=datetime.now())
+    future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:

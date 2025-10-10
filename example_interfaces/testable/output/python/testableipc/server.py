@@ -593,14 +593,14 @@ class TestAbleServer:
         )
         self._conn.publish("testAble/{}/signal/threeStrings".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
 
-    def emit_single_enum(self, value: Optional[stinger_types.Numbers]):
+    def emit_single_enum(self, value: stinger_types.Numbers):
         """Server application code should call this method to emit the 'singleEnum' signal.
 
         SingleEnumSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
 
         payload = SingleEnumSignalPayload(
-            value=value if value is not None else None,
+            value=value,
         )
         self._conn.publish("testAble/{}/signal/singleEnum".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
 
@@ -878,7 +878,7 @@ class TestAbleServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_call_three_integers(self, handler: Callable[[int, int, Optional[int]], stinger_types.CallThreeIntegersReturnValue]):
+    def handle_call_three_integers(self, handler: Callable[[int, int, Optional[int]], stinger_types.CallThreeIntegersReturnValues]):
         """This is a decorator to decorate a method that will handle the 'callThreeIntegers' method calls."""
         if self._method_call_three_integers.callback is None and handler is not None:
             self._method_call_three_integers.callback = handler
@@ -992,7 +992,7 @@ class TestAbleServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_call_three_strings(self, handler: Callable[[str, str, Optional[str]], stinger_types.CallThreeStringsReturnValue]):
+    def handle_call_three_strings(self, handler: Callable[[str, Optional[str], str], stinger_types.CallThreeStringsReturnValues]):
         """This is a decorator to decorate a method that will handle the 'callThreeStrings' method calls."""
         if self._method_call_three_strings.callback is None and handler is not None:
             self._method_call_three_strings.callback = handler
@@ -1106,7 +1106,7 @@ class TestAbleServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_call_three_enums(self, handler: Callable[[stinger_types.Numbers, stinger_types.Numbers, Optional[stinger_types.Numbers]], stinger_types.CallThreeEnumsReturnValue]):
+    def handle_call_three_enums(self, handler: Callable[[stinger_types.Numbers, stinger_types.Numbers, Optional[stinger_types.Numbers]], stinger_types.CallThreeEnumsReturnValues]):
         """This is a decorator to decorate a method that will handle the 'callThreeEnums' method calls."""
         if self._method_call_three_enums.callback is None and handler is not None:
             self._method_call_three_enums.callback = handler
@@ -1222,7 +1222,7 @@ class TestAbleServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_call_three_structs(self, handler: Callable[[stinger_types.AllTypes, stinger_types.AllTypes, stinger_types.AllTypes], stinger_types.CallThreeStructsReturnValue]):
+    def handle_call_three_structs(self, handler: Callable[[stinger_types.AllTypes, stinger_types.AllTypes, stinger_types.AllTypes], stinger_types.CallThreeStructsReturnValues]):
         """This is a decorator to decorate a method that will handle the 'callThreeStructs' method calls."""
         if self._method_call_three_structs.callback is None and handler is not None:
             self._method_call_three_structs.callback = handler
@@ -1336,7 +1336,7 @@ class TestAbleServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_call_three_date_times(self, handler: Callable[[datetime, datetime, Optional[datetime]], stinger_types.CallThreeDateTimesReturnValue]):
+    def handle_call_three_date_times(self, handler: Callable[[datetime, datetime, Optional[datetime]], stinger_types.CallThreeDateTimesReturnValues]):
         """This is a decorator to decorate a method that will handle the 'callThreeDateTimes' method calls."""
         if self._method_call_three_date_times.callback is None and handler is not None:
             self._method_call_three_date_times.callback = handler
@@ -1450,7 +1450,7 @@ class TestAbleServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_call_three_durations(self, handler: Callable[[timedelta, timedelta, Optional[timedelta]], stinger_types.CallThreeDurationsReturnValue]):
+    def handle_call_three_durations(self, handler: Callable[[timedelta, timedelta, Optional[timedelta]], stinger_types.CallThreeDurationsReturnValues]):
         """This is a decorator to decorate a method that will handle the 'callThreeDurations' method calls."""
         if self._method_call_three_durations.callback is None and handler is not None:
             self._method_call_three_durations.callback = handler
@@ -1570,7 +1570,7 @@ class TestAbleServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_call_three_binaries(self, handler: Callable[[bytes, bytes, bytes], stinger_types.CallThreeBinariesReturnValue]):
+    def handle_call_three_binaries(self, handler: Callable[[bytes, bytes, bytes], stinger_types.CallThreeBinariesReturnValues]):
         """This is a decorator to decorate a method that will handle the 'callThreeBinaries' method calls."""
         if self._method_call_three_binaries.callback is None and handler is not None:
             self._method_call_three_binaries.callback = handler
@@ -2544,25 +2544,25 @@ class TestAbleServerBuilder:
         self._call_with_nothing_method_handler: Optional[Callable[[None], None]] = None
         self._call_one_integer_method_handler: Optional[Callable[[int], int]] = None
         self._call_optional_integer_method_handler: Optional[Callable[[Optional[int]], Optional[int]]] = None
-        self._call_three_integers_method_handler: Optional[Callable[[int, int, Optional[int]], stinger_types.CallThreeIntegersReturnValue]] = None
+        self._call_three_integers_method_handler: Optional[Callable[[int, int, Optional[int]], stinger_types.CallThreeIntegersReturnValues]] = None
         self._call_one_string_method_handler: Optional[Callable[[str], str]] = None
         self._call_optional_string_method_handler: Optional[Callable[[Optional[str]], Optional[str]]] = None
-        self._call_three_strings_method_handler: Optional[Callable[[str, str, Optional[str]], stinger_types.CallThreeStringsReturnValue]] = None
+        self._call_three_strings_method_handler: Optional[Callable[[str, Optional[str], str], stinger_types.CallThreeStringsReturnValues]] = None
         self._call_one_enum_method_handler: Optional[Callable[[stinger_types.Numbers], stinger_types.Numbers]] = None
         self._call_optional_enum_method_handler: Optional[Callable[[Optional[stinger_types.Numbers]], Optional[stinger_types.Numbers]]] = None
-        self._call_three_enums_method_handler: Optional[Callable[[stinger_types.Numbers, stinger_types.Numbers, Optional[stinger_types.Numbers]], stinger_types.CallThreeEnumsReturnValue]] = None
+        self._call_three_enums_method_handler: Optional[Callable[[stinger_types.Numbers, stinger_types.Numbers, Optional[stinger_types.Numbers]], stinger_types.CallThreeEnumsReturnValues]] = None
         self._call_one_struct_method_handler: Optional[Callable[[stinger_types.AllTypes], stinger_types.AllTypes]] = None
         self._call_optional_struct_method_handler: Optional[Callable[[stinger_types.AllTypes], stinger_types.AllTypes]] = None
-        self._call_three_structs_method_handler: Optional[Callable[[stinger_types.AllTypes, stinger_types.AllTypes, stinger_types.AllTypes], stinger_types.CallThreeStructsReturnValue]] = None
+        self._call_three_structs_method_handler: Optional[Callable[[stinger_types.AllTypes, stinger_types.AllTypes, stinger_types.AllTypes], stinger_types.CallThreeStructsReturnValues]] = None
         self._call_one_date_time_method_handler: Optional[Callable[[datetime], datetime]] = None
         self._call_optional_date_time_method_handler: Optional[Callable[[Optional[datetime]], Optional[datetime]]] = None
-        self._call_three_date_times_method_handler: Optional[Callable[[datetime, datetime, Optional[datetime]], stinger_types.CallThreeDateTimesReturnValue]] = None
+        self._call_three_date_times_method_handler: Optional[Callable[[datetime, datetime, Optional[datetime]], stinger_types.CallThreeDateTimesReturnValues]] = None
         self._call_one_duration_method_handler: Optional[Callable[[timedelta], timedelta]] = None
         self._call_optional_duration_method_handler: Optional[Callable[[Optional[timedelta]], Optional[timedelta]]] = None
-        self._call_three_durations_method_handler: Optional[Callable[[timedelta, timedelta, Optional[timedelta]], stinger_types.CallThreeDurationsReturnValue]] = None
+        self._call_three_durations_method_handler: Optional[Callable[[timedelta, timedelta, Optional[timedelta]], stinger_types.CallThreeDurationsReturnValues]] = None
         self._call_one_binary_method_handler: Optional[Callable[[bytes], bytes]] = None
         self._call_optional_binary_method_handler: Optional[Callable[[bytes], bytes]] = None
-        self._call_three_binaries_method_handler: Optional[Callable[[bytes, bytes, bytes], stinger_types.CallThreeBinariesReturnValue]] = None
+        self._call_three_binaries_method_handler: Optional[Callable[[bytes, bytes, bytes], stinger_types.CallThreeBinariesReturnValues]] = None
 
         self._read_write_integer_property_callbacks: List[Callable[[int], None]] = []
         self._read_only_integer_property_callbacks: List[Callable[[int], None]] = []
@@ -2607,7 +2607,7 @@ class TestAbleServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_call_three_integers(self, handler: Callable[[int, int, Optional[int]], stinger_types.CallThreeIntegersReturnValue]):
+    def handle_call_three_integers(self, handler: Callable[[int, int, Optional[int]], stinger_types.CallThreeIntegersReturnValues]):
         if self._call_three_integers_method_handler is None and handler is not None:
             self._call_three_integers_method_handler = handler
         else:
@@ -2625,7 +2625,7 @@ class TestAbleServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_call_three_strings(self, handler: Callable[[str, str, Optional[str]], stinger_types.CallThreeStringsReturnValue]):
+    def handle_call_three_strings(self, handler: Callable[[str, Optional[str], str], stinger_types.CallThreeStringsReturnValues]):
         if self._call_three_strings_method_handler is None and handler is not None:
             self._call_three_strings_method_handler = handler
         else:
@@ -2643,7 +2643,7 @@ class TestAbleServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_call_three_enums(self, handler: Callable[[stinger_types.Numbers, stinger_types.Numbers, Optional[stinger_types.Numbers]], stinger_types.CallThreeEnumsReturnValue]):
+    def handle_call_three_enums(self, handler: Callable[[stinger_types.Numbers, stinger_types.Numbers, Optional[stinger_types.Numbers]], stinger_types.CallThreeEnumsReturnValues]):
         if self._call_three_enums_method_handler is None and handler is not None:
             self._call_three_enums_method_handler = handler
         else:
@@ -2661,7 +2661,7 @@ class TestAbleServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_call_three_structs(self, handler: Callable[[stinger_types.AllTypes, stinger_types.AllTypes, stinger_types.AllTypes], stinger_types.CallThreeStructsReturnValue]):
+    def handle_call_three_structs(self, handler: Callable[[stinger_types.AllTypes, stinger_types.AllTypes, stinger_types.AllTypes], stinger_types.CallThreeStructsReturnValues]):
         if self._call_three_structs_method_handler is None and handler is not None:
             self._call_three_structs_method_handler = handler
         else:
@@ -2679,7 +2679,7 @@ class TestAbleServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_call_three_date_times(self, handler: Callable[[datetime, datetime, Optional[datetime]], stinger_types.CallThreeDateTimesReturnValue]):
+    def handle_call_three_date_times(self, handler: Callable[[datetime, datetime, Optional[datetime]], stinger_types.CallThreeDateTimesReturnValues]):
         if self._call_three_date_times_method_handler is None and handler is not None:
             self._call_three_date_times_method_handler = handler
         else:
@@ -2697,7 +2697,7 @@ class TestAbleServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_call_three_durations(self, handler: Callable[[timedelta, timedelta, Optional[timedelta]], stinger_types.CallThreeDurationsReturnValue]):
+    def handle_call_three_durations(self, handler: Callable[[timedelta, timedelta, Optional[timedelta]], stinger_types.CallThreeDurationsReturnValues]):
         if self._call_three_durations_method_handler is None and handler is not None:
             self._call_three_durations_method_handler = handler
         else:
@@ -2715,7 +2715,7 @@ class TestAbleServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_call_three_binaries(self, handler: Callable[[bytes, bytes, bytes], stinger_types.CallThreeBinariesReturnValue]):
+    def handle_call_three_binaries(self, handler: Callable[[bytes, bytes, bytes], stinger_types.CallThreeBinariesReturnValues]):
         if self._call_three_binaries_method_handler is None and handler is not None:
             self._call_three_binaries_method_handler = handler
         else:
@@ -2976,11 +2976,11 @@ if __name__ == "__main__":
     )
 
     server.read_write_struct = stinger_types.AllTypes(
-        bool_=True,
-        int_=42,
-        number=3.14,
-        str="apples",
-        enum_=stinger_types.Numbers.ONE,
+        the_bool=True,
+        the_int=42,
+        the_number=3.14,
+        the_str="apples",
+        the_enum=stinger_types.Numbers.ONE,
         date_and_time=datetime.now(),
         time_duration=timedelta(seconds=3536),
         data=b"example binary data",
@@ -2993,11 +2993,11 @@ if __name__ == "__main__":
     )
 
     server.read_write_optional_struct = stinger_types.AllTypes(
-        bool_=True,
-        int_=42,
-        number=3.14,
-        str="apples",
-        enum_=stinger_types.Numbers.ONE,
+        the_bool=True,
+        the_int=42,
+        the_number=3.14,
+        the_str="apples",
+        the_enum=stinger_types.Numbers.ONE,
         date_and_time=datetime.now(),
         time_duration=timedelta(seconds=3536),
         data=b"example binary data",
@@ -3011,11 +3011,11 @@ if __name__ == "__main__":
 
     server.read_write_two_structs = stinger_types.ReadWriteTwoStructsProperty(
         first=stinger_types.AllTypes(
-            bool_=True,
-            int_=42,
-            number=3.14,
-            str="apples",
-            enum_=stinger_types.Numbers.ONE,
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=stinger_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
@@ -3027,18 +3027,18 @@ if __name__ == "__main__":
             OptionalBinary=b"example binary data",
         ),
         second=stinger_types.AllTypes(
-            bool_=True,
-            int_=42,
-            number=3.14,
-            str="apples",
-            enum_=stinger_types.Numbers.ONE,
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=stinger_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             OptionalInteger=42,
             OptionalString="apples",
             OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=None,
+            OptionalDateTime=datetime.now(),
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         ),
@@ -3061,7 +3061,7 @@ if __name__ == "__main__":
 
     server.read_write_two_datetimes = stinger_types.ReadWriteTwoDatetimesProperty(
         first=datetime.now(),
-        second=None,
+        second=datetime.now(),
     )
 
     server.read_write_duration = timedelta(seconds=3536)
@@ -3101,10 +3101,10 @@ if __name__ == "__main__":
         return 42
 
     @server.handle_call_three_integers
-    def call_three_integers(input1: int, input2: int, input3: Optional[int]) -> stinger_types.CallThreeIntegersReturnValue:
+    def call_three_integers(input1: int, input2: int, input3: Optional[int]) -> stinger_types.CallThreeIntegersReturnValues:
         """This is an example handler for the 'callThreeIntegers' method."""
         print(f"Running call_three_integers'({input1}, {input2}, {input3})'")
-        return stinger_types.CallThreeIntegersReturnValue(output1=42, output2=42, output3=42)
+        return stinger_types.CallThreeIntegersReturnValues(output1=42, output2=42, output3=42)
 
     @server.handle_call_one_string
     def call_one_string(input1: str) -> str:
@@ -3119,10 +3119,10 @@ if __name__ == "__main__":
         return "apples"
 
     @server.handle_call_three_strings
-    def call_three_strings(input1: str, input2: str, input3: Optional[str]) -> stinger_types.CallThreeStringsReturnValue:
+    def call_three_strings(input1: str, input2: Optional[str], input3: str) -> stinger_types.CallThreeStringsReturnValues:
         """This is an example handler for the 'callThreeStrings' method."""
         print(f"Running call_three_strings'({input1}, {input2}, {input3})'")
-        return stinger_types.CallThreeStringsReturnValue(output1="apples", output2="apples", output3="apples")
+        return stinger_types.CallThreeStringsReturnValues(output1="apples", output2="apples", output3="apples")
 
     @server.handle_call_one_enum
     def call_one_enum(input1: stinger_types.Numbers) -> stinger_types.Numbers:
@@ -3137,28 +3137,28 @@ if __name__ == "__main__":
         return stinger_types.Numbers.ONE
 
     @server.handle_call_three_enums
-    def call_three_enums(input1: stinger_types.Numbers, input2: stinger_types.Numbers, input3: Optional[stinger_types.Numbers]) -> stinger_types.CallThreeEnumsReturnValue:
+    def call_three_enums(input1: stinger_types.Numbers, input2: stinger_types.Numbers, input3: Optional[stinger_types.Numbers]) -> stinger_types.CallThreeEnumsReturnValues:
         """This is an example handler for the 'callThreeEnums' method."""
         print(f"Running call_three_enums'({input1}, {input2}, {input3})'")
-        return stinger_types.CallThreeEnumsReturnValue(output1=stinger_types.Numbers.ONE, output2=stinger_types.Numbers.ONE, output3=stinger_types.Numbers.ONE)
+        return stinger_types.CallThreeEnumsReturnValues(output1=stinger_types.Numbers.ONE, output2=stinger_types.Numbers.ONE, output3=stinger_types.Numbers.ONE)
 
     @server.handle_call_one_struct
     def call_one_struct(input1: stinger_types.AllTypes) -> stinger_types.AllTypes:
         """This is an example handler for the 'callOneStruct' method."""
         print(f"Running call_one_struct'({input1})'")
         return stinger_types.AllTypes(
-            bool_=True,
-            int_=42,
-            number=3.14,
-            str="apples",
-            enum_=stinger_types.Numbers.ONE,
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=stinger_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             OptionalInteger=42,
             OptionalString="apples",
             OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
+            OptionalDateTime=None,
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         )
@@ -3168,11 +3168,11 @@ if __name__ == "__main__":
         """This is an example handler for the 'callOptionalStruct' method."""
         print(f"Running call_optional_struct'({input1})'")
         return stinger_types.AllTypes(
-            bool_=True,
-            int_=42,
-            number=3.14,
-            str="apples",
-            enum_=stinger_types.Numbers.ONE,
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=stinger_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
@@ -3185,16 +3185,16 @@ if __name__ == "__main__":
         )
 
     @server.handle_call_three_structs
-    def call_three_structs(input1: stinger_types.AllTypes, input2: stinger_types.AllTypes, input3: stinger_types.AllTypes) -> stinger_types.CallThreeStructsReturnValue:
+    def call_three_structs(input1: stinger_types.AllTypes, input2: stinger_types.AllTypes, input3: stinger_types.AllTypes) -> stinger_types.CallThreeStructsReturnValues:
         """This is an example handler for the 'callThreeStructs' method."""
         print(f"Running call_three_structs'({input1}, {input2}, {input3})'")
-        return stinger_types.CallThreeStructsReturnValue(
+        return stinger_types.CallThreeStructsReturnValues(
             output1=stinger_types.AllTypes(
-                bool_=True,
-                int_=42,
-                number=3.14,
-                str="apples",
-                enum_=stinger_types.Numbers.ONE,
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=stinger_types.Numbers.ONE,
                 date_and_time=datetime.now(),
                 time_duration=timedelta(seconds=3536),
                 data=b"example binary data",
@@ -3206,27 +3206,27 @@ if __name__ == "__main__":
                 OptionalBinary=b"example binary data",
             ),
             output2=stinger_types.AllTypes(
-                bool_=True,
-                int_=42,
-                number=3.14,
-                str="apples",
-                enum_=stinger_types.Numbers.ONE,
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=stinger_types.Numbers.ONE,
                 date_and_time=datetime.now(),
                 time_duration=timedelta(seconds=3536),
                 data=b"example binary data",
                 OptionalInteger=42,
                 OptionalString="apples",
                 OptionalEnum=stinger_types.Numbers.ONE,
-                OptionalDateTime=datetime.now(),
+                OptionalDateTime=None,
                 OptionalDuration=None,
                 OptionalBinary=b"example binary data",
             ),
             output3=stinger_types.AllTypes(
-                bool_=True,
-                int_=42,
-                number=3.14,
-                str="apples",
-                enum_=stinger_types.Numbers.ONE,
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=stinger_types.Numbers.ONE,
                 date_and_time=datetime.now(),
                 time_duration=timedelta(seconds=3536),
                 data=b"example binary data",
@@ -3252,10 +3252,10 @@ if __name__ == "__main__":
         return None
 
     @server.handle_call_three_date_times
-    def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> stinger_types.CallThreeDateTimesReturnValue:
+    def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> stinger_types.CallThreeDateTimesReturnValues:
         """This is an example handler for the 'callThreeDateTimes' method."""
         print(f"Running call_three_date_times'({input1}, {input2}, {input3})'")
-        return stinger_types.CallThreeDateTimesReturnValue(output1=datetime.now(), output2=datetime.now(), output3=datetime.now())
+        return stinger_types.CallThreeDateTimesReturnValues(output1=datetime.now(), output2=datetime.now(), output3=datetime.now())
 
     @server.handle_call_one_duration
     def call_one_duration(input1: timedelta) -> timedelta:
@@ -3270,10 +3270,10 @@ if __name__ == "__main__":
         return None
 
     @server.handle_call_three_durations
-    def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[timedelta]) -> stinger_types.CallThreeDurationsReturnValue:
+    def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[timedelta]) -> stinger_types.CallThreeDurationsReturnValues:
         """This is an example handler for the 'callThreeDurations' method."""
         print(f"Running call_three_durations'({input1}, {input2}, {input3})'")
-        return stinger_types.CallThreeDurationsReturnValue(output1=timedelta(seconds=3536), output2=timedelta(seconds=3536), output3=None)
+        return stinger_types.CallThreeDurationsReturnValues(output1=timedelta(seconds=3536), output2=timedelta(seconds=3536), output3=None)
 
     @server.handle_call_one_binary
     def call_one_binary(input1: bytes) -> bytes:
@@ -3288,10 +3288,10 @@ if __name__ == "__main__":
         return b"example binary data"
 
     @server.handle_call_three_binaries
-    def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> stinger_types.CallThreeBinariesReturnValue:
+    def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> stinger_types.CallThreeBinariesReturnValues:
         """This is an example handler for the 'callThreeBinaries' method."""
         print(f"Running call_three_binaries'({input1}, {input2}, {input3})'")
-        return stinger_types.CallThreeBinariesReturnValue(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
+        return stinger_types.CallThreeBinariesReturnValues(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
 
     @server.on_read_write_integer_updates
     def on_read_write_integer_update(value: int):
@@ -3405,29 +3405,29 @@ if __name__ == "__main__":
             server.emit_three_enums(stinger_types.Numbers.ONE, stinger_types.Numbers.ONE, stinger_types.Numbers.ONE)
             server.emit_single_struct(
                 stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=stinger_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
+                    OptionalDateTime=None,
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 )
             )
             server.emit_single_optional_struct(
                 stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
@@ -3441,11 +3441,11 @@ if __name__ == "__main__":
             )
             server.emit_three_structs(
                 stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
@@ -3457,11 +3457,11 @@ if __name__ == "__main__":
                     OptionalBinary=b"example binary data",
                 ),
                 stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
@@ -3473,11 +3473,11 @@ if __name__ == "__main__":
                     OptionalBinary=b"example binary data",
                 ),
                 stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
@@ -3490,7 +3490,7 @@ if __name__ == "__main__":
                 ),
             )
             server.emit_single_date_time(datetime.now())
-            server.emit_single_optional_datetime(datetime.now())
+            server.emit_single_optional_datetime(None)
             server.emit_three_date_times(datetime.now(), datetime.now(), datetime.now())
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
@@ -3512,11 +3512,11 @@ if __name__ == "__main__":
             server.emit_three_enums(first=stinger_types.Numbers.ONE, second=stinger_types.Numbers.ONE, third=stinger_types.Numbers.ONE)
             server.emit_single_struct(
                 value=stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
@@ -3530,11 +3530,11 @@ if __name__ == "__main__":
             )
             server.emit_single_optional_struct(
                 value=stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
@@ -3548,43 +3548,43 @@ if __name__ == "__main__":
             )
             server.emit_three_structs(
                 first=stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=stinger_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
+                    OptionalDateTime=None,
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 ),
                 second=stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=stinger_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
+                    OptionalDateTime=None,
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 ),
                 third=stinger_types.AllTypes(
-                    bool_=True,
-                    int_=42,
-                    number=3.14,
-                    str="apples",
-                    enum_=stinger_types.Numbers.ONE,
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
@@ -3598,7 +3598,7 @@ if __name__ == "__main__":
             )
             server.emit_single_date_time(value=datetime.now())
             server.emit_single_optional_datetime(value=datetime.now())
-            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=None)
+            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=datetime.now())
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)
             server.emit_three_durations(first=timedelta(seconds=3536), second=timedelta(seconds=3536), third=None)

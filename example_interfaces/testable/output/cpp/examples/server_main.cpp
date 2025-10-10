@@ -44,13 +44,13 @@ int main(int argc, char** argv)
     server->updateReadWriteTwoStringsProperty("apples", boost::make_optional(std::string("apples")));
 
     std::cout << "Setting initial value for property 'read_write_struct'.\n";
-    server->updateReadWriteStructProperty({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+    server->updateReadWriteStructProperty(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
 
     std::cout << "Setting initial value for property 'read_write_optional_struct'.\n";
-    server->updateReadWriteOptionalStructProperty({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+    server->updateReadWriteOptionalStructProperty(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
 
     std::cout << "Setting initial value for property 'read_write_two_structs'.\n";
-    server->updateReadWriteTwoStructsProperty({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } }, { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+    server->updateReadWriteTwoStructsProperty(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
 
     std::cout << "Setting initial value for property 'read_only_enum'.\n";
     server->updateReadOnlyEnumProperty(Numbers::ONE);
@@ -83,13 +83,13 @@ int main(int argc, char** argv)
     server->updateReadWriteTwoDurationsProperty(std::chrono::duration<double>(3536), std::chrono::duration<double>(3536));
 
     std::cout << "Setting initial value for property 'read_write_binary'.\n";
-    server->updateReadWriteBinaryProperty({ 101, 120, 97, 109, 112, 108, 101 });
+    server->updateReadWriteBinaryProperty(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
 
     std::cout << "Setting initial value for property 'read_write_optional_binary'.\n";
-    server->updateReadWriteOptionalBinaryProperty({ 101, 120, 97, 109, 112, 108, 101 });
+    server->updateReadWriteOptionalBinaryProperty(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
 
     std::cout << "Setting initial value for property 'read_write_two_binaries'.\n";
-    server->updateReadWriteTwoBinariesProperty({ 101, 120, 97, 109, 112, 108, 101 }, { 101, 120, 97, 109, 112, 108, 101 });
+    server->updateReadWriteTwoBinariesProperty(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
 
     auto emptyFuture = server->emitEmptySignal();
     auto singleIntFuture = server->emitSingleIntSignal(42);
@@ -101,18 +101,18 @@ int main(int argc, char** argv)
     auto singleEnumFuture = server->emitSingleEnumSignal(Numbers::ONE);
     auto singleOptionalEnumFuture = server->emitSingleOptionalEnumSignal(Numbers::ONE);
     auto threeEnumsFuture = server->emitThreeEnumsSignal(Numbers::ONE, Numbers::ONE, Numbers::ONE);
-    auto singleStructFuture = server->emitSingleStructSignal({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
-    auto singleOptionalStructFuture = server->emitSingleOptionalStructSignal({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
-    auto threeStructsFuture = server->emitThreeStructsSignal({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } }, { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } }, { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+    auto singleStructFuture = server->emitSingleStructSignal(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
+    auto singleOptionalStructFuture = server->emitSingleOptionalStructSignal(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
+    auto threeStructsFuture = server->emitThreeStructsSignal(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
     auto singleDateTimeFuture = server->emitSingleDateTimeSignal(std::chrono::system_clock::now());
     auto singleOptionalDatetimeFuture = server->emitSingleOptionalDatetimeSignal(std::chrono::system_clock::now());
     auto threeDateTimesFuture = server->emitThreeDateTimesSignal(std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now());
     auto singleDurationFuture = server->emitSingleDurationSignal(std::chrono::duration<double>(3536));
     auto singleOptionalDurationFuture = server->emitSingleOptionalDurationSignal(std::chrono::duration<double>(3536));
     auto threeDurationsFuture = server->emitThreeDurationsSignal(std::chrono::duration<double>(3536), std::chrono::duration<double>(3536), std::chrono::duration<double>(3536));
-    auto singleBinaryFuture = server->emitSingleBinarySignal({ 101, 120, 97, 109, 112, 108, 101 });
-    auto singleOptionalBinaryFuture = server->emitSingleOptionalBinarySignal({ 101, 120, 97, 109, 112, 108, 101 });
-    auto threeBinariesFuture = server->emitThreeBinariesSignal({ 101, 120, 97, 109, 112, 108, 101 }, { 101, 120, 97, 109, 112, 108, 101 }, { 101, 120, 97, 109, 112, 108, 101 });
+    auto singleBinaryFuture = server->emitSingleBinarySignal(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
+    auto singleOptionalBinaryFuture = server->emitSingleOptionalBinarySignal(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
+    auto threeBinariesFuture = server->emitThreeBinariesSignal(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
     emptyFuture.wait();
     singleIntFuture.wait();
     singleOptionalIntFuture.wait();
@@ -152,13 +152,13 @@ int main(int argc, char** argv)
                                                    return 42;
                                                });
 
-    server->registerCallThreeIntegersHandler([](int unused1, int unused2, boost::optional<int> unused3) -> CallThreeIntegersReturnValue
+    server->registerCallThreeIntegersHandler([](int unused1, int unused2, boost::optional<int> unused3) -> CallThreeIntegersReturnValues
                                              {
                                                  std::cout << "Received call for callThreeIntegers\n";
-                                                 return CallThreeIntegersReturnValue{ 42, 42, 42 };
+                                                 return CallThreeIntegersReturnValues{ 42, 42, 42 };
                                              });
 
-    server->registerCallOneStringHandler([](const std::string& unused1) -> std::string
+    server->registerCallOneStringHandler([](std::string unused1) -> std::string
                                          {
                                              std::cout << "Received call for callOneString\n";
                                              return "apples";
@@ -170,10 +170,10 @@ int main(int argc, char** argv)
                                                   return boost::make_optional(std::string("apples"));
                                               });
 
-    server->registerCallThreeStringsHandler([](const std::string& unused1, const std::string& unused2, boost::optional<std::string> unused3) -> CallThreeStringsReturnValue
+    server->registerCallThreeStringsHandler([](std::string unused1, boost::optional<std::string> unused2, std::string unused3) -> CallThreeStringsReturnValues
                                             {
                                                 std::cout << "Received call for callThreeStrings\n";
-                                                return CallThreeStringsReturnValue{ "apples", "apples", boost::make_optional(std::string("apples")) };
+                                                return CallThreeStringsReturnValues{ "apples", boost::make_optional(std::string("apples")), "apples" };
                                             });
 
     server->registerCallOneEnumHandler([](Numbers unused1) -> Numbers
@@ -188,28 +188,28 @@ int main(int argc, char** argv)
                                                 return Numbers::ONE;
                                             });
 
-    server->registerCallThreeEnumsHandler([](Numbers unused1, Numbers unused2, boost::optional<Numbers> unused3) -> CallThreeEnumsReturnValue
+    server->registerCallThreeEnumsHandler([](Numbers unused1, Numbers unused2, boost::optional<Numbers> unused3) -> CallThreeEnumsReturnValues
                                           {
                                               std::cout << "Received call for callThreeEnums\n";
-                                              return CallThreeEnumsReturnValue{ Numbers::ONE, Numbers::ONE, Numbers::ONE };
+                                              return CallThreeEnumsReturnValues{ Numbers::ONE, Numbers::ONE, Numbers::ONE };
                                           });
 
     server->registerCallOneStructHandler([](AllTypes unused1) -> AllTypes
                                          {
                                              std::cout << "Received call for callOneStruct\n";
-                                             return CallOneStructReturnValue{ { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } } };
+                                             return AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } };
                                          });
 
-    server->registerCallOptionalStructHandler([](AllTypes unused1) -> boost::optional<AllTypes>
+    server->registerCallOptionalStructHandler([](boost::optional<AllTypes> unused1) -> boost::optional<AllTypes>
                                               {
                                                   std::cout << "Received call for callOptionalStruct\n";
-                                                  return CallOptionalStructReturnValue{ { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } } };
+                                                  return AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } };
                                               });
 
-    server->registerCallThreeStructsHandler([](AllTypes unused1, AllTypes unused2, AllTypes unused3) -> CallThreeStructsReturnValue
+    server->registerCallThreeStructsHandler([](boost::optional<AllTypes> unused1, AllTypes unused2, AllTypes unused3) -> CallThreeStructsReturnValues
                                             {
                                                 std::cout << "Received call for callThreeStructs\n";
-                                                return CallThreeStructsReturnValue{ { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } }, { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } }, { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } } };
+                                                return CallThreeStructsReturnValues{ AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } } };
                                             });
 
     server->registerCallOneDateTimeHandler([](std::chrono::time_point<std::chrono::system_clock> unused1) -> std::chrono::time_point<std::chrono::system_clock>
@@ -224,10 +224,10 @@ int main(int argc, char** argv)
                                                     return std::chrono::system_clock::now();
                                                 });
 
-    server->registerCallThreeDateTimesHandler([](std::chrono::time_point<std::chrono::system_clock> unused1, std::chrono::time_point<std::chrono::system_clock> unused2, boost::optional<std::chrono::time_point<std::chrono::system_clock>> unused3) -> CallThreeDateTimesReturnValue
+    server->registerCallThreeDateTimesHandler([](std::chrono::time_point<std::chrono::system_clock> unused1, std::chrono::time_point<std::chrono::system_clock> unused2, boost::optional<std::chrono::time_point<std::chrono::system_clock>> unused3) -> CallThreeDateTimesReturnValues
                                               {
                                                   std::cout << "Received call for callThreeDateTimes\n";
-                                                  return CallThreeDateTimesReturnValue{ std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now() };
+                                                  return CallThreeDateTimesReturnValues{ std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now() };
                                               });
 
     server->registerCallOneDurationHandler([](std::chrono::duration<double> unused1) -> std::chrono::duration<double>
@@ -242,28 +242,28 @@ int main(int argc, char** argv)
                                                     return std::chrono::duration<double>(3536);
                                                 });
 
-    server->registerCallThreeDurationsHandler([](std::chrono::duration<double> unused1, std::chrono::duration<double> unused2, boost::optional<std::chrono::duration<double>> unused3) -> CallThreeDurationsReturnValue
+    server->registerCallThreeDurationsHandler([](std::chrono::duration<double> unused1, std::chrono::duration<double> unused2, boost::optional<std::chrono::duration<double>> unused3) -> CallThreeDurationsReturnValues
                                               {
                                                   std::cout << "Received call for callThreeDurations\n";
-                                                  return CallThreeDurationsReturnValue{ std::chrono::duration<double>(3536), std::chrono::duration<double>(3536), std::chrono::duration<double>(3536) };
+                                                  return CallThreeDurationsReturnValues{ std::chrono::duration<double>(3536), std::chrono::duration<double>(3536), std::chrono::duration<double>(3536) };
                                               });
 
     server->registerCallOneBinaryHandler([](std::vector<uint8_t> unused1) -> std::vector<uint8_t>
                                          {
                                              std::cout << "Received call for callOneBinary\n";
-                                             return { 101, 120, 97, 109, 112, 108, 101 };
+                                             return std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 };
                                          });
 
     server->registerCallOptionalBinaryHandler([](boost::optional<std::vector<uint8_t>> unused1) -> boost::optional<std::vector<uint8_t>>
                                               {
                                                   std::cout << "Received call for callOptionalBinary\n";
-                                                  return { 101, 120, 97, 109, 112, 108, 101 };
+                                                  return std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 };
                                               });
 
-    server->registerCallThreeBinariesHandler([](std::vector<uint8_t> unused1, std::vector<uint8_t> unused2, boost::optional<std::vector<uint8_t>> unused3) -> CallThreeBinariesReturnValue
+    server->registerCallThreeBinariesHandler([](std::vector<uint8_t> unused1, std::vector<uint8_t> unused2, boost::optional<std::vector<uint8_t>> unused3) -> CallThreeBinariesReturnValues
                                              {
                                                  std::cout << "Received call for callThreeBinaries\n";
-                                                 return CallThreeBinariesReturnValue{ { 101, 120, 97, 109, 112, 108, 101 }, { 101, 120, 97, 109, 112, 108, 101 }, { 101, 120, 97, 109, 112, 108, 101 } };
+                                                 return CallThreeBinariesReturnValues{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } };
                                              });
 
     // Start a background thread that emits signals every 60 seconds.
@@ -297,11 +297,11 @@ int main(int argc, char** argv)
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             auto threeEnumsFuture = server->emitThreeEnumsSignal(Numbers::ONE, Numbers::ONE, Numbers::ONE);
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
-                                            auto singleStructFuture = server->emitSingleStructSignal({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+                                            auto singleStructFuture = server->emitSingleStructSignal(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
-                                            auto singleOptionalStructFuture = server->emitSingleOptionalStructSignal({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+                                            auto singleOptionalStructFuture = server->emitSingleOptionalStructSignal(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
-                                            auto threeStructsFuture = server->emitThreeStructsSignal({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } }, { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } }, { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+                                            auto threeStructsFuture = server->emitThreeStructsSignal(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             auto singleDateTimeFuture = server->emitSingleDateTimeSignal(std::chrono::system_clock::now());
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -315,11 +315,11 @@ int main(int argc, char** argv)
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             auto threeDurationsFuture = server->emitThreeDurationsSignal(std::chrono::duration<double>(3536), std::chrono::duration<double>(3536), std::chrono::duration<double>(3536));
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
-                                            auto singleBinaryFuture = server->emitSingleBinarySignal({ 101, 120, 97, 109, 112, 108, 101 });
+                                            auto singleBinaryFuture = server->emitSingleBinarySignal(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
-                                            auto singleOptionalBinaryFuture = server->emitSingleOptionalBinarySignal({ 101, 120, 97, 109, 112, 108, 101 });
+                                            auto singleOptionalBinaryFuture = server->emitSingleOptionalBinarySignal(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
-                                            auto threeBinariesFuture = server->emitThreeBinariesSignal({ 101, 120, 97, 109, 112, 108, 101 }, { 101, 120, 97, 109, 112, 108, 101 }, { 101, 120, 97, 109, 112, 108, 101 });
+                                            auto threeBinariesFuture = server->emitThreeBinariesSignal(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             emptyFuture.wait();
                                             singleIntFuture.wait();
@@ -381,13 +381,13 @@ int main(int argc, char** argv)
                                             server->updateReadWriteTwoStringsProperty("apples", boost::make_optional(std::string("apples")));
 
                                             std::cout << "Updating value for property 'read_write_struct'.\n";
-                                            server->updateReadWriteStructProperty({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+                                            server->updateReadWriteStructProperty(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
 
                                             std::cout << "Updating value for property 'read_write_optional_struct'.\n";
-                                            server->updateReadWriteOptionalStructProperty({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+                                            server->updateReadWriteOptionalStructProperty(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
 
                                             std::cout << "Updating value for property 'read_write_two_structs'.\n";
-                                            server->updateReadWriteTwoStructsProperty({ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } }, { true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), { 101, 120, 97, 109, 112, 108, 101 } });
+                                            server->updateReadWriteTwoStructsProperty(AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } });
 
                                             std::cout << "Updating value for property 'read_only_enum'.\n";
                                             server->updateReadOnlyEnumProperty(Numbers::ONE);
@@ -420,13 +420,13 @@ int main(int argc, char** argv)
                                             server->updateReadWriteTwoDurationsProperty(std::chrono::duration<double>(3536), std::chrono::duration<double>(3536));
 
                                             std::cout << "Updating value for property 'read_write_binary'.\n";
-                                            server->updateReadWriteBinaryProperty({ 101, 120, 97, 109, 112, 108, 101 });
+                                            server->updateReadWriteBinaryProperty(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
 
                                             std::cout << "Updating value for property 'read_write_optional_binary'.\n";
-                                            server->updateReadWriteOptionalBinaryProperty({ 101, 120, 97, 109, 112, 108, 101 });
+                                            server->updateReadWriteOptionalBinaryProperty(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
 
                                             std::cout << "Updating value for property 'read_write_two_binaries'.\n";
-                                            server->updateReadWriteTwoBinariesProperty({ 101, 120, 97, 109, 112, 108, 101 }, { 101, 120, 97, 109, 112, 108, 101 });
+                                            server->updateReadWriteTwoBinariesProperty(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
                                         }
                                     }
                                 });

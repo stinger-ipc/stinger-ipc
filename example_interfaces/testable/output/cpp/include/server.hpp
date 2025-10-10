@@ -24,7 +24,8 @@ It contains enumerations used by the Test Able interface.
 
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
-#include "return_types.hpp"
+
+#include "method_payloads.hpp"
 
 class TestAbleServer
 {
@@ -86,49 +87,50 @@ public:
 
     void registerCallOptionalIntegerHandler(std::function<boost::optional<int>(boost::optional<int>)> func);
 
-    void registerCallThreeIntegersHandler(std::function<CallThreeIntegersReturnValue(int, int, boost::optional<int>)> func);
+    void registerCallThreeIntegersHandler(std::function<CallThreeIntegersReturnValues(int, int, boost::optional<int>)> func);
 
     void registerCallOneStringHandler(std::function<std::string(std::string)> func);
 
     void registerCallOptionalStringHandler(std::function<boost::optional<std::string>(boost::optional<std::string>)> func);
 
-    void registerCallThreeStringsHandler(std::function<CallThreeStringsReturnValue(std::string, std::string, boost::optional<std::string>)> func);
+    void registerCallThreeStringsHandler(std::function<CallThreeStringsReturnValues(std::string, boost::optional<std::string>, std::string)> func);
 
     void registerCallOneEnumHandler(std::function<Numbers(Numbers)> func);
 
     void registerCallOptionalEnumHandler(std::function<boost::optional<Numbers>(boost::optional<Numbers>)> func);
 
-    void registerCallThreeEnumsHandler(std::function<CallThreeEnumsReturnValue(Numbers, Numbers, boost::optional<Numbers>)> func);
+    void registerCallThreeEnumsHandler(std::function<CallThreeEnumsReturnValues(Numbers, Numbers, boost::optional<Numbers>)> func);
 
     void registerCallOneStructHandler(std::function<AllTypes(AllTypes)> func);
 
     void registerCallOptionalStructHandler(std::function<boost::optional<AllTypes>(boost::optional<AllTypes>)> func);
 
-    void registerCallThreeStructsHandler(std::function<CallThreeStructsReturnValue(AllTypes, AllTypes, boost::optional<AllTypes>)> func);
+    void registerCallThreeStructsHandler(std::function<CallThreeStructsReturnValues(boost::optional<AllTypes>, AllTypes, AllTypes)> func);
 
     void registerCallOneDateTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> func);
 
     void registerCallOptionalDateTimeHandler(std::function<boost::optional<std::chrono::time_point<std::chrono::system_clock>>(boost::optional<std::chrono::time_point<std::chrono::system_clock>>)> func);
 
-    void registerCallThreeDateTimesHandler(std::function<CallThreeDateTimesReturnValue(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)> func);
+    void registerCallThreeDateTimesHandler(std::function<CallThreeDateTimesReturnValues(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)> func);
 
     void registerCallOneDurationHandler(std::function<std::chrono::duration<double>(std::chrono::duration<double>)> func);
 
     void registerCallOptionalDurationHandler(std::function<boost::optional<std::chrono::duration<double>>(boost::optional<std::chrono::duration<double>>)> func);
 
-    void registerCallThreeDurationsHandler(std::function<CallThreeDurationsReturnValue(std::chrono::duration<double>, std::chrono::duration<double>, boost::optional<std::chrono::duration<double>>)> func);
+    void registerCallThreeDurationsHandler(std::function<CallThreeDurationsReturnValues(std::chrono::duration<double>, std::chrono::duration<double>, boost::optional<std::chrono::duration<double>>)> func);
 
     void registerCallOneBinaryHandler(std::function<std::vector<uint8_t>(std::vector<uint8_t>)> func);
 
     void registerCallOptionalBinaryHandler(std::function<boost::optional<std::vector<uint8_t>>(boost::optional<std::vector<uint8_t>>)> func);
 
-    void registerCallThreeBinariesHandler(std::function<CallThreeBinariesReturnValue(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)> func);
+    void registerCallThreeBinariesHandler(std::function<CallThreeBinariesReturnValues(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)> func);
 
     // ---read_write_integer Property---
 
     // Gets the latest value of the `read_write_integer` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteIntegerProperty> getReadWriteIntegerProperty() const;
+
+    boost::optional<int> getReadWriteIntegerProperty() const;
 
     // Add a callback that will be called whenever the `read_write_integer` property is updated.
     // The provided method will be called whenever a new value for the `read_write_integer` property is received.
@@ -142,7 +144,8 @@ public:
 
     // Gets the latest value of the `read_only_integer` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadOnlyIntegerProperty> getReadOnlyIntegerProperty() const;
+
+    boost::optional<int> getReadOnlyIntegerProperty() const;
 
     // Add a callback that will be called whenever the `read_only_integer` property is updated.
     // The provided method will be called whenever a new value for the `read_only_integer` property is received.
@@ -156,6 +159,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_integer` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<int> getReadWriteOptionalIntegerProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_integer` property is updated.
@@ -170,6 +174,7 @@ public:
 
     // Gets the latest value of the `read_write_two_integers` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<ReadWriteTwoIntegersProperty> getReadWriteTwoIntegersProperty() const;
 
     // Add a callback that will be called whenever the `read_write_two_integers` property is updated.
@@ -184,13 +189,14 @@ public:
 
     // Gets the latest value of the `read_only_string` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadOnlyStringProperty> getReadOnlyStringProperty() const;
+
+    boost::optional<const std::string&> getReadOnlyStringProperty() const;
 
     // Add a callback that will be called whenever the `read_only_string` property is updated.
     // The provided method will be called whenever a new value for the `read_only_string` property is received.
-    void registerReadOnlyStringPropertyCallback(const std::function<void(const std::string&)>& cb);
+    void registerReadOnlyStringPropertyCallback(const std::function<void(std::string)>& cb);
 
-    void updateReadOnlyStringProperty(const std::string&);
+    void updateReadOnlyStringProperty(std::string);
 
     void republishReadOnlyStringProperty() const;
 
@@ -198,13 +204,14 @@ public:
 
     // Gets the latest value of the `read_write_string` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteStringProperty> getReadWriteStringProperty() const;
+
+    boost::optional<const std::string&> getReadWriteStringProperty() const;
 
     // Add a callback that will be called whenever the `read_write_string` property is updated.
     // The provided method will be called whenever a new value for the `read_write_string` property is received.
-    void registerReadWriteStringPropertyCallback(const std::function<void(const std::string&)>& cb);
+    void registerReadWriteStringPropertyCallback(const std::function<void(std::string)>& cb);
 
-    void updateReadWriteStringProperty(const std::string&);
+    void updateReadWriteStringProperty(std::string);
 
     void republishReadWriteStringProperty() const;
 
@@ -212,6 +219,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_string` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<std::string> getReadWriteOptionalStringProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_string` property is updated.
@@ -226,13 +234,14 @@ public:
 
     // Gets the latest value of the `read_write_two_strings` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<ReadWriteTwoStringsProperty> getReadWriteTwoStringsProperty() const;
 
     // Add a callback that will be called whenever the `read_write_two_strings` property is updated.
     // The provided method will be called whenever a new value for the `read_write_two_strings` property is received.
-    void registerReadWriteTwoStringsPropertyCallback(const std::function<void(const std::string&, boost::optional<std::string>)>& cb);
+    void registerReadWriteTwoStringsPropertyCallback(const std::function<void(std::string, boost::optional<std::string>)>& cb);
 
-    void updateReadWriteTwoStringsProperty(const std::string&, boost::optional<std::string>);
+    void updateReadWriteTwoStringsProperty(std::string, boost::optional<std::string>);
 
     void republishReadWriteTwoStringsProperty() const;
 
@@ -240,7 +249,8 @@ public:
 
     // Gets the latest value of the `read_write_struct` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteStructProperty> getReadWriteStructProperty() const;
+
+    boost::optional<AllTypes> getReadWriteStructProperty() const;
 
     // Add a callback that will be called whenever the `read_write_struct` property is updated.
     // The provided method will be called whenever a new value for the `read_write_struct` property is received.
@@ -254,13 +264,14 @@ public:
 
     // Gets the latest value of the `read_write_optional_struct` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    ReadWriteOptionalStructProperty getReadWriteOptionalStructProperty() const;
+
+    boost::optional<AllTypes> getReadWriteOptionalStructProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_struct` property is updated.
     // The provided method will be called whenever a new value for the `read_write_optional_struct` property is received.
-    void registerReadWriteOptionalStructPropertyCallback(const std::function<void(AllTypes)>& cb);
+    void registerReadWriteOptionalStructPropertyCallback(const std::function<void(boost::optional<AllTypes>)>& cb);
 
-    void updateReadWriteOptionalStructProperty(AllTypes);
+    void updateReadWriteOptionalStructProperty(boost::optional<AllTypes>);
 
     void republishReadWriteOptionalStructProperty() const;
 
@@ -268,13 +279,14 @@ public:
 
     // Gets the latest value of the `read_write_two_structs` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<ReadWriteTwoStructsProperty> getReadWriteTwoStructsProperty() const;
 
     // Add a callback that will be called whenever the `read_write_two_structs` property is updated.
     // The provided method will be called whenever a new value for the `read_write_two_structs` property is received.
-    void registerReadWriteTwoStructsPropertyCallback(const std::function<void(AllTypes, AllTypes)>& cb);
+    void registerReadWriteTwoStructsPropertyCallback(const std::function<void(AllTypes, boost::optional<AllTypes>)>& cb);
 
-    void updateReadWriteTwoStructsProperty(AllTypes, AllTypes);
+    void updateReadWriteTwoStructsProperty(AllTypes, boost::optional<AllTypes>);
 
     void republishReadWriteTwoStructsProperty() const;
 
@@ -282,7 +294,8 @@ public:
 
     // Gets the latest value of the `read_only_enum` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadOnlyEnumProperty> getReadOnlyEnumProperty() const;
+
+    boost::optional<Numbers> getReadOnlyEnumProperty() const;
 
     // Add a callback that will be called whenever the `read_only_enum` property is updated.
     // The provided method will be called whenever a new value for the `read_only_enum` property is received.
@@ -296,7 +309,8 @@ public:
 
     // Gets the latest value of the `read_write_enum` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteEnumProperty> getReadWriteEnumProperty() const;
+
+    boost::optional<Numbers> getReadWriteEnumProperty() const;
 
     // Add a callback that will be called whenever the `read_write_enum` property is updated.
     // The provided method will be called whenever a new value for the `read_write_enum` property is received.
@@ -310,6 +324,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_enum` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<Numbers> getReadWriteOptionalEnumProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_enum` property is updated.
@@ -324,6 +339,7 @@ public:
 
     // Gets the latest value of the `read_write_two_enums` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<ReadWriteTwoEnumsProperty> getReadWriteTwoEnumsProperty() const;
 
     // Add a callback that will be called whenever the `read_write_two_enums` property is updated.
@@ -338,7 +354,8 @@ public:
 
     // Gets the latest value of the `read_write_datetime` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteDatetimeProperty> getReadWriteDatetimeProperty() const;
+
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> getReadWriteDatetimeProperty() const;
 
     // Add a callback that will be called whenever the `read_write_datetime` property is updated.
     // The provided method will be called whenever a new value for the `read_write_datetime` property is received.
@@ -352,6 +369,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_datetime` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<std::chrono::time_point<std::chrono::system_clock>> getReadWriteOptionalDatetimeProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_datetime` property is updated.
@@ -366,6 +384,7 @@ public:
 
     // Gets the latest value of the `read_write_two_datetimes` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<ReadWriteTwoDatetimesProperty> getReadWriteTwoDatetimesProperty() const;
 
     // Add a callback that will be called whenever the `read_write_two_datetimes` property is updated.
@@ -380,7 +399,8 @@ public:
 
     // Gets the latest value of the `read_write_duration` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteDurationProperty> getReadWriteDurationProperty() const;
+
+    boost::optional<std::chrono::duration<double>> getReadWriteDurationProperty() const;
 
     // Add a callback that will be called whenever the `read_write_duration` property is updated.
     // The provided method will be called whenever a new value for the `read_write_duration` property is received.
@@ -394,6 +414,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_duration` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<std::chrono::duration<double>> getReadWriteOptionalDurationProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_duration` property is updated.
@@ -408,6 +429,7 @@ public:
 
     // Gets the latest value of the `read_write_two_durations` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<ReadWriteTwoDurationsProperty> getReadWriteTwoDurationsProperty() const;
 
     // Add a callback that will be called whenever the `read_write_two_durations` property is updated.
@@ -422,7 +444,8 @@ public:
 
     // Gets the latest value of the `read_write_binary` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
-    boost::optional<ReadWriteBinaryProperty> getReadWriteBinaryProperty() const;
+
+    boost::optional<std::vector<uint8_t>> getReadWriteBinaryProperty() const;
 
     // Add a callback that will be called whenever the `read_write_binary` property is updated.
     // The provided method will be called whenever a new value for the `read_write_binary` property is received.
@@ -436,6 +459,7 @@ public:
 
     // Gets the latest value of the `read_write_optional_binary` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<std::vector<uint8_t>> getReadWriteOptionalBinaryProperty() const;
 
     // Add a callback that will be called whenever the `read_write_optional_binary` property is updated.
@@ -450,6 +474,7 @@ public:
 
     // Gets the latest value of the `read_write_two_binaries` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
+
     boost::optional<ReadWriteTwoBinariesProperty> getReadWriteTwoBinariesProperty() const;
 
     // Add a callback that will be called whenever the `read_write_two_binaries` property is updated.
@@ -483,7 +508,7 @@ private:
     int _callOptionalIntegerMethodSubscriptionId;
 
     void _callCallThreeIntegersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<CallThreeIntegersReturnValue(int, int, boost::optional<int>)> _callThreeIntegersHandler;
+    std::function<CallThreeIntegersReturnValues(int, int, boost::optional<int>)> _callThreeIntegersHandler;
     int _callThreeIntegersMethodSubscriptionId;
 
     void _callCallOneStringHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
@@ -495,7 +520,7 @@ private:
     int _callOptionalStringMethodSubscriptionId;
 
     void _callCallThreeStringsHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<CallThreeStringsReturnValue(std::string, std::string, boost::optional<std::string>)> _callThreeStringsHandler;
+    std::function<CallThreeStringsReturnValues(std::string, boost::optional<std::string>, std::string)> _callThreeStringsHandler;
     int _callThreeStringsMethodSubscriptionId;
 
     void _callCallOneEnumHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
@@ -507,7 +532,7 @@ private:
     int _callOptionalEnumMethodSubscriptionId;
 
     void _callCallThreeEnumsHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<CallThreeEnumsReturnValue(Numbers, Numbers, boost::optional<Numbers>)> _callThreeEnumsHandler;
+    std::function<CallThreeEnumsReturnValues(Numbers, Numbers, boost::optional<Numbers>)> _callThreeEnumsHandler;
     int _callThreeEnumsMethodSubscriptionId;
 
     void _callCallOneStructHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
@@ -519,7 +544,7 @@ private:
     int _callOptionalStructMethodSubscriptionId;
 
     void _callCallThreeStructsHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<CallThreeStructsReturnValue(AllTypes, AllTypes, boost::optional<AllTypes>)> _callThreeStructsHandler;
+    std::function<CallThreeStructsReturnValues(boost::optional<AllTypes>, AllTypes, AllTypes)> _callThreeStructsHandler;
     int _callThreeStructsMethodSubscriptionId;
 
     void _callCallOneDateTimeHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
@@ -531,7 +556,7 @@ private:
     int _callOptionalDateTimeMethodSubscriptionId;
 
     void _callCallThreeDateTimesHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<CallThreeDateTimesReturnValue(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)> _callThreeDateTimesHandler;
+    std::function<CallThreeDateTimesReturnValues(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)> _callThreeDateTimesHandler;
     int _callThreeDateTimesMethodSubscriptionId;
 
     void _callCallOneDurationHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
@@ -543,7 +568,7 @@ private:
     int _callOptionalDurationMethodSubscriptionId;
 
     void _callCallThreeDurationsHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<CallThreeDurationsReturnValue(std::chrono::duration<double>, std::chrono::duration<double>, boost::optional<std::chrono::duration<double>>)> _callThreeDurationsHandler;
+    std::function<CallThreeDurationsReturnValues(std::chrono::duration<double>, std::chrono::duration<double>, boost::optional<std::chrono::duration<double>>)> _callThreeDurationsHandler;
     int _callThreeDurationsMethodSubscriptionId;
 
     void _callCallOneBinaryHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
@@ -555,7 +580,7 @@ private:
     int _callOptionalBinaryMethodSubscriptionId;
 
     void _callCallThreeBinariesHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<CallThreeBinariesReturnValue(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)> _callThreeBinariesHandler;
+    std::function<CallThreeBinariesReturnValues(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)> _callThreeBinariesHandler;
     int _callThreeBinariesMethodSubscriptionId;
 
     // ---------------- PROPERTIES ------------------
@@ -605,7 +630,7 @@ private:
     // ---read_write_optional_integer Property---
 
     // Current value for the `read_write_optional_integer` property.
-    boost::optional<int> _readWriteOptionalIntegerProperty;
+    boost::optional<ReadWriteOptionalIntegerProperty> _readWriteOptionalIntegerProperty;
 
     // This is the property version  of `read_write_optional_integer`.
     int _lastReadWriteOptionalIntegerPropertyVersion = -1;
@@ -662,7 +687,7 @@ private:
     void _receiveReadOnlyStringPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `read_only_string` property.
-    std::vector<std::function<void(const std::string&)>> _readOnlyStringPropertyCallbacks;
+    std::vector<std::function<void(std::string)>> _readOnlyStringPropertyCallbacks;
     std::mutex _readOnlyStringPropertyCallbacksMutex;
 
     // ---read_write_string Property---
@@ -683,13 +708,13 @@ private:
     void _receiveReadWriteStringPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `read_write_string` property.
-    std::vector<std::function<void(const std::string&)>> _readWriteStringPropertyCallbacks;
+    std::vector<std::function<void(std::string)>> _readWriteStringPropertyCallbacks;
     std::mutex _readWriteStringPropertyCallbacksMutex;
 
     // ---read_write_optional_string Property---
 
     // Current value for the `read_write_optional_string` property.
-    boost::optional<std::string> _readWriteOptionalStringProperty;
+    boost::optional<ReadWriteOptionalStringProperty> _readWriteOptionalStringProperty;
 
     // This is the property version  of `read_write_optional_string`.
     int _lastReadWriteOptionalStringPropertyVersion = -1;
@@ -725,7 +750,7 @@ private:
     void _receiveReadWriteTwoStringsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `read_write_two_strings` property.
-    std::vector<std::function<void(const std::string&, boost::optional<std::string>)>> _readWriteTwoStringsPropertyCallbacks;
+    std::vector<std::function<void(std::string, boost::optional<std::string>)>> _readWriteTwoStringsPropertyCallbacks;
     std::mutex _readWriteTwoStringsPropertyCallbacksMutex;
 
     // ---read_write_struct Property---
@@ -752,7 +777,7 @@ private:
     // ---read_write_optional_struct Property---
 
     // Current value for the `read_write_optional_struct` property.
-    ReadWriteOptionalStructProperty _readWriteOptionalStructProperty;
+    boost::optional<ReadWriteOptionalStructProperty> _readWriteOptionalStructProperty;
 
     // This is the property version  of `read_write_optional_struct`.
     int _lastReadWriteOptionalStructPropertyVersion = -1;
@@ -767,7 +792,7 @@ private:
     void _receiveReadWriteOptionalStructPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `read_write_optional_struct` property.
-    std::vector<std::function<void(AllTypes)>> _readWriteOptionalStructPropertyCallbacks;
+    std::vector<std::function<void(boost::optional<AllTypes>)>> _readWriteOptionalStructPropertyCallbacks;
     std::mutex _readWriteOptionalStructPropertyCallbacksMutex;
 
     // ---read_write_two_structs Property---
@@ -788,7 +813,7 @@ private:
     void _receiveReadWriteTwoStructsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `read_write_two_structs` property.
-    std::vector<std::function<void(AllTypes, AllTypes)>> _readWriteTwoStructsPropertyCallbacks;
+    std::vector<std::function<void(AllTypes, boost::optional<AllTypes>)>> _readWriteTwoStructsPropertyCallbacks;
     std::mutex _readWriteTwoStructsPropertyCallbacksMutex;
 
     // ---read_only_enum Property---
@@ -836,7 +861,7 @@ private:
     // ---read_write_optional_enum Property---
 
     // Current value for the `read_write_optional_enum` property.
-    boost::optional<Numbers> _readWriteOptionalEnumProperty;
+    boost::optional<ReadWriteOptionalEnumProperty> _readWriteOptionalEnumProperty;
 
     // This is the property version  of `read_write_optional_enum`.
     int _lastReadWriteOptionalEnumPropertyVersion = -1;
@@ -899,7 +924,7 @@ private:
     // ---read_write_optional_datetime Property---
 
     // Current value for the `read_write_optional_datetime` property.
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> _readWriteOptionalDatetimeProperty;
+    boost::optional<ReadWriteOptionalDatetimeProperty> _readWriteOptionalDatetimeProperty;
 
     // This is the property version  of `read_write_optional_datetime`.
     int _lastReadWriteOptionalDatetimePropertyVersion = -1;
@@ -962,7 +987,7 @@ private:
     // ---read_write_optional_duration Property---
 
     // Current value for the `read_write_optional_duration` property.
-    boost::optional<std::chrono::duration<double>> _readWriteOptionalDurationProperty;
+    boost::optional<ReadWriteOptionalDurationProperty> _readWriteOptionalDurationProperty;
 
     // This is the property version  of `read_write_optional_duration`.
     int _lastReadWriteOptionalDurationPropertyVersion = -1;
@@ -1025,7 +1050,7 @@ private:
     // ---read_write_optional_binary Property---
 
     // Current value for the `read_write_optional_binary` property.
-    boost::optional<std::vector<uint8_t>> _readWriteOptionalBinaryProperty;
+    boost::optional<ReadWriteOptionalBinaryProperty> _readWriteOptionalBinaryProperty;
 
     // This is the property version  of `read_write_optional_binary`.
     int _lastReadWriteOptionalBinaryPropertyVersion = -1;

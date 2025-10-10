@@ -56,19 +56,28 @@ impl WeatherMethodHandlers for WeatherMethodImpl {
 
 #[tokio::main]
 async fn main() {
-    env_logger::Builder::from_default_env()
-        .target(env_logger::Target::Stdout)
-        .init();
-
     block_on(async {
-        let conn_opts = MqttierOptions::new()
+        let mqttier_options = MqttierOptions::new()
             .connection(Connection::TcpLocalhost(1883))
+            .client_id("rust-server-demo".to_string())
             .build();
-        let mut connection = MqttierClient::new(conn_opts).unwrap();
+        let mut connection = MqttierClient::new(mqttier_options).unwrap();
 
         let handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers>>> =
             Arc::new(Mutex::new(Box::new(WeatherMethodImpl::new())));
-        let mut server = WeatherServer::new(&mut connection, handlers.clone()).await;
+
+        let mut server = WeatherServer::new(
+            &mut connection,
+            handlers.clone(),
+            "rust-server-demo:1".to_string(),
+        )
+        .await;
+
+        let mut looping_server = server.clone();
+        tokio::spawn(async move {
+            println!("Starting connection loop");
+            let _conn_loop = looping_server.run_loop().await;
+        });
 
         println!("Setting initial value for property 'location'");
         let new_value = LocationProperty {
@@ -89,7 +98,7 @@ async fn main() {
 
         println!("Setting initial value for property 'current_condition'");
         let new_value = CurrentConditionProperty {
-            condition: WeatherCondition::Sunny,
+            condition: WeatherCondition::Snowy,
             description: "apples".to_string(),
         };
         let prop_init_future = server.set_current_condition(new_value).await;
@@ -103,21 +112,21 @@ async fn main() {
             monday: ForecastForDay {
                 high_temperature: 3.14,
                 low_temperature: 3.14,
-                condition: WeatherCondition::Sunny,
+                condition: WeatherCondition::Snowy,
                 start_time: "apples".to_string(),
                 end_time: "apples".to_string(),
             },
             tuesday: ForecastForDay {
                 high_temperature: 3.14,
                 low_temperature: 3.14,
-                condition: WeatherCondition::Sunny,
+                condition: WeatherCondition::Snowy,
                 start_time: "apples".to_string(),
                 end_time: "apples".to_string(),
             },
             wednesday: ForecastForDay {
                 high_temperature: 3.14,
                 low_temperature: 3.14,
-                condition: WeatherCondition::Sunny,
+                condition: WeatherCondition::Snowy,
                 start_time: "apples".to_string(),
                 end_time: "apples".to_string(),
             },
@@ -132,23 +141,23 @@ async fn main() {
         let new_value = HourlyForecastProperty {
             hour_0: ForecastForHour {
                 temperature: 3.14,
-                starttime: "apples".to_string(),
-                condition: WeatherCondition::Sunny,
+                starttime: chrono::Utc::now(),
+                condition: WeatherCondition::Snowy,
             },
             hour_1: ForecastForHour {
                 temperature: 3.14,
-                starttime: "apples".to_string(),
-                condition: WeatherCondition::Sunny,
+                starttime: chrono::Utc::now(),
+                condition: WeatherCondition::Snowy,
             },
             hour_2: ForecastForHour {
                 temperature: 3.14,
-                starttime: "apples".to_string(),
-                condition: WeatherCondition::Sunny,
+                starttime: chrono::Utc::now(),
+                condition: WeatherCondition::Snowy,
             },
             hour_3: ForecastForHour {
                 temperature: 3.14,
-                starttime: "apples".to_string(),
-                condition: WeatherCondition::Sunny,
+                starttime: chrono::Utc::now(),
+                condition: WeatherCondition::Snowy,
             },
         };
         let prop_init_future = server.set_hourly_forecast(new_value).await;
@@ -245,22 +254,22 @@ async fn main() {
         let new_value = HourlyForecastProperty {
             hour_0: ForecastForHour {
                 temperature: 1.0,
-                starttime: "foo".to_string(),
+                starttime: chrono::Utc::now(),
                 condition: WeatherCondition::Sunny,
             },
             hour_1: ForecastForHour {
                 temperature: 1.0,
-                starttime: "foo".to_string(),
+                starttime: chrono::Utc::now(),
                 condition: WeatherCondition::Sunny,
             },
             hour_2: ForecastForHour {
                 temperature: 1.0,
-                starttime: "foo".to_string(),
+                starttime: chrono::Utc::now(),
                 condition: WeatherCondition::Sunny,
             },
             hour_3: ForecastForHour {
                 temperature: 1.0,
-                starttime: "foo".to_string(),
+                starttime: chrono::Utc::now(),
                 condition: WeatherCondition::Sunny,
             },
         };
@@ -295,7 +304,6 @@ async fn main() {
                 e
             );
         }
-        let _server_loop_task = server.run_loop().await;
     });
     // Ctrl-C to stop
 }

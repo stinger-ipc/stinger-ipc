@@ -5,7 +5,6 @@ on the next generation.
 It contains enumerations used by the Full interface.
 */
 
-
 #pragma once
 
 #include <functional>
@@ -34,14 +33,16 @@ enum class MethodReturnCode
 
 struct MqttProperties
 {
-    MqttProperties()
-        : correlationId(boost::none),
-            responseTopic(boost::none),
-            returnCode(boost::none),
-            subscriptionId(boost::none),
-            propertyVersion(boost::none),
-            messageExpiryInterval(boost::none)
-    {}
+    MqttProperties():
+        correlationId(boost::none),
+        responseTopic(boost::none),
+        returnCode(boost::none),
+        subscriptionId(boost::none),
+        propertyVersion(boost::none),
+        messageExpiryInterval(boost::none)
+    {
+    }
+
     boost::optional<std::string> correlationId;
     boost::optional<std::string> responseTopic;
     boost::optional<MethodReturnCode> returnCode;
@@ -50,7 +51,7 @@ struct MqttProperties
     boost::optional<int> messageExpiryInterval;
 };
 
-typedef std::function<void(int, const char *)> LogFunctionType;
+typedef std::function<void(int, const char*)> LogFunctionType;
 typedef int CallbackHandleType;
 
 class IBrokerConnection
@@ -71,11 +72,7 @@ public:
     /*! Provide a callback to be called on an incoming message.
      * Implementation should accept this at any time, even when not connected.
      */
-    virtual CallbackHandleType AddMessageCallback(const std::function<void
-            (const std::string&, 
-            const std::string&, 
-            const MqttProperties&
-        )>& cb) = 0;
+    virtual CallbackHandleType AddMessageCallback(const std::function<void(const std::string&, const std::string&, const MqttProperties&)>& cb) = 0;
 
     virtual void RemoveMessageCallback(CallbackHandleType handle) = 0;
 
@@ -92,5 +89,5 @@ public:
 
     virtual void SetLogLevel(int level) = 0;
 
-    virtual void Log(int level, const char *fmt, ...) const = 0;
-}; 
+    virtual void Log(int level, const char* fmt, ...) const = 0;
+};

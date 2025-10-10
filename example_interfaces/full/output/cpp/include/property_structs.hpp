@@ -5,88 +5,79 @@ on the next generation.
 It contains enumerations used by the Full interface.
 */
 
-
 #pragma once
 #include <string>
 #include <rapidjson/document.h>
 #include "enums.hpp"
 #include "structs.hpp"
 
-
-
 /**
- * The `favorite_number` property contains a single field:
- *   int number;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * My favorite number
  * 
  */
-typedef int FavoriteNumberProperty;
+struct FavoriteNumberProperty
+{
+    static FavoriteNumberProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    int number;
+};
 
-
-struct FavoriteFoodsProperty {
+struct FavoriteFoodsProperty
+{
     static FavoriteFoodsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::string drink;
-    int slices_of_pizza;
+    int slicesOfPizza;
     boost::optional<std::string> breakfast;
 };
 
-
-struct LunchMenuProperty {
+struct LunchMenuProperty
+{
     static LunchMenuProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     Lunch monday;
-    Lunch tuesday;  ///< Tuesday's lunch menu.
+    Lunch tuesday; ///< Tuesday's lunch menu.
 };
 
-
-
 /**
- * The `family_name` property contains a single field:
- *   std::string family_name;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * This is to test a property with a single string value.
  */
-typedef std::string FamilyNameProperty;
-
-
+struct FamilyNameProperty
+{
+    static FamilyNameProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::string familyName;
+};
 
 /**
- * The `last_breakfast_time` property contains a single field:
- *   std::chrono::time_point<std::chrono::system_clock> timestamp;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * This is to test a property with a single datetime value.
  */
-typedef std::chrono::time_point<std::chrono::system_clock> LastBreakfastTimeProperty;
-
-
+struct LastBreakfastTimeProperty
+{
+    static LastBreakfastTimeProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::chrono::time_point<std::chrono::system_clock> timestamp;
+};
 
 /**
- * The `breakfast_length` property contains a single field:
- *   std::chrono::duration<double> length;
- *
- * Because there is only one field, no outer-structure is needed. 
- *
  * This is to test a property with a single duration value.
  */
-typedef std::chrono::duration<double> BreakfastLengthProperty;
+struct BreakfastLengthProperty
+{
+    static BreakfastLengthProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::chrono::duration<double> length;
+};
 
 /**
  * This is to test a property with multiple datetime values.
  */
-struct LastBirthdaysProperty {
+struct LastBirthdaysProperty
+{
     static LastBirthdaysProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::chrono::time_point<std::chrono::system_clock> mom;
     std::chrono::time_point<std::chrono::system_clock> dad;
     boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister;
-    boost::optional<int> brothers_age;
+    boost::optional<int> brothersAge;
 };
-

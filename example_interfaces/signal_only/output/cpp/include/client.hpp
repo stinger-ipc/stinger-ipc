@@ -19,7 +19,8 @@ It contains enumerations used by the SignalOnly interface.
 #include <boost/optional.hpp>
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
-#include "return_types.hpp"
+#include "method_payloads.hpp"
+#include "signal_payloads.hpp"
 
 class SignalOnlyClient
 {
@@ -43,11 +44,11 @@ public:
     // The provided method will be called whenever a `bark` is received.
     void registerBarkCallback(const std::function<void(std::string)>& cb);
 
-    // Register a callback for the `maybe_number` signal.
+    // Register a callback for the `maybe_number` signal.  The argument is optional.
     // The provided method will be called whenever a `maybe_number` is received.
     void registerMaybeNumberCallback(const std::function<void(boost::optional<int>)>& cb);
 
-    // Register a callback for the `maybe_name` signal.
+    // Register a callback for the `maybe_name` signal.  The argument is optional.
     // The provided method will be called whenever a `maybe_name` is received.
     void registerMaybeNameCallback(const std::function<void(boost::optional<std::string>)>& cb);
 

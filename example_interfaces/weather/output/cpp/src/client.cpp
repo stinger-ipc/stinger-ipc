@@ -218,7 +218,9 @@ void WeatherClient::_handleRefreshDailyForecastResponse(
     auto promiseItr = _pendingRefreshDailyForecastMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshDailyForecastMethodCalls.end())
     {
-        // There are no values in the response.
+        // Found the promise for this correlation ID.
+
+        // Method doesn't have any return values.
         promiseItr->second.set_value();
     }
 
@@ -260,7 +262,9 @@ void WeatherClient::_handleRefreshHourlyForecastResponse(
     auto promiseItr = _pendingRefreshHourlyForecastMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshHourlyForecastMethodCalls.end())
     {
-        // There are no values in the response.
+        // Found the promise for this correlation ID.
+
+        // Method doesn't have any return values.
         promiseItr->second.set_value();
     }
 
@@ -302,7 +306,9 @@ void WeatherClient::_handleRefreshCurrentConditionsResponse(
     auto promiseItr = _pendingRefreshCurrentConditionsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshCurrentConditionsMethodCalls.end())
     {
-        // There are no values in the response.
+        // Found the promise for this correlation ID.
+
+        // Method doesn't have any return values.
         promiseItr->second.set_value();
     }
 
@@ -359,7 +365,6 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
         for (const auto& cb: _locationPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.latitude, tempValue.longitude);
         }
     }
@@ -368,7 +373,11 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
 boost::optional<LocationProperty> WeatherClient::getLocationProperty() const
 {
     std::lock_guard<std::mutex> lock(_locationPropertyMutex);
-    return _locationProperty;
+    if (_locationProperty)
+    {
+        return *_locationProperty;
+    }
+    return boost::none;
 }
 
 void WeatherClient::registerLocationPropertyCallback(const std::function<void(double latitude, double longitude)>& cb)
@@ -409,14 +418,16 @@ void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
     }
     CurrentTemperatureProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("temperature_f");
-    if (itr != doc.MemberEnd() && itr->value.IsDouble())
-    {
-        tempValue = itr->value.GetDouble();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("temperature_f");
+        if (itr != doc.MemberEnd() && itr->value.IsDouble())
+        {
+            tempValue.temperatureF = itr->value.GetDouble();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -430,19 +441,22 @@ void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
         for (const auto& cb: _currentTemperaturePropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.temperatureF);
         }
     }
 }
 
-boost::optional<CurrentTemperatureProperty> WeatherClient::getCurrentTemperatureProperty() const
+boost::optional<double> WeatherClient::getCurrentTemperatureProperty() const
 {
     std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
-    return _currentTemperatureProperty;
+    if (_currentTemperatureProperty)
+    {
+        return _currentTemperatureProperty->temperatureF;
+    }
+    return boost::none;
 }
 
-void WeatherClient::registerCurrentTemperaturePropertyCallback(const std::function<void(double temperature_f)>& cb)
+void WeatherClient::registerCurrentTemperaturePropertyCallback(const std::function<void(double temperatureF)>& cb)
 {
     std::lock_guard<std::mutex> lock(_currentTemperaturePropertyCallbacksMutex);
     _currentTemperaturePropertyCallbacks.push_back(cb);
@@ -498,7 +512,6 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
         for (const auto& cb: _currentConditionPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.condition, tempValue.description);
         }
     }
@@ -507,10 +520,14 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
 boost::optional<CurrentConditionProperty> WeatherClient::getCurrentConditionProperty() const
 {
     std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
-    return _currentConditionProperty;
+    if (_currentConditionProperty)
+    {
+        return *_currentConditionProperty;
+    }
+    return boost::none;
 }
 
-void WeatherClient::registerCurrentConditionPropertyCallback(const std::function<void(WeatherCondition condition, const std::string& description)>& cb)
+void WeatherClient::registerCurrentConditionPropertyCallback(const std::function<void(WeatherCondition condition, std::string description)>& cb)
 {
     std::lock_guard<std::mutex> lock(_currentConditionPropertyCallbacksMutex);
     _currentConditionPropertyCallbacks.push_back(cb);
@@ -577,7 +594,6 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
         for (const auto& cb: _dailyForecastPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
             cb(tempValue.monday, tempValue.tuesday, tempValue.wednesday);
         }
     }
@@ -586,7 +602,11 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
 boost::optional<DailyForecastProperty> WeatherClient::getDailyForecastProperty() const
 {
     std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
-    return _dailyForecastProperty;
+    if (_dailyForecastProperty)
+    {
+        return *_dailyForecastProperty;
+    }
+    return boost::none;
 }
 
 void WeatherClient::registerDailyForecastPropertyCallback(const std::function<void(ForecastForDay monday, ForecastForDay tuesday, ForecastForDay wednesday)>& cb)
@@ -615,7 +635,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_0");
         if (itr != doc.MemberEnd() && itr->value.IsObject())
         {
-            tempValue.hour_0 = ForecastForHour::FromRapidJsonObject(itr->value);
+            tempValue.hour0 = ForecastForHour::FromRapidJsonObject(itr->value);
         }
         else
         {
@@ -626,7 +646,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_1");
         if (itr != doc.MemberEnd() && itr->value.IsObject())
         {
-            tempValue.hour_1 = ForecastForHour::FromRapidJsonObject(itr->value);
+            tempValue.hour1 = ForecastForHour::FromRapidJsonObject(itr->value);
         }
         else
         {
@@ -637,7 +657,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_2");
         if (itr != doc.MemberEnd() && itr->value.IsObject())
         {
-            tempValue.hour_2 = ForecastForHour::FromRapidJsonObject(itr->value);
+            tempValue.hour2 = ForecastForHour::FromRapidJsonObject(itr->value);
         }
         else
         {
@@ -648,7 +668,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         rapidjson::Value::ConstMemberIterator itr = doc.FindMember("hour_3");
         if (itr != doc.MemberEnd() && itr->value.IsObject())
         {
-            tempValue.hour_3 = ForecastForHour::FromRapidJsonObject(itr->value);
+            tempValue.hour3 = ForecastForHour::FromRapidJsonObject(itr->value);
         }
         else
         {
@@ -667,8 +687,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         for (const auto& cb: _hourlyForecastPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue.hour_0, tempValue.hour_1, tempValue.hour_2, tempValue.hour_3);
+            cb(tempValue.hour0, tempValue.hour1, tempValue.hour2, tempValue.hour3);
         }
     }
 }
@@ -676,10 +695,14 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
 boost::optional<HourlyForecastProperty> WeatherClient::getHourlyForecastProperty() const
 {
     std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
-    return _hourlyForecastProperty;
+    if (_hourlyForecastProperty)
+    {
+        return *_hourlyForecastProperty;
+    }
+    return boost::none;
 }
 
-void WeatherClient::registerHourlyForecastPropertyCallback(const std::function<void(ForecastForHour hour_0, ForecastForHour hour_1, ForecastForHour hour_2, ForecastForHour hour_3)>& cb)
+void WeatherClient::registerHourlyForecastPropertyCallback(const std::function<void(ForecastForHour hour0, ForecastForHour hour1, ForecastForHour hour2, ForecastForHour hour3)>& cb)
 {
     std::lock_guard<std::mutex> lock(_hourlyForecastPropertyCallbacksMutex);
     _hourlyForecastPropertyCallbacks.push_back(cb);
@@ -701,14 +724,16 @@ void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const 
     }
     CurrentConditionRefreshIntervalProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.seconds = itr->value.GetInt();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -722,16 +747,19 @@ void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const 
         for (const auto& cb: _currentConditionRefreshIntervalPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.seconds);
         }
     }
 }
 
-boost::optional<CurrentConditionRefreshIntervalProperty> WeatherClient::getCurrentConditionRefreshIntervalProperty() const
+boost::optional<int> WeatherClient::getCurrentConditionRefreshIntervalProperty() const
 {
     std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
-    return _currentConditionRefreshIntervalProperty;
+    if (_currentConditionRefreshIntervalProperty)
+    {
+        return _currentConditionRefreshIntervalProperty->seconds;
+    }
+    return boost::none;
 }
 
 void WeatherClient::registerCurrentConditionRefreshIntervalPropertyCallback(const std::function<void(int seconds)>& cb)
@@ -770,14 +798,16 @@ void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const st
     }
     HourlyForecastRefreshIntervalProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.seconds = itr->value.GetInt();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -791,16 +821,19 @@ void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const st
         for (const auto& cb: _hourlyForecastRefreshIntervalPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.seconds);
         }
     }
 }
 
-boost::optional<HourlyForecastRefreshIntervalProperty> WeatherClient::getHourlyForecastRefreshIntervalProperty() const
+boost::optional<int> WeatherClient::getHourlyForecastRefreshIntervalProperty() const
 {
     std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
-    return _hourlyForecastRefreshIntervalProperty;
+    if (_hourlyForecastRefreshIntervalProperty)
+    {
+        return _hourlyForecastRefreshIntervalProperty->seconds;
+    }
+    return boost::none;
 }
 
 void WeatherClient::registerHourlyForecastRefreshIntervalPropertyCallback(const std::function<void(int seconds)>& cb)
@@ -839,14 +872,16 @@ void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std
     }
     DailyForecastRefreshIntervalProperty tempValue;
 
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
-    if (itr != doc.MemberEnd() && itr->value.IsInt())
-    {
-        tempValue = itr->value.GetInt();
-    }
-    else
-    {
-        throw std::runtime_error("Received payload doesn't have required value/type");
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seconds");
+        if (itr != doc.MemberEnd() && itr->value.IsInt())
+        {
+            tempValue.seconds = itr->value.GetInt();
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
     }
 
     { // Scope lock
@@ -860,16 +895,19 @@ void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std
         for (const auto& cb: _dailyForecastRefreshIntervalPropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-
-            cb(tempValue);
+            cb(tempValue.seconds);
         }
     }
 }
 
-boost::optional<DailyForecastRefreshIntervalProperty> WeatherClient::getDailyForecastRefreshIntervalProperty() const
+boost::optional<int> WeatherClient::getDailyForecastRefreshIntervalProperty() const
 {
     std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
-    return _dailyForecastRefreshIntervalProperty;
+    if (_dailyForecastRefreshIntervalProperty)
+    {
+        return _dailyForecastRefreshIntervalProperty->seconds;
+    }
+    return boost::none;
 }
 
 void WeatherClient::registerDailyForecastRefreshIntervalPropertyCallback(const std::function<void(int seconds)>& cb)

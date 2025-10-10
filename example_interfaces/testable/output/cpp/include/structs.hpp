@@ -13,39 +13,24 @@ It contains enumerations used by the Test Able interface.
 #include <boost/optional.hpp>
 #include <rapidjson/document.h>
 #include "enums.hpp"
-
-// Utility function to convert ISO timestamp string to time_point
-std::chrono::time_point<std::chrono::system_clock> parseIsoTimestamp(const std::string& isoTimestamp);
-
-// Utility function to convert time_point to ISO timestamp string
-std::string timePointToIsoString(const std::chrono::time_point<std::chrono::system_clock>& timePoint);
-
-std::string durationToIsoString(const std::chrono::duration<double>& duration);
-
-std::chrono::duration<double> parseIsoDuration(const std::string& isoDuration);
-
-// Base64 encode binary data using Boost; takes a vector of unsigned bytes and returns std::string
-std::string base64Encode(const std::vector<unsigned char>& data);
-
-// Decode a base64 encoded string into a vector of bytes
-std::vector<unsigned char> base64Decode(const std::string& b64input);
+#include "conversions.hpp"
 
 struct AllTypes
 {
     static AllTypes FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    bool bool_;
-    int int_;
-    double number;
-    std::string str;
-    Numbers enum_;
-    std::chrono::time_point<std::chrono::system_clock> date_and_time;
-    std::chrono::duration<double> time_duration;
+    bool theBool;
+    int theInt;
+    double theNumber;
+    std::string theStr;
+    Numbers theEnum;
+    std::chrono::time_point<std::chrono::system_clock> dateAndTime;
+    std::chrono::duration<double> timeDuration;
     std::vector<uint8_t> data;
-    boost::optional<int> OptionalInteger;
-    boost::optional<std::string> OptionalString;
-    boost::optional<Numbers> OptionalEnum;
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> OptionalDateTime;
-    boost::optional<std::chrono::duration<double>> OptionalDuration;
-    boost::optional<std::vector<uint8_t>> OptionalBinary;
+    boost::optional<int> optionalInteger;
+    boost::optional<std::string> optionalString;
+    boost::optional<Numbers> optionalEnum;
+    boost::optional<std::chrono::time_point<std::chrono::system_clock>> optionalDateTime;
+    boost::optional<std::chrono::duration<double>> optionalDuration;
+    boost::optional<std::vector<uint8_t>> optionalBinary;
 };

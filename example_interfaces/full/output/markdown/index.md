@@ -250,7 +250,7 @@ client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> 
 A `todayIs` signal can be emitted by calling the server's `emitTodayIsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
 ```cpp
-auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), {101, 120, 97, 109, 112, 108, 101});
+auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101});
 todayIsFuture.wait(); // Optional, to block until signal is sent.
 ```
 
@@ -372,10 +372,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_do_something 
-def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
+def do_something(aString: str) -> stinger_types.DoSomethingReturnValues:
     """ This is an example handler for the 'doSomething' method.  """
     print(f"Running do_something'({aString})'")
-    return stinger_types.DoSomethingReturnValue(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.SATURDAY)
+    return stinger_types.DoSomethingReturnValues(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.SATURDAY)
 ```
 
 </details>
@@ -556,10 +556,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_set_the_time 
-def set_the_time(the_first_time: datetime, the_second_time: datetime) -> stinger_types.SetTheTimeReturnValue:
+def set_the_time(the_first_time: datetime, the_second_time: datetime) -> stinger_types.SetTheTimeReturnValues:
     """ This is an example handler for the 'set_the_time' method.  """
     print(f"Running set_the_time'({the_first_time}, {the_second_time})'")
-    return stinger_types.SetTheTimeReturnValue(timestamp=datetime.now(), confirmation_message="apples")
+    return stinger_types.SetTheTimeReturnValues(timestamp=datetime.now(), confirmation_message="apples")
 ```
 
 </details>

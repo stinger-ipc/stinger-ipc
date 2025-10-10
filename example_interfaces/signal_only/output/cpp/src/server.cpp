@@ -13,6 +13,7 @@
 #include <rapidjson/document.h>
 #include "structs.hpp"
 #include "server.hpp"
+#include "method_payloads.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
 

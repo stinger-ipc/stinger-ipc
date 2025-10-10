@@ -37,9 +37,10 @@ int main(int argc, char** argv)
     WeatherClient client(conn, serviceId);
 
     // Register callbacks for signals.
-    client.registerCurrentTimeCallback([](const std::string& current_time)
+    client.registerCurrentTimeCallback([](std::string currentTime)
                                        {
-                                           std::cout << "Received CURRENT_TIME signal: " << "current_time=" << current_time << std::endl;
+                                           std::cout << "Received CURRENT_TIME signal: "
+                                                     << "current_time=" << currentTime << std::endl;
                                        });
 
     // Register callbacks for property updates.
@@ -48,12 +49,12 @@ int main(int argc, char** argv)
                                                 std::cout << "Received update for location property: " << "latitude=" << latitude /* unhandled arg type*/ << " | " << "longitude=" << longitude /* unhandled arg type*/ << std::endl;
                                             });
 
-    client.registerCurrentTemperaturePropertyCallback([](double temperature_f)
+    client.registerCurrentTemperaturePropertyCallback([](double temperatureF)
                                                       {
-                                                          std::cout << "Received update for current_temperature property: " << "temperature_f=" << temperature_f /* unhandled arg type*/ << std::endl;
+                                                          std::cout << "Received update for current_temperature property: " << "temperature_f=" << temperatureF /* unhandled arg type*/ << std::endl;
                                                       });
 
-    client.registerCurrentConditionPropertyCallback([](WeatherCondition condition, const std::string& description)
+    client.registerCurrentConditionPropertyCallback([](WeatherCondition condition, std::string description)
                                                     {
                                                         std::cout << "Received update for current_condition property: " << "condition=" << weatherConditionStrings[static_cast<int>(condition)]
                                                                   << " | " << "description=" << description /* unhandled arg type*/ << std::endl;
@@ -67,7 +68,7 @@ int main(int argc, char** argv)
                                                                << std::endl;
                                                  });
 
-    client.registerHourlyForecastPropertyCallback([](ForecastForHour hour_0, ForecastForHour hour_1, ForecastForHour hour_2, ForecastForHour hour_3)
+    client.registerHourlyForecastPropertyCallback([](ForecastForHour hour0, ForecastForHour hour1, ForecastForHour hour2, ForecastForHour hour3)
                                                   {
                                                       std::cout << "Received update for hourly_forecast property: " << "hour_0=" << "[ForecastForHour object]"
                                                                 << " | " << "hour_1=" << "[ForecastForHour object]"
@@ -92,35 +93,50 @@ int main(int argc, char** argv)
                                                                 });
 
     // Call each method with example values.
-    std::cout << "Calling refresh_daily_forecast" << std::endl;
-    auto refreshDailyForecastResultFuture = client.refreshDailyForecast();
-    auto refreshDailyForecastStatus = refreshDailyForecastResultFuture.wait_for(boost::chrono::seconds(5));
-    if (refreshDailyForecastStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for refresh_daily_forecast response." << std::endl;
+
+    // ----------------------METHOD REFRESH_DAILY_FORECAST-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING REFRESH_DAILY_FORECAST" << std::endl;
+        auto refreshDailyForecastResultFuture = client.refreshDailyForecast();
+        auto refreshDailyForecastStatus = refreshDailyForecastResultFuture.wait_for(boost::chrono::seconds(5));
+        if (refreshDailyForecastStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for REFRESH_DAILY_FORECAST response." << std::endl;
+        }
+        else
+        {
+            std::cout << "REFRESH_DAILY_FORECAST Completed.  It has not return values." << std::endl;
+        }
     }
-    else
-    {
+
+    // ----------------------METHOD REFRESH_HOURLY_FORECAST-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING REFRESH_HOURLY_FORECAST" << std::endl;
+        auto refreshHourlyForecastResultFuture = client.refreshHourlyForecast();
+        auto refreshHourlyForecastStatus = refreshHourlyForecastResultFuture.wait_for(boost::chrono::seconds(5));
+        if (refreshHourlyForecastStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for REFRESH_HOURLY_FORECAST response." << std::endl;
+        }
+        else
+        {
+            std::cout << "REFRESH_HOURLY_FORECAST Completed.  It has not return values." << std::endl;
+        }
     }
-    std::cout << "Calling refresh_hourly_forecast" << std::endl;
-    auto refreshHourlyForecastResultFuture = client.refreshHourlyForecast();
-    auto refreshHourlyForecastStatus = refreshHourlyForecastResultFuture.wait_for(boost::chrono::seconds(5));
-    if (refreshHourlyForecastStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for refresh_hourly_forecast response." << std::endl;
-    }
-    else
-    {
-    }
-    std::cout << "Calling refresh_current_conditions" << std::endl;
-    auto refreshCurrentConditionsResultFuture = client.refreshCurrentConditions();
-    auto refreshCurrentConditionsStatus = refreshCurrentConditionsResultFuture.wait_for(boost::chrono::seconds(5));
-    if (refreshCurrentConditionsStatus == boost::future_status::timeout)
-    {
-        std::cout << "TIMEOUT after 5 seconds waiting for refresh_current_conditions response." << std::endl;
-    }
-    else
-    {
+
+    // ----------------------METHOD REFRESH_CURRENT_CONDITIONS-----------------------------------------
+    { // Restrict scope
+        std::cout << "CALLING REFRESH_CURRENT_CONDITIONS" << std::endl;
+        auto refreshCurrentConditionsResultFuture = client.refreshCurrentConditions();
+        auto refreshCurrentConditionsStatus = refreshCurrentConditionsResultFuture.wait_for(boost::chrono::seconds(5));
+        if (refreshCurrentConditionsStatus == boost::future_status::timeout)
+        {
+            std::cout << "TIMEOUT after 5 seconds waiting for REFRESH_CURRENT_CONDITIONS response." << std::endl;
+        }
+        else
+        {
+            std::cout << "REFRESH_CURRENT_CONDITIONS Completed.  It has not return values." << std::endl;
+        }
     }
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;

@@ -15,6 +15,7 @@
 #include <rapidjson/document.h>
 #include "structs.hpp"
 #include "server.hpp"
+#include "method_payloads.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include "ibrokerconnection.hpp"
 
@@ -118,7 +119,7 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
-boost::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+boost::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -149,99 +150,40 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         const boost::optional<std::string> optResponseTopic) const
 {
     _broker->Log(LOG_INFO, "Handling call to {{method_name}}");
-    if (_{{method_name | camelCase}}Handler) {
-        {%for arg in method.arg_list%}
-        {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}};
-        { // Scoping
-            rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
-            if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
-                {%if arg.arg_type.name.lower() == 'primitive'%}
-                temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
-                {%elif arg.arg_type.name.lower() == 'enum'%}
-                // Convert the json integer into the enum type.
-                temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
-                {%elif arg.arg_type.name.lower() == 'struct'%}
-                // Convert the json object into the struct type.
-                if (itr->value.IsObject()) {
-                    temp{{arg.name|UpperCamelCase}} = {{arg.cpp_type}}::FromRapidJsonObject(itr->value);
-                }
-                {%endif%}
-            } else {
-                throw std::runtime_error("Received payload doesn't have required value/type");
-            }
-        }
-        {%endfor%}
+    if (!_{{method_name | camelCase}}Handler) {
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
+    {%if method.arg_list | length > 0 %}
+    auto requestArgs = {{method_name | UpperCamelCase}}RequestArguments::FromRapidJsonObject(doc);
+    {%endif%}
+    {%if method.return_arg_list | length == 0 %}
+    // Method doesn't have any return values.
+    _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+    auto returnValues = {{method_name | UpperCamelCase}}ReturnValues();
+    {%elif method.return_arg_list | length == 1%}
+    // Method has a single return value.
+    auto returnValue = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {{method_name | UpperCamelCase}}ReturnValues returnValues = {returnValue};
+    {%else%}
+    // Method has multiple return values.
+    auto returnValues = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {%endif%}
 
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+        
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
-        {%if method.return_value_type is false -%}
-        // No Return Value.
-        _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
-        {%elif method.return_value_type == "multiple" %}
-        // Return value has multiple values.
-        {{method.return_value_cpp_class}} ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
-        {%else%}
-        // Return value is a single value.
-        {{method.return_value_cpp_class}} ret = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
-        {%endif%} 
-
-        if (optResponseTopic)
-        {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
-            
-            {%macro add_arg_to_json(arg, value) %}
-            // add the '{{value}}' value to the json as '{{arg.name}}'.
-            rapidjson::Value returnValue{{arg.name|UpperCamelCase}};
-            {%-if arg.arg_type.name.lower() == 'primitive' %}
-            {%-if arg.type.name.lower() == 'string' %}
-            returnValue{{arg.name|UpperCamelCase}}.SetString({{value}}{%if arg.optional%}->{%else%}.{%endif%}c_str(), {{value}}{%if arg.optional%}->{%else%}.{%endif%}size(), responseJson.GetAllocator());
-            {%-else%}
-            returnValue{{arg.name|UpperCamelCase}}.Set{{arg.cpp_rapidjson_type | UpperCamelCase}}({%if arg.optional%}*{%endif%}{{value}}); // Rapid Json type for {{arg.arg_type}} is {{arg.cpp_rapidjson_type}}
-            {%-endif%} {# value type string/primitive #}
-            {%-elif arg.arg_type.name.lower() == 'enum'%}
-            {%if arg.optional%}
-            if ({{value}})
-            {
-                returnValue{{arg.name|UpperCamelCase}}.SetInt(static_cast<int>(*{{value}}));
-            }
-            else
-            {
-                returnValue{{arg.name|UpperCamelCase}}.SetNull();
-            }
-            {%else%}
-            returnValue{{arg.name|UpperCamelCase}}.SetInt(static_cast<int>({{value}}));
-            {%endif%}
-            {%-endif%} {# value or enum#}
-            responseJson.AddMember("{{arg.name}}", returnValue{{arg.name|UpperCamelCase}}, responseJson.GetAllocator());
-            {%endmacro%}
-            {%-if method.return_value_type == 'struct'%}
-            // Return type is a struct of values that need added to json
-            {%for member in method.return_value.members-%}
-            {%if method.return_value.optional%}
-            {{add_arg_to_json(member, "ret->"+member.name)}}
-            {%else%}
-            {{add_arg_to_json(member, "ret."+member.name)}}
-            {%endif%}
-            {%endfor%}
-
-            {%-elif method.return_value_type == 'multiple'%}
-            // Return type is a struct of values that need added to json
-            {%for member in method.return_value-%}
-            {{add_arg_to_json(member, "ret."+member.name)}}
-            {%endfor%}
-
-            {%-elif method.return_value_type is not false%}
-            // Return type is a single value
-            {{add_arg_to_json(method.return_value, "ret")}}
-            {%-endif%}
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-            MqttProperties mqttProps;
-            mqttProps.correlationId = optCorrelationId;
-            mqttProps.returnCode = MethodReturnCode::SUCCESS;
-            _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-        }
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
     }
 }
 {%endfor%}
@@ -255,11 +197,7 @@ void {{stinger.cpp.server_class_name}}::update{{prop_name | UpperCamelCase}}Prop
 {
     { // Scope lock
     std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
-        {%if prop.arg_list|length == 1 -%}
-        _{{prop_name | lowerCamelCase}}Property = {{prop.arg_list[0].name}};
-        {%else-%}
-        _{{prop_name | lowerCamelCase}}Property = {{prop_name | UpperCamelCase}}Property{ {%for arg in prop.arg_list %}{{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%} };
-        {%endif-%}
+        _{{prop_name | lowerCamelCase}}Property = {{prop_name | UpperCamelCase}}Property{ {%for arg in prop.arg_list %}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
         _last{{prop_name | UpperCamelCase}}PropertyVersion++;
     }
     { // Scope lock
@@ -279,38 +217,7 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
     if (_{{prop_name | lowerCamelCase}}Property)
     {
         doc.SetObject();
-        {%if prop.arg_list|length == 1 -%}
-        {%if prop.arg_list[0].arg_type.name.lower() == 'primitive' and prop.arg_list[0].type.name.lower() == 'string' -%}
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString(_{{prop_name | lowerCamelCase}}Property->c_str(), _{{prop_name | lowerCamelCase}}Property->size(), doc.GetAllocator());
-        doc.AddMember("{{prop.arg_list[0].name}}", tempStringValue, doc.GetAllocator());
-        {%elif prop.arg_list[0].arg_type.name.lower() == 'datetime' -%}
-        // Datetime field
-        std::string {{prop.arg_list[0].name|lowerCamelCase}}Str = timePointToIsoString(*_{{prop_name | lowerCamelCase}}Property);
-        rapidjson::Value {{prop.arg_list[0].name|lowerCamelCase}}Value({{prop.arg_list[0].name|lowerCamelCase}}Str.c_str(), doc.GetAllocator());
-        doc.AddMember("{{prop.arg_list[0].name}}", {{prop.arg_list[0].name|lowerCamelCase}}Value, doc.GetAllocator());
-        {%elif prop.arg_list[0].arg_type.name.lower() == 'duration' -%}
-        // duration field
-        std::string {{prop.arg_list[0].name|lowerCamelCase}}Str = durationToIsoString(*_{{prop_name | lowerCamelCase}}Property);
-        rapidjson::Value {{prop.arg_list[0].name|lowerCamelCase}}Value({{prop.arg_list[0].name|lowerCamelCase}}Str.c_str(), doc.GetAllocator());
-        doc.AddMember("{{prop.arg_list[0].name}}", {{prop.arg_list[0].name|lowerCamelCase}}Value, doc.GetAllocator());
-        {%elif prop.arg_list[0].arg_type.name.lower() == 'binary' -%}
-        // binary field
-        std::string {{prop.arg_list[0].name|lowerCamelCase}}Str = base64Encode(*_{{prop_name | lowerCamelCase}}Property);
-        rapidjson::Value {{prop.arg_list[0].name|lowerCamelCase}}Value({{prop.arg_list[0].name|lowerCamelCase}}Str.c_str(), doc.GetAllocator());
-        doc.AddMember("{{prop.arg_list[0].name}}", {{prop.arg_list[0].name|lowerCamelCase}}Value, doc.GetAllocator());
-        {%elif prop.arg_list[0].arg_type.name.lower() == 'enum' -%}
-        // enumeration
-        doc.AddMember("{{prop.arg_list[0].name}}", static_cast<int>(*_{{prop_name | lowerCamelCase}}Property), doc.GetAllocator());
-        {%elif prop.arg_list[0].arg_type.name.lower() == 'struct' -%}
-        // structure
         _{{prop_name | lowerCamelCase}}Property->AddToRapidJsonObject(doc, doc.GetAllocator());
-        {%else%} {# not string primitive #}
-        doc.AddMember("{{prop.arg_list[0].name}}", *_{{prop_name | lowerCamelCase}}Property, doc.GetAllocator());
-        {%endif%} {# primitive string or other primitive #}
-        {%else%} {# complex type #}
-        _{{prop_name | lowerCamelCase}}Property->AddToRapidJsonObject(doc, doc.GetAllocator());
-        {%endif%}
     }
     else
     {
@@ -342,28 +249,12 @@ void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     // TODO: Check _last{{prop_name | UpperCamelCase}}PropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    {%if prop.arg_list | length == 1%}
-    {% set arg = prop.arg_list[0] %}
-    {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}}{%if arg.optional%} = boost::none{%endif%};
-    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
-    if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
-        {%if arg.arg_type.name.lower() == 'primitive'%}
-        temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
-        {%elif arg.arg_type.name.lower() == 'enum'%}
-        temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
-        {%endif%}
-    } else {
-        throw std::runtime_error("Received payload doesn't have required value/type");
-    }
-
-    {%else%}
     // Deserialize {{prop.arg_list|length}} values into struct.
-    {{pr.prop_value_type(prop)}} tempValue = {{pr.prop_value_type(prop)}}::FromRapidJsonObject(doc);
-    {%endif%}
+    {{prop_name|UpperCamelCase}}Property tempValue = {{prop_name|UpperCamelCase}}Property::FromRapidJsonObject(doc);
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
-        _{{prop_name | lowerCamelCase}}Property = {%if prop.arg_list|length == 1 %}temp{{arg.name|UpperCamelCase}};{%else%}tempValue;{%endif%}
+        _{{prop_name | lowerCamelCase}}Property = tempValue;
         _last{{prop_name | UpperCamelCase}}PropertyVersion++;
     }
     republish{{prop_name | UpperCamelCase}}Property();

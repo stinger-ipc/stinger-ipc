@@ -259,7 +259,7 @@ class FullServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
+    def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValues]):
         """This is a decorator to decorate a method that will handle the 'doSomething' method calls."""
         if self._method_do_something.callback is None and handler is not None:
             self._method_do_something.callback = handler
@@ -371,7 +371,7 @@ class FullServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
-    def handle_set_the_time(self, handler: Callable[[datetime, datetime], stinger_types.SetTheTimeReturnValue]):
+    def handle_set_the_time(self, handler: Callable[[datetime, datetime], stinger_types.SetTheTimeReturnValues]):
         """This is a decorator to decorate a method that will handle the 'set_the_time' method calls."""
         if self._method_set_the_time.callback is None and handler is not None:
             self._method_set_the_time.callback = handler
@@ -776,10 +776,10 @@ class FullServerBuilder:
     def __init__(self):
 
         self._add_numbers_method_handler: Optional[Callable[[int, int, Optional[int]], int]] = None
-        self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValue]] = None
+        self._do_something_method_handler: Optional[Callable[[str], stinger_types.DoSomethingReturnValues]] = None
         self._echo_method_handler: Optional[Callable[[str], str]] = None
         self._what_time_is_it_method_handler: Optional[Callable[[datetime], datetime]] = None
-        self._set_the_time_method_handler: Optional[Callable[[datetime, datetime], stinger_types.SetTheTimeReturnValue]] = None
+        self._set_the_time_method_handler: Optional[Callable[[datetime, datetime], stinger_types.SetTheTimeReturnValues]] = None
         self._forward_time_method_handler: Optional[Callable[[timedelta], datetime]] = None
         self._how_off_is_the_clock_method_handler: Optional[Callable[[datetime], timedelta]] = None
 
@@ -797,7 +797,7 @@ class FullServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValue]):
+    def handle_do_something(self, handler: Callable[[str], stinger_types.DoSomethingReturnValues]):
         if self._do_something_method_handler is None and handler is not None:
             self._do_something_method_handler = handler
         else:
@@ -815,7 +815,7 @@ class FullServerBuilder:
         else:
             raise Exception("Method handler already set")
 
-    def handle_set_the_time(self, handler: Callable[[datetime, datetime], stinger_types.SetTheTimeReturnValue]):
+    def handle_set_the_time(self, handler: Callable[[datetime, datetime], stinger_types.SetTheTimeReturnValues]):
         if self._set_the_time_method_handler is None and handler is not None:
             self._set_the_time_method_handler = handler
         else:
@@ -942,7 +942,7 @@ if __name__ == "__main__":
     server.last_birthdays = stinger_types.LastBirthdaysProperty(
         mom=datetime.now(),
         dad=datetime.now(),
-        sister=datetime.now(),
+        sister=None,
         brothers_age=42,
     )
 
@@ -953,10 +953,10 @@ if __name__ == "__main__":
         return 42
 
     @server.handle_do_something
-    def do_something(aString: str) -> stinger_types.DoSomethingReturnValue:
+    def do_something(aString: str) -> stinger_types.DoSomethingReturnValues:
         """This is an example handler for the 'doSomething' method."""
         print(f"Running do_something'({aString})'")
-        return stinger_types.DoSomethingReturnValue(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.SATURDAY)
+        return stinger_types.DoSomethingReturnValues(label="apples", identifier=42, day=stinger_types.DayOfTheWeek.SATURDAY)
 
     @server.handle_echo
     def echo(message: str) -> str:
@@ -971,10 +971,10 @@ if __name__ == "__main__":
         return datetime.now()
 
     @server.handle_set_the_time
-    def set_the_time(the_first_time: datetime, the_second_time: datetime) -> stinger_types.SetTheTimeReturnValue:
+    def set_the_time(the_first_time: datetime, the_second_time: datetime) -> stinger_types.SetTheTimeReturnValues:
         """This is an example handler for the 'set_the_time' method."""
         print(f"Running set_the_time'({the_first_time}, {the_second_time})'")
-        return stinger_types.SetTheTimeReturnValue(timestamp=datetime.now(), confirmation_message="apples")
+        return stinger_types.SetTheTimeReturnValues(timestamp=datetime.now(), confirmation_message="apples")
 
     @server.handle_forward_time
     def forward_time(adjustment: timedelta) -> datetime:

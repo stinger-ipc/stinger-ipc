@@ -14,6 +14,7 @@ use mqttier::{Connection, MqttierClient, MqttierOptions};
 use tokio::join;
 use tokio::time::{Duration, sleep};
 use weather_ipc::client::WeatherClient;
+use weather_ipc::discovery::WeatherDiscovery;
 #[allow(unused_imports)]
 use weather_ipc::payloads::{MethodReturnCode, *};
 
@@ -22,9 +23,14 @@ async fn main() {
     block_on(async {
         let mqttier_options = MqttierOptions::new()
             .connection(Connection::TcpLocalhost(1883))
+            .client_id("rust-client-demo".to_string())
             .build();
         let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
-        let mut api_client = WeatherClient::new(&mut mqttier_client).await;
+
+        let discovery = WeatherDiscovery::new(&mut mqttier_client).await.unwrap();
+        let singleton_info = discovery.get_singleton_service().await;
+
+        let mut api_client = WeatherClient::new(&mut mqttier_client, singleton_info.instance).await;
 
         let client_for_loop = api_client.clone();
         tokio::spawn(async move {
