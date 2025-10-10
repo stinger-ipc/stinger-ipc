@@ -225,7 +225,7 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
     #[serde(with = "duration_iso_format")]
     pub {{arg.name}}: chrono::Duration,
     {%elif arg.arg_type.name.lower() == 'binary'%}
-    #[serde(with = "binary_format")]
+    #[serde(with = "base64_binary_format")]
     pub {{arg.name}}: Vec<u8>,
     {%else%}
     TEMPLATE ERROR CASE NOT HANDLED for {{arg.arg_type.name}} - please report a bug.
@@ -233,47 +233,20 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
     {%endfor%}
 }
 
-{%if method.return_value_type == 'struct' %}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `{{method_name}}` method.
 pub struct {{method.return_value_name | UpperCamelCase}} {
-{%-for arg in method.return_value %}{%if arg.arg_type.name.lower() == 'datetime'%}
-    #[serde(with = "datetime_iso_format")]{%elif arg.arg_type.name.lower() == 'duration'-%}
-    #[serde(with = "duration_iso_format")]{%elif arg.arg_type.name.lower() == 'binary'-%}
-    #[serde(with = "base64_binary_format")]{%endif%}
-    pub {{arg.name}}: {{arg.rust_local_type}},
+{%-for arg in method.return_arg_list %}
+    {%if arg.arg_type.name.lower() == 'datetime'%}#[serde(with = "datetime_iso_format")]
+    {%-elif arg.arg_type.name.lower() == 'duration'%}#[serde(with = "duration_iso_format")]
+    {%-elif arg.arg_type.name.lower() == 'binary'-%}#[serde(with = "base64_binary_format")]{%endif%}
+    {%-if arg.name != (arg.name | snake_case) -%}#[serde(rename = "{{arg.name}}")]{%-endif-%}
+    pub {{arg.name|snake_case}}: {{arg.rust_local_type}},
 {%-endfor%}
 }
-{%elif method.return_value_type == 'primitive'%}
-#[derive(Debug, Clone, Serialize)]
-pub struct {{method.return_value_name | UpperCamelCase}} {
-    pub {{method.return_value_property_name}}: {{method.return_value.rust_local_type}},
-}
-{%elif method.return_value_type == 'datetime'%}
-#[derive(Debug, Clone, Serialize)]
-pub struct {{method.return_value_name | UpperCamelCase}} {
-    #[serde(with = "datetime_iso_format")]
-    pub {{method.return_value_property_name}}: chrono::DateTime<chrono::Utc>,
-}
-{%elif method.return_value_type == 'duration'%}
-#[derive(Debug, Clone, Serialize)]
-pub struct {{method.return_value_name | UpperCamelCase}} {
-    #[serde(with = "duration_iso_format")]
-    pub {{method.return_value_property_name}}: chrono::Duration,
-}
-{%elif method.return_value_type == 'binary'%}
-#[derive(Debug, Clone, Serialize)]
-pub struct {{method.return_value_name | UpperCamelCase}} {
-    #[serde(with = "base64_binary_format")]
-    pub {{method.return_value_property_name}}: Vec<u8>,
-}
-{%else%}
-#[derive(Debug, Clone, Serialize)]
-/// Empty (no parameters) return structure for the `{{method_name}}` method.
-pub struct {{method.return_value_name | UpperCamelCase}} {
-}
-{%endif-%}
+
 {%-endfor%}
 {%for sig_name, sig in stinger.signals.items()%}
 // Structures for `{{sig_name}}` signal

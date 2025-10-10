@@ -3849,7 +3849,7 @@ if __name__ == "__main__":
             OptionalInteger=42,
             OptionalString="apples",
             OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=None,
+            OptionalDateTime=datetime.now(),
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         ),
@@ -3865,7 +3865,7 @@ if __name__ == "__main__":
             OptionalInteger=42,
             OptionalString="apples",
             OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=None,
+            OptionalDateTime=datetime.now(),
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         ),
@@ -3899,14 +3899,14 @@ if __name__ == "__main__":
         print(f"Timed out waiting for response to 'call_one_date_time' call")
 
     print("Making call to 'call_optional_date_time'")
-    future_resp = client.call_optional_date_time(input1=None)
+    future_resp = client.call_optional_date_time(input1=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_date_time' call")
 
     print("Making call to 'call_three_date_times'")
-    future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=None)
+    future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:

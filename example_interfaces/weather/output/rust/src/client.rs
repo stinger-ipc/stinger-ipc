@@ -339,12 +339,8 @@ impl WeatherClient {
         self.signal_channels.current_time_sender.subscribe()
     }
 
-    /// The `refresh_daily_forecast` method.
-    /// Method arguments are packed into a RefreshDailyForecastRequestObject structure
-    /// and published to the `weather/{}/method/refreshDailyForecast` MQTT topic.
-    ///
-    /// This method awaits on the response to the call before returning.
-    pub async fn refresh_daily_forecast(&mut self) -> Result<(), MethodReturnCode> {
+    async fn start_refresh_daily_forecast(&mut self) -> oneshot::Receiver<JsonValue> {
+        // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -369,8 +365,22 @@ impl WeatherClient {
                 correlation_data,
             )
             .await;
+        receiver
+    }
+
+    /// The `refresh_daily_forecast` method.
+    /// Method arguments are packed into a RefreshDailyForecastRequestObject structure
+    /// and published to the `weather/{}/method/refreshDailyForecast` MQTT topic.
+    ///
+    /// This method awaits on the response to the call before returning.
+    pub async fn refresh_daily_forecast(&mut self) -> Result<(), MethodReturnCode> {
+        let receiver = self.start_refresh_daily_forecast().await;
+
         let _resp_obj = receiver.await.unwrap();
-        Ok(())
+
+        Err(MethodReturnCode::DeserializationError(
+            "Not implemented".to_string(),
+        ))
     }
 
     /// Handler for responses to `refresh_daily_forecast` method calls.
@@ -398,12 +408,8 @@ impl WeatherClient {
             }
         }
     }
-    /// The `refresh_hourly_forecast` method.
-    /// Method arguments are packed into a RefreshHourlyForecastRequestObject structure
-    /// and published to the `weather/{}/method/refreshHourlyForecast` MQTT topic.
-    ///
-    /// This method awaits on the response to the call before returning.
-    pub async fn refresh_hourly_forecast(&mut self) -> Result<(), MethodReturnCode> {
+    async fn start_refresh_hourly_forecast(&mut self) -> oneshot::Receiver<JsonValue> {
+        // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -428,8 +434,22 @@ impl WeatherClient {
                 correlation_data,
             )
             .await;
+        receiver
+    }
+
+    /// The `refresh_hourly_forecast` method.
+    /// Method arguments are packed into a RefreshHourlyForecastRequestObject structure
+    /// and published to the `weather/{}/method/refreshHourlyForecast` MQTT topic.
+    ///
+    /// This method awaits on the response to the call before returning.
+    pub async fn refresh_hourly_forecast(&mut self) -> Result<(), MethodReturnCode> {
+        let receiver = self.start_refresh_hourly_forecast().await;
+
         let _resp_obj = receiver.await.unwrap();
-        Ok(())
+
+        Err(MethodReturnCode::DeserializationError(
+            "Not implemented".to_string(),
+        ))
     }
 
     /// Handler for responses to `refresh_hourly_forecast` method calls.
@@ -457,12 +477,8 @@ impl WeatherClient {
             }
         }
     }
-    /// The `refresh_current_conditions` method.
-    /// Method arguments are packed into a RefreshCurrentConditionsRequestObject structure
-    /// and published to the `weather/{}/method/refreshCurrentConditions` MQTT topic.
-    ///
-    /// This method awaits on the response to the call before returning.
-    pub async fn refresh_current_conditions(&mut self) -> Result<(), MethodReturnCode> {
+    async fn start_refresh_current_conditions(&mut self) -> oneshot::Receiver<JsonValue> {
+        // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -489,8 +505,22 @@ impl WeatherClient {
                 correlation_data,
             )
             .await;
+        receiver
+    }
+
+    /// The `refresh_current_conditions` method.
+    /// Method arguments are packed into a RefreshCurrentConditionsRequestObject structure
+    /// and published to the `weather/{}/method/refreshCurrentConditions` MQTT topic.
+    ///
+    /// This method awaits on the response to the call before returning.
+    pub async fn refresh_current_conditions(&mut self) -> Result<(), MethodReturnCode> {
+        let receiver = self.start_refresh_current_conditions().await;
+
         let _resp_obj = receiver.await.unwrap();
-        Ok(())
+
+        Err(MethodReturnCode::DeserializationError(
+            "Not implemented".to_string(),
+        ))
     }
 
     /// Handler for responses to `refresh_current_conditions` method calls.

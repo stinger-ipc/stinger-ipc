@@ -185,12 +185,9 @@ impl {{stinger.rust.client_struct_name}} {
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()-%}
-    /// The `{{method_name}}` method.
-    /// Method arguments are packed into a {{method_name | UpperCamelCase}}RequestObject structure
-    /// and published to the `{{method.topic}}` MQTT topic.
-    ///
-    /// This method awaits on the response to the call before returning.
-    pub async fn {{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodReturnCode> {
+
+    async fn start_{{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> oneshot::Receiver<JsonValue> {
+        // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
@@ -207,9 +204,21 @@ impl {{stinger.rust.client_struct_name}} {
 
         let response_topic: String = format!("{{method.response_topic('{}')}}", self.client_id);
         let _ = self.mqttier_client.publish_request(format!("{{method.topic}}", self.service_instance_id), &data, response_topic, correlation_data).await;
+        receiver
+    }
+
+    /// The `{{method_name}}` method.
+    /// Method arguments are packed into a {{method_name | UpperCamelCase}}RequestObject structure
+    /// and published to the `{{method.topic}}` MQTT topic.
+    ///
+    /// This method awaits on the response to the call before returning.
+    pub async fn {{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodReturnCode> {
+
+        let receiver = self.start_{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+
         let {%if method.return_value_type is false %}_{%endif%}resp_obj = receiver.await.unwrap();
         
-        {%-if method.return_value_type == 'primitive' %}
+        {#{%-if method.return_value_type == 'primitive' %}
         {%if method.return_value_rust_type == 'String'%}
         Ok(resp_obj["{{method.return_value_property_name}}"].as_str().unwrap().to_string())
         {%else%}
@@ -280,7 +289,8 @@ impl {{stinger.rust.client_struct_name}} {
         }
         {%else%}
         TEMPLATE ERROR CASE NOT HANDLED for {{method.return_value_type}}
-        {%-endif %}
+        {%-endif %} #}
+        Err(MethodReturnCode::DeserializationError("Not implemented".to_string()))
     }
 
     /// Handler for responses to `{{method_name}}` method calls.

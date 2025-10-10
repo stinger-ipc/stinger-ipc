@@ -242,10 +242,10 @@ pub struct ForecastForDay {
 /// Request Object for `refresh_daily_forecast` method.
 pub struct RefreshDailyForecastRequestObject {}
 
-#[derive(Debug, Clone, Serialize)]
-/// Empty (no parameters) return structure for the `refresh_daily_forecast` method.
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Return Object for `refresh_daily_forecast` method.
 pub struct RefreshDailyForecastReturnValues {}
-
 // Structures for `refresh_hourly_forecast` method
 
 #[allow(dead_code, non_snake_case)]
@@ -253,10 +253,10 @@ pub struct RefreshDailyForecastReturnValues {}
 /// Request Object for `refresh_hourly_forecast` method.
 pub struct RefreshHourlyForecastRequestObject {}
 
-#[derive(Debug, Clone, Serialize)]
-/// Empty (no parameters) return structure for the `refresh_hourly_forecast` method.
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Return Object for `refresh_hourly_forecast` method.
 pub struct RefreshHourlyForecastReturnValues {}
-
 // Structures for `refresh_current_conditions` method
 
 #[allow(dead_code, non_snake_case)]
@@ -264,8 +264,9 @@ pub struct RefreshHourlyForecastReturnValues {}
 /// Request Object for `refresh_current_conditions` method.
 pub struct RefreshCurrentConditionsRequestObject {}
 
-#[derive(Debug, Clone, Serialize)]
-/// Empty (no parameters) return structure for the `refresh_current_conditions` method.
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Return Object for `refresh_current_conditions` method.
 pub struct RefreshCurrentConditionsReturnValues {}
 
 // Structures for `current_time` signal

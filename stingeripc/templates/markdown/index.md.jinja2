@@ -296,7 +296,7 @@ There are no arguments for this request.
 #### Return Parameters
 
 {%if method.return_value_type == "struct" %}
-{{argtable(method.return_value)}}
+{{argtable(method.return_arg_list)}}
 {%elif method.return_value_type is false -%}
 There is no return value for this method call.
 {%else-%}

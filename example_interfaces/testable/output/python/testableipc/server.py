@@ -3022,7 +3022,7 @@ if __name__ == "__main__":
             OptionalInteger=42,
             OptionalString="apples",
             OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
+            OptionalDateTime=None,
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         ),
@@ -3057,7 +3057,7 @@ if __name__ == "__main__":
 
     server.read_write_datetime = datetime.now()
 
-    server.read_write_optional_datetime = datetime.now()
+    server.read_write_optional_datetime = None
 
     server.read_write_two_datetimes = stinger_types.ReadWriteTwoDatetimesProperty(
         first=datetime.now(),
@@ -3158,7 +3158,7 @@ if __name__ == "__main__":
             OptionalInteger=42,
             OptionalString="apples",
             OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=None,
+            OptionalDateTime=datetime.now(),
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         )
@@ -3217,7 +3217,7 @@ if __name__ == "__main__":
                 OptionalInteger=42,
                 OptionalString="apples",
                 OptionalEnum=stinger_types.Numbers.ONE,
-                OptionalDateTime=None,
+                OptionalDateTime=datetime.now(),
                 OptionalDuration=None,
                 OptionalBinary=b"example binary data",
             ),
@@ -3249,7 +3249,7 @@ if __name__ == "__main__":
     def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
         """This is an example handler for the 'callOptionalDateTime' method."""
         print(f"Running call_optional_date_time'({input1})'")
-        return None
+        return datetime.now()
 
     @server.handle_call_three_date_times
     def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> stinger_types.CallThreeDateTimesReturnValues:
@@ -3452,22 +3452,6 @@ if __name__ == "__main__":
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=stinger_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
-                ),
-                stinger_types.AllTypes(
-                    the_bool=True,
-                    the_int=42,
-                    the_number=3.14,
-                    the_str="apples",
-                    the_enum=stinger_types.Numbers.ONE,
-                    date_and_time=datetime.now(),
-                    time_duration=timedelta(seconds=3536),
-                    data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=stinger_types.Numbers.ONE,
                     OptionalDateTime=None,
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
@@ -3485,6 +3469,22 @@ if __name__ == "__main__":
                     OptionalString="apples",
                     OptionalEnum=stinger_types.Numbers.ONE,
                     OptionalDateTime=datetime.now(),
+                    OptionalDuration=None,
+                    OptionalBinary=b"example binary data",
+                ),
+                stinger_types.AllTypes(
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=stinger_types.Numbers.ONE,
+                    date_and_time=datetime.now(),
+                    time_duration=timedelta(seconds=3536),
+                    data=b"example binary data",
+                    OptionalInteger=42,
+                    OptionalString="apples",
+                    OptionalEnum=stinger_types.Numbers.ONE,
+                    OptionalDateTime=None,
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 ),
@@ -3559,7 +3559,7 @@ if __name__ == "__main__":
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=stinger_types.Numbers.ONE,
-                    OptionalDateTime=None,
+                    OptionalDateTime=datetime.now(),
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 ),

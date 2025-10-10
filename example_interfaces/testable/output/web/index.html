@@ -1,0 +1,5391 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Interface for testing Web Interface</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  
+  <body ng-app="myApp" ng-controller="myCtrl">
+    <div class="infobox-background" ng-show="!online || showoutput" id="offline">Connecting</div>
+
+    <div class="interface-box">
+      <h1>Interface for testing</h1>
+      <p id="interface-summary"><i>This tries to capture most variants of features.</i></p>
+      <p id="interface-doc">
+      
+      </p>
+    </div>
+    <!------------- SIGNALS ------------->
+    
+    <div class="component-box signal-box" id="signal-box-empty">
+        <h3 class="component-title signal-title">Signal: empty</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with no parameters.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleInt">
+        <h3 class="component-title signal-title">Signal: singleInt</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single integer parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The integer value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_int.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleOptionalInt">
+        <h3 class="component-title signal-title">Signal: singleOptionalInt</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single optional integer parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The integer value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_int.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-threeIntegers">
+        <h3 class="component-title signal-title">Signal: threeIntegers</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with three integer parameters, the third is optional.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">The first integer value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_integers.received.first" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+                <div class="arg-description">The second integer value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_integers.received.second" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">third</div>
+                
+                <div class="arg-description">The third integer value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_integers.received.third" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleString">
+        <h3 class="component-title signal-title">Signal: singleString</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single string parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The string value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_string.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleOptionalString">
+        <h3 class="component-title signal-title">Signal: singleOptionalString</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single optional string parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The string value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_string.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-threeStrings">
+        <h3 class="component-title signal-title">Signal: threeStrings</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with three string parameters, the third is optional.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">The first string value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_strings.received.first" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+                <div class="arg-description">The second string value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_strings.received.second" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">third</div>
+                
+                <div class="arg-description">The third string value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_strings.received.third" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleEnum">
+        <h3 class="component-title signal-title">Signal: singleEnum</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single enum parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The enum value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.single_enum.received.value" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleOptionalEnum">
+        <h3 class="component-title signal-title">Signal: singleOptionalEnum</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single optional enum parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The enum value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.single_optional_enum.received.value" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-threeEnums">
+        <h3 class="component-title signal-title">Signal: threeEnums</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with three enum parameters, the third is optional.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">The first enum value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.three_enums.received.first" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+                <div class="arg-description">The second enum value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.three_enums.received.second" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">third</div>
+                
+                <div class="arg-description">The third enum value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.three_enums.received.third" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleStruct">
+        <h3 class="component-title signal-title">Signal: singleStruct</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single struct parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The struct value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.single_struct.received.value.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.single_struct.received.value.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_struct.received.value.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleOptionalStruct">
+        <h3 class="component-title signal-title">Signal: singleOptionalStruct</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single optional struct parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The struct value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.single_optional_struct.received.value.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.single_optional_struct.received.value.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_struct.received.value.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-threeStructs">
+        <h3 class="component-title signal-title">Signal: threeStructs</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with three struct parameters, the third is optional.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">The first struct value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.three_structs.received.first.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.three_structs.received.first.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.first.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+                <div class="arg-description">The second struct value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.three_structs.received.second.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.three_structs.received.second.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.second.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">third</div>
+                
+                <div class="arg-description">The third struct value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.three_structs.received.third.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="signals.three_structs.received.third.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_structs.received.third.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleDateTime">
+        <h3 class="component-title signal-title">Signal: singleDateTime</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single date and time parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The date and time value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_date_time.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleOptionalDatetime">
+        <h3 class="component-title signal-title">Signal: singleOptionalDatetime</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single optional date and time parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The date and time value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_datetime.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-threeDateTimes">
+        <h3 class="component-title signal-title">Signal: threeDateTimes</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with three date and time parameters, the third is optional.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">The first date and time value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_date_times.received.first" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+                <div class="arg-description">The second date and time value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_date_times.received.second" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">third</div>
+                
+                <div class="arg-description">The third date and time value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_date_times.received.third" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleDuration">
+        <h3 class="component-title signal-title">Signal: singleDuration</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single duration parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The duration value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_duration.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleOptionalDuration">
+        <h3 class="component-title signal-title">Signal: singleOptionalDuration</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single optional duration parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The duration value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_duration.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-threeDurations">
+        <h3 class="component-title signal-title">Signal: threeDurations</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with three duration parameters, the third is optional.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">The first duration value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_durations.received.first" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+                <div class="arg-description">The second duration value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_durations.received.second" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">third</div>
+                
+                <div class="arg-description">The third duration value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_durations.received.third" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleBinary">
+        <h3 class="component-title signal-title">Signal: singleBinary</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single binary parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The binary value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_binary.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-singleOptionalBinary">
+        <h3 class="component-title signal-title">Signal: singleOptionalBinary</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with a single optional binary parameter.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+                <div class="arg-description">The binary value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.single_optional_binary.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box signal-box" id="signal-box-threeBinaries">
+        <h3 class="component-title signal-title">Signal: threeBinaries</h3>
+        <div class="component-doc signal-doc">
+<p>A signal with three binary parameters, the third is optional.</p>
+        
+        </div>
+        <div class="last-received signal-value">
+        
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">The first binary value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_binaries.received.first" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+                <div class="arg-description">The second binary value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_binaries.received.second" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">third</div>
+                
+                <div class="arg-description">The third binary value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="signals.three_binaries.received.third" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+    </div>
+    
+
+    <!------------- PROPERTIES ------------->
+    
+    <div class="component-box prop-box" id="prop-box-read_write_integer">
+        <h3 class="component-title prop-title">Property: read_write_integer</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write integer property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_integer.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_integer)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_only_integer">
+        <h3 class="component-title prop-title">Property: read_only_integer</h3>
+        <div class="component-doc prop-doc">
+<p>A read-only integer property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="properties.read_only_integer.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_optional_integer">
+        <h3 class="component-title prop-title">Property: read_write_optional_integer</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write optional integer property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_integer.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_optional_integer)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_two_integers">
+        <h3 class="component-title prop-title">Property: read_write_two_integers</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write property with two integer values. The second is optional.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">An integer value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_integers.received.first" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_integers.received.second" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_two_integers)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_only_string">
+        <h3 class="component-title prop-title">Property: read_only_string</h3>
+        <div class="component-doc prop-doc">
+<p>A read-only string property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input disabled type="text" ng-model="properties.read_only_string.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_string">
+        <h3 class="component-title prop-title">Property: read_write_string</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write string property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_string.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_string)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_optional_string">
+        <h3 class="component-title prop-title">Property: read_write_optional_string</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write optional string property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_string.received.value" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_optional_string)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_two_strings">
+        <h3 class="component-title prop-title">Property: read_write_two_strings</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write property with two string values. The second is optional.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">A string value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_strings.received.first" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_strings.received.second" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_two_strings)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_struct">
+        <h3 class="component-title prop-title">Property: read_write_struct</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write struct property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_struct.received.value.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_struct.received.value.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_struct.received.value.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_struct)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_optional_struct">
+        <h3 class="component-title prop-title">Property: read_write_optional_struct</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write optional struct property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_optional_struct.received.value.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_optional_struct.received.value.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_struct.received.value.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_optional_struct)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_two_structs">
+        <h3 class="component-title prop-title">Property: read_write_two_structs</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write property with two struct values. The second is optional.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">A struct value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_two_structs.received.first.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_two_structs.received.first.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.first.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_two_structs.received.second.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_two_structs.received.second.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_structs.received.second.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_two_structs)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_only_enum">
+        <h3 class="component-title prop-title">Property: read_only_enum</h3>
+        <div class="component-doc prop-doc">
+<p>A read-only enum property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select disabled ng-model="properties.read_only_enum.received.value" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_enum">
+        <h3 class="component-title prop-title">Property: read_write_enum</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write enum property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_enum.received.value" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_enum)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_optional_enum">
+        <h3 class="component-title prop-title">Property: read_write_optional_enum</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write optional enum property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_optional_enum.received.value" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_optional_enum)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_two_enums">
+        <h3 class="component-title prop-title">Property: read_write_two_enums</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write property with two enum values. The second is optional.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">An enum value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_two_enums.received.first" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="properties.read_write_two_enums.received.second" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_two_enums)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_datetime">
+        <h3 class="component-title prop-title">Property: read_write_datetime</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write datetime property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_datetime.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_datetime)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_optional_datetime">
+        <h3 class="component-title prop-title">Property: read_write_optional_datetime</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write optional datetime property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_datetime.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_optional_datetime)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_two_datetimes">
+        <h3 class="component-title prop-title">Property: read_write_two_datetimes</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write property with two datetime values. The second is optional.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">A date and time value.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_datetimes.received.first" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_datetimes.received.second" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_two_datetimes)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_duration">
+        <h3 class="component-title prop-title">Property: read_write_duration</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write duration property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_duration.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_duration)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_optional_duration">
+        <h3 class="component-title prop-title">Property: read_write_optional_duration</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write optional duration property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_duration.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_optional_duration)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_two_durations">
+        <h3 class="component-title prop-title">Property: read_write_two_durations</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write property with two duration values. The second is optional.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">A duration of time.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_durations.received.first" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_durations.received.second" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_two_durations)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_binary">
+        <h3 class="component-title prop-title">Property: read_write_binary</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write binary property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_binary.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_binary)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_optional_binary">
+        <h3 class="component-title prop-title">Property: read_write_optional_binary</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write optional binary property.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">value</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_optional_binary.received.value" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_optional_binary)" />
+        
+    </div>
+    
+    <div class="component-box prop-box" id="prop-box-read_write_two_binaries">
+        <h3 class="component-title prop-title">Property: read_write_two_binaries</h3>
+        <div class="component-doc prop-doc">
+<p>A read-write property with two binary values.  The second is optional.</p>
+        
+        </div>
+        <div class="last-received property-value">
+          
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">first</div>
+                
+                <div class="arg-description">A binary blob of data.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_binaries.received.first" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">second</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="properties.read_write_two_binaries.received.second" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+        </div>
+        
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.read_write_two_binaries)" />
+        
+    </div>
+     
+
+    <!------------- METHODS ------------->
+    
+    <div class="component-box method-box" id="method-box-callWithNothing">
+        <h3 class="component-title method-title">Method: callWithNothing</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes no arguments and returns nothing.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_with_nothing)">
+                
+          <table class="arglist">
+          
+          </table>
+                <button type="submit" class="publish-button">Call callWithNothing</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callWithNothing'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOneInteger">
+        <h3 class="component-title method-title">Method: callOneInteger</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one integer argument and returns one integer value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_one_integer)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_integer.args.input1" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOneInteger</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOneInteger'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOptionalInteger">
+        <h3 class="component-title method-title">Method: callOptionalInteger</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one optional integer argument and returns one optional integer value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_optional_integer)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_integer.args.input1" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOptionalInteger</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOptionalInteger'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callThreeIntegers">
+        <h3 class="component-title method-title">Method: callThreeIntegers</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes three integer arguments, the third is optional, and returns three integer values, the third is optional.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_three_integers)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+                <div class="arg-description">The first integer input.  The other two don't have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_integers.args.input1" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input2</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_integers.args.input2" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input3</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_integers.args.input3" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callThreeIntegers</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callThreeIntegers'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOneString">
+        <h3 class="component-title method-title">Method: callOneString</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one string argument and returns one string value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_one_string)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_string.args.input1" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOneString</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOneString'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOptionalString">
+        <h3 class="component-title method-title">Method: callOptionalString</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one optional string argument and returns one optional string value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_optional_string)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_string.args.input1" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOptionalString</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOptionalString'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callThreeStrings">
+        <h3 class="component-title method-title">Method: callThreeStrings</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes three string arguments, the 2<sup>nd</sup> is optional, and returns three string values, the 2<sup>nd</sup> is optional.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_three_strings)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+                <div class="arg-description">The first string input.  The other two don't have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_strings.args.input1" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input2</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_strings.args.input2" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input3</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_strings.args.input3" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callThreeStrings</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callThreeStrings'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOneEnum">
+        <h3 class="component-title method-title">Method: callOneEnum</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one enum argument and returns one enum value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_one_enum)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_one_enum.args.input1" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOneEnum</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOneEnum'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOptionalEnum">
+        <h3 class="component-title method-title">Method: callOptionalEnum</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one optional enum argument and returns one optional enum value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_optional_enum)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_optional_enum.args.input1" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOptionalEnum</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOptionalEnum'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callThreeEnums">
+        <h3 class="component-title method-title">Method: callThreeEnums</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes three enum arguments, the third is optional, and returns three enum values, the third is optional.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_three_enums)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+                <div class="arg-description">The first enum input.  The other two don't have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_three_enums.args.input1" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input2</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_three_enums.args.input2" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input3</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_three_enums.args.input3" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callThreeEnums</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callThreeEnums'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOneStruct">
+        <h3 class="component-title method-title">Method: callOneStruct</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one struct argument and returns one struct value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_one_struct)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_one_struct.args.input1.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_one_struct.args.input1.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_struct.args.input1.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOneStruct</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOneStruct'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOptionalStruct">
+        <h3 class="component-title method-title">Method: callOptionalStruct</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one optional struct argument and returns one optional struct value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_optional_struct)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_optional_struct.args.input1.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_optional_struct.args.input1.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_struct.args.input1.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOptionalStruct</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOptionalStruct'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callThreeStructs">
+        <h3 class="component-title method-title">Method: callThreeStructs</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes three struct arguments, the first is optional, and returns three struct values, the first is optional.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_three_structs)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+                <div class="arg-description">The first struct input.  The other two don't have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_three_structs.args.input1.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_three_structs.args.input1.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input1.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input2</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_three_structs.args.input2.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_three_structs.args.input2.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input2.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input3</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <div class="struct-arg">
+                  
+                  
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_bool</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.the_bool" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_int</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.the_int" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_number</div>
+                
+                <div class="arg-description">A floating point number.  Bool and int do not have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.the_number" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_str</div>
+                
+                <div class="arg-description">A string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.the_str" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">the_enum</div>
+                
+                <div class="arg-description">An enum type</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_three_structs.args.input3.the_enum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">date_and_time</div>
+                
+                <div class="arg-description">A date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.date_and_time" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">time_duration</div>
+                
+                <div class="arg-description">A duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.time_duration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">data</div>
+                
+                <div class="arg-description">A binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.data" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalInteger</div>
+                
+                <div class="arg-description">An optional integer type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.OptionalInteger" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalString</div>
+                
+                <div class="arg-description">An optional string type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.OptionalString" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalEnum</div>
+                
+                <div class="arg-description">An optional enum type, one of the numbers.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <select ng-model="methods.call_three_structs.args.input3.OptionalEnum" ng-options="n.id as n.name for n in enums.numbers">
+                </select>
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDateTime</div>
+                
+                <div class="arg-description">An optional date and time type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.OptionalDateTime" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalDuration</div>
+                
+                <div class="arg-description">An optional duration type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.OptionalDuration" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">OptionalBinary</div>
+                
+                <div class="arg-description">An optional binary type.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_structs.args.input3.OptionalBinary" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                </div>
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callThreeStructs</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callThreeStructs'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOneDateTime">
+        <h3 class="component-title method-title">Method: callOneDateTime</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one date and time argument and returns one date and time value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_one_date_time)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_date_time.args.input1" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOneDateTime</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOneDateTime'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOptionalDateTime">
+        <h3 class="component-title method-title">Method: callOptionalDateTime</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one optional date and time argument and returns one optional date and time value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_optional_date_time)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_date_time.args.input1" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOptionalDateTime</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOptionalDateTime'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callThreeDateTimes">
+        <h3 class="component-title method-title">Method: callThreeDateTimes</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes three date and time arguments, the third is optional, and returns three date and time values, the third is optional.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_three_date_times)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+                <div class="arg-description">The first date and time input.  The other two don't have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_date_times.args.input1" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input2</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_date_times.args.input2" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input3</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_date_times.args.input3" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callThreeDateTimes</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callThreeDateTimes'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOneDuration">
+        <h3 class="component-title method-title">Method: callOneDuration</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one duration argument and returns one duration value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_one_duration)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_duration.args.input1" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOneDuration</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOneDuration'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOptionalDuration">
+        <h3 class="component-title method-title">Method: callOptionalDuration</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one optional duration argument and returns one optional duration value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_optional_duration)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_duration.args.input1" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOptionalDuration</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOptionalDuration'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callThreeDurations">
+        <h3 class="component-title method-title">Method: callThreeDurations</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes three duration arguments, the third is optional, and returns three duration values, the third is optional.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_three_durations)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+                <div class="arg-description">The first duration input.  The other two don't have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_durations.args.input1" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input2</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_durations.args.input2" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input3</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_durations.args.input3" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callThreeDurations</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callThreeDurations'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOneBinary">
+        <h3 class="component-title method-title">Method: callOneBinary</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one binary argument and returns one binary value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_one_binary)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_one_binary.args.input1" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOneBinary</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOneBinary'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callOptionalBinary">
+        <h3 class="component-title method-title">Method: callOptionalBinary</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes one optional binary argument and returns one optional binary value.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_optional_binary)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_optional_binary.args.input1" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callOptionalBinary</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callOptionalBinary'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+    
+    <div class="component-box method-box" id="method-box-callThreeBinaries">
+        <h3 class="component-title method-title">Method: callThreeBinaries</h3>
+        <div class="component-doc method-doc">
+<p>Method that takes three binary arguments, the third is optional, and returns three binary values, the third is optional.</p>
+        
+        </div>
+        <div class="method-form-box">
+            <form ng-submit="callMethod(methods.call_three_binaries)">
+                
+          <table class="arglist">
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input1</div>
+                
+                <div class="arg-description">The first binary input.  The other two don't have descriptions.</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_binaries.args.input1" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input2</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_binaries.args.input2" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+            <tr class="argrow">
+              <td class="arg-name-cell">
+                <div class="arg-name">input3</div>
+                
+              </td>
+              <td class="arg-value-cell">
+                
+                <input type="text" ng-model="methods.call_three_binaries.args.input3" placeholder="(unknown type)" />
+                 
+              </td>
+            </tr>
+          
+          </table>
+                <button type="submit" class="publish-button">Call callThreeBinaries</button>
+            </form>
+        </div>
+        <div class="last-received method-response" ng-bind="methods['callThreeBinaries'].received">
+        
+          <table class="arglist">
+          
+          </table>
+        </div>
+    </div>
+     
+
+    
+    <div id="console" ng-class="{ 'expanded' : (console.showing) }">
+      <div class="top" ng-click=" console.showing = !console.showing ">Request Console <span ng-show="console.showing && console.requests.length > 0" ng-click="console.requests = []"> - Clear</span>
+        <p class="expanded-toggle">{{ console.showing ? 'Hide' : 'Show' }}</p>
+      </div>
+      <div id="request-list">
+        <p ng-repeat="msg in console.requests" class="entry">
+          <strong>{{msg.name}}:</strong> <em>{{msg.topic}}</em> <span class="elapsedTime" ng-show="msg.responseTime">{{msg.responseTime - msg.requestTime}}ms</span><span class="elapsedTime" ng-show="msg.eventTime">{{msg.eventTime}}</span>
+          <span class="outgoing" ng-show="msg.payload">{{msg.payload}}</span>
+          <span class="incoming" ng-show="msg.response">{{msg.response}}</span>
+          <span ng-repeat="result in msg.results" class="action-result">{{result}}</span>
+        </p>
+      </div>
+    </div>
+    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js"></script>
+    <script src="https://unpkg.com/mqtt@5.14.0/dist/mqtt.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

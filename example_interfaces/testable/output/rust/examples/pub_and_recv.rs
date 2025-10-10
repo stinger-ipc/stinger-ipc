@@ -1,20 +1,21 @@
-
-use mqttier::{MqttierClient, MqttierOptions, Connection};
-use tokio::time::{sleep, Duration};
+use mqttier::{Connection, MqttierClient, MqttierOptions};
 use tokio::join;
 use tokio::sync::mpsc;
+use tokio::time::{Duration, sleep};
 
 #[tokio::main]
 async fn main() {
-
     println!("Starting pub and recv example");
 
     let conn_opts = MqttierOptions::new()
-            .connection(Connection::TcpLocalhost(1883))
-            .build();
+        .connection(Connection::TcpLocalhost(1883))
+        .build();
     let client = MqttierClient::new(conn_opts).unwrap();
     let (recv_chan_tx, mut recv_chan_rx) = mpsc::channel(32);
-    client.subscribe("example/recv_topic".to_string(), 1, recv_chan_tx.clone()).await.expect("Failed to subscribe to topic");
+    client
+        .subscribe("example/recv_topic".to_string(), 1, recv_chan_tx.clone())
+        .await
+        .expect("Failed to subscribe to topic");
 
     println!("Starting MQTT client loop");
     client.run_loop().await.unwrap();
@@ -26,7 +27,9 @@ async fn main() {
             i = i + 1;
             sleep(Duration::from_secs(1)).await; // Simulate periodic publishing
             let message = format!("Periodic message {}", i);
-            let pub_result_rx = client2.publish_string("example/pub_topic".to_string(), message, 1, false, None).await;
+            let pub_result_rx = client2
+                .publish_string("example/pub_topic".to_string(), message, 1, false, None)
+                .await;
             let pub_result = pub_result_rx.await;
             match pub_result {
                 Ok(_) => println!("Published message {}", i),
@@ -40,7 +43,7 @@ async fn main() {
             match recv_chan_rx.recv().await {
                 Some(message) => {
                     println!("Received message: {:?}", message);
-                },
+                }
                 None => {
                     eprintln!("Receiver channel closed");
                     break;
@@ -48,6 +51,6 @@ async fn main() {
             }
         }
     });
-    
+
     let _result = join!(receive_task);
 }
