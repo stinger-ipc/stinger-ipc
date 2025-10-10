@@ -164,7 +164,7 @@ void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Cal
 {%-endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
+boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -228,17 +228,17 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         {{arg.cpp_type}} {{arg.name}} = {{arg.name|lowerCamelCase}}Itr->value.Get{{arg.cpp_rapidjson_type}}();
         {%endif%}
         {%elif arg.arg_type.name.lower() == 'enum'-%}
-        {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_type}}>({{arg.name|lowerCamelCase}}Itr->value.GetInt());
+        {{arg.cpp_type}} {{arg.name}} = static_cast<{{arg.cpp_data_type}}>({{arg.name|lowerCamelCase}}Itr->value.GetInt());
         {%elif arg.arg_type.name.lower() == 'datetime'%}
         {{arg.cpp_type}} {{arg.name}};
         if ({{arg.name|lowerCamelCase}}Itr != doc.MemberEnd() && {{arg.name|lowerCamelCase}}Itr->value.IsString()) {
             {{arg.name}} = parseIsoTimestamp({{arg.name|lowerCamelCase}}Itr->value.Get{{arg.cpp_rapidjson_type}}());
         }
         {%elif method.return_value_type == 'struct'%}{%for arg2 in method.return_value.members%}
-        // {{arg2}}
+        // struct {{arg2}}
         {%endfor%}
         {%elif method.return_value_type == 'multiple'%}{%for arg2 in method.return_value%}
-        // {{arg2}}
+        // multiple {{arg2}}
         {%endfor%}
         {%elif method.return_value_type == 'duration'%}
         {{arg.cpp_type}} {{arg.name}};

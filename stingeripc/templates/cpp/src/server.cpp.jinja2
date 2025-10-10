@@ -299,6 +299,12 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
         std::string {{prop.arg_list[0].name|lowerCamelCase}}Str = base64Encode(*_{{prop_name | lowerCamelCase}}Property);
         rapidjson::Value {{prop.arg_list[0].name|lowerCamelCase}}Value({{prop.arg_list[0].name|lowerCamelCase}}Str.c_str(), doc.GetAllocator());
         doc.AddMember("{{prop.arg_list[0].name}}", {{prop.arg_list[0].name|lowerCamelCase}}Value, doc.GetAllocator());
+        {%elif prop.arg_list[0].arg_type.name.lower() == 'enum' -%}
+        // enumeration
+        doc.AddMember("{{prop.arg_list[0].name}}", static_cast<int>(*_{{prop_name | lowerCamelCase}}Property), doc.GetAllocator());
+        {%elif prop.arg_list[0].arg_type.name.lower() == 'struct' -%}
+        // structure
+        _{{prop_name | lowerCamelCase}}Property->AddToRapidJsonObject(doc, doc.GetAllocator());
         {%else%} {# not string primitive #}
         doc.AddMember("{{prop.arg_list[0].name}}", *_{{prop_name | lowerCamelCase}}Property, doc.GetAllocator());
         {%endif%} {# primitive string or other primitive #}

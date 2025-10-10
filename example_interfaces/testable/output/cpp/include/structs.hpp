@@ -33,6 +33,7 @@ std::vector<unsigned char> base64Decode(const std::string& b64input);
 struct AllTypes
 {
     static AllTypes FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     bool bool_;
     int int_;
     double number;

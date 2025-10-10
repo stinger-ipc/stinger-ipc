@@ -33,6 +33,7 @@ std::vector<unsigned char> base64Decode(const std::string& b64input);
 {%for istruct_name, istruct in stinger.structs.items() %}
 struct {{istruct_name | UpperCamelCase }} {
     static {{istruct_name | UpperCamelCase }} FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     {%-for value in istruct.members %}
     {{value.cpp_temp_type}} {{value.name}};
     {%-endfor%}

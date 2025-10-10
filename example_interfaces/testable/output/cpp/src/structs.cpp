@@ -1,4 +1,5 @@
 
+
 #include "structs.hpp"
 #include <sstream>
 #include <iomanip>
@@ -298,3 +299,73 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 
     return allTypes;
 };
+
+void AllTypes::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    parent.AddMember("bool_", bool_, allocator);
+
+    parent.AddMember("int_", int_, allocator);
+
+    parent.AddMember("number", number, allocator);
+
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(str.c_str(), str.size(), allocator);
+        parent.AddMember("str", tempStringValue, allocator);
+    }
+
+    parent.AddMember("enum_", static_cast<int>(enum_), allocator);
+
+    { // Restrict Scope
+        rapidjson::Value tempDateAndTimeStringValue;
+        std::string dateAndTimeIsoString = timePointToIsoString(date_and_time);
+        tempDateAndTimeStringValue.SetString(dateAndTimeIsoString.c_str(), dateAndTimeIsoString.size(), allocator);
+        parent.AddMember("date_and_time", tempDateAndTimeStringValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempTimeDurationStringValue;
+        std::string timeDurationIsoString = durationToIsoString(time_duration);
+        tempTimeDurationStringValue.SetString(timeDurationIsoString.c_str(), timeDurationIsoString.size(), allocator);
+        parent.AddMember("time_duration", tempTimeDurationStringValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempDataStringValue;
+        std::string dataB64String = base64Encode(data);
+        tempDataStringValue.SetString(dataB64String.c_str(), dataB64String.size(), allocator);
+        parent.AddMember("data", tempDataStringValue, allocator);
+    }
+    if (OptionalInteger)
+        parent.AddMember("OptionalInteger", *OptionalInteger, allocator);
+
+    if (OptionalString)
+    {
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(OptionalString->c_str(), OptionalString->size(), allocator);
+        parent.AddMember("OptionalString", tempStringValue, allocator);
+    }
+
+    parent.AddMember("OptionalEnum", static_cast<int>(*OptionalEnum), allocator);
+
+    { // Restrict Scope
+        rapidjson::Value tempOptionalDateTimeStringValue;
+        std::string optionalDateTimeIsoString = timePointToIsoString(*OptionalDateTime);
+        tempOptionalDateTimeStringValue.SetString(optionalDateTimeIsoString.c_str(), optionalDateTimeIsoString.size(), allocator);
+        parent.AddMember("OptionalDateTime", tempOptionalDateTimeStringValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempOptionalDurationStringValue;
+        std::string optionalDurationIsoString = durationToIsoString(*OptionalDuration);
+        tempOptionalDurationStringValue.SetString(optionalDurationIsoString.c_str(), optionalDurationIsoString.size(), allocator);
+        parent.AddMember("OptionalDuration", tempOptionalDurationStringValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempOptionalBinaryStringValue;
+        std::string optionalBinaryB64String = base64Encode(*OptionalBinary);
+        tempOptionalBinaryStringValue.SetString(optionalBinaryB64String.c_str(), optionalBinaryB64String.size(), allocator);
+        parent.AddMember("OptionalBinary", tempOptionalBinaryStringValue, allocator);
+    }
+}

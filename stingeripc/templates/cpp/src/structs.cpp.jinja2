@@ -1,4 +1,5 @@
 {% import "partials/deserialize.jinja2"  as deser %}
+{% import "partials/serialize.jinja2" as ser %}
 #include "structs.hpp"
 #include <sstream>
 #include <iomanip>
@@ -137,4 +138,11 @@ std::vector<unsigned char> base64Decode(const std::string& b64input)
 
     return {{istruct_name | lowerCamelCase}};
 };
+
+void {{istruct_name | UpperCamelCase }}::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    {%for arg in istruct.members%}
+    {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
+    {%- endfor %}
+}
 {%endfor%}

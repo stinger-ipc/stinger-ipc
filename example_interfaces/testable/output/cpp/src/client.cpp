@@ -2058,7 +2058,7 @@ void TestAbleClient::_handleCallThreeIntegersResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeIntegers");
 }
 
-boost::future<std::string> TestAbleClient::callOneString(const std::string& input1)
+boost::future<std::string> TestAbleClient::callOneString(std::string input1)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -2192,7 +2192,7 @@ void TestAbleClient::_handleCallOptionalStringResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalString");
 }
 
-boost::future<CallThreeStringsReturnValue> TestAbleClient::callThreeStrings(const std::string& input1, const std::string& input2, boost::optional<std::string> input3)
+boost::future<CallThreeStringsReturnValue> TestAbleClient::callThreeStrings(std::string input1, std::string input2, boost::optional<std::string> input3)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -2403,7 +2403,7 @@ void TestAbleClient::_handleCallOptionalEnumResponse(
         boost::optional<Numbers> output1 = boost::none;
         if (output1Itr != doc.MemberEnd())
         {
-            boost::optional<Numbers> output1 = static_cast<boost::optional<Numbers>>(output1Itr->value.GetInt());
+            boost::optional<Numbers> output1 = static_cast<Numbers>(output1Itr->value.GetInt());
         }
 
         promiseItr->second.set_value(output1);
@@ -2479,7 +2479,7 @@ void TestAbleClient::_handleCallThreeEnumsResponse(
         boost::optional<Numbers> output3 = boost::none;
         if (output3Itr != doc.MemberEnd())
         {
-            boost::optional<Numbers> output3 = static_cast<boost::optional<Numbers>>(output3Itr->value.GetInt());
+            boost::optional<Numbers> output3 = static_cast<Numbers>(output3Itr->value.GetInt());
         }
 
         CallThreeEnumsReturnValue returnValue{ //initializer list
@@ -2573,65 +2573,15 @@ void TestAbleClient::_handleCallOneStructResponse(
 
         rapidjson::Value::ConstMemberIterator timeDurationItr = doc.FindMember("time_duration");
 
-        // <ArgPrimitive name=bool_ type=bool>
+        TEMPLATE ERROR with unhandled return value type struct
 
-        // <ArgPrimitive name=int_ type=int>
+                rapidjson::Value::ConstMemberIterator dataItr
+                = doc.FindMember("data");
 
-        // <ArgPrimitive name=number type=float>
+        TEMPLATE ERROR with unhandled return value type struct
 
-        // <ArgPrimitive name=str type=str>
-
-        // <ArgEnum name=enum_>
-
-        // <ArgDateTime name=date_and_time>
-
-        // <ArgDuration name=time_duration>
-
-        // <ArgBinary name=data>
-
-        // <ArgPrimitive name=OptionalInteger type=int>
-
-        // <ArgPrimitive name=OptionalString type=str>
-
-        // <ArgEnum name=OptionalEnum>
-
-        // <ArgDateTime name=OptionalDateTime>
-
-        // <ArgDuration name=OptionalDuration>
-
-        // <ArgBinary name=OptionalBinary>
-
-        rapidjson::Value::ConstMemberIterator dataItr = doc.FindMember("data");
-
-        // <ArgPrimitive name=bool_ type=bool>
-
-        // <ArgPrimitive name=int_ type=int>
-
-        // <ArgPrimitive name=number type=float>
-
-        // <ArgPrimitive name=str type=str>
-
-        // <ArgEnum name=enum_>
-
-        // <ArgDateTime name=date_and_time>
-
-        // <ArgDuration name=time_duration>
-
-        // <ArgBinary name=data>
-
-        // <ArgPrimitive name=OptionalInteger type=int>
-
-        // <ArgPrimitive name=OptionalString type=str>
-
-        // <ArgEnum name=OptionalEnum>
-
-        // <ArgDateTime name=OptionalDateTime>
-
-        // <ArgDuration name=OptionalDuration>
-
-        // <ArgBinary name=OptionalBinary>
-
-        rapidjson::Value::ConstMemberIterator optionalIntegerItr = doc.FindMember("OptionalInteger");
+                rapidjson::Value::ConstMemberIterator optionalIntegerItr
+                = doc.FindMember("OptionalInteger");
 
         // arg is optional, so check if it is set
         boost::optional<int> OptionalInteger = boost::none;
@@ -2655,7 +2605,7 @@ void TestAbleClient::_handleCallOneStructResponse(
         boost::optional<Numbers> OptionalEnum = boost::none;
         if (optionalEnumItr != doc.MemberEnd())
         {
-            boost::optional<Numbers> OptionalEnum = static_cast<boost::optional<Numbers>>(optionalEnumItr->value.GetInt());
+            boost::optional<Numbers> OptionalEnum = static_cast<Numbers>(optionalEnumItr->value.GetInt());
         }
 
         rapidjson::Value::ConstMemberIterator optionalDateTimeItr = doc.FindMember("OptionalDateTime");
@@ -2677,33 +2627,7 @@ void TestAbleClient::_handleCallOneStructResponse(
         boost::optional<std::chrono::duration<double>> OptionalDuration = boost::none;
         if (optionalDurationItr != doc.MemberEnd())
         {
-            // <ArgPrimitive name=bool_ type=bool>
-
-            // <ArgPrimitive name=int_ type=int>
-
-            // <ArgPrimitive name=number type=float>
-
-            // <ArgPrimitive name=str type=str>
-
-            // <ArgEnum name=enum_>
-
-            // <ArgDateTime name=date_and_time>
-
-            // <ArgDuration name=time_duration>
-
-            // <ArgBinary name=data>
-
-            // <ArgPrimitive name=OptionalInteger type=int>
-
-            // <ArgPrimitive name=OptionalString type=str>
-
-            // <ArgEnum name=OptionalEnum>
-
-            // <ArgDateTime name=OptionalDateTime>
-
-            // <ArgDuration name=OptionalDuration>
-
-            // <ArgBinary name=OptionalBinary>
+            TEMPLATE ERROR with unhandled return value type struct
         }
 
         rapidjson::Value::ConstMemberIterator optionalBinaryItr = doc.FindMember("OptionalBinary");
@@ -2712,33 +2636,7 @@ void TestAbleClient::_handleCallOneStructResponse(
         boost::optional<std::vector<uint8_t>> OptionalBinary = boost::none;
         if (optionalBinaryItr != doc.MemberEnd())
         {
-            // <ArgPrimitive name=bool_ type=bool>
-
-            // <ArgPrimitive name=int_ type=int>
-
-            // <ArgPrimitive name=number type=float>
-
-            // <ArgPrimitive name=str type=str>
-
-            // <ArgEnum name=enum_>
-
-            // <ArgDateTime name=date_and_time>
-
-            // <ArgDuration name=time_duration>
-
-            // <ArgBinary name=data>
-
-            // <ArgPrimitive name=OptionalInteger type=int>
-
-            // <ArgPrimitive name=OptionalString type=str>
-
-            // <ArgEnum name=OptionalEnum>
-
-            // <ArgDateTime name=OptionalDateTime>
-
-            // <ArgDuration name=OptionalDuration>
-
-            // <ArgBinary name=OptionalBinary>
+            TEMPLATE ERROR with unhandled return value type struct
         }
 
         AllTypes returnValue{ //initializer list
@@ -2764,7 +2662,7 @@ void TestAbleClient::_handleCallOneStructResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneStruct");
 }
 
-boost::future<boost::optional<AllTypes>> TestAbleClient::callOptionalStruct(AllTypes input1)
+boost::future<boost::optional<AllTypes>> TestAbleClient::callOptionalStruct(boost::optional<AllTypes> input1)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -2843,65 +2741,15 @@ void TestAbleClient::_handleCallOptionalStructResponse(
 
         rapidjson::Value::ConstMemberIterator timeDurationItr = doc.FindMember("time_duration");
 
-        // <ArgPrimitive name=bool_ type=bool>
+        TEMPLATE ERROR with unhandled return value type struct
 
-        // <ArgPrimitive name=int_ type=int>
+                rapidjson::Value::ConstMemberIterator dataItr
+                = doc.FindMember("data");
 
-        // <ArgPrimitive name=number type=float>
+        TEMPLATE ERROR with unhandled return value type struct
 
-        // <ArgPrimitive name=str type=str>
-
-        // <ArgEnum name=enum_>
-
-        // <ArgDateTime name=date_and_time>
-
-        // <ArgDuration name=time_duration>
-
-        // <ArgBinary name=data>
-
-        // <ArgPrimitive name=OptionalInteger type=int>
-
-        // <ArgPrimitive name=OptionalString type=str>
-
-        // <ArgEnum name=OptionalEnum>
-
-        // <ArgDateTime name=OptionalDateTime>
-
-        // <ArgDuration name=OptionalDuration>
-
-        // <ArgBinary name=OptionalBinary>
-
-        rapidjson::Value::ConstMemberIterator dataItr = doc.FindMember("data");
-
-        // <ArgPrimitive name=bool_ type=bool>
-
-        // <ArgPrimitive name=int_ type=int>
-
-        // <ArgPrimitive name=number type=float>
-
-        // <ArgPrimitive name=str type=str>
-
-        // <ArgEnum name=enum_>
-
-        // <ArgDateTime name=date_and_time>
-
-        // <ArgDuration name=time_duration>
-
-        // <ArgBinary name=data>
-
-        // <ArgPrimitive name=OptionalInteger type=int>
-
-        // <ArgPrimitive name=OptionalString type=str>
-
-        // <ArgEnum name=OptionalEnum>
-
-        // <ArgDateTime name=OptionalDateTime>
-
-        // <ArgDuration name=OptionalDuration>
-
-        // <ArgBinary name=OptionalBinary>
-
-        rapidjson::Value::ConstMemberIterator optionalIntegerItr = doc.FindMember("OptionalInteger");
+                rapidjson::Value::ConstMemberIterator optionalIntegerItr
+                = doc.FindMember("OptionalInteger");
 
         // arg is optional, so check if it is set
         boost::optional<int> OptionalInteger = boost::none;
@@ -2925,7 +2773,7 @@ void TestAbleClient::_handleCallOptionalStructResponse(
         boost::optional<Numbers> OptionalEnum = boost::none;
         if (optionalEnumItr != doc.MemberEnd())
         {
-            boost::optional<Numbers> OptionalEnum = static_cast<boost::optional<Numbers>>(optionalEnumItr->value.GetInt());
+            boost::optional<Numbers> OptionalEnum = static_cast<Numbers>(optionalEnumItr->value.GetInt());
         }
 
         rapidjson::Value::ConstMemberIterator optionalDateTimeItr = doc.FindMember("OptionalDateTime");
@@ -2947,33 +2795,7 @@ void TestAbleClient::_handleCallOptionalStructResponse(
         boost::optional<std::chrono::duration<double>> OptionalDuration = boost::none;
         if (optionalDurationItr != doc.MemberEnd())
         {
-            // <ArgPrimitive name=bool_ type=bool>
-
-            // <ArgPrimitive name=int_ type=int>
-
-            // <ArgPrimitive name=number type=float>
-
-            // <ArgPrimitive name=str type=str>
-
-            // <ArgEnum name=enum_>
-
-            // <ArgDateTime name=date_and_time>
-
-            // <ArgDuration name=time_duration>
-
-            // <ArgBinary name=data>
-
-            // <ArgPrimitive name=OptionalInteger type=int>
-
-            // <ArgPrimitive name=OptionalString type=str>
-
-            // <ArgEnum name=OptionalEnum>
-
-            // <ArgDateTime name=OptionalDateTime>
-
-            // <ArgDuration name=OptionalDuration>
-
-            // <ArgBinary name=OptionalBinary>
+            TEMPLATE ERROR with unhandled return value type struct
         }
 
         rapidjson::Value::ConstMemberIterator optionalBinaryItr = doc.FindMember("OptionalBinary");
@@ -2982,33 +2804,7 @@ void TestAbleClient::_handleCallOptionalStructResponse(
         boost::optional<std::vector<uint8_t>> OptionalBinary = boost::none;
         if (optionalBinaryItr != doc.MemberEnd())
         {
-            // <ArgPrimitive name=bool_ type=bool>
-
-            // <ArgPrimitive name=int_ type=int>
-
-            // <ArgPrimitive name=number type=float>
-
-            // <ArgPrimitive name=str type=str>
-
-            // <ArgEnum name=enum_>
-
-            // <ArgDateTime name=date_and_time>
-
-            // <ArgDuration name=time_duration>
-
-            // <ArgBinary name=data>
-
-            // <ArgPrimitive name=OptionalInteger type=int>
-
-            // <ArgPrimitive name=OptionalString type=str>
-
-            // <ArgEnum name=OptionalEnum>
-
-            // <ArgDateTime name=OptionalDateTime>
-
-            // <ArgDuration name=OptionalDuration>
-
-            // <ArgBinary name=OptionalBinary>
+            TEMPLATE ERROR with unhandled return value type struct
         }
 
         boost::optional<AllTypes> returnValue{ //initializer list
@@ -3034,7 +2830,7 @@ void TestAbleClient::_handleCallOptionalStructResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalStruct");
 }
 
-boost::future<CallThreeStructsReturnValue> TestAbleClient::callThreeStructs(AllTypes input1, AllTypes input2, AllTypes input3)
+boost::future<CallThreeStructsReturnValue> TestAbleClient::callThreeStructs(AllTypes input1, AllTypes input2, boost::optional<AllTypes> input3)
 {
     auto correlationId = boost::uuids::random_generator()();
     const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
@@ -3085,17 +2881,9 @@ void TestAbleClient::_handleCallThreeStructsResponse(
 
         // <ArgStruct name=output1>
 
-        // <ArgStruct name=output2>
-
-        // <ArgStruct name=output3>
-
         rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
 
-        // <ArgStruct name=output1>
-
         // <ArgStruct name=output2>
-
-        // <ArgStruct name=output3>
 
         rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
 
@@ -3103,10 +2891,6 @@ void TestAbleClient::_handleCallThreeStructsResponse(
         AllTypes output3 = boost::none;
         if (output3Itr != doc.MemberEnd())
         {
-            // <ArgStruct name=output1>
-
-            // <ArgStruct name=output2>
-
             // <ArgStruct name=output3>
         }
 
@@ -3587,19 +3371,19 @@ void TestAbleClient::_handleCallThreeDurationsResponse(
     {
         rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
 
-        // <ArgDuration name=output1>
+        // multiple <ArgDuration name=output1>
 
-        // <ArgDuration name=output2>
+        // multiple <ArgDuration name=output2>
 
-        // <ArgDuration name=output3>
+        // multiple <ArgDuration name=output3>
 
         rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
 
-        // <ArgDuration name=output1>
+        // multiple <ArgDuration name=output1>
 
-        // <ArgDuration name=output2>
+        // multiple <ArgDuration name=output2>
 
-        // <ArgDuration name=output3>
+        // multiple <ArgDuration name=output3>
 
         rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
 
@@ -3607,11 +3391,11 @@ void TestAbleClient::_handleCallThreeDurationsResponse(
         boost::optional<std::chrono::duration<double>> output3 = boost::none;
         if (output3Itr != doc.MemberEnd())
         {
-            // <ArgDuration name=output1>
+            // multiple <ArgDuration name=output1>
 
-            // <ArgDuration name=output2>
+            // multiple <ArgDuration name=output2>
 
-            // <ArgDuration name=output3>
+            // multiple <ArgDuration name=output3>
         }
 
         CallThreeDurationsReturnValue returnValue{ //initializer list
@@ -3831,19 +3615,19 @@ void TestAbleClient::_handleCallThreeBinariesResponse(
     {
         rapidjson::Value::ConstMemberIterator output1Itr = doc.FindMember("output1");
 
-        // <ArgBinary name=output1>
+        // multiple <ArgBinary name=output1>
 
-        // <ArgBinary name=output2>
+        // multiple <ArgBinary name=output2>
 
-        // <ArgBinary name=output3>
+        // multiple <ArgBinary name=output3>
 
         rapidjson::Value::ConstMemberIterator output2Itr = doc.FindMember("output2");
 
-        // <ArgBinary name=output1>
+        // multiple <ArgBinary name=output1>
 
-        // <ArgBinary name=output2>
+        // multiple <ArgBinary name=output2>
 
-        // <ArgBinary name=output3>
+        // multiple <ArgBinary name=output3>
 
         rapidjson::Value::ConstMemberIterator output3Itr = doc.FindMember("output3");
 
@@ -3851,11 +3635,11 @@ void TestAbleClient::_handleCallThreeBinariesResponse(
         boost::optional<std::vector<uint8_t>> output3 = boost::none;
         if (output3Itr != doc.MemberEnd())
         {
-            // <ArgBinary name=output1>
+            // multiple <ArgBinary name=output1>
 
-            // <ArgBinary name=output2>
+            // multiple <ArgBinary name=output2>
 
-            // <ArgBinary name=output3>
+            // multiple <ArgBinary name=output3>
         }
 
         CallThreeBinariesReturnValue returnValue{ //initializer list

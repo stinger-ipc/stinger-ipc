@@ -3738,8 +3738,8 @@ void TestAbleServer::republishReadWriteStructProperty() const
     if (_readWriteStructProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("value", *_readWriteStructProperty, doc.GetAllocator());
+        // structure
+        _readWriteStructProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -3826,8 +3826,8 @@ void TestAbleServer::republishReadWriteOptionalStructProperty() const
     if (_readWriteOptionalStructProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("value", *_readWriteOptionalStructProperty, doc.GetAllocator());
+        // structure
+        _readWriteOptionalStructProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
     }
     else
     {
@@ -3995,8 +3995,8 @@ void TestAbleServer::republishReadOnlyEnumProperty() const
     if (_readOnlyEnumProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("value", *_readOnlyEnumProperty, doc.GetAllocator());
+        // enumeration
+        doc.AddMember("value", static_cast<int>(*_readOnlyEnumProperty), doc.GetAllocator());
     }
     else
     {
@@ -4084,8 +4084,8 @@ void TestAbleServer::republishReadWriteEnumProperty() const
     if (_readWriteEnumProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("value", *_readWriteEnumProperty, doc.GetAllocator());
+        // enumeration
+        doc.AddMember("value", static_cast<int>(*_readWriteEnumProperty), doc.GetAllocator());
     }
     else
     {
@@ -4173,8 +4173,8 @@ void TestAbleServer::republishReadWriteOptionalEnumProperty() const
     if (_readWriteOptionalEnumProperty)
     {
         doc.SetObject();
-
-        doc.AddMember("value", *_readWriteOptionalEnumProperty, doc.GetAllocator());
+        // enumeration
+        doc.AddMember("value", static_cast<int>(*_readWriteOptionalEnumProperty), doc.GetAllocator());
     }
     else
     {
