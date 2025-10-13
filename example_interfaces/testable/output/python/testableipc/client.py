@@ -20,7 +20,7 @@ from interface_types import *
 import threading
 
 from connection import IBrokerConnection
-import interface_types as stinger_types
+import interface_types as interface_types
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -31,12 +31,12 @@ ThreeIntegersSignalCallbackType = Callable[[int, int, Optional[int]], None]
 SingleStringSignalCallbackType = Callable[[str], None]
 SingleOptionalStringSignalCallbackType = Callable[[Optional[str]], None]
 ThreeStringsSignalCallbackType = Callable[[str, str, Optional[str]], None]
-SingleEnumSignalCallbackType = Callable[[stinger_types.Numbers], None]
-SingleOptionalEnumSignalCallbackType = Callable[[Optional[stinger_types.Numbers]], None]
-ThreeEnumsSignalCallbackType = Callable[[stinger_types.Numbers, stinger_types.Numbers, Optional[stinger_types.Numbers]], None]
-SingleStructSignalCallbackType = Callable[[stinger_types.AllTypes], None]
-SingleOptionalStructSignalCallbackType = Callable[[stinger_types.AllTypes], None]
-ThreeStructsSignalCallbackType = Callable[[stinger_types.AllTypes, stinger_types.AllTypes, stinger_types.AllTypes], None]
+SingleEnumSignalCallbackType = Callable[[interface_types.Numbers], None]
+SingleOptionalEnumSignalCallbackType = Callable[[Optional[interface_types.Numbers]], None]
+ThreeEnumsSignalCallbackType = Callable[[interface_types.Numbers, interface_types.Numbers, Optional[interface_types.Numbers]], None]
+SingleStructSignalCallbackType = Callable[[interface_types.AllTypes], None]
+SingleOptionalStructSignalCallbackType = Callable[[interface_types.AllTypes], None]
+ThreeStructsSignalCallbackType = Callable[[interface_types.AllTypes, interface_types.AllTypes, interface_types.AllTypes], None]
 SingleDateTimeSignalCallbackType = Callable[[datetime], None]
 SingleOptionalDatetimeSignalCallbackType = Callable[[Optional[datetime]], None]
 ThreeDateTimesSignalCallbackType = Callable[[datetime, datetime, Optional[datetime]], None]
@@ -49,50 +49,50 @@ ThreeBinariesSignalCallbackType = Callable[[bytes, bytes, bytes], None]
 CallWithNothingMethodResponseCallbackType = Callable[[], None]
 CallOneIntegerMethodResponseCallbackType = Callable[[int], None]
 CallOptionalIntegerMethodResponseCallbackType = Callable[[Optional[int]], None]
-CallThreeIntegersMethodResponseCallbackType = Callable[[stinger_types.CallThreeIntegersReturnValues], None]
+CallThreeIntegersMethodResponseCallbackType = Callable[[interface_types.CallThreeIntegersMethodResponse], None]
 CallOneStringMethodResponseCallbackType = Callable[[str], None]
 CallOptionalStringMethodResponseCallbackType = Callable[[Optional[str]], None]
-CallThreeStringsMethodResponseCallbackType = Callable[[stinger_types.CallThreeStringsReturnValues], None]
-CallOneEnumMethodResponseCallbackType = Callable[[stinger_types.Numbers], None]
-CallOptionalEnumMethodResponseCallbackType = Callable[[Optional[stinger_types.Numbers]], None]
-CallThreeEnumsMethodResponseCallbackType = Callable[[stinger_types.CallThreeEnumsReturnValues], None]
-CallOneStructMethodResponseCallbackType = Callable[[stinger_types.AllTypes], None]
-CallOptionalStructMethodResponseCallbackType = Callable[[stinger_types.AllTypes], None]
-CallThreeStructsMethodResponseCallbackType = Callable[[stinger_types.CallThreeStructsReturnValues], None]
+CallThreeStringsMethodResponseCallbackType = Callable[[interface_types.CallThreeStringsMethodResponse], None]
+CallOneEnumMethodResponseCallbackType = Callable[[interface_types.Numbers], None]
+CallOptionalEnumMethodResponseCallbackType = Callable[[Optional[interface_types.Numbers]], None]
+CallThreeEnumsMethodResponseCallbackType = Callable[[interface_types.CallThreeEnumsMethodResponse], None]
+CallOneStructMethodResponseCallbackType = Callable[[interface_types.AllTypes], None]
+CallOptionalStructMethodResponseCallbackType = Callable[[interface_types.AllTypes], None]
+CallThreeStructsMethodResponseCallbackType = Callable[[interface_types.CallThreeStructsMethodResponse], None]
 CallOneDateTimeMethodResponseCallbackType = Callable[[datetime], None]
 CallOptionalDateTimeMethodResponseCallbackType = Callable[[Optional[datetime]], None]
-CallThreeDateTimesMethodResponseCallbackType = Callable[[stinger_types.CallThreeDateTimesReturnValues], None]
+CallThreeDateTimesMethodResponseCallbackType = Callable[[interface_types.CallThreeDateTimesMethodResponse], None]
 CallOneDurationMethodResponseCallbackType = Callable[[timedelta], None]
 CallOptionalDurationMethodResponseCallbackType = Callable[[Optional[timedelta]], None]
-CallThreeDurationsMethodResponseCallbackType = Callable[[stinger_types.CallThreeDurationsReturnValues], None]
+CallThreeDurationsMethodResponseCallbackType = Callable[[interface_types.CallThreeDurationsMethodResponse], None]
 CallOneBinaryMethodResponseCallbackType = Callable[[bytes], None]
 CallOptionalBinaryMethodResponseCallbackType = Callable[[bytes], None]
-CallThreeBinariesMethodResponseCallbackType = Callable[[stinger_types.CallThreeBinariesReturnValues], None]
+CallThreeBinariesMethodResponseCallbackType = Callable[[interface_types.CallThreeBinariesMethodResponse], None]
 
 ReadWriteIntegerPropertyUpdatedCallbackType = Callable[[int], None]
 ReadOnlyIntegerPropertyUpdatedCallbackType = Callable[[int], None]
 ReadWriteOptionalIntegerPropertyUpdatedCallbackType = Callable[[Optional[int]], None]
-ReadWriteTwoIntegersPropertyUpdatedCallbackType = Callable[[stinger_types.ReadWriteTwoIntegersProperty], None]
+ReadWriteTwoIntegersPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoIntegersProperty], None]
 ReadOnlyStringPropertyUpdatedCallbackType = Callable[[str], None]
 ReadWriteStringPropertyUpdatedCallbackType = Callable[[str], None]
 ReadWriteOptionalStringPropertyUpdatedCallbackType = Callable[[Optional[str]], None]
-ReadWriteTwoStringsPropertyUpdatedCallbackType = Callable[[stinger_types.ReadWriteTwoStringsProperty], None]
-ReadWriteStructPropertyUpdatedCallbackType = Callable[[stinger_types.AllTypes], None]
-ReadWriteOptionalStructPropertyUpdatedCallbackType = Callable[[stinger_types.AllTypes], None]
-ReadWriteTwoStructsPropertyUpdatedCallbackType = Callable[[stinger_types.ReadWriteTwoStructsProperty], None]
-ReadOnlyEnumPropertyUpdatedCallbackType = Callable[[stinger_types.Numbers], None]
-ReadWriteEnumPropertyUpdatedCallbackType = Callable[[stinger_types.Numbers], None]
-ReadWriteOptionalEnumPropertyUpdatedCallbackType = Callable[[Optional[stinger_types.Numbers]], None]
-ReadWriteTwoEnumsPropertyUpdatedCallbackType = Callable[[stinger_types.ReadWriteTwoEnumsProperty], None]
+ReadWriteTwoStringsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoStringsProperty], None]
+ReadWriteStructPropertyUpdatedCallbackType = Callable[[interface_types.AllTypes], None]
+ReadWriteOptionalStructPropertyUpdatedCallbackType = Callable[[interface_types.AllTypes], None]
+ReadWriteTwoStructsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoStructsProperty], None]
+ReadOnlyEnumPropertyUpdatedCallbackType = Callable[[interface_types.Numbers], None]
+ReadWriteEnumPropertyUpdatedCallbackType = Callable[[interface_types.Numbers], None]
+ReadWriteOptionalEnumPropertyUpdatedCallbackType = Callable[[Optional[interface_types.Numbers]], None]
+ReadWriteTwoEnumsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoEnumsProperty], None]
 ReadWriteDatetimePropertyUpdatedCallbackType = Callable[[datetime], None]
 ReadWriteOptionalDatetimePropertyUpdatedCallbackType = Callable[[Optional[datetime]], None]
-ReadWriteTwoDatetimesPropertyUpdatedCallbackType = Callable[[stinger_types.ReadWriteTwoDatetimesProperty], None]
+ReadWriteTwoDatetimesPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoDatetimesProperty], None]
 ReadWriteDurationPropertyUpdatedCallbackType = Callable[[timedelta], None]
 ReadWriteOptionalDurationPropertyUpdatedCallbackType = Callable[[Optional[timedelta]], None]
-ReadWriteTwoDurationsPropertyUpdatedCallbackType = Callable[[stinger_types.ReadWriteTwoDurationsProperty], None]
+ReadWriteTwoDurationsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoDurationsProperty], None]
 ReadWriteBinaryPropertyUpdatedCallbackType = Callable[[bytes], None]
 ReadWriteOptionalBinaryPropertyUpdatedCallbackType = Callable[[bytes], None]
-ReadWriteTwoBinariesPropertyUpdatedCallbackType = Callable[[stinger_types.ReadWriteTwoBinariesProperty], None]
+ReadWriteTwoBinariesPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoBinariesProperty], None]
 
 
 class TestAbleClient:
@@ -117,7 +117,7 @@ class TestAbleClient:
         self._property_read_write_optional_integer = None  # type: Optional[int]
         self._conn.subscribe("testAble/{}/property/readWriteOptionalInteger/value".format(self._service_id), self._receive_read_write_optional_integer_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_integer: list[ReadWriteOptionalIntegerPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_integers = None  # type: Optional[stinger_types.ReadWriteTwoIntegersProperty]
+        self._property_read_write_two_integers = None  # type: Optional[interface_types.ReadWriteTwoIntegersProperty]
         self._conn.subscribe("testAble/{}/property/readWriteTwoIntegers/value".format(self._service_id), self._receive_read_write_two_integers_property_update_message)
         self._changed_value_callbacks_for_read_write_two_integers: list[ReadWriteTwoIntegersPropertyUpdatedCallbackType] = []
         self._property_read_only_string = None  # type: Optional[str]
@@ -129,28 +129,28 @@ class TestAbleClient:
         self._property_read_write_optional_string = None  # type: Optional[str]
         self._conn.subscribe("testAble/{}/property/readWriteOptionalString/value".format(self._service_id), self._receive_read_write_optional_string_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_string: list[ReadWriteOptionalStringPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_strings = None  # type: Optional[stinger_types.ReadWriteTwoStringsProperty]
+        self._property_read_write_two_strings = None  # type: Optional[interface_types.ReadWriteTwoStringsProperty]
         self._conn.subscribe("testAble/{}/property/readWriteTwoStrings/value".format(self._service_id), self._receive_read_write_two_strings_property_update_message)
         self._changed_value_callbacks_for_read_write_two_strings: list[ReadWriteTwoStringsPropertyUpdatedCallbackType] = []
-        self._property_read_write_struct = None  # type: Optional[stinger_types.AllTypes]
+        self._property_read_write_struct = None  # type: Optional[interface_types.AllTypes]
         self._conn.subscribe("testAble/{}/property/readWriteStruct/value".format(self._service_id), self._receive_read_write_struct_property_update_message)
         self._changed_value_callbacks_for_read_write_struct: list[ReadWriteStructPropertyUpdatedCallbackType] = []
-        self._property_read_write_optional_struct = None  # type: Optional[stinger_types.AllTypes]
+        self._property_read_write_optional_struct = None  # type: Optional[interface_types.AllTypes]
         self._conn.subscribe("testAble/{}/property/readWriteOptionalStruct/value".format(self._service_id), self._receive_read_write_optional_struct_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_struct: list[ReadWriteOptionalStructPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_structs = None  # type: Optional[stinger_types.ReadWriteTwoStructsProperty]
+        self._property_read_write_two_structs = None  # type: Optional[interface_types.ReadWriteTwoStructsProperty]
         self._conn.subscribe("testAble/{}/property/readWriteTwoStructs/value".format(self._service_id), self._receive_read_write_two_structs_property_update_message)
         self._changed_value_callbacks_for_read_write_two_structs: list[ReadWriteTwoStructsPropertyUpdatedCallbackType] = []
-        self._property_read_only_enum = None  # type: Optional[stinger_types.Numbers]
+        self._property_read_only_enum = None  # type: Optional[interface_types.Numbers]
         self._conn.subscribe("testAble/{}/property/readOnlyEnum/value".format(self._service_id), self._receive_read_only_enum_property_update_message)
         self._changed_value_callbacks_for_read_only_enum: list[ReadOnlyEnumPropertyUpdatedCallbackType] = []
-        self._property_read_write_enum = None  # type: Optional[stinger_types.Numbers]
+        self._property_read_write_enum = None  # type: Optional[interface_types.Numbers]
         self._conn.subscribe("testAble/{}/property/readWriteEnum/value".format(self._service_id), self._receive_read_write_enum_property_update_message)
         self._changed_value_callbacks_for_read_write_enum: list[ReadWriteEnumPropertyUpdatedCallbackType] = []
-        self._property_read_write_optional_enum = None  # type: Optional[stinger_types.Numbers]
+        self._property_read_write_optional_enum = None  # type: Optional[interface_types.Numbers]
         self._conn.subscribe("testAble/{}/property/readWriteOptionalEnum/value".format(self._service_id), self._receive_read_write_optional_enum_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_enum: list[ReadWriteOptionalEnumPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_enums = None  # type: Optional[stinger_types.ReadWriteTwoEnumsProperty]
+        self._property_read_write_two_enums = None  # type: Optional[interface_types.ReadWriteTwoEnumsProperty]
         self._conn.subscribe("testAble/{}/property/readWriteTwoEnums/value".format(self._service_id), self._receive_read_write_two_enums_property_update_message)
         self._changed_value_callbacks_for_read_write_two_enums: list[ReadWriteTwoEnumsPropertyUpdatedCallbackType] = []
         self._property_read_write_datetime = None  # type: Optional[datetime.datetime]
@@ -159,7 +159,7 @@ class TestAbleClient:
         self._property_read_write_optional_datetime = None  # type: Optional[datetime.datetime]
         self._conn.subscribe("testAble/{}/property/readWriteOptionalDatetime/value".format(self._service_id), self._receive_read_write_optional_datetime_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_datetime: list[ReadWriteOptionalDatetimePropertyUpdatedCallbackType] = []
-        self._property_read_write_two_datetimes = None  # type: Optional[stinger_types.ReadWriteTwoDatetimesProperty]
+        self._property_read_write_two_datetimes = None  # type: Optional[interface_types.ReadWriteTwoDatetimesProperty]
         self._conn.subscribe("testAble/{}/property/readWriteTwoDatetimes/value".format(self._service_id), self._receive_read_write_two_datetimes_property_update_message)
         self._changed_value_callbacks_for_read_write_two_datetimes: list[ReadWriteTwoDatetimesPropertyUpdatedCallbackType] = []
         self._property_read_write_duration = None  # type: Optional[datetime.timedelta]
@@ -168,7 +168,7 @@ class TestAbleClient:
         self._property_read_write_optional_duration = None  # type: Optional[datetime.timedelta]
         self._conn.subscribe("testAble/{}/property/readWriteOptionalDuration/value".format(self._service_id), self._receive_read_write_optional_duration_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_duration: list[ReadWriteOptionalDurationPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_durations = None  # type: Optional[stinger_types.ReadWriteTwoDurationsProperty]
+        self._property_read_write_two_durations = None  # type: Optional[interface_types.ReadWriteTwoDurationsProperty]
         self._conn.subscribe("testAble/{}/property/readWriteTwoDurations/value".format(self._service_id), self._receive_read_write_two_durations_property_update_message)
         self._changed_value_callbacks_for_read_write_two_durations: list[ReadWriteTwoDurationsPropertyUpdatedCallbackType] = []
         self._property_read_write_binary = None  # type: Optional[bytes]
@@ -177,7 +177,7 @@ class TestAbleClient:
         self._property_read_write_optional_binary = None  # type: Optional[bytes]
         self._conn.subscribe("testAble/{}/property/readWriteOptionalBinary/value".format(self._service_id), self._receive_read_write_optional_binary_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_binary: list[ReadWriteOptionalBinaryPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_binaries = None  # type: Optional[stinger_types.ReadWriteTwoBinariesProperty]
+        self._property_read_write_two_binaries = None  # type: Optional[interface_types.ReadWriteTwoBinariesProperty]
         self._conn.subscribe("testAble/{}/property/readWriteTwoBinaries/value".format(self._service_id), self._receive_read_write_two_binaries_property_update_message)
         self._changed_value_callbacks_for_read_write_two_binaries: list[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_empty: list[EmptySignalCallbackType] = []
@@ -286,15 +286,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_integers(self) -> Optional[stinger_types.ReadWriteTwoIntegersProperty]:
+    def read_write_two_integers(self) -> Optional[interface_types.ReadWriteTwoIntegersProperty]:
         """Property 'read_write_two_integers' getter."""
         return self._property_read_write_two_integers
 
     @read_write_two_integers.setter
-    def read_write_two_integers(self, value: stinger_types.ReadWriteTwoIntegersProperty):
+    def read_write_two_integers(self, value: interface_types.ReadWriteTwoIntegersProperty):
         """Serializes and publishes the 'read_write_two_integers' property."""
-        if not isinstance(value, stinger_types.ReadWriteTwoIntegersProperty):
-            raise ValueError("The 'read_write_two_integers' property must be a stinger_types.ReadWriteTwoIntegersProperty")
+        if not isinstance(value, interface_types.ReadWriteTwoIntegersProperty):
+            raise ValueError("The 'read_write_two_integers' property must be a interface_types.ReadWriteTwoIntegersProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_integers' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoIntegers/setValue".format(self._service_id), serialized, qos=1)
@@ -369,15 +369,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_strings(self) -> Optional[stinger_types.ReadWriteTwoStringsProperty]:
+    def read_write_two_strings(self) -> Optional[interface_types.ReadWriteTwoStringsProperty]:
         """Property 'read_write_two_strings' getter."""
         return self._property_read_write_two_strings
 
     @read_write_two_strings.setter
-    def read_write_two_strings(self, value: stinger_types.ReadWriteTwoStringsProperty):
+    def read_write_two_strings(self, value: interface_types.ReadWriteTwoStringsProperty):
         """Serializes and publishes the 'read_write_two_strings' property."""
-        if not isinstance(value, stinger_types.ReadWriteTwoStringsProperty):
-            raise ValueError("The 'read_write_two_strings' property must be a stinger_types.ReadWriteTwoStringsProperty")
+        if not isinstance(value, interface_types.ReadWriteTwoStringsProperty):
+            raise ValueError("The 'read_write_two_strings' property must be a interface_types.ReadWriteTwoStringsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_strings' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoStrings/setValue".format(self._service_id), serialized, qos=1)
@@ -392,15 +392,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_struct(self) -> Optional[stinger_types.AllTypes]:
+    def read_write_struct(self) -> Optional[interface_types.AllTypes]:
         """Property 'read_write_struct' getter."""
         return self._property_read_write_struct
 
     @read_write_struct.setter
-    def read_write_struct(self, value: stinger_types.AllTypes):
+    def read_write_struct(self, value: interface_types.AllTypes):
         """Serializes and publishes the 'read_write_struct' property."""
-        if not isinstance(value, stinger_types.AllTypes):
-            raise ValueError("The 'read_write_struct' property must be a stinger_types.AllTypes")
+        if not isinstance(value, interface_types.AllTypes):
+            raise ValueError("The 'read_write_struct' property must be a interface_types.AllTypes")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_struct' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteStruct/setValue".format(self._service_id), serialized, qos=1)
@@ -415,15 +415,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_struct(self) -> Optional[stinger_types.AllTypes]:
+    def read_write_optional_struct(self) -> Optional[interface_types.AllTypes]:
         """Property 'read_write_optional_struct' getter."""
         return self._property_read_write_optional_struct
 
     @read_write_optional_struct.setter
-    def read_write_optional_struct(self, value: stinger_types.AllTypes):
+    def read_write_optional_struct(self, value: interface_types.AllTypes):
         """Serializes and publishes the 'read_write_optional_struct' property."""
-        if not isinstance(value, stinger_types.AllTypes):
-            raise ValueError("The 'read_write_optional_struct' property must be a stinger_types.AllTypes")
+        if not isinstance(value, interface_types.AllTypes):
+            raise ValueError("The 'read_write_optional_struct' property must be a interface_types.AllTypes")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_struct' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteOptionalStruct/setValue".format(self._service_id), serialized, qos=1)
@@ -438,15 +438,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_structs(self) -> Optional[stinger_types.ReadWriteTwoStructsProperty]:
+    def read_write_two_structs(self) -> Optional[interface_types.ReadWriteTwoStructsProperty]:
         """Property 'read_write_two_structs' getter."""
         return self._property_read_write_two_structs
 
     @read_write_two_structs.setter
-    def read_write_two_structs(self, value: stinger_types.ReadWriteTwoStructsProperty):
+    def read_write_two_structs(self, value: interface_types.ReadWriteTwoStructsProperty):
         """Serializes and publishes the 'read_write_two_structs' property."""
-        if not isinstance(value, stinger_types.ReadWriteTwoStructsProperty):
-            raise ValueError("The 'read_write_two_structs' property must be a stinger_types.ReadWriteTwoStructsProperty")
+        if not isinstance(value, interface_types.ReadWriteTwoStructsProperty):
+            raise ValueError("The 'read_write_two_structs' property must be a interface_types.ReadWriteTwoStructsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_structs' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoStructs/setValue".format(self._service_id), serialized, qos=1)
@@ -461,7 +461,7 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_only_enum(self) -> Optional[stinger_types.Numbers]:
+    def read_only_enum(self) -> Optional[interface_types.Numbers]:
         """Property 'read_only_enum' getter."""
         return self._property_read_only_enum
 
@@ -475,15 +475,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_enum(self) -> Optional[stinger_types.Numbers]:
+    def read_write_enum(self) -> Optional[interface_types.Numbers]:
         """Property 'read_write_enum' getter."""
         return self._property_read_write_enum
 
     @read_write_enum.setter
-    def read_write_enum(self, value: stinger_types.Numbers):
+    def read_write_enum(self, value: interface_types.Numbers):
         """Serializes and publishes the 'read_write_enum' property."""
-        if not isinstance(value, stinger_types.Numbers):
-            raise ValueError("The 'read_write_enum' property must be a stinger_types.Numbers")
+        if not isinstance(value, interface_types.Numbers):
+            raise ValueError("The 'read_write_enum' property must be a interface_types.Numbers")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_enum' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteEnum/setValue".format(self._service_id), serialized, qos=1)
@@ -498,15 +498,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_enum(self) -> Optional[Optional[stinger_types.Numbers]]:
+    def read_write_optional_enum(self) -> Optional[Optional[interface_types.Numbers]]:
         """Property 'read_write_optional_enum' getter."""
         return self._property_read_write_optional_enum
 
     @read_write_optional_enum.setter
-    def read_write_optional_enum(self, value: Optional[stinger_types.Numbers]):
+    def read_write_optional_enum(self, value: Optional[interface_types.Numbers]):
         """Serializes and publishes the 'read_write_optional_enum' property."""
-        if not isinstance(value, stinger_types.Numbers):
-            raise ValueError("The 'read_write_optional_enum' property must be a stinger_types.Numbers")
+        if not isinstance(value, interface_types.Numbers):
+            raise ValueError("The 'read_write_optional_enum' property must be a interface_types.Numbers")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_enum' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteOptionalEnum/setValue".format(self._service_id), serialized, qos=1)
@@ -521,15 +521,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_enums(self) -> Optional[stinger_types.ReadWriteTwoEnumsProperty]:
+    def read_write_two_enums(self) -> Optional[interface_types.ReadWriteTwoEnumsProperty]:
         """Property 'read_write_two_enums' getter."""
         return self._property_read_write_two_enums
 
     @read_write_two_enums.setter
-    def read_write_two_enums(self, value: stinger_types.ReadWriteTwoEnumsProperty):
+    def read_write_two_enums(self, value: interface_types.ReadWriteTwoEnumsProperty):
         """Serializes and publishes the 'read_write_two_enums' property."""
-        if not isinstance(value, stinger_types.ReadWriteTwoEnumsProperty):
-            raise ValueError("The 'read_write_two_enums' property must be a stinger_types.ReadWriteTwoEnumsProperty")
+        if not isinstance(value, interface_types.ReadWriteTwoEnumsProperty):
+            raise ValueError("The 'read_write_two_enums' property must be a interface_types.ReadWriteTwoEnumsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_enums' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoEnums/setValue".format(self._service_id), serialized, qos=1)
@@ -590,15 +590,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_datetimes(self) -> Optional[stinger_types.ReadWriteTwoDatetimesProperty]:
+    def read_write_two_datetimes(self) -> Optional[interface_types.ReadWriteTwoDatetimesProperty]:
         """Property 'read_write_two_datetimes' getter."""
         return self._property_read_write_two_datetimes
 
     @read_write_two_datetimes.setter
-    def read_write_two_datetimes(self, value: stinger_types.ReadWriteTwoDatetimesProperty):
+    def read_write_two_datetimes(self, value: interface_types.ReadWriteTwoDatetimesProperty):
         """Serializes and publishes the 'read_write_two_datetimes' property."""
-        if not isinstance(value, stinger_types.ReadWriteTwoDatetimesProperty):
-            raise ValueError("The 'read_write_two_datetimes' property must be a stinger_types.ReadWriteTwoDatetimesProperty")
+        if not isinstance(value, interface_types.ReadWriteTwoDatetimesProperty):
+            raise ValueError("The 'read_write_two_datetimes' property must be a interface_types.ReadWriteTwoDatetimesProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_datetimes' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoDatetimes/setValue".format(self._service_id), serialized, qos=1)
@@ -659,15 +659,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_durations(self) -> Optional[stinger_types.ReadWriteTwoDurationsProperty]:
+    def read_write_two_durations(self) -> Optional[interface_types.ReadWriteTwoDurationsProperty]:
         """Property 'read_write_two_durations' getter."""
         return self._property_read_write_two_durations
 
     @read_write_two_durations.setter
-    def read_write_two_durations(self, value: stinger_types.ReadWriteTwoDurationsProperty):
+    def read_write_two_durations(self, value: interface_types.ReadWriteTwoDurationsProperty):
         """Serializes and publishes the 'read_write_two_durations' property."""
-        if not isinstance(value, stinger_types.ReadWriteTwoDurationsProperty):
-            raise ValueError("The 'read_write_two_durations' property must be a stinger_types.ReadWriteTwoDurationsProperty")
+        if not isinstance(value, interface_types.ReadWriteTwoDurationsProperty):
+            raise ValueError("The 'read_write_two_durations' property must be a interface_types.ReadWriteTwoDurationsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_durations' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoDurations/setValue".format(self._service_id), serialized, qos=1)
@@ -728,15 +728,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_binaries(self) -> Optional[stinger_types.ReadWriteTwoBinariesProperty]:
+    def read_write_two_binaries(self) -> Optional[interface_types.ReadWriteTwoBinariesProperty]:
         """Property 'read_write_two_binaries' getter."""
         return self._property_read_write_two_binaries
 
     @read_write_two_binaries.setter
-    def read_write_two_binaries(self, value: stinger_types.ReadWriteTwoBinariesProperty):
+    def read_write_two_binaries(self, value: interface_types.ReadWriteTwoBinariesProperty):
         """Serializes and publishes the 'read_write_two_binaries' property."""
-        if not isinstance(value, stinger_types.ReadWriteTwoBinariesProperty):
-            raise ValueError("The 'read_write_two_binaries' property must be a stinger_types.ReadWriteTwoBinariesProperty")
+        if not isinstance(value, interface_types.ReadWriteTwoBinariesProperty):
+            raise ValueError("The 'read_write_two_binaries' property must be a interface_types.ReadWriteTwoBinariesProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_binaries' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoBinaries/setValue".format(self._service_id), serialized, qos=1)
@@ -1491,7 +1491,7 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_integers' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.ReadWriteTwoIntegersProperty.model_validate_json(payload)
+            prop_value = interface_types.ReadWriteTwoIntegersProperty.model_validate_json(payload)
             self._property_read_write_two_integers = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_integers, value=self._property_read_write_two_integers)
         except Exception as e:
@@ -1542,7 +1542,7 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_strings' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.ReadWriteTwoStringsProperty.model_validate_json(payload)
+            prop_value = interface_types.ReadWriteTwoStringsProperty.model_validate_json(payload)
             self._property_read_write_two_strings = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_strings, value=self._property_read_write_two_strings)
         except Exception as e:
@@ -1580,7 +1580,7 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_structs' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.ReadWriteTwoStructsProperty.model_validate_json(payload)
+            prop_value = interface_types.ReadWriteTwoStructsProperty.model_validate_json(payload)
             self._property_read_write_two_structs = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_structs, value=self._property_read_write_two_structs)
         except Exception as e:
@@ -1631,7 +1631,7 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_enums' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.ReadWriteTwoEnumsProperty.model_validate_json(payload)
+            prop_value = interface_types.ReadWriteTwoEnumsProperty.model_validate_json(payload)
             self._property_read_write_two_enums = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_enums, value=self._property_read_write_two_enums)
         except Exception as e:
@@ -1669,7 +1669,7 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_datetimes' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.ReadWriteTwoDatetimesProperty.model_validate_json(payload)
+            prop_value = interface_types.ReadWriteTwoDatetimesProperty.model_validate_json(payload)
             self._property_read_write_two_datetimes = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_datetimes, value=self._property_read_write_two_datetimes)
         except Exception as e:
@@ -1707,7 +1707,7 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_durations' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.ReadWriteTwoDurationsProperty.model_validate_json(payload)
+            prop_value = interface_types.ReadWriteTwoDurationsProperty.model_validate_json(payload)
             self._property_read_write_two_durations = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_durations, value=self._property_read_write_two_durations)
         except Exception as e:
@@ -1745,7 +1745,7 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_binaries' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.ReadWriteTwoBinariesProperty.model_validate_json(payload)
+            prop_value = interface_types.ReadWriteTwoBinariesProperty.model_validate_json(payload)
             self._property_read_write_two_binaries = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_binaries, value=self._property_read_write_two_binaries)
         except Exception as e:
@@ -2066,7 +2066,7 @@ class TestAbleClient:
 
             return_args["output3"] = int(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeIntegersReturnValues(**return_args)
+            return_obj = interface_types.CallThreeIntegersMethodResponse(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2197,7 +2197,7 @@ class TestAbleClient:
 
             return_args["output3"] = str(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeStringsReturnValues(**return_args)
+            return_obj = interface_types.CallThreeStringsMethodResponse(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2206,7 +2206,7 @@ class TestAbleClient:
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
 
-    def call_one_enum(self, input1: stinger_types.Numbers) -> futures.Future:
+    def call_one_enum(self, input1: interface_types.Numbers) -> futures.Future:
         """Calling this initiates a `callOneEnum` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2246,7 +2246,7 @@ class TestAbleClient:
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
 
-    def call_optional_enum(self, input1: Optional[stinger_types.Numbers]) -> futures.Future:
+    def call_optional_enum(self, input1: Optional[interface_types.Numbers]) -> futures.Future:
         """Calling this initiates a `callOptionalEnum` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2286,7 +2286,7 @@ class TestAbleClient:
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
 
-    def call_three_enums(self, input1: stinger_types.Numbers, input2: stinger_types.Numbers, input3: Optional[stinger_types.Numbers]) -> futures.Future:
+    def call_three_enums(self, input1: interface_types.Numbers, input2: interface_types.Numbers, input3: Optional[interface_types.Numbers]) -> futures.Future:
         """Calling this initiates a `callThreeEnums` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2322,13 +2322,13 @@ class TestAbleClient:
                 ],
             )
 
-            return_args["output1"] = stinger_types.Numbers(return_args["output1"])
+            return_args["output1"] = interface_types.Numbers(return_args["output1"])
 
-            return_args["output2"] = stinger_types.Numbers(return_args["output2"])
+            return_args["output2"] = interface_types.Numbers(return_args["output2"])
 
-            return_args["output3"] = stinger_types.Numbers(return_args["output3"])
+            return_args["output3"] = interface_types.Numbers(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeEnumsReturnValues(**return_args)
+            return_obj = interface_types.CallThreeEnumsMethodResponse(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2337,7 +2337,7 @@ class TestAbleClient:
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
 
-    def call_one_struct(self, input1: stinger_types.AllTypes) -> futures.Future:
+    def call_one_struct(self, input1: interface_types.AllTypes) -> futures.Future:
         """Calling this initiates a `callOneStruct` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2390,7 +2390,7 @@ class TestAbleClient:
 
             return_args["the_str"] = str(return_args["the_str"])
 
-            return_args["the_enum"] = stinger_types.Numbers(return_args["the_enum"])
+            return_args["the_enum"] = interface_types.Numbers(return_args["the_enum"])
 
             return_args["date_and_time"] = datetime.fromisoformat(return_args["date_and_time"])
 
@@ -2402,7 +2402,7 @@ class TestAbleClient:
 
             return_args["OptionalString"] = str(return_args["OptionalString"])
 
-            return_args["OptionalEnum"] = stinger_types.Numbers(return_args["OptionalEnum"])
+            return_args["OptionalEnum"] = interface_types.Numbers(return_args["OptionalEnum"])
 
             return_args["OptionalDateTime"] = datetime.fromisoformat(return_args["OptionalDateTime"])
 
@@ -2410,7 +2410,7 @@ class TestAbleClient:
 
             return_args["OptionalBinary"] = base64.b64decode(return_args["OptionalBinary"])
 
-            return_obj = stinger_types.AllTypes(**return_args)
+            return_obj = interface_types.AllTypes(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2419,7 +2419,7 @@ class TestAbleClient:
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
 
-    def call_optional_struct(self, input1: stinger_types.AllTypes) -> futures.Future:
+    def call_optional_struct(self, input1: interface_types.AllTypes) -> futures.Future:
         """Calling this initiates a `callOptionalStruct` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2472,7 +2472,7 @@ class TestAbleClient:
 
             return_args["the_str"] = str(return_args["the_str"])
 
-            return_args["the_enum"] = stinger_types.Numbers(return_args["the_enum"])
+            return_args["the_enum"] = interface_types.Numbers(return_args["the_enum"])
 
             return_args["date_and_time"] = datetime.fromisoformat(return_args["date_and_time"])
 
@@ -2484,7 +2484,7 @@ class TestAbleClient:
 
             return_args["OptionalString"] = str(return_args["OptionalString"])
 
-            return_args["OptionalEnum"] = stinger_types.Numbers(return_args["OptionalEnum"])
+            return_args["OptionalEnum"] = interface_types.Numbers(return_args["OptionalEnum"])
 
             return_args["OptionalDateTime"] = datetime.fromisoformat(return_args["OptionalDateTime"])
 
@@ -2492,7 +2492,7 @@ class TestAbleClient:
 
             return_args["OptionalBinary"] = base64.b64decode(return_args["OptionalBinary"])
 
-            return_obj = stinger_types.AllTypes(**return_args)
+            return_obj = interface_types.AllTypes(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2501,7 +2501,7 @@ class TestAbleClient:
         if not fut.done():
             fut.set_exception(Exception("No return value set"))
 
-    def call_three_structs(self, input1: stinger_types.AllTypes, input2: stinger_types.AllTypes, input3: stinger_types.AllTypes) -> futures.Future:
+    def call_three_structs(self, input1: interface_types.AllTypes, input2: interface_types.AllTypes, input3: interface_types.AllTypes) -> futures.Future:
         """Calling this initiates a `callThreeStructs` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2537,13 +2537,13 @@ class TestAbleClient:
                 ],
             )
 
-            return_args["output1"] = stinger_types.AllTypes(return_args["output1"])
+            return_args["output1"] = interface_types.AllTypes(return_args["output1"])
 
-            return_args["output2"] = stinger_types.AllTypes(return_args["output2"])
+            return_args["output2"] = interface_types.AllTypes(return_args["output2"])
 
-            return_args["output3"] = stinger_types.AllTypes(return_args["output3"])
+            return_args["output3"] = interface_types.AllTypes(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeStructsReturnValues(**return_args)
+            return_obj = interface_types.CallThreeStructsMethodResponse(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2674,7 +2674,7 @@ class TestAbleClient:
 
             return_args["output3"] = datetime.fromisoformat(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeDateTimesReturnValues(**return_args)
+            return_obj = interface_types.CallThreeDateTimesMethodResponse(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2805,7 +2805,7 @@ class TestAbleClient:
 
             return_args["output3"] = parse_duration(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeDurationsReturnValues(**return_args)
+            return_obj = interface_types.CallThreeDurationsMethodResponse(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -2936,7 +2936,7 @@ class TestAbleClient:
 
             return_args["output3"] = base64.b64decode(return_args["output3"])
 
-            return_obj = stinger_types.CallThreeBinariesReturnValues(**return_args)
+            return_obj = interface_types.CallThreeBinariesMethodResponse(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -3475,48 +3475,48 @@ if __name__ == "__main__":
         print(f"Got a 'threeStrings' signal: first={ first } second={ second } third={ third } ")
 
     @client_builder.receive_single_enum
-    def print_singleEnum_receipt(value: stinger_types.Numbers):
+    def print_singleEnum_receipt(value: interface_types.Numbers):
         """
-        @param value stinger_types.Numbers The enum value.
+        @param value interface_types.Numbers The enum value.
         """
         print(f"Got a 'singleEnum' signal: value={ value } ")
 
     @client_builder.receive_single_optional_enum
-    def print_singleOptionalEnum_receipt(value: Optional[stinger_types.Numbers]):
+    def print_singleOptionalEnum_receipt(value: Optional[interface_types.Numbers]):
         """
-        @param value Optional[stinger_types.Numbers] The enum value.
+        @param value Optional[interface_types.Numbers] The enum value.
         """
         print(f"Got a 'singleOptionalEnum' signal: value={ value } ")
 
     @client_builder.receive_three_enums
-    def print_threeEnums_receipt(first: stinger_types.Numbers, second: stinger_types.Numbers, third: Optional[stinger_types.Numbers]):
+    def print_threeEnums_receipt(first: interface_types.Numbers, second: interface_types.Numbers, third: Optional[interface_types.Numbers]):
         """
-        @param first stinger_types.Numbers The first enum value.
-        @param second stinger_types.Numbers The second enum value.
-        @param third Optional[stinger_types.Numbers] The third enum value.
+        @param first interface_types.Numbers The first enum value.
+        @param second interface_types.Numbers The second enum value.
+        @param third Optional[interface_types.Numbers] The third enum value.
         """
         print(f"Got a 'threeEnums' signal: first={ first } second={ second } third={ third } ")
 
     @client_builder.receive_single_struct
-    def print_singleStruct_receipt(value: stinger_types.AllTypes):
+    def print_singleStruct_receipt(value: interface_types.AllTypes):
         """
-        @param value stinger_types.AllTypes The struct value.
+        @param value interface_types.AllTypes The struct value.
         """
         print(f"Got a 'singleStruct' signal: value={ value } ")
 
     @client_builder.receive_single_optional_struct
-    def print_singleOptionalStruct_receipt(value: stinger_types.AllTypes):
+    def print_singleOptionalStruct_receipt(value: interface_types.AllTypes):
         """
-        @param value stinger_types.AllTypes The struct value.
+        @param value interface_types.AllTypes The struct value.
         """
         print(f"Got a 'singleOptionalStruct' signal: value={ value } ")
 
     @client_builder.receive_three_structs
-    def print_threeStructs_receipt(first: stinger_types.AllTypes, second: stinger_types.AllTypes, third: stinger_types.AllTypes):
+    def print_threeStructs_receipt(first: interface_types.AllTypes, second: interface_types.AllTypes, third: interface_types.AllTypes):
         """
-        @param first stinger_types.AllTypes The first struct value.
-        @param second stinger_types.AllTypes The second struct value.
-        @param third stinger_types.AllTypes The third struct value.
+        @param first interface_types.AllTypes The first struct value.
+        @param second interface_types.AllTypes The second struct value.
+        @param third interface_types.AllTypes The third struct value.
         """
         print(f"Got a 'threeStructs' signal: first={ first } second={ second } third={ third } ")
 
@@ -3605,7 +3605,7 @@ if __name__ == "__main__":
         print(f"Property 'read_write_optional_integer' has been updated to: {value}")
 
     @client_builder.read_write_two_integers_updated
-    def print_new_read_write_two_integers_value(value: stinger_types.ReadWriteTwoIntegersProperty):
+    def print_new_read_write_two_integers_value(value: interface_types.ReadWriteTwoIntegersProperty):
         """ """
         print(f"Property 'read_write_two_integers' has been updated to: {value}")
 
@@ -3625,42 +3625,42 @@ if __name__ == "__main__":
         print(f"Property 'read_write_optional_string' has been updated to: {value}")
 
     @client_builder.read_write_two_strings_updated
-    def print_new_read_write_two_strings_value(value: stinger_types.ReadWriteTwoStringsProperty):
+    def print_new_read_write_two_strings_value(value: interface_types.ReadWriteTwoStringsProperty):
         """ """
         print(f"Property 'read_write_two_strings' has been updated to: {value}")
 
     @client_builder.read_write_struct_updated
-    def print_new_read_write_struct_value(value: stinger_types.AllTypes):
+    def print_new_read_write_struct_value(value: interface_types.AllTypes):
         """ """
         print(f"Property 'read_write_struct' has been updated to: {value}")
 
     @client_builder.read_write_optional_struct_updated
-    def print_new_read_write_optional_struct_value(value: stinger_types.AllTypes):
+    def print_new_read_write_optional_struct_value(value: interface_types.AllTypes):
         """ """
         print(f"Property 'read_write_optional_struct' has been updated to: {value}")
 
     @client_builder.read_write_two_structs_updated
-    def print_new_read_write_two_structs_value(value: stinger_types.ReadWriteTwoStructsProperty):
+    def print_new_read_write_two_structs_value(value: interface_types.ReadWriteTwoStructsProperty):
         """ """
         print(f"Property 'read_write_two_structs' has been updated to: {value}")
 
     @client_builder.read_only_enum_updated
-    def print_new_read_only_enum_value(value: stinger_types.Numbers):
+    def print_new_read_only_enum_value(value: interface_types.Numbers):
         """ """
         print(f"Property 'read_only_enum' has been updated to: {value}")
 
     @client_builder.read_write_enum_updated
-    def print_new_read_write_enum_value(value: stinger_types.Numbers):
+    def print_new_read_write_enum_value(value: interface_types.Numbers):
         """ """
         print(f"Property 'read_write_enum' has been updated to: {value}")
 
     @client_builder.read_write_optional_enum_updated
-    def print_new_read_write_optional_enum_value(value: Optional[stinger_types.Numbers]):
+    def print_new_read_write_optional_enum_value(value: Optional[interface_types.Numbers]):
         """ """
         print(f"Property 'read_write_optional_enum' has been updated to: {value}")
 
     @client_builder.read_write_two_enums_updated
-    def print_new_read_write_two_enums_value(value: stinger_types.ReadWriteTwoEnumsProperty):
+    def print_new_read_write_two_enums_value(value: interface_types.ReadWriteTwoEnumsProperty):
         """ """
         print(f"Property 'read_write_two_enums' has been updated to: {value}")
 
@@ -3675,7 +3675,7 @@ if __name__ == "__main__":
         print(f"Property 'read_write_optional_datetime' has been updated to: {value}")
 
     @client_builder.read_write_two_datetimes_updated
-    def print_new_read_write_two_datetimes_value(value: stinger_types.ReadWriteTwoDatetimesProperty):
+    def print_new_read_write_two_datetimes_value(value: interface_types.ReadWriteTwoDatetimesProperty):
         """ """
         print(f"Property 'read_write_two_datetimes' has been updated to: {value}")
 
@@ -3690,7 +3690,7 @@ if __name__ == "__main__":
         print(f"Property 'read_write_optional_duration' has been updated to: {value}")
 
     @client_builder.read_write_two_durations_updated
-    def print_new_read_write_two_durations_value(value: stinger_types.ReadWriteTwoDurationsProperty):
+    def print_new_read_write_two_durations_value(value: interface_types.ReadWriteTwoDurationsProperty):
         """ """
         print(f"Property 'read_write_two_durations' has been updated to: {value}")
 
@@ -3705,7 +3705,7 @@ if __name__ == "__main__":
         print(f"Property 'read_write_optional_binary' has been updated to: {value}")
 
     @client_builder.read_write_two_binaries_updated
-    def print_new_read_write_two_binaries_value(value: stinger_types.ReadWriteTwoBinariesProperty):
+    def print_new_read_write_two_binaries_value(value: interface_types.ReadWriteTwoBinariesProperty):
         """ """
         print(f"Property 'read_write_two_binaries' has been updated to: {value}")
 
@@ -3767,21 +3767,21 @@ if __name__ == "__main__":
         print(f"Timed out waiting for response to 'call_three_strings' call")
 
     print("Making call to 'call_one_enum'")
-    future_resp = client.call_one_enum(input1=stinger_types.Numbers.ONE)
+    future_resp = client.call_one_enum(input1=interface_types.Numbers.ONE)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_enum' call")
 
     print("Making call to 'call_optional_enum'")
-    future_resp = client.call_optional_enum(input1=stinger_types.Numbers.ONE)
+    future_resp = client.call_optional_enum(input1=interface_types.Numbers.ONE)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_enum' call")
 
     print("Making call to 'call_three_enums'")
-    future_resp = client.call_three_enums(input1=stinger_types.Numbers.ONE, input2=stinger_types.Numbers.ONE, input3=stinger_types.Numbers.ONE)
+    future_resp = client.call_three_enums(input1=interface_types.Numbers.ONE, input2=interface_types.Numbers.ONE, input3=interface_types.Numbers.ONE)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
@@ -3789,19 +3789,19 @@ if __name__ == "__main__":
 
     print("Making call to 'call_one_struct'")
     future_resp = client.call_one_struct(
-        input1=stinger_types.AllTypes(
+        input1=interface_types.AllTypes(
             the_bool=True,
             the_int=42,
             the_number=3.14,
             the_str="apples",
-            the_enum=stinger_types.Numbers.ONE,
+            the_enum=interface_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             OptionalInteger=42,
             OptionalString="apples",
-            OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
+            OptionalEnum=interface_types.Numbers.ONE,
+            OptionalDateTime=None,
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         )
@@ -3813,18 +3813,18 @@ if __name__ == "__main__":
 
     print("Making call to 'call_optional_struct'")
     future_resp = client.call_optional_struct(
-        input1=stinger_types.AllTypes(
+        input1=interface_types.AllTypes(
             the_bool=True,
             the_int=42,
             the_number=3.14,
             the_str="apples",
-            the_enum=stinger_types.Numbers.ONE,
+            the_enum=interface_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             OptionalInteger=42,
             OptionalString="apples",
-            OptionalEnum=stinger_types.Numbers.ONE,
+            OptionalEnum=interface_types.Numbers.ONE,
             OptionalDateTime=datetime.now(),
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
@@ -3837,50 +3837,50 @@ if __name__ == "__main__":
 
     print("Making call to 'call_three_structs'")
     future_resp = client.call_three_structs(
-        input1=stinger_types.AllTypes(
+        input1=interface_types.AllTypes(
             the_bool=True,
             the_int=42,
             the_number=3.14,
             the_str="apples",
-            the_enum=stinger_types.Numbers.ONE,
+            the_enum=interface_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             OptionalInteger=42,
             OptionalString="apples",
-            OptionalEnum=stinger_types.Numbers.ONE,
+            OptionalEnum=interface_types.Numbers.ONE,
             OptionalDateTime=None,
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         ),
-        input2=stinger_types.AllTypes(
+        input2=interface_types.AllTypes(
             the_bool=True,
             the_int=42,
             the_number=3.14,
             the_str="apples",
-            the_enum=stinger_types.Numbers.ONE,
+            the_enum=interface_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             OptionalInteger=42,
             OptionalString="apples",
-            OptionalEnum=stinger_types.Numbers.ONE,
-            OptionalDateTime=None,
+            OptionalEnum=interface_types.Numbers.ONE,
+            OptionalDateTime=datetime.now(),
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         ),
-        input3=stinger_types.AllTypes(
+        input3=interface_types.AllTypes(
             the_bool=True,
             the_int=42,
             the_number=3.14,
             the_str="apples",
-            the_enum=stinger_types.Numbers.ONE,
+            the_enum=interface_types.Numbers.ONE,
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             OptionalInteger=42,
             OptionalString="apples",
-            OptionalEnum=stinger_types.Numbers.ONE,
+            OptionalEnum=interface_types.Numbers.ONE,
             OptionalDateTime=datetime.now(),
             OptionalDuration=None,
             OptionalBinary=b"example binary data",

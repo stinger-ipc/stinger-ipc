@@ -12,6 +12,19 @@
 {%-else%}
 {{value}}.AddMember("{{arg.name}}", {%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}}, {{allocator}});
 {%-endif%}
+{%elif arg.arg_type.name.lower() == 'struct'%}
+{ // Restrict Scope
+    rapidjson::Value tempStructValue;
+    {%if arg.optional %}if ({{arg.name|lowerCamelCase}}) { {%-endif%}
+        tempStructValue.SetObject();
+        {{arg.name|lowerCamelCase}}{%if arg.optional %}->{%else%}.{%endif%}AddToRapidJsonObject(tempStructValue, {{allocator}});
+    {%if arg.optional %} }
+    else
+    {
+        tempStructValue.SetNull();
+    }{%-endif%}
+    {{value}}.AddMember("{{arg.name}}", tempStructValue, {{allocator}});
+}
 {%elif arg.arg_type.name.lower() == 'enum'%}
 {{value}}.AddMember("{{arg.name}}", static_cast<int>({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}}), {{allocator}});
 {%elif arg.arg_type.name.lower() == 'datetime'%}

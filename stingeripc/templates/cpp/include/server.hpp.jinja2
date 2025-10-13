@@ -40,7 +40,7 @@ public:
     virtual ~{{stinger.cpp.server_class_name}}();
 
     {%for sig_name, sig in stinger.signals.items()%}
-    boost::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}}{%if not loop.last%}, {%endif%}{%endfor%});
+    boost::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_func_param_type}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}

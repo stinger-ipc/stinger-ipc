@@ -72,6 +72,18 @@ class LocationProperty(BaseModel):
     longitude: float
 
 
+class CurrentTemperatureProperty(BaseModel):
+    """Interface property `current_temperature` (multi-value struct).
+
+        This is the current (estimated) temperature in degrees fahrenheit.  This values
+    is regularly updated.  The value is extrapolated from the hourly forecast, but
+    adjusted based on the latest conditions at the nearest weather station.
+
+    """
+
+    temperature_f: float
+
+
 class CurrentConditionProperty(BaseModel):
     """Interface property `current_condition` (multi-value struct).
 
@@ -112,6 +124,37 @@ class HourlyForecastProperty(BaseModel):
     hour_1: ForecastForHour = Field(description="This is the forecast for the next hour.")
     hour_2: ForecastForHour
     hour_3: ForecastForHour
+
+
+class CurrentConditionRefreshIntervalProperty(BaseModel):
+    """Interface property `current_condition_refresh_interval` (multi-value struct).
+
+        This is the maximum interval, in seconds, that the latest weather conditions at the nearest weather
+    station are retrieved.
+
+    """
+
+    seconds: int
+
+
+class HourlyForecastRefreshIntervalProperty(BaseModel):
+    """Interface property `hourly_forecast_refresh_interval` (multi-value struct).
+
+    This is the maximum interval, in seconds, that the hourly forecast data is retrieved.
+
+    """
+
+    seconds: int = Field(description="Interval duration in seconds.")
+
+
+class DailyForecastRefreshIntervalProperty(BaseModel):
+    """Interface property `daily_forecast_refresh_interval` (multi-value struct).
+
+    This is the maximum interval, in seconds, that the daily forecast data is retrieved.
+
+    """
+
+    seconds: int
 
 
 class RefreshDailyForecastMethodRequest(BaseModel):

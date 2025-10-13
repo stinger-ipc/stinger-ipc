@@ -54,6 +54,16 @@ class TodayIsSignalPayload(BaseModel):
     memory_segment: bytes
 
 
+class FavoriteNumberProperty(BaseModel):
+    """Interface property `favorite_number` (multi-value struct).
+
+    My favorite number
+
+    """
+
+    number: int
+
+
 class FavoriteFoodsProperty(BaseModel):
     """Interface property `favorite_foods` (multi-value struct)."""
 
@@ -67,6 +77,33 @@ class LunchMenuProperty(BaseModel):
 
     monday: Lunch
     tuesday: Lunch = Field(description="Tuesday's lunch menu.")
+
+
+class FamilyNameProperty(BaseModel):
+    """Interface property `family_name` (multi-value struct).
+
+    This is to test a property with a single string value.
+    """
+
+    family_name: str
+
+
+class LastBreakfastTimeProperty(BaseModel):
+    """Interface property `last_breakfast_time` (multi-value struct).
+
+    This is to test a property with a single datetime value.
+    """
+
+    timestamp: datetime
+
+
+class BreakfastLengthProperty(BaseModel):
+    """Interface property `breakfast_length` (multi-value struct).
+
+    This is to test a property with a single duration value.
+    """
+
+    length: timedelta
 
 
 class LastBirthdaysProperty(BaseModel):

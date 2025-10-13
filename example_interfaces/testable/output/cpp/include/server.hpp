@@ -59,9 +59,9 @@ public:
 
     boost::future<bool> emitSingleStructSignal(AllTypes);
 
-    boost::future<bool> emitSingleOptionalStructSignal(AllTypes);
+    boost::future<bool> emitSingleOptionalStructSignal(boost::optional<AllTypes>);
 
-    boost::future<bool> emitThreeStructsSignal(AllTypes, AllTypes, AllTypes);
+    boost::future<bool> emitThreeStructsSignal(AllTypes, AllTypes, boost::optional<AllTypes>);
 
     boost::future<bool> emitSingleDateTimeSignal(std::chrono::time_point<std::chrono::system_clock>);
 

@@ -704,6 +704,14 @@ CallOneStructRequestArguments CallOneStructRequestArguments::FromRapidJsonObject
 
 void CallOneStructRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        input1.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("input1", tempStructValue, allocator);
+    }
 }
 
 // --- (De-)Serialization for callOneStruct method return type ---
@@ -728,6 +736,14 @@ CallOneStructReturnValues CallOneStructReturnValues::FromRapidJsonObject(const r
 
 void CallOneStructReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        output1.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("output1", tempStructValue, allocator);
+    }
 }
 
 // --- (De-)Serialization for callOptionalStruct method request arguments ---
@@ -752,6 +768,19 @@ CallOptionalStructRequestArguments CallOptionalStructRequestArguments::FromRapid
 
 void CallOptionalStructRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (input1)
+        {
+            tempStructValue.SetObject();
+            input1->AddToRapidJsonObject(tempStructValue, allocator);
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        parent.AddMember("input1", tempStructValue, allocator);
+    }
 }
 
 // --- (De-)Serialization for callOptionalStruct method return type ---
@@ -776,6 +805,19 @@ CallOptionalStructReturnValues CallOptionalStructReturnValues::FromRapidJsonObje
 
 void CallOptionalStructReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (output1)
+        {
+            tempStructValue.SetObject();
+            output1->AddToRapidJsonObject(tempStructValue, allocator);
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        parent.AddMember("output1", tempStructValue, allocator);
+    }
 }
 
 // --- (De-)Serialization for callThreeStructs method request arguments ---
@@ -822,6 +864,37 @@ CallThreeStructsRequestArguments CallThreeStructsRequestArguments::FromRapidJson
 
 void CallThreeStructsRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (input1)
+        {
+            tempStructValue.SetObject();
+            input1->AddToRapidJsonObject(tempStructValue, allocator);
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        parent.AddMember("input1", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        input2.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("input2", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        input3.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("input3", tempStructValue, allocator);
+    }
 }
 
 // --- (De-)Serialization for callThreeStructs method return type ---
@@ -868,6 +941,37 @@ CallThreeStructsReturnValues CallThreeStructsReturnValues::FromRapidJsonObject(c
 
 void CallThreeStructsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (output1)
+        {
+            tempStructValue.SetObject();
+            output1->AddToRapidJsonObject(tempStructValue, allocator);
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        parent.AddMember("output1", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        output2.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("output2", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        output3.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("output3", tempStructValue, allocator);
+    }
 }
 
 // --- (De-)Serialization for callOneDateTime method request arguments ---

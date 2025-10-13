@@ -266,6 +266,14 @@ ReadWriteStructProperty ReadWriteStructProperty::FromRapidJsonObject(const rapid
 
 void ReadWriteStructProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        value.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("value", tempStructValue, allocator);
+    }
 }
 
 ReadWriteOptionalStructProperty ReadWriteOptionalStructProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -289,6 +297,19 @@ ReadWriteOptionalStructProperty ReadWriteOptionalStructProperty::FromRapidJsonOb
 
 void ReadWriteOptionalStructProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (value)
+        {
+            tempStructValue.SetObject();
+            value->AddToRapidJsonObject(tempStructValue, allocator);
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        parent.AddMember("value", tempStructValue, allocator);
+    }
 }
 
 ReadWriteTwoStructsProperty ReadWriteTwoStructsProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -323,6 +344,28 @@ ReadWriteTwoStructsProperty ReadWriteTwoStructsProperty::FromRapidJsonObject(con
 
 void ReadWriteTwoStructsProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        first.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("first", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (second)
+        {
+            tempStructValue.SetObject();
+            second->AddToRapidJsonObject(tempStructValue, allocator);
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        parent.AddMember("second", tempStructValue, allocator);
+    }
 }
 
 ReadOnlyEnumProperty ReadOnlyEnumProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)

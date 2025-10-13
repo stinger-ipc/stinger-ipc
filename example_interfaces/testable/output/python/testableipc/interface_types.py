@@ -5,7 +5,7 @@ on the next generation.
 It contains enumerations used by the Test Able interface.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime, timedelta
 from typing import Optional
 from enum import IntEnum
@@ -147,6 +147,8 @@ class SingleStructSignalPayload(BaseModel):
     A signal with a single struct parameter.
     """
 
+    model_config = ConfigDict(from_attributes=True)
+
     value: AllTypes = Field(description="The struct value.")
 
 
@@ -156,6 +158,8 @@ class SingleOptionalStructSignalPayload(BaseModel):
     A signal with a single optional struct parameter.
     """
 
+    model_config = ConfigDict(from_attributes=True)
+
     value: Optional[AllTypes] = Field(description="The struct value.")
 
 
@@ -164,6 +168,8 @@ class ThreeStructsSignalPayload(BaseModel):
 
     A signal with three struct parameters, the third is optional.
     """
+
+    model_config = ConfigDict(from_attributes=True)
 
     first: AllTypes = Field(description="The first struct value.")
     second: AllTypes = Field(description="The second struct value.")
@@ -295,6 +301,33 @@ class AllTypes(BaseModel):
     OptionalBinary: Optional[bytes] = Field(description="An optional binary type.")
 
 
+class ReadWriteIntegerProperty(BaseModel):
+    """Interface property `read_write_integer` (multi-value struct).
+
+    A read-write integer property.
+    """
+
+    value: int
+
+
+class ReadOnlyIntegerProperty(BaseModel):
+    """Interface property `read_only_integer` (multi-value struct).
+
+    A read-only integer property.
+    """
+
+    value: int
+
+
+class ReadWriteOptionalIntegerProperty(BaseModel):
+    """Interface property `read_write_optional_integer` (multi-value struct).
+
+    A read-write optional integer property.
+    """
+
+    value: Optional[int]
+
+
 class ReadWriteTwoIntegersProperty(BaseModel):
     """Interface property `read_write_two_integers` (multi-value struct).
 
@@ -303,6 +336,33 @@ class ReadWriteTwoIntegersProperty(BaseModel):
 
     first: int = Field(description="An integer value.")
     second: Optional[int]
+
+
+class ReadOnlyStringProperty(BaseModel):
+    """Interface property `read_only_string` (multi-value struct).
+
+    A read-only string property.
+    """
+
+    value: str
+
+
+class ReadWriteStringProperty(BaseModel):
+    """Interface property `read_write_string` (multi-value struct).
+
+    A read-write string property.
+    """
+
+    value: str
+
+
+class ReadWriteOptionalStringProperty(BaseModel):
+    """Interface property `read_write_optional_string` (multi-value struct).
+
+    A read-write optional string property.
+    """
+
+    value: Optional[str]
 
 
 class ReadWriteTwoStringsProperty(BaseModel):
@@ -315,6 +375,24 @@ class ReadWriteTwoStringsProperty(BaseModel):
     second: Optional[str]
 
 
+class ReadWriteStructProperty(BaseModel):
+    """Interface property `read_write_struct` (multi-value struct).
+
+    A read-write struct property.
+    """
+
+    value: AllTypes
+
+
+class ReadWriteOptionalStructProperty(BaseModel):
+    """Interface property `read_write_optional_struct` (multi-value struct).
+
+    A read-write optional struct property.
+    """
+
+    value: Optional[AllTypes]
+
+
 class ReadWriteTwoStructsProperty(BaseModel):
     """Interface property `read_write_two_structs` (multi-value struct).
 
@@ -323,6 +401,33 @@ class ReadWriteTwoStructsProperty(BaseModel):
 
     first: AllTypes = Field(description="A struct value.")
     second: Optional[AllTypes]
+
+
+class ReadOnlyEnumProperty(BaseModel):
+    """Interface property `read_only_enum` (multi-value struct).
+
+    A read-only enum property.
+    """
+
+    value: Numbers
+
+
+class ReadWriteEnumProperty(BaseModel):
+    """Interface property `read_write_enum` (multi-value struct).
+
+    A read-write enum property.
+    """
+
+    value: Numbers
+
+
+class ReadWriteOptionalEnumProperty(BaseModel):
+    """Interface property `read_write_optional_enum` (multi-value struct).
+
+    A read-write optional enum property.
+    """
+
+    value: Optional[Numbers]
 
 
 class ReadWriteTwoEnumsProperty(BaseModel):
@@ -335,6 +440,24 @@ class ReadWriteTwoEnumsProperty(BaseModel):
     second: Optional[Numbers]
 
 
+class ReadWriteDatetimeProperty(BaseModel):
+    """Interface property `read_write_datetime` (multi-value struct).
+
+    A read-write datetime property.
+    """
+
+    value: datetime
+
+
+class ReadWriteOptionalDatetimeProperty(BaseModel):
+    """Interface property `read_write_optional_datetime` (multi-value struct).
+
+    A read-write optional datetime property.
+    """
+
+    value: Optional[datetime]
+
+
 class ReadWriteTwoDatetimesProperty(BaseModel):
     """Interface property `read_write_two_datetimes` (multi-value struct).
 
@@ -345,6 +468,24 @@ class ReadWriteTwoDatetimesProperty(BaseModel):
     second: Optional[datetime]
 
 
+class ReadWriteDurationProperty(BaseModel):
+    """Interface property `read_write_duration` (multi-value struct).
+
+    A read-write duration property.
+    """
+
+    value: timedelta
+
+
+class ReadWriteOptionalDurationProperty(BaseModel):
+    """Interface property `read_write_optional_duration` (multi-value struct).
+
+    A read-write optional duration property.
+    """
+
+    value: Optional[timedelta]
+
+
 class ReadWriteTwoDurationsProperty(BaseModel):
     """Interface property `read_write_two_durations` (multi-value struct).
 
@@ -353,6 +494,24 @@ class ReadWriteTwoDurationsProperty(BaseModel):
 
     first: timedelta = Field(description="A duration of time.")
     second: Optional[timedelta]
+
+
+class ReadWriteBinaryProperty(BaseModel):
+    """Interface property `read_write_binary` (multi-value struct).
+
+    A read-write binary property.
+    """
+
+    value: bytes
+
+
+class ReadWriteOptionalBinaryProperty(BaseModel):
+    """Interface property `read_write_optional_binary` (multi-value struct).
+
+    A read-write optional binary property.
+    """
+
+    value: Optional[bytes]
 
 
 class ReadWriteTwoBinariesProperty(BaseModel):
@@ -416,7 +575,7 @@ class CallOptionalIntegerMethodResponse(BaseModel):
     Method that takes one optional integer argument and returns one optional integer value.
     """
 
-    output1: Optional[Optional[int]]
+    output1: Optional[int]
 
 
 class CallThreeIntegersMethodRequest(BaseModel):
@@ -474,7 +633,7 @@ class CallOptionalStringMethodResponse(BaseModel):
     Method that takes one optional string argument and returns one optional string value.
     """
 
-    output1: Optional[Optional[str]]
+    output1: Optional[str]
 
 
 class CallThreeStringsMethodRequest(BaseModel):
@@ -514,7 +673,7 @@ class CallOneEnumMethodResponse(BaseModel):
     Method that takes one enum argument and returns one enum value.
     """
 
-    output1: stinger_types.Numbers
+    output1: Numbers
 
 
 class CallOptionalEnumMethodRequest(BaseModel):
@@ -532,7 +691,7 @@ class CallOptionalEnumMethodResponse(BaseModel):
     Method that takes one optional enum argument and returns one optional enum value.
     """
 
-    output1: Optional[Optional[stinger_types.Numbers]]
+    output1: Optional[Numbers]
 
 
 class CallThreeEnumsMethodRequest(BaseModel):
@@ -572,20 +731,7 @@ class CallOneStructMethodResponse(BaseModel):
     Method that takes one struct argument and returns one struct value.
     """
 
-    the_bool: bool
-    the_int: int
-    the_number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
-    the_str: str = Field(description="A string type.")
-    the_enum: Numbers = Field(description="An enum type")
-    date_and_time: datetime = Field(description="A date and time type.")
-    time_duration: timedelta = Field(description="A duration type.")
-    data: bytes = Field(description="A binary type.")
-    OptionalInteger: Optional[int] = Field(description="An optional integer type.")
-    OptionalString: Optional[str] = Field(description="An optional string type.")
-    OptionalEnum: Optional[Numbers] = Field(description="An optional enum type, one of the numbers.")
-    OptionalDateTime: Optional[datetime] = Field(description="An optional date and time type.")
-    OptionalDuration: Optional[timedelta] = Field(description="An optional duration type.")
-    OptionalBinary: Optional[bytes] = Field(description="An optional binary type.")
+    output1: AllTypes
 
 
 class CallOptionalStructMethodRequest(BaseModel):
@@ -603,20 +749,7 @@ class CallOptionalStructMethodResponse(BaseModel):
     Method that takes one optional struct argument and returns one optional struct value.
     """
 
-    the_bool: bool
-    the_int: int
-    the_number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
-    the_str: str = Field(description="A string type.")
-    the_enum: Numbers = Field(description="An enum type")
-    date_and_time: datetime = Field(description="A date and time type.")
-    time_duration: timedelta = Field(description="A duration type.")
-    data: bytes = Field(description="A binary type.")
-    OptionalInteger: Optional[int] = Field(description="An optional integer type.")
-    OptionalString: Optional[str] = Field(description="An optional string type.")
-    OptionalEnum: Optional[Numbers] = Field(description="An optional enum type, one of the numbers.")
-    OptionalDateTime: Optional[datetime] = Field(description="An optional date and time type.")
-    OptionalDuration: Optional[timedelta] = Field(description="An optional duration type.")
-    OptionalBinary: Optional[bytes] = Field(description="An optional binary type.")
+    output1: Optional[AllTypes]
 
 
 class CallThreeStructsMethodRequest(BaseModel):
@@ -674,7 +807,7 @@ class CallOptionalDateTimeMethodResponse(BaseModel):
     Method that takes one optional date and time argument and returns one optional date and time value.
     """
 
-    output1: Optional[Optional[datetime]]
+    output1: Optional[datetime]
 
 
 class CallThreeDateTimesMethodRequest(BaseModel):
@@ -732,7 +865,7 @@ class CallOptionalDurationMethodResponse(BaseModel):
     Method that takes one optional duration argument and returns one optional duration value.
     """
 
-    output1: Optional[Optional[timedelta]]
+    output1: Optional[timedelta]
 
 
 class CallThreeDurationsMethodRequest(BaseModel):

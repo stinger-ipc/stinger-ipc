@@ -119,10 +119,11 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
-boost::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+boost::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
     rapidjson::Document doc;
     doc.SetObject();
+
     {%-for arg in sig.arg_list%}
     {{ser.addToValue('doc', arg, 'doc.GetAllocator()') | indent}}
     {%-endfor%}

@@ -809,7 +809,7 @@ The `singleEnum` signal can be subscribed to by using the client's `receive_sing
 
 ```python
 @client.receive_single_enum
-def on_single_enum(value: stinger_types.Numbers):
+def on_single_enum(value: interface_types.Numbers):
     print(f"Got a 'singleEnum' signal: value={ value } ")
 ```
 
@@ -821,7 +821,7 @@ def on_single_enum(value: stinger_types.Numbers):
 A server can emit a `singleEnum` signal simply by calling the server's `emit_single_enum` method.
 
 ```python
-server.emit_single_enum(stinger_types.Numbers.ONE)
+server.emit_single_enum(interface_types.Numbers.ONE)
 ```
 
 </details>
@@ -898,7 +898,7 @@ The `singleOptionalEnum` signal can be subscribed to by using the client's `rece
 
 ```python
 @client.receive_single_optional_enum
-def on_single_optional_enum(value: Optional[stinger_types.Numbers]):
+def on_single_optional_enum(value: Optional[interface_types.Numbers]):
     print(f"Got a 'singleOptionalEnum' signal: value={ value } ")
 ```
 
@@ -910,7 +910,7 @@ def on_single_optional_enum(value: Optional[stinger_types.Numbers]):
 A server can emit a `singleOptionalEnum` signal simply by calling the server's `emit_single_optional_enum` method.
 
 ```python
-server.emit_single_optional_enum(stinger_types.Numbers.ONE)
+server.emit_single_optional_enum(interface_types.Numbers.ONE)
 ```
 
 </details>
@@ -989,7 +989,7 @@ The `threeEnums` signal can be subscribed to by using the client's `receive_thre
 
 ```python
 @client.receive_three_enums
-def on_three_enums(first: stinger_types.Numbers, second: stinger_types.Numbers, third: Optional[stinger_types.Numbers]):
+def on_three_enums(first: interface_types.Numbers, second: interface_types.Numbers, third: Optional[interface_types.Numbers]):
     print(f"Got a 'threeEnums' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -1001,7 +1001,7 @@ def on_three_enums(first: stinger_types.Numbers, second: stinger_types.Numbers, 
 A server can emit a `threeEnums` signal simply by calling the server's `emit_three_enums` method.
 
 ```python
-server.emit_three_enums(stinger_types.Numbers.ONE, stinger_types.Numbers.ONE, stinger_types.Numbers.ONE)
+server.emit_three_enums(interface_types.Numbers.ONE, interface_types.Numbers.ONE, interface_types.Numbers.ONE)
 ```
 
 </details>
@@ -1078,7 +1078,7 @@ The `singleStruct` signal can be subscribed to by using the client's `receive_si
 
 ```python
 @client.receive_single_struct
-def on_single_struct(value: stinger_types.AllTypes):
+def on_single_struct(value: interface_types.AllTypes):
     print(f"Got a 'singleStruct' signal: value={ value } ")
 ```
 
@@ -1090,7 +1090,7 @@ def on_single_struct(value: stinger_types.AllTypes):
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
 ```python
-server.emit_single_struct(stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"))
+server.emit_single_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
 ```
 
 </details>
@@ -1167,7 +1167,7 @@ The `singleOptionalStruct` signal can be subscribed to by using the client's `re
 
 ```python
 @client.receive_single_optional_struct
-def on_single_optional_struct(value: stinger_types.AllTypes):
+def on_single_optional_struct(value: interface_types.AllTypes):
     print(f"Got a 'singleOptionalStruct' signal: value={ value } ")
 ```
 
@@ -1179,7 +1179,7 @@ def on_single_optional_struct(value: stinger_types.AllTypes):
 A server can emit a `singleOptionalStruct` signal simply by calling the server's `emit_single_optional_struct` method.
 
 ```python
-server.emit_single_optional_struct(stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+server.emit_single_optional_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
 ```
 
 </details>
@@ -1258,7 +1258,7 @@ The `threeStructs` signal can be subscribed to by using the client's `receive_th
 
 ```python
 @client.receive_three_structs
-def on_three_structs(first: stinger_types.AllTypes, second: stinger_types.AllTypes, third: stinger_types.AllTypes):
+def on_three_structs(first: interface_types.AllTypes, second: interface_types.AllTypes, third: interface_types.AllTypes):
     print(f"Got a 'threeStructs' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -1270,7 +1270,7 @@ def on_three_structs(first: stinger_types.AllTypes, second: stinger_types.AllTyp
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
 ```python
-server.emit_three_structs(stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"), stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+server.emit_three_structs(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
 ```
 
 </details>
@@ -2371,10 +2371,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_integers 
-def call_three_integers(input1: int, input2: int, input3: Optional[int]) -> stinger_types.CallThreeIntegersReturnValues:
+def call_three_integers(input1: int, input2: int, input3: Optional[int]) -> interface_types.CallThreeIntegersMethodResponse:
     """ This is an example handler for the 'callThreeIntegers' method.  """
     print(f"Running call_three_integers'({input1}, {input2}, {input3})'")
-    return stinger_types.CallThreeIntegersReturnValues(output1=42, output2=42, output3=42)
+    return interface_types.CallThreeIntegersMethodResponse(output1=42, output2=42, output3=42)
 ```
 
 </details>
@@ -2556,10 +2556,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_strings 
-def call_three_strings(input1: str, input2: Optional[str], input3: str) -> stinger_types.CallThreeStringsReturnValues:
+def call_three_strings(input1: str, input2: Optional[str], input3: str) -> interface_types.CallThreeStringsMethodResponse:
     """ This is an example handler for the 'callThreeStrings' method.  """
     print(f"Running call_three_strings'({input1}, {input2}, {input3})'")
-    return stinger_types.CallThreeStringsReturnValues(output1="apples", output2="apples", output3="apples")
+    return interface_types.CallThreeStringsMethodResponse(output1="apples", output2="apples", output3="apples")
 ```
 
 </details>
@@ -2600,7 +2600,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_one_enum(input1=stinger_types.Numbers.ONE)
+future = client.call_one_enum(input1=interface_types.Numbers.ONE)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2617,10 +2617,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_enum 
-def call_one_enum(input1: stinger_types.Numbers) -> stinger_types.Numbers:
+def call_one_enum(input1: interface_types.Numbers) -> interface_types.Numbers:
     """ This is an example handler for the 'callOneEnum' method.  """
     print(f"Running call_one_enum'({input1})'")
-    return stinger_types.Numbers.ONE
+    return interface_types.Numbers.ONE
 ```
 
 </details>
@@ -2661,7 +2661,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_enum(input1=stinger_types.Numbers.ONE)
+future = client.call_optional_enum(input1=interface_types.Numbers.ONE)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2678,10 +2678,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_enum 
-def call_optional_enum(input1: Optional[stinger_types.Numbers]) -> Optional[stinger_types.Numbers]:
+def call_optional_enum(input1: Optional[interface_types.Numbers]) -> Optional[interface_types.Numbers]:
     """ This is an example handler for the 'callOptionalEnum' method.  """
     print(f"Running call_optional_enum'({input1})'")
-    return stinger_types.Numbers.ONE
+    return interface_types.Numbers.ONE
 ```
 
 </details>
@@ -2724,7 +2724,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_enums(input1=stinger_types.Numbers.ONE, input2=stinger_types.Numbers.ONE, input3=stinger_types.Numbers.ONE)
+future = client.call_three_enums(input1=interface_types.Numbers.ONE, input2=interface_types.Numbers.ONE, input3=interface_types.Numbers.ONE)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2741,10 +2741,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_enums 
-def call_three_enums(input1: stinger_types.Numbers, input2: stinger_types.Numbers, input3: Optional[stinger_types.Numbers]) -> stinger_types.CallThreeEnumsReturnValues:
+def call_three_enums(input1: interface_types.Numbers, input2: interface_types.Numbers, input3: Optional[interface_types.Numbers]) -> interface_types.CallThreeEnumsMethodResponse:
     """ This is an example handler for the 'callThreeEnums' method.  """
     print(f"Running call_three_enums'({input1}, {input2}, {input3})'")
-    return stinger_types.CallThreeEnumsReturnValues(output1=stinger_types.Numbers.ONE, output2=stinger_types.Numbers.ONE, output3=stinger_types.Numbers.ONE)
+    return interface_types.CallThreeEnumsMethodResponse(output1=interface_types.Numbers.ONE, output2=interface_types.Numbers.ONE, output3=interface_types.Numbers.ONE)
 ```
 
 </details>
@@ -2788,7 +2788,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_one_struct(input1=stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+future = client.call_one_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2805,10 +2805,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_struct 
-def call_one_struct(input1: stinger_types.AllTypes) -> stinger_types.AllTypes:
+def call_one_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
     """ This is an example handler for the 'callOneStruct' method.  """
     print(f"Running call_one_struct'({input1})'")
-    return stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data")
+    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data")
 ```
 
 </details>
@@ -2852,7 +2852,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_struct(input1=stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+future = client.call_optional_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2869,10 +2869,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_struct 
-def call_optional_struct(input1: stinger_types.AllTypes) -> stinger_types.AllTypes:
+def call_optional_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
     """ This is an example handler for the 'callOptionalStruct' method.  """
     print(f"Running call_optional_struct'({input1})'")
-    return stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data")
+    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data")
 ```
 
 </details>
@@ -2915,7 +2915,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_structs(input1=stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), input2=stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), input3=stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2932,10 +2932,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_structs 
-def call_three_structs(input1: stinger_types.AllTypes, input2: stinger_types.AllTypes, input3: stinger_types.AllTypes) -> stinger_types.CallThreeStructsReturnValues:
+def call_three_structs(input1: interface_types.AllTypes, input2: interface_types.AllTypes, input3: interface_types.AllTypes) -> interface_types.CallThreeStructsMethodResponse:
     """ This is an example handler for the 'callThreeStructs' method.  """
     print(f"Running call_three_structs'({input1}, {input2}, {input3})'")
-    return stinger_types.CallThreeStructsReturnValues(output1=stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"), output2=stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"), output3=stinger_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=stinger_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=stinger_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+    return interface_types.CallThreeStructsMethodResponse(output1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), output2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), output3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
 ```
 
 </details>
@@ -3117,10 +3117,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_date_times 
-def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> stinger_types.CallThreeDateTimesReturnValues:
+def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> interface_types.CallThreeDateTimesMethodResponse:
     """ This is an example handler for the 'callThreeDateTimes' method.  """
     print(f"Running call_three_date_times'({input1}, {input2}, {input3})'")
-    return stinger_types.CallThreeDateTimesReturnValues(output1=datetime.now(), output2=datetime.now(), output3=datetime.now())
+    return interface_types.CallThreeDateTimesMethodResponse(output1=datetime.now(), output2=datetime.now(), output3=datetime.now())
 ```
 
 </details>
@@ -3302,10 +3302,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_durations 
-def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[timedelta]) -> stinger_types.CallThreeDurationsReturnValues:
+def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[timedelta]) -> interface_types.CallThreeDurationsMethodResponse:
     """ This is an example handler for the 'callThreeDurations' method.  """
     print(f"Running call_three_durations'({input1}, {input2}, {input3})'")
-    return stinger_types.CallThreeDurationsReturnValues(output1=timedelta(seconds=3536), output2=timedelta(seconds=3536), output3=None)
+    return interface_types.CallThreeDurationsMethodResponse(output1=timedelta(seconds=3536), output2=timedelta(seconds=3536), output3=None)
 ```
 
 </details>
@@ -3487,10 +3487,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_binaries 
-def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> stinger_types.CallThreeBinariesReturnValues:
+def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> interface_types.CallThreeBinariesMethodResponse:
     """ This is an example handler for the 'callThreeBinaries' method.  """
     print(f"Running call_three_binaries'({input1}, {input2}, {input3})'")
-    return stinger_types.CallThreeBinariesReturnValues(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
+    return interface_types.CallThreeBinariesMethodResponse(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
 ```
 
 </details>

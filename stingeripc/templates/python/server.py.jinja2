@@ -120,6 +120,10 @@ class {{stinger.python.server_class_name}}:
 
         {{sig_name|UpperCamelCase}}SignalPayload is a pydantic BaseModel which will validate the arguments.
         """
+        {%for arg in sig.arg_list%}
+        assert isinstance({{arg.name}}, {{arg.python_annotation}}), f"The '{{arg.name}}' argument must be of type {{arg.python_annotation}}, but was {type({{arg.name}})}"
+        {%endfor%}
+
         
         payload = {{sig_name|UpperCamelCase}}SignalPayload({%-for arg in sig.arg_list%}
             {{arg.name}}={{arg.name}}{%if arg.optional%} if {{arg.name}} is not None else None{%endif%},
@@ -194,6 +198,34 @@ class {{stinger.python.server_class_name}}:
 
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
+    {%if prop.arg_list | length == 1%}
+    {%-set arg = prop.arg_list[0] %}
+    @property
+    def {{prop_name | snake_case}}(self) -> {%if arg.optional%}{{prop.python_annotation}}{%else%}Optional[{{prop.python_annotation}}]{%endif%}:
+        """ This property returns the last received value for the '{{prop_name}}' property.
+        """
+        with self._property_{{prop_name|snake_case}}_mutex:
+            return self._property_{{prop_name|snake_case}}
+
+    @{{prop_name | snake_case}}.setter
+    def {{prop_name | snake_case}}(self, {{arg.name|snake_case}}: {{prop.python_annotation}}):
+        """ This property sets (publishes) a new value for the '{{prop_name}}' property.
+        """
+
+        if {%if arg.optional%}({{arg.name|snake_case}} is not None) and {%endif%}(not isinstance({{arg.name|snake_case}}, {{prop.python_local_type}})):
+            raise ValueError(f"The value must be {{prop.python_class}} {%if arg.optional%}or None{%endif%}.")
+
+        prop_obj = {{prop_name|UpperCamelCase}}Property({{arg.name|snake_case}}={{arg.name|snake_case}})
+        payload = prop_obj.model_dump_json()
+
+        if self._property_{{prop_name|snake_case}}.value is None or {{arg.name|snake_case}} != self._property_{{prop_name|snake_case}}.value.{{arg.name|snake_case}}:
+            with self._property_{{prop_name|snake_case}}.mutex:
+                self._property_{{prop_name|snake_case}}.value = prop_obj
+                self._property_{{prop_name|snake_case}}.version += 1
+            self._conn.publish("{{prop.value_topic}}".format(self._instance_id), payload, qos=1, retain=True)
+            for callback in self._property_{{prop_name|snake_case}}.callbacks:
+                callback(prop_obj.{{arg.name|snake_case}})
+    {%else%} {# property with multiple arguments #}
     @property
     def {{prop_name | snake_case}}(self) -> Optional[{{prop.python_annotation}}]:
         """ This property returns the last received value for the '{{prop_name}}' property.
@@ -202,33 +234,23 @@ class {{stinger.python.server_class_name}}:
             return self._property_{{prop_name|snake_case}}
 
     @{{prop_name | snake_case}}.setter
-    def {{prop_name | snake_case}}(self, {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}: {{prop.python_annotation}}):
+    def {{prop_name | snake_case}}(self, value: {{prop_name|UpperCamelCase}}Property):
         """ This property sets (publishes) a new value for the '{{prop_name}}' property.
         """
-        if not isinstance({%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}, {{prop.python_local_type}}):
+
+        if not isinstance(value, {{prop_name|UpperCamelCase}}Property):
             raise ValueError(f"The value must be {{prop.python_class}}.")
 
-        {%if prop.arg_list | length > 1%}
         payload = value.model_dump_json()
-        {%elif prop.arg_list[0].arg_type.name.lower() == "datetime" %}
-        payload = json.dumps({ "{{prop.arg_list[0].name}}": {{prop.arg_list[0].name|snake_case}}.isoformat() })
-        {%elif prop.arg_list[0].arg_type.name.lower() == "duration" %}
-        payload = json.dumps({ "{{prop.arg_list[0].name}}": isodate.duration_isoformat({{prop.arg_list[0].name|snake_case}}) })
-        {%else%}
-        payload = json.dumps({ "{{prop.arg_list[0].name}}": {{prop.arg_list[0].name|snake_case}} }) 
-        {%endif%}
 
-        if {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%} != self._property_{{prop_name|snake_case}}.value:
+        if value != self._property_{{prop_name|snake_case}}.value:
             with self._property_{{prop_name|snake_case}}.mutex:
-                self._property_{{prop_name|snake_case}}.value = {%if prop.arg_list | length > 1%}value{%else%}{{prop.arg_list[0].name|snake_case}}{%endif%}
+                self._property_{{prop_name|snake_case}}.value = value
                 self._property_{{prop_name|snake_case}}.version += 1
             self._conn.publish("{{prop.value_topic}}".format(self._instance_id), payload, qos=1, retain=True)
             for callback in self._property_{{prop_name|snake_case}}.callbacks:
-                {%-if prop.arg_list | length > 1%}
-                    callback({%for arg in prop.arg_list %}value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
-                {%-else%}
-                callback({{prop.arg_list[0].name|snake_case}})
-                {%-endif%}
+                callback({%for arg in prop.arg_list %}value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
+    {%endif%}
 
     def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ This method sets (publishes) a new value for the '{{prop_name}}' property.
@@ -239,7 +261,7 @@ class {{stinger.python.server_class_name}}:
         {%-endfor%}
 
         {%if prop.arg_list | length > 1%}
-        obj = stinger_types.{{prop.python_local_type}}({%for arg in prop.arg_list%}
+        obj = interface_types.{{prop.python_local_type}}({%for arg in prop.arg_list%}
             {{arg.name}}={{arg.name|snake_case}},
             {%endfor%}
         )

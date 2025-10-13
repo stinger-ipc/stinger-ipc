@@ -362,6 +362,14 @@ SingleStructPayload SingleStructPayload::FromRapidJsonObject(const rapidjson::Va
 
 void SingleStructPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        value.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("value", tempStructValue, allocator);
+    }
 }
 
 // --- (De-)Serialization for singleOptionalStruct signal payload ---
@@ -386,6 +394,19 @@ SingleOptionalStructPayload SingleOptionalStructPayload::FromRapidJsonObject(con
 
 void SingleOptionalStructPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (value)
+        {
+            tempStructValue.SetObject();
+            value->AddToRapidJsonObject(tempStructValue, allocator);
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        parent.AddMember("value", tempStructValue, allocator);
+    }
 }
 
 // --- (De-)Serialization for threeStructs signal payload ---
@@ -432,6 +453,37 @@ ThreeStructsPayload ThreeStructsPayload::FromRapidJsonObject(const rapidjson::Va
 
 void ThreeStructsPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        first.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("first", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        second.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("second", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (third)
+        {
+            tempStructValue.SetObject();
+            third->AddToRapidJsonObject(tempStructValue, allocator);
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        parent.AddMember("third", tempStructValue, allocator);
+    }
 }
 
 // --- (De-)Serialization for singleDateTime signal payload ---

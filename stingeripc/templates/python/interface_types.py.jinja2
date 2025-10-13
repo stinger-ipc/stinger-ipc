@@ -54,8 +54,8 @@ class {{method.return_value_python_local_type}}(BaseModel):
 {%endif-%}
 {%endfor%}
 
-{%-for prop_name, prop in stinger.properties.items()%}{%if prop.arg_list | length > 1%}
-class {{prop.python_local_type}}(BaseModel):
+{%-for prop_name, prop in stinger.properties.items()%}
+class {{prop_name|UpperCamelCase}}Property(BaseModel):
     """ Interface property `{{prop_name}}` (multi-value struct).{%if prop.documentation%}
     
     {{prop.documentation}}{%endif%}
@@ -75,7 +75,7 @@ class {{prop.python_local_type}}(BaseModel):
     {{arg.name}}: {%if arg.optional%}Optional[bytes]{%else%}bytes{%endif%}{%if arg.description%} = Field(description="{{arg.description}}"){%endif%}
     {%endif-%}
     {%endfor%}
-{%endif%}{%endfor%}
+{%endfor%}
 
 {%- for method_name, method in stinger.methods.items()%}
 class {{method_name|UpperCamelCase}}MethodRequest(BaseModel):
@@ -95,17 +95,10 @@ class {{method_name|UpperCamelCase}}MethodResponse(BaseModel):
 
     {{method.documentation}}{%endif%}
     """
-    {%if method.return_value_type == "struct"%}
-    {%-for arg in method.return_value.members%}
+    {%-for arg in method.return_arg_list%}
     {{arg.name}}: {%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}{%if arg.description%} = Field(description="{{arg.description}}"){%endif%}
     {%-endfor%}
-    {%elif method.return_value_type == "multiple"%}
-    {%-for arg in method.return_value%}
-    {{arg.name}}: {%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}{%if arg.description%} = Field(description="{{arg.description}}"){%endif%}
-    {%-endfor%}
-    {%elif method.return_value_type != false %}
-    {{method.return_value.name}}: {%if method.return_value.optional%}Optional[{{method.return_value_python_annotation}}]{%else%}{{method.return_value_python_annotation}}{%endif%}{%if method.return_value.description%} = Field(description="{{method.return_value.description}}"){%endif%}
-    {%else%}
-    pass    
+    {%if method.return_value_type == false%}
+    pass
     {%endif%}
 {%endfor%}

@@ -118,6 +118,23 @@ LunchMenuProperty LunchMenuProperty::FromRapidJsonObject(const rapidjson::Value&
 
 void LunchMenuProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        monday.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("monday", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        tuesday.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("tuesday", tempStructValue, allocator);
+    }
 }
 
 FamilyNameProperty FamilyNameProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)

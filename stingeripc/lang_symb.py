@@ -8,7 +8,7 @@ class PythonSymbols:
 
     @property
     def type_definition_module(self) -> str:
-        return "stinger_types"
+        return "interface_types"
 
 
 class PythonInterfaceSymbols(PythonSymbols):

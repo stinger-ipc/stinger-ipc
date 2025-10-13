@@ -19,7 +19,7 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import IBrokerConnection
 from method_codes import *
 from interface_types import *
-import interface_types as stinger_types
+import interface_types as interface_types
 
 
 T = TypeVar("T")
@@ -88,6 +88,12 @@ class SignalOnlyServer:
         AnotherSignalSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
 
+        assert isinstance(one, float), f"The 'one' argument must be of type float, but was {type(one)}"
+
+        assert isinstance(two, bool), f"The 'two' argument must be of type bool, but was {type(two)}"
+
+        assert isinstance(three, str), f"The 'three' argument must be of type str, but was {type(three)}"
+
         payload = AnotherSignalSignalPayload(
             one=one,
             two=two,
@@ -101,6 +107,8 @@ class SignalOnlyServer:
         BarkSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
 
+        assert isinstance(word, str), f"The 'word' argument must be of type str, but was {type(word)}"
+
         payload = BarkSignalPayload(
             word=word,
         )
@@ -111,6 +119,8 @@ class SignalOnlyServer:
 
         MaybeNumberSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
+
+        assert isinstance(number, Optional[int]), f"The 'number' argument must be of type Optional[int], but was {type(number)}"
 
         payload = MaybeNumberSignalPayload(
             number=number if number is not None else None,
@@ -123,6 +133,8 @@ class SignalOnlyServer:
         MaybeNameSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
 
+        assert isinstance(name, Optional[str]), f"The 'name' argument must be of type Optional[str], but was {type(name)}"
+
         payload = MaybeNameSignalPayload(
             name=name if name is not None else None,
         )
@@ -133,6 +145,8 @@ class SignalOnlyServer:
 
         NowSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
+
+        assert isinstance(timestamp, datetime), f"The 'timestamp' argument must be of type datetime, but was {type(timestamp)}"
 
         payload = NowSignalPayload(
             timestamp=timestamp,

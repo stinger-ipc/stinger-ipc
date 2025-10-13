@@ -20,26 +20,26 @@ from interface_types import *
 import threading
 
 from connection import IBrokerConnection
-import interface_types as stinger_types
+import interface_types as interface_types
 
 logging.basicConfig(level=logging.DEBUG)
 
-TodayIsSignalCallbackType = Callable[[int, Optional[stinger_types.DayOfTheWeek], datetime, timedelta, bytes], None]
+TodayIsSignalCallbackType = Callable[[int, Optional[interface_types.DayOfTheWeek], datetime, timedelta, bytes], None]
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
-DoSomethingMethodResponseCallbackType = Callable[[stinger_types.DoSomethingReturnValues], None]
+DoSomethingMethodResponseCallbackType = Callable[[interface_types.DoSomethingMethodResponse], None]
 EchoMethodResponseCallbackType = Callable[[str], None]
 WhatTimeIsItMethodResponseCallbackType = Callable[[datetime], None]
-SetTheTimeMethodResponseCallbackType = Callable[[stinger_types.SetTheTimeReturnValues], None]
+SetTheTimeMethodResponseCallbackType = Callable[[interface_types.SetTheTimeMethodResponse], None]
 ForwardTimeMethodResponseCallbackType = Callable[[datetime], None]
 HowOffIsTheClockMethodResponseCallbackType = Callable[[timedelta], None]
 
 FavoriteNumberPropertyUpdatedCallbackType = Callable[[int], None]
-FavoriteFoodsPropertyUpdatedCallbackType = Callable[[stinger_types.FavoriteFoodsProperty], None]
-LunchMenuPropertyUpdatedCallbackType = Callable[[stinger_types.LunchMenuProperty], None]
+FavoriteFoodsPropertyUpdatedCallbackType = Callable[[interface_types.FavoriteFoodsProperty], None]
+LunchMenuPropertyUpdatedCallbackType = Callable[[interface_types.LunchMenuProperty], None]
 FamilyNamePropertyUpdatedCallbackType = Callable[[str], None]
 LastBreakfastTimePropertyUpdatedCallbackType = Callable[[datetime], None]
 BreakfastLengthPropertyUpdatedCallbackType = Callable[[timedelta], None]
-LastBirthdaysPropertyUpdatedCallbackType = Callable[[stinger_types.LastBirthdaysProperty], None]
+LastBirthdaysPropertyUpdatedCallbackType = Callable[[interface_types.LastBirthdaysProperty], None]
 
 
 class FullClient:
@@ -58,10 +58,10 @@ class FullClient:
         self._property_favorite_number = None  # type: Optional[int]
         self._conn.subscribe("full/{}/property/favoriteNumber/value".format(self._service_id), self._receive_favorite_number_property_update_message)
         self._changed_value_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
-        self._property_favorite_foods = None  # type: Optional[stinger_types.FavoriteFoodsProperty]
+        self._property_favorite_foods = None  # type: Optional[interface_types.FavoriteFoodsProperty]
         self._conn.subscribe("full/{}/property/favoriteFoods/value".format(self._service_id), self._receive_favorite_foods_property_update_message)
         self._changed_value_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
-        self._property_lunch_menu = None  # type: Optional[stinger_types.LunchMenuProperty]
+        self._property_lunch_menu = None  # type: Optional[interface_types.LunchMenuProperty]
         self._conn.subscribe("full/{}/property/lunchMenu/value".format(self._service_id), self._receive_lunch_menu_property_update_message)
         self._changed_value_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
         self._property_family_name = None  # type: Optional[str]
@@ -73,7 +73,7 @@ class FullClient:
         self._property_breakfast_length = None  # type: Optional[datetime.timedelta]
         self._conn.subscribe("full/{}/property/breakfastLength/value".format(self._service_id), self._receive_breakfast_length_property_update_message)
         self._changed_value_callbacks_for_breakfast_length: list[BreakfastLengthPropertyUpdatedCallbackType] = []
-        self._property_last_birthdays = None  # type: Optional[stinger_types.LastBirthdaysProperty]
+        self._property_last_birthdays = None  # type: Optional[interface_types.LastBirthdaysProperty]
         self._conn.subscribe("full/{}/property/lastBirthdays/value".format(self._service_id), self._receive_last_birthdays_property_update_message)
         self._changed_value_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
@@ -109,15 +109,15 @@ class FullClient:
         return handler
 
     @property
-    def favorite_foods(self) -> Optional[stinger_types.FavoriteFoodsProperty]:
+    def favorite_foods(self) -> Optional[interface_types.FavoriteFoodsProperty]:
         """Property 'favorite_foods' getter."""
         return self._property_favorite_foods
 
     @favorite_foods.setter
-    def favorite_foods(self, value: stinger_types.FavoriteFoodsProperty):
+    def favorite_foods(self, value: interface_types.FavoriteFoodsProperty):
         """Serializes and publishes the 'favorite_foods' property."""
-        if not isinstance(value, stinger_types.FavoriteFoodsProperty):
-            raise ValueError("The 'favorite_foods' property must be a stinger_types.FavoriteFoodsProperty")
+        if not isinstance(value, interface_types.FavoriteFoodsProperty):
+            raise ValueError("The 'favorite_foods' property must be a interface_types.FavoriteFoodsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'favorite_foods' property to %s", serialized)
         self._conn.publish("full/{}/property/favoriteFoods/setValue".format(self._service_id), serialized, qos=1)
@@ -132,15 +132,15 @@ class FullClient:
         return handler
 
     @property
-    def lunch_menu(self) -> Optional[stinger_types.LunchMenuProperty]:
+    def lunch_menu(self) -> Optional[interface_types.LunchMenuProperty]:
         """Property 'lunch_menu' getter."""
         return self._property_lunch_menu
 
     @lunch_menu.setter
-    def lunch_menu(self, value: stinger_types.LunchMenuProperty):
+    def lunch_menu(self, value: interface_types.LunchMenuProperty):
         """Serializes and publishes the 'lunch_menu' property."""
-        if not isinstance(value, stinger_types.LunchMenuProperty):
-            raise ValueError("The 'lunch_menu' property must be a stinger_types.LunchMenuProperty")
+        if not isinstance(value, interface_types.LunchMenuProperty):
+            raise ValueError("The 'lunch_menu' property must be a interface_types.LunchMenuProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'lunch_menu' property to %s", serialized)
         self._conn.publish("full/{}/property/lunchMenu/setValue".format(self._service_id), serialized, qos=1)
@@ -224,15 +224,15 @@ class FullClient:
         return handler
 
     @property
-    def last_birthdays(self) -> Optional[stinger_types.LastBirthdaysProperty]:
+    def last_birthdays(self) -> Optional[interface_types.LastBirthdaysProperty]:
         """Property 'last_birthdays' getter."""
         return self._property_last_birthdays
 
     @last_birthdays.setter
-    def last_birthdays(self, value: stinger_types.LastBirthdaysProperty):
+    def last_birthdays(self, value: interface_types.LastBirthdaysProperty):
         """Serializes and publishes the 'last_birthdays' property."""
-        if not isinstance(value, stinger_types.LastBirthdaysProperty):
-            raise ValueError("The 'last_birthdays' property must be a stinger_types.LastBirthdaysProperty")
+        if not isinstance(value, interface_types.LastBirthdaysProperty):
+            raise ValueError("The 'last_birthdays' property must be a interface_types.LastBirthdaysProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'last_birthdays' property to %s", serialized)
         self._conn.publish("full/{}/property/lastBirthdays/setValue".format(self._service_id), serialized, qos=1)
@@ -436,7 +436,7 @@ class FullClient:
             self._logger.warning("Received 'favorite_foods' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.FavoriteFoodsProperty.model_validate_json(payload)
+            prop_value = interface_types.FavoriteFoodsProperty.model_validate_json(payload)
             self._property_favorite_foods = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_favorite_foods, value=self._property_favorite_foods)
         except Exception as e:
@@ -448,7 +448,7 @@ class FullClient:
             self._logger.warning("Received 'lunch_menu' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.LunchMenuProperty.model_validate_json(payload)
+            prop_value = interface_types.LunchMenuProperty.model_validate_json(payload)
             self._property_lunch_menu = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_lunch_menu, value=self._property_lunch_menu)
         except Exception as e:
@@ -499,7 +499,7 @@ class FullClient:
             self._logger.warning("Received 'last_birthdays' property change with non-JSON content type")
             return
         try:
-            prop_value = stinger_types.LastBirthdaysProperty.model_validate_json(payload)
+            prop_value = interface_types.LastBirthdaysProperty.model_validate_json(payload)
             self._property_last_birthdays = prop_value
             self._do_callbacks_for(self._changed_value_callbacks_for_last_birthdays, value=self._property_last_birthdays)
         except Exception as e:
@@ -598,9 +598,9 @@ class FullClient:
 
             return_args["identifier"] = int(return_args["identifier"])
 
-            return_args["day"] = stinger_types.DayOfTheWeek(return_args["day"])
+            return_args["day"] = interface_types.DayOfTheWeek(return_args["day"])
 
-            return_obj = stinger_types.DoSomethingReturnValues(**return_args)
+            return_obj = interface_types.DoSomethingMethodResponse(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -722,7 +722,7 @@ class FullClient:
 
             return_args["confirmation_message"] = str(return_args["confirmation_message"])
 
-            return_obj = stinger_types.SetTheTimeReturnValues(**return_args)
+            return_obj = interface_types.SetTheTimeMethodResponse(**return_args)
             fut.set_result(return_obj)
 
         except Exception as e:
@@ -986,10 +986,10 @@ if __name__ == "__main__":
     client_builder = FullClientBuilder()
 
     @client_builder.receive_today_is
-    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: Optional[stinger_types.DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
+    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: Optional[interface_types.DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
         """
         @param dayOfMonth int
-        @param dayOfWeek Optional[stinger_types.DayOfTheWeek]
+        @param dayOfWeek Optional[interface_types.DayOfTheWeek]
         @param timestamp datetime
         @param process_time timedelta
         @param memory_segment bytes
@@ -1002,12 +1002,12 @@ if __name__ == "__main__":
         print(f"Property 'favorite_number' has been updated to: {value}")
 
     @client_builder.favorite_foods_updated
-    def print_new_favorite_foods_value(value: stinger_types.FavoriteFoodsProperty):
+    def print_new_favorite_foods_value(value: interface_types.FavoriteFoodsProperty):
         """ """
         print(f"Property 'favorite_foods' has been updated to: {value}")
 
     @client_builder.lunch_menu_updated
-    def print_new_lunch_menu_value(value: stinger_types.LunchMenuProperty):
+    def print_new_lunch_menu_value(value: interface_types.LunchMenuProperty):
         """ """
         print(f"Property 'lunch_menu' has been updated to: {value}")
 
@@ -1027,7 +1027,7 @@ if __name__ == "__main__":
         print(f"Property 'breakfast_length' has been updated to: {value}")
 
     @client_builder.last_birthdays_updated
-    def print_new_last_birthdays_value(value: stinger_types.LastBirthdaysProperty):
+    def print_new_last_birthdays_value(value: interface_types.LastBirthdaysProperty):
         """ """
         print(f"Property 'last_birthdays' has been updated to: {value}")
 

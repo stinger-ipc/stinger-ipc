@@ -19,7 +19,7 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from connection import IBrokerConnection
 from method_codes import *
 from interface_types import *
-import interface_types as stinger_types
+import interface_types as interface_types
 
 
 T = TypeVar("T")
@@ -52,7 +52,7 @@ class WeatherServer:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
 
-        self._property_location: PropertyControls[stinger_types.LocationProperty, float, float] = PropertyControls()
+        self._property_location: PropertyControls[interface_types.LocationProperty, float, float] = PropertyControls()
         self._property_location.subscription_id = self._conn.subscribe("weather/{}/property/location/setValue".format(self._instance_id), self._receive_location_update_request_message)
 
         self._property_current_temperature: PropertyControls[float, float] = PropertyControls()
@@ -60,12 +60,12 @@ class WeatherServer:
             "weather/{}/property/currentTemperature/setValue".format(self._instance_id), self._receive_current_temperature_update_request_message
         )
 
-        self._property_current_condition: PropertyControls[stinger_types.CurrentConditionProperty, stinger_types.WeatherCondition, str] = PropertyControls()
+        self._property_current_condition: PropertyControls[interface_types.CurrentConditionProperty, interface_types.WeatherCondition, str] = PropertyControls()
         self._property_current_condition.subscription_id = self._conn.subscribe(
             "weather/{}/property/currentCondition/setValue".format(self._instance_id), self._receive_current_condition_update_request_message
         )
 
-        self._property_daily_forecast: PropertyControls[stinger_types.DailyForecastProperty, stinger_types.ForecastForDay, stinger_types.ForecastForDay, stinger_types.ForecastForDay] = (
+        self._property_daily_forecast: PropertyControls[interface_types.DailyForecastProperty, interface_types.ForecastForDay, interface_types.ForecastForDay, interface_types.ForecastForDay] = (
             PropertyControls()
         )
         self._property_daily_forecast.subscription_id = self._conn.subscribe(
@@ -73,7 +73,7 @@ class WeatherServer:
         )
 
         self._property_hourly_forecast: PropertyControls[
-            stinger_types.HourlyForecastProperty, stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour
+            interface_types.HourlyForecastProperty, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour
         ] = PropertyControls()
         self._property_hourly_forecast.subscription_id = self._conn.subscribe(
             "weather/{}/property/hourlyForecast/setValue".format(self._instance_id), self._receive_hourly_forecast_update_request_message
@@ -133,7 +133,7 @@ class WeatherServer:
 
     def _receive_location_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         try:
-            prop_value = stinger_types.LocationProperty.model_validate_json(payload)
+            prop_value = interface_types.LocationProperty.model_validate_json(payload)
         except ValidationError as e:
             self._logger.error("Failed to validate payload for %s: %s", topic, e)
             self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
@@ -155,7 +155,7 @@ class WeatherServer:
 
     def _receive_current_condition_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         try:
-            prop_value = stinger_types.CurrentConditionProperty.model_validate_json(payload)
+            prop_value = interface_types.CurrentConditionProperty.model_validate_json(payload)
         except ValidationError as e:
             self._logger.error("Failed to validate payload for %s: %s", topic, e)
             self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
@@ -168,7 +168,7 @@ class WeatherServer:
 
     def _receive_daily_forecast_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         try:
-            prop_value = stinger_types.DailyForecastProperty.model_validate_json(payload)
+            prop_value = interface_types.DailyForecastProperty.model_validate_json(payload)
         except ValidationError as e:
             self._logger.error("Failed to validate payload for %s: %s", topic, e)
             self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
@@ -181,7 +181,7 @@ class WeatherServer:
 
     def _receive_hourly_forecast_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         try:
-            prop_value = stinger_types.HourlyForecastProperty.model_validate_json(payload)
+            prop_value = interface_types.HourlyForecastProperty.model_validate_json(payload)
         except ValidationError as e:
             self._logger.error("Failed to validate payload for %s: %s", topic, e)
             self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
@@ -228,6 +228,8 @@ class WeatherServer:
 
         CurrentTimeSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
+
+        assert isinstance(current_time, str), f"The 'current_time' argument must be of type str, but was {type(current_time)}"
 
         payload = CurrentTimeSignalPayload(
             current_time=current_time,
@@ -343,16 +345,17 @@ class WeatherServer:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     @property
-    def location(self) -> Optional[stinger_types.LocationProperty]:
+    def location(self) -> Optional[interface_types.LocationProperty]:
         """This property returns the last received value for the 'location' property."""
         with self._property_location_mutex:
             return self._property_location
 
     @location.setter
-    def location(self, value: stinger_types.LocationProperty):
+    def location(self, value: LocationProperty):
         """This property sets (publishes) a new value for the 'location' property."""
+
         if not isinstance(value, LocationProperty):
-            raise ValueError(f"The value must be stinger_types.LocationProperty.")
+            raise ValueError(f"The value must be interface_types.LocationProperty.")
 
         payload = value.model_dump_json()
 
@@ -371,7 +374,7 @@ class WeatherServer:
         if not isinstance(longitude, float):
             raise ValueError(f"The 'longitude' value must be float.")
 
-        obj = stinger_types.LocationProperty(
+        obj = interface_types.LocationProperty(
             latitude=latitude,
             longitude=longitude,
         )
@@ -393,18 +396,20 @@ class WeatherServer:
     @current_temperature.setter
     def current_temperature(self, temperature_f: float):
         """This property sets (publishes) a new value for the 'current_temperature' property."""
+
         if not isinstance(temperature_f, float):
-            raise ValueError(f"The value must be float.")
+            raise ValueError(f"The value must be float .")
 
-        payload = json.dumps({"temperature_f": temperature_f})
+        prop_obj = CurrentTemperatureProperty(temperature_f=temperature_f)
+        payload = prop_obj.model_dump_json()
 
-        if temperature_f != self._property_current_temperature.value:
+        if self._property_current_temperature.value is None or temperature_f != self._property_current_temperature.value.temperature_f:
             with self._property_current_temperature.mutex:
-                self._property_current_temperature.value = temperature_f
+                self._property_current_temperature.value = prop_obj
                 self._property_current_temperature.version += 1
             self._conn.publish("weather/{}/property/currentTemperature/value".format(self._instance_id), payload, qos=1, retain=True)
             for callback in self._property_current_temperature.callbacks:
-                callback(temperature_f)
+                callback(prop_obj.temperature_f)
 
     def set_current_temperature(self, temperature_f: float):
         """This method sets (publishes) a new value for the 'current_temperature' property."""
@@ -422,16 +427,17 @@ class WeatherServer:
             self._property_current_temperature.callbacks.append(handler)
 
     @property
-    def current_condition(self) -> Optional[stinger_types.CurrentConditionProperty]:
+    def current_condition(self) -> Optional[interface_types.CurrentConditionProperty]:
         """This property returns the last received value for the 'current_condition' property."""
         with self._property_current_condition_mutex:
             return self._property_current_condition
 
     @current_condition.setter
-    def current_condition(self, value: stinger_types.CurrentConditionProperty):
+    def current_condition(self, value: CurrentConditionProperty):
         """This property sets (publishes) a new value for the 'current_condition' property."""
+
         if not isinstance(value, CurrentConditionProperty):
-            raise ValueError(f"The value must be stinger_types.CurrentConditionProperty.")
+            raise ValueError(f"The value must be interface_types.CurrentConditionProperty.")
 
         payload = value.model_dump_json()
 
@@ -443,14 +449,14 @@ class WeatherServer:
             for callback in self._property_current_condition.callbacks:
                 callback(value.condition, value.description)
 
-    def set_current_condition(self, condition: stinger_types.WeatherCondition, description: str):
+    def set_current_condition(self, condition: interface_types.WeatherCondition, description: str):
         """This method sets (publishes) a new value for the 'current_condition' property."""
-        if not isinstance(condition, stinger_types.WeatherCondition):
-            raise ValueError(f"The 'condition' value must be stinger_types.WeatherCondition.")
+        if not isinstance(condition, interface_types.WeatherCondition):
+            raise ValueError(f"The 'condition' value must be interface_types.WeatherCondition.")
         if not isinstance(description, str):
             raise ValueError(f"The 'description' value must be str.")
 
-        obj = stinger_types.CurrentConditionProperty(
+        obj = interface_types.CurrentConditionProperty(
             condition=condition,
             description=description,
         )
@@ -458,22 +464,23 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.current_condition = obj
 
-    def on_current_condition_updates(self, handler: Callable[[stinger_types.WeatherCondition, str], None]):
+    def on_current_condition_updates(self, handler: Callable[[interface_types.WeatherCondition, str], None]):
         """This method registers a callback to be called whenever a new 'current_condition' property update is received."""
         if handler is not None:
             self._property_current_condition.callbacks.append(handler)
 
     @property
-    def daily_forecast(self) -> Optional[stinger_types.DailyForecastProperty]:
+    def daily_forecast(self) -> Optional[interface_types.DailyForecastProperty]:
         """This property returns the last received value for the 'daily_forecast' property."""
         with self._property_daily_forecast_mutex:
             return self._property_daily_forecast
 
     @daily_forecast.setter
-    def daily_forecast(self, value: stinger_types.DailyForecastProperty):
+    def daily_forecast(self, value: DailyForecastProperty):
         """This property sets (publishes) a new value for the 'daily_forecast' property."""
+
         if not isinstance(value, DailyForecastProperty):
-            raise ValueError(f"The value must be stinger_types.DailyForecastProperty.")
+            raise ValueError(f"The value must be interface_types.DailyForecastProperty.")
 
         payload = value.model_dump_json()
 
@@ -485,16 +492,16 @@ class WeatherServer:
             for callback in self._property_daily_forecast.callbacks:
                 callback(value.monday, value.tuesday, value.wednesday)
 
-    def set_daily_forecast(self, monday: stinger_types.ForecastForDay, tuesday: stinger_types.ForecastForDay, wednesday: stinger_types.ForecastForDay):
+    def set_daily_forecast(self, monday: interface_types.ForecastForDay, tuesday: interface_types.ForecastForDay, wednesday: interface_types.ForecastForDay):
         """This method sets (publishes) a new value for the 'daily_forecast' property."""
-        if not isinstance(monday, stinger_types.ForecastForDay):
-            raise ValueError(f"The 'monday' value must be stinger_types.ForecastForDay.")
-        if not isinstance(tuesday, stinger_types.ForecastForDay):
-            raise ValueError(f"The 'tuesday' value must be stinger_types.ForecastForDay.")
-        if not isinstance(wednesday, stinger_types.ForecastForDay):
-            raise ValueError(f"The 'wednesday' value must be stinger_types.ForecastForDay.")
+        if not isinstance(monday, interface_types.ForecastForDay):
+            raise ValueError(f"The 'monday' value must be interface_types.ForecastForDay.")
+        if not isinstance(tuesday, interface_types.ForecastForDay):
+            raise ValueError(f"The 'tuesday' value must be interface_types.ForecastForDay.")
+        if not isinstance(wednesday, interface_types.ForecastForDay):
+            raise ValueError(f"The 'wednesday' value must be interface_types.ForecastForDay.")
 
-        obj = stinger_types.DailyForecastProperty(
+        obj = interface_types.DailyForecastProperty(
             monday=monday,
             tuesday=tuesday,
             wednesday=wednesday,
@@ -503,22 +510,23 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.daily_forecast = obj
 
-    def on_daily_forecast_updates(self, handler: Callable[[stinger_types.ForecastForDay, stinger_types.ForecastForDay, stinger_types.ForecastForDay], None]):
+    def on_daily_forecast_updates(self, handler: Callable[[interface_types.ForecastForDay, interface_types.ForecastForDay, interface_types.ForecastForDay], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast' property update is received."""
         if handler is not None:
             self._property_daily_forecast.callbacks.append(handler)
 
     @property
-    def hourly_forecast(self) -> Optional[stinger_types.HourlyForecastProperty]:
+    def hourly_forecast(self) -> Optional[interface_types.HourlyForecastProperty]:
         """This property returns the last received value for the 'hourly_forecast' property."""
         with self._property_hourly_forecast_mutex:
             return self._property_hourly_forecast
 
     @hourly_forecast.setter
-    def hourly_forecast(self, value: stinger_types.HourlyForecastProperty):
+    def hourly_forecast(self, value: HourlyForecastProperty):
         """This property sets (publishes) a new value for the 'hourly_forecast' property."""
+
         if not isinstance(value, HourlyForecastProperty):
-            raise ValueError(f"The value must be stinger_types.HourlyForecastProperty.")
+            raise ValueError(f"The value must be interface_types.HourlyForecastProperty.")
 
         payload = value.model_dump_json()
 
@@ -530,18 +538,18 @@ class WeatherServer:
             for callback in self._property_hourly_forecast.callbacks:
                 callback(value.hour_0, value.hour_1, value.hour_2, value.hour_3)
 
-    def set_hourly_forecast(self, hour_0: stinger_types.ForecastForHour, hour_1: stinger_types.ForecastForHour, hour_2: stinger_types.ForecastForHour, hour_3: stinger_types.ForecastForHour):
+    def set_hourly_forecast(self, hour_0: interface_types.ForecastForHour, hour_1: interface_types.ForecastForHour, hour_2: interface_types.ForecastForHour, hour_3: interface_types.ForecastForHour):
         """This method sets (publishes) a new value for the 'hourly_forecast' property."""
-        if not isinstance(hour_0, stinger_types.ForecastForHour):
-            raise ValueError(f"The 'hour_0' value must be stinger_types.ForecastForHour.")
-        if not isinstance(hour_1, stinger_types.ForecastForHour):
-            raise ValueError(f"The 'hour_1' value must be stinger_types.ForecastForHour.")
-        if not isinstance(hour_2, stinger_types.ForecastForHour):
-            raise ValueError(f"The 'hour_2' value must be stinger_types.ForecastForHour.")
-        if not isinstance(hour_3, stinger_types.ForecastForHour):
-            raise ValueError(f"The 'hour_3' value must be stinger_types.ForecastForHour.")
+        if not isinstance(hour_0, interface_types.ForecastForHour):
+            raise ValueError(f"The 'hour_0' value must be interface_types.ForecastForHour.")
+        if not isinstance(hour_1, interface_types.ForecastForHour):
+            raise ValueError(f"The 'hour_1' value must be interface_types.ForecastForHour.")
+        if not isinstance(hour_2, interface_types.ForecastForHour):
+            raise ValueError(f"The 'hour_2' value must be interface_types.ForecastForHour.")
+        if not isinstance(hour_3, interface_types.ForecastForHour):
+            raise ValueError(f"The 'hour_3' value must be interface_types.ForecastForHour.")
 
-        obj = stinger_types.HourlyForecastProperty(
+        obj = interface_types.HourlyForecastProperty(
             hour_0=hour_0,
             hour_1=hour_1,
             hour_2=hour_2,
@@ -551,7 +559,7 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.hourly_forecast = obj
 
-    def on_hourly_forecast_updates(self, handler: Callable[[stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour], None]):
+    def on_hourly_forecast_updates(self, handler: Callable[[interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast' property update is received."""
         if handler is not None:
             self._property_hourly_forecast.callbacks.append(handler)
@@ -565,18 +573,20 @@ class WeatherServer:
     @current_condition_refresh_interval.setter
     def current_condition_refresh_interval(self, seconds: int):
         """This property sets (publishes) a new value for the 'current_condition_refresh_interval' property."""
+
         if not isinstance(seconds, int):
-            raise ValueError(f"The value must be int.")
+            raise ValueError(f"The value must be int .")
 
-        payload = json.dumps({"seconds": seconds})
+        prop_obj = CurrentConditionRefreshIntervalProperty(seconds=seconds)
+        payload = prop_obj.model_dump_json()
 
-        if seconds != self._property_current_condition_refresh_interval.value:
+        if self._property_current_condition_refresh_interval.value is None or seconds != self._property_current_condition_refresh_interval.value.seconds:
             with self._property_current_condition_refresh_interval.mutex:
-                self._property_current_condition_refresh_interval.value = seconds
+                self._property_current_condition_refresh_interval.value = prop_obj
                 self._property_current_condition_refresh_interval.version += 1
             self._conn.publish("weather/{}/property/currentConditionRefreshInterval/value".format(self._instance_id), payload, qos=1, retain=True)
             for callback in self._property_current_condition_refresh_interval.callbacks:
-                callback(seconds)
+                callback(prop_obj.seconds)
 
     def set_current_condition_refresh_interval(self, seconds: int):
         """This method sets (publishes) a new value for the 'current_condition_refresh_interval' property."""
@@ -602,18 +612,20 @@ class WeatherServer:
     @hourly_forecast_refresh_interval.setter
     def hourly_forecast_refresh_interval(self, seconds: int):
         """This property sets (publishes) a new value for the 'hourly_forecast_refresh_interval' property."""
+
         if not isinstance(seconds, int):
-            raise ValueError(f"The value must be int.")
+            raise ValueError(f"The value must be int .")
 
-        payload = json.dumps({"seconds": seconds})
+        prop_obj = HourlyForecastRefreshIntervalProperty(seconds=seconds)
+        payload = prop_obj.model_dump_json()
 
-        if seconds != self._property_hourly_forecast_refresh_interval.value:
+        if self._property_hourly_forecast_refresh_interval.value is None or seconds != self._property_hourly_forecast_refresh_interval.value.seconds:
             with self._property_hourly_forecast_refresh_interval.mutex:
-                self._property_hourly_forecast_refresh_interval.value = seconds
+                self._property_hourly_forecast_refresh_interval.value = prop_obj
                 self._property_hourly_forecast_refresh_interval.version += 1
             self._conn.publish("weather/{}/property/hourlyForecastRefreshInterval/value".format(self._instance_id), payload, qos=1, retain=True)
             for callback in self._property_hourly_forecast_refresh_interval.callbacks:
-                callback(seconds)
+                callback(prop_obj.seconds)
 
     def set_hourly_forecast_refresh_interval(self, seconds: int):
         """This method sets (publishes) a new value for the 'hourly_forecast_refresh_interval' property."""
@@ -639,18 +651,20 @@ class WeatherServer:
     @daily_forecast_refresh_interval.setter
     def daily_forecast_refresh_interval(self, seconds: int):
         """This property sets (publishes) a new value for the 'daily_forecast_refresh_interval' property."""
+
         if not isinstance(seconds, int):
-            raise ValueError(f"The value must be int.")
+            raise ValueError(f"The value must be int .")
 
-        payload = json.dumps({"seconds": seconds})
+        prop_obj = DailyForecastRefreshIntervalProperty(seconds=seconds)
+        payload = prop_obj.model_dump_json()
 
-        if seconds != self._property_daily_forecast_refresh_interval.value:
+        if self._property_daily_forecast_refresh_interval.value is None or seconds != self._property_daily_forecast_refresh_interval.value.seconds:
             with self._property_daily_forecast_refresh_interval.mutex:
-                self._property_daily_forecast_refresh_interval.value = seconds
+                self._property_daily_forecast_refresh_interval.value = prop_obj
                 self._property_daily_forecast_refresh_interval.version += 1
             self._conn.publish("weather/{}/property/dailyForecastRefreshInterval/value".format(self._instance_id), payload, qos=1, retain=True)
             for callback in self._property_daily_forecast_refresh_interval.callbacks:
-                callback(seconds)
+                callback(prop_obj.seconds)
 
     def set_daily_forecast_refresh_interval(self, seconds: int):
         """This method sets (publishes) a new value for the 'daily_forecast_refresh_interval' property."""
@@ -681,11 +695,11 @@ class WeatherServerBuilder:
 
         self._location_property_callbacks: List[Callable[[float, float], None]] = []
         self._current_temperature_property_callbacks: List[Callable[[float], None]] = []
-        self._current_condition_property_callbacks: List[Callable[[stinger_types.WeatherCondition, str], None]] = []
-        self._daily_forecast_property_callbacks: List[Callable[[stinger_types.ForecastForDay, stinger_types.ForecastForDay, stinger_types.ForecastForDay], None]] = []
-        self._hourly_forecast_property_callbacks: List[Callable[[stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour], None]] = (
-            []
-        )
+        self._current_condition_property_callbacks: List[Callable[[interface_types.WeatherCondition, str], None]] = []
+        self._daily_forecast_property_callbacks: List[Callable[[interface_types.ForecastForDay, interface_types.ForecastForDay, interface_types.ForecastForDay], None]] = []
+        self._hourly_forecast_property_callbacks: List[
+            Callable[[interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour], None]
+        ] = []
         self._current_condition_refresh_interval_property_callbacks: List[Callable[[int], None]] = []
         self._hourly_forecast_refresh_interval_property_callbacks: List[Callable[[int], None]] = []
         self._daily_forecast_refresh_interval_property_callbacks: List[Callable[[int], None]] = []
@@ -716,15 +730,15 @@ class WeatherServerBuilder:
         """This method registers a callback to be called whenever a new 'current_temperature' property update is received."""
         self._current_temperature_property_callbacks.append(handler)
 
-    def on_current_condition_updates(self, handler: Callable[[stinger_types.WeatherCondition, str], None]):
+    def on_current_condition_updates(self, handler: Callable[[interface_types.WeatherCondition, str], None]):
         """This method registers a callback to be called whenever a new 'current_condition' property update is received."""
         self._current_condition_property_callbacks.append(handler)
 
-    def on_daily_forecast_updates(self, handler: Callable[[stinger_types.ForecastForDay, stinger_types.ForecastForDay, stinger_types.ForecastForDay], None]):
+    def on_daily_forecast_updates(self, handler: Callable[[interface_types.ForecastForDay, interface_types.ForecastForDay, interface_types.ForecastForDay], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast' property update is received."""
         self._daily_forecast_property_callbacks.append(handler)
 
-    def on_hourly_forecast_updates(self, handler: Callable[[stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour, stinger_types.ForecastForHour], None]):
+    def on_hourly_forecast_updates(self, handler: Callable[[interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast' property update is received."""
         self._hourly_forecast_property_callbacks.append(handler)
 
@@ -790,29 +804,29 @@ if __name__ == "__main__":
     conn = MqttBrokerConnection(transport, client_id="py-server-demo")
     server = WeatherServer(conn, "py-server-demo:1")
 
-    server.location = stinger_types.LocationProperty(
+    server.location = interface_types.LocationProperty(
         latitude=3.14,
         longitude=3.14,
     )
 
     server.current_temperature = 3.14
 
-    server.current_condition = stinger_types.CurrentConditionProperty(
-        condition=stinger_types.WeatherCondition.SNOWY,
+    server.current_condition = interface_types.CurrentConditionProperty(
+        condition=interface_types.WeatherCondition.SNOWY,
         description="apples",
     )
 
-    server.daily_forecast = stinger_types.DailyForecastProperty(
-        monday=stinger_types.ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=stinger_types.WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
-        tuesday=stinger_types.ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=stinger_types.WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
-        wednesday=stinger_types.ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=stinger_types.WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+    server.daily_forecast = interface_types.DailyForecastProperty(
+        monday=interface_types.ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=interface_types.WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+        tuesday=interface_types.ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=interface_types.WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+        wednesday=interface_types.ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=interface_types.WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
     )
 
-    server.hourly_forecast = stinger_types.HourlyForecastProperty(
-        hour_0=stinger_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=stinger_types.WeatherCondition.SNOWY),
-        hour_1=stinger_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=stinger_types.WeatherCondition.SNOWY),
-        hour_2=stinger_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=stinger_types.WeatherCondition.SNOWY),
-        hour_3=stinger_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=stinger_types.WeatherCondition.SNOWY),
+    server.hourly_forecast = interface_types.HourlyForecastProperty(
+        hour_0=interface_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=interface_types.WeatherCondition.SNOWY),
+        hour_1=interface_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=interface_types.WeatherCondition.SNOWY),
+        hour_2=interface_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=interface_types.WeatherCondition.SNOWY),
+        hour_3=interface_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=interface_types.WeatherCondition.SNOWY),
     )
 
     server.current_condition_refresh_interval = 42
@@ -848,15 +862,15 @@ if __name__ == "__main__":
         print(f"Received update for 'current_temperature' property: { temperature_f= }")
 
     @server.on_current_condition_updates
-    def on_current_condition_update(condition: stinger_types.WeatherCondition, description: str):
+    def on_current_condition_update(condition: interface_types.WeatherCondition, description: str):
         print(f"Received update for 'current_condition' property: { condition= }, { description= }")
 
     @server.on_daily_forecast_updates
-    def on_daily_forecast_update(monday: stinger_types.ForecastForDay, tuesday: stinger_types.ForecastForDay, wednesday: stinger_types.ForecastForDay):
+    def on_daily_forecast_update(monday: interface_types.ForecastForDay, tuesday: interface_types.ForecastForDay, wednesday: interface_types.ForecastForDay):
         print(f"Received update for 'daily_forecast' property: { monday= }, { tuesday= }, { wednesday= }")
 
     @server.on_hourly_forecast_updates
-    def on_hourly_forecast_update(hour_0: stinger_types.ForecastForHour, hour_1: stinger_types.ForecastForHour, hour_2: stinger_types.ForecastForHour, hour_3: stinger_types.ForecastForHour):
+    def on_hourly_forecast_update(hour_0: interface_types.ForecastForHour, hour_1: interface_types.ForecastForHour, hour_2: interface_types.ForecastForHour, hour_3: interface_types.ForecastForHour):
         print(f"Received update for 'hourly_forecast' property: { hour_0= }, { hour_1= }, { hour_2= }, { hour_3= }")
 
     @server.on_current_condition_refresh_interval_updates

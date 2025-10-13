@@ -1165,6 +1165,15 @@ boost::future<bool> TestAbleServer::emitSingleStructSignal(AllTypes value)
     rapidjson::Document doc;
     doc.SetObject();
 
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        value.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("value", tempStructValue, doc.GetAllocator());
+    }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -1172,10 +1181,24 @@ boost::future<bool> TestAbleServer::emitSingleStructSignal(AllTypes value)
     return _broker->Publish((boost::format("testAble/%1%/signal/singleStruct") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-boost::future<bool> TestAbleServer::emitSingleOptionalStructSignal(AllTypes value)
+boost::future<bool> TestAbleServer::emitSingleOptionalStructSignal(boost::optional<AllTypes> value)
 {
     rapidjson::Document doc;
     doc.SetObject();
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (value)
+        {
+            tempStructValue.SetObject();
+            value->AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        doc.AddMember("value", tempStructValue, doc.GetAllocator());
+    }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
@@ -1184,10 +1207,42 @@ boost::future<bool> TestAbleServer::emitSingleOptionalStructSignal(AllTypes valu
     return _broker->Publish((boost::format("testAble/%1%/signal/singleOptionalStruct") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-boost::future<bool> TestAbleServer::emitThreeStructsSignal(AllTypes first, AllTypes second, AllTypes third)
+boost::future<bool> TestAbleServer::emitThreeStructsSignal(AllTypes first, AllTypes second, boost::optional<AllTypes> third)
 {
     rapidjson::Document doc;
     doc.SetObject();
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        first.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("first", tempStructValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        second.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("second", tempStructValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (third)
+        {
+            tempStructValue.SetObject();
+            third->AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        doc.AddMember("third", tempStructValue, doc.GetAllocator());
+    }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);

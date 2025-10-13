@@ -88,6 +88,18 @@ class Arg:
     @property
     def cpp_type(self) -> str:
         return stringmanip.upper_camel_case(self.name)
+    
+    @property
+    def cpp_temp_type(self) -> str:
+        if self.optional and "optional" not in self.cpp_type:
+            return f"boost::optional<{self.cpp_type}>"
+        return self.cpp_type
+
+    @property
+    def cpp_func_param_type(self) -> str:
+        if self.optional and "optional" not in self.cpp_type:
+            return f"boost::optional<{self.cpp_type}>"
+        return self.cpp_type
 
     @classmethod
     def new_arg_from_stinger(
@@ -200,6 +212,10 @@ class ArgEnum(Arg):
     @property
     def python_type(self) -> str:
         return self._enum.python_type
+
+    @property
+    def python_local_type(self) -> str:
+        return self._enum.python_local_type
 
     @property
     def python_class(self) -> str:
@@ -384,14 +400,8 @@ class ArgStruct(Arg):
         return self._interface_struct.cpp_type
 
     @property
-    def cpp_temp_type(self) -> str:
-        if self.optional:
-            return f"boost::optional<{self._interface_struct.cpp_type}>"
-        return self._interface_struct.cpp_type
-
-    @property
     def python_type(self) -> str:
-        return f"stinger_types.{self._interface_struct.python_local_type}"
+        return f"interface_types.{self._interface_struct.python_local_type}"
 
     @property
     def python_local_type(self) -> str:
@@ -814,7 +824,7 @@ class Method(InterfaceComponent):
             return self._return_value.python_type
         elif isinstance(self._return_value, list):
             return (
-                f"stinger_types.{stringmanip.upper_camel_case(self.return_value_name)}"
+                f"interface_types.{stringmanip.upper_camel_case(self.name)}MethodResponse"
             )
         else:
             raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
@@ -827,7 +837,7 @@ class Method(InterfaceComponent):
             return self._return_value.python_annotation
         elif isinstance(self._return_value, list):
             return (
-                f"stinger_types.{stringmanip.upper_camel_case(self.return_value_name)}"
+                f"interface_types.{stringmanip.upper_camel_case(self.name)}MethodResponse"
             )
         else:
             raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
@@ -957,14 +967,14 @@ class Property(InterfaceComponent):
         if len(self._arg_list) == 1:
             return self._arg_list[0].python_class
         else:
-            return f"stinger_types.{stringmanip.upper_camel_case(self.name)}Property"
+            return f"interface_types.{stringmanip.upper_camel_case(self.name)}Property"
 
     @property
     def python_annotation(self) -> str:
         if len(self._arg_list) == 1:
             return self._arg_list[0].python_annotation
         else:
-            return f"stinger_types.{stringmanip.upper_camel_case(self.name)}Property"
+            return f"interface_types.{stringmanip.upper_camel_case(self.name)}Property"
 
     @property
     def rust_local_type(self) -> str:
@@ -1062,11 +1072,15 @@ class InterfaceEnum:
 
     @staticmethod
     def get_module_alias(lang="python") -> str:
-        return "stinger_types"
+        return "interface_types"
 
     @property
     def python_type(self) -> str:
         return f"{self.get_module_alias()}.{stringmanip.upper_camel_case(self.name)}"
+
+    @property
+    def python_local_type(self) -> str:
+        return f"{stringmanip.upper_camel_case(self.name)}"
 
     @property
     def rust_local_type(self) -> str:
@@ -1139,7 +1153,7 @@ class InterfaceStruct:
 
     @staticmethod
     def get_module_alias(lang="python") -> str:
-        return "stinger_types"
+        return "interface_types"
 
     @property
     def python_type(self) -> str:

@@ -989,6 +989,24 @@ boost::future<bool> FullClient::updateLunchMenuProperty(Lunch monday, Lunch tues
     rapidjson::Document doc;
     doc.SetObject();
 
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        monday.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("monday", tempStructValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        tuesday.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("tuesday", tempStructValue, doc.GetAllocator());
+    }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);

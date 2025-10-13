@@ -2427,6 +2427,15 @@ boost::future<AllTypes> TestAbleClient::callOneStruct(AllTypes input1)
     rapidjson::Document doc;
     doc.SetObject();
 
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        input1.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("input1", tempStructValue, doc.GetAllocator());
+    }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -2484,6 +2493,20 @@ boost::future<boost::optional<AllTypes>> TestAbleClient::callOptionalStruct(boos
     rapidjson::Document doc;
     doc.SetObject();
 
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (input1)
+        {
+            tempStructValue.SetObject();
+            input1->AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        doc.AddMember("input1", tempStructValue, doc.GetAllocator());
+    }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -2540,6 +2563,38 @@ boost::future<CallThreeStructsReturnValues> TestAbleClient::callThreeStructs(boo
 
     rapidjson::Document doc;
     doc.SetObject();
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (input1)
+        {
+            tempStructValue.SetObject();
+            input1->AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        doc.AddMember("input1", tempStructValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        input2.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("input2", tempStructValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        input3.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("input3", tempStructValue, doc.GetAllocator());
+    }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
@@ -3882,6 +3937,15 @@ boost::future<bool> TestAbleClient::updateReadWriteStructProperty(AllTypes value
     rapidjson::Document doc;
     doc.SetObject();
 
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        value.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("value", tempStructValue, doc.GetAllocator());
+    }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -3953,6 +4017,20 @@ boost::future<bool> TestAbleClient::updateReadWriteOptionalStructProperty(boost:
 {
     rapidjson::Document doc;
     doc.SetObject();
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (value)
+        {
+            tempStructValue.SetObject();
+            value->AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        doc.AddMember("value", tempStructValue, doc.GetAllocator());
+    }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
@@ -4036,6 +4114,29 @@ boost::future<bool> TestAbleClient::updateReadWriteTwoStructsProperty(AllTypes f
 {
     rapidjson::Document doc;
     doc.SetObject();
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        first.AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+
+        doc.AddMember("first", tempStructValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+        if (second)
+        {
+            tempStructValue.SetObject();
+            second->AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
+        }
+        else
+        {
+            tempStructValue.SetNull();
+        }
+        doc.AddMember("second", tempStructValue, doc.GetAllocator());
+    }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);

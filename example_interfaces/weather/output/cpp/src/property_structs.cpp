@@ -148,6 +148,32 @@ DailyForecastProperty DailyForecastProperty::FromRapidJsonObject(const rapidjson
 
 void DailyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        monday.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("monday", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        tuesday.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("tuesday", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        wednesday.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("wednesday", tempStructValue, allocator);
+    }
 }
 
 HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -204,6 +230,41 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
 
 void HourlyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        hour0.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("hour_0", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        hour1.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("hour_1", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        hour2.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("hour_2", tempStructValue, allocator);
+    }
+
+    { // Restrict Scope
+        rapidjson::Value tempStructValue;
+
+        tempStructValue.SetObject();
+        hour3.AddToRapidJsonObject(tempStructValue, allocator);
+
+        parent.AddMember("hour_3", tempStructValue, allocator);
+    }
 }
 
 CurrentConditionRefreshIntervalProperty CurrentConditionRefreshIntervalProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
