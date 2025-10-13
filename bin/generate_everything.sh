@@ -54,6 +54,7 @@ function generate_rust() {
     echo
     echo "----------- Generating Rust for ${IFACE_NAME}----------------"
     IFACE_NAME=$1
+    EXAMPLE_PREFIX=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     uv run stinger generate rust ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     RC=$?
@@ -61,8 +62,14 @@ function generate_rust() {
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo update)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo fmt)
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --features client,server,payloads)
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_client_demo --features client)
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${IFACE_NAME}_server_demo --features server)
+        if [ $? -ne 0 ]; then
+            RC=1
+        fi
+        if [ "${IFACE_NAME}" == "testable" ]; then
+            EXAMPLE_PREFIX="test_able"
+        fi
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${EXAMPLE_PREFIX}_client_demo --features client)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${EXAMPLE_PREFIX}_server_demo --features server)
     fi
     return $RC
 }

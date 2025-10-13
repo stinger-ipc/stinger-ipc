@@ -1,5 +1,5 @@
 //! Payloads module for Test Able IPC
-//! 
+//!
 //! Contains all the data structures, enums, and return codes used by the Test Able IPC system.
 
 /*
@@ -16,11 +16,10 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-
 pub mod base64_binary_format {
-    use serde::{Deserialize, Deserializer, Serializer};
-    use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
     use base64::Engine;
+    use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+    use serde::{Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -95,7 +94,7 @@ pub mod datetime_iso_format {
 pub mod duration_iso_format {
     use chrono::Duration;
     use iso8601_duration::Duration as IsoDuration;
-    use serde::{Deserializer, Serializer, Deserialize};
+    use serde::{Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -111,14 +110,15 @@ pub mod duration_iso_format {
         D: Deserializer<'de>,
     {
         let iso_string = String::deserialize(deserializer)?;
-        let iso_dur: IsoDuration = iso_string.parse::<IsoDuration>()
+        let iso_dur: IsoDuration = iso_string
+            .parse::<IsoDuration>()
             .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
-        let std_duration: std::time::Duration = iso_dur.to_std()
-            .ok_or_else(|| serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration"))?;
+        let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
+            serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration")
+        })?;
         chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
     }
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -177,7 +177,7 @@ impl MethodReturnCode {
     }
 }
 
-
+// --- ENUMERATIONS ---
 
 #[repr(u32)]
 #[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
@@ -185,7 +185,7 @@ impl MethodReturnCode {
 pub enum Numbers {
     One = 1,
     Two = 2,
-    Three = 3
+    Three = 3,
 }
 
 #[allow(dead_code)]
@@ -201,68 +201,80 @@ impl From<Numbers> for u32 {
     }
 }
 
-impl From<u32> for Numbers {
-    fn from(s: u32) -> Numbers {
-        Numbers::from_u32(s).unwrap()
+impl TryFrom<u32> for Numbers {
+    type Error = String;
+    fn try_from(v: u32) -> Result<Self, Self::Error> {
+        Numbers::from_u32(v).ok_or_else(|| format!("Invalid Numbers value: {}", v))
     }
 }
 
 impl fmt::Display for Numbers {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-       write!(f, "{:?}", self)
+        write!(f, "{:?}", self)
     }
 }
 
-
+// --- INTERFACE STRUCTURES ---
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct AllTypes {
     pub the_bool: bool,
+
     pub the_int: i32,
+    /// A floating point number.  Bool and int do not have descriptions.
     pub the_number: f32,
+    /// A string type.
     pub the_str: String,
+    /// An enum type
     pub the_enum: Numbers,
-    
+
+    /// A date and time type.
     #[serde(with = "datetime_iso_format")]
     pub date_and_time: chrono::DateTime<chrono::Utc>,
-    
+
+    /// A duration type.
     #[serde(with = "duration_iso_format")]
     pub time_duration: chrono::Duration,
-    
+
+    /// A binary type.
     #[serde(with = "base64_binary_format")]
     pub data: Vec<u8>,
-    
-    pub OptionalInteger: Option<i32>,
-    pub OptionalString: Option<String>,
-    pub OptionalEnum: Option<Numbers>,
-    
+
+    /// An optional integer type.#[serde(rename = "OptionalInteger")]
+    pub optional_integer: Option<i32>,
+    /// An optional string type.#[serde(rename = "OptionalString")]
+    pub optional_string: Option<String>,
+    /// An optional enum type, one of the numbers.#[serde(rename = "OptionalEnum")]
+    pub optional_enum: Option<Numbers>,
+
+    /// An optional date and time type.#[serde(rename = "OptionalDateTime")]
     #[serde(with = "datetime_iso_format")]
-    pub OptionalDateTime: chrono::DateTime<chrono::Utc>,
-    
+    pub optional_date_time: chrono::DateTime<chrono::Utc>,
+
+    /// An optional duration type.#[serde(rename = "OptionalDuration")]
     #[serde(with = "duration_iso_format")]
-    pub OptionalDuration: chrono::Duration,
-    
+    pub optional_duration: chrono::Duration,
+
+    /// An optional binary type.#[serde(rename = "OptionalBinary")]
     #[serde(with = "base64_binary_format")]
-    pub OptionalBinary: Vec<u8>,
-    
+    pub optional_binary: Vec<u8>,
 }
 
+// ---- METHODS ----
 
 // Structures for `callWithNothing` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callWithNothing` method.
-pub struct CallWithNothingRequestObject {
-}
-
+pub struct CallWithNothingRequestObject {}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callWithNothing` method.
-pub struct CallWithNothingReturnValues {
-}
+pub struct CallWithNothingReturnValues {}
+
 // Structures for `callOneInteger` method
 
 #[allow(dead_code, non_snake_case)]
@@ -272,13 +284,13 @@ pub struct CallOneIntegerRequestObject {
     pub input1: i32,
 }
 
-
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOneInteger` method.
 pub struct CallOneIntegerReturnValues {
     pub output1: i32,
 }
+
 // Structures for `callOptionalInteger` method
 
 #[allow(dead_code, non_snake_case)]
@@ -288,33 +300,39 @@ pub struct CallOptionalIntegerRequestObject {
     pub input1: Option<i32>,
 }
 
-
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOptionalInteger` method.
 pub struct CallOptionalIntegerReturnValues {
     pub output1: Option<i32>,
 }
+
 // Structures for `callThreeIntegers` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callThreeIntegers` method.
 pub struct CallThreeIntegersRequestObject {
+    /// The first integer input.  The other two don't have descriptions.
     pub input1: i32,
+
     pub input2: i32,
+
     pub input3: Option<i32>,
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callThreeIntegers` method.
 pub struct CallThreeIntegersReturnValues {
+    /// The first integer output.  The other two don't have descriptions.
     pub output1: i32,
+
     pub output2: i32,
+
     pub output3: Option<i32>,
 }
+
 // Structures for `callOneString` method
 
 #[allow(dead_code, non_snake_case)]
@@ -324,13 +342,13 @@ pub struct CallOneStringRequestObject {
     pub input1: String,
 }
 
-
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOneString` method.
 pub struct CallOneStringReturnValues {
     pub output1: String,
 }
+
 // Structures for `callOptionalString` method
 
 #[allow(dead_code, non_snake_case)]
@@ -340,42 +358,47 @@ pub struct CallOptionalStringRequestObject {
     pub input1: Option<String>,
 }
 
-
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOptionalString` method.
 pub struct CallOptionalStringReturnValues {
     pub output1: Option<String>,
 }
+
 // Structures for `callThreeStrings` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callThreeStrings` method.
 pub struct CallThreeStringsRequestObject {
+    /// The first string input.  The other two don't have descriptions.
     pub input1: String,
+
     pub input2: Option<String>,
+
     pub input3: String,
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callThreeStrings` method.
 pub struct CallThreeStringsReturnValues {
+    /// The first string output.  The other two don't have descriptions.
     pub output1: String,
+
     pub output2: Option<String>,
+
     pub output3: String,
 }
+
 // Structures for `callOneEnum` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callOneEnum` method.
-pub struct CallOneEnumRequestObject {pub input1: u32,
-    
+pub struct CallOneEnumRequestObject {
+    pub input1: Numbers,
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -383,15 +406,15 @@ pub struct CallOneEnumRequestObject {pub input1: u32,
 pub struct CallOneEnumReturnValues {
     pub output1: Numbers,
 }
+
 // Structures for `callOptionalEnum` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callOptionalEnum` method.
-pub struct CallOptionalEnumRequestObject {pub input1: u32,
-    
+pub struct CallOptionalEnumRequestObject {
+    pub input1: Option<Numbers>,
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -399,36 +422,41 @@ pub struct CallOptionalEnumRequestObject {pub input1: u32,
 pub struct CallOptionalEnumReturnValues {
     pub output1: Option<Numbers>,
 }
+
 // Structures for `callThreeEnums` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callThreeEnums` method.
-pub struct CallThreeEnumsRequestObject {pub input1: u32,
-    pub input2: u32,
-    pub input3: u32,
-    
-}
+pub struct CallThreeEnumsRequestObject {
+    /// The first enum input.  The other two don't have descriptions.
+    pub input1: Numbers,
 
+    pub input2: Numbers,
+
+    pub input3: Option<Numbers>,
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callThreeEnums` method.
 pub struct CallThreeEnumsReturnValues {
+    /// The first enum output.  The other two don't have descriptions.
     pub output1: Numbers,
+
     pub output2: Numbers,
+
     pub output3: Option<Numbers>,
 }
+
 // Structures for `callOneStruct` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callOneStruct` method.
 pub struct CallOneStructRequestObject {
-    TEMPLATE ERROR CASE NOT HANDLED for STRUCT - please report a bug.
-    
+    pub input1: AllTypes,
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -436,16 +464,15 @@ pub struct CallOneStructRequestObject {
 pub struct CallOneStructReturnValues {
     pub output1: AllTypes,
 }
+
 // Structures for `callOptionalStruct` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callOptionalStruct` method.
 pub struct CallOptionalStructRequestObject {
-    TEMPLATE ERROR CASE NOT HANDLED for STRUCT - please report a bug.
-    
+    pub input1: AllTypes,
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -453,29 +480,33 @@ pub struct CallOptionalStructRequestObject {
 pub struct CallOptionalStructReturnValues {
     pub output1: AllTypes,
 }
+
 // Structures for `callThreeStructs` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callThreeStructs` method.
 pub struct CallThreeStructsRequestObject {
-    TEMPLATE ERROR CASE NOT HANDLED for STRUCT - please report a bug.
-    
-    TEMPLATE ERROR CASE NOT HANDLED for STRUCT - please report a bug.
-    
-    TEMPLATE ERROR CASE NOT HANDLED for STRUCT - please report a bug.
-    
-}
+    /// The first struct input.  The other two don't have descriptions.
+    pub input1: AllTypes,
 
+    pub input2: AllTypes,
+
+    pub input3: AllTypes,
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callThreeStructs` method.
 pub struct CallThreeStructsReturnValues {
+    /// The first struct output.  The other two don't have descriptions.
     pub output1: AllTypes,
+
     pub output2: AllTypes,
+
     pub output3: AllTypes,
 }
+
 // Structures for `callOneDateTime` method
 
 #[allow(dead_code, non_snake_case)]
@@ -484,16 +515,16 @@ pub struct CallThreeStructsReturnValues {
 pub struct CallOneDateTimeRequestObject {
     #[serde(with = "datetime_iso_format")]
     pub input1: chrono::DateTime<chrono::Utc>,
-    
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOneDateTime` method.
 pub struct CallOneDateTimeReturnValues {
-    #[serde(with = "datetime_iso_format")]pub output1: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "datetime_iso_format")]
+    pub output1: chrono::DateTime<chrono::Utc>,
 }
+
 // Structures for `callOptionalDateTime` method
 
 #[allow(dead_code, non_snake_case)]
@@ -502,42 +533,46 @@ pub struct CallOneDateTimeReturnValues {
 pub struct CallOptionalDateTimeRequestObject {
     #[serde(with = "datetime_iso_format")]
     pub input1: chrono::DateTime<chrono::Utc>,
-    
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOptionalDateTime` method.
 pub struct CallOptionalDateTimeReturnValues {
-    #[serde(with = "datetime_iso_format")]pub output1: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "datetime_iso_format")]
+    pub output1: chrono::DateTime<chrono::Utc>,
 }
+
 // Structures for `callThreeDateTimes` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callThreeDateTimes` method.
 pub struct CallThreeDateTimesRequestObject {
+    /// The first date and time input.  The other two don't have descriptions.
     #[serde(with = "datetime_iso_format")]
     pub input1: chrono::DateTime<chrono::Utc>,
-    
+
     #[serde(with = "datetime_iso_format")]
     pub input2: chrono::DateTime<chrono::Utc>,
-    
+
     #[serde(with = "datetime_iso_format")]
     pub input3: chrono::DateTime<chrono::Utc>,
-    
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callThreeDateTimes` method.
 pub struct CallThreeDateTimesReturnValues {
-    #[serde(with = "datetime_iso_format")]pub output1: chrono::DateTime<chrono::Utc>,
-    #[serde(with = "datetime_iso_format")]pub output2: chrono::DateTime<chrono::Utc>,
-    #[serde(with = "datetime_iso_format")]pub output3: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "datetime_iso_format")]
+    /// The first date and time output.  The other two don't have descriptions.
+    pub output1: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "datetime_iso_format")]
+    pub output2: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "datetime_iso_format")]
+    pub output3: chrono::DateTime<chrono::Utc>,
 }
+
 // Structures for `callOneDuration` method
 
 #[allow(dead_code, non_snake_case)]
@@ -546,16 +581,16 @@ pub struct CallThreeDateTimesReturnValues {
 pub struct CallOneDurationRequestObject {
     #[serde(with = "duration_iso_format")]
     pub input1: chrono::Duration,
-    
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOneDuration` method.
 pub struct CallOneDurationReturnValues {
-    #[serde(with = "duration_iso_format")]pub output1: chrono::Duration,
+    #[serde(with = "duration_iso_format")]
+    pub output1: chrono::Duration,
 }
+
 // Structures for `callOptionalDuration` method
 
 #[allow(dead_code, non_snake_case)]
@@ -564,42 +599,46 @@ pub struct CallOneDurationReturnValues {
 pub struct CallOptionalDurationRequestObject {
     #[serde(with = "duration_iso_format")]
     pub input1: chrono::Duration,
-    
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOptionalDuration` method.
 pub struct CallOptionalDurationReturnValues {
-    #[serde(with = "duration_iso_format")]pub output1: chrono::Duration,
+    #[serde(with = "duration_iso_format")]
+    pub output1: chrono::Duration,
 }
+
 // Structures for `callThreeDurations` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callThreeDurations` method.
 pub struct CallThreeDurationsRequestObject {
+    /// The first duration input.  The other two don't have descriptions.
     #[serde(with = "duration_iso_format")]
     pub input1: chrono::Duration,
-    
+
     #[serde(with = "duration_iso_format")]
     pub input2: chrono::Duration,
-    
+
     #[serde(with = "duration_iso_format")]
     pub input3: chrono::Duration,
-    
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callThreeDurations` method.
 pub struct CallThreeDurationsReturnValues {
-    #[serde(with = "duration_iso_format")]pub output1: chrono::Duration,
-    #[serde(with = "duration_iso_format")]pub output2: chrono::Duration,
-    #[serde(with = "duration_iso_format")]pub output3: chrono::Duration,
+    #[serde(with = "duration_iso_format")]
+    /// The first duration output.  The other two don't have descriptions.
+    pub output1: chrono::Duration,
+    #[serde(with = "duration_iso_format")]
+    pub output2: chrono::Duration,
+    #[serde(with = "duration_iso_format")]
+    pub output3: chrono::Duration,
 }
+
 // Structures for `callOneBinary` method
 
 #[allow(dead_code, non_snake_case)]
@@ -608,16 +647,16 @@ pub struct CallThreeDurationsReturnValues {
 pub struct CallOneBinaryRequestObject {
     #[serde(with = "base64_binary_format")]
     pub input1: Vec<u8>,
-    
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOneBinary` method.
 pub struct CallOneBinaryReturnValues {
-    #[serde(with = "base64_binary_format")]pub output1: Vec<u8>,
+    #[serde(with = "base64_binary_format")]
+    pub output1: Vec<u8>,
 }
+
 // Structures for `callOptionalBinary` method
 
 #[allow(dead_code, non_snake_case)]
@@ -626,253 +665,269 @@ pub struct CallOneBinaryReturnValues {
 pub struct CallOptionalBinaryRequestObject {
     #[serde(with = "base64_binary_format")]
     pub input1: Vec<u8>,
-    
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callOptionalBinary` method.
 pub struct CallOptionalBinaryReturnValues {
-    #[serde(with = "base64_binary_format")]pub output1: Vec<u8>,
+    #[serde(with = "base64_binary_format")]
+    pub output1: Vec<u8>,
 }
+
 // Structures for `callThreeBinaries` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `callThreeBinaries` method.
 pub struct CallThreeBinariesRequestObject {
+    /// The first binary input.  The other two don't have descriptions.
     #[serde(with = "base64_binary_format")]
     pub input1: Vec<u8>,
-    
+
     #[serde(with = "base64_binary_format")]
     pub input2: Vec<u8>,
-    
+
     #[serde(with = "base64_binary_format")]
     pub input3: Vec<u8>,
-    
 }
-
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `callThreeBinaries` method.
 pub struct CallThreeBinariesReturnValues {
-    #[serde(with = "base64_binary_format")]pub output1: Vec<u8>,
-    #[serde(with = "base64_binary_format")]pub output2: Vec<u8>,
-    #[serde(with = "base64_binary_format")]pub output3: Vec<u8>,
+    #[serde(with = "base64_binary_format")]
+    /// The first binary output.  The other two don't have descriptions.
+    pub output1: Vec<u8>,
+    #[serde(with = "base64_binary_format")]
+    pub output2: Vec<u8>,
+    #[serde(with = "base64_binary_format")]
+    pub output3: Vec<u8>,
 }
+
+// ---- SIGNALS ----
 
 // Structures for `empty` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct EmptySignalPayload {
-}
+pub struct EmptySignalPayload {}
 
 // Structures for `singleInt` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleIntSignalPayload {
+    /// The integer value.
     pub value: i32,
-    
 }
 
 // Structures for `singleOptionalInt` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleOptionalIntSignalPayload {
+    /// The integer value.
     pub value: Option<i32>,
-    
 }
 
 // Structures for `threeIntegers` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThreeIntegersSignalPayload {
+    /// The first integer value.
     pub first: i32,
-    
+    /// The second integer value.
     pub second: i32,
-    
+    /// The third integer value.
     pub third: Option<i32>,
-    
 }
 
 // Structures for `singleString` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleStringSignalPayload {
+    /// The string value.
     pub value: String,
-    
 }
 
 // Structures for `singleOptionalString` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleOptionalStringSignalPayload {
+    /// The string value.
     pub value: Option<String>,
-    
 }
 
 // Structures for `threeStrings` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThreeStringsSignalPayload {
+    /// The first string value.
     pub first: String,
-    
+    /// The second string value.
     pub second: String,
-    
+    /// The third string value.
     pub third: Option<String>,
-    
 }
 
 // Structures for `singleEnum` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SingleEnumSignalPayload {pub value: Numbers,
-    
+pub struct SingleEnumSignalPayload {
+    /// The enum value.
+    pub value: Numbers,
 }
 
 // Structures for `singleOptionalEnum` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SingleOptionalEnumSignalPayload {pub value: Option<Numbers>,
-    
+pub struct SingleOptionalEnumSignalPayload {
+    /// The enum value.
+    pub value: Option<Numbers>,
 }
 
 // Structures for `threeEnums` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ThreeEnumsSignalPayload {pub first: Numbers,
+pub struct ThreeEnumsSignalPayload {
+    /// The first enum value.
+    pub first: Numbers,
+    /// The second enum value.
     pub second: Numbers,
+    /// The third enum value.
     pub third: Option<Numbers>,
-    
 }
 
 // Structures for `singleStruct` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleStructSignalPayload {
+    /// The struct value.
+    pub value: AllTypes,
 }
 
 // Structures for `singleOptionalStruct` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleOptionalStructSignalPayload {
+    /// The struct value.
+    pub value: AllTypes,
 }
 
 // Structures for `threeStructs` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThreeStructsSignalPayload {
+    /// The first struct value.
+    pub first: AllTypes,
+    /// The second struct value.
+    pub second: AllTypes,
+    /// The third struct value.
+    pub third: AllTypes,
 }
 
 // Structures for `singleDateTime` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleDateTimeSignalPayload {
+    /// The date and time value.
     #[serde(with = "datetime_iso_format")]
     pub value: chrono::DateTime<chrono::Utc>,
-    
 }
 
 // Structures for `singleOptionalDatetime` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleOptionalDatetimeSignalPayload {
+    /// The date and time value.
     #[serde(with = "datetime_iso_format")]
     pub value: chrono::DateTime<chrono::Utc>,
-    
 }
 
 // Structures for `threeDateTimes` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThreeDateTimesSignalPayload {
+    /// The first date and time value.
     #[serde(with = "datetime_iso_format")]
     pub first: chrono::DateTime<chrono::Utc>,
-    
+    /// The second date and time value.
     #[serde(with = "datetime_iso_format")]
     pub second: chrono::DateTime<chrono::Utc>,
-    
+    /// The third date and time value.
     #[serde(with = "datetime_iso_format")]
     pub third: chrono::DateTime<chrono::Utc>,
-    
 }
 
 // Structures for `singleDuration` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleDurationSignalPayload {
+    /// The duration value.
     #[serde(with = "duration_iso_format")]
     pub value: chrono::Duration,
-    
 }
 
 // Structures for `singleOptionalDuration` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleOptionalDurationSignalPayload {
+    /// The duration value.
     #[serde(with = "duration_iso_format")]
     pub value: chrono::Duration,
-    
 }
 
 // Structures for `threeDurations` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThreeDurationsSignalPayload {
+    /// The first duration value.
     #[serde(with = "duration_iso_format")]
     pub first: chrono::Duration,
-    
+    /// The second duration value.
     #[serde(with = "duration_iso_format")]
     pub second: chrono::Duration,
-    
+    /// The third duration value.
     #[serde(with = "duration_iso_format")]
     pub third: chrono::Duration,
-    
 }
 
 // Structures for `singleBinary` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleBinarySignalPayload {
+    /// The binary value.
     #[serde(with = "base64_binary_format")]
     pub value: Vec<u8>,
-    
 }
 
 // Structures for `singleOptionalBinary` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleOptionalBinarySignalPayload {
+    /// The binary value.
     #[serde(with = "base64_binary_format")]
     pub value: Vec<u8>,
-    
 }
 
 // Structures for `threeBinaries` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThreeBinariesSignalPayload {
+    /// The first binary value.
     #[serde(with = "base64_binary_format")]
     pub first: Vec<u8>,
-    
+    /// The second binary value.
     #[serde(with = "base64_binary_format")]
     pub second: Vec<u8>,
-    
+    /// The third binary value.
     #[serde(with = "base64_binary_format")]
     pub third: Vec<u8>,
-    
 }
-
-
 
 // `read_write_integer` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteIntegerProperty {
     pub value: i32,
-    
 }
 
 // `read_only_integer` property structure.
@@ -880,7 +935,6 @@ pub struct ReadWriteIntegerProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadOnlyIntegerProperty {
     pub value: i32,
-    
 }
 
 // `read_write_optional_integer` property structure.
@@ -888,7 +942,6 @@ pub struct ReadOnlyIntegerProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteOptionalIntegerProperty {
     pub value: Option<i32>,
-    
 }
 
 // `read_write_two_integers` property structure.
@@ -897,7 +950,6 @@ pub struct ReadWriteOptionalIntegerProperty {
 pub struct ReadWriteTwoIntegersProperty {
     pub first: i32,
     pub second: Option<i32>,
-    
 }
 
 // `read_only_string` property structure.
@@ -905,7 +957,6 @@ pub struct ReadWriteTwoIntegersProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadOnlyStringProperty {
     pub value: String,
-    
 }
 
 // `read_write_string` property structure.
@@ -913,7 +964,6 @@ pub struct ReadOnlyStringProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteStringProperty {
     pub value: String,
-    
 }
 
 // `read_write_optional_string` property structure.
@@ -921,7 +971,6 @@ pub struct ReadWriteStringProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteOptionalStringProperty {
     pub value: Option<String>,
-    
 }
 
 // `read_write_two_strings` property structure.
@@ -930,7 +979,6 @@ pub struct ReadWriteOptionalStringProperty {
 pub struct ReadWriteTwoStringsProperty {
     pub first: String,
     pub second: Option<String>,
-    
 }
 
 // `read_write_struct` property structure.
@@ -938,7 +986,6 @@ pub struct ReadWriteTwoStringsProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteStructProperty {
     pub value: AllTypes,
-    
 }
 
 // `read_write_optional_struct` property structure.
@@ -946,7 +993,6 @@ pub struct ReadWriteStructProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteOptionalStructProperty {
     pub value: AllTypes,
-    
 }
 
 // `read_write_two_structs` property structure.
@@ -955,7 +1001,6 @@ pub struct ReadWriteOptionalStructProperty {
 pub struct ReadWriteTwoStructsProperty {
     pub first: AllTypes,
     pub second: AllTypes,
-    
 }
 
 // `read_only_enum` property structure.
@@ -963,7 +1008,6 @@ pub struct ReadWriteTwoStructsProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadOnlyEnumProperty {
     pub value: Numbers,
-    
 }
 
 // `read_write_enum` property structure.
@@ -971,7 +1015,6 @@ pub struct ReadOnlyEnumProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteEnumProperty {
     pub value: Numbers,
-    
 }
 
 // `read_write_optional_enum` property structure.
@@ -979,7 +1022,6 @@ pub struct ReadWriteEnumProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteOptionalEnumProperty {
     pub value: Option<Numbers>,
-    
 }
 
 // `read_write_two_enums` property structure.
@@ -988,116 +1030,94 @@ pub struct ReadWriteOptionalEnumProperty {
 pub struct ReadWriteTwoEnumsProperty {
     pub first: Numbers,
     pub second: Option<Numbers>,
-    
 }
 
 // `read_write_datetime` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteDatetimeProperty {
-    
     #[serde(with = "datetime_iso_format")]
     pub value: chrono::DateTime<chrono::Utc>,
-    
 }
 
 // `read_write_optional_datetime` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteOptionalDatetimeProperty {
-    
     #[serde(with = "datetime_iso_format")]
     pub value: chrono::DateTime<chrono::Utc>,
-    
 }
 
 // `read_write_two_datetimes` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteTwoDatetimesProperty {
-    
     #[serde(with = "datetime_iso_format")]
     pub first: chrono::DateTime<chrono::Utc>,
-    
+
     #[serde(with = "datetime_iso_format")]
     pub second: chrono::DateTime<chrono::Utc>,
-    
 }
 
 // `read_write_duration` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteDurationProperty {
-    
     #[serde(with = "duration_iso_format")]
     pub value: chrono::Duration,
-    
 }
 
 // `read_write_optional_duration` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteOptionalDurationProperty {
-    
     #[serde(with = "duration_iso_format")]
     pub value: chrono::Duration,
-    
 }
 
 // `read_write_two_durations` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteTwoDurationsProperty {
-    
     #[serde(with = "duration_iso_format")]
     pub first: chrono::Duration,
-    
+
     #[serde(with = "duration_iso_format")]
     pub second: chrono::Duration,
-    
 }
 
 // `read_write_binary` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteBinaryProperty {
-    
     #[serde(with = "base64_binary_format")]
     pub value: Vec<u8>,
-    
 }
 
 // `read_write_optional_binary` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteOptionalBinaryProperty {
-    
     #[serde(with = "base64_binary_format")]
     pub value: Vec<u8>,
-    
 }
 
 // `read_write_two_binaries` property structure.
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ReadWriteTwoBinariesProperty {
-    
     #[serde(with = "base64_binary_format")]
     pub first: Vec<u8>,
-    
+
     #[serde(with = "base64_binary_format")]
     pub second: Vec<u8>,
-    
 }
-
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::{DateTime, Utc};
 
-    
     #[test]
     fn test_read_write_integer_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1107,7 +1127,7 @@ mod tests {
 
         let parsed: ReadWriteIntegerProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_only_integer_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1117,7 +1137,7 @@ mod tests {
 
         let parsed: ReadOnlyIntegerProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_optional_integer_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1127,7 +1147,7 @@ mod tests {
 
         let parsed: ReadWriteOptionalIntegerProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_two_integers_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1139,7 +1159,7 @@ mod tests {
 
         let parsed: ReadWriteTwoIntegersProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_only_string_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1149,7 +1169,7 @@ mod tests {
 
         let parsed: ReadOnlyStringProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_string_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1159,7 +1179,7 @@ mod tests {
 
         let parsed: ReadWriteStringProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_optional_string_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1169,7 +1189,7 @@ mod tests {
 
         let parsed: ReadWriteOptionalStringProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_two_strings_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1181,7 +1201,7 @@ mod tests {
 
         let parsed: ReadWriteTwoStringsProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_struct_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1191,7 +1211,7 @@ mod tests {
 
         let parsed: ReadWriteStructProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_optional_struct_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1201,7 +1221,7 @@ mod tests {
 
         let parsed: ReadWriteOptionalStructProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_two_structs_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1213,7 +1233,7 @@ mod tests {
 
         let parsed: ReadWriteTwoStructsProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_only_enum_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1223,7 +1243,7 @@ mod tests {
 
         let parsed: ReadOnlyEnumProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_enum_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1233,7 +1253,7 @@ mod tests {
 
         let parsed: ReadWriteEnumProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_optional_enum_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1243,7 +1263,7 @@ mod tests {
 
         let parsed: ReadWriteOptionalEnumProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_two_enums_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1255,7 +1275,7 @@ mod tests {
 
         let parsed: ReadWriteTwoEnumsProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_datetime_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1265,7 +1285,7 @@ mod tests {
 
         let parsed: ReadWriteDatetimeProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_optional_datetime_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1275,7 +1295,7 @@ mod tests {
 
         let parsed: ReadWriteOptionalDatetimeProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_two_datetimes_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1287,7 +1307,7 @@ mod tests {
 
         let parsed: ReadWriteTwoDatetimesProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_duration_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1297,7 +1317,7 @@ mod tests {
 
         let parsed: ReadWriteDurationProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_optional_duration_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1307,7 +1327,7 @@ mod tests {
 
         let parsed: ReadWriteOptionalDurationProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_two_durations_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1319,7 +1339,7 @@ mod tests {
 
         let parsed: ReadWriteTwoDurationsProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_binary_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1329,7 +1349,7 @@ mod tests {
 
         let parsed: ReadWriteBinaryProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_optional_binary_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1339,7 +1359,7 @@ mod tests {
 
         let parsed: ReadWriteOptionalBinaryProperty = serde_json::from_str(json_str).unwrap();
     }
-    
+
     #[test]
     fn test_read_write_two_binaries_property_json_format() {
         // Test deserializing from a known JSON string
@@ -1351,12 +1371,11 @@ mod tests {
 
         let parsed: ReadWriteTwoBinariesProperty = serde_json::from_str(json_str).unwrap();
     }
-    
 
     #[test]
     fn test_base64_binary_format_serialization() {
         use serde::{Deserialize, Serialize};
-        
+
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct TestStruct {
             #[serde(with = "base64_binary_format")]
@@ -1365,11 +1384,13 @@ mod tests {
 
         // Test with various binary data
         let test_data = vec![0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37];
-        let test_struct = TestStruct { data: test_data.clone() };
+        let test_struct = TestStruct {
+            data: test_data.clone(),
+        };
 
         // Test serialization
         let serialized = serde_json::to_string(&test_struct).unwrap();
-        
+
         // The base64 encoded value of [0x00, 0x01, 0x02, 0xFF, 0xFE, 0x42, 0x13, 0x37] should be "AAEC//5CEzc="
         assert!(serialized.contains("AAEC//5CEzc="));
 
@@ -1381,7 +1402,7 @@ mod tests {
     #[test]
     fn test_base64_binary_format_option_serialization() {
         use serde::{Deserialize, Serialize};
-        
+
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct TestStruct {
             #[serde(with = "base64_binary_format")]
@@ -1392,7 +1413,9 @@ mod tests {
 
         // Test with Some data
         let test_data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F]; // "Hello" in bytes
-        let test_struct_some = TestStruct { data: Some(test_data.clone()) };
+        let test_struct_some = TestStruct {
+            data: Some(test_data.clone()),
+        };
 
         let serialized_some = serde_json::to_string(&test_struct_some).unwrap();
         let deserialized_some: TestStruct = serde_json::from_str(&serialized_some).unwrap();
@@ -1408,7 +1431,7 @@ mod tests {
     #[test]
     fn test_base64_binary_format_round_trip() {
         use serde::{Deserialize, Serialize};
-        
+
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct BinaryData {
             #[serde(with = "base64_binary_format")]

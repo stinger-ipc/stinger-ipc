@@ -8,7 +8,6 @@ on the next generation.
 
 This is the Client for the Full interface.
 */
-use json::JsonValue;
 #[cfg(feature = "client")]
 use mqttier::{MqttierClient, ReceivedMessage};
 use serde_json;
@@ -17,6 +16,7 @@ use uuid::Uuid;
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+#[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
@@ -80,7 +80,7 @@ pub struct FullProperties {
 pub struct FullClient {
     mqttier_client: MqttierClient,
     /// Temporarily holds oneshot channels for responses to method calls.
-    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
+    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>>,
 
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
@@ -354,7 +354,7 @@ impl FullClient {
         first: i32,
         second: i32,
         third: Option<i32>,
-    ) -> oneshot::Receiver<JsonValue> {
+    ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -396,39 +396,15 @@ impl FullClient {
     ) -> Result<i32, MethodReturnCode> {
         let receiver = self.start_add_numbers(first, second, third).await;
 
-        let resp_obj = receiver.await.unwrap();
+        let resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
+        let return_values: AddNumbersReturnValues = serde_json::from_str(&resp_str)
+            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+
+        Ok(return_values.sum)
     }
 
-    /// Handler for responses to `addNumbers` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_add_numbers_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
-    }
-    async fn start_do_something(&mut self, a_string: String) -> oneshot::Receiver<JsonValue> {
+    async fn start_do_something(&mut self, a_string: String) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -464,39 +440,15 @@ impl FullClient {
     ) -> Result<DoSomethingReturnValues, MethodReturnCode> {
         let receiver = self.start_do_something(a_string).await;
 
-        let resp_obj = receiver.await.unwrap();
+        let resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
+        let return_values: DoSomethingReturnValues = serde_json::from_str(&resp_str)
+            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+
+        Ok(return_values)
     }
 
-    /// Handler for responses to `doSomething` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_do_something_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
-    }
-    async fn start_echo(&mut self, message: String) -> oneshot::Receiver<JsonValue> {
+    async fn start_echo(&mut self, message: String) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -529,42 +481,18 @@ impl FullClient {
     pub async fn echo(&mut self, message: String) -> Result<String, MethodReturnCode> {
         let receiver = self.start_echo(message).await;
 
-        let resp_obj = receiver.await.unwrap();
+        let resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
+        let return_values: EchoReturnValues = serde_json::from_str(&resp_str)
+            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+
+        Ok(return_values.message)
     }
 
-    /// Handler for responses to `echo` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_echo_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
-    }
     async fn start_what_time_is_it(
         &mut self,
         the_first_time: chrono::DateTime<chrono::Utc>,
-    ) -> oneshot::Receiver<JsonValue> {
+    ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -602,43 +530,19 @@ impl FullClient {
     ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
         let receiver = self.start_what_time_is_it(the_first_time).await;
 
-        let resp_obj = receiver.await.unwrap();
+        let resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
+        let return_values: WhatTimeIsItReturnValues = serde_json::from_str(&resp_str)
+            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+
+        Ok(return_values.timestamp)
     }
 
-    /// Handler for responses to `what_time_is_it` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_what_time_is_it_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
-    }
     async fn start_set_the_time(
         &mut self,
         the_first_time: chrono::DateTime<chrono::Utc>,
         the_second_time: chrono::DateTime<chrono::Utc>,
-    ) -> oneshot::Receiver<JsonValue> {
+    ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -680,42 +584,18 @@ impl FullClient {
             .start_set_the_time(the_first_time, the_second_time)
             .await;
 
-        let resp_obj = receiver.await.unwrap();
+        let resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
+        let return_values: SetTheTimeReturnValues = serde_json::from_str(&resp_str)
+            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+
+        Ok(return_values)
     }
 
-    /// Handler for responses to `set_the_time` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_set_the_time_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
-    }
     async fn start_forward_time(
         &mut self,
         adjustment: chrono::Duration,
-    ) -> oneshot::Receiver<JsonValue> {
+    ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -753,42 +633,18 @@ impl FullClient {
     ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
         let receiver = self.start_forward_time(adjustment).await;
 
-        let resp_obj = receiver.await.unwrap();
+        let resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
+        let return_values: ForwardTimeReturnValues = serde_json::from_str(&resp_str)
+            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+
+        Ok(return_values.new_time)
     }
 
-    /// Handler for responses to `forward_time` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_forward_time_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
-    }
     async fn start_how_off_is_the_clock(
         &mut self,
         actual_time: chrono::DateTime<chrono::Utc>,
-    ) -> oneshot::Receiver<JsonValue> {
+    ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -827,37 +683,12 @@ impl FullClient {
     ) -> Result<chrono::Duration, MethodReturnCode> {
         let receiver = self.start_how_off_is_the_clock(actual_time).await;
 
-        let resp_obj = receiver.await.unwrap();
+        let resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
-    }
+        let return_values: HowOffIsTheClockReturnValues = serde_json::from_str(&resp_str)
+            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
 
-    /// Handler for responses to `how_off_is_the_clock` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_how_off_is_the_clock_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
+        Ok(return_values.difference)
     }
 
     /// Watch for changes to the `favorite_number` property.
@@ -981,7 +812,7 @@ impl FullClient {
         let _ = self.mqttier_client.run_loop().await;
 
         // Clone the Arc pointer to the map.  This will be moved into the loop_task.
-        let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>> =
+        let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>> =
             self.pending_responses.clone();
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -1003,43 +834,115 @@ impl FullClient {
 
                 let payload = String::from_utf8_lossy(&msg.payload).to_string();
                 if msg.subscription_id == sub_ids.add_numbers_method_resp {
-                    FullClient::handle_add_numbers_response(resp_map.clone(), payload, opt_corr_id);
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.do_something_method_resp {
-                    FullClient::handle_do_something_response(
-                        resp_map.clone(),
-                        payload,
-                        opt_corr_id,
-                    );
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.echo_method_resp {
-                    FullClient::handle_echo_response(resp_map.clone(), payload, opt_corr_id);
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.what_time_is_it_method_resp {
-                    FullClient::handle_what_time_is_it_response(
-                        resp_map.clone(),
-                        payload,
-                        opt_corr_id,
-                    );
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.set_the_time_method_resp {
-                    FullClient::handle_set_the_time_response(
-                        resp_map.clone(),
-                        payload,
-                        opt_corr_id,
-                    );
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.forward_time_method_resp {
-                    FullClient::handle_forward_time_response(
-                        resp_map.clone(),
-                        payload,
-                        opt_corr_id,
-                    );
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.how_off_is_the_clock_method_resp {
-                    FullClient::handle_how_off_is_the_clock_response(
-                        resp_map.clone(),
-                        payload,
-                        opt_corr_id,
-                    );
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 }
 
                 if msg.subscription_id == sub_ids.today_is_signal.unwrap_or_default() {
                     let chan = sig_chans.today_is_sender.clone();
+
                     let pl: TodayIsSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let _send_result = chan.send(pl);

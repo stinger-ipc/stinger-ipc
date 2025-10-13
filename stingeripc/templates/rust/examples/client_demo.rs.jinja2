@@ -44,7 +44,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task{{loop.index}} = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -95,7 +95,8 @@ async fn main() {
         {%endif%}
         {%endif%}{%endfor%}
 
-        let _ = join!(sig_rx_task);
+        // Join on all the signal emitting tasks.
+        let _ = join!({%for _ in stinger.signals%}sig_rx_task{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%});
     });
     // Ctrl-C to stop
 }

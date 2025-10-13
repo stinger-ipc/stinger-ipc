@@ -50,15 +50,11 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
     {{prop_name | snake_case}}_topic: Arc<String>,
-    {%-if prop.arg_list | length > 1%}
-    {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.rust_type}}>>>,
-    {{prop_name | snake_case}}_tx_channel: watch::Sender<Option<{{prop.rust_type}}>>,
-    {%-else%}
-    {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.arg_list[0].rust_type}}>>>,
-    {{prop_name | snake_case}}_tx_channel: watch::Sender<Option<{{prop.arg_list[0].rust_type}}>>,
-    {%endif%}
+    {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop_name|UpperCamelCase}}Property>>>,
+    {{prop_name | snake_case}}_tx_channel: watch::Sender<Option<{%if prop.arg_list|length == 1%}{{prop.arg_list[0].rust_type}}{%else%}{{prop_name|UpperCamelCase}}Property{%endif%}>>,
     {%-endfor%}
 }
+
 {%endif%}
 {%endif%}{# any methods or properties #}
 #[derive(Clone)]
@@ -237,21 +233,21 @@ impl {{stinger.rust.server_struct_name}} {
             match rc {
                 Ok({%if method.return_value_type is false %}_{%else%}retval{%endif%}) => {
                     {%-if method.return_value_type == "primitive" %}
-                    let retval = {{method_name | UpperCamelCase}}ReturnValue {
+                    let retval = {{method_name | UpperCamelCase}}ReturnValues {
                         {{method.return_value_property_name}}: retval,
                     };
                     {%elif method.return_value_type is false %}
-                    let retval = {{method_name | UpperCamelCase}}ReturnValue {};
+                    let retval = {{method_name | UpperCamelCase}}ReturnValues {};
                     {%elif method.return_value_type == "datetime" %}
-                    let retval = {{method_name | UpperCamelCase}}ReturnValue {
+                    let retval = {{method_name | UpperCamelCase}}ReturnValues {
                         {{method.return_value_property_name}}: retval,
                     };
                     {%elif method.return_value_type == "duration" %}
-                    let retval = {{method_name | UpperCamelCase}}ReturnValue {
+                    let retval = {{method_name | UpperCamelCase}}ReturnValues {
                         {{method.return_value_property_name}}: retval,
                     };
                     {%elif method.return_value_type == "binary" %}
-                    let retval = {{method_name | UpperCamelCase}}ReturnValue {
+                    let retval = {{method_name | UpperCamelCase}}ReturnValues {
                         {{method.return_value_property_name}}: retval,
                     };
                     {%endif%}
@@ -270,30 +266,22 @@ impl {{stinger.rust.server_struct_name}} {
     {%endfor%}
 
     {%-for prop_name, prop in stinger.properties.items()%}
-    async fn publish_{{prop_name}}_value(publisher: MqttierClient, topic: String, data: {{prop.rust_type}}) -> SentMessageFuture
+    async fn publish_{{prop_name}}_value(publisher: MqttierClient, topic: String, data: {{prop_name|UpperCamelCase}}Property) -> SentMessageFuture
     {
-        {%-if prop.arg_list | length == 1%}
-        let new_data = {{prop_name | UpperCamelCase}}Property {
-            {{prop.arg_list[0].name}}: data,
-        };
-        debug!("Publishing '{{prop_name}}' property value to topic {}", topic);
-        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
-        {%else%}
         let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        {%endif%}
         {{stinger.rust.server_struct_name}}::oneshot_to_future(published_oneshot).await
     }
     {%if not prop.read_only %}
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
-    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, data: Arc<Mutex<Option<{{prop.rust_type}}>>>, watch_sender: watch::Sender<Option<{{prop.rust_type}}>>, msg: ReceivedMessage) -> SentMessageFuture
+    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, property_pointer: Arc<Mutex<Option<{{prop_name|UpperCamelCase}}Property>>>, watch_sender: watch::Sender<Option<{%if prop.arg_list|length == 1%}{{prop.arg_list[0].rust_type}}{%else%}{{prop_name|UpperCamelCase}}Property{%endif%}>>, msg: ReceivedMessage) -> SentMessageFuture
     {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: {{prop_name | UpperCamelCase}}Property = {
+        let new_property_structure: {{prop_name | UpperCamelCase}}Property = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
                     return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::DeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string())).await;
@@ -301,13 +289,9 @@ impl {{stinger.rust.server_struct_name}} {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                {%if prop.arg_list | length == 1 -%}
-                *guard = Some(new_data.{{prop.arg_list[0].name}}{%if prop.arg_list[0].rust_type == 'String' %}.clone(){%endif%});
-                {%else-%}
-                *guard = Some(new_data.clone());
-                {%endif%}
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => {
@@ -322,41 +306,48 @@ impl {{stinger.rust.server_struct_name}} {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        {%-if prop.arg_list | length == 1%}
-        let data2 = new_data.{{prop.arg_list[0].name}}{%if prop.arg_list[0].rust_type == 'String' %}.clone(){%endif%};
-        {%-else%}
-        let data2 = new_data;
-        {%endif%}
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = {%if prop.arg_list|length == 1%}new_property_structure.{{prop.arg_list[0].name|snake_case}}.clone(){%else%}new_property_structure.clone(){%endif%};
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
                 error!("Failed to notify local watchers for '{{prop_name}}' property: {:?}", e);
             }
         };
-        {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher, topic2, data2).await
+        {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher, topic2, new_property_structure).await
     }
 
     pub async fn watch_{{prop_name}}(&self) -> watch::Receiver<Option<{{prop.rust_type}}>> {
         self.properties.{{prop_name}}_tx_channel.subscribe()
     }
-
     {%endif%}{# not read only property #}
+
+    /// Sets the value{%if prop.arg_list|length > 1%}s{%endif%} of the {{prop_name}} property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) -> SentMessageFuture {
-        let prop = self.properties.{{prop_name}}.clone();
-        {
+        let prop = self.properties.{{prop_name|snake_case}}.clone();
+        
+        // Set the server's copy of the property value{%if prop.arg_list|length > 1%}s{%endif%}.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
+                {% if prop.arg_list | length == 1%}
+                if let Some(ref mut property_value) = *locked_data {
+                    property_value.{{prop.arg_list[0].name|snake_case}} = data.clone();
+                } 
+                {%else%}
                 *locked_data = Some(data.clone());
+                {% endif %}
+                locked_data.clone()
             } else {
                 return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property '{{prop_name}}'"),
                 ))
                 .await;
             }
-        }
+        };
 
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self.properties.{{prop_name}}_tx_channel.send_if_modified(|current_data| {
+        // Notify watchers of the new property value.
+        let data_to_send_to_watchers = {%if prop.arg_list|length == 1%}Some(data.clone()){%else%}property_obj.clone(){%endif%};
+        let send_result = self.properties.{{prop_name|snake_case}}_tx_channel.send_if_modified(|current_data| {
             if current_data != &data_to_send_to_watchers {
                 *current_data = data_to_send_to_watchers;
                 true
@@ -364,13 +355,19 @@ impl {{stinger.rust.server_struct_name}} {
                 false
             }
         });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property '{{prop_name}}' value not changed, so not notifying watchers.");
             return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.{{prop_name}}_topic.as_ref().clone();
-            {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.{{prop_name}}_topic.as_ref().clone();
+                {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher2, topic2, prop_obj).await
+            } else {
+                {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::UnknownError("Could not find property object".to_string())).await
+            }
         }
     }
     {%endfor%}

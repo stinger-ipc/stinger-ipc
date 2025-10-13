@@ -43,7 +43,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task1 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -63,7 +63,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task2 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -83,7 +83,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task3 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -103,7 +103,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task4 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -123,7 +123,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task5 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -138,7 +138,14 @@ async fn main() {
             }
         });
 
-        let _ = join!(sig_rx_task);
+        // Join on all the signal emitting tasks.
+        let _ = join!(
+            sig_rx_task1,
+            sig_rx_task2,
+            sig_rx_task3,
+            sig_rx_task4,
+            sig_rx_task5
+        );
     });
     // Ctrl-C to stop
 }

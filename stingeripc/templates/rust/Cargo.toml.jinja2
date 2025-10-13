@@ -1,5 +1,5 @@
 [package]
-name = "{{stinger.rust.package_name}}"
+name = "{{stinger.rust.package_name|replace('__', '_')}}"
 version = "{{stinger.version}}"
 edition = "2024"
 
@@ -42,16 +42,16 @@ features = [
 ]
 
 [[example]]
-name = "{{stinger.name | snake_case}}_client_demo"
+name = "{{stinger.name | snake_case|replace('__', '_')}}_client_demo"
 path = "examples/client_demo.rs"
 required-features = ["client"]
 
 [[example]]
-name = "{{stinger.name | snake_case}}_server_demo" 
+name = "{{stinger.name | snake_case|replace('__', '_')}}_server_demo" 
 path = "examples/server_demo.rs"
 required-features = ["server"]
 
 [[example]]
-name = "{{stinger.name | snake_case}}_connection_demo"
+name = "{{stinger.name | snake_case|replace('__', '_')}}_connection_demo"
 path = "examples/pub_and_recv.rs"
 required-features = ["payloads"]

@@ -177,6 +177,8 @@ impl MethodReturnCode {
     }
 }
 
+// --- ENUMERATIONS ---
+
 #[repr(u32)]
 #[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(into = "u32", try_from = "u32")]
@@ -203,9 +205,11 @@ impl From<WeatherCondition> for u32 {
     }
 }
 
-impl From<u32> for WeatherCondition {
-    fn from(s: u32) -> WeatherCondition {
-        WeatherCondition::from_u32(s).unwrap()
+impl TryFrom<u32> for WeatherCondition {
+    type Error = String;
+    fn try_from(v: u32) -> Result<Self, Self::Error> {
+        WeatherCondition::from_u32(v)
+            .ok_or_else(|| format!("Invalid WeatherCondition value: {}", v))
     }
 }
 
@@ -215,10 +219,14 @@ impl fmt::Display for WeatherCondition {
     }
 }
 
+// --- INTERFACE STRUCTURES ---
+
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ForecastForHour {
+    /// Forecasted temperature in degrees fahrenheit.
     pub temperature: f32,
+    /// Forecast is valid for the hour starting at this time.
     #[serde(with = "datetime_iso_format")]
     pub starttime: chrono::DateTime<chrono::Utc>,
 
@@ -227,13 +235,19 @@ pub struct ForecastForHour {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ForecastForDay {
+    /// High temperature for the day in degrees fahrenheit.
     pub high_temperature: f32,
+    /// Low temperature for the day in degrees fahrenheit.
     pub low_temperature: f32,
+
     pub condition: WeatherCondition,
 
     pub start_time: String,
+
     pub end_time: String,
 }
+
+// ---- METHODS ----
 
 // Structures for `refresh_daily_forecast` method
 
@@ -246,6 +260,7 @@ pub struct RefreshDailyForecastRequestObject {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `refresh_daily_forecast` method.
 pub struct RefreshDailyForecastReturnValues {}
+
 // Structures for `refresh_hourly_forecast` method
 
 #[allow(dead_code, non_snake_case)]
@@ -257,6 +272,7 @@ pub struct RefreshHourlyForecastRequestObject {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `refresh_hourly_forecast` method.
 pub struct RefreshHourlyForecastReturnValues {}
+
 // Structures for `refresh_current_conditions` method
 
 #[allow(dead_code, non_snake_case)]
@@ -268,6 +284,8 @@ pub struct RefreshCurrentConditionsRequestObject {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `refresh_current_conditions` method.
 pub struct RefreshCurrentConditionsReturnValues {}
+
+// ---- SIGNALS ----
 
 // Structures for `current_time` signal
 #[allow(dead_code, non_snake_case)]

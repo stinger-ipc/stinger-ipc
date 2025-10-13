@@ -60,7 +60,7 @@ struct FullServerSubscriptionIds {
 #[derive(Clone)]
 struct FullProperties {
     favorite_number_topic: Arc<String>,
-    favorite_number: Arc<Mutex<Option<i32>>>,
+    favorite_number: Arc<Mutex<Option<FavoriteNumberProperty>>>,
     favorite_number_tx_channel: watch::Sender<Option<i32>>,
     favorite_foods_topic: Arc<String>,
     favorite_foods: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
@@ -69,13 +69,13 @@ struct FullProperties {
     lunch_menu: Arc<Mutex<Option<LunchMenuProperty>>>,
     lunch_menu_tx_channel: watch::Sender<Option<LunchMenuProperty>>,
     family_name_topic: Arc<String>,
-    family_name: Arc<Mutex<Option<String>>>,
+    family_name: Arc<Mutex<Option<FamilyNameProperty>>>,
     family_name_tx_channel: watch::Sender<Option<String>>,
     last_breakfast_time_topic: Arc<String>,
-    last_breakfast_time: Arc<Mutex<Option<chrono::DateTime<chrono::Utc>>>>,
+    last_breakfast_time: Arc<Mutex<Option<LastBreakfastTimeProperty>>>,
     last_breakfast_time_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
     breakfast_length_topic: Arc<String>,
-    breakfast_length: Arc<Mutex<Option<chrono::Duration>>>,
+    breakfast_length: Arc<Mutex<Option<BreakfastLengthProperty>>>,
     breakfast_length_tx_channel: watch::Sender<Option<chrono::Duration>>,
     last_birthdays_topic: Arc<String>,
     last_birthdays: Arc<Mutex<Option<LastBirthdaysProperty>>>,
@@ -462,7 +462,7 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = AddNumbersReturnValue { sum: retval };
+                    let retval = AddNumbersReturnValues { sum: retval };
 
                     let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
@@ -584,7 +584,7 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = EchoReturnValue { message: retval };
+                    let retval = EchoReturnValues { message: retval };
 
                     let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
@@ -648,7 +648,7 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = WhatTimeIsItReturnValue { timestamp: retval };
+                    let retval = WhatTimeIsItReturnValues { timestamp: retval };
 
                     let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
@@ -772,7 +772,7 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = ForwardTimeReturnValue { new_time: retval };
+                    let retval = ForwardTimeReturnValues { new_time: retval };
 
                     let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
@@ -836,7 +836,7 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = HowOffIsTheClockReturnValue { difference: retval };
+                    let retval = HowOffIsTheClockReturnValues { difference: retval };
 
                     let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
@@ -867,15 +867,9 @@ impl FullServer {
     async fn publish_favorite_number_value(
         publisher: MqttierClient,
         topic: String,
-        data: i32,
+        data: FavoriteNumberProperty,
     ) -> SentMessageFuture {
-        let new_data = FavoriteNumberProperty { number: data };
-        debug!(
-            "Publishing 'favorite_number' property value to topic {}",
-            topic
-        );
-        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
-
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -885,15 +879,15 @@ impl FullServer {
     async fn update_favorite_number_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<i32>>>,
+        property_pointer: Arc<Mutex<Option<FavoriteNumberProperty>>>,
         watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: FavoriteNumberProperty = {
+        let new_property_structure: FavoriteNumberProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'favorite_number' property: {:?}",
@@ -909,10 +903,9 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.number);
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -925,8 +918,7 @@ impl FullServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data.number;
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.number.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -936,26 +928,35 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_favorite_number_value(publisher, topic2, data2).await
+        FullServer::publish_favorite_number_value(publisher, topic2, new_property_structure).await
     }
 
     pub async fn watch_favorite_number(&self) -> watch::Receiver<Option<i32>> {
         self.properties.favorite_number_tx_channel.subscribe()
     }
 
+    /// Sets the value of the favorite_number property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_favorite_number(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.favorite_number.clone();
-        {
+
+        // Set the server's copy of the property value.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
+                if let Some(ref mut property_value) = *locked_data {
+                    property_value.number = data.clone();
+                }
+
+                locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'favorite_number'"),
                 ))
                 .await;
             }
-        }
+        };
 
+        // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
         let send_result =
             self.properties
@@ -968,13 +969,22 @@ impl FullServer {
                         false
                     }
                 });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'favorite_number' value not changed, so not notifying watchers.");
             return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.favorite_number_topic.as_ref().clone();
-            FullServer::publish_favorite_number_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.favorite_number_topic.as_ref().clone();
+                FullServer::publish_favorite_number_value(publisher2, topic2, prop_obj).await
+            } else {
+                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
@@ -984,7 +994,6 @@ impl FullServer {
         data: FavoriteFoodsProperty,
     ) -> SentMessageFuture {
         let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -994,15 +1003,15 @@ impl FullServer {
     async fn update_favorite_foods_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
+        property_pointer: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
         watch_sender: watch::Sender<Option<FavoriteFoodsProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: FavoriteFoodsProperty = {
+        let new_property_structure: FavoriteFoodsProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'favorite_foods' property: {:?}",
@@ -1018,10 +1027,9 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.clone());
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -1034,9 +1042,7 @@ impl FullServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data;
-
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -1046,27 +1052,34 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_favorite_foods_value(publisher, topic2, data2).await
+        FullServer::publish_favorite_foods_value(publisher, topic2, new_property_structure).await
     }
 
     pub async fn watch_favorite_foods(&self) -> watch::Receiver<Option<FavoriteFoodsProperty>> {
         self.properties.favorite_foods_tx_channel.subscribe()
     }
 
+    /// Sets the values of the favorite_foods property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_favorite_foods(&mut self, data: FavoriteFoodsProperty) -> SentMessageFuture {
         let prop = self.properties.favorite_foods.clone();
-        {
+
+        // Set the server's copy of the property values.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
+
+                locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'favorite_foods'"),
                 ))
                 .await;
             }
-        }
+        };
 
-        let data_to_send_to_watchers = Some(data.clone());
+        // Notify watchers of the new property value.
+        let data_to_send_to_watchers = property_obj.clone();
         let send_result =
             self.properties
                 .favorite_foods_tx_channel
@@ -1078,13 +1091,22 @@ impl FullServer {
                         false
                     }
                 });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'favorite_foods' value not changed, so not notifying watchers.");
             return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
-            FullServer::publish_favorite_foods_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
+                FullServer::publish_favorite_foods_value(publisher2, topic2, prop_obj).await
+            } else {
+                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
@@ -1094,7 +1116,6 @@ impl FullServer {
         data: LunchMenuProperty,
     ) -> SentMessageFuture {
         let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -1104,15 +1125,15 @@ impl FullServer {
     async fn update_lunch_menu_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<LunchMenuProperty>>>,
+        property_pointer: Arc<Mutex<Option<LunchMenuProperty>>>,
         watch_sender: watch::Sender<Option<LunchMenuProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: LunchMenuProperty = {
+        let new_property_structure: LunchMenuProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'lunch_menu' property: {:?}",
@@ -1128,10 +1149,9 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.clone());
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -1144,9 +1164,7 @@ impl FullServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data;
-
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -1156,27 +1174,34 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_lunch_menu_value(publisher, topic2, data2).await
+        FullServer::publish_lunch_menu_value(publisher, topic2, new_property_structure).await
     }
 
     pub async fn watch_lunch_menu(&self) -> watch::Receiver<Option<LunchMenuProperty>> {
         self.properties.lunch_menu_tx_channel.subscribe()
     }
 
+    /// Sets the values of the lunch_menu property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_lunch_menu(&mut self, data: LunchMenuProperty) -> SentMessageFuture {
         let prop = self.properties.lunch_menu.clone();
-        {
+
+        // Set the server's copy of the property values.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
+
+                locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'lunch_menu'"),
                 ))
                 .await;
             }
-        }
+        };
 
-        let data_to_send_to_watchers = Some(data.clone());
+        // Notify watchers of the new property value.
+        let data_to_send_to_watchers = property_obj.clone();
         let send_result = self
             .properties
             .lunch_menu_tx_channel
@@ -1188,25 +1213,31 @@ impl FullServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'lunch_menu' value not changed, so not notifying watchers.");
             return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
-            FullServer::publish_lunch_menu_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
+                FullServer::publish_lunch_menu_value(publisher2, topic2, prop_obj).await
+            } else {
+                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
     async fn publish_family_name_value(
         publisher: MqttierClient,
         topic: String,
-        data: String,
+        data: FamilyNameProperty,
     ) -> SentMessageFuture {
-        let new_data = FamilyNameProperty { family_name: data };
-        debug!("Publishing 'family_name' property value to topic {}", topic);
-        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
-
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -1216,15 +1247,15 @@ impl FullServer {
     async fn update_family_name_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<String>>>,
+        property_pointer: Arc<Mutex<Option<FamilyNameProperty>>>,
         watch_sender: watch::Sender<Option<String>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: FamilyNameProperty = {
+        let new_property_structure: FamilyNameProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'family_name' property: {:?}",
@@ -1240,10 +1271,9 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.family_name.clone());
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -1256,8 +1286,7 @@ impl FullServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data.family_name.clone();
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.family_name.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -1267,26 +1296,35 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_family_name_value(publisher, topic2, data2).await
+        FullServer::publish_family_name_value(publisher, topic2, new_property_structure).await
     }
 
     pub async fn watch_family_name(&self) -> watch::Receiver<Option<String>> {
         self.properties.family_name_tx_channel.subscribe()
     }
 
+    /// Sets the value of the family_name property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_family_name(&mut self, data: String) -> SentMessageFuture {
         let prop = self.properties.family_name.clone();
-        {
+
+        // Set the server's copy of the property value.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
+                if let Some(ref mut property_value) = *locked_data {
+                    property_value.family_name = data.clone();
+                }
+
+                locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'family_name'"),
                 ))
                 .await;
             }
-        }
+        };
 
+        // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
         let send_result = self
             .properties
@@ -1299,28 +1337,31 @@ impl FullServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'family_name' value not changed, so not notifying watchers.");
             return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.family_name_topic.as_ref().clone();
-            FullServer::publish_family_name_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.family_name_topic.as_ref().clone();
+                FullServer::publish_family_name_value(publisher2, topic2, prop_obj).await
+            } else {
+                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
     async fn publish_last_breakfast_time_value(
         publisher: MqttierClient,
         topic: String,
-        data: chrono::DateTime<chrono::Utc>,
+        data: LastBreakfastTimeProperty,
     ) -> SentMessageFuture {
-        let new_data = LastBreakfastTimeProperty { timestamp: data };
-        debug!(
-            "Publishing 'last_breakfast_time' property value to topic {}",
-            topic
-        );
-        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
-
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -1330,15 +1371,15 @@ impl FullServer {
     async fn update_last_breakfast_time_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<chrono::DateTime<chrono::Utc>>>>,
+        property_pointer: Arc<Mutex<Option<LastBreakfastTimeProperty>>>,
         watch_sender: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: LastBreakfastTimeProperty = {
+        let new_property_structure: LastBreakfastTimeProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'last_breakfast_time' property: {:?}",
@@ -1355,10 +1396,9 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.timestamp);
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -1371,8 +1411,7 @@ impl FullServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data.timestamp;
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.timestamp.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -1382,7 +1421,8 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_last_breakfast_time_value(publisher, topic2, data2).await
+        FullServer::publish_last_breakfast_time_value(publisher, topic2, new_property_structure)
+            .await
     }
 
     pub async fn watch_last_breakfast_time(
@@ -1391,22 +1431,31 @@ impl FullServer {
         self.properties.last_breakfast_time_tx_channel.subscribe()
     }
 
+    /// Sets the value of the last_breakfast_time property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_last_breakfast_time(
         &mut self,
         data: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
         let prop = self.properties.last_breakfast_time.clone();
-        {
+
+        // Set the server's copy of the property value.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
+                if let Some(ref mut property_value) = *locked_data {
+                    property_value.timestamp = data.clone();
+                }
+
+                locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'last_breakfast_time'"),
                 ))
                 .await;
             }
-        }
+        };
 
+        // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
         let send_result = self
             .properties
@@ -1419,28 +1468,31 @@ impl FullServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'last_breakfast_time' value not changed, so not notifying watchers.");
             return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.last_breakfast_time_topic.as_ref().clone();
-            FullServer::publish_last_breakfast_time_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.last_breakfast_time_topic.as_ref().clone();
+                FullServer::publish_last_breakfast_time_value(publisher2, topic2, prop_obj).await
+            } else {
+                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
     async fn publish_breakfast_length_value(
         publisher: MqttierClient,
         topic: String,
-        data: chrono::Duration,
+        data: BreakfastLengthProperty,
     ) -> SentMessageFuture {
-        let new_data = BreakfastLengthProperty { length: data };
-        debug!(
-            "Publishing 'breakfast_length' property value to topic {}",
-            topic
-        );
-        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
-
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -1450,15 +1502,15 @@ impl FullServer {
     async fn update_breakfast_length_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<chrono::Duration>>>,
+        property_pointer: Arc<Mutex<Option<BreakfastLengthProperty>>>,
         watch_sender: watch::Sender<Option<chrono::Duration>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: BreakfastLengthProperty = {
+        let new_property_structure: BreakfastLengthProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'breakfast_length' property: {:?}",
@@ -1474,10 +1526,9 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.length);
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -1490,8 +1541,7 @@ impl FullServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data.length;
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.length.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -1501,26 +1551,35 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_breakfast_length_value(publisher, topic2, data2).await
+        FullServer::publish_breakfast_length_value(publisher, topic2, new_property_structure).await
     }
 
     pub async fn watch_breakfast_length(&self) -> watch::Receiver<Option<chrono::Duration>> {
         self.properties.breakfast_length_tx_channel.subscribe()
     }
 
+    /// Sets the value of the breakfast_length property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_breakfast_length(&mut self, data: chrono::Duration) -> SentMessageFuture {
         let prop = self.properties.breakfast_length.clone();
-        {
+
+        // Set the server's copy of the property value.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
+                if let Some(ref mut property_value) = *locked_data {
+                    property_value.length = data.clone();
+                }
+
+                locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'breakfast_length'"),
                 ))
                 .await;
             }
-        }
+        };
 
+        // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
         let send_result = self
             .properties
@@ -1533,13 +1592,22 @@ impl FullServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'breakfast_length' value not changed, so not notifying watchers.");
             return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.breakfast_length_topic.as_ref().clone();
-            FullServer::publish_breakfast_length_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.breakfast_length_topic.as_ref().clone();
+                FullServer::publish_breakfast_length_value(publisher2, topic2, prop_obj).await
+            } else {
+                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
@@ -1549,7 +1617,6 @@ impl FullServer {
         data: LastBirthdaysProperty,
     ) -> SentMessageFuture {
         let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-
         FullServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -1559,15 +1626,15 @@ impl FullServer {
     async fn update_last_birthdays_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<LastBirthdaysProperty>>>,
+        property_pointer: Arc<Mutex<Option<LastBirthdaysProperty>>>,
         watch_sender: watch::Sender<Option<LastBirthdaysProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: LastBirthdaysProperty = {
+        let new_property_structure: LastBirthdaysProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'last_birthdays' property: {:?}",
@@ -1583,10 +1650,9 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.clone());
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -1599,9 +1665,7 @@ impl FullServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data;
-
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -1611,27 +1675,34 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_last_birthdays_value(publisher, topic2, data2).await
+        FullServer::publish_last_birthdays_value(publisher, topic2, new_property_structure).await
     }
 
     pub async fn watch_last_birthdays(&self) -> watch::Receiver<Option<LastBirthdaysProperty>> {
         self.properties.last_birthdays_tx_channel.subscribe()
     }
 
+    /// Sets the values of the last_birthdays property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_last_birthdays(&mut self, data: LastBirthdaysProperty) -> SentMessageFuture {
         let prop = self.properties.last_birthdays.clone();
-        {
+
+        // Set the server's copy of the property values.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
+
+                locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'last_birthdays'"),
                 ))
                 .await;
             }
-        }
+        };
 
-        let data_to_send_to_watchers = Some(data.clone());
+        // Notify watchers of the new property value.
+        let data_to_send_to_watchers = property_obj.clone();
         let send_result =
             self.properties
                 .last_birthdays_tx_channel
@@ -1643,13 +1714,22 @@ impl FullServer {
                         false
                     }
                 });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'last_birthdays' value not changed, so not notifying watchers.");
             return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.last_birthdays_topic.as_ref().clone();
-            FullServer::publish_last_birthdays_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.last_birthdays_topic.as_ref().clone();
+                FullServer::publish_last_birthdays_value(publisher2, topic2, prop_obj).await
+            } else {
+                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 

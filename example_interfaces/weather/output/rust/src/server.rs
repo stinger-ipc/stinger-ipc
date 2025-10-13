@@ -53,7 +53,7 @@ struct WeatherProperties {
     location: Arc<Mutex<Option<LocationProperty>>>,
     location_tx_channel: watch::Sender<Option<LocationProperty>>,
     current_temperature_topic: Arc<String>,
-    current_temperature: Arc<Mutex<Option<f32>>>,
+    current_temperature: Arc<Mutex<Option<CurrentTemperatureProperty>>>,
     current_temperature_tx_channel: watch::Sender<Option<f32>>,
     current_condition_topic: Arc<String>,
     current_condition: Arc<Mutex<Option<CurrentConditionProperty>>>,
@@ -65,13 +65,13 @@ struct WeatherProperties {
     hourly_forecast: Arc<Mutex<Option<HourlyForecastProperty>>>,
     hourly_forecast_tx_channel: watch::Sender<Option<HourlyForecastProperty>>,
     current_condition_refresh_interval_topic: Arc<String>,
-    current_condition_refresh_interval: Arc<Mutex<Option<i32>>>,
+    current_condition_refresh_interval: Arc<Mutex<Option<CurrentConditionRefreshIntervalProperty>>>,
     current_condition_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
     hourly_forecast_refresh_interval_topic: Arc<String>,
-    hourly_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
+    hourly_forecast_refresh_interval: Arc<Mutex<Option<HourlyForecastRefreshIntervalProperty>>>,
     hourly_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
     daily_forecast_refresh_interval_topic: Arc<String>,
-    daily_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
+    daily_forecast_refresh_interval: Arc<Mutex<Option<DailyForecastRefreshIntervalProperty>>>,
     daily_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
 }
 
@@ -368,7 +368,7 @@ impl WeatherServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(_) => {
-                    let retval = RefreshDailyForecastReturnValue {};
+                    let retval = RefreshDailyForecastReturnValues {};
 
                     let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
@@ -415,7 +415,7 @@ impl WeatherServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(_) => {
-                    let retval = RefreshHourlyForecastReturnValue {};
+                    let retval = RefreshHourlyForecastReturnValues {};
 
                     let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
@@ -462,7 +462,7 @@ impl WeatherServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(_) => {
-                    let retval = RefreshCurrentConditionsReturnValue {};
+                    let retval = RefreshCurrentConditionsReturnValues {};
 
                     let _fut_publish_result = publisher
                         .publish_response(resp_topic, &retval, corr_data)
@@ -496,7 +496,6 @@ impl WeatherServer {
         data: LocationProperty,
     ) -> SentMessageFuture {
         let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-
         WeatherServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -506,15 +505,15 @@ impl WeatherServer {
     async fn update_location_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<LocationProperty>>>,
+        property_pointer: Arc<Mutex<Option<LocationProperty>>>,
         watch_sender: watch::Sender<Option<LocationProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: LocationProperty = {
+        let new_property_structure: LocationProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'location' property: {:?}",
@@ -530,10 +529,9 @@ impl WeatherServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.clone());
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -546,9 +544,7 @@ impl WeatherServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data;
-
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -558,27 +554,34 @@ impl WeatherServer {
                 );
             }
         };
-        WeatherServer::publish_location_value(publisher, topic2, data2).await
+        WeatherServer::publish_location_value(publisher, topic2, new_property_structure).await
     }
 
     pub async fn watch_location(&self) -> watch::Receiver<Option<LocationProperty>> {
         self.properties.location_tx_channel.subscribe()
     }
 
+    /// Sets the values of the location property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_location(&mut self, data: LocationProperty) -> SentMessageFuture {
         let prop = self.properties.location.clone();
-        {
+
+        // Set the server's copy of the property values.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
+
+                locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'location'"),
                 ))
                 .await;
             }
-        }
+        };
 
-        let data_to_send_to_watchers = Some(data.clone());
+        // Notify watchers of the new property value.
+        let data_to_send_to_watchers = property_obj.clone();
         let send_result = self
             .properties
             .location_tx_channel
@@ -590,46 +593,56 @@ impl WeatherServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'location' value not changed, so not notifying watchers.");
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.location_topic.as_ref().clone();
-            WeatherServer::publish_location_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.location_topic.as_ref().clone();
+                WeatherServer::publish_location_value(publisher2, topic2, prop_obj).await
+            } else {
+                WeatherServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
     async fn publish_current_temperature_value(
         publisher: MqttierClient,
         topic: String,
-        data: f32,
+        data: CurrentTemperatureProperty,
     ) -> SentMessageFuture {
-        let new_data = CurrentTemperatureProperty {
-            temperature_f: data,
-        };
-        debug!(
-            "Publishing 'current_temperature' property value to topic {}",
-            topic
-        );
-        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
-
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
         WeatherServer::oneshot_to_future(published_oneshot).await
     }
 
+    /// Sets the value of the current_temperature property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_current_temperature(&mut self, data: f32) -> SentMessageFuture {
         let prop = self.properties.current_temperature.clone();
-        {
+
+        // Set the server's copy of the property value.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
+                if let Some(ref mut property_value) = *locked_data {
+                    property_value.temperature_f = data.clone();
+                }
+
+                locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'current_temperature'"),
                 ))
                 .await;
             }
-        }
+        };
 
+        // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
         let send_result = self
             .properties
@@ -642,13 +655,22 @@ impl WeatherServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'current_temperature' value not changed, so not notifying watchers.");
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.current_temperature_topic.as_ref().clone();
-            WeatherServer::publish_current_temperature_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.current_temperature_topic.as_ref().clone();
+                WeatherServer::publish_current_temperature_value(publisher2, topic2, prop_obj).await
+            } else {
+                WeatherServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
@@ -658,27 +680,33 @@ impl WeatherServer {
         data: CurrentConditionProperty,
     ) -> SentMessageFuture {
         let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-
         WeatherServer::oneshot_to_future(published_oneshot).await
     }
 
+    /// Sets the values of the current_condition property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_current_condition(
         &mut self,
         data: CurrentConditionProperty,
     ) -> SentMessageFuture {
         let prop = self.properties.current_condition.clone();
-        {
+
+        // Set the server's copy of the property values.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
+
+                locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'current_condition'"),
                 ))
                 .await;
             }
-        }
+        };
 
-        let data_to_send_to_watchers = Some(data.clone());
+        // Notify watchers of the new property value.
+        let data_to_send_to_watchers = property_obj.clone();
         let send_result = self
             .properties
             .current_condition_tx_channel
@@ -690,13 +718,22 @@ impl WeatherServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'current_condition' value not changed, so not notifying watchers.");
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.current_condition_topic.as_ref().clone();
-            WeatherServer::publish_current_condition_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.current_condition_topic.as_ref().clone();
+                WeatherServer::publish_current_condition_value(publisher2, topic2, prop_obj).await
+            } else {
+                WeatherServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
@@ -706,24 +743,30 @@ impl WeatherServer {
         data: DailyForecastProperty,
     ) -> SentMessageFuture {
         let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-
         WeatherServer::oneshot_to_future(published_oneshot).await
     }
 
+    /// Sets the values of the daily_forecast property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_daily_forecast(&mut self, data: DailyForecastProperty) -> SentMessageFuture {
         let prop = self.properties.daily_forecast.clone();
-        {
+
+        // Set the server's copy of the property values.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
+
+                locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'daily_forecast'"),
                 ))
                 .await;
             }
-        }
+        };
 
-        let data_to_send_to_watchers = Some(data.clone());
+        // Notify watchers of the new property value.
+        let data_to_send_to_watchers = property_obj.clone();
         let send_result =
             self.properties
                 .daily_forecast_tx_channel
@@ -735,13 +778,22 @@ impl WeatherServer {
                         false
                     }
                 });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'daily_forecast' value not changed, so not notifying watchers.");
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.daily_forecast_topic.as_ref().clone();
-            WeatherServer::publish_daily_forecast_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.daily_forecast_topic.as_ref().clone();
+                WeatherServer::publish_daily_forecast_value(publisher2, topic2, prop_obj).await
+            } else {
+                WeatherServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
@@ -751,24 +803,30 @@ impl WeatherServer {
         data: HourlyForecastProperty,
     ) -> SentMessageFuture {
         let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-
         WeatherServer::oneshot_to_future(published_oneshot).await
     }
 
+    /// Sets the values of the hourly_forecast property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_hourly_forecast(&mut self, data: HourlyForecastProperty) -> SentMessageFuture {
         let prop = self.properties.hourly_forecast.clone();
-        {
+
+        // Set the server's copy of the property values.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
                 *locked_data = Some(data.clone());
+
+                locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'hourly_forecast'"),
                 ))
                 .await;
             }
-        }
+        };
 
-        let data_to_send_to_watchers = Some(data.clone());
+        // Notify watchers of the new property value.
+        let data_to_send_to_watchers = property_obj.clone();
         let send_result =
             self.properties
                 .hourly_forecast_tx_channel
@@ -780,28 +838,31 @@ impl WeatherServer {
                         false
                     }
                 });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'hourly_forecast' value not changed, so not notifying watchers.");
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self.properties.hourly_forecast_topic.as_ref().clone();
-            WeatherServer::publish_hourly_forecast_value(publisher2, topic2, data).await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self.properties.hourly_forecast_topic.as_ref().clone();
+                WeatherServer::publish_hourly_forecast_value(publisher2, topic2, prop_obj).await
+            } else {
+                WeatherServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
     async fn publish_current_condition_refresh_interval_value(
         publisher: MqttierClient,
         topic: String,
-        data: i32,
+        data: CurrentConditionRefreshIntervalProperty,
     ) -> SentMessageFuture {
-        let new_data = CurrentConditionRefreshIntervalProperty { seconds: data };
-        debug!(
-            "Publishing 'current_condition_refresh_interval' property value to topic {}",
-            topic
-        );
-        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
-
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
         WeatherServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -811,15 +872,15 @@ impl WeatherServer {
     async fn update_current_condition_refresh_interval_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<i32>>>,
+        property_pointer: Arc<Mutex<Option<CurrentConditionRefreshIntervalProperty>>>,
         watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: CurrentConditionRefreshIntervalProperty = {
+        let new_property_structure: CurrentConditionRefreshIntervalProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'current_condition_refresh_interval' property: {:?}",
@@ -830,10 +891,9 @@ impl WeatherServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.seconds);
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -846,8 +906,7 @@ impl WeatherServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data.seconds;
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.seconds.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -857,8 +916,12 @@ impl WeatherServer {
                 );
             }
         };
-        WeatherServer::publish_current_condition_refresh_interval_value(publisher, topic2, data2)
-            .await
+        WeatherServer::publish_current_condition_refresh_interval_value(
+            publisher,
+            topic2,
+            new_property_structure,
+        )
+        .await
     }
 
     pub async fn watch_current_condition_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
@@ -867,19 +930,28 @@ impl WeatherServer {
             .subscribe()
     }
 
+    /// Sets the value of the current_condition_refresh_interval property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_current_condition_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.current_condition_refresh_interval.clone();
-        {
+
+        // Set the server's copy of the property value.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
+                if let Some(ref mut property_value) = *locked_data {
+                    property_value.seconds = data.clone();
+                }
+
+                locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'current_condition_refresh_interval'"),
                 ))
                 .await;
             }
-        }
+        };
 
+        // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
         let send_result = self
             .properties
@@ -892,37 +964,40 @@ impl WeatherServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!(
                 "Property 'current_condition_refresh_interval' value not changed, so not notifying watchers."
             );
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self
-                .properties
-                .current_condition_refresh_interval_topic
-                .as_ref()
-                .clone();
-            WeatherServer::publish_current_condition_refresh_interval_value(
-                publisher2, topic2, data,
-            )
-            .await
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self
+                    .properties
+                    .current_condition_refresh_interval_topic
+                    .as_ref()
+                    .clone();
+                WeatherServer::publish_current_condition_refresh_interval_value(
+                    publisher2, topic2, prop_obj,
+                )
+                .await
+            } else {
+                WeatherServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
     async fn publish_hourly_forecast_refresh_interval_value(
         publisher: MqttierClient,
         topic: String,
-        data: i32,
+        data: HourlyForecastRefreshIntervalProperty,
     ) -> SentMessageFuture {
-        let new_data = HourlyForecastRefreshIntervalProperty { seconds: data };
-        debug!(
-            "Publishing 'hourly_forecast_refresh_interval' property value to topic {}",
-            topic
-        );
-        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
-
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
         WeatherServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -932,15 +1007,15 @@ impl WeatherServer {
     async fn update_hourly_forecast_refresh_interval_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<i32>>>,
+        property_pointer: Arc<Mutex<Option<HourlyForecastRefreshIntervalProperty>>>,
         watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: HourlyForecastRefreshIntervalProperty = {
+        let new_property_structure: HourlyForecastRefreshIntervalProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'hourly_forecast_refresh_interval' property: {:?}",
@@ -951,10 +1026,9 @@ impl WeatherServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.seconds);
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -969,8 +1043,7 @@ impl WeatherServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data.seconds;
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.seconds.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -980,8 +1053,12 @@ impl WeatherServer {
                 );
             }
         };
-        WeatherServer::publish_hourly_forecast_refresh_interval_value(publisher, topic2, data2)
-            .await
+        WeatherServer::publish_hourly_forecast_refresh_interval_value(
+            publisher,
+            topic2,
+            new_property_structure,
+        )
+        .await
     }
 
     pub async fn watch_hourly_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
@@ -990,19 +1067,28 @@ impl WeatherServer {
             .subscribe()
     }
 
+    /// Sets the value of the hourly_forecast_refresh_interval property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_hourly_forecast_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.hourly_forecast_refresh_interval.clone();
-        {
+
+        // Set the server's copy of the property value.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
+                if let Some(ref mut property_value) = *locked_data {
+                    property_value.seconds = data.clone();
+                }
+
+                locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'hourly_forecast_refresh_interval'"),
                 ))
                 .await;
             }
-        }
+        };
 
+        // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
         let send_result = self
             .properties
@@ -1015,35 +1101,40 @@ impl WeatherServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!(
                 "Property 'hourly_forecast_refresh_interval' value not changed, so not notifying watchers."
             );
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self
-                .properties
-                .hourly_forecast_refresh_interval_topic
-                .as_ref()
-                .clone();
-            WeatherServer::publish_hourly_forecast_refresh_interval_value(publisher2, topic2, data)
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self
+                    .properties
+                    .hourly_forecast_refresh_interval_topic
+                    .as_ref()
+                    .clone();
+                WeatherServer::publish_hourly_forecast_refresh_interval_value(
+                    publisher2, topic2, prop_obj,
+                )
                 .await
+            } else {
+                WeatherServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 
     async fn publish_daily_forecast_refresh_interval_value(
         publisher: MqttierClient,
         topic: String,
-        data: i32,
+        data: DailyForecastRefreshIntervalProperty,
     ) -> SentMessageFuture {
-        let new_data = DailyForecastRefreshIntervalProperty { seconds: data };
-        debug!(
-            "Publishing 'daily_forecast_refresh_interval' property value to topic {}",
-            topic
-        );
-        let published_oneshot = publisher.publish_state(topic, &new_data, 1).await;
-
+        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
         WeatherServer::oneshot_to_future(published_oneshot).await
     }
 
@@ -1053,15 +1144,15 @@ impl WeatherServer {
     async fn update_daily_forecast_refresh_interval_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        data: Arc<Mutex<Option<i32>>>,
+        property_pointer: Arc<Mutex<Option<DailyForecastRefreshIntervalProperty>>>,
         watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
-        let new_data: DailyForecastRefreshIntervalProperty = {
+        let new_property_structure: DailyForecastRefreshIntervalProperty = {
             match serde_json::from_str(&payload_str) {
-                Ok(data) => data,
+                Ok(obj) => obj,
                 Err(e) => {
                     error!(
                         "Failed to parse JSON received over MQTT to update 'daily_forecast_refresh_interval' property: {:?}",
@@ -1072,10 +1163,9 @@ impl WeatherServer {
             }
         };
 
-        let assignment_result = match data.lock() {
+        let assignment_result = match property_pointer.lock() {
             Ok(mut guard) => {
-                *guard = Some(new_data.seconds);
-
+                *guard = Some(new_property_structure.clone());
                 Ok(())
             }
             Err(_e) => Err(()),
@@ -1090,8 +1180,7 @@ impl WeatherServer {
             .await;
         }
         let topic2: String = topic.as_ref().clone();
-        let data2 = new_data.seconds;
-        let data_to_send_to_watchers = data2.clone();
+        let data_to_send_to_watchers = new_property_structure.seconds.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
@@ -1101,7 +1190,12 @@ impl WeatherServer {
                 );
             }
         };
-        WeatherServer::publish_daily_forecast_refresh_interval_value(publisher, topic2, data2).await
+        WeatherServer::publish_daily_forecast_refresh_interval_value(
+            publisher,
+            topic2,
+            new_property_structure,
+        )
+        .await
     }
 
     pub async fn watch_daily_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
@@ -1110,19 +1204,28 @@ impl WeatherServer {
             .subscribe()
     }
 
+    /// Sets the value of the daily_forecast_refresh_interval property.
+    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_daily_forecast_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.daily_forecast_refresh_interval.clone();
-        {
+
+        // Set the server's copy of the property value.
+        let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
+                if let Some(ref mut property_value) = *locked_data {
+                    property_value.seconds = data.clone();
+                }
+
+                locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
                     format!("Failed to lock mutex for setting property 'daily_forecast_refresh_interval'"),
                 ))
                 .await;
             }
-        }
+        };
 
+        // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
         let send_result = self
             .properties
@@ -1135,20 +1238,31 @@ impl WeatherServer {
                     false
                 }
             });
+
+        // Send value to MQTT if it has changed.
         if !send_result {
             debug!(
                 "Property 'daily_forecast_refresh_interval' value not changed, so not notifying watchers."
             );
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
-            let publisher2 = self.mqttier_client.clone();
-            let topic2 = self
-                .properties
-                .daily_forecast_refresh_interval_topic
-                .as_ref()
-                .clone();
-            WeatherServer::publish_daily_forecast_refresh_interval_value(publisher2, topic2, data)
+            if let Some(prop_obj) = property_obj {
+                let publisher2 = self.mqttier_client.clone();
+                let topic2 = self
+                    .properties
+                    .daily_forecast_refresh_interval_topic
+                    .as_ref()
+                    .clone();
+                WeatherServer::publish_daily_forecast_refresh_interval_value(
+                    publisher2, topic2, prop_obj,
+                )
                 .await
+            } else {
+                WeatherServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                    "Could not find property object".to_string(),
+                ))
+                .await
+            }
         }
     }
 

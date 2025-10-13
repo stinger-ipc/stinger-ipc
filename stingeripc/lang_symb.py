@@ -19,7 +19,8 @@ class PythonInterfaceSymbols(PythonSymbols):
 
     @property
     def package_name(self):
-        return f"{stringmanip.lower_camel_case(self._iface.name).lower()}ipc"
+        s = f"{stringmanip.lower_camel_case(self._iface.name).lower()}ipc"
+        return s.replace('__', '_')
 
     @property
     def client_class_name(self) -> str:
@@ -70,7 +71,8 @@ class RustInterfaceSymbols(RustSymbols):
     @property
     def package_name(self) -> str:
         """ Name of the rust package for the interface client."""
-        return f"{stringcase.snakecase(self._iface.name)}_ipc"
+        s = f"{stringcase.snakecase(self._iface.name)}_ipc"
+        return s.replace('__', '_')
 
     @property
     def client_struct_name(self) -> str:

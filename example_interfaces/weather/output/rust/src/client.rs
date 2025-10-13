@@ -8,7 +8,6 @@ on the next generation.
 
 This is the Client for the weather interface.
 */
-use json::JsonValue;
 #[cfg(feature = "client")]
 use mqttier::{MqttierClient, ReceivedMessage};
 use serde_json;
@@ -17,6 +16,7 @@ use uuid::Uuid;
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+#[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
@@ -47,7 +47,7 @@ struct WeatherSubscriptionIds {
 /// is a signal, it will send the signal payload via the tx channel that is in this struct.
 #[derive(Clone)]
 struct WeatherSignalChannels {
-    current_time_sender: broadcast::Sender<CurrentTimeSignalPayload>,
+    current_time_sender: broadcast::Sender<String>,
 }
 
 #[derive(Clone)]
@@ -79,7 +79,7 @@ pub struct WeatherProperties {
 pub struct WeatherClient {
     mqttier_client: MqttierClient,
     /// Temporarily holds oneshot channels for responses to method calls.
-    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
+    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>>,
 
     /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
@@ -335,11 +335,11 @@ impl WeatherClient {
 
     /// Get the RX receiver side of the broadcast channel for the current_time signal.
     /// The signal payload, `CurrentTimeSignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_current_time_receiver(&self) -> broadcast::Receiver<CurrentTimeSignalPayload> {
+    pub fn get_current_time_receiver(&self) -> broadcast::Receiver<String> {
         self.signal_channels.current_time_sender.subscribe()
     }
 
-    async fn start_refresh_daily_forecast(&mut self) -> oneshot::Receiver<JsonValue> {
+    async fn start_refresh_daily_forecast(&mut self) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -376,39 +376,12 @@ impl WeatherClient {
     pub async fn refresh_daily_forecast(&mut self) -> Result<(), MethodReturnCode> {
         let receiver = self.start_refresh_daily_forecast().await;
 
-        let _resp_obj = receiver.await.unwrap();
+        let _resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
+        Ok(())
     }
 
-    /// Handler for responses to `refresh_daily_forecast` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_refresh_daily_forecast_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
-    }
-    async fn start_refresh_hourly_forecast(&mut self) -> oneshot::Receiver<JsonValue> {
+    async fn start_refresh_hourly_forecast(&mut self) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -445,39 +418,12 @@ impl WeatherClient {
     pub async fn refresh_hourly_forecast(&mut self) -> Result<(), MethodReturnCode> {
         let receiver = self.start_refresh_hourly_forecast().await;
 
-        let _resp_obj = receiver.await.unwrap();
+        let _resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
+        Ok(())
     }
 
-    /// Handler for responses to `refresh_hourly_forecast` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_refresh_hourly_forecast_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
-    }
-    async fn start_refresh_current_conditions(&mut self) -> oneshot::Receiver<JsonValue> {
+    async fn start_refresh_current_conditions(&mut self) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -516,37 +462,9 @@ impl WeatherClient {
     pub async fn refresh_current_conditions(&mut self) -> Result<(), MethodReturnCode> {
         let receiver = self.start_refresh_current_conditions().await;
 
-        let _resp_obj = receiver.await.unwrap();
+        let _resp_str: String = receiver.await.unwrap();
 
-        Err(MethodReturnCode::DeserializationError(
-            "Not implemented".to_string(),
-        ))
-    }
-
-    /// Handler for responses to `refresh_current_conditions` method calls.
-    /// It finds oneshot channel created for the method call, and sends the response to that channel.
-    fn handle_refresh_current_conditions_response(
-        pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>>,
-        payload: String,
-        opt_correlation_id: Option<Uuid>,
-    ) {
-        let payload_object = json::parse(&payload).unwrap();
-        if opt_correlation_id.is_some() {
-            let sender_opt = opt_correlation_id.and_then(|uuid| {
-                let mut hashmap = pending_responses.lock().expect("Mutex was poisoned");
-                hashmap.remove(&uuid)
-            });
-            match sender_opt {
-                Some(sender) => {
-                    let oss: oneshot::Sender<JsonValue> = sender;
-                    match oss.send(payload_object) {
-                        Ok(_) => (),
-                        Err(_) => (),
-                    }
-                }
-                None => (),
-            }
-        }
+        Ok(())
     }
 
     /// Watch for changes to the `location` property.
@@ -653,7 +571,7 @@ impl WeatherClient {
         let _ = self.mqttier_client.run_loop().await;
 
         // Clone the Arc pointer to the map.  This will be moved into the loop_task.
-        let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<JsonValue>>>> =
+        let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>> =
             self.pending_responses.clone();
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -675,30 +593,58 @@ impl WeatherClient {
 
                 let payload = String::from_utf8_lossy(&msg.payload).to_string();
                 if msg.subscription_id == sub_ids.refresh_daily_forecast_method_resp {
-                    WeatherClient::handle_refresh_daily_forecast_response(
-                        resp_map.clone(),
-                        payload,
-                        opt_corr_id,
-                    );
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.refresh_hourly_forecast_method_resp {
-                    WeatherClient::handle_refresh_hourly_forecast_response(
-                        resp_map.clone(),
-                        payload,
-                        opt_corr_id,
-                    );
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.refresh_current_conditions_method_resp {
-                    WeatherClient::handle_refresh_current_conditions_response(
-                        resp_map.clone(),
-                        payload,
-                        opt_corr_id,
-                    );
+                    // TODO: Simplify subscription because we'll always look up by correlation id.
+                    if opt_corr_id.is_some() {
+                        let opt_sender = opt_corr_id.and_then(|uuid| {
+                            let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                            hashmap.remove(&uuid)
+                        });
+                        if let Some(sender) = opt_sender {
+                            let oss: oneshot::Sender<String> = sender;
+                            match oss.send(payload) {
+                                Ok(_) => (),
+                                Err(_) => (),
+                            }
+                        }
+                    }
                 }
 
                 if msg.subscription_id == sub_ids.current_time_signal.unwrap_or_default() {
                     let chan = sig_chans.current_time_sender.clone();
+
                     let pl: CurrentTimeSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    let _send_result = chan.send(pl.current_time);
                 }
 
                 if msg.subscription_id == sub_ids.location_property_value {

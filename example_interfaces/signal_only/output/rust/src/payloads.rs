@@ -175,6 +175,14 @@ impl MethodReturnCode {
     }
 }
 
+// --- ENUMERATIONS ---
+
+// --- INTERFACE STRUCTURES ---
+
+// ---- METHODS ----
+
+// ---- SIGNALS ----
+
 // Structures for `anotherSignal` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]

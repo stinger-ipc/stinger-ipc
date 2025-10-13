@@ -80,7 +80,7 @@ examples/
 The library automatically includes the necessary dependencies based on the features you enable:
 
 - **Core dependencies** (always included): futures, mqttier, serde, serde_json, tokio, num-derive, num-traits, uuid
-- **Client dependencies** (with `client` feature): paho-mqtt, json, log, env_logger  
-- **Server dependencies** (with `server` feature): async-trait, tracing, env_logger
+- **Client dependencies** (with `client` feature): paho-mqtt, json 
+- **Server dependencies** (with `server` feature): async-trait, tracing
 
 This modular approach allows you to include only the functionality you need, reducing compile times and binary size.

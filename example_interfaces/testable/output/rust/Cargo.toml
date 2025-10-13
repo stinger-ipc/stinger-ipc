@@ -1,5 +1,5 @@
 [package]
-name = "test__able_ipc"
+name = "test_able_ipc"
 version = "0.0.1"
 edition = "2024"
 
@@ -42,16 +42,16 @@ features = [
 ]
 
 [[example]]
-name = "test__able_client_demo"
+name = "test_able_client_demo"
 path = "examples/client_demo.rs"
 required-features = ["client"]
 
 [[example]]
-name = "test__able_server_demo" 
+name = "test_able_server_demo" 
 path = "examples/server_demo.rs"
 required-features = ["server"]
 
 [[example]]
-name = "test__able_connection_demo"
+name = "test_able_connection_demo"
 path = "examples/pub_and_recv.rs"
 required-features = ["payloads"]

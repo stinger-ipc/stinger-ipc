@@ -414,10 +414,16 @@ class ArgStruct(Arg):
         return "Object"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
-        example_list: dict[str, str] = {
-            a.name: str(a.get_random_example_value(lang, seed=seed))
-            for a in self.members
-        }
+        if lang == "rust":
+            example_list: dict[str, str] = {
+                stringcase.snakecase(a.name): str(a.get_random_example_value(lang, seed=seed))
+                for a in self.members
+            }
+        else:
+            example_list: dict[str, str] = {
+                a.name: str(a.get_random_example_value(lang, seed=seed))
+                for a in self.members
+            }
         if lang == "c++":
             return self.cpp_type + "{" + ", ".join(example_list.values()) + "}"
         elif lang == "python":

@@ -11,10 +11,10 @@ This is the Client for the Full interface.
 
 use futures::executor::block_on;
 use mqttier::{Connection, MqttierClient, MqttierOptions};
-use test__able_ipc::client::TestAbleClient;
-use test__able_ipc::discovery::TestAbleDiscovery;
+use test_able_ipc::client::TestAbleClient;
+use test_able_ipc::discovery::TestAbleDiscovery;
 #[allow(unused_imports)]
-use test__able_ipc::payloads::{MethodReturnCode, *};
+use test_able_ipc::payloads::{MethodReturnCode, *};
 use tokio::join;
 use tokio::time::{Duration, sleep};
 
@@ -44,7 +44,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task1 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -64,7 +64,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task2 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -84,7 +84,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task3 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -107,7 +107,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task4 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -127,7 +127,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task5 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -147,7 +147,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task6 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -170,7 +170,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task7 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -190,7 +190,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task8 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -210,7 +210,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task9 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -233,7 +233,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task10 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -253,7 +253,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task11 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -273,7 +273,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task12 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -296,7 +296,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task13 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -316,7 +316,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task14 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -336,7 +336,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task15 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -359,7 +359,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task16 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -379,7 +379,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task17 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -399,7 +399,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task18 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -422,7 +422,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task19 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -442,7 +442,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task20 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -462,7 +462,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task21 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -485,7 +485,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task22 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -707,12 +707,12 @@ async fn main() {
                 date_and_time: chrono::Utc::now(),
                 time_duration: chrono::Duration::seconds(3536),
                 data: vec![101, 120, 97, 109, 112, 108, 101],
-                OptionalInteger: Some(42),
-                OptionalString: Some("apples".to_string()),
-                OptionalEnum: Some(Numbers::One),
-                OptionalDateTime: chrono::Utc::now(),
-                OptionalDuration: chrono::Duration::seconds(3536),
-                OptionalBinary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_integer: Some(42),
+                optional_string: Some("apples".to_string()),
+                optional_enum: Some(Numbers::One),
+                optional_date_time: chrono::Utc::now(),
+                optional_duration: chrono::Duration::seconds(3536),
+                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
             })
             .await
             .expect("Failed to call callOneStruct");
@@ -729,12 +729,12 @@ async fn main() {
                 date_and_time: chrono::Utc::now(),
                 time_duration: chrono::Duration::seconds(3536),
                 data: vec![101, 120, 97, 109, 112, 108, 101],
-                OptionalInteger: Some(42),
-                OptionalString: Some("apples".to_string()),
-                OptionalEnum: Some(Numbers::One),
-                OptionalDateTime: chrono::Utc::now(),
-                OptionalDuration: chrono::Duration::seconds(3536),
-                OptionalBinary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_integer: Some(42),
+                optional_string: Some("apples".to_string()),
+                optional_enum: Some(Numbers::One),
+                optional_date_time: chrono::Utc::now(),
+                optional_duration: chrono::Duration::seconds(3536),
+                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
             })
             .await
             .expect("Failed to call callOptionalStruct");
@@ -752,12 +752,12 @@ async fn main() {
                     date_and_time: chrono::Utc::now(),
                     time_duration: chrono::Duration::seconds(3536),
                     data: vec![101, 120, 97, 109, 112, 108, 101],
-                    OptionalInteger: Some(42),
-                    OptionalString: Some("apples".to_string()),
-                    OptionalEnum: Some(Numbers::One),
-                    OptionalDateTime: chrono::Utc::now(),
-                    OptionalDuration: chrono::Duration::seconds(3536),
-                    OptionalBinary: vec![101, 120, 97, 109, 112, 108, 101],
+                    optional_integer: Some(42),
+                    optional_string: Some("apples".to_string()),
+                    optional_enum: Some(Numbers::One),
+                    optional_date_time: chrono::Utc::now(),
+                    optional_duration: chrono::Duration::seconds(3536),
+                    optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
                 },
                 AllTypes {
                     the_bool: true,
@@ -768,12 +768,12 @@ async fn main() {
                     date_and_time: chrono::Utc::now(),
                     time_duration: chrono::Duration::seconds(3536),
                     data: vec![101, 120, 97, 109, 112, 108, 101],
-                    OptionalInteger: Some(42),
-                    OptionalString: Some("apples".to_string()),
-                    OptionalEnum: Some(Numbers::One),
-                    OptionalDateTime: chrono::Utc::now(),
-                    OptionalDuration: chrono::Duration::seconds(3536),
-                    OptionalBinary: vec![101, 120, 97, 109, 112, 108, 101],
+                    optional_integer: Some(42),
+                    optional_string: Some("apples".to_string()),
+                    optional_enum: Some(Numbers::One),
+                    optional_date_time: chrono::Utc::now(),
+                    optional_duration: chrono::Duration::seconds(3536),
+                    optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
                 },
                 AllTypes {
                     the_bool: true,
@@ -784,12 +784,12 @@ async fn main() {
                     date_and_time: chrono::Utc::now(),
                     time_duration: chrono::Duration::seconds(3536),
                     data: vec![101, 120, 97, 109, 112, 108, 101],
-                    OptionalInteger: Some(42),
-                    OptionalString: Some("apples".to_string()),
-                    OptionalEnum: Some(Numbers::One),
-                    OptionalDateTime: chrono::Utc::now(),
-                    OptionalDuration: chrono::Duration::seconds(3536),
-                    OptionalBinary: vec![101, 120, 97, 109, 112, 108, 101],
+                    optional_integer: Some(42),
+                    optional_string: Some("apples".to_string()),
+                    optional_enum: Some(Numbers::One),
+                    optional_date_time: chrono::Utc::now(),
+                    optional_duration: chrono::Duration::seconds(3536),
+                    optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
                 },
             )
             .await
@@ -896,12 +896,12 @@ async fn main() {
             date_and_time: chrono::Utc::now(),
             time_duration: chrono::Duration::seconds(3536),
             data: vec![101, 120, 97, 109, 112, 108, 101],
-            OptionalInteger: Some(42),
-            OptionalString: Some("apples".to_string()),
-            OptionalEnum: Some(Numbers::One),
-            OptionalDateTime: chrono::Utc::now(),
-            OptionalDuration: chrono::Duration::seconds(3536),
-            OptionalBinary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(3536),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
         });
 
         let _ = api_client.set_read_write_optional_struct(AllTypes {
@@ -913,12 +913,12 @@ async fn main() {
             date_and_time: chrono::Utc::now(),
             time_duration: chrono::Duration::seconds(3536),
             data: vec![101, 120, 97, 109, 112, 108, 101],
-            OptionalInteger: Some(42),
-            OptionalString: Some("apples".to_string()),
-            OptionalEnum: Some(Numbers::One),
-            OptionalDateTime: chrono::Utc::now(),
-            OptionalDuration: chrono::Duration::seconds(3536),
-            OptionalBinary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(3536),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
         });
 
         let read_write_two_structs_new_value = ReadWriteTwoStructsProperty {
@@ -931,12 +931,12 @@ async fn main() {
                 date_and_time: chrono::Utc::now(),
                 time_duration: chrono::Duration::seconds(3536),
                 data: vec![101, 120, 97, 109, 112, 108, 101],
-                OptionalInteger: Some(42),
-                OptionalString: Some("apples".to_string()),
-                OptionalEnum: Some(Numbers::One),
-                OptionalDateTime: chrono::Utc::now(),
-                OptionalDuration: chrono::Duration::seconds(3536),
-                OptionalBinary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_integer: Some(42),
+                optional_string: Some("apples".to_string()),
+                optional_enum: Some(Numbers::One),
+                optional_date_time: chrono::Utc::now(),
+                optional_duration: chrono::Duration::seconds(3536),
+                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
             },
             second: AllTypes {
                 the_bool: true,
@@ -947,12 +947,12 @@ async fn main() {
                 date_and_time: chrono::Utc::now(),
                 time_duration: chrono::Duration::seconds(3536),
                 data: vec![101, 120, 97, 109, 112, 108, 101],
-                OptionalInteger: Some(42),
-                OptionalString: Some("apples".to_string()),
-                OptionalEnum: Some(Numbers::One),
-                OptionalDateTime: chrono::Utc::now(),
-                OptionalDuration: chrono::Duration::seconds(3536),
-                OptionalBinary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_integer: Some(42),
+                optional_string: Some("apples".to_string()),
+                optional_enum: Some(Numbers::One),
+                optional_date_time: chrono::Utc::now(),
+                optional_duration: chrono::Duration::seconds(3536),
+                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
             },
         };
         let _ = api_client.set_read_write_two_structs(read_write_two_structs_new_value);
@@ -997,7 +997,31 @@ async fn main() {
         };
         let _ = api_client.set_read_write_two_binaries(read_write_two_binaries_new_value);
 
-        let _ = join!(sig_rx_task);
+        // Join on all the signal emitting tasks.
+        let _ = join!(
+            sig_rx_task1,
+            sig_rx_task2,
+            sig_rx_task3,
+            sig_rx_task4,
+            sig_rx_task5,
+            sig_rx_task6,
+            sig_rx_task7,
+            sig_rx_task8,
+            sig_rx_task9,
+            sig_rx_task10,
+            sig_rx_task11,
+            sig_rx_task12,
+            sig_rx_task13,
+            sig_rx_task14,
+            sig_rx_task15,
+            sig_rx_task16,
+            sig_rx_task17,
+            sig_rx_task18,
+            sig_rx_task19,
+            sig_rx_task20,
+            sig_rx_task21,
+            sig_rx_task22
+        );
     });
     // Ctrl-C to stop
 }

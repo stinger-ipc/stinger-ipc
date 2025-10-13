@@ -33,13 +33,13 @@ Each example requires the corresponding feature to be enabled:
 
 ```bash
 # Client example
-cargo run --example {{stinger.name | snake_case}}_client_demo --features client
+cargo run --example {{stinger.name | snake_case|replace('__', '_')}}_client_demo --features client
 
 # Server example
-cargo run --example {{stinger.name | snake_case}}_server_demo --features server
+cargo run --example {{stinger.name | snake_case|replace('__', '_')}}_server_demo --features server
 
 # Payloads example
-cargo run --example {{stinger.name | snake_case}}_connection_demo --features payloads
+cargo run --example {{stinger.name | snake_case|replace('__', '_')}}_connection_demo --features payloads
 ```
 
 ### Building with Specific Features
@@ -80,7 +80,7 @@ examples/
 The library automatically includes the necessary dependencies based on the features you enable:
 
 - **Core dependencies** (always included): futures, mqttier, serde, serde_json, tokio, num-derive, num-traits, uuid
-- **Client dependencies** (with `client` feature): paho-mqtt, json, log, env_logger  
-- **Server dependencies** (with `server` feature): async-trait, tracing, env_logger
+- **Client dependencies** (with `client` feature): paho-mqtt, json 
+- **Server dependencies** (with `server` feature): async-trait, tracing
 
 This modular approach allows you to include only the functionality you need, reducing compile times and binary size.

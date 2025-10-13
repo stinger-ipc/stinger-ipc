@@ -14,6 +14,7 @@ use serde_json;
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+#[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc};
@@ -37,10 +38,10 @@ struct SignalOnlySubscriptionIds {
 #[derive(Clone)]
 struct SignalOnlySignalChannels {
     another_signal_sender: broadcast::Sender<AnotherSignalSignalPayload>,
-    bark_sender: broadcast::Sender<BarkSignalPayload>,
-    maybe_number_sender: broadcast::Sender<MaybeNumberSignalPayload>,
-    maybe_name_sender: broadcast::Sender<MaybeNameSignalPayload>,
-    now_sender: broadcast::Sender<NowSignalPayload>,
+    bark_sender: broadcast::Sender<String>,
+    maybe_number_sender: broadcast::Sender<Option<i32>>,
+    maybe_name_sender: broadcast::Sender<Option<String>>,
+    now_sender: broadcast::Sender<chrono::DateTime<chrono::Utc>>,
 }
 
 /// This is the struct for our API client.
@@ -149,22 +150,22 @@ impl SignalOnlyClient {
     }
     /// Get the RX receiver side of the broadcast channel for the bark signal.
     /// The signal payload, `BarkSignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_bark_receiver(&self) -> broadcast::Receiver<BarkSignalPayload> {
+    pub fn get_bark_receiver(&self) -> broadcast::Receiver<String> {
         self.signal_channels.bark_sender.subscribe()
     }
     /// Get the RX receiver side of the broadcast channel for the maybe_number signal.
     /// The signal payload, `MaybeNumberSignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_maybe_number_receiver(&self) -> broadcast::Receiver<MaybeNumberSignalPayload> {
+    pub fn get_maybe_number_receiver(&self) -> broadcast::Receiver<Option<i32>> {
         self.signal_channels.maybe_number_sender.subscribe()
     }
     /// Get the RX receiver side of the broadcast channel for the maybe_name signal.
     /// The signal payload, `MaybeNameSignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_maybe_name_receiver(&self) -> broadcast::Receiver<MaybeNameSignalPayload> {
+    pub fn get_maybe_name_receiver(&self) -> broadcast::Receiver<Option<String>> {
         self.signal_channels.maybe_name_sender.subscribe()
     }
     /// Get the RX receiver side of the broadcast channel for the now signal.
     /// The signal payload, `NowSignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_now_receiver(&self) -> broadcast::Receiver<NowSignalPayload> {
+    pub fn get_now_receiver(&self) -> broadcast::Receiver<chrono::DateTime<chrono::Utc>> {
         self.signal_channels.now_sender.subscribe()
     }
 
@@ -186,29 +187,34 @@ impl SignalOnlyClient {
             while let Some(msg) = message_receiver.recv().await {
                 if msg.subscription_id == sub_ids.another_signal_signal.unwrap_or_default() {
                     let chan = sig_chans.another_signal_sender.clone();
+
                     let pl: AnotherSignalSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
                     let _send_result = chan.send(pl);
                 } else if msg.subscription_id == sub_ids.bark_signal.unwrap_or_default() {
                     let chan = sig_chans.bark_sender.clone();
+
                     let pl: BarkSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    let _send_result = chan.send(pl.word);
                 } else if msg.subscription_id == sub_ids.maybe_number_signal.unwrap_or_default() {
                     let chan = sig_chans.maybe_number_sender.clone();
+
                     let pl: MaybeNumberSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    let _send_result = chan.send(pl.number);
                 } else if msg.subscription_id == sub_ids.maybe_name_signal.unwrap_or_default() {
                     let chan = sig_chans.maybe_name_sender.clone();
+
                     let pl: MaybeNameSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    let _send_result = chan.send(pl.name);
                 } else if msg.subscription_id == sub_ids.now_signal.unwrap_or_default() {
                     let chan = sig_chans.now_sender.clone();
+
                     let pl: NowSignalPayload =
                         serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    let _send_result = chan.send(pl.timestamp);
                 }
             }
         });

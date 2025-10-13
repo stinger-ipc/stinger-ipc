@@ -43,7 +43,7 @@ async fn main() {
 
         sleep(Duration::from_secs(5)).await;
 
-        let sig_rx_task = tokio::spawn(async move {
+        let sig_rx_task1 = tokio::spawn(async move {
             println!("Looping for signals");
             loop {
                 match sig_rx.recv().await {
@@ -136,7 +136,8 @@ async fn main() {
 
         let _ = api_client.set_daily_forecast_refresh_interval(42);
 
-        let _ = join!(sig_rx_task);
+        // Join on all the signal emitting tasks.
+        let _ = join!(sig_rx_task1);
     });
     // Ctrl-C to stop
 }

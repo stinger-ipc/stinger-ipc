@@ -4,7 +4,7 @@ on the next generation.
 
 This is the Client for the Test Able interface.
 */
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use std::fmt;
 use std::sync::{Arc, RwLock};
 
@@ -22,7 +22,9 @@ pub enum TestAbleDiscoveryError {
 impl fmt::Display for TestAbleDiscoveryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TestAbleDiscoveryError::Subscribe(err) => write!(f, "failed to subscribe for discovery: {err}"),
+            TestAbleDiscoveryError::Subscribe(err) => {
+                write!(f, "failed to subscribe for discovery: {err}")
+            }
         }
     }
 }
@@ -48,9 +50,7 @@ pub struct TestAbleDiscovery {
 pub type TestAbleDiscoveryReceiver = broadcast::Receiver<InterfaceInfo>;
 
 impl TestAbleDiscovery {
-    pub async fn new(
-        connection: &mut MqttierClient,
-    ) -> Result<Self, TestAbleDiscoveryError> {
+    pub async fn new(connection: &mut MqttierClient) -> Result<Self, TestAbleDiscoveryError> {
         let service_name = "Test Able".to_string();
         let discovery_topic = format!("testAble/{}/interface", "+");
 
@@ -84,7 +84,10 @@ impl TestAbleDiscovery {
     }
 
     pub fn discovered_interfaces(&self) -> Vec<InterfaceInfo> {
-        let guard = self.discovered_interfaces.read().expect("interfaces poisoned");
+        let guard = self
+            .discovered_interfaces
+            .read()
+            .expect("interfaces poisoned");
         guard.values().cloned().collect()
     }
 
@@ -102,10 +105,7 @@ impl TestAbleDiscovery {
 
         // No interfaces yet, wait for the first one to be discovered
         let mut receiver = self.notification_tx.subscribe();
-        receiver
-            .recv()
-            .await
-            .expect("notification channel closed")
+        receiver.recv().await.expect("notification channel closed")
     }
 
     pub fn subscription_id(&self) -> usize {
@@ -113,16 +113,16 @@ impl TestAbleDiscovery {
     }
 
     /// Subscribe to notifications for newly discovered interfaces.
-    /// 
+    ///
     /// Returns a receiver that will be notified when a new interface is discovered.
     /// Notifications are only sent for new interfaces, not for updates to existing ones.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```no_run
-    /// use test__able_ipc::discovery::TestAbleDiscovery;
+    /// use test_able_ipc::discovery::TestAbleDiscovery;
     /// use mqttier::{Connection, MqttierClient, MqttierOptions};
-    /// 
+    ///
     /// #[tokio::main]
     /// async fn main() {
     ///     let options = MqttierOptions::new()
@@ -180,7 +180,9 @@ impl TestAbleDiscovery {
                 .write()
                 .expect("interfaces write lock poisoned");
             let instance_id = info.instance.clone();
-            let is_new_instance = interfaces_guard.insert(instance_id.clone(), info.clone()).is_none();
+            let is_new_instance = interfaces_guard
+                .insert(instance_id.clone(), info.clone())
+                .is_none();
             drop(interfaces_guard);
 
             // Send notification only for new interfaces
@@ -190,7 +192,6 @@ impl TestAbleDiscovery {
         }
     }
 }
-
 
 impl Drop for TestAbleDiscovery {
     fn drop(&mut self) {
@@ -252,10 +253,17 @@ mod tests {
         assert!(interfaces_guard.contains_key("beta"));
 
         // Check that we received exactly 2 notifications (only for new interfaces)
-        let info1 = notification_rx.try_recv().expect("should have first notification");
+        let info1 = notification_rx
+            .try_recv()
+            .expect("should have first notification");
         assert_eq!(info1.instance, "alpha");
-        let info2 = notification_rx.try_recv().expect("should have second notification");
+        let info2 = notification_rx
+            .try_recv()
+            .expect("should have second notification");
         assert_eq!(info2.instance, "beta");
-        assert!(notification_rx.try_recv().is_err(), "should not have third notification");
+        assert!(
+            notification_rx.try_recv().is_err(),
+            "should not have third notification"
+        );
     }
 }

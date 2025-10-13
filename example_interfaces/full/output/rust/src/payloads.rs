@@ -177,6 +177,8 @@ impl MethodReturnCode {
     }
 }
 
+// --- ENUMERATIONS ---
+
 #[repr(u32)]
 #[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(into = "u32", try_from = "u32")]
@@ -203,9 +205,10 @@ impl From<DayOfTheWeek> for u32 {
     }
 }
 
-impl From<u32> for DayOfTheWeek {
-    fn from(s: u32) -> DayOfTheWeek {
-        DayOfTheWeek::from_u32(s).unwrap()
+impl TryFrom<u32> for DayOfTheWeek {
+    type Error = String;
+    fn try_from(v: u32) -> Result<Self, Self::Error> {
+        DayOfTheWeek::from_u32(v).ok_or_else(|| format!("Invalid DayOfTheWeek value: {}", v))
     }
 }
 
@@ -215,21 +218,29 @@ impl fmt::Display for DayOfTheWeek {
     }
 }
 
+// --- INTERFACE STRUCTURES ---
+
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Lunch {
     pub drink: bool,
+
     pub sandwich: String,
+
     pub crackers: f32,
+
     pub day: DayOfTheWeek,
 
     pub order_number: Option<i32>,
+
     #[serde(with = "datetime_iso_format")]
     pub time_of_lunch: chrono::DateTime<chrono::Utc>,
 
     #[serde(with = "duration_iso_format")]
     pub duration_of_lunch: chrono::Duration,
 }
+
+// ---- METHODS ----
 
 // Structures for `addNumbers` method
 
@@ -238,7 +249,9 @@ pub struct Lunch {
 /// Request Object for `addNumbers` method.
 pub struct AddNumbersRequestObject {
     pub first: i32,
+
     pub second: i32,
+
     pub third: Option<i32>,
 }
 
@@ -248,12 +261,14 @@ pub struct AddNumbersRequestObject {
 pub struct AddNumbersReturnValues {
     pub sum: i32,
 }
+
 // Structures for `doSomething` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `doSomething` method.
 pub struct DoSomethingRequestObject {
+    #[serde(rename = "aString")]
     pub aString: String,
 }
 
@@ -262,9 +277,12 @@ pub struct DoSomethingRequestObject {
 /// Return Object for `doSomething` method.
 pub struct DoSomethingReturnValues {
     pub label: String,
+
     pub identifier: i32,
+
     pub day: DayOfTheWeek,
 }
+
 // Structures for `echo` method
 
 #[allow(dead_code, non_snake_case)]
@@ -280,6 +298,7 @@ pub struct EchoRequestObject {
 pub struct EchoReturnValues {
     pub message: String,
 }
+
 // Structures for `what_time_is_it` method
 
 #[allow(dead_code, non_snake_case)]
@@ -297,6 +316,7 @@ pub struct WhatTimeIsItReturnValues {
     #[serde(with = "datetime_iso_format")]
     pub timestamp: chrono::DateTime<chrono::Utc>,
 }
+
 // Structures for `set_the_time` method
 
 #[allow(dead_code, non_snake_case)]
@@ -316,8 +336,10 @@ pub struct SetTheTimeRequestObject {
 pub struct SetTheTimeReturnValues {
     #[serde(with = "datetime_iso_format")]
     pub timestamp: chrono::DateTime<chrono::Utc>,
+
     pub confirmation_message: String,
 }
+
 // Structures for `forward_time` method
 
 #[allow(dead_code, non_snake_case)]
@@ -335,6 +357,7 @@ pub struct ForwardTimeReturnValues {
     #[serde(with = "datetime_iso_format")]
     pub new_time: chrono::DateTime<chrono::Utc>,
 }
+
 // Structures for `how_off_is_the_clock` method
 
 #[allow(dead_code, non_snake_case)]
@@ -353,11 +376,15 @@ pub struct HowOffIsTheClockReturnValues {
     pub difference: chrono::Duration,
 }
 
+// ---- SIGNALS ----
+
 // Structures for `todayIs` signal
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TodayIsSignalPayload {
+    #[serde(rename = "dayOfMonth")]
     pub dayOfMonth: i32,
+    #[serde(rename = "dayOfWeek")]
     pub dayOfWeek: Option<DayOfTheWeek>,
 
     #[serde(with = "datetime_iso_format")]

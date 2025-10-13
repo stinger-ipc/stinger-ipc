@@ -2987,7 +2987,7 @@ if __name__ == "__main__":
         OptionalInteger=42,
         OptionalString="apples",
         OptionalEnum=stinger_types.Numbers.ONE,
-        OptionalDateTime=datetime.now(),
+        OptionalDateTime=None,
         OptionalDuration=None,
         OptionalBinary=b"example binary data",
     )
@@ -3061,7 +3061,7 @@ if __name__ == "__main__":
 
     server.read_write_two_datetimes = stinger_types.ReadWriteTwoDatetimesProperty(
         first=datetime.now(),
-        second=datetime.now(),
+        second=None,
     )
 
     server.read_write_duration = timedelta(seconds=3536)
@@ -3416,7 +3416,7 @@ if __name__ == "__main__":
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=stinger_types.Numbers.ONE,
-                    OptionalDateTime=None,
+                    OptionalDateTime=datetime.now(),
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 )
@@ -3452,7 +3452,7 @@ if __name__ == "__main__":
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=stinger_types.Numbers.ONE,
-                    OptionalDateTime=None,
+                    OptionalDateTime=datetime.now(),
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 ),
@@ -3484,13 +3484,13 @@ if __name__ == "__main__":
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=stinger_types.Numbers.ONE,
-                    OptionalDateTime=None,
+                    OptionalDateTime=datetime.now(),
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 ),
             )
             server.emit_single_date_time(datetime.now())
-            server.emit_single_optional_datetime(None)
+            server.emit_single_optional_datetime(datetime.now())
             server.emit_three_date_times(datetime.now(), datetime.now(), datetime.now())
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
@@ -3598,7 +3598,7 @@ if __name__ == "__main__":
             )
             server.emit_single_date_time(value=datetime.now())
             server.emit_single_optional_datetime(value=datetime.now())
-            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=datetime.now())
+            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=None)
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)
             server.emit_three_durations(first=timedelta(seconds=3536), second=timedelta(seconds=3536), third=None)
