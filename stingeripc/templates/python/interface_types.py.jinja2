@@ -44,16 +44,6 @@ class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
     {%-endfor%}
 {%endfor%}
 
-{%-for method_name, method in stinger.methods.items()%}
-{%-if method.return_value_type == 'struct'%}
-class {{method.return_value_python_local_type}}(BaseModel):
-    """ Interface method `{{method_name}}` return value struct. """
-    {%-for arg in method.return_value.members%}
-    {{arg.name}}: {%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}{%if arg.description%} = Field(description="{{arg.description}}"){%endif%}
-    {%-endfor%}
-{%endif-%}
-{%endfor%}
-
 {%-for prop_name, prop in stinger.properties.items()%}
 class {{prop_name|UpperCamelCase}}Property(BaseModel):
     """ Interface property `{{prop_name}}` (multi-value struct).{%if prop.documentation%}

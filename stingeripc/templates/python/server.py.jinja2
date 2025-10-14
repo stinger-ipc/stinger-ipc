@@ -158,8 +158,8 @@ class {{stinger.python.server_class_name}}:
                 try:
                     return_struct = self._method_{{method_name|snake_case}}.callback(*method_args)
                     self._logger.debug("Return value is %s", return_struct)
-                    {%if method.return_value is false%}
-                        return_json = "{}"
+                    {%if method.return_value_type is false%}
+                    return_json = "{}"
                     {%else%}
                     if return_struct is not None:
                         {%-if method.return_value_type == "primitive" %}

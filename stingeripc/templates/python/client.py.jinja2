@@ -71,7 +71,7 @@ class {{stinger.python.client_class_name}}:
     def {{prop_name}}(self, value: {{prop_spec.python_annotation}}):
         """ Serializes and publishes the '{{prop_name}}' property.
         """
-        if not isinstance(value, {{prop_spec.python_class}}):
+        if not isinstance(value, {{prop_spec.python_local_type}}):
             raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}")
         {%if prop_spec.arg_list | length > 1 -%}
         serialized = value.model_dump_json(exclude_none=True)
@@ -196,6 +196,8 @@ class {{stinger.python.client_class_name}}:
         payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}
             {{arg.name}}={{arg.name|snake_case}},{%endfor%}
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling '{{method_name}}' method with payload %s", json_payload)
         self._conn.publish("{{method.topic}}".format(self._service_id), payload.model_dump_json(), qos=2, retain=False,
                            correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._conn.client_id}')}}")
         return fut

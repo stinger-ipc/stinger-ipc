@@ -5,7 +5,7 @@ on the next generation.
 It contains enumerations used by the Test Able interface.
 """
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 from typing import Optional
 from enum import IntEnum
@@ -147,8 +147,6 @@ class SingleStructSignalPayload(BaseModel):
     A signal with a single struct parameter.
     """
 
-    model_config = ConfigDict(from_attributes=True)
-
     value: AllTypes = Field(description="The struct value.")
 
 
@@ -158,8 +156,6 @@ class SingleOptionalStructSignalPayload(BaseModel):
     A signal with a single optional struct parameter.
     """
 
-    model_config = ConfigDict(from_attributes=True)
-
     value: Optional[AllTypes] = Field(description="The struct value.")
 
 
@@ -168,8 +164,6 @@ class ThreeStructsSignalPayload(BaseModel):
 
     A signal with three struct parameters, the third is optional.
     """
-
-    model_config = ConfigDict(from_attributes=True)
 
     first: AllTypes = Field(description="The first struct value.")
     second: AllTypes = Field(description="The second struct value.")
@@ -261,44 +255,6 @@ class ThreeBinariesSignalPayload(BaseModel):
     first: bytes = Field(description="The first binary value.")
     second: bytes = Field(description="The second binary value.")
     third: Optional[bytes] = Field(description="The third binary value.")
-
-
-class AllTypes(BaseModel):
-    """Interface method `callOneStruct` return value struct."""
-
-    the_bool: bool
-    the_int: int
-    the_number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
-    the_str: str = Field(description="A string type.")
-    the_enum: Numbers = Field(description="An enum type")
-    date_and_time: datetime = Field(description="A date and time type.")
-    time_duration: timedelta = Field(description="A duration type.")
-    data: bytes = Field(description="A binary type.")
-    OptionalInteger: Optional[int] = Field(description="An optional integer type.")
-    OptionalString: Optional[str] = Field(description="An optional string type.")
-    OptionalEnum: Optional[Numbers] = Field(description="An optional enum type, one of the numbers.")
-    OptionalDateTime: Optional[datetime] = Field(description="An optional date and time type.")
-    OptionalDuration: Optional[timedelta] = Field(description="An optional duration type.")
-    OptionalBinary: Optional[bytes] = Field(description="An optional binary type.")
-
-
-class AllTypes(BaseModel):
-    """Interface method `callOptionalStruct` return value struct."""
-
-    the_bool: bool
-    the_int: int
-    the_number: float = Field(description="A floating point number.  Bool and int do not have descriptions.")
-    the_str: str = Field(description="A string type.")
-    the_enum: Numbers = Field(description="An enum type")
-    date_and_time: datetime = Field(description="A date and time type.")
-    time_duration: timedelta = Field(description="A duration type.")
-    data: bytes = Field(description="A binary type.")
-    OptionalInteger: Optional[int] = Field(description="An optional integer type.")
-    OptionalString: Optional[str] = Field(description="An optional string type.")
-    OptionalEnum: Optional[Numbers] = Field(description="An optional enum type, one of the numbers.")
-    OptionalDateTime: Optional[datetime] = Field(description="An optional date and time type.")
-    OptionalDuration: Optional[timedelta] = Field(description="An optional duration type.")
-    OptionalBinary: Optional[bytes] = Field(description="An optional binary type.")
 
 
 class ReadWriteIntegerProperty(BaseModel):

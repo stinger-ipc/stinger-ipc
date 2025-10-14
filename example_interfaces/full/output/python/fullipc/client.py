@@ -116,7 +116,7 @@ class FullClient:
     @favorite_foods.setter
     def favorite_foods(self, value: interface_types.FavoriteFoodsProperty):
         """Serializes and publishes the 'favorite_foods' property."""
-        if not isinstance(value, interface_types.FavoriteFoodsProperty):
+        if not isinstance(value, FavoriteFoodsProperty):
             raise ValueError("The 'favorite_foods' property must be a interface_types.FavoriteFoodsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'favorite_foods' property to %s", serialized)
@@ -139,7 +139,7 @@ class FullClient:
     @lunch_menu.setter
     def lunch_menu(self, value: interface_types.LunchMenuProperty):
         """Serializes and publishes the 'lunch_menu' property."""
-        if not isinstance(value, interface_types.LunchMenuProperty):
+        if not isinstance(value, LunchMenuProperty):
             raise ValueError("The 'lunch_menu' property must be a interface_types.LunchMenuProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'lunch_menu' property to %s", serialized)
@@ -185,7 +185,7 @@ class FullClient:
     @last_breakfast_time.setter
     def last_breakfast_time(self, value: datetime):
         """Serializes and publishes the 'last_breakfast_time' property."""
-        if not isinstance(value, datetime.datetime):
+        if not isinstance(value, datetime):
             raise ValueError("The 'last_breakfast_time' property must be a datetime.datetime")
         serialized = json.dumps({"timestamp": value.timestamp})
         self._logger.debug("Setting 'last_breakfast_time' property to %s", serialized)
@@ -208,7 +208,7 @@ class FullClient:
     @breakfast_length.setter
     def breakfast_length(self, value: timedelta):
         """Serializes and publishes the 'breakfast_length' property."""
-        if not isinstance(value, datetime.timedelta):
+        if not isinstance(value, timedelta):
             raise ValueError("The 'breakfast_length' property must be a datetime.timedelta")
         serialized = json.dumps({"length": value.length})
         self._logger.debug("Setting 'breakfast_length' property to %s", serialized)
@@ -231,7 +231,7 @@ class FullClient:
     @last_birthdays.setter
     def last_birthdays(self, value: interface_types.LastBirthdaysProperty):
         """Serializes and publishes the 'last_birthdays' property."""
-        if not isinstance(value, interface_types.LastBirthdaysProperty):
+        if not isinstance(value, LastBirthdaysProperty):
             raise ValueError("The 'last_birthdays' property must be a interface_types.LastBirthdaysProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'last_birthdays' property to %s", serialized)
@@ -528,6 +528,8 @@ class FullClient:
             second=second,
             third=third,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'addNumbers' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/addNumbers".format(self._service_id),
             payload.model_dump_json(),
@@ -568,6 +570,8 @@ class FullClient:
         payload = DoSomethingMethodRequest(
             aString=a_string,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'doSomething' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/doSomething".format(self._service_id),
             payload.model_dump_json(),
@@ -617,6 +621,8 @@ class FullClient:
         payload = EchoMethodRequest(
             message=message,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'echo' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/echo".format(self._service_id), payload.model_dump_json(), qos=2, retain=False, correlation_id=correlation_id, response_topic=f"client/{self._conn.client_id}/echo/response"
         )
@@ -652,6 +658,8 @@ class FullClient:
         payload = WhatTimeIsItMethodRequest(
             the_first_time=the_first_time,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'what_time_is_it' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/whatTimeIsIt".format(self._service_id),
             payload.model_dump_json(),
@@ -693,6 +701,8 @@ class FullClient:
             the_first_time=the_first_time,
             the_second_time=the_second_time,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'set_the_time' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/setTheTime".format(self._service_id),
             payload.model_dump_json(),
@@ -739,6 +749,8 @@ class FullClient:
         payload = ForwardTimeMethodRequest(
             adjustment=adjustment,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'forward_time' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/forwardTime".format(self._service_id),
             payload.model_dump_json(),
@@ -779,6 +791,8 @@ class FullClient:
         payload = HowOffIsTheClockMethodRequest(
             actual_time=actual_time,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'how_off_is_the_clock' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/howOffIsTheClock".format(self._service_id),
             payload.model_dump_json(),

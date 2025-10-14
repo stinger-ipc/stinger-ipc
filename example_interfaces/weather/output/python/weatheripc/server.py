@@ -261,8 +261,7 @@ class WeatherServer:
                     return_struct = self._method_refresh_daily_forecast.callback(*method_args)
                     self._logger.debug("Return value is %s", return_struct)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    return_json = "{}"
 
                 except Exception as e:
                     self._logger.exception("Exception while handling refresh_daily_forecast", exc_info=e)
@@ -297,8 +296,7 @@ class WeatherServer:
                     return_struct = self._method_refresh_hourly_forecast.callback(*method_args)
                     self._logger.debug("Return value is %s", return_struct)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    return_json = "{}"
 
                 except Exception as e:
                     self._logger.exception("Exception while handling refresh_hourly_forecast", exc_info=e)
@@ -333,8 +331,7 @@ class WeatherServer:
                     return_struct = self._method_refresh_current_conditions.callback(*method_args)
                     self._logger.debug("Return value is %s", return_struct)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    return_json = "{}"
 
                 except Exception as e:
                     self._logger.exception("Exception while handling refresh_current_conditions", exc_info=e)

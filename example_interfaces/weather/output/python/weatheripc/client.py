@@ -89,7 +89,7 @@ class WeatherClient:
     @location.setter
     def location(self, value: interface_types.LocationProperty):
         """Serializes and publishes the 'location' property."""
-        if not isinstance(value, interface_types.LocationProperty):
+        if not isinstance(value, LocationProperty):
             raise ValueError("The 'location' property must be a interface_types.LocationProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'location' property to %s", serialized)
@@ -437,6 +437,8 @@ class WeatherClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_daily_forecast_response, fut)
         payload = RefreshDailyForecastMethodRequest()
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'refresh_daily_forecast' method with payload %s", json_payload)
         self._conn.publish(
             "weather/{}/method/refreshDailyForecast".format(self._service_id),
             payload.model_dump_json(),
@@ -470,6 +472,8 @@ class WeatherClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_hourly_forecast_response, fut)
         payload = RefreshHourlyForecastMethodRequest()
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'refresh_hourly_forecast' method with payload %s", json_payload)
         self._conn.publish(
             "weather/{}/method/refreshHourlyForecast".format(self._service_id),
             payload.model_dump_json(),
@@ -503,6 +507,8 @@ class WeatherClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_current_conditions_response, fut)
         payload = RefreshCurrentConditionsMethodRequest()
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'refresh_current_conditions' method with payload %s", json_payload)
         self._conn.publish(
             "weather/{}/method/refreshCurrentConditions".format(self._service_id),
             payload.model_dump_json(),

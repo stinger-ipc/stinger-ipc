@@ -293,7 +293,7 @@ class TestAbleClient:
     @read_write_two_integers.setter
     def read_write_two_integers(self, value: interface_types.ReadWriteTwoIntegersProperty):
         """Serializes and publishes the 'read_write_two_integers' property."""
-        if not isinstance(value, interface_types.ReadWriteTwoIntegersProperty):
+        if not isinstance(value, ReadWriteTwoIntegersProperty):
             raise ValueError("The 'read_write_two_integers' property must be a interface_types.ReadWriteTwoIntegersProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_integers' property to %s", serialized)
@@ -376,7 +376,7 @@ class TestAbleClient:
     @read_write_two_strings.setter
     def read_write_two_strings(self, value: interface_types.ReadWriteTwoStringsProperty):
         """Serializes and publishes the 'read_write_two_strings' property."""
-        if not isinstance(value, interface_types.ReadWriteTwoStringsProperty):
+        if not isinstance(value, ReadWriteTwoStringsProperty):
             raise ValueError("The 'read_write_two_strings' property must be a interface_types.ReadWriteTwoStringsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_strings' property to %s", serialized)
@@ -399,7 +399,7 @@ class TestAbleClient:
     @read_write_struct.setter
     def read_write_struct(self, value: interface_types.AllTypes):
         """Serializes and publishes the 'read_write_struct' property."""
-        if not isinstance(value, interface_types.AllTypes):
+        if not isinstance(value, AllTypes):
             raise ValueError("The 'read_write_struct' property must be a interface_types.AllTypes")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_struct' property to %s", serialized)
@@ -422,7 +422,7 @@ class TestAbleClient:
     @read_write_optional_struct.setter
     def read_write_optional_struct(self, value: interface_types.AllTypes):
         """Serializes and publishes the 'read_write_optional_struct' property."""
-        if not isinstance(value, interface_types.AllTypes):
+        if not isinstance(value, AllTypes):
             raise ValueError("The 'read_write_optional_struct' property must be a interface_types.AllTypes")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_struct' property to %s", serialized)
@@ -445,7 +445,7 @@ class TestAbleClient:
     @read_write_two_structs.setter
     def read_write_two_structs(self, value: interface_types.ReadWriteTwoStructsProperty):
         """Serializes and publishes the 'read_write_two_structs' property."""
-        if not isinstance(value, interface_types.ReadWriteTwoStructsProperty):
+        if not isinstance(value, ReadWriteTwoStructsProperty):
             raise ValueError("The 'read_write_two_structs' property must be a interface_types.ReadWriteTwoStructsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_structs' property to %s", serialized)
@@ -482,7 +482,7 @@ class TestAbleClient:
     @read_write_enum.setter
     def read_write_enum(self, value: interface_types.Numbers):
         """Serializes and publishes the 'read_write_enum' property."""
-        if not isinstance(value, interface_types.Numbers):
+        if not isinstance(value, Numbers):
             raise ValueError("The 'read_write_enum' property must be a interface_types.Numbers")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_enum' property to %s", serialized)
@@ -505,7 +505,7 @@ class TestAbleClient:
     @read_write_optional_enum.setter
     def read_write_optional_enum(self, value: Optional[interface_types.Numbers]):
         """Serializes and publishes the 'read_write_optional_enum' property."""
-        if not isinstance(value, interface_types.Numbers):
+        if not isinstance(value, Numbers):
             raise ValueError("The 'read_write_optional_enum' property must be a interface_types.Numbers")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_enum' property to %s", serialized)
@@ -528,7 +528,7 @@ class TestAbleClient:
     @read_write_two_enums.setter
     def read_write_two_enums(self, value: interface_types.ReadWriteTwoEnumsProperty):
         """Serializes and publishes the 'read_write_two_enums' property."""
-        if not isinstance(value, interface_types.ReadWriteTwoEnumsProperty):
+        if not isinstance(value, ReadWriteTwoEnumsProperty):
             raise ValueError("The 'read_write_two_enums' property must be a interface_types.ReadWriteTwoEnumsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_enums' property to %s", serialized)
@@ -551,7 +551,7 @@ class TestAbleClient:
     @read_write_datetime.setter
     def read_write_datetime(self, value: datetime):
         """Serializes and publishes the 'read_write_datetime' property."""
-        if not isinstance(value, datetime.datetime):
+        if not isinstance(value, datetime):
             raise ValueError("The 'read_write_datetime' property must be a datetime.datetime")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_datetime' property to %s", serialized)
@@ -574,7 +574,7 @@ class TestAbleClient:
     @read_write_optional_datetime.setter
     def read_write_optional_datetime(self, value: Optional[datetime]):
         """Serializes and publishes the 'read_write_optional_datetime' property."""
-        if not isinstance(value, datetime.datetime):
+        if not isinstance(value, datetime):
             raise ValueError("The 'read_write_optional_datetime' property must be a datetime.datetime")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_datetime' property to %s", serialized)
@@ -597,7 +597,7 @@ class TestAbleClient:
     @read_write_two_datetimes.setter
     def read_write_two_datetimes(self, value: interface_types.ReadWriteTwoDatetimesProperty):
         """Serializes and publishes the 'read_write_two_datetimes' property."""
-        if not isinstance(value, interface_types.ReadWriteTwoDatetimesProperty):
+        if not isinstance(value, ReadWriteTwoDatetimesProperty):
             raise ValueError("The 'read_write_two_datetimes' property must be a interface_types.ReadWriteTwoDatetimesProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_datetimes' property to %s", serialized)
@@ -620,7 +620,7 @@ class TestAbleClient:
     @read_write_duration.setter
     def read_write_duration(self, value: timedelta):
         """Serializes and publishes the 'read_write_duration' property."""
-        if not isinstance(value, datetime.timedelta):
+        if not isinstance(value, timedelta):
             raise ValueError("The 'read_write_duration' property must be a datetime.timedelta")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_duration' property to %s", serialized)
@@ -643,7 +643,7 @@ class TestAbleClient:
     @read_write_optional_duration.setter
     def read_write_optional_duration(self, value: Optional[timedelta]):
         """Serializes and publishes the 'read_write_optional_duration' property."""
-        if not isinstance(value, datetime.timedelta):
+        if not isinstance(value, timedelta):
             raise ValueError("The 'read_write_optional_duration' property must be a datetime.timedelta")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_duration' property to %s", serialized)
@@ -666,7 +666,7 @@ class TestAbleClient:
     @read_write_two_durations.setter
     def read_write_two_durations(self, value: interface_types.ReadWriteTwoDurationsProperty):
         """Serializes and publishes the 'read_write_two_durations' property."""
-        if not isinstance(value, interface_types.ReadWriteTwoDurationsProperty):
+        if not isinstance(value, ReadWriteTwoDurationsProperty):
             raise ValueError("The 'read_write_two_durations' property must be a interface_types.ReadWriteTwoDurationsProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_durations' property to %s", serialized)
@@ -735,7 +735,7 @@ class TestAbleClient:
     @read_write_two_binaries.setter
     def read_write_two_binaries(self, value: interface_types.ReadWriteTwoBinariesProperty):
         """Serializes and publishes the 'read_write_two_binaries' property."""
-        if not isinstance(value, interface_types.ReadWriteTwoBinariesProperty):
+        if not isinstance(value, ReadWriteTwoBinariesProperty):
             raise ValueError("The 'read_write_two_binaries' property must be a interface_types.ReadWriteTwoBinariesProperty")
         serialized = value.model_dump_json(exclude_none=True)
         self._logger.debug("Setting 'read_write_two_binaries' property to %s", serialized)
@@ -1919,6 +1919,8 @@ class TestAbleClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_call_with_nothing_response, fut)
         payload = CallWithNothingMethodRequest()
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callWithNothing' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callWithNothing".format(self._service_id),
             payload.model_dump_json(),
@@ -1952,6 +1954,8 @@ class TestAbleClient:
         payload = CallOneIntegerMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOneInteger' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneInteger".format(self._service_id),
             payload.model_dump_json(),
@@ -1992,6 +1996,8 @@ class TestAbleClient:
         payload = CallOptionalIntegerMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOptionalInteger' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalInteger".format(self._service_id),
             payload.model_dump_json(),
@@ -2034,6 +2040,8 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callThreeIntegers' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeIntegers".format(self._service_id),
             payload.model_dump_json(),
@@ -2083,6 +2091,8 @@ class TestAbleClient:
         payload = CallOneStringMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOneString' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneString".format(self._service_id),
             payload.model_dump_json(),
@@ -2123,6 +2133,8 @@ class TestAbleClient:
         payload = CallOptionalStringMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOptionalString' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalString".format(self._service_id),
             payload.model_dump_json(),
@@ -2165,6 +2177,8 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callThreeStrings' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeStrings".format(self._service_id),
             payload.model_dump_json(),
@@ -2214,6 +2228,8 @@ class TestAbleClient:
         payload = CallOneEnumMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOneEnum' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneEnum".format(self._service_id),
             payload.model_dump_json(),
@@ -2254,6 +2270,8 @@ class TestAbleClient:
         payload = CallOptionalEnumMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOptionalEnum' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalEnum".format(self._service_id),
             payload.model_dump_json(),
@@ -2296,6 +2314,8 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callThreeEnums' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeEnums".format(self._service_id),
             payload.model_dump_json(),
@@ -2345,6 +2365,8 @@ class TestAbleClient:
         payload = CallOneStructMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOneStruct' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneStruct".format(self._service_id),
             payload.model_dump_json(),
@@ -2427,6 +2449,8 @@ class TestAbleClient:
         payload = CallOptionalStructMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOptionalStruct' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalStruct".format(self._service_id),
             payload.model_dump_json(),
@@ -2511,6 +2535,8 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callThreeStructs' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeStructs".format(self._service_id),
             payload.model_dump_json(),
@@ -2560,6 +2586,8 @@ class TestAbleClient:
         payload = CallOneDateTimeMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOneDateTime' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneDateTime".format(self._service_id),
             payload.model_dump_json(),
@@ -2600,6 +2628,8 @@ class TestAbleClient:
         payload = CallOptionalDateTimeMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOptionalDateTime' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalDateTime".format(self._service_id),
             payload.model_dump_json(),
@@ -2642,6 +2672,8 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callThreeDateTimes' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeDateTimes".format(self._service_id),
             payload.model_dump_json(),
@@ -2691,6 +2723,8 @@ class TestAbleClient:
         payload = CallOneDurationMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOneDuration' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneDuration".format(self._service_id),
             payload.model_dump_json(),
@@ -2731,6 +2765,8 @@ class TestAbleClient:
         payload = CallOptionalDurationMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOptionalDuration' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalDuration".format(self._service_id),
             payload.model_dump_json(),
@@ -2773,6 +2809,8 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callThreeDurations' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeDurations".format(self._service_id),
             payload.model_dump_json(),
@@ -2822,6 +2860,8 @@ class TestAbleClient:
         payload = CallOneBinaryMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOneBinary' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneBinary".format(self._service_id),
             payload.model_dump_json(),
@@ -2862,6 +2902,8 @@ class TestAbleClient:
         payload = CallOptionalBinaryMethodRequest(
             input1=input1,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOptionalBinary' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalBinary".format(self._service_id),
             payload.model_dump_json(),
@@ -2904,6 +2946,8 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callThreeBinaries' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeBinaries".format(self._service_id),
             payload.model_dump_json(),
@@ -3801,7 +3845,7 @@ if __name__ == "__main__":
             OptionalInteger=42,
             OptionalString="apples",
             OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=None,
+            OptionalDateTime=datetime.now(),
             OptionalDuration=None,
             OptionalBinary=b"example binary data",
         )

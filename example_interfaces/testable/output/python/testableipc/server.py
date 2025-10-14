@@ -863,8 +863,7 @@ class TestAbleServer:
                     return_struct = self._method_call_with_nothing.callback(*method_args)
                     self._logger.debug("Return value is %s", return_struct)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    return_json = "{}"
 
                 except Exception as e:
                     self._logger.exception("Exception while handling callWithNothing", exc_info=e)
@@ -3172,11 +3171,11 @@ if __name__ == "__main__":
 
     server.read_write_datetime = datetime.now()
 
-    server.read_write_optional_datetime = None
+    server.read_write_optional_datetime = datetime.now()
 
     server.read_write_two_datetimes = interface_types.ReadWriteTwoDatetimesProperty(
         first=datetime.now(),
-        second=None,
+        second=datetime.now(),
     )
 
     server.read_write_duration = timedelta(seconds=3536)
@@ -3316,7 +3315,7 @@ if __name__ == "__main__":
                 OptionalInteger=42,
                 OptionalString="apples",
                 OptionalEnum=interface_types.Numbers.ONE,
-                OptionalDateTime=datetime.now(),
+                OptionalDateTime=None,
                 OptionalDuration=None,
                 OptionalBinary=b"example binary data",
             ),
@@ -3332,7 +3331,7 @@ if __name__ == "__main__":
                 OptionalInteger=42,
                 OptionalString="apples",
                 OptionalEnum=interface_types.Numbers.ONE,
-                OptionalDateTime=None,
+                OptionalDateTime=datetime.now(),
                 OptionalDuration=None,
                 OptionalBinary=b"example binary data",
             ),
@@ -3364,7 +3363,7 @@ if __name__ == "__main__":
     def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
         """This is an example handler for the 'callOptionalDateTime' method."""
         print(f"Running call_optional_date_time'({input1})'")
-        return datetime.now()
+        return None
 
     @server.handle_call_three_date_times
     def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> interface_types.CallThreeDateTimesMethodResponse:
@@ -3531,7 +3530,7 @@ if __name__ == "__main__":
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
+                    OptionalDateTime=None,
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 )
@@ -3549,7 +3548,7 @@ if __name__ == "__main__":
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=None,
+                    OptionalDateTime=datetime.now(),
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 )
@@ -3567,7 +3566,7 @@ if __name__ == "__main__":
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
+                    OptionalDateTime=None,
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 ),
@@ -3606,7 +3605,7 @@ if __name__ == "__main__":
             )
             server.emit_single_date_time(datetime.now())
             server.emit_single_optional_datetime(datetime.now())
-            server.emit_three_date_times(datetime.now(), datetime.now(), datetime.now())
+            server.emit_three_date_times(datetime.now(), datetime.now(), None)
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
             server.emit_three_durations(timedelta(seconds=3536), timedelta(seconds=3536), None)
@@ -3674,7 +3673,7 @@ if __name__ == "__main__":
                     OptionalInteger=42,
                     OptionalString="apples",
                     OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=None,
+                    OptionalDateTime=datetime.now(),
                     OptionalDuration=None,
                     OptionalBinary=b"example binary data",
                 ),

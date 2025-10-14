@@ -1179,7 +1179,7 @@ def on_single_optional_struct(value: interface_types.AllTypes):
 A server can emit a `singleOptionalStruct` signal simply by calling the server's `emit_single_optional_struct` method.
 
 ```python
-server.emit_single_optional_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+server.emit_single_optional_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"))
 ```
 
 </details>
@@ -1270,7 +1270,7 @@ def on_three_structs(first: interface_types.AllTypes, second: interface_types.Al
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
 ```python
-server.emit_three_structs(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+server.emit_three_structs(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"))
 ```
 
 </details>
@@ -1448,7 +1448,7 @@ def on_single_optional_datetime(value: Optional[datetime]):
 A server can emit a `singleOptionalDatetime` signal simply by calling the server's `emit_single_optional_datetime` method.
 
 ```python
-server.emit_single_optional_datetime(datetime.now())
+server.emit_single_optional_datetime(None)
 ```
 
 </details>
@@ -2788,7 +2788,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_one_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"))
+future = client.call_one_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2808,7 +2808,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_one_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
     """ This is an example handler for the 'callOneStruct' method.  """
     print(f"Running call_one_struct'({input1})'")
-    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data")
+    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data")
 ```
 
 </details>
@@ -2852,7 +2852,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+future = client.call_optional_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2915,7 +2915,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2935,7 +2935,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_three_structs(input1: interface_types.AllTypes, input2: interface_types.AllTypes, input3: interface_types.AllTypes) -> interface_types.CallThreeStructsMethodResponse:
     """ This is an example handler for the 'callThreeStructs' method.  """
     print(f"Running call_three_structs'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeStructsMethodResponse(output1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), output2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), output3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
+    return interface_types.CallThreeStructsMethodResponse(output1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=None, OptionalDuration=None, OptionalBinary=b"example binary data"), output2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"), output3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", OptionalInteger=42, OptionalString="apples", OptionalEnum=interface_types.Numbers.ONE, OptionalDateTime=datetime.now(), OptionalDuration=None, OptionalBinary=b"example binary data"))
 ```
 
 </details>
