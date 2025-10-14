@@ -5,10 +5,18 @@ on the next generation.
 It contains enumerations used by the Full interface.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Annotated, Union
+import base64
 from enum import IntEnum
+
+
+def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
+    """If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
+    if isinstance(value, str):
+        return base64.b64decode(value)
+    return value
 
 
 class InterfaceInfo(BaseModel):
@@ -35,23 +43,35 @@ class DayOfTheWeek(IntEnum):
 class Lunch(BaseModel):
     """Interface struct `lunch`."""
 
-    drink: bool
-    sandwich: str
-    crackers: float
-    day: DayOfTheWeek
-    order_number: Optional[int]
-    time_of_lunch: datetime
-    duration_of_lunch: timedelta
+    model_config = ConfigDict(populate_by_name=True)
+    drink: Annotated[bool, Field()]
+    sandwich: Annotated[str, Field()]
+    crackers: Annotated[float, Field()]
+    day: Annotated[DayOfTheWeek, Field()]
+    order_number: Annotated[Optional[int], Field()]
+    time_of_lunch: Annotated[datetime, Field()]
+    duration_of_lunch: Annotated[timedelta, Field()]
 
 
 class TodayIsSignalPayload(BaseModel):
     """Interface signal `todayIs`."""
 
-    dayOfMonth: int
-    dayOfWeek: Optional[DayOfTheWeek]
-    timestamp: datetime
-    process_time: timedelta
-    memory_segment: bytes
+    model_config = ConfigDict(populate_by_name=True)
+    day_of_month: Annotated[
+        int,
+        Field(
+            alias="dayOfMonth",
+        ),
+    ]
+    day_of_week: Annotated[
+        Optional[DayOfTheWeek],
+        Field(
+            alias="dayOfWeek",
+        ),
+    ]
+    timestamp: Annotated[datetime, Field()]
+    process_time: Annotated[timedelta, Field()]
+    memory_segment: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
 
 
 class FavoriteNumberProperty(BaseModel):
@@ -61,22 +81,30 @@ class FavoriteNumberProperty(BaseModel):
 
     """
 
-    number: int
+    model_config = ConfigDict(populate_by_name=True)
+    number: Annotated[int, Field()]
 
 
 class FavoriteFoodsProperty(BaseModel):
     """Interface property `favorite_foods` (multi-value struct)."""
 
-    drink: str
-    slices_of_pizza: int
-    breakfast: Optional[str]
+    model_config = ConfigDict(populate_by_name=True)
+    drink: Annotated[str, Field()]
+    slices_of_pizza: Annotated[int, Field()]
+    breakfast: Annotated[Optional[str], Field()]
 
 
 class LunchMenuProperty(BaseModel):
     """Interface property `lunch_menu` (multi-value struct)."""
 
-    monday: Lunch
-    tuesday: Lunch = Field(description="Tuesday's lunch menu.")
+    model_config = ConfigDict(populate_by_name=True)
+    monday: Annotated[Lunch, Field()]
+    tuesday: Annotated[
+        Lunch,
+        Field(
+            description="Tuesday's lunch menu.",
+        ),
+    ]
 
 
 class FamilyNameProperty(BaseModel):
@@ -85,7 +113,8 @@ class FamilyNameProperty(BaseModel):
     This is to test a property with a single string value.
     """
 
-    family_name: str
+    model_config = ConfigDict(populate_by_name=True)
+    family_name: Annotated[str, Field()]
 
 
 class LastBreakfastTimeProperty(BaseModel):
@@ -94,7 +123,8 @@ class LastBreakfastTimeProperty(BaseModel):
     This is to test a property with a single datetime value.
     """
 
-    timestamp: datetime
+    model_config = ConfigDict(populate_by_name=True)
+    timestamp: Annotated[datetime, Field()]
 
 
 class BreakfastLengthProperty(BaseModel):
@@ -103,7 +133,8 @@ class BreakfastLengthProperty(BaseModel):
     This is to test a property with a single duration value.
     """
 
-    length: timedelta
+    model_config = ConfigDict(populate_by_name=True)
+    length: Annotated[timedelta, Field()]
 
 
 class LastBirthdaysProperty(BaseModel):
@@ -112,38 +143,48 @@ class LastBirthdaysProperty(BaseModel):
     This is to test a property with multiple datetime values.
     """
 
-    mom: datetime
-    dad: datetime
-    sister: Optional[datetime]
-    brothers_age: Optional[int]
+    model_config = ConfigDict(populate_by_name=True)
+    mom: Annotated[datetime, Field()]
+    dad: Annotated[datetime, Field()]
+    sister: Annotated[Optional[datetime], Field()]
+    brothers_age: Annotated[Optional[int], Field()]
 
 
 class AddNumbersMethodRequest(BaseModel):
     """Interface method `addNumbers` request object."""
 
-    first: int
-    second: int
-    third: Optional[int]
+    model_config = ConfigDict(populate_by_name=True)
+    first: Annotated[int, Field()]
+    second: Annotated[int, Field()]
+    third: Annotated[Optional[int], Field()]
 
 
 class AddNumbersMethodResponse(BaseModel):
     """Interface method `addNumbers` response object."""
 
-    sum: int
+    model_config = ConfigDict(populate_by_name=True)
+    sum: Annotated[int, Field()]
 
 
 class DoSomethingMethodRequest(BaseModel):
     """Interface method `doSomething` request object."""
 
-    aString: str
+    model_config = ConfigDict(populate_by_name=True)
+    a_string: Annotated[
+        str,
+        Field(
+            alias="aString",
+        ),
+    ]
 
 
 class DoSomethingMethodResponse(BaseModel):
     """Interface method `doSomething` response object."""
 
-    label: str
-    identifier: int
-    day: DayOfTheWeek
+    model_config = ConfigDict(populate_by_name=True)
+    label: Annotated[str, Field()]
+    identifier: Annotated[int, Field()]
+    day: Annotated[DayOfTheWeek, Field()]
 
 
 class EchoMethodRequest(BaseModel):
@@ -152,7 +193,8 @@ class EchoMethodRequest(BaseModel):
     Echo back the received message.
     """
 
-    message: str
+    model_config = ConfigDict(populate_by_name=True)
+    message: Annotated[str, Field()]
 
 
 class EchoMethodResponse(BaseModel):
@@ -161,7 +203,8 @@ class EchoMethodResponse(BaseModel):
     Echo back the received message.
     """
 
-    message: str
+    model_config = ConfigDict(populate_by_name=True)
+    message: Annotated[str, Field()]
 
 
 class WhatTimeIsItMethodRequest(BaseModel):
@@ -170,7 +213,8 @@ class WhatTimeIsItMethodRequest(BaseModel):
     Get the current date and time.
     """
 
-    the_first_time: datetime
+    model_config = ConfigDict(populate_by_name=True)
+    the_first_time: Annotated[datetime, Field()]
 
 
 class WhatTimeIsItMethodResponse(BaseModel):
@@ -179,21 +223,24 @@ class WhatTimeIsItMethodResponse(BaseModel):
     Get the current date and time.
     """
 
-    timestamp: datetime
+    model_config = ConfigDict(populate_by_name=True)
+    timestamp: Annotated[datetime, Field()]
 
 
 class SetTheTimeMethodRequest(BaseModel):
     """Interface method `set_the_time` request object."""
 
-    the_first_time: datetime
-    the_second_time: datetime
+    model_config = ConfigDict(populate_by_name=True)
+    the_first_time: Annotated[datetime, Field()]
+    the_second_time: Annotated[datetime, Field()]
 
 
 class SetTheTimeMethodResponse(BaseModel):
     """Interface method `set_the_time` response object."""
 
-    timestamp: datetime
-    confirmation_message: str
+    model_config = ConfigDict(populate_by_name=True)
+    timestamp: Annotated[datetime, Field()]
+    confirmation_message: Annotated[str, Field()]
 
 
 class ForwardTimeMethodRequest(BaseModel):
@@ -202,7 +249,8 @@ class ForwardTimeMethodRequest(BaseModel):
     This method takes a time and a duration, and returns the time plus the duration.
     """
 
-    adjustment: timedelta
+    model_config = ConfigDict(populate_by_name=True)
+    adjustment: Annotated[timedelta, Field()]
 
 
 class ForwardTimeMethodResponse(BaseModel):
@@ -211,7 +259,8 @@ class ForwardTimeMethodResponse(BaseModel):
     This method takes a time and a duration, and returns the time plus the duration.
     """
 
-    new_time: datetime
+    model_config = ConfigDict(populate_by_name=True)
+    new_time: Annotated[datetime, Field()]
 
 
 class HowOffIsTheClockMethodRequest(BaseModel):
@@ -220,7 +269,8 @@ class HowOffIsTheClockMethodRequest(BaseModel):
     Returns how far off the clock is from the actual time.
     """
 
-    actual_time: datetime
+    model_config = ConfigDict(populate_by_name=True)
+    actual_time: Annotated[datetime, Field()]
 
 
 class HowOffIsTheClockMethodResponse(BaseModel):
@@ -229,4 +279,5 @@ class HowOffIsTheClockMethodResponse(BaseModel):
     Returns how far off the clock is from the actual time.
     """
 
-    difference: timedelta
+    model_config = ConfigDict(populate_by_name=True)
+    difference: Annotated[timedelta, Field()]

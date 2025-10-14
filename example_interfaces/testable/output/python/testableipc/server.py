@@ -255,7 +255,7 @@ class TestAbleServer:
         data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = "testAble/{}/interface".format(self._instance_id)
-        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
+        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         self._conn.publish_status(topic, data, expiry)
 
     def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
@@ -521,7 +521,7 @@ class TestAbleServer:
         """
 
         payload = EmptySignalPayload()
-        self._conn.publish("testAble/{}/signal/empty".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/empty".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_int(self, value: int):
         """Server application code should call this method to emit the 'singleInt' signal.
@@ -534,7 +534,7 @@ class TestAbleServer:
         payload = SingleIntSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleInt".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleInt".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_int(self, value: Optional[int]):
         """Server application code should call this method to emit the 'singleOptionalInt' signal.
@@ -547,7 +547,7 @@ class TestAbleServer:
         payload = SingleOptionalIntSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalInt".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleOptionalInt".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_integers(self, first: int, second: int, third: Optional[int]):
         """Server application code should call this method to emit the 'threeIntegers' signal.
@@ -566,7 +566,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeIntegers".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/threeIntegers".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_string(self, value: str):
         """Server application code should call this method to emit the 'singleString' signal.
@@ -579,7 +579,7 @@ class TestAbleServer:
         payload = SingleStringSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleString".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleString".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_string(self, value: Optional[str]):
         """Server application code should call this method to emit the 'singleOptionalString' signal.
@@ -592,7 +592,7 @@ class TestAbleServer:
         payload = SingleOptionalStringSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalString".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleOptionalString".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_strings(self, first: str, second: str, third: Optional[str]):
         """Server application code should call this method to emit the 'threeStrings' signal.
@@ -611,7 +611,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeStrings".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/threeStrings".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_enum(self, value: interface_types.Numbers):
         """Server application code should call this method to emit the 'singleEnum' signal.
@@ -624,7 +624,7 @@ class TestAbleServer:
         payload = SingleEnumSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleEnum".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleEnum".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_enum(self, value: Optional[interface_types.Numbers]):
         """Server application code should call this method to emit the 'singleOptionalEnum' signal.
@@ -637,7 +637,7 @@ class TestAbleServer:
         payload = SingleOptionalEnumSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalEnum".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleOptionalEnum".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_enums(self, first: interface_types.Numbers, second: interface_types.Numbers, third: Optional[interface_types.Numbers]):
         """Server application code should call this method to emit the 'threeEnums' signal.
@@ -656,7 +656,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeEnums".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/threeEnums".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_struct(self, value: interface_types.AllTypes):
         """Server application code should call this method to emit the 'singleStruct' signal.
@@ -669,7 +669,7 @@ class TestAbleServer:
         payload = SingleStructSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleStruct".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleStruct".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_struct(self, value: interface_types.AllTypes):
         """Server application code should call this method to emit the 'singleOptionalStruct' signal.
@@ -682,7 +682,7 @@ class TestAbleServer:
         payload = SingleOptionalStructSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalStruct".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleOptionalStruct".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_structs(self, first: interface_types.AllTypes, second: interface_types.AllTypes, third: interface_types.AllTypes):
         """Server application code should call this method to emit the 'threeStructs' signal.
@@ -701,7 +701,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeStructs".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/threeStructs".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_date_time(self, value: datetime):
         """Server application code should call this method to emit the 'singleDateTime' signal.
@@ -714,7 +714,7 @@ class TestAbleServer:
         payload = SingleDateTimeSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleDateTime".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleDateTime".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_datetime(self, value: Optional[datetime]):
         """Server application code should call this method to emit the 'singleOptionalDatetime' signal.
@@ -727,7 +727,7 @@ class TestAbleServer:
         payload = SingleOptionalDatetimeSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalDatetime".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleOptionalDatetime".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_date_times(self, first: datetime, second: datetime, third: Optional[datetime]):
         """Server application code should call this method to emit the 'threeDateTimes' signal.
@@ -746,7 +746,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeDateTimes".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/threeDateTimes".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_duration(self, value: timedelta):
         """Server application code should call this method to emit the 'singleDuration' signal.
@@ -759,7 +759,7 @@ class TestAbleServer:
         payload = SingleDurationSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleDuration".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleDuration".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_duration(self, value: Optional[timedelta]):
         """Server application code should call this method to emit the 'singleOptionalDuration' signal.
@@ -772,7 +772,7 @@ class TestAbleServer:
         payload = SingleOptionalDurationSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalDuration".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleOptionalDuration".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_durations(self, first: timedelta, second: timedelta, third: Optional[timedelta]):
         """Server application code should call this method to emit the 'threeDurations' signal.
@@ -791,7 +791,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeDurations".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/threeDurations".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_binary(self, value: bytes):
         """Server application code should call this method to emit the 'singleBinary' signal.
@@ -804,7 +804,7 @@ class TestAbleServer:
         payload = SingleBinarySignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleBinary".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleBinary".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_binary(self, value: bytes):
         """Server application code should call this method to emit the 'singleOptionalBinary' signal.
@@ -817,7 +817,7 @@ class TestAbleServer:
         payload = SingleOptionalBinarySignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalBinary".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/singleOptionalBinary".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_binaries(self, first: bytes, second: bytes, third: bytes):
         """Server application code should call this method to emit the 'threeBinaries' signal.
@@ -836,7 +836,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeBinaries".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("testAble/{}/signal/threeBinaries".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def handle_call_with_nothing(self, handler: Callable[[None], None]):
         """This is a decorator to decorate a method that will handle the 'callWithNothing' method calls."""
@@ -860,11 +860,15 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_with_nothing.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    self._method_call_with_nothing.callback(*method_args)
 
                     return_json = "{}"
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callWithNothing: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callWithNothing", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -897,11 +901,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_one_integer.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_one_integer.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": return_struct})
+                    if not isinstance(return_values, int):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
+                    ret_obj = CallOneIntegerMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOneInteger: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOneInteger", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -934,11 +945,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_optional_integer.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_optional_integer.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": return_struct})
+                    if not isinstance(return_values, int):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
+                    ret_obj = CallOptionalIntegerMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOptionalInteger: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOptionalInteger", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -973,12 +991,17 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_three_integers.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_three_integers.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, CallThreeIntegersMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeIntegersMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callThreeIntegers: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callThreeIntegers", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1011,11 +1034,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_one_string.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_one_string.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": return_struct})
+                    if not isinstance(return_values, str):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type str, but was {type(return_values)}")
+                    ret_obj = CallOneStringMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOneString: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOneString", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1048,11 +1078,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_optional_string.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_optional_string.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": return_struct})
+                    if not isinstance(return_values, str):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type str, but was {type(return_values)}")
+                    ret_obj = CallOptionalStringMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOptionalString: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOptionalString", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1087,12 +1124,17 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_three_strings.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_three_strings.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, CallThreeStringsMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeStringsMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callThreeStrings: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callThreeStrings", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1125,11 +1167,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_one_enum.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_one_enum.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": return_struct.value})
+                    if not isinstance(return_values, interface_types.Numbers):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type interface_types.Numbers, but was {type(return_values)}")
+                    ret_obj = CallOneEnumMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOneEnum: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOneEnum", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1162,11 +1211,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_optional_enum.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_optional_enum.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": return_struct.value})
+                    if not isinstance(return_values, interface_types.Numbers):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type interface_types.Numbers, but was {type(return_values)}")
+                    ret_obj = CallOptionalEnumMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOptionalEnum: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOptionalEnum", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1201,12 +1257,17 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_three_enums.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_three_enums.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, CallThreeEnumsMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeEnumsMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callThreeEnums: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callThreeEnums", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1239,12 +1300,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_one_struct.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_one_struct.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, interface_types.AllTypes):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type interface_types.AllTypes, but was {type(return_values)}")
+                    ret_obj = CallOneStructMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOneStruct: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOneStruct", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1277,12 +1344,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_optional_struct.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_optional_struct.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, interface_types.AllTypes):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type interface_types.AllTypes, but was {type(return_values)}")
+                    ret_obj = CallOptionalStructMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOptionalStruct: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOptionalStruct", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1317,12 +1390,17 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_three_structs.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_three_structs.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, CallThreeStructsMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeStructsMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callThreeStructs: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callThreeStructs", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1355,11 +1433,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_one_date_time.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_one_date_time.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": return_struct.isoformat()})
+                    if not isinstance(return_values, datetime.datetime):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.datetime, but was {type(return_values)}")
+                    ret_obj = CallOneDateTimeMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOneDateTime: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOneDateTime", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1392,11 +1477,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_optional_date_time.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_optional_date_time.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": return_struct.isoformat()})
+                    if not isinstance(return_values, datetime.datetime):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.datetime, but was {type(return_values)}")
+                    ret_obj = CallOptionalDateTimeMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOptionalDateTime: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOptionalDateTime", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1431,12 +1523,17 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_three_date_times.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_three_date_times.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, CallThreeDateTimesMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeDateTimesMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callThreeDateTimes: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callThreeDateTimes", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1469,11 +1566,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_one_duration.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_one_duration.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": isodate.duration_isoformat(return_struct)})
+                    if not isinstance(return_values, datetime.timedelta):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.timedelta, but was {type(return_values)}")
+                    ret_obj = CallOneDurationMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOneDuration: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOneDuration", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1506,11 +1610,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_optional_duration.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_optional_duration.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"output1": isodate.duration_isoformat(return_struct)})
+                    if not isinstance(return_values, datetime.timedelta):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.timedelta, but was {type(return_values)}")
+                    ret_obj = CallOptionalDurationMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOptionalDuration: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOptionalDuration", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1545,12 +1656,17 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_three_durations.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_three_durations.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, CallThreeDurationsMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeDurationsMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callThreeDurations: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callThreeDurations", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1583,14 +1699,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_one_binary.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_one_binary.callback(*method_args)
 
-                    if return_struct is not None:
-                        import base64
+                    if not isinstance(return_values, bytes):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type bytes, but was {type(return_values)}")
+                    ret_obj = CallOneBinaryMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
 
-                        return_json = json.dumps({"output1": base64.b64encode(return_struct).decode("utf-8")})
-
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOneBinary: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOneBinary", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1623,14 +1743,18 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_optional_binary.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_optional_binary.callback(*method_args)
 
-                    if return_struct is not None:
-                        import base64
+                    if not isinstance(return_values, bytes):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type bytes, but was {type(return_values)}")
+                    ret_obj = CallOptionalBinaryMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
 
-                        return_json = json.dumps({"output1": base64.b64encode(return_struct).decode("utf-8")})
-
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOptionalBinary: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callOptionalBinary", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1665,12 +1789,17 @@ class TestAbleServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_call_three_binaries.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_call_three_binaries.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, CallThreeBinariesMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeBinariesMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callThreeBinaries: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling callThreeBinaries", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -1693,7 +1822,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be int .")
 
         prop_obj = ReadWriteIntegerProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_integer.value is None or value != self._property_read_write_integer.value.value:
             with self._property_read_write_integer.mutex:
@@ -1732,7 +1861,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be int .")
 
         prop_obj = ReadOnlyIntegerProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_only_integer.value is None or value != self._property_read_only_integer.value.value:
             with self._property_read_only_integer.mutex:
@@ -1771,7 +1900,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be int or None.")
 
         prop_obj = ReadWriteOptionalIntegerProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_optional_integer.value is None or value != self._property_read_write_optional_integer.value.value:
             with self._property_read_write_optional_integer.mutex:
@@ -1809,7 +1938,7 @@ class TestAbleServer:
         if not isinstance(value, ReadWriteTwoIntegersProperty):
             raise ValueError(f"The value must be interface_types.ReadWriteTwoIntegersProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_read_write_two_integers.value:
             with self._property_read_write_two_integers.mutex:
@@ -1853,7 +1982,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be str .")
 
         prop_obj = ReadOnlyStringProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_only_string.value is None or value != self._property_read_only_string.value.value:
             with self._property_read_only_string.mutex:
@@ -1892,7 +2021,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be str .")
 
         prop_obj = ReadWriteStringProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_string.value is None or value != self._property_read_write_string.value.value:
             with self._property_read_write_string.mutex:
@@ -1931,7 +2060,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be str or None.")
 
         prop_obj = ReadWriteOptionalStringProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_optional_string.value is None or value != self._property_read_write_optional_string.value.value:
             with self._property_read_write_optional_string.mutex:
@@ -1969,7 +2098,7 @@ class TestAbleServer:
         if not isinstance(value, ReadWriteTwoStringsProperty):
             raise ValueError(f"The value must be interface_types.ReadWriteTwoStringsProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_read_write_two_strings.value:
             with self._property_read_write_two_strings.mutex:
@@ -2013,7 +2142,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be interface_types.AllTypes .")
 
         prop_obj = ReadWriteStructProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_struct.value is None or value != self._property_read_write_struct.value.value:
             with self._property_read_write_struct.mutex:
@@ -2052,7 +2181,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be interface_types.AllTypes or None.")
 
         prop_obj = ReadWriteOptionalStructProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_optional_struct.value is None or value != self._property_read_write_optional_struct.value.value:
             with self._property_read_write_optional_struct.mutex:
@@ -2090,7 +2219,7 @@ class TestAbleServer:
         if not isinstance(value, ReadWriteTwoStructsProperty):
             raise ValueError(f"The value must be interface_types.ReadWriteTwoStructsProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_read_write_two_structs.value:
             with self._property_read_write_two_structs.mutex:
@@ -2134,7 +2263,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be interface_types.Numbers .")
 
         prop_obj = ReadOnlyEnumProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_only_enum.value is None or value != self._property_read_only_enum.value.value:
             with self._property_read_only_enum.mutex:
@@ -2173,7 +2302,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be interface_types.Numbers .")
 
         prop_obj = ReadWriteEnumProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_enum.value is None or value != self._property_read_write_enum.value.value:
             with self._property_read_write_enum.mutex:
@@ -2212,7 +2341,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be interface_types.Numbers or None.")
 
         prop_obj = ReadWriteOptionalEnumProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_optional_enum.value is None or value != self._property_read_write_optional_enum.value.value:
             with self._property_read_write_optional_enum.mutex:
@@ -2250,7 +2379,7 @@ class TestAbleServer:
         if not isinstance(value, ReadWriteTwoEnumsProperty):
             raise ValueError(f"The value must be interface_types.ReadWriteTwoEnumsProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_read_write_two_enums.value:
             with self._property_read_write_two_enums.mutex:
@@ -2294,7 +2423,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be datetime.datetime .")
 
         prop_obj = ReadWriteDatetimeProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_datetime.value is None or value != self._property_read_write_datetime.value.value:
             with self._property_read_write_datetime.mutex:
@@ -2333,7 +2462,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be datetime.datetime or None.")
 
         prop_obj = ReadWriteOptionalDatetimeProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_optional_datetime.value is None or value != self._property_read_write_optional_datetime.value.value:
             with self._property_read_write_optional_datetime.mutex:
@@ -2371,7 +2500,7 @@ class TestAbleServer:
         if not isinstance(value, ReadWriteTwoDatetimesProperty):
             raise ValueError(f"The value must be interface_types.ReadWriteTwoDatetimesProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_read_write_two_datetimes.value:
             with self._property_read_write_two_datetimes.mutex:
@@ -2415,7 +2544,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be datetime.timedelta .")
 
         prop_obj = ReadWriteDurationProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_duration.value is None or value != self._property_read_write_duration.value.value:
             with self._property_read_write_duration.mutex:
@@ -2454,7 +2583,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be datetime.timedelta or None.")
 
         prop_obj = ReadWriteOptionalDurationProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_optional_duration.value is None or value != self._property_read_write_optional_duration.value.value:
             with self._property_read_write_optional_duration.mutex:
@@ -2492,7 +2621,7 @@ class TestAbleServer:
         if not isinstance(value, ReadWriteTwoDurationsProperty):
             raise ValueError(f"The value must be interface_types.ReadWriteTwoDurationsProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_read_write_two_durations.value:
             with self._property_read_write_two_durations.mutex:
@@ -2536,7 +2665,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be bytes .")
 
         prop_obj = ReadWriteBinaryProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_binary.value is None or value != self._property_read_write_binary.value.value:
             with self._property_read_write_binary.mutex:
@@ -2575,7 +2704,7 @@ class TestAbleServer:
             raise ValueError(f"The value must be bytes or None.")
 
         prop_obj = ReadWriteOptionalBinaryProperty(value=value)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_read_write_optional_binary.value is None or value != self._property_read_write_optional_binary.value.value:
             with self._property_read_write_optional_binary.mutex:
@@ -2613,7 +2742,7 @@ class TestAbleServer:
         if not isinstance(value, ReadWriteTwoBinariesProperty):
             raise ValueError(f"The value must be interface_types.ReadWriteTwoBinariesProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_read_write_two_binaries.value:
             with self._property_read_write_two_binaries.mutex:
@@ -3098,12 +3227,12 @@ if __name__ == "__main__":
         date_and_time=datetime.now(),
         time_duration=timedelta(seconds=3536),
         data=b"example binary data",
-        OptionalInteger=42,
-        OptionalString="apples",
-        OptionalEnum=interface_types.Numbers.ONE,
-        OptionalDateTime=datetime.now(),
-        OptionalDuration=None,
-        OptionalBinary=b"example binary data",
+        optional_integer=42,
+        optional_string="apples",
+        optional_enum=interface_types.Numbers.ONE,
+        optional_date_time=None,
+        optional_duration=None,
+        optional_binary=b"example binary data",
     )
 
     server.read_write_optional_struct = interface_types.AllTypes(
@@ -3115,12 +3244,12 @@ if __name__ == "__main__":
         date_and_time=datetime.now(),
         time_duration=timedelta(seconds=3536),
         data=b"example binary data",
-        OptionalInteger=42,
-        OptionalString="apples",
-        OptionalEnum=interface_types.Numbers.ONE,
-        OptionalDateTime=datetime.now(),
-        OptionalDuration=None,
-        OptionalBinary=b"example binary data",
+        optional_integer=42,
+        optional_string="apples",
+        optional_enum=interface_types.Numbers.ONE,
+        optional_date_time=datetime.now(),
+        optional_duration=None,
+        optional_binary=b"example binary data",
     )
 
     server.read_write_two_structs = interface_types.ReadWriteTwoStructsProperty(
@@ -3133,12 +3262,12 @@ if __name__ == "__main__":
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=interface_types.Numbers.ONE,
+            optional_date_time=None,
+            optional_duration=None,
+            optional_binary=b"example binary data",
         ),
         second=interface_types.AllTypes(
             the_bool=True,
@@ -3149,12 +3278,12 @@ if __name__ == "__main__":
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=None,
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=interface_types.Numbers.ONE,
+            optional_date_time=datetime.now(),
+            optional_duration=None,
+            optional_binary=b"example binary data",
         ),
     )
 
@@ -3269,12 +3398,12 @@ if __name__ == "__main__":
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=interface_types.Numbers.ONE,
+            optional_date_time=datetime.now(),
+            optional_duration=None,
+            optional_binary=b"example binary data",
         )
 
     @server.handle_call_optional_struct
@@ -3290,12 +3419,12 @@ if __name__ == "__main__":
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=interface_types.Numbers.ONE,
+            optional_date_time=datetime.now(),
+            optional_duration=None,
+            optional_binary=b"example binary data",
         )
 
     @server.handle_call_three_structs
@@ -3312,12 +3441,12 @@ if __name__ == "__main__":
                 date_and_time=datetime.now(),
                 time_duration=timedelta(seconds=3536),
                 data=b"example binary data",
-                OptionalInteger=42,
-                OptionalString="apples",
-                OptionalEnum=interface_types.Numbers.ONE,
-                OptionalDateTime=None,
-                OptionalDuration=None,
-                OptionalBinary=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=interface_types.Numbers.ONE,
+                optional_date_time=datetime.now(),
+                optional_duration=None,
+                optional_binary=b"example binary data",
             ),
             output2=interface_types.AllTypes(
                 the_bool=True,
@@ -3328,12 +3457,12 @@ if __name__ == "__main__":
                 date_and_time=datetime.now(),
                 time_duration=timedelta(seconds=3536),
                 data=b"example binary data",
-                OptionalInteger=42,
-                OptionalString="apples",
-                OptionalEnum=interface_types.Numbers.ONE,
-                OptionalDateTime=datetime.now(),
-                OptionalDuration=None,
-                OptionalBinary=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=interface_types.Numbers.ONE,
+                optional_date_time=datetime.now(),
+                optional_duration=None,
+                optional_binary=b"example binary data",
             ),
             output3=interface_types.AllTypes(
                 the_bool=True,
@@ -3344,12 +3473,12 @@ if __name__ == "__main__":
                 date_and_time=datetime.now(),
                 time_duration=timedelta(seconds=3536),
                 data=b"example binary data",
-                OptionalInteger=42,
-                OptionalString="apples",
-                OptionalEnum=interface_types.Numbers.ONE,
-                OptionalDateTime=datetime.now(),
-                OptionalDuration=None,
-                OptionalBinary=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=interface_types.Numbers.ONE,
+                optional_date_time=None,
+                optional_duration=None,
+                optional_binary=b"example binary data",
             ),
         )
 
@@ -3363,7 +3492,7 @@ if __name__ == "__main__":
     def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
         """This is an example handler for the 'callOptionalDateTime' method."""
         print(f"Running call_optional_date_time'({input1})'")
-        return None
+        return datetime.now()
 
     @server.handle_call_three_date_times
     def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> interface_types.CallThreeDateTimesMethodResponse:
@@ -3527,12 +3656,12 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=None,
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=datetime.now(),
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 )
             )
             server.emit_single_optional_struct(
@@ -3545,12 +3674,12 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=None,
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 )
             )
             server.emit_three_structs(
@@ -3563,12 +3692,12 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=None,
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=datetime.now(),
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 ),
                 interface_types.AllTypes(
                     the_bool=True,
@@ -3579,12 +3708,12 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=None,
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 ),
                 interface_types.AllTypes(
                     the_bool=True,
@@ -3595,16 +3724,16 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=datetime.now(),
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 ),
             )
             server.emit_single_date_time(datetime.now())
-            server.emit_single_optional_datetime(datetime.now())
+            server.emit_single_optional_datetime(None)
             server.emit_three_date_times(datetime.now(), datetime.now(), None)
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
@@ -3634,12 +3763,12 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=datetime.now(),
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 )
             )
             server.emit_single_optional_struct(
@@ -3652,12 +3781,12 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=None,
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=datetime.now(),
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 )
             )
             server.emit_three_structs(
@@ -3670,12 +3799,12 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=None,
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 ),
                 second=interface_types.AllTypes(
                     the_bool=True,
@@ -3686,12 +3815,12 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=None,
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 ),
                 third=interface_types.AllTypes(
                     the_bool=True,
@@ -3702,16 +3831,16 @@ if __name__ == "__main__":
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
-                    OptionalInteger=42,
-                    OptionalString="apples",
-                    OptionalEnum=interface_types.Numbers.ONE,
-                    OptionalDateTime=datetime.now(),
-                    OptionalDuration=None,
-                    OptionalBinary=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=interface_types.Numbers.ONE,
+                    optional_date_time=datetime.now(),
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
                 ),
             )
             server.emit_single_date_time(value=datetime.now())
-            server.emit_single_optional_datetime(value=datetime.now())
+            server.emit_single_optional_datetime(value=None)
             server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=datetime.now())
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)
@@ -3720,7 +3849,7 @@ if __name__ == "__main__":
             server.emit_single_optional_binary(value=b"example binary data")
             server.emit_three_binaries(first=b"example binary data", second=b"example binary data", third=b"example binary data")
 
-            sleep(6)
+            sleep(16)
         except KeyboardInterrupt:
             break
 

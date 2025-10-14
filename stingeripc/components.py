@@ -424,7 +424,7 @@ class ArgStruct(Arg):
         return "Object"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
-        if lang == "rust":
+        if lang in ["rust", "python"]:
             example_list: dict[str, str] = {
                 stringcase.snakecase(a.name): str(a.get_random_example_value(lang, seed=seed))
                 for a in self.members
@@ -1295,14 +1295,17 @@ class StingerSpec:
             2: "Server Error",
             3: "Transport Error",
             4: "Payload Error",
-            5: "Serialization Error",
-            6: "Deserialization Error",
-            7: "Unauthorized",
-            8: "Timeout",
-            9: "OutOfSync",
-            10: "Unknown Error",
-            11: "Not Implemented",
-            12: "Service Unavailable",
+            5: "Client Serialization Error",
+            6: "Client Deserialization Error",
+            7: "Server Serialization Error",
+            8: "Server Deserialization Error",
+            9: "Method Not Found",
+            10: "Unauthorized",
+            11: "Timeout",
+            12: "OutOfSync",
+            13: "Unknown Error",
+            14: "Not Implemented",
+            15: "Service Unavailable",
         }
 
     @property

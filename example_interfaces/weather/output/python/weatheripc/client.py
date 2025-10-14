@@ -256,19 +256,20 @@ class WeatherClient:
     def _receive_refresh_daily_forecast_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'refresh_daily_forecast' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -277,19 +278,20 @@ class WeatherClient:
     def _receive_refresh_hourly_forecast_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'refresh_hourly_forecast' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -298,19 +300,20 @@ class WeatherClient:
     def _receive_refresh_current_conditions_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'refresh_current_conditions' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -449,20 +452,23 @@ class WeatherClient:
         )
         return fut
 
-    def _handle_refresh_daily_forecast_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_refresh_daily_forecast_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `refresh_daily_forecast` IPC method call."""
         self._logger.debug("Handling refresh_daily_forecast response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            fut.set_result(None)
-
+            resp_model = RefreshDailyForecastMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling refresh_daily_forecast", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'refresh_daily_forecast' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(None)
+            return
+        else:
+            self._logger.warning("Future for 'refresh_daily_forecast' method was already done!")
 
     def refresh_hourly_forecast(
         self,
@@ -484,20 +490,23 @@ class WeatherClient:
         )
         return fut
 
-    def _handle_refresh_hourly_forecast_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_refresh_hourly_forecast_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `refresh_hourly_forecast` IPC method call."""
         self._logger.debug("Handling refresh_hourly_forecast response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            fut.set_result(None)
-
+            resp_model = RefreshHourlyForecastMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling refresh_hourly_forecast", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'refresh_hourly_forecast' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(None)
+            return
+        else:
+            self._logger.warning("Future for 'refresh_hourly_forecast' method was already done!")
 
     def refresh_current_conditions(
         self,
@@ -519,20 +528,23 @@ class WeatherClient:
         )
         return fut
 
-    def _handle_refresh_current_conditions_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_refresh_current_conditions_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `refresh_current_conditions` IPC method call."""
         self._logger.debug("Handling refresh_current_conditions response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            fut.set_result(None)
-
+            resp_model = RefreshCurrentConditionsMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling refresh_current_conditions", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'refresh_current_conditions' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(None)
+            return
+        else:
+            self._logger.warning("Future for 'refresh_current_conditions' method was already done!")
 
 
 class WeatherClientBuilder:

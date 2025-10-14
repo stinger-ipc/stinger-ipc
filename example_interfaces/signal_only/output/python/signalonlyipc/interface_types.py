@@ -5,9 +5,17 @@ on the next generation.
 It contains enumerations used by the SignalOnly interface.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Annotated, Union
+import base64
+
+
+def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
+    """If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
+    if isinstance(value, str):
+        return base64.b64decode(value)
+    return value
 
 
 class InterfaceInfo(BaseModel):
@@ -22,9 +30,10 @@ class InterfaceInfo(BaseModel):
 class AnotherSignalSignalPayload(BaseModel):
     """Interface signal `anotherSignal`."""
 
-    one: float
-    two: bool
-    three: str
+    model_config = ConfigDict(populate_by_name=True)
+    one: Annotated[float, Field()]
+    two: Annotated[bool, Field()]
+    three: Annotated[str, Field()]
 
 
 class BarkSignalPayload(BaseModel):
@@ -33,7 +42,8 @@ class BarkSignalPayload(BaseModel):
     Emitted when a dog barks.
     """
 
-    word: str
+    model_config = ConfigDict(populate_by_name=True)
+    word: Annotated[str, Field()]
 
 
 class MaybeNumberSignalPayload(BaseModel):
@@ -42,7 +52,8 @@ class MaybeNumberSignalPayload(BaseModel):
     A signal with optionally no payload.
     """
 
-    number: Optional[int]
+    model_config = ConfigDict(populate_by_name=True)
+    number: Annotated[Optional[int], Field()]
 
 
 class MaybeNameSignalPayload(BaseModel):
@@ -51,7 +62,8 @@ class MaybeNameSignalPayload(BaseModel):
     A signal with optionally no payload.
     """
 
-    name: Optional[str]
+    model_config = ConfigDict(populate_by_name=True)
+    name: Annotated[Optional[str], Field()]
 
 
 class NowSignalPayload(BaseModel):
@@ -60,4 +72,5 @@ class NowSignalPayload(BaseModel):
     The current date and time.
     """
 
-    timestamp: datetime
+    model_config = ConfigDict(populate_by_name=True)
+    timestamp: Annotated[datetime, Field()]

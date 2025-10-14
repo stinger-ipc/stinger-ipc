@@ -124,19 +124,20 @@ class {{stinger.python.client_class_name}}:
     def _receive_{{method_name | snake_case}}_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle '{{method_name}}' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -202,72 +203,30 @@ class {{stinger.python.client_class_name}}:
                            correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._conn.client_id}')}}")
         return fut
 
-    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
         """ This called with the response to a `{{method_name}}` IPC method call.
         """
         self._logger.debug("Handling {{method_name | snake_case}} response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json['debugResultMessage'] if 'debugResultMessage' in response_json else None)
-            {%if method.return_value is none%}
-            fut.set_result(None)
-            {%elif method.return_value_type == 'struct' %}
-            return_args = self._filter_for_args(response_json, [{%for m in method.return_value.members%}"{{m.name}}", {%endfor%}])
-            {%for arg in method.return_value.members-%}
-            {%if arg.arg_type.name.lower() == 'datetime'%}
-            return_args["{{arg.name}}"] = datetime.fromisoformat(return_args["{{arg.name}}"])
-            {%elif arg.arg_type.name.lower() == 'duration'%}
-            return_args["{{arg.name}}"] = parse_duration(return_args["{{arg.name}}"])
-            {%elif arg.arg_type.name.lower() == 'binary'%}
-            return_args["{{arg.name}}"] = base64.b64decode(return_args["{{arg.name}}"])
-            {%else%}
-            return_args["{{arg.name}}"] = {{arg.python_type}}(return_args["{{arg.name}}"])
-            {%endif%}
-            {%endfor%}
-            return_obj = {{method.return_value_python_type}}(**return_args)
-            fut.set_result(return_obj)
-            {%elif method.return_value_type == 'multiple' %}
-            return_args = self._filter_for_args(response_json, [{%for m in method.return_value%}"{{m.name}}", {%endfor%}])
-            {%for arg in method.return_value%}
-            {%if arg.arg_type.name.lower() == 'datetime'%}
-            return_args["{{arg.name}}"] = datetime.fromisoformat(return_args["{{arg.name}}"])
-            {%elif arg.arg_type.name.lower() == 'duration'%}
-            return_args["{{arg.name}}"] = parse_duration(return_args["{{arg.name}}"])
-            {%elif arg.arg_type.name.lower() == 'binary'%}
-            return_args["{{arg.name}}"] = base64.b64decode(return_args["{{arg.name}}"])
-            {%else%}
-            return_args["{{arg.name}}"] = {{arg.python_type}}(return_args["{{arg.name}}"])
-            {%endif%}
-            {%endfor%}
-            return_obj = {{method.return_value_python_type}}(**return_args)
-            fut.set_result(return_obj)
-            {%else%}
-            if "{{method.return_value_property_name}}" in response_json:
-                {%if method.return_value.arg_type.name.lower() == 'datetime'%}
-                if not isinstance(response_json["{{method.return_value_property_name}}"], str):
-                    raise ValueError("Return value '{{method.return_value_property_name}}' had wrong type")
-                fut.set_result(datetime.fromisoformat(response_json["{{method.return_value_property_name}}"]))
-                {%elif method.return_value.arg_type.name.lower() == 'duration'%}
-                if not isinstance(response_json["{{method.return_value_property_name}}"], str):
-                    raise ValueError("Return value '{{method.return_value_property_name}}' had wrong type")
-                fut.set_result(parse_duration(response_json["{{method.return_value_property_name}}"]))
-                {%elif method.return_value.arg_type.name.lower() == 'binary'%}
-                if not isinstance(response_json["{{method.return_value_property_name}}"], str):
-                    raise ValueError("Return value '{{method.return_value_property_name}}' had wrong type")
-                fut.set_result(base64.b64decode(response_json["{{method.return_value_property_name}}"]))
-                {%else%}
-                if not isinstance(response_json["{{method.return_value_property_name}}"], {{method.return_value.python_local_type}}):
-                    raise ValueError("Return value '{{method.return_value_property_name}}' had wrong type")
-                fut.set_result(response_json["{{method.return_value_property_name}}"])
-                {%endif%}
-            else:
-                raise Exception("Response message didn't have the return value")
-            {%endif%}
+            resp_model = {{method_name|UpperCamelCase}}MethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling {{method_name | snake_case}}", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to '{{method_name}}' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+        {%-if method.return_arg_list | length == 0 %}
+            fut.set_result(None)
+            return
+        {%elif method.return_arg_list | length == 1 %}
+            fut.set_result(resp_model.{{method.return_arg_list[0].name|snake_case}})
+        {%else%}
+            fut.set_result(resp_model)
+        {%endif-%}
+        else:
+            self._logger.warning("Future for '{{method_name}}' method was already done!")
     {%endfor%}
 
 class {{stinger.python.client_class_name}}Builder:

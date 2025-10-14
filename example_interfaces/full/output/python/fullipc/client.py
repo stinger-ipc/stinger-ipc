@@ -273,19 +273,20 @@ class FullClient:
     def _receive_add_numbers_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'addNumbers' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -294,19 +295,20 @@ class FullClient:
     def _receive_do_something_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'doSomething' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -315,19 +317,20 @@ class FullClient:
     def _receive_echo_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'echo' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -336,19 +339,20 @@ class FullClient:
     def _receive_what_time_is_it_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'what_time_is_it' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -357,19 +361,20 @@ class FullClient:
     def _receive_set_the_time_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'set_the_time' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -378,19 +383,20 @@ class FullClient:
     def _receive_forward_time_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'forward_time' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -399,19 +405,20 @@ class FullClient:
     def _receive_how_off_is_the_clock_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'how_off_is_the_clock' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -540,27 +547,22 @@ class FullClient:
         )
         return fut
 
-    def _handle_add_numbers_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_add_numbers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `addNumbers` IPC method call."""
         self._logger.debug("Handling add_numbers response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "sum" in response_json:
-
-                if not isinstance(response_json["sum"], int):
-                    raise ValueError("Return value 'sum' had wrong type")
-                fut.set_result(response_json["sum"])
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = AddNumbersMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling add_numbers", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'addNumbers' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.sum)
+        else:
+            self._logger.warning("Future for 'addNumbers' method was already done!")
 
     def do_something(self, a_string: str) -> futures.Future:
         """Calling this initiates a `doSomething` IPC method call."""
@@ -582,36 +584,22 @@ class FullClient:
         )
         return fut
 
-    def _handle_do_something_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_do_something_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `doSomething` IPC method call."""
         self._logger.debug("Handling do_something response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "label",
-                    "identifier",
-                    "day",
-                ],
-            )
-
-            return_args["label"] = str(return_args["label"])
-
-            return_args["identifier"] = int(return_args["identifier"])
-
-            return_args["day"] = interface_types.DayOfTheWeek(return_args["day"])
-
-            return_obj = interface_types.DoSomethingMethodResponse(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = DoSomethingMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling do_something", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'doSomething' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'doSomething' method was already done!")
 
     def echo(self, message: str) -> futures.Future:
         """Calling this initiates a `echo` IPC method call."""
@@ -628,27 +616,22 @@ class FullClient:
         )
         return fut
 
-    def _handle_echo_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_echo_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `echo` IPC method call."""
         self._logger.debug("Handling echo response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "message" in response_json:
-
-                if not isinstance(response_json["message"], str):
-                    raise ValueError("Return value 'message' had wrong type")
-                fut.set_result(response_json["message"])
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = EchoMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling echo", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'echo' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.message)
+        else:
+            self._logger.warning("Future for 'echo' method was already done!")
 
     def what_time_is_it(self, the_first_time: datetime) -> futures.Future:
         """Calling this initiates a `what_time_is_it` IPC method call."""
@@ -670,27 +653,22 @@ class FullClient:
         )
         return fut
 
-    def _handle_what_time_is_it_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_what_time_is_it_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `what_time_is_it` IPC method call."""
         self._logger.debug("Handling what_time_is_it response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "timestamp" in response_json:
-
-                if not isinstance(response_json["timestamp"], str):
-                    raise ValueError("Return value 'timestamp' had wrong type")
-                fut.set_result(datetime.fromisoformat(response_json["timestamp"]))
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = WhatTimeIsItMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling what_time_is_it", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'what_time_is_it' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.timestamp)
+        else:
+            self._logger.warning("Future for 'what_time_is_it' method was already done!")
 
     def set_the_time(self, the_first_time: datetime, the_second_time: datetime) -> futures.Future:
         """Calling this initiates a `set_the_time` IPC method call."""
@@ -713,33 +691,22 @@ class FullClient:
         )
         return fut
 
-    def _handle_set_the_time_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_set_the_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `set_the_time` IPC method call."""
         self._logger.debug("Handling set_the_time response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "timestamp",
-                    "confirmation_message",
-                ],
-            )
-
-            return_args["timestamp"] = datetime.fromisoformat(return_args["timestamp"])
-
-            return_args["confirmation_message"] = str(return_args["confirmation_message"])
-
-            return_obj = interface_types.SetTheTimeMethodResponse(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = SetTheTimeMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling set_the_time", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'set_the_time' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'set_the_time' method was already done!")
 
     def forward_time(self, adjustment: timedelta) -> futures.Future:
         """Calling this initiates a `forward_time` IPC method call."""
@@ -761,27 +728,22 @@ class FullClient:
         )
         return fut
 
-    def _handle_forward_time_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_forward_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `forward_time` IPC method call."""
         self._logger.debug("Handling forward_time response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "new_time" in response_json:
-
-                if not isinstance(response_json["new_time"], str):
-                    raise ValueError("Return value 'new_time' had wrong type")
-                fut.set_result(datetime.fromisoformat(response_json["new_time"]))
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = ForwardTimeMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling forward_time", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'forward_time' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.new_time)
+        else:
+            self._logger.warning("Future for 'forward_time' method was already done!")
 
     def how_off_is_the_clock(self, actual_time: datetime) -> futures.Future:
         """Calling this initiates a `how_off_is_the_clock` IPC method call."""
@@ -803,27 +765,22 @@ class FullClient:
         )
         return fut
 
-    def _handle_how_off_is_the_clock_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_how_off_is_the_clock_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `how_off_is_the_clock` IPC method call."""
         self._logger.debug("Handling how_off_is_the_clock response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "difference" in response_json:
-
-                if not isinstance(response_json["difference"], str):
-                    raise ValueError("Return value 'difference' had wrong type")
-                fut.set_result(parse_duration(response_json["difference"]))
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = HowOffIsTheClockMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling how_off_is_the_clock", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'how_off_is_the_clock' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.difference)
+        else:
+            self._logger.warning("Future for 'how_off_is_the_clock' method was already done!")
 
 
 class FullClientBuilder:

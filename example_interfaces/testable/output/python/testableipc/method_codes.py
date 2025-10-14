@@ -8,14 +8,17 @@ class MethodReturnCode(IntEnum):
     SERVER_ERROR = 2
     TRANSPORT_ERROR = 3
     PAYLOAD_ERROR = 4
-    SERIALIZATION_ERROR = 5
-    DESERIALIZATION_ERROR = 6
-    UNAUTHORIZED = 7
-    TIMEOUT = 8
-    OUT_OF_SYNC = 9
-    UNKNOWN_ERROR = 10
-    NOT_IMPLEMENTED = 11
-    SERVICE_UNAVAILABLE = 12
+    CLIENT_SERIALIZATION_ERROR = 5
+    CLIENT_DESERIALIZATION_ERROR = 6
+    SERVER_SERIALIZATION_ERROR = 7
+    SERVER_DESERIALIZATION_ERROR = 8
+    METHOD_NOT_FOUND = 9
+    UNAUTHORIZED = 10
+    TIMEOUT = 11
+    OUT_OF_SYNC = 12
+    UNKNOWN_ERROR = 13
+    NOT_IMPLEMENTED = 14
+    SERVICE_UNAVAILABLE = 15
 
 
 class StingerMethodException(Exception):
@@ -54,14 +57,29 @@ class PayloadErrorStingerMethodException(StingerMethodException):
         super().__init__(MethodReturnCode.PAYLOAD_ERROR, message)
 
 
-class SerializationErrorStingerMethodException(StingerMethodException):
+class ClientSerializationErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodReturnCode.SERIALIZATION_ERROR, message)
+        super().__init__(MethodReturnCode.CLIENT_SERIALIZATION_ERROR, message)
 
 
-class DeserializationErrorStingerMethodException(StingerMethodException):
+class ClientDeserializationErrorStingerMethodException(StingerMethodException):
     def __init__(self, message: str):
-        super().__init__(MethodReturnCode.DESERIALIZATION_ERROR, message)
+        super().__init__(MethodReturnCode.CLIENT_DESERIALIZATION_ERROR, message)
+
+
+class ServerSerializationErrorStingerMethodException(StingerMethodException):
+    def __init__(self, message: str):
+        super().__init__(MethodReturnCode.SERVER_SERIALIZATION_ERROR, message)
+
+
+class ServerDeserializationErrorStingerMethodException(StingerMethodException):
+    def __init__(self, message: str):
+        super().__init__(MethodReturnCode.SERVER_DESERIALIZATION_ERROR, message)
+
+
+class MethodNotFoundStingerMethodException(StingerMethodException):
+    def __init__(self, message: str):
+        super().__init__(MethodReturnCode.METHOD_NOT_FOUND, message)
 
 
 class UnauthorizedStingerMethodException(StingerMethodException):
@@ -101,14 +119,17 @@ def stinger_exception_factory(return_code: int, message: Optional[str] = None):
         2: ServerErrorStingerMethodException,
         3: TransportErrorStingerMethodException,
         4: PayloadErrorStingerMethodException,
-        5: SerializationErrorStingerMethodException,
-        6: DeserializationErrorStingerMethodException,
-        7: UnauthorizedStingerMethodException,
-        8: TimeoutStingerMethodException,
-        9: OutOfSyncStingerMethodException,
-        10: UnknownErrorStingerMethodException,
-        11: NotImplementedStingerMethodException,
-        12: ServiceUnavailableStingerMethodException,
+        5: ClientSerializationErrorStingerMethodException,
+        6: ClientDeserializationErrorStingerMethodException,
+        7: ServerSerializationErrorStingerMethodException,
+        8: ServerDeserializationErrorStingerMethodException,
+        9: MethodNotFoundStingerMethodException,
+        10: UnauthorizedStingerMethodException,
+        11: TimeoutStingerMethodException,
+        12: OutOfSyncStingerMethodException,
+        13: UnknownErrorStingerMethodException,
+        14: NotImplementedStingerMethodException,
+        15: ServiceUnavailableStingerMethodException,
     }
     exc_class = exc_classes[return_code]
     return exc_class(message or "")

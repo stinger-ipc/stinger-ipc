@@ -987,19 +987,20 @@ class TestAbleClient:
     def _receive_call_with_nothing_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callWithNothing' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1008,19 +1009,20 @@ class TestAbleClient:
     def _receive_call_one_integer_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneInteger' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1029,19 +1031,20 @@ class TestAbleClient:
     def _receive_call_optional_integer_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalInteger' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1050,19 +1053,20 @@ class TestAbleClient:
     def _receive_call_three_integers_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeIntegers' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1071,19 +1075,20 @@ class TestAbleClient:
     def _receive_call_one_string_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneString' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1092,19 +1097,20 @@ class TestAbleClient:
     def _receive_call_optional_string_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalString' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1113,19 +1119,20 @@ class TestAbleClient:
     def _receive_call_three_strings_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeStrings' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1134,19 +1141,20 @@ class TestAbleClient:
     def _receive_call_one_enum_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneEnum' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1155,19 +1163,20 @@ class TestAbleClient:
     def _receive_call_optional_enum_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalEnum' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1176,19 +1185,20 @@ class TestAbleClient:
     def _receive_call_three_enums_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeEnums' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1197,19 +1207,20 @@ class TestAbleClient:
     def _receive_call_one_struct_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneStruct' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1218,19 +1229,20 @@ class TestAbleClient:
     def _receive_call_optional_struct_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalStruct' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1239,19 +1251,20 @@ class TestAbleClient:
     def _receive_call_three_structs_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeStructs' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1260,19 +1273,20 @@ class TestAbleClient:
     def _receive_call_one_date_time_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneDateTime' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1281,19 +1295,20 @@ class TestAbleClient:
     def _receive_call_optional_date_time_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalDateTime' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1302,19 +1317,20 @@ class TestAbleClient:
     def _receive_call_three_date_times_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeDateTimes' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1323,19 +1339,20 @@ class TestAbleClient:
     def _receive_call_one_duration_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneDuration' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1344,19 +1361,20 @@ class TestAbleClient:
     def _receive_call_optional_duration_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalDuration' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1365,19 +1383,20 @@ class TestAbleClient:
     def _receive_call_three_durations_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeDurations' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1386,19 +1405,20 @@ class TestAbleClient:
     def _receive_call_one_binary_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneBinary' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1407,19 +1427,20 @@ class TestAbleClient:
     def _receive_call_optional_binary_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalBinary' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1428,19 +1449,20 @@ class TestAbleClient:
     def _receive_call_three_binaries_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeBinaries' method response.
         result_code = MethodReturnCode.SUCCESS
+        debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info: %s", user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
             if "ReturnValue" in user_properties:
                 result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
-        response = json.loads(payload)
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(response, result_code)
+                cb(payload, result_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1931,20 +1953,23 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_with_nothing_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_with_nothing_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callWithNothing` IPC method call."""
         self._logger.debug("Handling call_with_nothing response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            fut.set_result(None)
-
+            resp_model = CallWithNothingMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_with_nothing", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callWithNothing' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(None)
+            return
+        else:
+            self._logger.warning("Future for 'callWithNothing' method was already done!")
 
     def call_one_integer(self, input1: int) -> futures.Future:
         """Calling this initiates a `callOneInteger` IPC method call."""
@@ -1966,27 +1991,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_one_integer_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_one_integer_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOneInteger` IPC method call."""
         self._logger.debug("Handling call_one_integer response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], int):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(response_json["output1"])
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOneIntegerMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_one_integer", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOneInteger' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOneInteger' method was already done!")
 
     def call_optional_integer(self, input1: Optional[int]) -> futures.Future:
         """Calling this initiates a `callOptionalInteger` IPC method call."""
@@ -2008,27 +2028,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_optional_integer_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_optional_integer_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOptionalInteger` IPC method call."""
         self._logger.debug("Handling call_optional_integer response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], int):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(response_json["output1"])
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOptionalIntegerMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_optional_integer", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOptionalInteger' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOptionalInteger' method was already done!")
 
     def call_three_integers(self, input1: int, input2: int, input3: Optional[int]) -> futures.Future:
         """Calling this initiates a `callThreeIntegers` IPC method call."""
@@ -2052,36 +2067,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_three_integers_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_three_integers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callThreeIntegers` IPC method call."""
         self._logger.debug("Handling call_three_integers response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "output1",
-                    "output2",
-                    "output3",
-                ],
-            )
-
-            return_args["output1"] = int(return_args["output1"])
-
-            return_args["output2"] = int(return_args["output2"])
-
-            return_args["output3"] = int(return_args["output3"])
-
-            return_obj = interface_types.CallThreeIntegersMethodResponse(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = CallThreeIntegersMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_three_integers", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callThreeIntegers' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'callThreeIntegers' method was already done!")
 
     def call_one_string(self, input1: str) -> futures.Future:
         """Calling this initiates a `callOneString` IPC method call."""
@@ -2103,27 +2104,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_one_string_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_one_string_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOneString` IPC method call."""
         self._logger.debug("Handling call_one_string response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], str):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(response_json["output1"])
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOneStringMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_one_string", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOneString' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOneString' method was already done!")
 
     def call_optional_string(self, input1: Optional[str]) -> futures.Future:
         """Calling this initiates a `callOptionalString` IPC method call."""
@@ -2145,27 +2141,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_optional_string_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_optional_string_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOptionalString` IPC method call."""
         self._logger.debug("Handling call_optional_string response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], str):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(response_json["output1"])
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOptionalStringMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_optional_string", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOptionalString' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOptionalString' method was already done!")
 
     def call_three_strings(self, input1: str, input2: Optional[str], input3: str) -> futures.Future:
         """Calling this initiates a `callThreeStrings` IPC method call."""
@@ -2189,36 +2180,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_three_strings_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_three_strings_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callThreeStrings` IPC method call."""
         self._logger.debug("Handling call_three_strings response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "output1",
-                    "output2",
-                    "output3",
-                ],
-            )
-
-            return_args["output1"] = str(return_args["output1"])
-
-            return_args["output2"] = str(return_args["output2"])
-
-            return_args["output3"] = str(return_args["output3"])
-
-            return_obj = interface_types.CallThreeStringsMethodResponse(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = CallThreeStringsMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_three_strings", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callThreeStrings' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'callThreeStrings' method was already done!")
 
     def call_one_enum(self, input1: interface_types.Numbers) -> futures.Future:
         """Calling this initiates a `callOneEnum` IPC method call."""
@@ -2240,27 +2217,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_one_enum_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_one_enum_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOneEnum` IPC method call."""
         self._logger.debug("Handling call_one_enum response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], Numbers):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(response_json["output1"])
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOneEnumMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_one_enum", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOneEnum' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOneEnum' method was already done!")
 
     def call_optional_enum(self, input1: Optional[interface_types.Numbers]) -> futures.Future:
         """Calling this initiates a `callOptionalEnum` IPC method call."""
@@ -2282,27 +2254,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_optional_enum_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_optional_enum_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOptionalEnum` IPC method call."""
         self._logger.debug("Handling call_optional_enum response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], Numbers):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(response_json["output1"])
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOptionalEnumMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_optional_enum", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOptionalEnum' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOptionalEnum' method was already done!")
 
     def call_three_enums(self, input1: interface_types.Numbers, input2: interface_types.Numbers, input3: Optional[interface_types.Numbers]) -> futures.Future:
         """Calling this initiates a `callThreeEnums` IPC method call."""
@@ -2326,36 +2293,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_three_enums_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_three_enums_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callThreeEnums` IPC method call."""
         self._logger.debug("Handling call_three_enums response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "output1",
-                    "output2",
-                    "output3",
-                ],
-            )
-
-            return_args["output1"] = interface_types.Numbers(return_args["output1"])
-
-            return_args["output2"] = interface_types.Numbers(return_args["output2"])
-
-            return_args["output3"] = interface_types.Numbers(return_args["output3"])
-
-            return_obj = interface_types.CallThreeEnumsMethodResponse(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = CallThreeEnumsMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_three_enums", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callThreeEnums' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'callThreeEnums' method was already done!")
 
     def call_one_struct(self, input1: interface_types.AllTypes) -> futures.Future:
         """Calling this initiates a `callOneStruct` IPC method call."""
@@ -2377,69 +2330,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_one_struct_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_one_struct_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOneStruct` IPC method call."""
         self._logger.debug("Handling call_one_struct response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "the_bool",
-                    "the_int",
-                    "the_number",
-                    "the_str",
-                    "the_enum",
-                    "date_and_time",
-                    "time_duration",
-                    "data",
-                    "OptionalInteger",
-                    "OptionalString",
-                    "OptionalEnum",
-                    "OptionalDateTime",
-                    "OptionalDuration",
-                    "OptionalBinary",
-                ],
-            )
-
-            return_args["the_bool"] = bool(return_args["the_bool"])
-
-            return_args["the_int"] = int(return_args["the_int"])
-
-            return_args["the_number"] = float(return_args["the_number"])
-
-            return_args["the_str"] = str(return_args["the_str"])
-
-            return_args["the_enum"] = interface_types.Numbers(return_args["the_enum"])
-
-            return_args["date_and_time"] = datetime.fromisoformat(return_args["date_and_time"])
-
-            return_args["time_duration"] = parse_duration(return_args["time_duration"])
-
-            return_args["data"] = base64.b64decode(return_args["data"])
-
-            return_args["OptionalInteger"] = int(return_args["OptionalInteger"])
-
-            return_args["OptionalString"] = str(return_args["OptionalString"])
-
-            return_args["OptionalEnum"] = interface_types.Numbers(return_args["OptionalEnum"])
-
-            return_args["OptionalDateTime"] = datetime.fromisoformat(return_args["OptionalDateTime"])
-
-            return_args["OptionalDuration"] = parse_duration(return_args["OptionalDuration"])
-
-            return_args["OptionalBinary"] = base64.b64decode(return_args["OptionalBinary"])
-
-            return_obj = interface_types.AllTypes(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = CallOneStructMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_one_struct", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOneStruct' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOneStruct' method was already done!")
 
     def call_optional_struct(self, input1: interface_types.AllTypes) -> futures.Future:
         """Calling this initiates a `callOptionalStruct` IPC method call."""
@@ -2461,69 +2367,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_optional_struct_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_optional_struct_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOptionalStruct` IPC method call."""
         self._logger.debug("Handling call_optional_struct response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "the_bool",
-                    "the_int",
-                    "the_number",
-                    "the_str",
-                    "the_enum",
-                    "date_and_time",
-                    "time_duration",
-                    "data",
-                    "OptionalInteger",
-                    "OptionalString",
-                    "OptionalEnum",
-                    "OptionalDateTime",
-                    "OptionalDuration",
-                    "OptionalBinary",
-                ],
-            )
-
-            return_args["the_bool"] = bool(return_args["the_bool"])
-
-            return_args["the_int"] = int(return_args["the_int"])
-
-            return_args["the_number"] = float(return_args["the_number"])
-
-            return_args["the_str"] = str(return_args["the_str"])
-
-            return_args["the_enum"] = interface_types.Numbers(return_args["the_enum"])
-
-            return_args["date_and_time"] = datetime.fromisoformat(return_args["date_and_time"])
-
-            return_args["time_duration"] = parse_duration(return_args["time_duration"])
-
-            return_args["data"] = base64.b64decode(return_args["data"])
-
-            return_args["OptionalInteger"] = int(return_args["OptionalInteger"])
-
-            return_args["OptionalString"] = str(return_args["OptionalString"])
-
-            return_args["OptionalEnum"] = interface_types.Numbers(return_args["OptionalEnum"])
-
-            return_args["OptionalDateTime"] = datetime.fromisoformat(return_args["OptionalDateTime"])
-
-            return_args["OptionalDuration"] = parse_duration(return_args["OptionalDuration"])
-
-            return_args["OptionalBinary"] = base64.b64decode(return_args["OptionalBinary"])
-
-            return_obj = interface_types.AllTypes(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = CallOptionalStructMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_optional_struct", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOptionalStruct' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOptionalStruct' method was already done!")
 
     def call_three_structs(self, input1: interface_types.AllTypes, input2: interface_types.AllTypes, input3: interface_types.AllTypes) -> futures.Future:
         """Calling this initiates a `callThreeStructs` IPC method call."""
@@ -2547,36 +2406,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_three_structs_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_three_structs_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callThreeStructs` IPC method call."""
         self._logger.debug("Handling call_three_structs response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "output1",
-                    "output2",
-                    "output3",
-                ],
-            )
-
-            return_args["output1"] = interface_types.AllTypes(return_args["output1"])
-
-            return_args["output2"] = interface_types.AllTypes(return_args["output2"])
-
-            return_args["output3"] = interface_types.AllTypes(return_args["output3"])
-
-            return_obj = interface_types.CallThreeStructsMethodResponse(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = CallThreeStructsMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_three_structs", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callThreeStructs' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'callThreeStructs' method was already done!")
 
     def call_one_date_time(self, input1: datetime) -> futures.Future:
         """Calling this initiates a `callOneDateTime` IPC method call."""
@@ -2598,27 +2443,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_one_date_time_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_one_date_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOneDateTime` IPC method call."""
         self._logger.debug("Handling call_one_date_time response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], str):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(datetime.fromisoformat(response_json["output1"]))
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOneDateTimeMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_one_date_time", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOneDateTime' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOneDateTime' method was already done!")
 
     def call_optional_date_time(self, input1: Optional[datetime]) -> futures.Future:
         """Calling this initiates a `callOptionalDateTime` IPC method call."""
@@ -2640,27 +2480,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_optional_date_time_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_optional_date_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOptionalDateTime` IPC method call."""
         self._logger.debug("Handling call_optional_date_time response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], str):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(datetime.fromisoformat(response_json["output1"]))
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOptionalDateTimeMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_optional_date_time", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOptionalDateTime' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOptionalDateTime' method was already done!")
 
     def call_three_date_times(self, input1: datetime, input2: datetime, input3: Optional[datetime]) -> futures.Future:
         """Calling this initiates a `callThreeDateTimes` IPC method call."""
@@ -2684,36 +2519,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_three_date_times_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_three_date_times_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callThreeDateTimes` IPC method call."""
         self._logger.debug("Handling call_three_date_times response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "output1",
-                    "output2",
-                    "output3",
-                ],
-            )
-
-            return_args["output1"] = datetime.fromisoformat(return_args["output1"])
-
-            return_args["output2"] = datetime.fromisoformat(return_args["output2"])
-
-            return_args["output3"] = datetime.fromisoformat(return_args["output3"])
-
-            return_obj = interface_types.CallThreeDateTimesMethodResponse(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = CallThreeDateTimesMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_three_date_times", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callThreeDateTimes' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'callThreeDateTimes' method was already done!")
 
     def call_one_duration(self, input1: timedelta) -> futures.Future:
         """Calling this initiates a `callOneDuration` IPC method call."""
@@ -2735,27 +2556,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_one_duration_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_one_duration_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOneDuration` IPC method call."""
         self._logger.debug("Handling call_one_duration response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], str):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(parse_duration(response_json["output1"]))
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOneDurationMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_one_duration", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOneDuration' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOneDuration' method was already done!")
 
     def call_optional_duration(self, input1: Optional[timedelta]) -> futures.Future:
         """Calling this initiates a `callOptionalDuration` IPC method call."""
@@ -2777,27 +2593,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_optional_duration_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_optional_duration_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOptionalDuration` IPC method call."""
         self._logger.debug("Handling call_optional_duration response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], str):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(parse_duration(response_json["output1"]))
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOptionalDurationMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_optional_duration", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOptionalDuration' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOptionalDuration' method was already done!")
 
     def call_three_durations(self, input1: timedelta, input2: timedelta, input3: Optional[timedelta]) -> futures.Future:
         """Calling this initiates a `callThreeDurations` IPC method call."""
@@ -2821,36 +2632,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_three_durations_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_three_durations_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callThreeDurations` IPC method call."""
         self._logger.debug("Handling call_three_durations response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "output1",
-                    "output2",
-                    "output3",
-                ],
-            )
-
-            return_args["output1"] = parse_duration(return_args["output1"])
-
-            return_args["output2"] = parse_duration(return_args["output2"])
-
-            return_args["output3"] = parse_duration(return_args["output3"])
-
-            return_obj = interface_types.CallThreeDurationsMethodResponse(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = CallThreeDurationsMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_three_durations", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callThreeDurations' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'callThreeDurations' method was already done!")
 
     def call_one_binary(self, input1: bytes) -> futures.Future:
         """Calling this initiates a `callOneBinary` IPC method call."""
@@ -2872,27 +2669,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_one_binary_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_one_binary_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOneBinary` IPC method call."""
         self._logger.debug("Handling call_one_binary response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], str):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(base64.b64decode(response_json["output1"]))
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOneBinaryMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_one_binary", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOneBinary' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOneBinary' method was already done!")
 
     def call_optional_binary(self, input1: bytes) -> futures.Future:
         """Calling this initiates a `callOptionalBinary` IPC method call."""
@@ -2914,27 +2706,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_optional_binary_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_optional_binary_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callOptionalBinary` IPC method call."""
         self._logger.debug("Handling call_optional_binary response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            if "output1" in response_json:
-
-                if not isinstance(response_json["output1"], str):
-                    raise ValueError("Return value 'output1' had wrong type")
-                fut.set_result(base64.b64decode(response_json["output1"]))
-
-            else:
-                raise Exception("Response message didn't have the return value")
-
+            resp_model = CallOptionalBinaryMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_optional_binary", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOptionalBinary' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOptionalBinary' method was already done!")
 
     def call_three_binaries(self, input1: bytes, input2: bytes, input3: bytes) -> futures.Future:
         """Calling this initiates a `callThreeBinaries` IPC method call."""
@@ -2958,36 +2745,22 @@ class TestAbleClient:
         )
         return fut
 
-    def _handle_call_three_binaries_response(self, fut: futures.Future, response_json: Dict[str, Any], return_value: MethodReturnCode):
+    def _handle_call_three_binaries_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
         """This called with the response to a `callThreeBinaries` IPC method call."""
         self._logger.debug("Handling call_three_binaries response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+
         try:
-            if return_value != MethodReturnCode.SUCCESS.value:
-                raise stinger_exception_factory(return_value, response_json["debugResultMessage"] if "debugResultMessage" in response_json else None)
-
-            return_args = self._filter_for_args(
-                response_json,
-                [
-                    "output1",
-                    "output2",
-                    "output3",
-                ],
-            )
-
-            return_args["output1"] = base64.b64decode(return_args["output1"])
-
-            return_args["output2"] = base64.b64decode(return_args["output2"])
-
-            return_args["output3"] = base64.b64decode(return_args["output3"])
-
-            return_obj = interface_types.CallThreeBinariesMethodResponse(**return_args)
-            fut.set_result(return_obj)
-
+            resp_model = CallThreeBinariesMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            self._logger.info("Exception while handling call_three_binaries", exc_info=e)
-            fut.set_exception(e)
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callThreeBinaries' method: {e}"))
+
         if not fut.done():
-            fut.set_exception(Exception("No return value set"))
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'callThreeBinaries' method was already done!")
 
 
 class TestAbleClientBuilder:
@@ -3842,12 +3615,12 @@ if __name__ == "__main__":
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=interface_types.Numbers.ONE,
+            optional_date_time=datetime.now(),
+            optional_duration=None,
+            optional_binary=b"example binary data",
         )
     )
     try:
@@ -3866,12 +3639,12 @@ if __name__ == "__main__":
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=interface_types.Numbers.ONE,
+            optional_date_time=datetime.now(),
+            optional_duration=None,
+            optional_binary=b"example binary data",
         )
     )
     try:
@@ -3890,12 +3663,12 @@ if __name__ == "__main__":
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=None,
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=interface_types.Numbers.ONE,
+            optional_date_time=datetime.now(),
+            optional_duration=None,
+            optional_binary=b"example binary data",
         ),
         input2=interface_types.AllTypes(
             the_bool=True,
@@ -3906,12 +3679,12 @@ if __name__ == "__main__":
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=interface_types.Numbers.ONE,
+            optional_date_time=datetime.now(),
+            optional_duration=None,
+            optional_binary=b"example binary data",
         ),
         input3=interface_types.AllTypes(
             the_bool=True,
@@ -3922,12 +3695,12 @@ if __name__ == "__main__":
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
-            OptionalInteger=42,
-            OptionalString="apples",
-            OptionalEnum=interface_types.Numbers.ONE,
-            OptionalDateTime=datetime.now(),
-            OptionalDuration=None,
-            OptionalBinary=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=interface_types.Numbers.ONE,
+            optional_date_time=None,
+            optional_duration=None,
+            optional_binary=b"example binary data",
         ),
     )
     try:

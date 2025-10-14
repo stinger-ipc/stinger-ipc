@@ -122,7 +122,7 @@ class WeatherServer:
         data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = "weather/{}/interface".format(self._instance_id)
-        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
+        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         self._conn.publish_status(topic, data, expiry)
 
     def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
@@ -234,7 +234,7 @@ class WeatherServer:
         payload = CurrentTimeSignalPayload(
             current_time=current_time,
         )
-        self._conn.publish("weather/{}/signal/currentTime".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("weather/{}/signal/currentTime".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def handle_refresh_daily_forecast(self, handler: Callable[[None], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_daily_forecast' method calls."""
@@ -258,11 +258,15 @@ class WeatherServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_refresh_daily_forecast.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    self._method_refresh_daily_forecast.callback(*method_args)
 
                     return_json = "{}"
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling refresh_daily_forecast: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling refresh_daily_forecast", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -293,11 +297,15 @@ class WeatherServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_refresh_hourly_forecast.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    self._method_refresh_hourly_forecast.callback(*method_args)
 
                     return_json = "{}"
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling refresh_hourly_forecast: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling refresh_hourly_forecast", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -328,11 +336,15 @@ class WeatherServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_refresh_current_conditions.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    self._method_refresh_current_conditions.callback(*method_args)
 
                     return_json = "{}"
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling refresh_current_conditions: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling refresh_current_conditions", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -354,7 +366,7 @@ class WeatherServer:
         if not isinstance(value, LocationProperty):
             raise ValueError(f"The value must be interface_types.LocationProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_location.value:
             with self._property_location.mutex:
@@ -398,7 +410,7 @@ class WeatherServer:
             raise ValueError(f"The value must be float .")
 
         prop_obj = CurrentTemperatureProperty(temperature_f=temperature_f)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_current_temperature.value is None or temperature_f != self._property_current_temperature.value.temperature_f:
             with self._property_current_temperature.mutex:
@@ -436,7 +448,7 @@ class WeatherServer:
         if not isinstance(value, CurrentConditionProperty):
             raise ValueError(f"The value must be interface_types.CurrentConditionProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_current_condition.value:
             with self._property_current_condition.mutex:
@@ -479,7 +491,7 @@ class WeatherServer:
         if not isinstance(value, DailyForecastProperty):
             raise ValueError(f"The value must be interface_types.DailyForecastProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_daily_forecast.value:
             with self._property_daily_forecast.mutex:
@@ -525,7 +537,7 @@ class WeatherServer:
         if not isinstance(value, HourlyForecastProperty):
             raise ValueError(f"The value must be interface_types.HourlyForecastProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_hourly_forecast.value:
             with self._property_hourly_forecast.mutex:
@@ -575,7 +587,7 @@ class WeatherServer:
             raise ValueError(f"The value must be int .")
 
         prop_obj = CurrentConditionRefreshIntervalProperty(seconds=seconds)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_current_condition_refresh_interval.value is None or seconds != self._property_current_condition_refresh_interval.value.seconds:
             with self._property_current_condition_refresh_interval.mutex:
@@ -614,7 +626,7 @@ class WeatherServer:
             raise ValueError(f"The value must be int .")
 
         prop_obj = HourlyForecastRefreshIntervalProperty(seconds=seconds)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_hourly_forecast_refresh_interval.value is None or seconds != self._property_hourly_forecast_refresh_interval.value.seconds:
             with self._property_hourly_forecast_refresh_interval.mutex:
@@ -653,7 +665,7 @@ class WeatherServer:
             raise ValueError(f"The value must be int .")
 
         prop_obj = DailyForecastRefreshIntervalProperty(seconds=seconds)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_daily_forecast_refresh_interval.value is None or seconds != self._property_daily_forecast_refresh_interval.value.seconds:
             with self._property_daily_forecast_refresh_interval.mutex:
@@ -891,7 +903,7 @@ if __name__ == "__main__":
             sleep(4)
             server.emit_current_time(current_time="apples")
 
-            sleep(6)
+            sleep(16)
         except KeyboardInterrupt:
             break
 

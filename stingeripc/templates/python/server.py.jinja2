@@ -76,7 +76,7 @@ class {{stinger.python.server_class_name}}:
         )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
         topic = "{{stinger.interface_info_topic}}".format(self._instance_id)
-        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
+        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         self._conn.publish_status(topic, data, expiry)
 
     def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
@@ -124,11 +124,10 @@ class {{stinger.python.server_class_name}}:
         assert isinstance({{arg.name}}, {{arg.python_annotation}}), f"The '{{arg.name}}' argument must be of type {{arg.python_annotation}}, but was {type({{arg.name}})}"
         {%endfor%}
 
-        
         payload = {{sig_name|UpperCamelCase}}SignalPayload({%-for arg in sig.arg_list%}
             {{arg.name}}={{arg.name}}{%if arg.optional%} if {{arg.name}} is not None else None{%endif%},
         {%endfor%})
-        self._conn.publish("{{sig.topic}}".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("{{sig.topic}}".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     {%endfor%}
 
@@ -150,43 +149,31 @@ class {{stinger.python.server_class_name}}:
         response_topic = properties.get('ResponseTopic') # type: Optional[str]
         self._logger.debug("Correlation data for '{{method_name}}' request: %s", correlation_id)
         if self._method_{{method_name|snake_case}}.callback is not None:
-            method_args = [{%for arg in method.arg_list %}payload.{{arg.name}}, {%endfor%}]
+            method_args = [{%for arg in method.arg_list %}payload.{{arg.name|snake_case}}, {%endfor%}]
             
             if response_topic is not None:
                 return_json = ""
                 debug_msg = None # type: Optional[str]
                 try:
-                    return_struct = self._method_{{method_name|snake_case}}.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
-                    {%if method.return_value_type is false%}
+                    {%if method.return_arg_list|length > 0 %}return_values = {%endif%}self._method_{{method_name|snake_case}}.callback(*method_args)
+                    
+                    {%if method.return_arg_list|length == 0%}
                     return_json = "{}"
+                    {%elif method.return_arg_list|length == 1 %}
+                    if not isinstance(return_values, {{method.return_arg_list[0].python_class}}):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.return_arg_list[0].python_class}}, but was {type(return_values)}")
+                    ret_obj = {{method_name|UpperCamelCase}}MethodResponse({{method.return_arg_list[0].name}}=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
                     {%else%}
-                    if return_struct is not None:
-                        {%-if method.return_value_type == "primitive" %}
-                        return_json = json.dumps({
-                            "{{method.return_value_property_name}}": return_struct
-                        })
-                        {%-elif method.return_value_type == "enum" %}
-                        return_json = json.dumps({
-                            "{{method.return_value_property_name}}": return_struct.value
-                        })
-                        {%-elif method.return_value_type == "datetime" %}
-                        return_json = json.dumps({
-                            "{{method.return_value_property_name}}": return_struct.isoformat()
-                        })
-                        {%-elif method.return_value_type == "duration" %}
-                        return_json = json.dumps({
-                            "{{method.return_value_property_name}}": isodate.duration_isoformat(return_struct)
-                        })
-                        {%-elif method.return_value_type == "binary" %}
-                        import base64
-                        return_json = json.dumps({
-                            "{{method.return_value_property_name}}": base64.b64encode(return_struct).decode('utf-8')
-                        })
-                        {%else%}
-                        return_json = return_struct.model_dump_json()
-                        {%endif%}
-                    {%-endif%}
+                    if not isinstance(return_values, {{method_name|UpperCamelCase}}MethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method_name|UpperCamelCase}}MethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
+                    {%endif%}
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling {{method_name}}: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -194,7 +181,6 @@ class {{stinger.python.server_class_name}}:
                     self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
-
 
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
@@ -216,7 +202,7 @@ class {{stinger.python.server_class_name}}:
             raise ValueError(f"The value must be {{prop.python_class}} {%if arg.optional%}or None{%endif%}.")
 
         prop_obj = {{prop_name|UpperCamelCase}}Property({{arg.name|snake_case}}={{arg.name|snake_case}})
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_{{prop_name|snake_case}}.value is None or {{arg.name|snake_case}} != self._property_{{prop_name|snake_case}}.value.{{arg.name|snake_case}}:
             with self._property_{{prop_name|snake_case}}.mutex:
@@ -241,7 +227,7 @@ class {{stinger.python.server_class_name}}:
         if not isinstance(value, {{prop_name|UpperCamelCase}}Property):
             raise ValueError(f"The value must be {{prop.python_class}}.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_{{prop_name|snake_case}}.value:
             with self._property_{{prop_name|snake_case}}.mutex:
@@ -367,7 +353,7 @@ if __name__ == '__main__':
             {%for sig_name, sig in stinger.signals.items()-%}
             server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
             {%endfor%}
-            sleep(6)
+            sleep(16)
         except KeyboardInterrupt:
             break
 

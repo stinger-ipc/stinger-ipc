@@ -5,10 +5,18 @@ on the next generation.
 It contains enumerations used by the weather interface.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Annotated, Union
+import base64
 from enum import IntEnum
+
+
+def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
+    """If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
+    if isinstance(value, str):
+        return base64.b64decode(value)
+    return value
 
 
 class InterfaceInfo(BaseModel):
@@ -35,19 +43,41 @@ class WeatherCondition(IntEnum):
 class ForecastForHour(BaseModel):
     """Interface struct `forecast_for_hour`."""
 
-    temperature: float
-    starttime: datetime
-    condition: WeatherCondition
+    model_config = ConfigDict(populate_by_name=True)
+    temperature: Annotated[
+        float,
+        Field(
+            description="Forecasted temperature in degrees fahrenheit.",
+        ),
+    ]
+    starttime: Annotated[
+        datetime,
+        Field(
+            description="Forecast is valid for the hour starting at this time.",
+        ),
+    ]
+    condition: Annotated[WeatherCondition, Field()]
 
 
 class ForecastForDay(BaseModel):
     """Interface struct `forecast_for_day`."""
 
-    high_temperature: float
-    low_temperature: float
-    condition: WeatherCondition
-    start_time: str
-    end_time: str
+    model_config = ConfigDict(populate_by_name=True)
+    high_temperature: Annotated[
+        float,
+        Field(
+            description="High temperature for the day in degrees fahrenheit.",
+        ),
+    ]
+    low_temperature: Annotated[
+        float,
+        Field(
+            description="Low temperature for the day in degrees fahrenheit.",
+        ),
+    ]
+    condition: Annotated[WeatherCondition, Field()]
+    start_time: Annotated[str, Field()]
+    end_time: Annotated[str, Field()]
 
 
 class CurrentTimeSignalPayload(BaseModel):
@@ -58,7 +88,8 @@ class CurrentTimeSignalPayload(BaseModel):
 
     """
 
-    current_time: str
+    model_config = ConfigDict(populate_by_name=True)
+    current_time: Annotated[str, Field()]
 
 
 class LocationProperty(BaseModel):
@@ -68,8 +99,9 @@ class LocationProperty(BaseModel):
 
     """
 
-    latitude: float
-    longitude: float
+    model_config = ConfigDict(populate_by_name=True)
+    latitude: Annotated[float, Field()]
+    longitude: Annotated[float, Field()]
 
 
 class CurrentTemperatureProperty(BaseModel):
@@ -81,7 +113,8 @@ class CurrentTemperatureProperty(BaseModel):
 
     """
 
-    temperature_f: float
+    model_config = ConfigDict(populate_by_name=True)
+    temperature_f: Annotated[float, Field()]
 
 
 class CurrentConditionProperty(BaseModel):
@@ -92,8 +125,9 @@ class CurrentConditionProperty(BaseModel):
 
     """
 
-    condition: WeatherCondition
-    description: str
+    model_config = ConfigDict(populate_by_name=True)
+    condition: Annotated[WeatherCondition, Field()]
+    description: Annotated[str, Field()]
 
 
 class DailyForecastProperty(BaseModel):
@@ -106,9 +140,15 @@ class DailyForecastProperty(BaseModel):
 
     """
 
-    monday: ForecastForDay = Field(description="This is the forecast for Monday.")
-    tuesday: ForecastForDay
-    wednesday: ForecastForDay
+    model_config = ConfigDict(populate_by_name=True)
+    monday: Annotated[
+        ForecastForDay,
+        Field(
+            description="This is the forecast for Monday.",
+        ),
+    ]
+    tuesday: Annotated[ForecastForDay, Field()]
+    wednesday: Annotated[ForecastForDay, Field()]
 
 
 class HourlyForecastProperty(BaseModel):
@@ -120,10 +160,21 @@ class HourlyForecastProperty(BaseModel):
 
     """
 
-    hour_0: ForecastForHour = Field(description="This is the forecast for the current hour.")
-    hour_1: ForecastForHour = Field(description="This is the forecast for the next hour.")
-    hour_2: ForecastForHour
-    hour_3: ForecastForHour
+    model_config = ConfigDict(populate_by_name=True)
+    hour_0: Annotated[
+        ForecastForHour,
+        Field(
+            description="This is the forecast for the current hour.",
+        ),
+    ]
+    hour_1: Annotated[
+        ForecastForHour,
+        Field(
+            description="This is the forecast for the next hour.",
+        ),
+    ]
+    hour_2: Annotated[ForecastForHour, Field()]
+    hour_3: Annotated[ForecastForHour, Field()]
 
 
 class CurrentConditionRefreshIntervalProperty(BaseModel):
@@ -134,7 +185,8 @@ class CurrentConditionRefreshIntervalProperty(BaseModel):
 
     """
 
-    seconds: int
+    model_config = ConfigDict(populate_by_name=True)
+    seconds: Annotated[int, Field()]
 
 
 class HourlyForecastRefreshIntervalProperty(BaseModel):
@@ -144,7 +196,13 @@ class HourlyForecastRefreshIntervalProperty(BaseModel):
 
     """
 
-    seconds: int = Field(description="Interval duration in seconds.")
+    model_config = ConfigDict(populate_by_name=True)
+    seconds: Annotated[
+        int,
+        Field(
+            description="Interval duration in seconds.",
+        ),
+    ]
 
 
 class DailyForecastRefreshIntervalProperty(BaseModel):
@@ -154,7 +212,8 @@ class DailyForecastRefreshIntervalProperty(BaseModel):
 
     """
 
-    seconds: int
+    model_config = ConfigDict(populate_by_name=True)
+    seconds: Annotated[int, Field()]
 
 
 class RefreshDailyForecastMethodRequest(BaseModel):
@@ -169,7 +228,7 @@ class RefreshDailyForecastMethodRequest(BaseModel):
 
     """
 
-    pass
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RefreshDailyForecastMethodResponse(BaseModel):
@@ -184,7 +243,7 @@ class RefreshDailyForecastMethodResponse(BaseModel):
 
     """
 
-    pass
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RefreshHourlyForecastMethodRequest(BaseModel):
@@ -199,7 +258,7 @@ class RefreshHourlyForecastMethodRequest(BaseModel):
 
     """
 
-    pass
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RefreshHourlyForecastMethodResponse(BaseModel):
@@ -214,7 +273,7 @@ class RefreshHourlyForecastMethodResponse(BaseModel):
 
     """
 
-    pass
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RefreshCurrentConditionsMethodRequest(BaseModel):
@@ -231,7 +290,7 @@ class RefreshCurrentConditionsMethodRequest(BaseModel):
 
     """
 
-    pass
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RefreshCurrentConditionsMethodResponse(BaseModel):
@@ -248,4 +307,4 @@ class RefreshCurrentConditionsMethodResponse(BaseModel):
 
     """
 
-    pass
+    model_config = ConfigDict(populate_by_name=True)

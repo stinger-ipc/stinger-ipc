@@ -117,7 +117,7 @@ class FullServer:
         data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = "full/{}/interface".format(self._instance_id)
-        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json())
+        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         self._conn.publish_status(topic, data, expiry)
 
     def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
@@ -228,7 +228,7 @@ class FullServer:
             process_time=process_time,
             memory_segment=memory_segment,
         )
-        self._conn.publish("full/{}/signal/todayIs".format(self._instance_id), payload.model_dump_json(), qos=1, retain=False)
+        self._conn.publish("full/{}/signal/todayIs".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
         """This is a decorator to decorate a method that will handle the 'addNumbers' method calls."""
@@ -256,11 +256,18 @@ class FullServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_add_numbers.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_add_numbers.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"sum": return_struct})
+                    if not isinstance(return_values, int):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
+                    ret_obj = AddNumbersMethodResponse(sum=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling addNumbers: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling addNumbers", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -286,19 +293,24 @@ class FullServer:
         self._logger.debug("Correlation data for 'doSomething' request: %s", correlation_id)
         if self._method_do_something.callback is not None:
             method_args = [
-                payload.aString,
+                payload.a_string,
             ]
 
             if response_topic is not None:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_do_something.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_do_something.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, DoSomethingMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type DoSomethingMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling doSomething: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling doSomething", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -331,11 +343,18 @@ class FullServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_echo.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_echo.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"message": return_struct})
+                    if not isinstance(return_values, str):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type str, but was {type(return_values)}")
+                    ret_obj = EchoMethodResponse(message=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling echo: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling echo", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -368,11 +387,18 @@ class FullServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_what_time_is_it.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_what_time_is_it.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"timestamp": return_struct.isoformat()})
+                    if not isinstance(return_values, datetime.datetime):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.datetime, but was {type(return_values)}")
+                    ret_obj = WhatTimeIsItMethodResponse(timestamp=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling what_time_is_it: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling what_time_is_it", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -406,12 +432,17 @@ class FullServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_set_the_time.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_set_the_time.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = return_struct.model_dump_json()
+                    if not isinstance(return_values, SetTheTimeMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type SetTheTimeMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
 
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling set_the_time: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling set_the_time", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -444,11 +475,18 @@ class FullServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_forward_time.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_forward_time.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"new_time": return_struct.isoformat()})
+                    if not isinstance(return_values, datetime.datetime):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.datetime, but was {type(return_values)}")
+                    ret_obj = ForwardTimeMethodResponse(new_time=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling forward_time: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling forward_time", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -481,11 +519,18 @@ class FullServer:
                 return_json = ""
                 debug_msg = None  # type: Optional[str]
                 try:
-                    return_struct = self._method_how_off_is_the_clock.callback(*method_args)
-                    self._logger.debug("Return value is %s", return_struct)
+                    return_values = self._method_how_off_is_the_clock.callback(*method_args)
 
-                    if return_struct is not None:
-                        return_json = json.dumps({"difference": isodate.duration_isoformat(return_struct)})
+                    if not isinstance(return_values, datetime.timedelta):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.timedelta, but was {type(return_values)}")
+                    ret_obj = HowOffIsTheClockMethodResponse(difference=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling how_off_is_the_clock: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling how_off_is_the_clock", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -508,7 +553,7 @@ class FullServer:
             raise ValueError(f"The value must be int .")
 
         prop_obj = FavoriteNumberProperty(number=number)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_favorite_number.value is None or number != self._property_favorite_number.value.number:
             with self._property_favorite_number.mutex:
@@ -546,7 +591,7 @@ class FullServer:
         if not isinstance(value, FavoriteFoodsProperty):
             raise ValueError(f"The value must be interface_types.FavoriteFoodsProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_favorite_foods.value:
             with self._property_favorite_foods.mutex:
@@ -592,7 +637,7 @@ class FullServer:
         if not isinstance(value, LunchMenuProperty):
             raise ValueError(f"The value must be interface_types.LunchMenuProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_lunch_menu.value:
             with self._property_lunch_menu.mutex:
@@ -636,7 +681,7 @@ class FullServer:
             raise ValueError(f"The value must be str .")
 
         prop_obj = FamilyNameProperty(family_name=family_name)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_family_name.value is None or family_name != self._property_family_name.value.family_name:
             with self._property_family_name.mutex:
@@ -675,7 +720,7 @@ class FullServer:
             raise ValueError(f"The value must be datetime.datetime .")
 
         prop_obj = LastBreakfastTimeProperty(timestamp=timestamp)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_last_breakfast_time.value is None or timestamp != self._property_last_breakfast_time.value.timestamp:
             with self._property_last_breakfast_time.mutex:
@@ -714,7 +759,7 @@ class FullServer:
             raise ValueError(f"The value must be datetime.timedelta .")
 
         prop_obj = BreakfastLengthProperty(length=length)
-        payload = prop_obj.model_dump_json()
+        payload = prop_obj.model_dump_json(by_alias=True)
 
         if self._property_breakfast_length.value is None or length != self._property_breakfast_length.value.length:
             with self._property_breakfast_length.mutex:
@@ -752,7 +797,7 @@ class FullServer:
         if not isinstance(value, LastBirthdaysProperty):
             raise ValueError(f"The value must be interface_types.LastBirthdaysProperty.")
 
-        payload = value.model_dump_json()
+        payload = value.model_dump_json(by_alias=True)
 
         if value != self._property_last_birthdays.value:
             with self._property_last_birthdays.mutex:
@@ -963,7 +1008,7 @@ if __name__ == "__main__":
     server.last_birthdays = interface_types.LastBirthdaysProperty(
         mom=datetime.now(),
         dad=datetime.now(),
-        sister=None,
+        sister=datetime.now(),
         brothers_age=42,
     )
 
@@ -1046,7 +1091,7 @@ if __name__ == "__main__":
             sleep(4)
             server.emit_today_is(dayOfMonth=42, dayOfWeek=interface_types.DayOfTheWeek.SATURDAY, timestamp=datetime.now(), process_time=timedelta(seconds=3536), memory_segment=b"example binary data")
 
-            sleep(6)
+            sleep(16)
         except KeyboardInterrupt:
             break
 
