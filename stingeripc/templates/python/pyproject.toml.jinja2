@@ -1,5 +1,5 @@
 [project]
-name = "{{stinger.name|UpperCamelCase}}"
+name = "{{stinger.name|snake_case|replace('_', '-')|replace('--', '-')}}-ipc"
 version = "{{stinger.version}}"
 description = "{{stinger.title}}"
 requires-python = ">=3.9"

@@ -1,5 +1,5 @@
 [project]
-name = "Weather"
+name = "weather-ipc"
 version = "0.1.2"
 description = "NWS weather forecast"
 requires-python = ">=3.9"

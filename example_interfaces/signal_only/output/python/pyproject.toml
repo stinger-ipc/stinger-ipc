@@ -1,5 +1,5 @@
 [project]
-name = "SignalOnly"
+name = "signal-only-ipc"
 version = "0.0.1"
 description = "SignalOnly"
 requires-python = ">=3.9"

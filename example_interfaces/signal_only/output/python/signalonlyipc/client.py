@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
 
-from connection import IBrokerConnection
+from .connection import IBrokerConnection
 
 
 logging.basicConfig(level=logging.DEBUG)

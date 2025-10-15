@@ -1,5 +1,5 @@
 [project]
-name = "Full"
+name = "full-ipc"
 version = "0.0.1"
 description = "Fully Featured Example Interface"
 requires-python = ">=3.9"

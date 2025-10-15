@@ -15,12 +15,12 @@ from isodate import parse_duration
 
 import asyncio
 import concurrent.futures as futures
-from method_codes import *
-from interface_types import *
+from .method_codes import *
+from .interface_types import *
 import threading
 
-from connection import IBrokerConnection
-import interface_types as interface_types
+from .connection import IBrokerConnection
+from . import interface_types as interface_types
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -3888,7 +3888,7 @@ if __name__ == "__main__":
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=None,
+            optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
         )
@@ -3944,7 +3944,7 @@ if __name__ == "__main__":
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=datetime.now(),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
         ),
@@ -3969,7 +3969,7 @@ if __name__ == "__main__":
         print(f"Timed out waiting for response to 'call_optional_date_time' call")
 
     print("Making call to 'call_three_date_times'")
-    future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=datetime.now())
+    future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:

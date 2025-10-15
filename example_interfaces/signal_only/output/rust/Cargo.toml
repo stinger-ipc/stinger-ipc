@@ -12,7 +12,7 @@ payloads = []
 [dependencies]
 # Core dependencies (always available)
 futures = "0.3.31"
-mqttier = { git = "https://github.com/stinger-ipc/mqttier", rev = "5e4ab1bc186e84181ffd72790759b774b998c740" }
+mqttier = "0.4.5"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 tokio = { version = "1", features = ["full"] }

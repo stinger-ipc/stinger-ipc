@@ -16,10 +16,10 @@ import isodate
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from connection import IBrokerConnection
-from method_codes import *
-from interface_types import *
-import interface_types as interface_types
+from .connection import IBrokerConnection
+from .method_codes import *
+from .interface_types import *
+from . import interface_types as interface_types
 
 
 T = TypeVar("T")

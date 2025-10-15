@@ -16,10 +16,10 @@ import isodate
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from connection import IBrokerConnection
-from method_codes import *
-from interface_types import *
-import interface_types as interface_types
+from .connection import IBrokerConnection
+from .method_codes import *
+from .interface_types import *
+from . import interface_types as interface_types
 
 
 T = TypeVar("T")
@@ -1008,7 +1008,7 @@ if __name__ == "__main__":
     server.last_birthdays = interface_types.LastBirthdaysProperty(
         mom=datetime.now(),
         dad=datetime.now(),
-        sister=datetime.now(),
+        sister=None,
         brothers_age=42,
     )
 

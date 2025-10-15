@@ -15,10 +15,10 @@ import isodate
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from connection import IBrokerConnection
-from method_codes import *
-from interface_types import *
-import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
+from .connection import IBrokerConnection
+from .method_codes import *
+from .interface_types import *
+from .  import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
 {%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
 
 T = TypeVar('T')

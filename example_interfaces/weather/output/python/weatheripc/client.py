@@ -15,12 +15,12 @@ from isodate import parse_duration
 
 import asyncio
 import concurrent.futures as futures
-from method_codes import *
-from interface_types import *
+from .method_codes import *
+from .interface_types import *
 import threading
 
-from connection import IBrokerConnection
-import interface_types as interface_types
+from .connection import IBrokerConnection
+from . import interface_types as interface_types
 
 logging.basicConfig(level=logging.DEBUG)
 
