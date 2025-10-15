@@ -93,9 +93,10 @@ pub struct {{stinger.rust.client_struct_name}} {
     {%endif%}
     /// Copy of MQTT Client ID
     pub client_id: String,
-
+    {%if stinger.methods | length > 0 %}
     /// Instance ID of the server
     service_instance_id: String,
+    {%endif%}
 }
 
 impl {{stinger.rust.client_struct_name}} {
@@ -171,7 +172,9 @@ impl {{stinger.rust.client_struct_name}} {
             subscription_ids: sub_ids,
             {%if stinger.signals | length > 0 %}signal_channels: signal_channels,{%endif%}
             client_id: connection.client_id.to_string(),
+            {%if stinger.methods | length > 0 %}
             service_instance_id: service_id,
+            {%endif%}
         };
         inst
     }
@@ -220,7 +223,7 @@ impl {{stinger.rust.client_struct_name}} {
         
         {%if method.return_arg_list |length > 0%}
         let return_values: {{method_name|UpperCamelCase}}ReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
         {%endif%}
         
         {%if method.return_arg_list |length == 0 %}

@@ -39,7 +39,6 @@ impl From<MqttierError> for FullDiscoveryError {
 
 pub struct FullDiscovery {
     service_name: String,
-    mqtt_client: MqttierClient,
     subscription_id: usize,
     discovered_interfaces: Arc<RwLock<HashMap<String, InterfaceInfo>>>,
     listener_handle: JoinHandle<()>,
@@ -71,7 +70,6 @@ impl FullDiscovery {
 
         Ok(Self {
             service_name,
-            mqtt_client: connection.clone(),
             subscription_id,
             discovered_interfaces,
             listener_handle,

@@ -861,32 +861,23 @@ if __name__ == "__main__":
     sleep(2)
 
     print("Making call to 'refresh_daily_forecast'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.refresh_daily_forecast()
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'refresh_daily_forecast' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'refresh_daily_forecast' call")
 
     print("Making call to 'refresh_hourly_forecast'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.refresh_hourly_forecast()
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'refresh_hourly_forecast' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'refresh_hourly_forecast' call")
 
     print("Making call to 'refresh_current_conditions'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.refresh_current_conditions()
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'refresh_current_conditions' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'refresh_current_conditions' call")
 

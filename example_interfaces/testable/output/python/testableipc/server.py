@@ -3247,7 +3247,7 @@ if __name__ == "__main__":
         optional_integer=42,
         optional_string="apples",
         optional_enum=interface_types.Numbers.ONE,
-        optional_date_time=None,
+        optional_date_time=datetime.now(),
         optional_duration=None,
         optional_binary=b"example binary data",
     )
@@ -3281,7 +3281,7 @@ if __name__ == "__main__":
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=datetime.now(),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
         ),
@@ -3304,7 +3304,7 @@ if __name__ == "__main__":
 
     server.read_write_two_datetimes = interface_types.ReadWriteTwoDatetimesProperty(
         first=datetime.now(),
-        second=datetime.now(),
+        second=None,
     )
 
     server.read_write_duration = timedelta(seconds=3536)
@@ -3476,7 +3476,7 @@ if __name__ == "__main__":
                 optional_integer=42,
                 optional_string="apples",
                 optional_enum=interface_types.Numbers.ONE,
-                optional_date_time=None,
+                optional_date_time=datetime.now(),
                 optional_duration=None,
                 optional_binary=b"example binary data",
             ),
@@ -3498,7 +3498,7 @@ if __name__ == "__main__":
     def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> interface_types.CallThreeDateTimesMethodResponse:
         """This is an example handler for the 'callThreeDateTimes' method."""
         print(f"Running call_three_date_times'({input1}, {input2}, {input3})'")
-        return interface_types.CallThreeDateTimesMethodResponse(output1=datetime.now(), output2=datetime.now(), output3=None)
+        return interface_types.CallThreeDateTimesMethodResponse(output1=datetime.now(), output2=datetime.now(), output3=datetime.now())
 
     @server.handle_call_one_duration
     def call_one_duration(input1: timedelta) -> timedelta:
@@ -3659,7 +3659,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 )
@@ -3677,7 +3677,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 )
@@ -3733,7 +3733,7 @@ if __name__ == "__main__":
                 ),
             )
             server.emit_single_date_time(datetime.now())
-            server.emit_single_optional_datetime(datetime.now())
+            server.emit_single_optional_datetime(None)
             server.emit_three_date_times(datetime.now(), datetime.now(), None)
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
@@ -3784,7 +3784,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 )
@@ -3818,7 +3818,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 ),
@@ -3834,14 +3834,14 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 ),
             )
             server.emit_single_date_time(value=datetime.now())
-            server.emit_single_optional_datetime(value=None)
-            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=datetime.now())
+            server.emit_single_optional_datetime(value=datetime.now())
+            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=None)
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)
             server.emit_three_durations(first=timedelta(seconds=3536), second=timedelta(seconds=3536), third=None)

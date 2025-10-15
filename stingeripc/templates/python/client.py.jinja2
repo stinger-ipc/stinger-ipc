@@ -400,12 +400,9 @@ if __name__ == '__main__':
     {%if stinger.methods | length > 0 %}
     {%-for method_name, method in stinger.methods.items()%}
     print("Making call to '{{method_name|snake_case}}'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to '{{method_name|snake_case}}' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to '{{method_name|snake_case}}' call")
     {%endfor%}

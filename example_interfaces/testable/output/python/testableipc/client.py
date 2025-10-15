@@ -3781,107 +3781,76 @@ if __name__ == "__main__":
     sleep(2)
 
     print("Making call to 'call_with_nothing'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_with_nothing()
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_with_nothing' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_with_nothing' call")
 
     print("Making call to 'call_one_integer'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_integer(input1=42)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_one_integer' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_integer' call")
 
     print("Making call to 'call_optional_integer'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_integer(input1=42)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_optional_integer' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_integer' call")
 
     print("Making call to 'call_three_integers'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_integers(input1=42, input2=42, input3=42)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_three_integers' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_integers' call")
 
     print("Making call to 'call_one_string'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_string(input1="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_one_string' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_string' call")
 
     print("Making call to 'call_optional_string'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_string(input1="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_optional_string' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_string' call")
 
     print("Making call to 'call_three_strings'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_strings(input1="apples", input2="apples", input3="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_three_strings' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_strings' call")
 
     print("Making call to 'call_one_enum'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_enum(input1=interface_types.Numbers.ONE)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_one_enum' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_enum' call")
 
     print("Making call to 'call_optional_enum'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_enum(input1=interface_types.Numbers.ONE)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_optional_enum' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_enum' call")
 
     print("Making call to 'call_three_enums'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_enums(input1=interface_types.Numbers.ONE, input2=interface_types.Numbers.ONE, input3=interface_types.Numbers.ONE)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_three_enums' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_enums' call")
 
     print("Making call to 'call_one_struct'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_struct(
         input1=interface_types.AllTypes(
             the_bool=True,
@@ -3902,13 +3871,10 @@ if __name__ == "__main__":
     )
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_one_struct' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_struct' call")
 
     print("Making call to 'call_optional_struct'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_struct(
         input1=interface_types.AllTypes(
             the_bool=True,
@@ -3929,13 +3895,10 @@ if __name__ == "__main__":
     )
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_optional_struct' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_struct' call")
 
     print("Making call to 'call_three_structs'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_structs(
         input1=interface_types.AllTypes(
             the_bool=True,
@@ -3988,98 +3951,69 @@ if __name__ == "__main__":
     )
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_three_structs' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_structs' call")
 
     print("Making call to 'call_one_date_time'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_date_time(input1=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_one_date_time' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_date_time' call")
 
     print("Making call to 'call_optional_date_time'")
-    start_time = datetime.now(tz=UTC)
-    future_resp = client.call_optional_date_time(input1=datetime.now())
+    future_resp = client.call_optional_date_time(input1=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_optional_date_time' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_date_time' call")
 
     print("Making call to 'call_three_date_times'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_three_date_times' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_date_times' call")
 
     print("Making call to 'call_one_duration'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_duration(input1=timedelta(seconds=3536))
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_one_duration' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_duration' call")
 
     print("Making call to 'call_optional_duration'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_duration(input1=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_optional_duration' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_duration' call")
 
     print("Making call to 'call_three_durations'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_durations(input1=timedelta(seconds=3536), input2=timedelta(seconds=3536), input3=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_three_durations' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_durations' call")
 
     print("Making call to 'call_one_binary'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_binary(input1=b"example binary data")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_one_binary' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_binary' call")
 
     print("Making call to 'call_optional_binary'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_binary(input1=b"example binary data")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_optional_binary' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_binary' call")
 
     print("Making call to 'call_three_binaries'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_binaries(input1=b"example binary data", input2=b"example binary data", input3=b"example binary data")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'call_three_binaries' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_binaries' call")
 

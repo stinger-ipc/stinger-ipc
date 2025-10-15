@@ -13,9 +13,9 @@ use mqttier::{MqttierClient, PublishResult, ReceivedMessage};
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
-use std::any::Any;
 
 use async_trait::async_trait;
+use std::any::Any;
 use std::sync::{Arc, Mutex};
 use tokio::sync::Mutex as AsyncMutex;
 
@@ -291,7 +291,7 @@ impl WeatherServer {
                 )),
 
                 Ok(PublishResult::SerializationError(s)) => {
-                    Err(MethodReturnCode::SerializationError(s))
+                    Err(MethodReturnCode::ServerSerializationError(s))
                 }
 
                 Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
@@ -520,7 +520,7 @@ impl WeatherServer {
                         e
                     );
                     return WeatherServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'location' payload".to_string(),
                         ),
                     )
@@ -886,7 +886,7 @@ impl WeatherServer {
                         "Failed to parse JSON received over MQTT to update 'current_condition_refresh_interval' property: {:?}",
                         e
                     );
-                    return WeatherServer::wrap_return_code_in_future(MethodReturnCode::DeserializationError("Failed to deserialize property 'current_condition_refresh_interval' payload".to_string())).await;
+                    return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'current_condition_refresh_interval' payload".to_string())).await;
                 }
             }
         };
@@ -1021,7 +1021,7 @@ impl WeatherServer {
                         "Failed to parse JSON received over MQTT to update 'hourly_forecast_refresh_interval' property: {:?}",
                         e
                     );
-                    return WeatherServer::wrap_return_code_in_future(MethodReturnCode::DeserializationError("Failed to deserialize property 'hourly_forecast_refresh_interval' payload".to_string())).await;
+                    return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'hourly_forecast_refresh_interval' payload".to_string())).await;
                 }
             }
         };
@@ -1158,7 +1158,7 @@ impl WeatherServer {
                         "Failed to parse JSON received over MQTT to update 'daily_forecast_refresh_interval' property: {:?}",
                         e
                     );
-                    return WeatherServer::wrap_return_code_in_future(MethodReturnCode::DeserializationError("Failed to deserialize property 'daily_forecast_refresh_interval' payload".to_string())).await;
+                    return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'daily_forecast_refresh_interval' payload".to_string())).await;
                 }
             }
         };

@@ -14,8 +14,8 @@ use mqttier::{MqttierClient{%if stinger.methods|length > 0 or stinger.properties
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
-use std::any::Any;
 {%if stinger.methods|length > 0 %}
+use std::any::Any;
 use async_trait::async_trait;
 use tokio::sync::Mutex as AsyncMutex;
 use std::sync::{Arc, Mutex};
@@ -162,7 +162,7 @@ impl {{stinger.rust.server_struct_name}} {
                 )),
 
                 Ok(PublishResult::SerializationError(s)) => {
-                    Err(MethodReturnCode::SerializationError(s))
+                    Err(MethodReturnCode::ServerSerializationError(s))
                 }
 
                 Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
@@ -216,7 +216,7 @@ impl {{stinger.rust.server_struct_name}} {
         let payload_obj = serde_json::from_slice::<{{method_name | UpperCamelCase}}RequestObject>(&payload_vec);
         if payload_obj.is_err() {
             error!("Error deserializing request payload for {{method_name}}: {:?}", payload_obj.err());
-            {{stinger.rust.server_struct_name}}::publish_error_response(publisher, opt_resp_topic, opt_corr_data, &MethodReturnCode::DeserializationError("Failed to deserialize request payload".to_string())).await;
+            {{stinger.rust.server_struct_name}}::publish_error_response(publisher, opt_resp_topic, opt_corr_data, &MethodReturnCode::ServerDeserializationError("Failed to deserialize request payload".to_string())).await;
             return;
         }
         // Unwrap is OK here because we just checked for error.
@@ -284,7 +284,7 @@ impl {{stinger.rust.server_struct_name}} {
                 Ok(obj) => obj,
                 Err(e) => {
                     error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
-                    return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::DeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string())).await;
+                    return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string())).await;
                 }
             }
         };

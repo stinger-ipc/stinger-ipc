@@ -1182,6 +1182,7 @@ impl TestAbleClient {
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
             client_id: connection.client_id.to_string(),
+
             service_instance_id: service_id,
         };
         inst
@@ -1394,7 +1395,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOneIntegerReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -1445,7 +1446,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOptionalIntegerReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -1504,7 +1505,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallThreeIntegersReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values)
     }
@@ -1545,7 +1546,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOneStringReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -1596,7 +1597,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOptionalStringReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -1654,7 +1655,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallThreeStringsReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values)
     }
@@ -1695,7 +1696,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOneEnumReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -1745,7 +1746,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOptionalEnumReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -1803,7 +1804,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallThreeEnumsReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values)
     }
@@ -1847,7 +1848,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOneStructReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -1895,7 +1896,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOptionalStructReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -1953,7 +1954,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallThreeStructsReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values)
     }
@@ -2003,7 +2004,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOneDateTimeReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -2054,7 +2055,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOptionalDateTimeReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -2115,7 +2116,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallThreeDateTimesReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values)
     }
@@ -2165,7 +2166,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOneDurationReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -2216,7 +2217,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOptionalDurationReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -2277,7 +2278,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallThreeDurationsReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values)
     }
@@ -2318,7 +2319,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOneBinaryReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -2366,7 +2367,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallOptionalBinaryReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.output1)
     }
@@ -2425,7 +2426,7 @@ impl TestAbleClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: CallThreeBinariesReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values)
     }

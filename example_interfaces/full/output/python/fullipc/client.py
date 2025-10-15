@@ -1087,72 +1087,51 @@ if __name__ == "__main__":
     sleep(2)
 
     print("Making call to 'add_numbers'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.add_numbers(first=42, second=42, third=42)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'add_numbers' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'add_numbers' call")
 
     print("Making call to 'do_something'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.do_something(a_string="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'do_something' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'do_something' call")
 
     print("Making call to 'echo'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.echo(message="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'echo' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'echo' call")
 
     print("Making call to 'what_time_is_it'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.what_time_is_it(the_first_time=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'what_time_is_it' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'what_time_is_it' call")
 
     print("Making call to 'set_the_time'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.set_the_time(the_first_time=datetime.now(), the_second_time=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'set_the_time' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'set_the_time' call")
 
     print("Making call to 'forward_time'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.forward_time(adjustment=timedelta(seconds=3536))
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'forward_time' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'forward_time' call")
 
     print("Making call to 'how_off_is_the_clock'")
-    start_time = datetime.now(tz=UTC)
     future_resp = client.how_off_is_the_clock(actual_time=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
-        end_time = datetime.now(tz=UTC)
-        print(f"Call to 'how_off_is_the_clock' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'how_off_is_the_clock' call")
 

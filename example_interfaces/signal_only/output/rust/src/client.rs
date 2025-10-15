@@ -65,9 +65,6 @@ pub struct SignalOnlyClient {
 
     /// Copy of MQTT Client ID
     pub client_id: String,
-
-    /// Instance ID of the server
-    service_instance_id: String,
 }
 
 impl SignalOnlyClient {
@@ -138,7 +135,6 @@ impl SignalOnlyClient {
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
             client_id: connection.client_id.to_string(),
-            service_instance_id: service_id,
         };
         inst
     }

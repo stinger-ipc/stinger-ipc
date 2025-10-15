@@ -13,9 +13,9 @@ use mqttier::{MqttierClient, PublishResult, ReceivedMessage};
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
-use std::any::Any;
 
 use async_trait::async_trait;
+use std::any::Any;
 use std::sync::{Arc, Mutex};
 use tokio::sync::Mutex as AsyncMutex;
 
@@ -944,7 +944,7 @@ impl TestAbleServer {
                 )),
 
                 Ok(PublishResult::SerializationError(s)) => {
-                    Err(MethodReturnCode::SerializationError(s))
+                    Err(MethodReturnCode::ServerSerializationError(s))
                 }
 
                 Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
@@ -1405,7 +1405,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1467,7 +1467,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1536,7 +1536,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1601,7 +1601,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1663,7 +1663,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1730,7 +1730,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1792,7 +1792,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1852,7 +1852,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1914,7 +1914,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1976,7 +1976,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2036,7 +2036,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2101,7 +2101,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2163,7 +2163,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2227,7 +2227,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2296,7 +2296,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2361,7 +2361,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2423,7 +2423,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2492,7 +2492,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2557,7 +2557,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2619,7 +2619,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2686,7 +2686,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2762,7 +2762,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_integer' payload"
                                 .to_string(),
                         ),
@@ -2950,7 +2950,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_optional_integer' payload"
                                 .to_string(),
                         ),
@@ -3096,7 +3096,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_two_integers' payload"
                                 .to_string(),
                         ),
@@ -3300,7 +3300,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_string' payload"
                                 .to_string(),
                         ),
@@ -3426,7 +3426,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_optional_string' payload"
                                 .to_string(),
                         ),
@@ -3574,7 +3574,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_two_strings' payload"
                                 .to_string(),
                         ),
@@ -3716,7 +3716,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_struct' payload"
                                 .to_string(),
                         ),
@@ -3842,7 +3842,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_optional_struct' payload"
                                 .to_string(),
                         ),
@@ -3985,7 +3985,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_two_structs' payload"
                                 .to_string(),
                         ),
@@ -4189,7 +4189,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_enum' payload".to_string(),
                         ),
                     )
@@ -4314,7 +4314,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_optional_enum' payload"
                                 .to_string(),
                         ),
@@ -4456,7 +4456,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_two_enums' payload"
                                 .to_string(),
                         ),
@@ -4590,7 +4590,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_datetime' payload"
                                 .to_string(),
                         ),
@@ -4722,7 +4722,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_optional_datetime' payload"
                                 .to_string(),
                         ),
@@ -4872,7 +4872,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_two_datetimes' payload"
                                 .to_string(),
                         ),
@@ -5014,7 +5014,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_duration' payload"
                                 .to_string(),
                         ),
@@ -5141,7 +5141,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_optional_duration' payload"
                                 .to_string(),
                         ),
@@ -5291,7 +5291,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_two_durations' payload"
                                 .to_string(),
                         ),
@@ -5433,7 +5433,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_binary' payload"
                                 .to_string(),
                         ),
@@ -5559,7 +5559,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_optional_binary' payload"
                                 .to_string(),
                         ),
@@ -5702,7 +5702,7 @@ impl TestAbleServer {
                         e
                     );
                     return TestAbleServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'read_write_two_binaries' payload"
                                 .to_string(),
                         ),

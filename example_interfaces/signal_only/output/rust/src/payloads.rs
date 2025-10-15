@@ -9,9 +9,6 @@ on the next generation.
 It contains enumerations used by the SignalOnly interface.
 */
 
-use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::FromPrimitive;
-
 use serde::{Deserialize, Serialize};
 
 pub mod base64_binary_format {

@@ -328,6 +328,7 @@ impl WeatherClient {
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
             client_id: connection.client_id.to_string(),
+
             service_instance_id: service_id,
         };
         inst

@@ -13,7 +13,6 @@ use mqttier::{MqttierClient, PublishResult};
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
-use std::any::Any;
 
 use std::future::Future;
 use std::pin::Pin;
@@ -60,7 +59,7 @@ impl SignalOnlyServer {
                 )),
 
                 Ok(PublishResult::SerializationError(s)) => {
-                    Err(MethodReturnCode::SerializationError(s))
+                    Err(MethodReturnCode::ServerSerializationError(s))
                 }
 
                 Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),

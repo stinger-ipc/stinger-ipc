@@ -338,6 +338,7 @@ impl FullClient {
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
             client_id: connection.client_id.to_string(),
+
             service_instance_id: service_id,
         };
         inst
@@ -399,7 +400,7 @@ impl FullClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: AddNumbersReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.sum)
     }
@@ -443,7 +444,7 @@ impl FullClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: DoSomethingReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values)
     }
@@ -484,7 +485,7 @@ impl FullClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: EchoReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.message)
     }
@@ -533,7 +534,7 @@ impl FullClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: WhatTimeIsItReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.timestamp)
     }
@@ -587,7 +588,7 @@ impl FullClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: SetTheTimeReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values)
     }
@@ -636,7 +637,7 @@ impl FullClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: ForwardTimeReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.new_time)
     }
@@ -686,7 +687,7 @@ impl FullClient {
         let resp_str: String = receiver.await.unwrap();
 
         let return_values: HowOffIsTheClockReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::DeserializationError(e.to_string()))?;
+            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
         Ok(return_values.difference)
     }

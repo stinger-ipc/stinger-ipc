@@ -13,9 +13,9 @@ use mqttier::{MqttierClient, PublishResult, ReceivedMessage};
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
-use std::any::Any;
 
 use async_trait::async_trait;
+use std::any::Any;
 use std::sync::{Arc, Mutex};
 use tokio::sync::Mutex as AsyncMutex;
 
@@ -351,7 +351,7 @@ impl FullServer {
                 )),
 
                 Ok(PublishResult::SerializationError(s)) => {
-                    Err(MethodReturnCode::SerializationError(s))
+                    Err(MethodReturnCode::ServerSerializationError(s))
                 }
 
                 Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
@@ -440,7 +440,7 @@ impl FullServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -504,7 +504,7 @@ impl FullServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -564,7 +564,7 @@ impl FullServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -626,7 +626,7 @@ impl FullServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -690,7 +690,7 @@ impl FullServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -752,7 +752,7 @@ impl FullServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -814,7 +814,7 @@ impl FullServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::DeserializationError(
+                &MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -894,7 +894,7 @@ impl FullServer {
                         e
                     );
                     return FullServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'favorite_number' payload".to_string(),
                         ),
                     )
@@ -1018,7 +1018,7 @@ impl FullServer {
                         e
                     );
                     return FullServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'favorite_foods' payload".to_string(),
                         ),
                     )
@@ -1140,7 +1140,7 @@ impl FullServer {
                         e
                     );
                     return FullServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'lunch_menu' payload".to_string(),
                         ),
                     )
@@ -1262,7 +1262,7 @@ impl FullServer {
                         e
                     );
                     return FullServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'family_name' payload".to_string(),
                         ),
                     )
@@ -1386,7 +1386,7 @@ impl FullServer {
                         e
                     );
                     return FullServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'last_breakfast_time' payload"
                                 .to_string(),
                         ),
@@ -1517,7 +1517,7 @@ impl FullServer {
                         e
                     );
                     return FullServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'breakfast_length' payload".to_string(),
                         ),
                     )
@@ -1641,7 +1641,7 @@ impl FullServer {
                         e
                     );
                     return FullServer::wrap_return_code_in_future(
-                        MethodReturnCode::DeserializationError(
+                        MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'last_birthdays' payload".to_string(),
                         ),
                     )
