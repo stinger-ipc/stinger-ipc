@@ -947,7 +947,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_optional_integer.callback(*method_args)
 
-                    if not isinstance(return_values, int):
+                    if not isinstance(return_values, int) and return_values is not None:
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
                     ret_obj = CallOptionalIntegerMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1080,7 +1080,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_optional_string.callback(*method_args)
 
-                    if not isinstance(return_values, str):
+                    if not isinstance(return_values, str) and return_values is not None:
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type str, but was {type(return_values)}")
                     ret_obj = CallOptionalStringMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1169,7 +1169,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_one_enum.callback(*method_args)
 
-                    if not isinstance(return_values, interface_types.Numbers):
+                    if not isinstance(return_values, Numbers):
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type interface_types.Numbers, but was {type(return_values)}")
                     ret_obj = CallOneEnumMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1213,7 +1213,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_optional_enum.callback(*method_args)
 
-                    if not isinstance(return_values, interface_types.Numbers):
+                    if not isinstance(return_values, Numbers) and return_values is not None:
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type interface_types.Numbers, but was {type(return_values)}")
                     ret_obj = CallOptionalEnumMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1302,7 +1302,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_one_struct.callback(*method_args)
 
-                    if not isinstance(return_values, interface_types.AllTypes):
+                    if not isinstance(return_values, AllTypes):
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type interface_types.AllTypes, but was {type(return_values)}")
                     ret_obj = CallOneStructMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1346,7 +1346,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_optional_struct.callback(*method_args)
 
-                    if not isinstance(return_values, interface_types.AllTypes):
+                    if not isinstance(return_values, AllTypes) and return_values is not None:
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type interface_types.AllTypes, but was {type(return_values)}")
                     ret_obj = CallOptionalStructMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1435,7 +1435,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_one_date_time.callback(*method_args)
 
-                    if not isinstance(return_values, datetime.datetime):
+                    if not isinstance(return_values, datetime):
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.datetime, but was {type(return_values)}")
                     ret_obj = CallOneDateTimeMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1479,7 +1479,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_optional_date_time.callback(*method_args)
 
-                    if not isinstance(return_values, datetime.datetime):
+                    if not isinstance(return_values, datetime) and return_values is not None:
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.datetime, but was {type(return_values)}")
                     ret_obj = CallOptionalDateTimeMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1568,7 +1568,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_one_duration.callback(*method_args)
 
-                    if not isinstance(return_values, datetime.timedelta):
+                    if not isinstance(return_values, timedelta):
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.timedelta, but was {type(return_values)}")
                     ret_obj = CallOneDurationMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1612,7 +1612,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_optional_duration.callback(*method_args)
 
-                    if not isinstance(return_values, datetime.timedelta):
+                    if not isinstance(return_values, timedelta) and return_values is not None:
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.timedelta, but was {type(return_values)}")
                     ret_obj = CallOptionalDurationMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1745,7 +1745,7 @@ class TestAbleServer:
                 try:
                     return_values = self._method_call_optional_binary.callback(*method_args)
 
-                    if not isinstance(return_values, bytes):
+                    if not isinstance(return_values, bytes) and return_values is not None:
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type bytes, but was {type(return_values)}")
                     ret_obj = CallOptionalBinaryMethodResponse(output1=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -3230,7 +3230,7 @@ if __name__ == "__main__":
         optional_integer=42,
         optional_string="apples",
         optional_enum=interface_types.Numbers.ONE,
-        optional_date_time=None,
+        optional_date_time=datetime.now(),
         optional_duration=None,
         optional_binary=b"example binary data",
     )
@@ -3247,7 +3247,7 @@ if __name__ == "__main__":
         optional_integer=42,
         optional_string="apples",
         optional_enum=interface_types.Numbers.ONE,
-        optional_date_time=datetime.now(),
+        optional_date_time=None,
         optional_duration=None,
         optional_binary=b"example binary data",
     )
@@ -3265,7 +3265,7 @@ if __name__ == "__main__":
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=None,
+            optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
         ),
@@ -3498,7 +3498,7 @@ if __name__ == "__main__":
     def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> interface_types.CallThreeDateTimesMethodResponse:
         """This is an example handler for the 'callThreeDateTimes' method."""
         print(f"Running call_three_date_times'({input1}, {input2}, {input3})'")
-        return interface_types.CallThreeDateTimesMethodResponse(output1=datetime.now(), output2=datetime.now(), output3=datetime.now())
+        return interface_types.CallThreeDateTimesMethodResponse(output1=datetime.now(), output2=datetime.now(), output3=None)
 
     @server.handle_call_one_duration
     def call_one_duration(input1: timedelta) -> timedelta:
@@ -3659,7 +3659,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=datetime.now(),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 )
@@ -3711,7 +3711,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 ),
@@ -3733,7 +3733,7 @@ if __name__ == "__main__":
                 ),
             )
             server.emit_single_date_time(datetime.now())
-            server.emit_single_optional_datetime(None)
+            server.emit_single_optional_datetime(datetime.now())
             server.emit_three_date_times(datetime.now(), datetime.now(), None)
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
@@ -3784,7 +3784,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=datetime.now(),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 )
@@ -3802,7 +3802,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 ),
@@ -3834,7 +3834,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=datetime.now(),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 ),

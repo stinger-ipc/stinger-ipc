@@ -212,7 +212,7 @@ class MqttBrokerConnection(IBrokerConnection):
             props["PropertyVersion"] = str(state_version)
         self.publish(topic, state_obj.model_dump_json(), qos=1, retain=True, user_properties=props)
 
-    def publish_request(self, topic: str, request_obj: BaseModel, response_topic: str, correlation_id: Optional[Union[str, bytes]]=None) -> str:
+    def publish_request(self, topic: str, request_obj: BaseModel, response_topic: str, correlation_id: Union[str, bytes, None]=None) -> Union[str, bytes]:
         if correlation_id is None:
             correlation_id = str(uuid.uuid4())
         self.publish(topic, request_obj.model_dump_json(), qos=1, retain=False,

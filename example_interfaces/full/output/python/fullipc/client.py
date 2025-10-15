@@ -56,24 +56,38 @@ class FullClient:
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
 
         self._property_favorite_number = None  # type: Optional[int]
+        self._property_favorite_number_mutex = threading.Lock()
+        self._property_favorite_number_version = -1
         self._conn.subscribe("full/{}/property/favoriteNumber/value".format(self._service_id), self._receive_favorite_number_property_update_message)
         self._changed_value_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
         self._property_favorite_foods = None  # type: Optional[interface_types.FavoriteFoodsProperty]
+        self._property_favorite_foods_mutex = threading.Lock()
+        self._property_favorite_foods_version = -1
         self._conn.subscribe("full/{}/property/favoriteFoods/value".format(self._service_id), self._receive_favorite_foods_property_update_message)
         self._changed_value_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
         self._property_lunch_menu = None  # type: Optional[interface_types.LunchMenuProperty]
+        self._property_lunch_menu_mutex = threading.Lock()
+        self._property_lunch_menu_version = -1
         self._conn.subscribe("full/{}/property/lunchMenu/value".format(self._service_id), self._receive_lunch_menu_property_update_message)
         self._changed_value_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
         self._property_family_name = None  # type: Optional[str]
+        self._property_family_name_mutex = threading.Lock()
+        self._property_family_name_version = -1
         self._conn.subscribe("full/{}/property/familyName/value".format(self._service_id), self._receive_family_name_property_update_message)
         self._changed_value_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
         self._property_last_breakfast_time = None  # type: Optional[datetime.datetime]
+        self._property_last_breakfast_time_mutex = threading.Lock()
+        self._property_last_breakfast_time_version = -1
         self._conn.subscribe("full/{}/property/lastBreakfastTime/value".format(self._service_id), self._receive_last_breakfast_time_property_update_message)
         self._changed_value_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
         self._property_breakfast_length = None  # type: Optional[datetime.timedelta]
+        self._property_breakfast_length_mutex = threading.Lock()
+        self._property_breakfast_length_version = -1
         self._conn.subscribe("full/{}/property/breakfastLength/value".format(self._service_id), self._receive_breakfast_length_property_update_message)
         self._changed_value_callbacks_for_breakfast_length: list[BreakfastLengthPropertyUpdatedCallbackType] = []
         self._property_last_birthdays = None  # type: Optional[interface_types.LastBirthdaysProperty]
+        self._property_last_birthdays_mutex = threading.Lock()
+        self._property_last_birthdays_version = -1
         self._conn.subscribe("full/{}/property/lastBirthdays/value".format(self._service_id), self._receive_last_birthdays_property_update_message)
         self._changed_value_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
@@ -103,9 +117,10 @@ class FullClient:
         """Sets a callback to be called when the 'favorite_number' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_favorite_number.append(handler)
-        if call_immediately and self._property_favorite_number is not None:
-            handler(self._property_favorite_number)
+        with self._property_favorite_number_mutex:
+            self._changed_value_callbacks_for_favorite_number.append(handler)
+            if call_immediately and self._property_favorite_number is not None:
+                handler(self._property_favorite_number)
         return handler
 
     @property
@@ -126,9 +141,10 @@ class FullClient:
         """Sets a callback to be called when the 'favorite_foods' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_favorite_foods.append(handler)
-        if call_immediately and self._property_favorite_foods is not None:
-            handler(self._property_favorite_foods)
+        with self._property_favorite_foods_mutex:
+            self._changed_value_callbacks_for_favorite_foods.append(handler)
+            if call_immediately and self._property_favorite_foods is not None:
+                handler(self._property_favorite_foods)
         return handler
 
     @property
@@ -149,9 +165,10 @@ class FullClient:
         """Sets a callback to be called when the 'lunch_menu' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_lunch_menu.append(handler)
-        if call_immediately and self._property_lunch_menu is not None:
-            handler(self._property_lunch_menu)
+        with self._property_lunch_menu_mutex:
+            self._changed_value_callbacks_for_lunch_menu.append(handler)
+            if call_immediately and self._property_lunch_menu is not None:
+                handler(self._property_lunch_menu)
         return handler
 
     @property
@@ -172,9 +189,10 @@ class FullClient:
         """Sets a callback to be called when the 'family_name' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_family_name.append(handler)
-        if call_immediately and self._property_family_name is not None:
-            handler(self._property_family_name)
+        with self._property_family_name_mutex:
+            self._changed_value_callbacks_for_family_name.append(handler)
+            if call_immediately and self._property_family_name is not None:
+                handler(self._property_family_name)
         return handler
 
     @property
@@ -195,9 +213,10 @@ class FullClient:
         """Sets a callback to be called when the 'last_breakfast_time' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_last_breakfast_time.append(handler)
-        if call_immediately and self._property_last_breakfast_time is not None:
-            handler(self._property_last_breakfast_time)
+        with self._property_last_breakfast_time_mutex:
+            self._changed_value_callbacks_for_last_breakfast_time.append(handler)
+            if call_immediately and self._property_last_breakfast_time is not None:
+                handler(self._property_last_breakfast_time)
         return handler
 
     @property
@@ -218,9 +237,10 @@ class FullClient:
         """Sets a callback to be called when the 'breakfast_length' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_breakfast_length.append(handler)
-        if call_immediately and self._property_breakfast_length is not None:
-            handler(self._property_breakfast_length)
+        with self._property_breakfast_length_mutex:
+            self._changed_value_callbacks_for_breakfast_length.append(handler)
+            if call_immediately and self._property_breakfast_length is not None:
+                handler(self._property_breakfast_length)
         return handler
 
     @property
@@ -241,9 +261,10 @@ class FullClient:
         """Sets a callback to be called when the 'last_birthdays' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_last_birthdays.append(handler)
-        if call_immediately and self._property_last_birthdays is not None:
-            handler(self._property_last_birthdays)
+        with self._property_last_birthdays_mutex:
+            self._changed_value_callbacks_for_last_birthdays.append(handler)
+            if call_immediately and self._property_last_birthdays is not None:
+                handler(self._property_last_birthdays)
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
@@ -272,21 +293,21 @@ class FullClient:
 
     def _receive_add_numbers_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'addNumbers' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -294,21 +315,21 @@ class FullClient:
 
     def _receive_do_something_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'doSomething' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -316,21 +337,21 @@ class FullClient:
 
     def _receive_echo_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'echo' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -338,21 +359,21 @@ class FullClient:
 
     def _receive_what_time_is_it_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'what_time_is_it' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -360,21 +381,21 @@ class FullClient:
 
     def _receive_set_the_time_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'set_the_time' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -382,21 +403,21 @@ class FullClient:
 
     def _receive_forward_time_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'forward_time' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -404,21 +425,21 @@ class FullClient:
 
     def _receive_how_off_is_the_clock_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'how_off_is_the_clock' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -430,12 +451,17 @@ class FullClient:
             self._logger.warning("Received 'favorite_number' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["number"])
-            self._property_favorite_number = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_favorite_number, value=self._property_favorite_number)
+            prop_obj = FavoriteNumberProperty.model_validate_json(payload)
+            with self._property_favorite_number_mutex:
+                self._property_favorite_number = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_favorite_number_version:
+                        self._property_favorite_number_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_favorite_number, value=prop_obj.number)
+
         except Exception as e:
-            self._logger.error("Error processing 'favorite_number' property change: %s", e)
+            self._logger.exception("Error processing 'favorite_number' property change: %s", exc_info=e)
 
     def _receive_favorite_foods_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'favorite_foods' property change.
@@ -443,11 +469,17 @@ class FullClient:
             self._logger.warning("Received 'favorite_foods' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.FavoriteFoodsProperty.model_validate_json(payload)
-            self._property_favorite_foods = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_favorite_foods, value=self._property_favorite_foods)
+            prop_obj = FavoriteFoodsProperty.model_validate_json(payload)
+            with self._property_favorite_foods_mutex:
+                self._property_favorite_foods = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_favorite_foods_version:
+                        self._property_favorite_foods_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_favorite_foods, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'favorite_foods' property change: %s", e)
+            self._logger.exception("Error processing 'favorite_foods' property change: %s", exc_info=e)
 
     def _receive_lunch_menu_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'lunch_menu' property change.
@@ -455,11 +487,17 @@ class FullClient:
             self._logger.warning("Received 'lunch_menu' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.LunchMenuProperty.model_validate_json(payload)
-            self._property_lunch_menu = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_lunch_menu, value=self._property_lunch_menu)
+            prop_obj = LunchMenuProperty.model_validate_json(payload)
+            with self._property_lunch_menu_mutex:
+                self._property_lunch_menu = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_lunch_menu_version:
+                        self._property_lunch_menu_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_lunch_menu, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'lunch_menu' property change: %s", e)
+            self._logger.exception("Error processing 'lunch_menu' property change: %s", exc_info=e)
 
     def _receive_family_name_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'family_name' property change.
@@ -467,12 +505,17 @@ class FullClient:
             self._logger.warning("Received 'family_name' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = str(payload_obj["family_name"])
-            self._property_family_name = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_family_name, value=self._property_family_name)
+            prop_obj = FamilyNameProperty.model_validate_json(payload)
+            with self._property_family_name_mutex:
+                self._property_family_name = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_family_name_version:
+                        self._property_family_name_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_family_name, value=prop_obj.family_name)
+
         except Exception as e:
-            self._logger.error("Error processing 'family_name' property change: %s", e)
+            self._logger.exception("Error processing 'family_name' property change: %s", exc_info=e)
 
     def _receive_last_breakfast_time_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'last_breakfast_time' property change.
@@ -480,12 +523,17 @@ class FullClient:
             self._logger.warning("Received 'last_breakfast_time' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = datetime.fromisoformat(payload_obj["timestamp"])
-            self._property_last_breakfast_time = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_last_breakfast_time, value=self._property_last_breakfast_time)
+            prop_obj = LastBreakfastTimeProperty.model_validate_json(payload)
+            with self._property_last_breakfast_time_mutex:
+                self._property_last_breakfast_time = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_last_breakfast_time_version:
+                        self._property_last_breakfast_time_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_last_breakfast_time, value=prop_obj.timestamp)
+
         except Exception as e:
-            self._logger.error("Error processing 'last_breakfast_time' property change: %s", e)
+            self._logger.exception("Error processing 'last_breakfast_time' property change: %s", exc_info=e)
 
     def _receive_breakfast_length_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'breakfast_length' property change.
@@ -493,12 +541,17 @@ class FullClient:
             self._logger.warning("Received 'breakfast_length' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = parse_duration(payload_obj["length"])
-            self._property_breakfast_length = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_breakfast_length, value=self._property_breakfast_length)
+            prop_obj = BreakfastLengthProperty.model_validate_json(payload)
+            with self._property_breakfast_length_mutex:
+                self._property_breakfast_length = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_breakfast_length_version:
+                        self._property_breakfast_length_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_breakfast_length, value=prop_obj.length)
+
         except Exception as e:
-            self._logger.error("Error processing 'breakfast_length' property change: %s", e)
+            self._logger.exception("Error processing 'breakfast_length' property change: %s", exc_info=e)
 
     def _receive_last_birthdays_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'last_birthdays' property change.
@@ -506,11 +559,17 @@ class FullClient:
             self._logger.warning("Received 'last_birthdays' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.LastBirthdaysProperty.model_validate_json(payload)
-            self._property_last_birthdays = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_last_birthdays, value=self._property_last_birthdays)
+            prop_obj = LastBirthdaysProperty.model_validate_json(payload)
+            with self._property_last_birthdays_mutex:
+                self._property_last_birthdays = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_last_birthdays_version:
+                        self._property_last_birthdays_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_last_birthdays, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'last_birthdays' property change: %s", e)
+            self._logger.exception("Error processing 'last_birthdays' property change: %s", exc_info=e)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """New MQTT messages are passed to this method, which, based on the topic,
@@ -552,7 +611,9 @@ class FullClient:
         self._logger.debug("Handling add_numbers response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'addNumbers' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = AddNumbersMethodResponse.model_validate_json(response_json_text)
@@ -589,7 +650,9 @@ class FullClient:
         self._logger.debug("Handling do_something response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'doSomething' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = DoSomethingMethodResponse.model_validate_json(response_json_text)
@@ -621,7 +684,9 @@ class FullClient:
         self._logger.debug("Handling echo response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'echo' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = EchoMethodResponse.model_validate_json(response_json_text)
@@ -658,7 +723,9 @@ class FullClient:
         self._logger.debug("Handling what_time_is_it response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'what_time_is_it' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = WhatTimeIsItMethodResponse.model_validate_json(response_json_text)
@@ -696,7 +763,9 @@ class FullClient:
         self._logger.debug("Handling set_the_time response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'set_the_time' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = SetTheTimeMethodResponse.model_validate_json(response_json_text)
@@ -733,7 +802,9 @@ class FullClient:
         self._logger.debug("Handling forward_time response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'forward_time' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = ForwardTimeMethodResponse.model_validate_json(response_json_text)
@@ -770,7 +841,9 @@ class FullClient:
         self._logger.debug("Handling how_off_is_the_clock response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'how_off_is_the_clock' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = HowOffIsTheClockMethodResponse.model_validate_json(response_json_text)
@@ -949,6 +1022,7 @@ class FullClientDiscoverer:
 
 if __name__ == "__main__":
     import signal
+    from time import sleep
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
@@ -1010,52 +1084,75 @@ if __name__ == "__main__":
         print("Timed out waiting for a service to appear")
         exit(1)
 
+    sleep(2)
+
     print("Making call to 'add_numbers'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.add_numbers(first=42, second=42, third=42)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'add_numbers' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'add_numbers' call")
 
     print("Making call to 'do_something'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.do_something(a_string="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'do_something' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'do_something' call")
 
     print("Making call to 'echo'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.echo(message="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'echo' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'echo' call")
 
     print("Making call to 'what_time_is_it'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.what_time_is_it(the_first_time=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'what_time_is_it' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'what_time_is_it' call")
 
     print("Making call to 'set_the_time'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.set_the_time(the_first_time=datetime.now(), the_second_time=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'set_the_time' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'set_the_time' call")
 
     print("Making call to 'forward_time'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.forward_time(adjustment=timedelta(seconds=3536))
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'forward_time' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'forward_time' call")
 
     print("Making call to 'how_off_is_the_clock'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.how_off_is_the_clock(actual_time=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'how_off_is_the_clock' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'how_off_is_the_clock' call")
 

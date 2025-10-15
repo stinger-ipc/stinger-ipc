@@ -290,6 +290,7 @@ class SignalOnlyClientDiscoverer:
 
 if __name__ == "__main__":
     import signal
+    from time import sleep
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
@@ -341,6 +342,8 @@ if __name__ == "__main__":
     except futures.TimeoutError:
         print("Timed out waiting for a service to appear")
         exit(1)
+
+    sleep(2)
 
     print("Ctrl-C will stop the program.")
     signal.pause()

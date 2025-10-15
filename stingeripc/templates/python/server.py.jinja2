@@ -160,7 +160,7 @@ class {{stinger.python.server_class_name}}:
                     {%if method.return_arg_list|length == 0%}
                     return_json = "{}"
                     {%elif method.return_arg_list|length == 1 %}
-                    if not isinstance(return_values, {{method.return_arg_list[0].python_class}}):
+                    if not isinstance(return_values, {{method.return_arg_list[0].python_local_type}}){% if method.return_arg_list[0].optional %} and return_values is not None{% endif %}:
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.return_arg_list[0].python_class}}, but was {type(return_values)}")
                     ret_obj = {{method_name|UpperCamelCase}}MethodResponse({{method.return_arg_list[0].name}}=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)

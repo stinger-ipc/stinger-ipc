@@ -109,75 +109,123 @@ class TestAbleClient:
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
 
         self._property_read_write_integer = None  # type: Optional[int]
+        self._property_read_write_integer_mutex = threading.Lock()
+        self._property_read_write_integer_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteInteger/value".format(self._service_id), self._receive_read_write_integer_property_update_message)
         self._changed_value_callbacks_for_read_write_integer: list[ReadWriteIntegerPropertyUpdatedCallbackType] = []
         self._property_read_only_integer = None  # type: Optional[int]
+        self._property_read_only_integer_mutex = threading.Lock()
+        self._property_read_only_integer_version = -1
         self._conn.subscribe("testAble/{}/property/readOnlyInteger/value".format(self._service_id), self._receive_read_only_integer_property_update_message)
         self._changed_value_callbacks_for_read_only_integer: list[ReadOnlyIntegerPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_integer = None  # type: Optional[int]
+        self._property_read_write_optional_integer_mutex = threading.Lock()
+        self._property_read_write_optional_integer_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalInteger/value".format(self._service_id), self._receive_read_write_optional_integer_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_integer: list[ReadWriteOptionalIntegerPropertyUpdatedCallbackType] = []
         self._property_read_write_two_integers = None  # type: Optional[interface_types.ReadWriteTwoIntegersProperty]
+        self._property_read_write_two_integers_mutex = threading.Lock()
+        self._property_read_write_two_integers_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoIntegers/value".format(self._service_id), self._receive_read_write_two_integers_property_update_message)
         self._changed_value_callbacks_for_read_write_two_integers: list[ReadWriteTwoIntegersPropertyUpdatedCallbackType] = []
         self._property_read_only_string = None  # type: Optional[str]
+        self._property_read_only_string_mutex = threading.Lock()
+        self._property_read_only_string_version = -1
         self._conn.subscribe("testAble/{}/property/readOnlyString/value".format(self._service_id), self._receive_read_only_string_property_update_message)
         self._changed_value_callbacks_for_read_only_string: list[ReadOnlyStringPropertyUpdatedCallbackType] = []
         self._property_read_write_string = None  # type: Optional[str]
+        self._property_read_write_string_mutex = threading.Lock()
+        self._property_read_write_string_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteString/value".format(self._service_id), self._receive_read_write_string_property_update_message)
         self._changed_value_callbacks_for_read_write_string: list[ReadWriteStringPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_string = None  # type: Optional[str]
+        self._property_read_write_optional_string_mutex = threading.Lock()
+        self._property_read_write_optional_string_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalString/value".format(self._service_id), self._receive_read_write_optional_string_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_string: list[ReadWriteOptionalStringPropertyUpdatedCallbackType] = []
         self._property_read_write_two_strings = None  # type: Optional[interface_types.ReadWriteTwoStringsProperty]
+        self._property_read_write_two_strings_mutex = threading.Lock()
+        self._property_read_write_two_strings_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoStrings/value".format(self._service_id), self._receive_read_write_two_strings_property_update_message)
         self._changed_value_callbacks_for_read_write_two_strings: list[ReadWriteTwoStringsPropertyUpdatedCallbackType] = []
         self._property_read_write_struct = None  # type: Optional[interface_types.AllTypes]
+        self._property_read_write_struct_mutex = threading.Lock()
+        self._property_read_write_struct_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteStruct/value".format(self._service_id), self._receive_read_write_struct_property_update_message)
         self._changed_value_callbacks_for_read_write_struct: list[ReadWriteStructPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_struct = None  # type: Optional[interface_types.AllTypes]
+        self._property_read_write_optional_struct_mutex = threading.Lock()
+        self._property_read_write_optional_struct_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalStruct/value".format(self._service_id), self._receive_read_write_optional_struct_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_struct: list[ReadWriteOptionalStructPropertyUpdatedCallbackType] = []
         self._property_read_write_two_structs = None  # type: Optional[interface_types.ReadWriteTwoStructsProperty]
+        self._property_read_write_two_structs_mutex = threading.Lock()
+        self._property_read_write_two_structs_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoStructs/value".format(self._service_id), self._receive_read_write_two_structs_property_update_message)
         self._changed_value_callbacks_for_read_write_two_structs: list[ReadWriteTwoStructsPropertyUpdatedCallbackType] = []
         self._property_read_only_enum = None  # type: Optional[interface_types.Numbers]
+        self._property_read_only_enum_mutex = threading.Lock()
+        self._property_read_only_enum_version = -1
         self._conn.subscribe("testAble/{}/property/readOnlyEnum/value".format(self._service_id), self._receive_read_only_enum_property_update_message)
         self._changed_value_callbacks_for_read_only_enum: list[ReadOnlyEnumPropertyUpdatedCallbackType] = []
         self._property_read_write_enum = None  # type: Optional[interface_types.Numbers]
+        self._property_read_write_enum_mutex = threading.Lock()
+        self._property_read_write_enum_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteEnum/value".format(self._service_id), self._receive_read_write_enum_property_update_message)
         self._changed_value_callbacks_for_read_write_enum: list[ReadWriteEnumPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_enum = None  # type: Optional[interface_types.Numbers]
+        self._property_read_write_optional_enum_mutex = threading.Lock()
+        self._property_read_write_optional_enum_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalEnum/value".format(self._service_id), self._receive_read_write_optional_enum_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_enum: list[ReadWriteOptionalEnumPropertyUpdatedCallbackType] = []
         self._property_read_write_two_enums = None  # type: Optional[interface_types.ReadWriteTwoEnumsProperty]
+        self._property_read_write_two_enums_mutex = threading.Lock()
+        self._property_read_write_two_enums_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoEnums/value".format(self._service_id), self._receive_read_write_two_enums_property_update_message)
         self._changed_value_callbacks_for_read_write_two_enums: list[ReadWriteTwoEnumsPropertyUpdatedCallbackType] = []
         self._property_read_write_datetime = None  # type: Optional[datetime.datetime]
+        self._property_read_write_datetime_mutex = threading.Lock()
+        self._property_read_write_datetime_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteDatetime/value".format(self._service_id), self._receive_read_write_datetime_property_update_message)
         self._changed_value_callbacks_for_read_write_datetime: list[ReadWriteDatetimePropertyUpdatedCallbackType] = []
         self._property_read_write_optional_datetime = None  # type: Optional[datetime.datetime]
+        self._property_read_write_optional_datetime_mutex = threading.Lock()
+        self._property_read_write_optional_datetime_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalDatetime/value".format(self._service_id), self._receive_read_write_optional_datetime_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_datetime: list[ReadWriteOptionalDatetimePropertyUpdatedCallbackType] = []
         self._property_read_write_two_datetimes = None  # type: Optional[interface_types.ReadWriteTwoDatetimesProperty]
+        self._property_read_write_two_datetimes_mutex = threading.Lock()
+        self._property_read_write_two_datetimes_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoDatetimes/value".format(self._service_id), self._receive_read_write_two_datetimes_property_update_message)
         self._changed_value_callbacks_for_read_write_two_datetimes: list[ReadWriteTwoDatetimesPropertyUpdatedCallbackType] = []
         self._property_read_write_duration = None  # type: Optional[datetime.timedelta]
+        self._property_read_write_duration_mutex = threading.Lock()
+        self._property_read_write_duration_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteDuration/value".format(self._service_id), self._receive_read_write_duration_property_update_message)
         self._changed_value_callbacks_for_read_write_duration: list[ReadWriteDurationPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_duration = None  # type: Optional[datetime.timedelta]
+        self._property_read_write_optional_duration_mutex = threading.Lock()
+        self._property_read_write_optional_duration_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalDuration/value".format(self._service_id), self._receive_read_write_optional_duration_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_duration: list[ReadWriteOptionalDurationPropertyUpdatedCallbackType] = []
         self._property_read_write_two_durations = None  # type: Optional[interface_types.ReadWriteTwoDurationsProperty]
+        self._property_read_write_two_durations_mutex = threading.Lock()
+        self._property_read_write_two_durations_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoDurations/value".format(self._service_id), self._receive_read_write_two_durations_property_update_message)
         self._changed_value_callbacks_for_read_write_two_durations: list[ReadWriteTwoDurationsPropertyUpdatedCallbackType] = []
         self._property_read_write_binary = None  # type: Optional[bytes]
+        self._property_read_write_binary_mutex = threading.Lock()
+        self._property_read_write_binary_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteBinary/value".format(self._service_id), self._receive_read_write_binary_property_update_message)
         self._changed_value_callbacks_for_read_write_binary: list[ReadWriteBinaryPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_binary = None  # type: Optional[bytes]
+        self._property_read_write_optional_binary_mutex = threading.Lock()
+        self._property_read_write_optional_binary_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalBinary/value".format(self._service_id), self._receive_read_write_optional_binary_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_binary: list[ReadWriteOptionalBinaryPropertyUpdatedCallbackType] = []
         self._property_read_write_two_binaries = None  # type: Optional[interface_types.ReadWriteTwoBinariesProperty]
+        self._property_read_write_two_binaries_mutex = threading.Lock()
+        self._property_read_write_two_binaries_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoBinaries/value".format(self._service_id), self._receive_read_write_two_binaries_property_update_message)
         self._changed_value_callbacks_for_read_write_two_binaries: list[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_empty: list[EmptySignalCallbackType] = []
@@ -243,9 +291,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_integer' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_integer.append(handler)
-        if call_immediately and self._property_read_write_integer is not None:
-            handler(self._property_read_write_integer)
+        with self._property_read_write_integer_mutex:
+            self._changed_value_callbacks_for_read_write_integer.append(handler)
+            if call_immediately and self._property_read_write_integer is not None:
+                handler(self._property_read_write_integer)
         return handler
 
     @property
@@ -257,9 +306,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_only_integer' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_only_integer.append(handler)
-        if call_immediately and self._property_read_only_integer is not None:
-            handler(self._property_read_only_integer)
+        with self._property_read_only_integer_mutex:
+            self._changed_value_callbacks_for_read_only_integer.append(handler)
+            if call_immediately and self._property_read_only_integer is not None:
+                handler(self._property_read_only_integer)
         return handler
 
     @property
@@ -280,9 +330,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_optional_integer' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_optional_integer.append(handler)
-        if call_immediately and self._property_read_write_optional_integer is not None:
-            handler(self._property_read_write_optional_integer)
+        with self._property_read_write_optional_integer_mutex:
+            self._changed_value_callbacks_for_read_write_optional_integer.append(handler)
+            if call_immediately and self._property_read_write_optional_integer is not None:
+                handler(self._property_read_write_optional_integer)
         return handler
 
     @property
@@ -303,9 +354,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_two_integers' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_two_integers.append(handler)
-        if call_immediately and self._property_read_write_two_integers is not None:
-            handler(self._property_read_write_two_integers)
+        with self._property_read_write_two_integers_mutex:
+            self._changed_value_callbacks_for_read_write_two_integers.append(handler)
+            if call_immediately and self._property_read_write_two_integers is not None:
+                handler(self._property_read_write_two_integers)
         return handler
 
     @property
@@ -317,9 +369,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_only_string' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_only_string.append(handler)
-        if call_immediately and self._property_read_only_string is not None:
-            handler(self._property_read_only_string)
+        with self._property_read_only_string_mutex:
+            self._changed_value_callbacks_for_read_only_string.append(handler)
+            if call_immediately and self._property_read_only_string is not None:
+                handler(self._property_read_only_string)
         return handler
 
     @property
@@ -340,9 +393,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_string' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_string.append(handler)
-        if call_immediately and self._property_read_write_string is not None:
-            handler(self._property_read_write_string)
+        with self._property_read_write_string_mutex:
+            self._changed_value_callbacks_for_read_write_string.append(handler)
+            if call_immediately and self._property_read_write_string is not None:
+                handler(self._property_read_write_string)
         return handler
 
     @property
@@ -363,9 +417,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_optional_string' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_optional_string.append(handler)
-        if call_immediately and self._property_read_write_optional_string is not None:
-            handler(self._property_read_write_optional_string)
+        with self._property_read_write_optional_string_mutex:
+            self._changed_value_callbacks_for_read_write_optional_string.append(handler)
+            if call_immediately and self._property_read_write_optional_string is not None:
+                handler(self._property_read_write_optional_string)
         return handler
 
     @property
@@ -386,9 +441,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_two_strings' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_two_strings.append(handler)
-        if call_immediately and self._property_read_write_two_strings is not None:
-            handler(self._property_read_write_two_strings)
+        with self._property_read_write_two_strings_mutex:
+            self._changed_value_callbacks_for_read_write_two_strings.append(handler)
+            if call_immediately and self._property_read_write_two_strings is not None:
+                handler(self._property_read_write_two_strings)
         return handler
 
     @property
@@ -409,9 +465,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_struct' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_struct.append(handler)
-        if call_immediately and self._property_read_write_struct is not None:
-            handler(self._property_read_write_struct)
+        with self._property_read_write_struct_mutex:
+            self._changed_value_callbacks_for_read_write_struct.append(handler)
+            if call_immediately and self._property_read_write_struct is not None:
+                handler(self._property_read_write_struct)
         return handler
 
     @property
@@ -432,9 +489,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_optional_struct' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_optional_struct.append(handler)
-        if call_immediately and self._property_read_write_optional_struct is not None:
-            handler(self._property_read_write_optional_struct)
+        with self._property_read_write_optional_struct_mutex:
+            self._changed_value_callbacks_for_read_write_optional_struct.append(handler)
+            if call_immediately and self._property_read_write_optional_struct is not None:
+                handler(self._property_read_write_optional_struct)
         return handler
 
     @property
@@ -455,9 +513,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_two_structs' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_two_structs.append(handler)
-        if call_immediately and self._property_read_write_two_structs is not None:
-            handler(self._property_read_write_two_structs)
+        with self._property_read_write_two_structs_mutex:
+            self._changed_value_callbacks_for_read_write_two_structs.append(handler)
+            if call_immediately and self._property_read_write_two_structs is not None:
+                handler(self._property_read_write_two_structs)
         return handler
 
     @property
@@ -469,9 +528,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_only_enum' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_only_enum.append(handler)
-        if call_immediately and self._property_read_only_enum is not None:
-            handler(self._property_read_only_enum)
+        with self._property_read_only_enum_mutex:
+            self._changed_value_callbacks_for_read_only_enum.append(handler)
+            if call_immediately and self._property_read_only_enum is not None:
+                handler(self._property_read_only_enum)
         return handler
 
     @property
@@ -492,9 +552,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_enum' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_enum.append(handler)
-        if call_immediately and self._property_read_write_enum is not None:
-            handler(self._property_read_write_enum)
+        with self._property_read_write_enum_mutex:
+            self._changed_value_callbacks_for_read_write_enum.append(handler)
+            if call_immediately and self._property_read_write_enum is not None:
+                handler(self._property_read_write_enum)
         return handler
 
     @property
@@ -515,9 +576,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_optional_enum' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_optional_enum.append(handler)
-        if call_immediately and self._property_read_write_optional_enum is not None:
-            handler(self._property_read_write_optional_enum)
+        with self._property_read_write_optional_enum_mutex:
+            self._changed_value_callbacks_for_read_write_optional_enum.append(handler)
+            if call_immediately and self._property_read_write_optional_enum is not None:
+                handler(self._property_read_write_optional_enum)
         return handler
 
     @property
@@ -538,9 +600,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_two_enums' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_two_enums.append(handler)
-        if call_immediately and self._property_read_write_two_enums is not None:
-            handler(self._property_read_write_two_enums)
+        with self._property_read_write_two_enums_mutex:
+            self._changed_value_callbacks_for_read_write_two_enums.append(handler)
+            if call_immediately and self._property_read_write_two_enums is not None:
+                handler(self._property_read_write_two_enums)
         return handler
 
     @property
@@ -561,9 +624,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_datetime' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_datetime.append(handler)
-        if call_immediately and self._property_read_write_datetime is not None:
-            handler(self._property_read_write_datetime)
+        with self._property_read_write_datetime_mutex:
+            self._changed_value_callbacks_for_read_write_datetime.append(handler)
+            if call_immediately and self._property_read_write_datetime is not None:
+                handler(self._property_read_write_datetime)
         return handler
 
     @property
@@ -584,9 +648,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_optional_datetime' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_optional_datetime.append(handler)
-        if call_immediately and self._property_read_write_optional_datetime is not None:
-            handler(self._property_read_write_optional_datetime)
+        with self._property_read_write_optional_datetime_mutex:
+            self._changed_value_callbacks_for_read_write_optional_datetime.append(handler)
+            if call_immediately and self._property_read_write_optional_datetime is not None:
+                handler(self._property_read_write_optional_datetime)
         return handler
 
     @property
@@ -607,9 +672,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_two_datetimes' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_two_datetimes.append(handler)
-        if call_immediately and self._property_read_write_two_datetimes is not None:
-            handler(self._property_read_write_two_datetimes)
+        with self._property_read_write_two_datetimes_mutex:
+            self._changed_value_callbacks_for_read_write_two_datetimes.append(handler)
+            if call_immediately and self._property_read_write_two_datetimes is not None:
+                handler(self._property_read_write_two_datetimes)
         return handler
 
     @property
@@ -630,9 +696,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_duration' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_duration.append(handler)
-        if call_immediately and self._property_read_write_duration is not None:
-            handler(self._property_read_write_duration)
+        with self._property_read_write_duration_mutex:
+            self._changed_value_callbacks_for_read_write_duration.append(handler)
+            if call_immediately and self._property_read_write_duration is not None:
+                handler(self._property_read_write_duration)
         return handler
 
     @property
@@ -653,9 +720,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_optional_duration' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_optional_duration.append(handler)
-        if call_immediately and self._property_read_write_optional_duration is not None:
-            handler(self._property_read_write_optional_duration)
+        with self._property_read_write_optional_duration_mutex:
+            self._changed_value_callbacks_for_read_write_optional_duration.append(handler)
+            if call_immediately and self._property_read_write_optional_duration is not None:
+                handler(self._property_read_write_optional_duration)
         return handler
 
     @property
@@ -676,9 +744,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_two_durations' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_two_durations.append(handler)
-        if call_immediately and self._property_read_write_two_durations is not None:
-            handler(self._property_read_write_two_durations)
+        with self._property_read_write_two_durations_mutex:
+            self._changed_value_callbacks_for_read_write_two_durations.append(handler)
+            if call_immediately and self._property_read_write_two_durations is not None:
+                handler(self._property_read_write_two_durations)
         return handler
 
     @property
@@ -699,9 +768,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_binary' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_binary.append(handler)
-        if call_immediately and self._property_read_write_binary is not None:
-            handler(self._property_read_write_binary)
+        with self._property_read_write_binary_mutex:
+            self._changed_value_callbacks_for_read_write_binary.append(handler)
+            if call_immediately and self._property_read_write_binary is not None:
+                handler(self._property_read_write_binary)
         return handler
 
     @property
@@ -722,9 +792,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_optional_binary' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_optional_binary.append(handler)
-        if call_immediately and self._property_read_write_optional_binary is not None:
-            handler(self._property_read_write_optional_binary)
+        with self._property_read_write_optional_binary_mutex:
+            self._changed_value_callbacks_for_read_write_optional_binary.append(handler)
+            if call_immediately and self._property_read_write_optional_binary is not None:
+                handler(self._property_read_write_optional_binary)
         return handler
 
     @property
@@ -745,9 +816,10 @@ class TestAbleClient:
         """Sets a callback to be called when the 'read_write_two_binaries' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_read_write_two_binaries.append(handler)
-        if call_immediately and self._property_read_write_two_binaries is not None:
-            handler(self._property_read_write_two_binaries)
+        with self._property_read_write_two_binaries_mutex:
+            self._changed_value_callbacks_for_read_write_two_binaries.append(handler)
+            if call_immediately and self._property_read_write_two_binaries is not None:
+                handler(self._property_read_write_two_binaries)
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
@@ -986,21 +1058,21 @@ class TestAbleClient:
 
     def _receive_call_with_nothing_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callWithNothing' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1008,21 +1080,21 @@ class TestAbleClient:
 
     def _receive_call_one_integer_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneInteger' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1030,21 +1102,21 @@ class TestAbleClient:
 
     def _receive_call_optional_integer_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalInteger' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1052,21 +1124,21 @@ class TestAbleClient:
 
     def _receive_call_three_integers_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeIntegers' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1074,21 +1146,21 @@ class TestAbleClient:
 
     def _receive_call_one_string_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneString' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1096,21 +1168,21 @@ class TestAbleClient:
 
     def _receive_call_optional_string_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalString' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1118,21 +1190,21 @@ class TestAbleClient:
 
     def _receive_call_three_strings_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeStrings' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1140,21 +1212,21 @@ class TestAbleClient:
 
     def _receive_call_one_enum_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneEnum' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1162,21 +1234,21 @@ class TestAbleClient:
 
     def _receive_call_optional_enum_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalEnum' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1184,21 +1256,21 @@ class TestAbleClient:
 
     def _receive_call_three_enums_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeEnums' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1206,21 +1278,21 @@ class TestAbleClient:
 
     def _receive_call_one_struct_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneStruct' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1228,21 +1300,21 @@ class TestAbleClient:
 
     def _receive_call_optional_struct_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalStruct' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1250,21 +1322,21 @@ class TestAbleClient:
 
     def _receive_call_three_structs_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeStructs' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1272,21 +1344,21 @@ class TestAbleClient:
 
     def _receive_call_one_date_time_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneDateTime' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1294,21 +1366,21 @@ class TestAbleClient:
 
     def _receive_call_optional_date_time_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalDateTime' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1316,21 +1388,21 @@ class TestAbleClient:
 
     def _receive_call_three_date_times_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeDateTimes' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1338,21 +1410,21 @@ class TestAbleClient:
 
     def _receive_call_one_duration_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneDuration' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1360,21 +1432,21 @@ class TestAbleClient:
 
     def _receive_call_optional_duration_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalDuration' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1382,21 +1454,21 @@ class TestAbleClient:
 
     def _receive_call_three_durations_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeDurations' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1404,21 +1476,21 @@ class TestAbleClient:
 
     def _receive_call_one_binary_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOneBinary' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1426,21 +1498,21 @@ class TestAbleClient:
 
     def _receive_call_optional_binary_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callOptionalBinary' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1448,21 +1520,21 @@ class TestAbleClient:
 
     def _receive_call_three_binaries_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callThreeBinaries' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -1474,12 +1546,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_integer' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["value"])
-            self._property_read_write_integer = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_integer, value=self._property_read_write_integer)
+            prop_obj = ReadWriteIntegerProperty.model_validate_json(payload)
+            with self._property_read_write_integer_mutex:
+                self._property_read_write_integer = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_integer_version:
+                        self._property_read_write_integer_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_integer, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_integer' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_integer' property change: %s", exc_info=e)
 
     def _receive_read_only_integer_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_only_integer' property change.
@@ -1487,12 +1564,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_only_integer' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["value"])
-            self._property_read_only_integer = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_only_integer, value=self._property_read_only_integer)
+            prop_obj = ReadOnlyIntegerProperty.model_validate_json(payload)
+            with self._property_read_only_integer_mutex:
+                self._property_read_only_integer = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_only_integer_version:
+                        self._property_read_only_integer_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_only_integer, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_only_integer' property change: %s", e)
+            self._logger.exception("Error processing 'read_only_integer' property change: %s", exc_info=e)
 
     def _receive_read_write_optional_integer_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_optional_integer' property change.
@@ -1500,12 +1582,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_optional_integer' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["value"])
-            self._property_read_write_optional_integer = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_integer, value=self._property_read_write_optional_integer)
+            prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(payload)
+            with self._property_read_write_optional_integer_mutex:
+                self._property_read_write_optional_integer = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_optional_integer_version:
+                        self._property_read_write_optional_integer_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_integer, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_optional_integer' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_optional_integer' property change: %s", exc_info=e)
 
     def _receive_read_write_two_integers_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_two_integers' property change.
@@ -1513,11 +1600,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_integers' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.ReadWriteTwoIntegersProperty.model_validate_json(payload)
-            self._property_read_write_two_integers = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_integers, value=self._property_read_write_two_integers)
+            prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(payload)
+            with self._property_read_write_two_integers_mutex:
+                self._property_read_write_two_integers = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_two_integers_version:
+                        self._property_read_write_two_integers_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_integers, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_two_integers' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_two_integers' property change: %s", exc_info=e)
 
     def _receive_read_only_string_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_only_string' property change.
@@ -1525,12 +1618,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_only_string' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = str(payload_obj["value"])
-            self._property_read_only_string = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_only_string, value=self._property_read_only_string)
+            prop_obj = ReadOnlyStringProperty.model_validate_json(payload)
+            with self._property_read_only_string_mutex:
+                self._property_read_only_string = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_only_string_version:
+                        self._property_read_only_string_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_only_string, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_only_string' property change: %s", e)
+            self._logger.exception("Error processing 'read_only_string' property change: %s", exc_info=e)
 
     def _receive_read_write_string_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_string' property change.
@@ -1538,12 +1636,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_string' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = str(payload_obj["value"])
-            self._property_read_write_string = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_string, value=self._property_read_write_string)
+            prop_obj = ReadWriteStringProperty.model_validate_json(payload)
+            with self._property_read_write_string_mutex:
+                self._property_read_write_string = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_string_version:
+                        self._property_read_write_string_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_string, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_string' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_string' property change: %s", exc_info=e)
 
     def _receive_read_write_optional_string_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_optional_string' property change.
@@ -1551,12 +1654,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_optional_string' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = str(payload_obj["value"])
-            self._property_read_write_optional_string = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_string, value=self._property_read_write_optional_string)
+            prop_obj = ReadWriteOptionalStringProperty.model_validate_json(payload)
+            with self._property_read_write_optional_string_mutex:
+                self._property_read_write_optional_string = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_optional_string_version:
+                        self._property_read_write_optional_string_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_string, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_optional_string' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_optional_string' property change: %s", exc_info=e)
 
     def _receive_read_write_two_strings_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_two_strings' property change.
@@ -1564,11 +1672,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_strings' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.ReadWriteTwoStringsProperty.model_validate_json(payload)
-            self._property_read_write_two_strings = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_strings, value=self._property_read_write_two_strings)
+            prop_obj = ReadWriteTwoStringsProperty.model_validate_json(payload)
+            with self._property_read_write_two_strings_mutex:
+                self._property_read_write_two_strings = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_two_strings_version:
+                        self._property_read_write_two_strings_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_strings, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_two_strings' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_two_strings' property change: %s", exc_info=e)
 
     def _receive_read_write_struct_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_struct' property change.
@@ -1576,12 +1690,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_struct' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = AllTypes(payload_obj["value"])
-            self._property_read_write_struct = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_struct, value=self._property_read_write_struct)
+            prop_obj = ReadWriteStructProperty.model_validate_json(payload)
+            with self._property_read_write_struct_mutex:
+                self._property_read_write_struct = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_struct_version:
+                        self._property_read_write_struct_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_struct, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_struct' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_struct' property change: %s", exc_info=e)
 
     def _receive_read_write_optional_struct_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_optional_struct' property change.
@@ -1589,12 +1708,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_optional_struct' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = AllTypes(payload_obj["value"])
-            self._property_read_write_optional_struct = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_struct, value=self._property_read_write_optional_struct)
+            prop_obj = ReadWriteOptionalStructProperty.model_validate_json(payload)
+            with self._property_read_write_optional_struct_mutex:
+                self._property_read_write_optional_struct = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_optional_struct_version:
+                        self._property_read_write_optional_struct_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_struct, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_optional_struct' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_optional_struct' property change: %s", exc_info=e)
 
     def _receive_read_write_two_structs_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_two_structs' property change.
@@ -1602,11 +1726,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_structs' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.ReadWriteTwoStructsProperty.model_validate_json(payload)
-            self._property_read_write_two_structs = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_structs, value=self._property_read_write_two_structs)
+            prop_obj = ReadWriteTwoStructsProperty.model_validate_json(payload)
+            with self._property_read_write_two_structs_mutex:
+                self._property_read_write_two_structs = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_two_structs_version:
+                        self._property_read_write_two_structs_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_structs, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_two_structs' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_two_structs' property change: %s", exc_info=e)
 
     def _receive_read_only_enum_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_only_enum' property change.
@@ -1614,12 +1744,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_only_enum' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = Numbers(payload_obj["value"])
-            self._property_read_only_enum = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_only_enum, value=self._property_read_only_enum)
+            prop_obj = ReadOnlyEnumProperty.model_validate_json(payload)
+            with self._property_read_only_enum_mutex:
+                self._property_read_only_enum = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_only_enum_version:
+                        self._property_read_only_enum_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_only_enum, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_only_enum' property change: %s", e)
+            self._logger.exception("Error processing 'read_only_enum' property change: %s", exc_info=e)
 
     def _receive_read_write_enum_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_enum' property change.
@@ -1627,12 +1762,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_enum' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = Numbers(payload_obj["value"])
-            self._property_read_write_enum = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_enum, value=self._property_read_write_enum)
+            prop_obj = ReadWriteEnumProperty.model_validate_json(payload)
+            with self._property_read_write_enum_mutex:
+                self._property_read_write_enum = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_enum_version:
+                        self._property_read_write_enum_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_enum, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_enum' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_enum' property change: %s", exc_info=e)
 
     def _receive_read_write_optional_enum_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_optional_enum' property change.
@@ -1640,12 +1780,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_optional_enum' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = Numbers(payload_obj["value"])
-            self._property_read_write_optional_enum = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_enum, value=self._property_read_write_optional_enum)
+            prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(payload)
+            with self._property_read_write_optional_enum_mutex:
+                self._property_read_write_optional_enum = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_optional_enum_version:
+                        self._property_read_write_optional_enum_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_enum, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_optional_enum' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_optional_enum' property change: %s", exc_info=e)
 
     def _receive_read_write_two_enums_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_two_enums' property change.
@@ -1653,11 +1798,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_enums' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.ReadWriteTwoEnumsProperty.model_validate_json(payload)
-            self._property_read_write_two_enums = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_enums, value=self._property_read_write_two_enums)
+            prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(payload)
+            with self._property_read_write_two_enums_mutex:
+                self._property_read_write_two_enums = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_two_enums_version:
+                        self._property_read_write_two_enums_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_enums, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_two_enums' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_two_enums' property change: %s", exc_info=e)
 
     def _receive_read_write_datetime_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_datetime' property change.
@@ -1665,12 +1816,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_datetime' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = datetime.fromisoformat(payload_obj["value"])
-            self._property_read_write_datetime = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_datetime, value=self._property_read_write_datetime)
+            prop_obj = ReadWriteDatetimeProperty.model_validate_json(payload)
+            with self._property_read_write_datetime_mutex:
+                self._property_read_write_datetime = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_datetime_version:
+                        self._property_read_write_datetime_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_datetime, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_datetime' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_datetime' property change: %s", exc_info=e)
 
     def _receive_read_write_optional_datetime_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_optional_datetime' property change.
@@ -1678,12 +1834,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_optional_datetime' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = datetime.fromisoformat(payload_obj["value"])
-            self._property_read_write_optional_datetime = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_datetime, value=self._property_read_write_optional_datetime)
+            prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(payload)
+            with self._property_read_write_optional_datetime_mutex:
+                self._property_read_write_optional_datetime = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_optional_datetime_version:
+                        self._property_read_write_optional_datetime_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_datetime, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_optional_datetime' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_optional_datetime' property change: %s", exc_info=e)
 
     def _receive_read_write_two_datetimes_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_two_datetimes' property change.
@@ -1691,11 +1852,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_datetimes' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.ReadWriteTwoDatetimesProperty.model_validate_json(payload)
-            self._property_read_write_two_datetimes = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_datetimes, value=self._property_read_write_two_datetimes)
+            prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(payload)
+            with self._property_read_write_two_datetimes_mutex:
+                self._property_read_write_two_datetimes = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_two_datetimes_version:
+                        self._property_read_write_two_datetimes_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_datetimes, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_two_datetimes' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_two_datetimes' property change: %s", exc_info=e)
 
     def _receive_read_write_duration_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_duration' property change.
@@ -1703,12 +1870,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_duration' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = parse_duration(payload_obj["value"])
-            self._property_read_write_duration = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_duration, value=self._property_read_write_duration)
+            prop_obj = ReadWriteDurationProperty.model_validate_json(payload)
+            with self._property_read_write_duration_mutex:
+                self._property_read_write_duration = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_duration_version:
+                        self._property_read_write_duration_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_duration, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_duration' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_duration' property change: %s", exc_info=e)
 
     def _receive_read_write_optional_duration_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_optional_duration' property change.
@@ -1716,12 +1888,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_optional_duration' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = parse_duration(payload_obj["value"])
-            self._property_read_write_optional_duration = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_duration, value=self._property_read_write_optional_duration)
+            prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(payload)
+            with self._property_read_write_optional_duration_mutex:
+                self._property_read_write_optional_duration = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_optional_duration_version:
+                        self._property_read_write_optional_duration_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_duration, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_optional_duration' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_optional_duration' property change: %s", exc_info=e)
 
     def _receive_read_write_two_durations_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_two_durations' property change.
@@ -1729,11 +1906,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_durations' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.ReadWriteTwoDurationsProperty.model_validate_json(payload)
-            self._property_read_write_two_durations = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_durations, value=self._property_read_write_two_durations)
+            prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(payload)
+            with self._property_read_write_two_durations_mutex:
+                self._property_read_write_two_durations = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_two_durations_version:
+                        self._property_read_write_two_durations_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_durations, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_two_durations' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_two_durations' property change: %s", exc_info=e)
 
     def _receive_read_write_binary_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_binary' property change.
@@ -1741,12 +1924,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_binary' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = base64.b64decode(payload_obj["value"])
-            self._property_read_write_binary = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_binary, value=self._property_read_write_binary)
+            prop_obj = ReadWriteBinaryProperty.model_validate_json(payload)
+            with self._property_read_write_binary_mutex:
+                self._property_read_write_binary = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_binary_version:
+                        self._property_read_write_binary_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_binary, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_binary' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_binary' property change: %s", exc_info=e)
 
     def _receive_read_write_optional_binary_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_optional_binary' property change.
@@ -1754,12 +1942,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_optional_binary' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = base64.b64decode(payload_obj["value"])
-            self._property_read_write_optional_binary = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_binary, value=self._property_read_write_optional_binary)
+            prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(payload)
+            with self._property_read_write_optional_binary_mutex:
+                self._property_read_write_optional_binary = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_optional_binary_version:
+                        self._property_read_write_optional_binary_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_binary, value=prop_obj.value)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_optional_binary' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_optional_binary' property change: %s", exc_info=e)
 
     def _receive_read_write_two_binaries_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_two_binaries' property change.
@@ -1767,11 +1960,17 @@ class TestAbleClient:
             self._logger.warning("Received 'read_write_two_binaries' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.ReadWriteTwoBinariesProperty.model_validate_json(payload)
-            self._property_read_write_two_binaries = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_binaries, value=self._property_read_write_two_binaries)
+            prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(payload)
+            with self._property_read_write_two_binaries_mutex:
+                self._property_read_write_two_binaries = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_two_binaries_version:
+                        self._property_read_write_two_binaries_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_binaries, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'read_write_two_binaries' property change: %s", e)
+            self._logger.exception("Error processing 'read_write_two_binaries' property change: %s", exc_info=e)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """New MQTT messages are passed to this method, which, based on the topic,
@@ -1958,7 +2157,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_with_nothing response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callWithNothing' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallWithNothingMethodResponse.model_validate_json(response_json_text)
@@ -1996,7 +2197,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_one_integer response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOneInteger' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOneIntegerMethodResponse.model_validate_json(response_json_text)
@@ -2033,7 +2236,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_optional_integer response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOptionalInteger' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOptionalIntegerMethodResponse.model_validate_json(response_json_text)
@@ -2072,7 +2277,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_three_integers response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callThreeIntegers' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallThreeIntegersMethodResponse.model_validate_json(response_json_text)
@@ -2109,7 +2316,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_one_string response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOneString' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOneStringMethodResponse.model_validate_json(response_json_text)
@@ -2146,7 +2355,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_optional_string response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOptionalString' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOptionalStringMethodResponse.model_validate_json(response_json_text)
@@ -2185,7 +2396,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_three_strings response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callThreeStrings' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallThreeStringsMethodResponse.model_validate_json(response_json_text)
@@ -2222,7 +2435,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_one_enum response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOneEnum' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOneEnumMethodResponse.model_validate_json(response_json_text)
@@ -2259,7 +2474,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_optional_enum response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOptionalEnum' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOptionalEnumMethodResponse.model_validate_json(response_json_text)
@@ -2298,7 +2515,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_three_enums response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callThreeEnums' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallThreeEnumsMethodResponse.model_validate_json(response_json_text)
@@ -2335,7 +2554,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_one_struct response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOneStruct' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOneStructMethodResponse.model_validate_json(response_json_text)
@@ -2372,7 +2593,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_optional_struct response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOptionalStruct' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOptionalStructMethodResponse.model_validate_json(response_json_text)
@@ -2411,7 +2634,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_three_structs response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callThreeStructs' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallThreeStructsMethodResponse.model_validate_json(response_json_text)
@@ -2448,7 +2673,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_one_date_time response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOneDateTime' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOneDateTimeMethodResponse.model_validate_json(response_json_text)
@@ -2485,7 +2712,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_optional_date_time response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOptionalDateTime' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOptionalDateTimeMethodResponse.model_validate_json(response_json_text)
@@ -2524,7 +2753,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_three_date_times response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callThreeDateTimes' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallThreeDateTimesMethodResponse.model_validate_json(response_json_text)
@@ -2561,7 +2792,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_one_duration response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOneDuration' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOneDurationMethodResponse.model_validate_json(response_json_text)
@@ -2598,7 +2831,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_optional_duration response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOptionalDuration' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOptionalDurationMethodResponse.model_validate_json(response_json_text)
@@ -2637,7 +2872,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_three_durations response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callThreeDurations' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallThreeDurationsMethodResponse.model_validate_json(response_json_text)
@@ -2674,7 +2911,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_one_binary response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOneBinary' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOneBinaryMethodResponse.model_validate_json(response_json_text)
@@ -2711,7 +2950,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_optional_binary response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOptionalBinary' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallOptionalBinaryMethodResponse.model_validate_json(response_json_text)
@@ -2750,7 +2991,9 @@ class TestAbleClient:
         self._logger.debug("Handling call_three_binaries response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callThreeBinaries' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = CallThreeBinariesMethodResponse.model_validate_json(response_json_text)
@@ -3233,6 +3476,7 @@ class TestAbleClientDiscoverer:
 
 if __name__ == "__main__":
     import signal
+    from time import sleep
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
@@ -3534,77 +3778,110 @@ if __name__ == "__main__":
         print("Timed out waiting for a service to appear")
         exit(1)
 
+    sleep(2)
+
     print("Making call to 'call_with_nothing'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_with_nothing()
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_with_nothing' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_with_nothing' call")
 
     print("Making call to 'call_one_integer'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_integer(input1=42)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_one_integer' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_integer' call")
 
     print("Making call to 'call_optional_integer'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_integer(input1=42)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_optional_integer' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_integer' call")
 
     print("Making call to 'call_three_integers'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_integers(input1=42, input2=42, input3=42)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_three_integers' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_integers' call")
 
     print("Making call to 'call_one_string'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_string(input1="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_one_string' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_string' call")
 
     print("Making call to 'call_optional_string'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_string(input1="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_optional_string' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_string' call")
 
     print("Making call to 'call_three_strings'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_strings(input1="apples", input2="apples", input3="apples")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_three_strings' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_strings' call")
 
     print("Making call to 'call_one_enum'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_enum(input1=interface_types.Numbers.ONE)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_one_enum' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_enum' call")
 
     print("Making call to 'call_optional_enum'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_enum(input1=interface_types.Numbers.ONE)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_optional_enum' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_enum' call")
 
     print("Making call to 'call_three_enums'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_enums(input1=interface_types.Numbers.ONE, input2=interface_types.Numbers.ONE, input3=interface_types.Numbers.ONE)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_three_enums' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_enums' call")
 
     print("Making call to 'call_one_struct'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_struct(
         input1=interface_types.AllTypes(
             the_bool=True,
@@ -3625,10 +3902,13 @@ if __name__ == "__main__":
     )
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_one_struct' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_struct' call")
 
     print("Making call to 'call_optional_struct'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_struct(
         input1=interface_types.AllTypes(
             the_bool=True,
@@ -3649,10 +3929,13 @@ if __name__ == "__main__":
     )
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_optional_struct' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_struct' call")
 
     print("Making call to 'call_three_structs'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_structs(
         input1=interface_types.AllTypes(
             the_bool=True,
@@ -3698,76 +3981,105 @@ if __name__ == "__main__":
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=None,
+            optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
         ),
     )
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_three_structs' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_structs' call")
 
     print("Making call to 'call_one_date_time'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_date_time(input1=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_one_date_time' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_date_time' call")
 
     print("Making call to 'call_optional_date_time'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_date_time(input1=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_optional_date_time' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_date_time' call")
 
     print("Making call to 'call_three_date_times'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=datetime.now())
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_three_date_times' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_date_times' call")
 
     print("Making call to 'call_one_duration'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_duration(input1=timedelta(seconds=3536))
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_one_duration' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_duration' call")
 
     print("Making call to 'call_optional_duration'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_duration(input1=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_optional_duration' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_duration' call")
 
     print("Making call to 'call_three_durations'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_durations(input1=timedelta(seconds=3536), input2=timedelta(seconds=3536), input3=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_three_durations' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_durations' call")
 
     print("Making call to 'call_one_binary'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_one_binary(input1=b"example binary data")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_one_binary' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_binary' call")
 
     print("Making call to 'call_optional_binary'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_optional_binary(input1=b"example binary data")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_optional_binary' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_binary' call")
 
     print("Making call to 'call_three_binaries'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.call_three_binaries(input1=b"example binary data", input2=b"example binary data", input3=b"example binary data")
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'call_three_binaries' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_binaries' call")
 

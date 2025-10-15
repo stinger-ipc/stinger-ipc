@@ -53,27 +53,43 @@ class WeatherClient:
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
 
         self._property_location = None  # type: Optional[interface_types.LocationProperty]
+        self._property_location_mutex = threading.Lock()
+        self._property_location_version = -1
         self._conn.subscribe("weather/{}/property/location/value".format(self._service_id), self._receive_location_property_update_message)
         self._changed_value_callbacks_for_location: list[LocationPropertyUpdatedCallbackType] = []
         self._property_current_temperature = None  # type: Optional[float]
+        self._property_current_temperature_mutex = threading.Lock()
+        self._property_current_temperature_version = -1
         self._conn.subscribe("weather/{}/property/currentTemperature/value".format(self._service_id), self._receive_current_temperature_property_update_message)
         self._changed_value_callbacks_for_current_temperature: list[CurrentTemperaturePropertyUpdatedCallbackType] = []
         self._property_current_condition = None  # type: Optional[interface_types.CurrentConditionProperty]
+        self._property_current_condition_mutex = threading.Lock()
+        self._property_current_condition_version = -1
         self._conn.subscribe("weather/{}/property/currentCondition/value".format(self._service_id), self._receive_current_condition_property_update_message)
         self._changed_value_callbacks_for_current_condition: list[CurrentConditionPropertyUpdatedCallbackType] = []
         self._property_daily_forecast = None  # type: Optional[interface_types.DailyForecastProperty]
+        self._property_daily_forecast_mutex = threading.Lock()
+        self._property_daily_forecast_version = -1
         self._conn.subscribe("weather/{}/property/dailyForecast/value".format(self._service_id), self._receive_daily_forecast_property_update_message)
         self._changed_value_callbacks_for_daily_forecast: list[DailyForecastPropertyUpdatedCallbackType] = []
         self._property_hourly_forecast = None  # type: Optional[interface_types.HourlyForecastProperty]
+        self._property_hourly_forecast_mutex = threading.Lock()
+        self._property_hourly_forecast_version = -1
         self._conn.subscribe("weather/{}/property/hourlyForecast/value".format(self._service_id), self._receive_hourly_forecast_property_update_message)
         self._changed_value_callbacks_for_hourly_forecast: list[HourlyForecastPropertyUpdatedCallbackType] = []
         self._property_current_condition_refresh_interval = None  # type: Optional[int]
+        self._property_current_condition_refresh_interval_mutex = threading.Lock()
+        self._property_current_condition_refresh_interval_version = -1
         self._conn.subscribe("weather/{}/property/currentConditionRefreshInterval/value".format(self._service_id), self._receive_current_condition_refresh_interval_property_update_message)
         self._changed_value_callbacks_for_current_condition_refresh_interval: list[CurrentConditionRefreshIntervalPropertyUpdatedCallbackType] = []
         self._property_hourly_forecast_refresh_interval = None  # type: Optional[int]
+        self._property_hourly_forecast_refresh_interval_mutex = threading.Lock()
+        self._property_hourly_forecast_refresh_interval_version = -1
         self._conn.subscribe("weather/{}/property/hourlyForecastRefreshInterval/value".format(self._service_id), self._receive_hourly_forecast_refresh_interval_property_update_message)
         self._changed_value_callbacks_for_hourly_forecast_refresh_interval: list[HourlyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
         self._property_daily_forecast_refresh_interval = None  # type: Optional[int]
+        self._property_daily_forecast_refresh_interval_mutex = threading.Lock()
+        self._property_daily_forecast_refresh_interval_version = -1
         self._conn.subscribe("weather/{}/property/dailyForecastRefreshInterval/value".format(self._service_id), self._receive_daily_forecast_refresh_interval_property_update_message)
         self._changed_value_callbacks_for_daily_forecast_refresh_interval: list[DailyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_current_time: list[CurrentTimeSignalCallbackType] = []
@@ -99,9 +115,10 @@ class WeatherClient:
         """Sets a callback to be called when the 'location' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_location.append(handler)
-        if call_immediately and self._property_location is not None:
-            handler(self._property_location)
+        with self._property_location_mutex:
+            self._changed_value_callbacks_for_location.append(handler)
+            if call_immediately and self._property_location is not None:
+                handler(self._property_location)
         return handler
 
     @property
@@ -113,9 +130,10 @@ class WeatherClient:
         """Sets a callback to be called when the 'current_temperature' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_current_temperature.append(handler)
-        if call_immediately and self._property_current_temperature is not None:
-            handler(self._property_current_temperature)
+        with self._property_current_temperature_mutex:
+            self._changed_value_callbacks_for_current_temperature.append(handler)
+            if call_immediately and self._property_current_temperature is not None:
+                handler(self._property_current_temperature)
         return handler
 
     @property
@@ -127,9 +145,10 @@ class WeatherClient:
         """Sets a callback to be called when the 'current_condition' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_current_condition.append(handler)
-        if call_immediately and self._property_current_condition is not None:
-            handler(self._property_current_condition)
+        with self._property_current_condition_mutex:
+            self._changed_value_callbacks_for_current_condition.append(handler)
+            if call_immediately and self._property_current_condition is not None:
+                handler(self._property_current_condition)
         return handler
 
     @property
@@ -141,9 +160,10 @@ class WeatherClient:
         """Sets a callback to be called when the 'daily_forecast' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_daily_forecast.append(handler)
-        if call_immediately and self._property_daily_forecast is not None:
-            handler(self._property_daily_forecast)
+        with self._property_daily_forecast_mutex:
+            self._changed_value_callbacks_for_daily_forecast.append(handler)
+            if call_immediately and self._property_daily_forecast is not None:
+                handler(self._property_daily_forecast)
         return handler
 
     @property
@@ -155,9 +175,10 @@ class WeatherClient:
         """Sets a callback to be called when the 'hourly_forecast' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_hourly_forecast.append(handler)
-        if call_immediately and self._property_hourly_forecast is not None:
-            handler(self._property_hourly_forecast)
+        with self._property_hourly_forecast_mutex:
+            self._changed_value_callbacks_for_hourly_forecast.append(handler)
+            if call_immediately and self._property_hourly_forecast is not None:
+                handler(self._property_hourly_forecast)
         return handler
 
     @property
@@ -178,9 +199,10 @@ class WeatherClient:
         """Sets a callback to be called when the 'current_condition_refresh_interval' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_current_condition_refresh_interval.append(handler)
-        if call_immediately and self._property_current_condition_refresh_interval is not None:
-            handler(self._property_current_condition_refresh_interval)
+        with self._property_current_condition_refresh_interval_mutex:
+            self._changed_value_callbacks_for_current_condition_refresh_interval.append(handler)
+            if call_immediately and self._property_current_condition_refresh_interval is not None:
+                handler(self._property_current_condition_refresh_interval)
         return handler
 
     @property
@@ -201,9 +223,10 @@ class WeatherClient:
         """Sets a callback to be called when the 'hourly_forecast_refresh_interval' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_hourly_forecast_refresh_interval.append(handler)
-        if call_immediately and self._property_hourly_forecast_refresh_interval is not None:
-            handler(self._property_hourly_forecast_refresh_interval)
+        with self._property_hourly_forecast_refresh_interval_mutex:
+            self._changed_value_callbacks_for_hourly_forecast_refresh_interval.append(handler)
+            if call_immediately and self._property_hourly_forecast_refresh_interval is not None:
+                handler(self._property_hourly_forecast_refresh_interval)
         return handler
 
     @property
@@ -224,9 +247,10 @@ class WeatherClient:
         """Sets a callback to be called when the 'daily_forecast_refresh_interval' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_daily_forecast_refresh_interval.append(handler)
-        if call_immediately and self._property_daily_forecast_refresh_interval is not None:
-            handler(self._property_daily_forecast_refresh_interval)
+        with self._property_daily_forecast_refresh_interval_mutex:
+            self._changed_value_callbacks_for_daily_forecast_refresh_interval.append(handler)
+            if call_immediately and self._property_daily_forecast_refresh_interval is not None:
+                handler(self._property_daily_forecast_refresh_interval)
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
@@ -255,21 +279,21 @@ class WeatherClient:
 
     def _receive_refresh_daily_forecast_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'refresh_daily_forecast' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -277,21 +301,21 @@ class WeatherClient:
 
     def _receive_refresh_hourly_forecast_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'refresh_hourly_forecast' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -299,21 +323,21 @@ class WeatherClient:
 
     def _receive_refresh_current_conditions_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'refresh_current_conditions' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -325,11 +349,17 @@ class WeatherClient:
             self._logger.warning("Received 'location' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.LocationProperty.model_validate_json(payload)
-            self._property_location = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_location, value=self._property_location)
+            prop_obj = LocationProperty.model_validate_json(payload)
+            with self._property_location_mutex:
+                self._property_location = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_location_version:
+                        self._property_location_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_location, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'location' property change: %s", e)
+            self._logger.exception("Error processing 'location' property change: %s", exc_info=e)
 
     def _receive_current_temperature_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'current_temperature' property change.
@@ -337,12 +367,17 @@ class WeatherClient:
             self._logger.warning("Received 'current_temperature' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = float(payload_obj["temperature_f"])
-            self._property_current_temperature = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_current_temperature, value=self._property_current_temperature)
+            prop_obj = CurrentTemperatureProperty.model_validate_json(payload)
+            with self._property_current_temperature_mutex:
+                self._property_current_temperature = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_current_temperature_version:
+                        self._property_current_temperature_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_current_temperature, value=prop_obj.temperature_f)
+
         except Exception as e:
-            self._logger.error("Error processing 'current_temperature' property change: %s", e)
+            self._logger.exception("Error processing 'current_temperature' property change: %s", exc_info=e)
 
     def _receive_current_condition_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'current_condition' property change.
@@ -350,11 +385,17 @@ class WeatherClient:
             self._logger.warning("Received 'current_condition' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.CurrentConditionProperty.model_validate_json(payload)
-            self._property_current_condition = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_current_condition, value=self._property_current_condition)
+            prop_obj = CurrentConditionProperty.model_validate_json(payload)
+            with self._property_current_condition_mutex:
+                self._property_current_condition = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_current_condition_version:
+                        self._property_current_condition_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_current_condition, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'current_condition' property change: %s", e)
+            self._logger.exception("Error processing 'current_condition' property change: %s", exc_info=e)
 
     def _receive_daily_forecast_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'daily_forecast' property change.
@@ -362,11 +403,17 @@ class WeatherClient:
             self._logger.warning("Received 'daily_forecast' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.DailyForecastProperty.model_validate_json(payload)
-            self._property_daily_forecast = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_daily_forecast, value=self._property_daily_forecast)
+            prop_obj = DailyForecastProperty.model_validate_json(payload)
+            with self._property_daily_forecast_mutex:
+                self._property_daily_forecast = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_daily_forecast_version:
+                        self._property_daily_forecast_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_daily_forecast, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'daily_forecast' property change: %s", e)
+            self._logger.exception("Error processing 'daily_forecast' property change: %s", exc_info=e)
 
     def _receive_hourly_forecast_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'hourly_forecast' property change.
@@ -374,11 +421,17 @@ class WeatherClient:
             self._logger.warning("Received 'hourly_forecast' property change with non-JSON content type")
             return
         try:
-            prop_value = interface_types.HourlyForecastProperty.model_validate_json(payload)
-            self._property_hourly_forecast = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_hourly_forecast, value=self._property_hourly_forecast)
+            prop_obj = HourlyForecastProperty.model_validate_json(payload)
+            with self._property_hourly_forecast_mutex:
+                self._property_hourly_forecast = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_hourly_forecast_version:
+                        self._property_hourly_forecast_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_hourly_forecast, value=prop_obj)
+
         except Exception as e:
-            self._logger.error("Error processing 'hourly_forecast' property change: %s", e)
+            self._logger.exception("Error processing 'hourly_forecast' property change: %s", exc_info=e)
 
     def _receive_current_condition_refresh_interval_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'current_condition_refresh_interval' property change.
@@ -386,12 +439,17 @@ class WeatherClient:
             self._logger.warning("Received 'current_condition_refresh_interval' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["seconds"])
-            self._property_current_condition_refresh_interval = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_current_condition_refresh_interval, value=self._property_current_condition_refresh_interval)
+            prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(payload)
+            with self._property_current_condition_refresh_interval_mutex:
+                self._property_current_condition_refresh_interval = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_current_condition_refresh_interval_version:
+                        self._property_current_condition_refresh_interval_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_current_condition_refresh_interval, value=prop_obj.seconds)
+
         except Exception as e:
-            self._logger.error("Error processing 'current_condition_refresh_interval' property change: %s", e)
+            self._logger.exception("Error processing 'current_condition_refresh_interval' property change: %s", exc_info=e)
 
     def _receive_hourly_forecast_refresh_interval_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'hourly_forecast_refresh_interval' property change.
@@ -399,12 +457,17 @@ class WeatherClient:
             self._logger.warning("Received 'hourly_forecast_refresh_interval' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["seconds"])
-            self._property_hourly_forecast_refresh_interval = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_hourly_forecast_refresh_interval, value=self._property_hourly_forecast_refresh_interval)
+            prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(payload)
+            with self._property_hourly_forecast_refresh_interval_mutex:
+                self._property_hourly_forecast_refresh_interval = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_hourly_forecast_refresh_interval_version:
+                        self._property_hourly_forecast_refresh_interval_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_hourly_forecast_refresh_interval, value=prop_obj.seconds)
+
         except Exception as e:
-            self._logger.error("Error processing 'hourly_forecast_refresh_interval' property change: %s", e)
+            self._logger.exception("Error processing 'hourly_forecast_refresh_interval' property change: %s", exc_info=e)
 
     def _receive_daily_forecast_refresh_interval_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'daily_forecast_refresh_interval' property change.
@@ -412,12 +475,17 @@ class WeatherClient:
             self._logger.warning("Received 'daily_forecast_refresh_interval' property change with non-JSON content type")
             return
         try:
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["seconds"])
-            self._property_daily_forecast_refresh_interval = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_daily_forecast_refresh_interval, value=self._property_daily_forecast_refresh_interval)
+            prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(payload)
+            with self._property_daily_forecast_refresh_interval_mutex:
+                self._property_daily_forecast_refresh_interval = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_daily_forecast_refresh_interval_version:
+                        self._property_daily_forecast_refresh_interval_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_daily_forecast_refresh_interval, value=prop_obj.seconds)
+
         except Exception as e:
-            self._logger.error("Error processing 'daily_forecast_refresh_interval' property change: %s", e)
+            self._logger.exception("Error processing 'daily_forecast_refresh_interval' property change: %s", exc_info=e)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """New MQTT messages are passed to this method, which, based on the topic,
@@ -457,7 +525,9 @@ class WeatherClient:
         self._logger.debug("Handling refresh_daily_forecast response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'refresh_daily_forecast' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = RefreshDailyForecastMethodResponse.model_validate_json(response_json_text)
@@ -495,7 +565,9 @@ class WeatherClient:
         self._logger.debug("Handling refresh_hourly_forecast response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'refresh_hourly_forecast' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = RefreshHourlyForecastMethodResponse.model_validate_json(response_json_text)
@@ -533,7 +605,9 @@ class WeatherClient:
         self._logger.debug("Handling refresh_current_conditions response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'refresh_current_conditions' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = RefreshCurrentConditionsMethodResponse.model_validate_json(response_json_text)
@@ -721,6 +795,7 @@ class WeatherClientDiscoverer:
 
 if __name__ == "__main__":
     import signal
+    from time import sleep
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
@@ -783,24 +858,35 @@ if __name__ == "__main__":
         print("Timed out waiting for a service to appear")
         exit(1)
 
+    sleep(2)
+
     print("Making call to 'refresh_daily_forecast'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.refresh_daily_forecast()
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'refresh_daily_forecast' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'refresh_daily_forecast' call")
 
     print("Making call to 'refresh_hourly_forecast'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.refresh_hourly_forecast()
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'refresh_hourly_forecast' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'refresh_hourly_forecast' call")
 
     print("Making call to 'refresh_current_conditions'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.refresh_current_conditions()
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to 'refresh_current_conditions' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'refresh_current_conditions' call")
 

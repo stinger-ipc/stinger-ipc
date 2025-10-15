@@ -389,7 +389,7 @@ class FullServer:
                 try:
                     return_values = self._method_what_time_is_it.callback(*method_args)
 
-                    if not isinstance(return_values, datetime.datetime):
+                    if not isinstance(return_values, datetime):
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.datetime, but was {type(return_values)}")
                     ret_obj = WhatTimeIsItMethodResponse(timestamp=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -477,7 +477,7 @@ class FullServer:
                 try:
                     return_values = self._method_forward_time.callback(*method_args)
 
-                    if not isinstance(return_values, datetime.datetime):
+                    if not isinstance(return_values, datetime):
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.datetime, but was {type(return_values)}")
                     ret_obj = ForwardTimeMethodResponse(new_time=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -521,7 +521,7 @@ class FullServer:
                 try:
                     return_values = self._method_how_off_is_the_clock.callback(*method_args)
 
-                    if not isinstance(return_values, datetime.timedelta):
+                    if not isinstance(return_values, timedelta):
                         raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime.timedelta, but was {type(return_values)}")
                     ret_obj = HowOffIsTheClockMethodResponse(difference=return_values)
                     return_json = ret_obj.model_dump_json(by_alias=True)
@@ -1008,7 +1008,7 @@ if __name__ == "__main__":
     server.last_birthdays = interface_types.LastBirthdaysProperty(
         mom=datetime.now(),
         dad=datetime.now(),
-        sister=datetime.now(),
+        sister=None,
         brothers_age=42,
     )
 

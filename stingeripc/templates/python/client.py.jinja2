@@ -49,7 +49,9 @@ class {{stinger.python.client_class_name}}:
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
-        self._property_{{prop_name}} = None # type: Optional[{{prop_spec.python_class}}]
+        self._property_{{prop_name|snake_case}} = None # type: Optional[{{prop_spec.python_class}}]
+        self._property_{{prop_name|snake_case}}_mutex = threading.Lock()
+        self._property_{{prop_name|snake_case}}_version = -1
         self._conn.subscribe("{{prop_spec.value_topic}}".format(self._service_id), self._receive_{{prop_name | snake_case}}_property_update_message)
         self._changed_value_callbacks_for_{{prop_name}}: list[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
@@ -85,11 +87,11 @@ class {{stinger.python.client_class_name}}:
         """ Sets a callback to be called when the '{{prop_name}}' property changes.
         Can be used as a decorator.
         """
-        self._changed_value_callbacks_for_{{prop_name}}.append(handler)
-        if call_immediately and self._property_{{prop_name}} is not None:
-            handler(self._property_{{prop_name}})
+        with self._property_{{prop_name|snake_case}}_mutex:
+            self._changed_value_callbacks_for_{{prop_name|snake_case}}.append(handler)
+            if call_immediately and self._property_{{prop_name|snake_case}} is not None:
+                handler(self._property_{{prop_name|snake_case}})
         return handler
-
     {%endfor%}
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
@@ -123,21 +125,21 @@ class {{stinger.python.client_class_name}}:
     {%-for method_name, method in stinger.methods.items()%}
     def _receive_{{method_name | snake_case}}_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle '{{method_name}}' method response.
-        result_code = MethodReturnCode.SUCCESS
+        return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if "UserProperty" in properties:
             user_properties = properties["UserProperty"]
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
-            if "ReturnValue" in user_properties:
-                result_code = MethodReturnCode(int(user_properties["ReturnValue"]))
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if "CorrelationData" in properties:
             correlation_id = properties["CorrelationData"].decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, result_code, debug_message)
+                cb(payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -151,24 +153,19 @@ class {{stinger.python.client_class_name}}:
             self._logger.warning("Received '{{prop_name}}' property change with non-JSON content type")
             return
         try:
-            {%if prop_spec.arg_list | length > 1 -%}
-            prop_value = {{prop_spec.python_class}}.model_validate_json(payload)
-            {%else-%}
-            payload_obj = json.loads(payload)
-            {%- if prop_spec.arg_list[0].arg_type.name.lower() == 'datetime'%}
-            prop_value = datetime.fromisoformat(payload_obj["{{prop_spec.arg_list[0].name}}"])
-            {% elif prop_spec.arg_list[0].arg_type.name.lower() == 'duration'%}
-            prop_value = parse_duration(payload_obj["{{prop_spec.arg_list[0].name}}"])
-            {% elif prop_spec.arg_list[0].arg_type.name.lower() == 'binary'%}
-            prop_value = base64.b64decode(payload_obj["{{prop_spec.arg_list[0].name}}"])
-            {%else%}
-            prop_value = {{prop_spec.arg_list[0].python_local_type}}(payload_obj["{{prop_spec.arg_list[0].name}}"])
-            {%endif-%}
-            {%endif-%}
-            self._property_{{prop_name}} = prop_value
-            self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name}}, value=self._property_{{prop_name}})
+            prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(payload)
+            with self._property_{{prop_name|snake_case}}_mutex:
+                self._property_{{prop_name|snake_case}} = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_{{prop_name|snake_case}}_version:
+                        self._property_{{prop_name|snake_case}}_version = int(ver)
+                {% if prop_spec.arg_list | length == 1 %}
+                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value=prop_obj.{{prop_spec.arg_list[0].name|snake_case}})
+                {%else%}
+                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value=prop_obj)
+                {%endif%}
         except Exception as e:
-            self._logger.error("Error processing '{{prop_name}}' property change: %s", e)
+            self._logger.exception("Error processing '{{prop_name}}' property change: %s", exc_info=e)
     {%endfor%}{# end property loop #}
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
@@ -209,7 +206,9 @@ class {{stinger.python.client_class_name}}:
         self._logger.debug("Handling {{method_name | snake_case}} response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from '{{method_name}}' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
 
         try:
             resp_model = {{method_name|UpperCamelCase}}MethodResponse.model_validate_json(response_json_text)
@@ -364,6 +363,7 @@ class {{stinger.python.client_class_name}}Discoverer:
 
 if __name__ == '__main__':
     import signal
+    from time import sleep
     from connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
@@ -395,12 +395,17 @@ if __name__ == '__main__':
         print("Timed out waiting for a service to appear")
         exit(1)
 
+    sleep(2)
+
     {%if stinger.methods | length > 0 %}
     {%-for method_name, method in stinger.methods.items()%}
     print("Making call to '{{method_name|snake_case}}'")
+    start_time = datetime.now(tz=UTC)
     future_resp = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
     try:
         print(f"RESULT:  {future_resp.result(5)}")
+        end_time = datetime.now(tz=UTC)
+        print(f"Call to '{{method_name|snake_case}}' took {end_time}-{start_time}{(end_time - start_time).total_seconds()*1000:.1f} ms")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to '{{method_name|snake_case}}' call")
     {%endfor%}
