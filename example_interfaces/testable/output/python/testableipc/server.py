@@ -3281,7 +3281,7 @@ if __name__ == "__main__":
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=None,
+            optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
         ),
@@ -3304,7 +3304,7 @@ if __name__ == "__main__":
 
     server.read_write_two_datetimes = interface_types.ReadWriteTwoDatetimesProperty(
         first=datetime.now(),
-        second=None,
+        second=datetime.now(),
     )
 
     server.read_write_duration = timedelta(seconds=3536)
@@ -3422,7 +3422,7 @@ if __name__ == "__main__":
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=datetime.now(),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
         )
@@ -3460,7 +3460,7 @@ if __name__ == "__main__":
                 optional_integer=42,
                 optional_string="apples",
                 optional_enum=interface_types.Numbers.ONE,
-                optional_date_time=datetime.now(),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
             ),
@@ -3476,7 +3476,7 @@ if __name__ == "__main__":
                 optional_integer=42,
                 optional_string="apples",
                 optional_enum=interface_types.Numbers.ONE,
-                optional_date_time=datetime.now(),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
             ),
@@ -3492,7 +3492,7 @@ if __name__ == "__main__":
     def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
         """This is an example handler for the 'callOptionalDateTime' method."""
         print(f"Running call_optional_date_time'({input1})'")
-        return datetime.now()
+        return None
 
     @server.handle_call_three_date_times
     def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> interface_types.CallThreeDateTimesMethodResponse:
@@ -3711,7 +3711,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=datetime.now(),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 ),
@@ -3734,7 +3734,7 @@ if __name__ == "__main__":
             )
             server.emit_single_date_time(datetime.now())
             server.emit_single_optional_datetime(None)
-            server.emit_three_date_times(datetime.now(), datetime.now(), None)
+            server.emit_three_date_times(datetime.now(), datetime.now(), datetime.now())
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
             server.emit_three_durations(timedelta(seconds=3536), timedelta(seconds=3536), None)
@@ -3818,7 +3818,7 @@ if __name__ == "__main__":
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=datetime.now(),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                 ),
@@ -3840,8 +3840,8 @@ if __name__ == "__main__":
                 ),
             )
             server.emit_single_date_time(value=datetime.now())
-            server.emit_single_optional_datetime(value=datetime.now())
-            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=None)
+            server.emit_single_optional_datetime(value=None)
+            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=datetime.now())
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)
             server.emit_three_durations(first=timedelta(seconds=3536), second=timedelta(seconds=3536), third=None)

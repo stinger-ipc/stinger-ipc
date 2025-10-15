@@ -4,15 +4,16 @@ on the next generation.
 
 It contains enumerations used by the Test Able interface.
 */
-use futures::executor::block_on;
-use mqttier::{Connection, MqttierClient, MqttierOptions};
 use std::any::Any;
+
+use mqttier::{Connection, MqttierClient, MqttierOptions};
 use test_able_ipc::server::{TestAbleMethodHandlers, TestAbleServer};
 use tokio::time::{Duration, sleep};
 
 use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing_subscriber;
 
 #[allow(unused_imports)]
 use test_able_ipc::payloads::{MethodReturnCode, *};
@@ -328,153 +329,462 @@ impl TestAbleMethodHandlers for TestAbleMethodImpl {
 
 #[tokio::main]
 async fn main() {
-    block_on(async {
-        let mqttier_options = MqttierOptions::new()
-            .connection(Connection::TcpLocalhost(1883))
-            .client_id("rust-server-demo".to_string())
-            .build();
-        let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    // Initialize tracing subscriber to see log output
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .init();
 
-        let handlers: Arc<Mutex<Box<dyn TestAbleMethodHandlers>>> =
-            Arc::new(Mutex::new(Box::new(TestAbleMethodImpl::new())));
+    let mqttier_options = MqttierOptions::new()
+        .connection(Connection::TcpLocalhost(1883))
+        .client_id("rust-server-demo".to_string())
+        .build();
+    let mut connection = MqttierClient::new(mqttier_options).unwrap();
 
-        let mut server = TestAbleServer::new(
-            &mut connection,
-            handlers.clone(),
-            "rust-server-demo:1".to_string(),
+    let handlers: Arc<Mutex<Box<dyn TestAbleMethodHandlers>>> =
+        Arc::new(Mutex::new(Box::new(TestAbleMethodImpl::new())));
+
+    let mut server = TestAbleServer::new(
+        &mut connection,
+        handlers.clone(),
+        "rust-server-demo:1".to_string(),
+    )
+    .await;
+
+    let mut looping_server = server.clone();
+    let _loop_join_handle = tokio::spawn(async move {
+        println!("Starting connection loop");
+        let _conn_loop = looping_server.run_loop().await;
+    });
+
+    println!("Setting initial value for property 'read_write_integer'");
+    let prop_init_future = server.set_read_write_integer(42).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_write_integer': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_only_integer'");
+    let prop_init_future = server.set_read_only_integer(42).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_only_integer': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_write_optional_integer'");
+    let prop_init_future = server.set_read_write_optional_integer(Some(42)).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_optional_integer': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_two_integers'");
+    let new_value = ReadWriteTwoIntegersProperty {
+        first: 42,
+        second: Some(42),
+    };
+    let prop_init_future = server.set_read_write_two_integers(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_two_integers': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_only_string'");
+    let prop_init_future = server.set_read_only_string("apples".to_string()).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_only_string': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_write_string'");
+    let prop_init_future = server.set_read_write_string("apples".to_string()).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_write_string': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_write_optional_string'");
+    let prop_init_future = server
+        .set_read_write_optional_string(Some("apples".to_string()))
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_optional_string': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_two_strings'");
+    let new_value = ReadWriteTwoStringsProperty {
+        first: "apples".to_string(),
+        second: Some("apples".to_string()),
+    };
+    let prop_init_future = server.set_read_write_two_strings(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_two_strings': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_struct'");
+    let prop_init_future = server
+        .set_read_write_struct(AllTypes {
+            the_bool: true,
+            the_int: 42,
+            the_number: 3.14,
+            the_str: "apples".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(3536),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(3536),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        })
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_write_struct': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_write_optional_struct'");
+    let prop_init_future = server
+        .set_read_write_optional_struct(AllTypes {
+            the_bool: true,
+            the_int: 42,
+            the_number: 3.14,
+            the_str: "apples".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(3536),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(3536),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        })
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_optional_struct': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_two_structs'");
+    let new_value = ReadWriteTwoStructsProperty {
+        first: AllTypes {
+            the_bool: true,
+            the_int: 42,
+            the_number: 3.14,
+            the_str: "apples".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(3536),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(3536),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        },
+        second: AllTypes {
+            the_bool: true,
+            the_int: 42,
+            the_number: 3.14,
+            the_str: "apples".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(3536),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(3536),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        },
+    };
+    let prop_init_future = server.set_read_write_two_structs(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_two_structs': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_only_enum'");
+    let prop_init_future = server.set_read_only_enum(Numbers::One).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_only_enum': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_write_enum'");
+    let prop_init_future = server.set_read_write_enum(Numbers::One).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_write_enum': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_write_optional_enum'");
+    let prop_init_future = server
+        .set_read_write_optional_enum(Some(Numbers::One))
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_optional_enum': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_two_enums'");
+    let new_value = ReadWriteTwoEnumsProperty {
+        first: Numbers::One,
+        second: Some(Numbers::One),
+    };
+    let prop_init_future = server.set_read_write_two_enums(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_two_enums': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_datetime'");
+    let prop_init_future = server.set_read_write_datetime(chrono::Utc::now()).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_write_datetime': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_write_optional_datetime'");
+    let prop_init_future = server
+        .set_read_write_optional_datetime(chrono::Utc::now())
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_optional_datetime': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_two_datetimes'");
+    let new_value = ReadWriteTwoDatetimesProperty {
+        first: chrono::Utc::now(),
+        second: chrono::Utc::now(),
+    };
+    let prop_init_future = server.set_read_write_two_datetimes(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_two_datetimes': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_duration'");
+    let prop_init_future = server
+        .set_read_write_duration(chrono::Duration::seconds(3536))
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_write_duration': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_write_optional_duration'");
+    let prop_init_future = server
+        .set_read_write_optional_duration(chrono::Duration::seconds(3536))
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_optional_duration': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_two_durations'");
+    let new_value = ReadWriteTwoDurationsProperty {
+        first: chrono::Duration::seconds(3536),
+        second: chrono::Duration::seconds(3536),
+    };
+    let prop_init_future = server.set_read_write_two_durations(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_two_durations': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_binary'");
+    let prop_init_future = server
+        .set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'read_write_binary': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'read_write_optional_binary'");
+    let prop_init_future = server
+        .set_read_write_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_optional_binary': {:?}",
+            e
+        );
+    }
+
+    println!("Setting initial value for property 'read_write_two_binaries'");
+    let new_value = ReadWriteTwoBinariesProperty {
+        first: vec![101, 120, 97, 109, 112, 108, 101],
+        second: vec![101, 120, 97, 109, 112, 108, 101],
+    };
+    let prop_init_future = server.set_read_write_two_binaries(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!(
+            "Error initializing property 'read_write_two_binaries': {:?}",
+            e
+        );
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'empty'");
+    let signal_result_future = server.emit_empty().await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'empty' was sent: {:?}", signal_result);
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleInt'");
+    let signal_result_future = server.emit_single_int(42).await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'singleInt' was sent: {:?}", signal_result);
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleOptionalInt'");
+    let signal_result_future = server.emit_single_optional_int(Some(42)).await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'singleOptionalInt' was sent: {:?}", signal_result);
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'threeIntegers'");
+    let signal_result_future = server.emit_three_integers(42, 42, Some(42)).await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'threeIntegers' was sent: {:?}", signal_result);
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleString'");
+    let signal_result_future = server.emit_single_string("apples".to_string()).await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'singleString' was sent: {:?}", signal_result);
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleOptionalString'");
+    let signal_result_future = server
+        .emit_single_optional_string(Some("apples".to_string()))
+        .await;
+    let signal_result = signal_result_future.await;
+    println!(
+        "Signal 'singleOptionalString' was sent: {:?}",
+        signal_result
+    );
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'threeStrings'");
+    let signal_result_future = server
+        .emit_three_strings(
+            "apples".to_string(),
+            "apples".to_string(),
+            Some("apples".to_string()),
         )
         .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'threeStrings' was sent: {:?}", signal_result);
 
-        let mut looping_server = server.clone();
-        tokio::spawn(async move {
-            println!("Starting connection loop");
-            let _conn_loop = looping_server.run_loop().await;
-        });
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleEnum'");
+    let signal_result_future = server.emit_single_enum(Numbers::One).await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'singleEnum' was sent: {:?}", signal_result);
 
-        println!("Setting initial value for property 'read_write_integer'");
-        let prop_init_future = server.set_read_write_integer(42).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_write_integer': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleOptionalEnum'");
+    let signal_result_future = server.emit_single_optional_enum(Some(Numbers::One)).await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'singleOptionalEnum' was sent: {:?}", signal_result);
 
-        println!("Setting initial value for property 'read_only_integer'");
-        let prop_init_future = server.set_read_only_integer(42).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_only_integer': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'threeEnums'");
+    let signal_result_future = server
+        .emit_three_enums(Numbers::One, Numbers::One, Some(Numbers::One))
+        .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'threeEnums' was sent: {:?}", signal_result);
 
-        println!("Setting initial value for property 'read_write_optional_integer'");
-        let prop_init_future = server.set_read_write_optional_integer(Some(42)).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_optional_integer': {:?}",
-                e
-            );
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleStruct'");
+    let signal_result_future = server
+        .emit_single_struct(AllTypes {
+            the_bool: true,
+            the_int: 42,
+            the_number: 3.14,
+            the_str: "apples".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(3536),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(3536),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        })
+        .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'singleStruct' was sent: {:?}", signal_result);
 
-        println!("Setting initial value for property 'read_write_two_integers'");
-        let new_value = ReadWriteTwoIntegersProperty {
-            first: 42,
-            second: Some(42),
-        };
-        let prop_init_future = server.set_read_write_two_integers(new_value).await;
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleOptionalStruct'");
+    let signal_result_future = server
+        .emit_single_optional_struct(AllTypes {
+            the_bool: true,
+            the_int: 42,
+            the_number: 3.14,
+            the_str: "apples".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(3536),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(3536),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        })
+        .await;
+    let signal_result = signal_result_future.await;
+    println!(
+        "Signal 'singleOptionalStruct' was sent: {:?}",
+        signal_result
+    );
 
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_two_integers': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_only_string'");
-        let prop_init_future = server.set_read_only_string("apples".to_string()).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_only_string': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'read_write_string'");
-        let prop_init_future = server.set_read_write_string("apples".to_string()).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_write_string': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'read_write_optional_string'");
-        let prop_init_future = server
-            .set_read_write_optional_string(Some("apples".to_string()))
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_optional_string': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_two_strings'");
-        let new_value = ReadWriteTwoStringsProperty {
-            first: "apples".to_string(),
-            second: Some("apples".to_string()),
-        };
-        let prop_init_future = server.set_read_write_two_strings(new_value).await;
-
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_two_strings': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_struct'");
-        let prop_init_future = server
-            .set_read_write_struct(AllTypes {
-                the_bool: true,
-                the_int: 42,
-                the_number: 3.14,
-                the_str: "apples".to_string(),
-                the_enum: Numbers::One,
-                date_and_time: chrono::Utc::now(),
-                time_duration: chrono::Duration::seconds(3536),
-                data: vec![101, 120, 97, 109, 112, 108, 101],
-                optional_integer: Some(42),
-                optional_string: Some("apples".to_string()),
-                optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            })
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_write_struct': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'read_write_optional_struct'");
-        let prop_init_future = server
-            .set_read_write_optional_struct(AllTypes {
-                the_bool: true,
-                the_int: 42,
-                the_number: 3.14,
-                the_str: "apples".to_string(),
-                the_enum: Numbers::One,
-                date_and_time: chrono::Utc::now(),
-                time_duration: chrono::Duration::seconds(3536),
-                data: vec![101, 120, 97, 109, 112, 108, 101],
-                optional_integer: Some(42),
-                optional_string: Some("apples".to_string()),
-                optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            })
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_optional_struct': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_two_structs'");
-        let new_value = ReadWriteTwoStructsProperty {
-            first: AllTypes {
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'threeStructs'");
+    let signal_result_future = server
+        .emit_three_structs(
+            AllTypes {
                 the_bool: true,
                 the_int: 42,
                 the_number: 3.14,
@@ -490,7 +800,7 @@ async fn main() {
                 optional_duration: chrono::Duration::seconds(3536),
                 optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
             },
-            second: AllTypes {
+            AllTypes {
                 the_bool: true,
                 the_int: 42,
                 the_number: 3.14,
@@ -506,227 +816,7 @@ async fn main() {
                 optional_duration: chrono::Duration::seconds(3536),
                 optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
             },
-        };
-        let prop_init_future = server.set_read_write_two_structs(new_value).await;
-
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_two_structs': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_only_enum'");
-        let prop_init_future = server.set_read_only_enum(Numbers::One).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_only_enum': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'read_write_enum'");
-        let prop_init_future = server.set_read_write_enum(Numbers::One).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_write_enum': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'read_write_optional_enum'");
-        let prop_init_future = server
-            .set_read_write_optional_enum(Some(Numbers::One))
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_optional_enum': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_two_enums'");
-        let new_value = ReadWriteTwoEnumsProperty {
-            first: Numbers::One,
-            second: Some(Numbers::One),
-        };
-        let prop_init_future = server.set_read_write_two_enums(new_value).await;
-
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_two_enums': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_datetime'");
-        let prop_init_future = server.set_read_write_datetime(chrono::Utc::now()).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_write_datetime': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'read_write_optional_datetime'");
-        let prop_init_future = server
-            .set_read_write_optional_datetime(chrono::Utc::now())
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_optional_datetime': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_two_datetimes'");
-        let new_value = ReadWriteTwoDatetimesProperty {
-            first: chrono::Utc::now(),
-            second: chrono::Utc::now(),
-        };
-        let prop_init_future = server.set_read_write_two_datetimes(new_value).await;
-
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_two_datetimes': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_duration'");
-        let prop_init_future = server
-            .set_read_write_duration(chrono::Duration::seconds(3536))
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_write_duration': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'read_write_optional_duration'");
-        let prop_init_future = server
-            .set_read_write_optional_duration(chrono::Duration::seconds(3536))
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_optional_duration': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_two_durations'");
-        let new_value = ReadWriteTwoDurationsProperty {
-            first: chrono::Duration::seconds(3536),
-            second: chrono::Duration::seconds(3536),
-        };
-        let prop_init_future = server.set_read_write_two_durations(new_value).await;
-
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_two_durations': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_binary'");
-        let prop_init_future = server
-            .set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101])
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'read_write_binary': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'read_write_optional_binary'");
-        let prop_init_future = server
-            .set_read_write_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_optional_binary': {:?}",
-                e
-            );
-        }
-
-        println!("Setting initial value for property 'read_write_two_binaries'");
-        let new_value = ReadWriteTwoBinariesProperty {
-            first: vec![101, 120, 97, 109, 112, 108, 101],
-            second: vec![101, 120, 97, 109, 112, 108, 101],
-        };
-        let prop_init_future = server.set_read_write_two_binaries(new_value).await;
-
-        if let Err(e) = prop_init_future.await {
-            eprintln!(
-                "Error initializing property 'read_write_two_binaries': {:?}",
-                e
-            );
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'empty'");
-        let signal_result_future = server.emit_empty().await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'empty' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleInt'");
-        let signal_result_future = server.emit_single_int(42).await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'singleInt' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleOptionalInt'");
-        let signal_result_future = server.emit_single_optional_int(Some(42)).await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'singleOptionalInt' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'threeIntegers'");
-        let signal_result_future = server.emit_three_integers(42, 42, Some(42)).await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'threeIntegers' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleString'");
-        let signal_result_future = server.emit_single_string("apples".to_string()).await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'singleString' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleOptionalString'");
-        let signal_result_future = server
-            .emit_single_optional_string(Some("apples".to_string()))
-            .await;
-        let signal_result = signal_result_future.await;
-        println!(
-            "Signal 'singleOptionalString' was sent: {:?}",
-            signal_result
-        );
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'threeStrings'");
-        let signal_result_future = server
-            .emit_three_strings(
-                "apples".to_string(),
-                "apples".to_string(),
-                Some("apples".to_string()),
-            )
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'threeStrings' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleEnum'");
-        let signal_result_future = server.emit_single_enum(Numbers::One).await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'singleEnum' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleOptionalEnum'");
-        let signal_result_future = server.emit_single_optional_enum(Some(Numbers::One)).await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'singleOptionalEnum' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'threeEnums'");
-        let signal_result_future = server
-            .emit_three_enums(Numbers::One, Numbers::One, Some(Numbers::One))
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'threeEnums' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleStruct'");
-        let signal_result_future = server
-            .emit_single_struct(AllTypes {
+            AllTypes {
                 the_bool: true,
                 the_int: 42,
                 the_number: 3.14,
@@ -741,454 +831,372 @@ async fn main() {
                 optional_date_time: chrono::Utc::now(),
                 optional_duration: chrono::Duration::seconds(3536),
                 optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            })
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'singleStruct' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleOptionalStruct'");
-        let signal_result_future = server
-            .emit_single_optional_struct(AllTypes {
-                the_bool: true,
-                the_int: 42,
-                the_number: 3.14,
-                the_str: "apples".to_string(),
-                the_enum: Numbers::One,
-                date_and_time: chrono::Utc::now(),
-                time_duration: chrono::Duration::seconds(3536),
-                data: vec![101, 120, 97, 109, 112, 108, 101],
-                optional_integer: Some(42),
-                optional_string: Some("apples".to_string()),
-                optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            })
-            .await;
-        let signal_result = signal_result_future.await;
-        println!(
-            "Signal 'singleOptionalStruct' was sent: {:?}",
-            signal_result
-        );
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'threeStructs'");
-        let signal_result_future = server
-            .emit_three_structs(
-                AllTypes {
-                    the_bool: true,
-                    the_int: 42,
-                    the_number: 3.14,
-                    the_str: "apples".to_string(),
-                    the_enum: Numbers::One,
-                    date_and_time: chrono::Utc::now(),
-                    time_duration: chrono::Duration::seconds(3536),
-                    data: vec![101, 120, 97, 109, 112, 108, 101],
-                    optional_integer: Some(42),
-                    optional_string: Some("apples".to_string()),
-                    optional_enum: Some(Numbers::One),
-                    optional_date_time: chrono::Utc::now(),
-                    optional_duration: chrono::Duration::seconds(3536),
-                    optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-                },
-                AllTypes {
-                    the_bool: true,
-                    the_int: 42,
-                    the_number: 3.14,
-                    the_str: "apples".to_string(),
-                    the_enum: Numbers::One,
-                    date_and_time: chrono::Utc::now(),
-                    time_duration: chrono::Duration::seconds(3536),
-                    data: vec![101, 120, 97, 109, 112, 108, 101],
-                    optional_integer: Some(42),
-                    optional_string: Some("apples".to_string()),
-                    optional_enum: Some(Numbers::One),
-                    optional_date_time: chrono::Utc::now(),
-                    optional_duration: chrono::Duration::seconds(3536),
-                    optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-                },
-                AllTypes {
-                    the_bool: true,
-                    the_int: 42,
-                    the_number: 3.14,
-                    the_str: "apples".to_string(),
-                    the_enum: Numbers::One,
-                    date_and_time: chrono::Utc::now(),
-                    time_duration: chrono::Duration::seconds(3536),
-                    data: vec![101, 120, 97, 109, 112, 108, 101],
-                    optional_integer: Some(42),
-                    optional_string: Some("apples".to_string()),
-                    optional_enum: Some(Numbers::One),
-                    optional_date_time: chrono::Utc::now(),
-                    optional_duration: chrono::Duration::seconds(3536),
-                    optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-                },
-            )
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'threeStructs' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleDateTime'");
-        let signal_result_future = server.emit_single_date_time(chrono::Utc::now()).await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'singleDateTime' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleOptionalDatetime'");
-        let signal_result_future = server
-            .emit_single_optional_datetime(chrono::Utc::now())
-            .await;
-        let signal_result = signal_result_future.await;
-        println!(
-            "Signal 'singleOptionalDatetime' was sent: {:?}",
-            signal_result
-        );
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'threeDateTimes'");
-        let signal_result_future = server
-            .emit_three_date_times(chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now())
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'threeDateTimes' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleDuration'");
-        let signal_result_future = server
-            .emit_single_duration(chrono::Duration::seconds(3536))
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'singleDuration' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleOptionalDuration'");
-        let signal_result_future = server
-            .emit_single_optional_duration(chrono::Duration::seconds(3536))
-            .await;
-        let signal_result = signal_result_future.await;
-        println!(
-            "Signal 'singleOptionalDuration' was sent: {:?}",
-            signal_result
-        );
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'threeDurations'");
-        let signal_result_future = server
-            .emit_three_durations(
-                chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
-            )
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'threeDurations' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleBinary'");
-        let signal_result_future = server
-            .emit_single_binary(vec![101, 120, 97, 109, 112, 108, 101])
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'singleBinary' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'singleOptionalBinary'");
-        let signal_result_future = server
-            .emit_single_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
-            .await;
-        let signal_result = signal_result_future.await;
-        println!(
-            "Signal 'singleOptionalBinary' was sent: {:?}",
-            signal_result
-        );
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'threeBinaries'");
-        let signal_result_future = server
-            .emit_three_binaries(
-                vec![101, 120, 97, 109, 112, 108, 101],
-                vec![101, 120, 97, 109, 112, 108, 101],
-                vec![101, 120, 97, 109, 112, 108, 101],
-            )
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'threeBinaries' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_integer'");
-        let prop_change_future = server.set_read_write_integer(2022).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_write_integer': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_only_integer'");
-        let prop_change_future = server.set_read_only_integer(2022).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_only_integer': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_optional_integer'");
-        let prop_change_future = server.set_read_write_optional_integer(Some(2022)).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!(
-                "Error changing property 'read_write_optional_integer': {:?}",
-                e
-            );
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_two_integers'");
-        let new_value = ReadWriteTwoIntegersProperty {
-            first: 2022,
-            second: Some(2022),
-        };
-        let _ = server.set_read_write_two_integers(new_value).await;
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_only_string'");
-        let prop_change_future = server.set_read_only_string("foo".to_string()).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_only_string': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_string'");
-        let prop_change_future = server.set_read_write_string("foo".to_string()).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_write_string': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_optional_string'");
-        let prop_change_future = server
-            .set_read_write_optional_string(Some("foo".to_string()))
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!(
-                "Error changing property 'read_write_optional_string': {:?}",
-                e
-            );
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_two_strings'");
-        let new_value = ReadWriteTwoStringsProperty {
-            first: "foo".to_string(),
-            second: Some("foo".to_string()),
-        };
-        let _ = server.set_read_write_two_strings(new_value).await;
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_struct'");
-        let prop_change_future = server
-            .set_read_write_struct(AllTypes {
-                the_bool: true,
-                the_int: 2022,
-                the_number: 1.0,
-                the_str: "foo".to_string(),
-                the_enum: Numbers::One,
-                date_and_time: chrono::Utc::now(),
-                time_duration: chrono::Duration::seconds(975),
-                data: vec![101, 120, 97, 109, 112, 108, 101],
-                optional_integer: Some(2022),
-                optional_string: Some("foo".to_string()),
-                optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(975),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            })
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_write_struct': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_optional_struct'");
-        let prop_change_future = server
-            .set_read_write_optional_struct(AllTypes {
-                the_bool: true,
-                the_int: 2022,
-                the_number: 1.0,
-                the_str: "foo".to_string(),
-                the_enum: Numbers::One,
-                date_and_time: chrono::Utc::now(),
-                time_duration: chrono::Duration::seconds(975),
-                data: vec![101, 120, 97, 109, 112, 108, 101],
-                optional_integer: Some(2022),
-                optional_string: Some("foo".to_string()),
-                optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(975),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            })
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!(
-                "Error changing property 'read_write_optional_struct': {:?}",
-                e
-            );
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_two_structs'");
-        let new_value = ReadWriteTwoStructsProperty {
-            first: AllTypes {
-                the_bool: true,
-                the_int: 2022,
-                the_number: 1.0,
-                the_str: "foo".to_string(),
-                the_enum: Numbers::One,
-                date_and_time: chrono::Utc::now(),
-                time_duration: chrono::Duration::seconds(967),
-                data: vec![101, 120, 97, 109, 112, 108, 101],
-                optional_integer: Some(2022),
-                optional_string: Some("foo".to_string()),
-                optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(967),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
             },
-            second: AllTypes {
-                the_bool: true,
-                the_int: 2022,
-                the_number: 1.0,
-                the_str: "foo".to_string(),
-                the_enum: Numbers::One,
-                date_and_time: chrono::Utc::now(),
-                time_duration: chrono::Duration::seconds(967),
-                data: vec![101, 120, 97, 109, 112, 108, 101],
-                optional_integer: Some(2022),
-                optional_string: Some("foo".to_string()),
-                optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(967),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            },
-        };
-        let _ = server.set_read_write_two_structs(new_value).await;
+        )
+        .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'threeStructs' was sent: {:?}", signal_result);
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_only_enum'");
-        let prop_change_future = server.set_read_only_enum(Numbers::One).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_only_enum': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleDateTime'");
+    let signal_result_future = server.emit_single_date_time(chrono::Utc::now()).await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'singleDateTime' was sent: {:?}", signal_result);
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_enum'");
-        let prop_change_future = server.set_read_write_enum(Numbers::One).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_write_enum': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleOptionalDatetime'");
+    let signal_result_future = server
+        .emit_single_optional_datetime(chrono::Utc::now())
+        .await;
+    let signal_result = signal_result_future.await;
+    println!(
+        "Signal 'singleOptionalDatetime' was sent: {:?}",
+        signal_result
+    );
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_optional_enum'");
-        let prop_change_future = server
-            .set_read_write_optional_enum(Some(Numbers::One))
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!(
-                "Error changing property 'read_write_optional_enum': {:?}",
-                e
-            );
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'threeDateTimes'");
+    let signal_result_future = server
+        .emit_three_date_times(chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now())
+        .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'threeDateTimes' was sent: {:?}", signal_result);
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_two_enums'");
-        let new_value = ReadWriteTwoEnumsProperty {
-            first: Numbers::One,
-            second: Some(Numbers::One),
-        };
-        let _ = server.set_read_write_two_enums(new_value).await;
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleDuration'");
+    let signal_result_future = server
+        .emit_single_duration(chrono::Duration::seconds(3536))
+        .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'singleDuration' was sent: {:?}", signal_result);
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_datetime'");
-        let prop_change_future = server.set_read_write_datetime(chrono::Utc::now()).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_write_datetime': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleOptionalDuration'");
+    let signal_result_future = server
+        .emit_single_optional_duration(chrono::Duration::seconds(3536))
+        .await;
+    let signal_result = signal_result_future.await;
+    println!(
+        "Signal 'singleOptionalDuration' was sent: {:?}",
+        signal_result
+    );
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_optional_datetime'");
-        let prop_change_future = server
-            .set_read_write_optional_datetime(chrono::Utc::now())
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!(
-                "Error changing property 'read_write_optional_datetime': {:?}",
-                e
-            );
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'threeDurations'");
+    let signal_result_future = server
+        .emit_three_durations(
+            chrono::Duration::seconds(3536),
+            chrono::Duration::seconds(3536),
+            chrono::Duration::seconds(3536),
+        )
+        .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'threeDurations' was sent: {:?}", signal_result);
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_two_datetimes'");
-        let new_value = ReadWriteTwoDatetimesProperty {
-            first: chrono::Utc::now(),
-            second: chrono::Utc::now(),
-        };
-        let _ = server.set_read_write_two_datetimes(new_value).await;
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleBinary'");
+    let signal_result_future = server
+        .emit_single_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'singleBinary' was sent: {:?}", signal_result);
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_duration'");
-        let prop_change_future = server
-            .set_read_write_duration(chrono::Duration::seconds(975))
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_write_duration': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'singleOptionalBinary'");
+    let signal_result_future = server
+        .emit_single_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .await;
+    let signal_result = signal_result_future.await;
+    println!(
+        "Signal 'singleOptionalBinary' was sent: {:?}",
+        signal_result
+    );
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_optional_duration'");
-        let prop_change_future = server
-            .set_read_write_optional_duration(chrono::Duration::seconds(975))
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!(
-                "Error changing property 'read_write_optional_duration': {:?}",
-                e
-            );
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'threeBinaries'");
+    let signal_result_future = server
+        .emit_three_binaries(
+            vec![101, 120, 97, 109, 112, 108, 101],
+            vec![101, 120, 97, 109, 112, 108, 101],
+            vec![101, 120, 97, 109, 112, 108, 101],
+        )
+        .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'threeBinaries' was sent: {:?}", signal_result);
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_two_durations'");
-        let new_value = ReadWriteTwoDurationsProperty {
-            first: chrono::Duration::seconds(967),
-            second: chrono::Duration::seconds(967),
-        };
-        let _ = server.set_read_write_two_durations(new_value).await;
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_integer'");
+    let prop_change_future = server.set_read_write_integer(2022).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_write_integer': {:?}", e);
+    }
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_binary'");
-        let prop_change_future = server
-            .set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101])
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'read_write_binary': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_only_integer'");
+    let prop_change_future = server.set_read_only_integer(2022).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_only_integer': {:?}", e);
+    }
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_optional_binary'");
-        let prop_change_future = server
-            .set_read_write_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!(
-                "Error changing property 'read_write_optional_binary': {:?}",
-                e
-            );
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_optional_integer'");
+    let prop_change_future = server.set_read_write_optional_integer(Some(2022)).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!(
+            "Error changing property 'read_write_optional_integer': {:?}",
+            e
+        );
+    }
 
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'read_write_two_binaries'");
-        let new_value = ReadWriteTwoBinariesProperty {
-            first: vec![101, 120, 97, 109, 112, 108, 101],
-            second: vec![101, 120, 97, 109, 112, 108, 101],
-        };
-        let _ = server.set_read_write_two_binaries(new_value).await;
-    });
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_two_integers'");
+    let new_value = ReadWriteTwoIntegersProperty {
+        first: 2022,
+        second: Some(2022),
+    };
+    let _ = server.set_read_write_two_integers(new_value).await;
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_only_string'");
+    let prop_change_future = server.set_read_only_string("foo".to_string()).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_only_string': {:?}", e);
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_string'");
+    let prop_change_future = server.set_read_write_string("foo".to_string()).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_write_string': {:?}", e);
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_optional_string'");
+    let prop_change_future = server
+        .set_read_write_optional_string(Some("foo".to_string()))
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!(
+            "Error changing property 'read_write_optional_string': {:?}",
+            e
+        );
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_two_strings'");
+    let new_value = ReadWriteTwoStringsProperty {
+        first: "foo".to_string(),
+        second: Some("foo".to_string()),
+    };
+    let _ = server.set_read_write_two_strings(new_value).await;
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_struct'");
+    let prop_change_future = server
+        .set_read_write_struct(AllTypes {
+            the_bool: true,
+            the_int: 2022,
+            the_number: 1.0,
+            the_str: "foo".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(975),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(2022),
+            optional_string: Some("foo".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(975),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        })
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_write_struct': {:?}", e);
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_optional_struct'");
+    let prop_change_future = server
+        .set_read_write_optional_struct(AllTypes {
+            the_bool: true,
+            the_int: 2022,
+            the_number: 1.0,
+            the_str: "foo".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(975),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(2022),
+            optional_string: Some("foo".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(975),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        })
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!(
+            "Error changing property 'read_write_optional_struct': {:?}",
+            e
+        );
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_two_structs'");
+    let new_value = ReadWriteTwoStructsProperty {
+        first: AllTypes {
+            the_bool: true,
+            the_int: 2022,
+            the_number: 1.0,
+            the_str: "foo".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(967),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(2022),
+            optional_string: Some("foo".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(967),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        },
+        second: AllTypes {
+            the_bool: true,
+            the_int: 2022,
+            the_number: 1.0,
+            the_str: "foo".to_string(),
+            the_enum: Numbers::One,
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(967),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(2022),
+            optional_string: Some("foo".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_date_time: chrono::Utc::now(),
+            optional_duration: chrono::Duration::seconds(967),
+            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        },
+    };
+    let _ = server.set_read_write_two_structs(new_value).await;
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_only_enum'");
+    let prop_change_future = server.set_read_only_enum(Numbers::One).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_only_enum': {:?}", e);
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_enum'");
+    let prop_change_future = server.set_read_write_enum(Numbers::One).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_write_enum': {:?}", e);
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_optional_enum'");
+    let prop_change_future = server
+        .set_read_write_optional_enum(Some(Numbers::One))
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!(
+            "Error changing property 'read_write_optional_enum': {:?}",
+            e
+        );
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_two_enums'");
+    let new_value = ReadWriteTwoEnumsProperty {
+        first: Numbers::One,
+        second: Some(Numbers::One),
+    };
+    let _ = server.set_read_write_two_enums(new_value).await;
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_datetime'");
+    let prop_change_future = server.set_read_write_datetime(chrono::Utc::now()).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_write_datetime': {:?}", e);
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_optional_datetime'");
+    let prop_change_future = server
+        .set_read_write_optional_datetime(chrono::Utc::now())
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!(
+            "Error changing property 'read_write_optional_datetime': {:?}",
+            e
+        );
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_two_datetimes'");
+    let new_value = ReadWriteTwoDatetimesProperty {
+        first: chrono::Utc::now(),
+        second: chrono::Utc::now(),
+    };
+    let _ = server.set_read_write_two_datetimes(new_value).await;
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_duration'");
+    let prop_change_future = server
+        .set_read_write_duration(chrono::Duration::seconds(975))
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_write_duration': {:?}", e);
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_optional_duration'");
+    let prop_change_future = server
+        .set_read_write_optional_duration(chrono::Duration::seconds(975))
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!(
+            "Error changing property 'read_write_optional_duration': {:?}",
+            e
+        );
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_two_durations'");
+    let new_value = ReadWriteTwoDurationsProperty {
+        first: chrono::Duration::seconds(967),
+        second: chrono::Duration::seconds(967),
+    };
+    let _ = server.set_read_write_two_durations(new_value).await;
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_binary'");
+    let prop_change_future = server
+        .set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'read_write_binary': {:?}", e);
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_optional_binary'");
+    let prop_change_future = server
+        .set_read_write_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!(
+            "Error changing property 'read_write_optional_binary': {:?}",
+            e
+        );
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'read_write_two_binaries'");
+    let new_value = ReadWriteTwoBinariesProperty {
+        first: vec![101, 120, 97, 109, 112, 108, 101],
+        second: vec![101, 120, 97, 109, 112, 108, 101],
+    };
+    let _ = server.set_read_write_two_binaries(new_value).await;
+
     // Ctrl-C to stop
 }

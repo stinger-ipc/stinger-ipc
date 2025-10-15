@@ -1539,7 +1539,7 @@ def on_three_date_times(first: datetime, second: datetime, third: Optional[datet
 A server can emit a `threeDateTimes` signal simply by calling the server's `emit_three_date_times` method.
 
 ```python
-server.emit_three_date_times(datetime.now(), datetime.now(), None)
+server.emit_three_date_times(datetime.now(), datetime.now(), datetime.now())
 ```
 
 </details>
@@ -2788,7 +2788,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_one_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
+future = client.call_one_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2872,7 +2872,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_optional_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
     """ This is an example handler for the 'callOptionalStruct' method.  """
     print(f"Running call_optional_struct'({input1})'")
-    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data")
+    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data")
 ```
 
 </details>
@@ -2915,7 +2915,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"))
+future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:

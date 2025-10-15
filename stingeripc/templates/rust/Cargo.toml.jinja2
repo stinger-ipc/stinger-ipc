@@ -5,14 +5,14 @@ edition = "2024"
 
 [features]
 default = []
-client = ["payloads", "paho-mqtt", "json", "log", "env_logger"]
-server = ["payloads", "async-trait", "tracing", "env_logger"]
+client = ["payloads", "tracing", "tracing-subscriber"]
+server = ["payloads", "async-trait", "tracing", "tracing-subscriber"]
 payloads = []
 
 [dependencies]
 # Core dependencies (always available)
 futures = "0.3.31"
-mqttier = "0.4.3"
+mqttier = { git = "https://github.com/stinger-ipc/mqttier", rev = "5e4ab1bc186e84181ffd72790759b774b998c740" }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 tokio = { version = "1", features = ["full"] }
@@ -22,16 +22,12 @@ chrono = "0.4.42"
 iso8601-duration = "0.2.0"
 builder-pattern = "0.4"
 base64 = "0.22.1"
-
-# Client specific dependencies
-paho-mqtt = { version = "0.13.3", optional = true }
-json = { version = "0.12.4", optional = true }
-log = { version = "0.4", optional = true }
-env_logger = { version = "0.10", optional = true }
+tracing = { version = "0.1.41", optional = true }
+tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter", "fmt"] }
 
 # Server specific dependencies
 async-trait = { version = "0.1", optional = true }
-tracing = { version = "0.1.41", optional = true }
+
 
 [dependencies.uuid]
 version = "1.17.0"

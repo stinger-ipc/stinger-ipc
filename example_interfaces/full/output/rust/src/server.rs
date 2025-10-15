@@ -940,13 +940,14 @@ impl FullServer {
     pub async fn set_favorite_number(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.favorite_number.clone();
 
+        let new_prop_obj = FavoriteNumberProperty {
+            number: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.number = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -1064,11 +1065,12 @@ impl FullServer {
     pub async fn set_favorite_foods(&mut self, data: FavoriteFoodsProperty) -> SentMessageFuture {
         let prop = self.properties.favorite_foods.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -1186,11 +1188,12 @@ impl FullServer {
     pub async fn set_lunch_menu(&mut self, data: LunchMenuProperty) -> SentMessageFuture {
         let prop = self.properties.lunch_menu.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -1308,13 +1311,14 @@ impl FullServer {
     pub async fn set_family_name(&mut self, data: String) -> SentMessageFuture {
         let prop = self.properties.family_name.clone();
 
+        let new_prop_obj = FamilyNameProperty {
+            family_name: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.family_name = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -1439,13 +1443,14 @@ impl FullServer {
     ) -> SentMessageFuture {
         let prop = self.properties.last_breakfast_time.clone();
 
+        let new_prop_obj = LastBreakfastTimeProperty {
+            timestamp: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.timestamp = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -1563,13 +1568,14 @@ impl FullServer {
     pub async fn set_breakfast_length(&mut self, data: chrono::Duration) -> SentMessageFuture {
         let prop = self.properties.breakfast_length.clone();
 
+        let new_prop_obj = BreakfastLengthProperty {
+            length: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.length = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -1687,11 +1693,12 @@ impl FullServer {
     pub async fn set_last_birthdays(&mut self, data: LastBirthdaysProperty) -> SentMessageFuture {
         let prop = self.properties.last_birthdays.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(

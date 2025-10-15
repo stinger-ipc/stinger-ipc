@@ -2810,13 +2810,14 @@ impl TestAbleServer {
     pub async fn set_read_write_integer(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.read_write_integer.clone();
 
+        let new_prop_obj = ReadWriteIntegerProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -2872,13 +2873,14 @@ impl TestAbleServer {
     pub async fn set_read_only_integer(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.read_only_integer.clone();
 
+        let new_prop_obj = ReadOnlyIntegerProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -3007,13 +3009,14 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_integer.clone();
 
+        let new_prop_obj = ReadWriteOptionalIntegerProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -3155,11 +3158,12 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_two_integers.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -3222,13 +3226,14 @@ impl TestAbleServer {
     pub async fn set_read_only_string(&mut self, data: String) -> SentMessageFuture {
         let prop = self.properties.read_only_string.clone();
 
+        let new_prop_obj = ReadOnlyStringProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -3348,13 +3353,14 @@ impl TestAbleServer {
     pub async fn set_read_write_string(&mut self, data: String) -> SentMessageFuture {
         let prop = self.properties.read_write_string.clone();
 
+        let new_prop_obj = ReadWriteStringProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -3485,13 +3491,14 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_string.clone();
 
+        let new_prop_obj = ReadWriteOptionalStringProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -3633,11 +3640,12 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_two_strings.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -3764,13 +3772,14 @@ impl TestAbleServer {
     pub async fn set_read_write_struct(&mut self, data: AllTypes) -> SentMessageFuture {
         let prop = self.properties.read_write_struct.clone();
 
+        let new_prop_obj = ReadWriteStructProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -3896,13 +3905,14 @@ impl TestAbleServer {
     pub async fn set_read_write_optional_struct(&mut self, data: AllTypes) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_struct.clone();
 
+        let new_prop_obj = ReadWriteOptionalStructProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -4044,11 +4054,12 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_two_structs.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -4111,13 +4122,14 @@ impl TestAbleServer {
     pub async fn set_read_only_enum(&mut self, data: Numbers) -> SentMessageFuture {
         let prop = self.properties.read_only_enum.clone();
 
+        let new_prop_obj = ReadOnlyEnumProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -4236,13 +4248,14 @@ impl TestAbleServer {
     pub async fn set_read_write_enum(&mut self, data: Numbers) -> SentMessageFuture {
         let prop = self.properties.read_write_enum.clone();
 
+        let new_prop_obj = ReadWriteEnumProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -4371,13 +4384,14 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_enum.clone();
 
+        let new_prop_obj = ReadWriteOptionalEnumProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -4513,11 +4527,12 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_two_enums.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -4643,13 +4658,14 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_datetime.clone();
 
+        let new_prop_obj = ReadWriteDatetimeProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -4783,13 +4799,14 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_datetime.clone();
 
+        let new_prop_obj = ReadWriteOptionalDatetimeProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -4931,11 +4948,12 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_two_datetimes.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -5062,13 +5080,14 @@ impl TestAbleServer {
     pub async fn set_read_write_duration(&mut self, data: chrono::Duration) -> SentMessageFuture {
         let prop = self.properties.read_write_duration.clone();
 
+        let new_prop_obj = ReadWriteDurationProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -5202,13 +5221,14 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_duration.clone();
 
+        let new_prop_obj = ReadWriteOptionalDurationProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -5350,11 +5370,12 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_two_durations.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -5481,13 +5502,14 @@ impl TestAbleServer {
     pub async fn set_read_write_binary(&mut self, data: Vec<u8>) -> SentMessageFuture {
         let prop = self.properties.read_write_binary.clone();
 
+        let new_prop_obj = ReadWriteBinaryProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -5613,13 +5635,14 @@ impl TestAbleServer {
     pub async fn set_read_write_optional_binary(&mut self, data: Vec<u8>) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_binary.clone();
 
+        let new_prop_obj = ReadWriteOptionalBinaryProperty {
+            value: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.value = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -5761,11 +5784,12 @@ impl TestAbleServer {
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_two_binaries.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(

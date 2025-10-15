@@ -326,16 +326,14 @@ impl {{stinger.rust.server_struct_name}} {
     pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) -> SentMessageFuture {
         let prop = self.properties.{{prop_name|snake_case}}.clone();
         
+        let new_prop_obj = {% if prop.arg_list | length == 1 %}{{prop_name|UpperCamelCase}}Property {
+            {{prop.arg_list[0].name}}: data.clone(),
+        }{% else %}data.clone(){% endif %};
+
         // Set the server's copy of the property value{%if prop.arg_list|length > 1%}s{%endif%}.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                {% if prop.arg_list | length == 1%}
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.{{prop.arg_list[0].name|snake_case}} = data.clone();
-                } 
-                {%else%}
-                *locked_data = Some(data.clone());
-                {% endif %}
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::ServerError(

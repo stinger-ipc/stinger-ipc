@@ -566,11 +566,12 @@ impl WeatherServer {
     pub async fn set_location(&mut self, data: LocationProperty) -> SentMessageFuture {
         let prop = self.properties.location.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -626,13 +627,14 @@ impl WeatherServer {
     pub async fn set_current_temperature(&mut self, data: f32) -> SentMessageFuture {
         let prop = self.properties.current_temperature.clone();
 
+        let new_prop_obj = CurrentTemperatureProperty {
+            temperature_f: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.temperature_f = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -691,11 +693,12 @@ impl WeatherServer {
     ) -> SentMessageFuture {
         let prop = self.properties.current_condition.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -751,11 +754,12 @@ impl WeatherServer {
     pub async fn set_daily_forecast(&mut self, data: DailyForecastProperty) -> SentMessageFuture {
         let prop = self.properties.daily_forecast.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -811,11 +815,12 @@ impl WeatherServer {
     pub async fn set_hourly_forecast(&mut self, data: HourlyForecastProperty) -> SentMessageFuture {
         let prop = self.properties.hourly_forecast.clone();
 
+        let new_prop_obj = data.clone();
+
         // Set the server's copy of the property values.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(data.clone());
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -935,13 +940,14 @@ impl WeatherServer {
     pub async fn set_current_condition_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.current_condition_refresh_interval.clone();
 
+        let new_prop_obj = CurrentConditionRefreshIntervalProperty {
+            seconds: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.seconds = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -1072,13 +1078,14 @@ impl WeatherServer {
     pub async fn set_hourly_forecast_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.hourly_forecast_refresh_interval.clone();
 
+        let new_prop_obj = HourlyForecastRefreshIntervalProperty {
+            seconds: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.seconds = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
@@ -1209,13 +1216,14 @@ impl WeatherServer {
     pub async fn set_daily_forecast_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
         let prop = self.properties.daily_forecast_refresh_interval.clone();
 
+        let new_prop_obj = DailyForecastRefreshIntervalProperty {
+            seconds: data.clone(),
+        };
+
         // Set the server's copy of the property value.
         let property_obj = {
             if let Ok(mut locked_data) = prop.lock() {
-                if let Some(ref mut property_value) = *locked_data {
-                    property_value.seconds = data.clone();
-                }
-
+                *locked_data = Some(new_prop_obj);
                 locked_data.clone()
             } else {
                 return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(

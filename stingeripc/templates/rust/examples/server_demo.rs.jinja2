@@ -5,13 +5,14 @@ on the next generation.
 It contains enumerations used by the {{stinger.name}} interface.
 */
 use std::any::Any;
-use futures::{executor::block_on};
+
 use mqttier::{MqttierClient, MqttierOptions, Connection};
 use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
 use tokio::time::{sleep, Duration};
 {%if stinger.methods|length > 0%}
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing_subscriber;
 use async_trait::async_trait;
 {%endif%}
 #[allow(unused_imports)]
@@ -72,68 +73,75 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | Upper
 #[tokio::main]
 async fn main() {
 
-    block_on(async {
-        let mqttier_options = MqttierOptions::new()
-            .connection(Connection::TcpLocalhost(1883))
-            .client_id("rust-server-demo".to_string())
-            .build();
-        let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    // Initialize tracing subscriber to see log output
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"))
+        )
+        .init();
 
-        {%if stinger.methods|length > 0%}
-        let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
+    let mqttier_options = MqttierOptions::new()
+        .connection(Connection::TcpLocalhost(1883))
+        .client_id("rust-server-demo".to_string())
+        .build();
+    let mut connection = MqttierClient::new(mqttier_options).unwrap();
 
-        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, handlers.clone(), "rust-server-demo:1".to_string()).await;
-        {%else%}
-        let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, "rust-server-demo:1".to_string()).await;
-        {%endif%}
+    {%if stinger.methods|length > 0%}
+    let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
 
-        let mut looping_server = server.clone();
-        tokio::spawn(async move {
-            println!("Starting connection loop");
-            let _conn_loop = looping_server.run_loop().await;
-        });
+    let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, handlers.clone(), "rust-server-demo:1".to_string()).await;
+    {%else%}
+    let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, "rust-server-demo:1".to_string()).await;
+    {%endif%}
 
-        {%for prop_name, prop in stinger.properties.items()%}
-        println!("Setting initial value for property '{{prop_name}}'");
-        {%-if prop.arg_list | length == 1 %}
-        let prop_init_future = server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
-        {%-else%}{# many args in property #}
-        let new_value = {{prop.rust_type}} {
-            {%-for arg in prop.arg_list %}
-                {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
-            {%-endfor%}
-        };
-        let prop_init_future = server.set_{{prop_name | snake_case}}(new_value).await;
-        {%endif%}
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property '{{prop_name}}': {:?}", e);
-        }
-        {%endfor%}{# property initialization -#}
-
-        {%for sig_name, sig in stinger.signals.items()%}
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal '{{sig_name}}'");
-        let signal_result_future = server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
-        let signal_result = signal_result_future.await;
-        println!("Signal '{{sig_name}}' was sent: {:?}", signal_result);
-        {%endfor%}
-        {%for prop_name, prop in stinger.properties.items()%}
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property '{{prop_name}}'");
-        {%-if prop.arg_list | length == 1 %}
-        let prop_change_future = server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}}).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property '{{prop_name}}': {:?}", e);
-        }
-        {%-else%}{# many args in property #}
-        let new_value = {{prop.rust_type}} {
-            {%-for arg in prop.arg_list %}
-                {{arg.name}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
-            {%-endfor%}
-        };
-        let _ = server.set_{{prop_name | snake_case}}(new_value).await;
-        {%endif%}
-        {%endfor%}{# property initialization -#}
+    let mut looping_server = server.clone();
+    let _loop_join_handle = tokio::spawn(async move {
+        println!("Starting connection loop");
+        let _conn_loop = looping_server.run_loop().await;
     });
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    println!("Setting initial value for property '{{prop_name}}'");
+    {%-if prop.arg_list | length == 1 %}
+    let prop_init_future = server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
+    {%-else%}{# many args in property #}
+    let new_value = {{prop.rust_type}} {
+        {%-for arg in prop.arg_list %}
+            {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
+        {%-endfor%}
+    };
+    let prop_init_future = server.set_{{prop_name | snake_case}}(new_value).await;
+    {%endif%}
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property '{{prop_name}}': {:?}", e);
+    }
+    {%endfor%}{# property initialization -#}
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal '{{sig_name}}'");
+    let signal_result_future = server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+    let signal_result = signal_result_future.await;
+    println!("Signal '{{sig_name}}' was sent: {:?}", signal_result);
+    {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property '{{prop_name}}'");
+    {%-if prop.arg_list | length == 1 %}
+    let prop_change_future = server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}}).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property '{{prop_name}}': {:?}", e);
+    }
+    {%-else%}{# many args in property #}
+    let new_value = {{prop.rust_type}} {
+        {%-for arg in prop.arg_list %}
+            {{arg.name}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
+        {%-endfor%}
+    };
+    let _ = server.set_{{prop_name | snake_case}}(new_value).await;
+    {%endif%}
+    {%endfor%}{# property initialization -#}
+
     // Ctrl-C to stop
 }

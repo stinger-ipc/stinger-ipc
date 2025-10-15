@@ -4,15 +4,16 @@ on the next generation.
 
 It contains enumerations used by the Full interface.
 */
-use full_ipc::server::{FullMethodHandlers, FullServer};
-use futures::executor::block_on;
-use mqttier::{Connection, MqttierClient, MqttierOptions};
 use std::any::Any;
+
+use full_ipc::server::{FullMethodHandlers, FullServer};
+use mqttier::{Connection, MqttierClient, MqttierOptions};
 use tokio::time::{Duration, sleep};
 
 use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing_subscriber;
 
 #[allow(unused_imports)]
 use full_ipc::payloads::{MethodReturnCode, *};
@@ -106,193 +107,200 @@ impl FullMethodHandlers for FullMethodImpl {
 
 #[tokio::main]
 async fn main() {
-    block_on(async {
-        let mqttier_options = MqttierOptions::new()
-            .connection(Connection::TcpLocalhost(1883))
-            .client_id("rust-server-demo".to_string())
-            .build();
-        let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    // Initialize tracing subscriber to see log output
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .init();
 
-        let handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>> =
-            Arc::new(Mutex::new(Box::new(FullMethodImpl::new())));
+    let mqttier_options = MqttierOptions::new()
+        .connection(Connection::TcpLocalhost(1883))
+        .client_id("rust-server-demo".to_string())
+        .build();
+    let mut connection = MqttierClient::new(mqttier_options).unwrap();
 
-        let mut server = FullServer::new(
-            &mut connection,
-            handlers.clone(),
-            "rust-server-demo:1".to_string(),
+    let handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>> =
+        Arc::new(Mutex::new(Box::new(FullMethodImpl::new())));
+
+    let mut server = FullServer::new(
+        &mut connection,
+        handlers.clone(),
+        "rust-server-demo:1".to_string(),
+    )
+    .await;
+
+    let mut looping_server = server.clone();
+    let _loop_join_handle = tokio::spawn(async move {
+        println!("Starting connection loop");
+        let _conn_loop = looping_server.run_loop().await;
+    });
+
+    println!("Setting initial value for property 'favorite_number'");
+    let prop_init_future = server.set_favorite_number(42).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'favorite_number': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'favorite_foods'");
+    let new_value = FavoriteFoodsProperty {
+        drink: "apples".to_string(),
+        slices_of_pizza: 42,
+        breakfast: Some("apples".to_string()),
+    };
+    let prop_init_future = server.set_favorite_foods(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'favorite_foods': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'lunch_menu'");
+    let new_value = LunchMenuProperty {
+        monday: Lunch {
+            drink: true,
+            sandwich: "apples".to_string(),
+            crackers: 3.14,
+            day: DayOfTheWeek::Saturday,
+            order_number: Some(42),
+            time_of_lunch: chrono::Utc::now(),
+            duration_of_lunch: chrono::Duration::seconds(3536),
+        },
+        tuesday: Lunch {
+            drink: true,
+            sandwich: "apples".to_string(),
+            crackers: 3.14,
+            day: DayOfTheWeek::Saturday,
+            order_number: Some(42),
+            time_of_lunch: chrono::Utc::now(),
+            duration_of_lunch: chrono::Duration::seconds(3536),
+        },
+    };
+    let prop_init_future = server.set_lunch_menu(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'lunch_menu': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'family_name'");
+    let prop_init_future = server.set_family_name("apples".to_string()).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'family_name': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'last_breakfast_time'");
+    let prop_init_future = server.set_last_breakfast_time(chrono::Utc::now()).await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'last_breakfast_time': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'breakfast_length'");
+    let prop_init_future = server
+        .set_breakfast_length(chrono::Duration::seconds(3536))
+        .await;
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'breakfast_length': {:?}", e);
+    }
+
+    println!("Setting initial value for property 'last_birthdays'");
+    let new_value = LastBirthdaysProperty {
+        mom: chrono::Utc::now(),
+        dad: chrono::Utc::now(),
+        sister: chrono::Utc::now(),
+        brothers_age: Some(42),
+    };
+    let prop_init_future = server.set_last_birthdays(new_value).await;
+
+    if let Err(e) = prop_init_future.await {
+        eprintln!("Error initializing property 'last_birthdays': {:?}", e);
+    }
+
+    sleep(Duration::from_secs(1)).await;
+    println!("Emitting signal 'todayIs'");
+    let signal_result_future = server
+        .emit_today_is(
+            42,
+            Some(DayOfTheWeek::Saturday),
+            chrono::Utc::now(),
+            chrono::Duration::seconds(3536),
+            vec![101, 120, 97, 109, 112, 108, 101],
         )
         .await;
+    let signal_result = signal_result_future.await;
+    println!("Signal 'todayIs' was sent: {:?}", signal_result);
 
-        let mut looping_server = server.clone();
-        tokio::spawn(async move {
-            println!("Starting connection loop");
-            let _conn_loop = looping_server.run_loop().await;
-        });
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'favorite_number'");
+    let prop_change_future = server.set_favorite_number(2022).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'favorite_number': {:?}", e);
+    }
 
-        println!("Setting initial value for property 'favorite_number'");
-        let prop_init_future = server.set_favorite_number(42).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'favorite_number': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'favorite_foods'");
+    let new_value = FavoriteFoodsProperty {
+        drink: "foo".to_string(),
+        slices_of_pizza: 2022,
+        breakfast: Some("foo".to_string()),
+    };
+    let _ = server.set_favorite_foods(new_value).await;
 
-        println!("Setting initial value for property 'favorite_foods'");
-        let new_value = FavoriteFoodsProperty {
-            drink: "apples".to_string(),
-            slices_of_pizza: 42,
-            breakfast: Some("apples".to_string()),
-        };
-        let prop_init_future = server.set_favorite_foods(new_value).await;
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'lunch_menu'");
+    let new_value = LunchMenuProperty {
+        monday: Lunch {
+            drink: true,
+            sandwich: "foo".to_string(),
+            crackers: 1.0,
+            day: DayOfTheWeek::Monday,
+            order_number: Some(2022),
+            time_of_lunch: chrono::Utc::now(),
+            duration_of_lunch: chrono::Duration::seconds(967),
+        },
+        tuesday: Lunch {
+            drink: true,
+            sandwich: "foo".to_string(),
+            crackers: 1.0,
+            day: DayOfTheWeek::Monday,
+            order_number: Some(2022),
+            time_of_lunch: chrono::Utc::now(),
+            duration_of_lunch: chrono::Duration::seconds(967),
+        },
+    };
+    let _ = server.set_lunch_menu(new_value).await;
 
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'favorite_foods': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'family_name'");
+    let prop_change_future = server.set_family_name("foo".to_string()).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'family_name': {:?}", e);
+    }
 
-        println!("Setting initial value for property 'lunch_menu'");
-        let new_value = LunchMenuProperty {
-            monday: Lunch {
-                drink: true,
-                sandwich: "apples".to_string(),
-                crackers: 3.14,
-                day: DayOfTheWeek::Saturday,
-                order_number: Some(42),
-                time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: chrono::Duration::seconds(3536),
-            },
-            tuesday: Lunch {
-                drink: true,
-                sandwich: "apples".to_string(),
-                crackers: 3.14,
-                day: DayOfTheWeek::Saturday,
-                order_number: Some(42),
-                time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: chrono::Duration::seconds(3536),
-            },
-        };
-        let prop_init_future = server.set_lunch_menu(new_value).await;
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'last_breakfast_time'");
+    let prop_change_future = server.set_last_breakfast_time(chrono::Utc::now()).await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'last_breakfast_time': {:?}", e);
+    }
 
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'lunch_menu': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'breakfast_length'");
+    let prop_change_future = server
+        .set_breakfast_length(chrono::Duration::seconds(975))
+        .await;
+    if let Err(e) = prop_change_future.await {
+        eprintln!("Error changing property 'breakfast_length': {:?}", e);
+    }
 
-        println!("Setting initial value for property 'family_name'");
-        let prop_init_future = server.set_family_name("apples".to_string()).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'family_name': {:?}", e);
-        }
+    sleep(Duration::from_secs(1)).await;
+    println!("Changing property 'last_birthdays'");
+    let new_value = LastBirthdaysProperty {
+        mom: chrono::Utc::now(),
+        dad: chrono::Utc::now(),
+        sister: chrono::Utc::now(),
+        brothers_age: Some(2022),
+    };
+    let _ = server.set_last_birthdays(new_value).await;
 
-        println!("Setting initial value for property 'last_breakfast_time'");
-        let prop_init_future = server.set_last_breakfast_time(chrono::Utc::now()).await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'last_breakfast_time': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'breakfast_length'");
-        let prop_init_future = server
-            .set_breakfast_length(chrono::Duration::seconds(3536))
-            .await;
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'breakfast_length': {:?}", e);
-        }
-
-        println!("Setting initial value for property 'last_birthdays'");
-        let new_value = LastBirthdaysProperty {
-            mom: chrono::Utc::now(),
-            dad: chrono::Utc::now(),
-            sister: chrono::Utc::now(),
-            brothers_age: Some(42),
-        };
-        let prop_init_future = server.set_last_birthdays(new_value).await;
-
-        if let Err(e) = prop_init_future.await {
-            eprintln!("Error initializing property 'last_birthdays': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Emitting signal 'todayIs'");
-        let signal_result_future = server
-            .emit_today_is(
-                42,
-                Some(DayOfTheWeek::Saturday),
-                chrono::Utc::now(),
-                chrono::Duration::seconds(3536),
-                vec![101, 120, 97, 109, 112, 108, 101],
-            )
-            .await;
-        let signal_result = signal_result_future.await;
-        println!("Signal 'todayIs' was sent: {:?}", signal_result);
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'favorite_number'");
-        let prop_change_future = server.set_favorite_number(2022).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'favorite_number': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'favorite_foods'");
-        let new_value = FavoriteFoodsProperty {
-            drink: "foo".to_string(),
-            slices_of_pizza: 2022,
-            breakfast: Some("foo".to_string()),
-        };
-        let _ = server.set_favorite_foods(new_value).await;
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'lunch_menu'");
-        let new_value = LunchMenuProperty {
-            monday: Lunch {
-                drink: true,
-                sandwich: "foo".to_string(),
-                crackers: 1.0,
-                day: DayOfTheWeek::Monday,
-                order_number: Some(2022),
-                time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: chrono::Duration::seconds(967),
-            },
-            tuesday: Lunch {
-                drink: true,
-                sandwich: "foo".to_string(),
-                crackers: 1.0,
-                day: DayOfTheWeek::Monday,
-                order_number: Some(2022),
-                time_of_lunch: chrono::Utc::now(),
-                duration_of_lunch: chrono::Duration::seconds(967),
-            },
-        };
-        let _ = server.set_lunch_menu(new_value).await;
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'family_name'");
-        let prop_change_future = server.set_family_name("foo".to_string()).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'family_name': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'last_breakfast_time'");
-        let prop_change_future = server.set_last_breakfast_time(chrono::Utc::now()).await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'last_breakfast_time': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'breakfast_length'");
-        let prop_change_future = server
-            .set_breakfast_length(chrono::Duration::seconds(975))
-            .await;
-        if let Err(e) = prop_change_future.await {
-            eprintln!("Error changing property 'breakfast_length': {:?}", e);
-        }
-
-        sleep(Duration::from_secs(1)).await;
-        println!("Changing property 'last_birthdays'");
-        let new_value = LastBirthdaysProperty {
-            mom: chrono::Utc::now(),
-            dad: chrono::Utc::now(),
-            sister: chrono::Utc::now(),
-            brothers_age: Some(2022),
-        };
-        let _ = server.set_last_birthdays(new_value).await;
-    });
     // Ctrl-C to stop
 }
