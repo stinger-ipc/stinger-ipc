@@ -27,18 +27,18 @@ RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "op
 class Arg:
     def __init__(self, name: str, description: Optional[str] = None):
         self._name = name
-        self._description = description
+        self._description = description.strip()
         self._default_value = None
         self._type: ArgType = ArgType.UNKNOWN
         self._optional: bool = False
 
     def set_description(self, description: str) -> Arg:
-        self._description = description
+        self._description = description.strip()
         return self
 
     def try_set_description_from_spec(self, spec: dict[str, Any]) -> Arg:
         if "description" in spec and isinstance(spec["description"], str):
-            self._description = spec["description"]
+            self.set_description(spec["description"])
         return self
 
     @property
@@ -1048,19 +1048,19 @@ class InterfaceEnum:
         self._name = name
         self._values: list[str] = []
         self._value_descriptions: list[str | None] = []
-        self._description: Optional[str] = None
+        self._documentation: Optional[str] = None
 
     def add_value(self, value: str, description: Optional[str] = None):
         self._values.append(value)
-        self._value_descriptions.append(description)
+        self._value_descriptions.append(description.strip())
 
     @property
     def name(self):
         return self._name
 
     @property
-    def description(self) -> str | None:
-        return self._description
+    def documentation(self) -> str | None:
+        return self._documentation
 
     @property
     def class_name(self):
@@ -1119,9 +1119,9 @@ class InterfaceEnum:
                 raise InvalidStingerStructure(
                     f"InterfaceEnum '{name}' items must have string names."
                 )
-        description = enum_spec.get("description", None)
-        if description is not None and isinstance(description, str):
-            ie._description = description
+        doc = enum_spec.get("documentation", None)
+        if doc is not None and isinstance(doc, str):
+            ie.documentation = doc
         return ie
 
 
@@ -1130,7 +1130,7 @@ class InterfaceStruct:
     def __init__(self, name: str):
         self._name = name
         self._members: list[Arg] = []
-        self._description: Optional[str] = None
+        self._documentation: Optional[str] = None
 
     def add_member(self, arg: Arg):
         self._members.append(arg)
@@ -1140,8 +1140,8 @@ class InterfaceStruct:
         return self._name
 
     @property
-    def description(self) -> str | None:
-        return self._description
+    def documentation(self) -> str | None:
+        return self._documentation
 
     @property
     def class_name(self):
@@ -1196,10 +1196,10 @@ class InterfaceStruct:
                 raise InvalidStingerStructure("Struct members must be dicts")
             arg = Arg.new_arg_from_stinger(memb, stinger_spec=stinger_spec)
             istruct.add_member(arg)
-        description = spec.get("description", None)
-        if description is not None and not isinstance(description, str):
-            raise InvalidStingerStructure("Struct description must be a string")
-        istruct._description = description
+        documentation = spec.get("documentation", None)
+        if documentation is not None and not isinstance(documentation, str):
+            raise InvalidStingerStructure("Struct documentation must be a string")
+        istruct._documentation = documentation
         return istruct
 
     def __str__(self) -> str:

@@ -11,7 +11,9 @@ properties:
     properties:
       version:
         type: string
-        const: "0.0.7"
+        enum:
+          - "0.0.7"
+          - "0.0.8"
     required:
       - version
 
@@ -117,6 +119,7 @@ $defs:
         default: false
       description:
         type: string
+        pattern: "^[^\n\r]*$"
       schema:
         type: object
         description: A JSON schema which further constrains the value.
