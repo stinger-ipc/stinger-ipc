@@ -1,0 +1,54 @@
+import signal
+from time import sleep
+from typing import Optional, Union
+from datetime import datetime, timedelta
+from {{stinger.python.package_name}}.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from {{stinger.python.package_name}}.client import {{stinger.python.client_class_name}}, {{stinger.python.client_class_name}}Builder, {{stinger.python.client_class_name}}Discoverer
+from {{stinger.python.package_name}} import interface_types
+
+if __name__ == '__main__':
+
+    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    conn = MqttBrokerConnection(transport)
+
+    client_builder = {{stinger.python.client_class_name}}Builder()
+    {%for sig_name, sig in stinger.signals.items()%}
+    @client_builder.receive_{{sig_name | snake_case }}
+    def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        """{{sig.description}}
+        {%for arg in sig.arg_list-%}
+        @param {{arg.name}} {{arg.python_annotation}} {{arg.description or ''}}
+        {%endfor%}"""
+        print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
+    {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    @client_builder.{{prop_name | snake_case}}_updated
+    def print_new_{{prop_name}}_value(value: {{prop.python_annotation}}):
+        """{{prop.description}}
+        """
+        print(f"Property '{{prop_name}}' has been updated to: {value}")
+    {%endfor%}
+
+    discovery = {{stinger.python.client_class_name}}Discoverer(conn, client_builder)
+    fut_client = discovery.get_singleton_client()
+    try:
+        client = fut_client.result(10)
+    except futures.TimeoutError:
+        print("Timed out waiting for a service to appear")
+        exit(1)
+
+    sleep(2)
+
+    {%if stinger.methods | length > 0 %}
+    {%-for method_name, method in stinger.methods.items()%}
+    print("Making call to '{{method_name|snake_case}}'")
+    future_resp = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+    try:
+        print(f"RESULT:  {future_resp.result(5)}")
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to '{{method_name|snake_case}}' call")
+    {%endfor%}
+    {%endif%}
+
+    print("Ctrl-C will stop the program.")
+    signal.pause()

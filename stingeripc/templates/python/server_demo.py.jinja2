@@ -1,0 +1,61 @@
+from time import sleep
+import signal
+from typing import Optional, Union
+from datetime import datetime, timedelta
+from {{stinger.python.package_name}}.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}
+from {{stinger.python.package_name}} import interface_types
+
+if __name__ == '__main__':
+    """
+    This shows an example on how to run the code.  Ideally, your app should do something similar, but use the methods in
+    a more meaningful way.
+    """
+
+    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    conn = MqttBrokerConnection(transport, client_id="py-server-demo")
+    server = {{stinger.python.server_class_name}}(conn, "py-server-demo:1")
+
+    {%for prop_name, prop in stinger.properties.items()-%}
+    {%if prop.arg_list | length > 1%}
+    server.{{prop_name | snake_case}} = {{prop.python_class}}(
+        {%for arg in prop.arg_list%}
+        {{arg.name}}={{arg.get_random_example_value()}},
+        {%endfor%}
+    )
+    {%else%}
+    server.{{prop_name | snake_case}} = {{prop.arg_list[0].get_random_example_value()}}
+    {%endif%}
+    {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    @server.handle_{{method_name | snake_case}} 
+    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
+        """ This is an example handler for the '{{method_name}}' method.  """
+        print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
+        return {{method.get_return_value_random_example_value('python')}}
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    @server.on_{{prop_name | snake_case}}_updates
+    def on_{{prop_name | snake_case}}_update({%for arg in prop.arg_list %}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        print(f"Received update for '{{prop_name}}' property: {%for arg in prop.arg_list %}{ {{arg.name}}= }{%if not loop.last%}, {%endif%}{%endfor%}")
+    {%endfor%}
+
+    print("Ctrl-C will stop the program.")
+
+    while True:
+        try:
+            {%for sig_name, sig in stinger.signals.items()-%}
+            server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+            {%endfor%}
+            sleep(4)
+            {%for sig_name, sig in stinger.signals.items()-%}
+            server.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+            {%endfor%}
+            sleep(16)
+        except KeyboardInterrupt:
+            break
+
+
+    signal.pause()
