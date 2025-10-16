@@ -28,7 +28,7 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
         t.render_template(f"{output_file}.jinja2", output_file, **params)
 
     package_name = f"{stringmanip.lower_camel_case(stinger.name).lower()}ipc"
-    generated_pkg_dir = output_dir / package_name
+    generated_pkg_dir = output_dir / "src" / package_name
     print(f"[bold]Making Directory:[/bold] {generated_pkg_dir}")
     os.makedirs(generated_pkg_dir, exist_ok=True)
     for output_file in [

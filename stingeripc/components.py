@@ -1336,6 +1336,10 @@ class StingerSpec:
         assert isinstance(prop, Property)
         self.properties[prop.name] = prop
 
+    @property
+    def properties_rw(self) -> dict[str, Property]:
+        return {k: v for k, v in self.properties.items() if not v.read_only}
+
     def add_enum(self, interface_enum: InterfaceEnum):
         assert interface_enum is not None
         self.enums[interface_enum.name] = interface_enum

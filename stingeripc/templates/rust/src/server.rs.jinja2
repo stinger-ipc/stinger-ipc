@@ -427,14 +427,14 @@ impl {{stinger.rust.server_struct_name}} {
                     {{stinger.rust.server_struct_name}}::handle_{{method_name|snake_case}}_request(publisher.clone(), method_handlers.clone(), msg).await;
                 }
                 {%-endfor%}{# methods #}
-                {%if stinger.properties | length > 0 %}
+                {%if stinger.properties_rw | length > 0 %}
                 else {
                     let update_prop_future = {
-                        {%-for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
+                        {%-for prop_name, prop in stinger.properties_rw.items()%}
                             {%if not loop.first %}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_update {
                                 {{stinger.rust.server_struct_name}}::update_{{prop_name | snake_case}}_value(publisher.clone(), properties.{{prop_name | snake_case}}_topic.clone(), properties.{{prop_name | snake_case}}.clone(), properties.{{prop_name | snake_case}}_tx_channel.clone(), msg).await
                             }
-                        {%-endif%}{%endfor%}{# properties #}
+                        {%endfor%}{# properties #}
                             else {
                                 {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::NotImplemented("Could not find a property matching the request".to_string())).await
                             }
@@ -451,7 +451,7 @@ impl {{stinger.rust.server_struct_name}} {
                         }
                     }
                 }
-                {%endif%}{# any properties #}
+                {%endif%}{# any read-write properties #}
             }
         });
         let _ = tokio::join!(loop_task);
