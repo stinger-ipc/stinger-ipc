@@ -20,7 +20,7 @@ def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
 
 
 class InterfaceInfo(BaseModel):
-    interfaceName: str = Field(default="Full")
+    interface_name: str = Field(default="Full")
     title: str = Field(default="Fully Featured Example Interface")
     version: str = Field(default="0.0.1")
     instance: str

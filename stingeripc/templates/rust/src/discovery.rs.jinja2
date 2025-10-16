@@ -11,7 +11,8 @@ use std::sync::{Arc, RwLock};
 use mqttier::{MqttierClient, MqttierError, ReceivedMessage};
 use tokio::sync::{broadcast, mpsc};
 use tokio::task::JoinHandle;
-
+#[allow(unused_imports)]
+use tracing::{debug, info, warn, error};
 use crate::interface::InterfaceInfo;
 
 #[derive(Debug)]
@@ -50,16 +51,21 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
     pub async fn new(
         connection: &mut MqttierClient,
     ) -> Result<Self, {{stinger.name|UpperCamelCase}}DiscoveryError> {
+        debug!("Starting mqttier loop if not already started.");
+        let _ = connection.run_loop().await;
+
         let service_name = "{{stinger.name}}".to_string();
         let discovery_topic = format!("{{stinger.interface_info_topic}}", "+");
 
         let (message_tx, message_rx) = mpsc::channel::<ReceivedMessage>(32);
+        debug!("Subscribing to discovery topic: {discovery_topic}");
         let subscription_id = connection
             .subscribe(discovery_topic, 1, message_tx.clone())
             .await
             .map_err({{stinger.name|UpperCamelCase}}DiscoveryError::from)?;
-
         let discovered_interfaces = Arc::new(RwLock::new(HashMap::new()));
+
+        // Clients can get a notification receiver by calling the subscribe() method.
         let (notification_tx, _notification_rx) = broadcast::channel::<InterfaceInfo>(32);
 
         let listener_handle = Self::spawn_listener(
@@ -151,6 +157,7 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
         notification_tx: broadcast::Sender<InterfaceInfo>,
     ) -> JoinHandle<()> {
         tokio::spawn(async move {
+            debug!("Listening for discovery messages");
             while let Some(message) = message_rx.recv().await {
                 Self::handle_message(message, &discovered_interfaces, &notification_tx);
             }
@@ -163,6 +170,7 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
         notification_tx: &broadcast::Sender<InterfaceInfo>,
     ) {
         if message.payload.is_empty() {
+            info!("Service represented by {} is now offline", message.topic);
             // Parse instance_id from topic (format: full/{instance_id}/interface)
             let topic_parts: Vec<&str> = message.topic.split('/').collect();
             if topic_parts.len() >= 2 {
@@ -173,17 +181,26 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
                 interfaces_guard.remove(&instance_id);
                 drop(interfaces_guard);
             }
-        } else if let Ok(info) = serde_json::from_slice::<InterfaceInfo>(&message.payload) {
-            let mut interfaces_guard = discovered_interfaces
-                .write()
-                .expect("interfaces write lock poisoned");
-            let instance_id = info.instance.clone();
-            let is_new_instance = interfaces_guard.insert(instance_id.clone(), info.clone()).is_none();
-            drop(interfaces_guard);
+        } else {
+            let deserialized = serde_json::from_slice::<InterfaceInfo>(&message.payload);
+            match deserialized {
+                Ok(info) => {
+                    info!("Discovered service instance: {:?}", info);
+                    let mut interfaces_guard = discovered_interfaces
+                        .write()
+                        .expect("interfaces write lock poisoned");
+                    let instance_id = info.instance.clone();
+                    let is_new_instance = interfaces_guard.insert(instance_id.clone(), info.clone()).is_none();
+                    drop(interfaces_guard);
 
-            // Send notification only for new interfaces
-            if is_new_instance {
-                let _ = notification_tx.send(info);
+                    // Send notification only for new interfaces
+                    if is_new_instance {
+                        let _ = notification_tx.send(info);
+                    }
+                },
+                Err(err) => {
+                    error!("Failed to deserialize InterfaceInfo from {}: {}", message.topic, err);
+                }
             }
         }
     }

@@ -643,103 +643,156 @@ impl WeatherClient {
                 if msg.subscription_id == sub_ids.current_time_signal.unwrap_or_default() {
                     let chan = sig_chans.current_time_sender.clone();
 
-                    let pl: CurrentTimeSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.current_time);
+                    match serde_json::from_slice::<CurrentTimeSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.current_time);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into CurrentTimeSignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 }
 
                 if msg.subscription_id == sub_ids.location_property_value {
-                    let pl: LocationProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<LocationProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props.location.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.location.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.location_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.location_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.current_temperature_property_value {
-                    let deserialized_data: CurrentTemperatureProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.temperature_f;
+                    match serde_json::from_slice::<CurrentTemperatureProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .current_temperature
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .current_temperature
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.current_temperature_tx_channel.send(Some(pl));
+                            *guard = Some(pl.temperature_f.clone());
+                            let _ = props
+                                .current_temperature_tx_channel
+                                .send(Some(pl.temperature_f));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.current_condition_property_value {
-                    let pl: CurrentConditionProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<CurrentConditionProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.current_condition.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.current_condition.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.current_condition_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.current_condition_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.daily_forecast_property_value {
-                    let pl: DailyForecastProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<DailyForecastProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.daily_forecast.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.daily_forecast.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.daily_forecast_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.daily_forecast_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.hourly_forecast_property_value {
-                    let pl: HourlyForecastProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<HourlyForecastProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.hourly_forecast.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.hourly_forecast.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.hourly_forecast_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.hourly_forecast_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.current_condition_refresh_interval_property_value
                 {
-                    let deserialized_data: CurrentConditionRefreshIntervalProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.seconds;
+                    match serde_json::from_slice::<CurrentConditionRefreshIntervalProperty>(
+                        &msg.payload,
+                    ) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .current_condition_refresh_interval
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .current_condition_refresh_interval
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props
-                        .current_condition_refresh_interval_tx_channel
-                        .send(Some(pl));
+                            *guard = Some(pl.seconds.clone());
+                            let _ = props
+                                .current_condition_refresh_interval_tx_channel
+                                .send(Some(pl.seconds));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.hourly_forecast_refresh_interval_property_value
                 {
-                    let deserialized_data: HourlyForecastRefreshIntervalProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.seconds;
+                    match serde_json::from_slice::<HourlyForecastRefreshIntervalProperty>(
+                        &msg.payload,
+                    ) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .hourly_forecast_refresh_interval
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .hourly_forecast_refresh_interval
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props
-                        .hourly_forecast_refresh_interval_tx_channel
-                        .send(Some(pl));
+                            *guard = Some(pl.seconds.clone());
+                            let _ = props
+                                .hourly_forecast_refresh_interval_tx_channel
+                                .send(Some(pl.seconds));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.daily_forecast_refresh_interval_property_value
                 {
-                    let deserialized_data: DailyForecastRefreshIntervalProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.seconds;
+                    match serde_json::from_slice::<DailyForecastRefreshIntervalProperty>(
+                        &msg.payload,
+                    ) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .daily_forecast_refresh_interval
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .daily_forecast_refresh_interval
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props
-                        .daily_forecast_refresh_interval_tx_channel
-                        .send(Some(pl));
+                            *guard = Some(pl.seconds.clone());
+                            let _ = props
+                                .daily_forecast_refresh_interval_tx_channel
+                                .send(Some(pl.seconds));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 }
             }
         });

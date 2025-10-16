@@ -20,7 +20,7 @@ def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
 
 
 class InterfaceInfo(BaseModel):
-    interfaceName: str = Field(default="weather")
+    interface_name: str = Field(default="weather")
     title: str = Field(default="NWS weather forecast")
     version: str = Field(default="0.1.2")
     instance: str

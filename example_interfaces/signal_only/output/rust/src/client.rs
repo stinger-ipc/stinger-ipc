@@ -184,33 +184,66 @@ impl SignalOnlyClient {
                 if msg.subscription_id == sub_ids.another_signal_signal.unwrap_or_default() {
                     let chan = sig_chans.another_signal_sender.clone();
 
-                    let pl: AnotherSignalSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<AnotherSignalSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into AnotherSignalSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.bark_signal.unwrap_or_default() {
                     let chan = sig_chans.bark_sender.clone();
 
-                    let pl: BarkSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.word);
+                    match serde_json::from_slice::<BarkSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.word);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into BarkSignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.maybe_number_signal.unwrap_or_default() {
                     let chan = sig_chans.maybe_number_sender.clone();
 
-                    let pl: MaybeNumberSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.number);
+                    match serde_json::from_slice::<MaybeNumberSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.number);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into MaybeNumberSignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.maybe_name_signal.unwrap_or_default() {
                     let chan = sig_chans.maybe_name_sender.clone();
 
-                    let pl: MaybeNameSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.name);
+                    match serde_json::from_slice::<MaybeNameSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.name);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into MaybeNameSignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.now_signal.unwrap_or_default() {
                     let chan = sig_chans.now_sender.clone();
 
-                    let pl: NowSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.timestamp);
+                    match serde_json::from_slice::<NowSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.timestamp);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into NowSignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 }
             }
         });

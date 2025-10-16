@@ -3220,409 +3220,723 @@ impl TestAbleClient {
                 } else if msg.subscription_id == sub_ids.single_int_signal.unwrap_or_default() {
                     let chan = sig_chans.single_int_sender.clone();
 
-                    let pl: SingleIntSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleIntSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SingleIntSignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.single_optional_int_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.single_optional_int_sender.clone();
 
-                    let pl: SingleOptionalIntSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleOptionalIntSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleOptionalIntSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.three_integers_signal.unwrap_or_default() {
                     let chan = sig_chans.three_integers_sender.clone();
 
-                    let pl: ThreeIntegersSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<ThreeIntegersSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into ThreeIntegersSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.single_string_signal.unwrap_or_default() {
                     let chan = sig_chans.single_string_sender.clone();
 
-                    let pl: SingleStringSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleStringSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleStringSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.single_optional_string_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.single_optional_string_sender.clone();
 
-                    let pl: SingleOptionalStringSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleOptionalStringSignalPayload>(&msg.payload)
+                    {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleOptionalStringSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.three_strings_signal.unwrap_or_default() {
                     let chan = sig_chans.three_strings_sender.clone();
 
-                    let pl: ThreeStringsSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<ThreeStringsSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into ThreeStringsSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.single_enum_signal.unwrap_or_default() {
                     let chan = sig_chans.single_enum_sender.clone();
 
-                    let pl: SingleEnumSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleEnumSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SingleEnumSignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.single_optional_enum_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.single_optional_enum_sender.clone();
 
-                    let pl: SingleOptionalEnumSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleOptionalEnumSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleOptionalEnumSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.three_enums_signal.unwrap_or_default() {
                     let chan = sig_chans.three_enums_sender.clone();
 
-                    let pl: ThreeEnumsSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<ThreeEnumsSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into ThreeEnumsSignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.single_struct_signal.unwrap_or_default() {
                     let chan = sig_chans.single_struct_sender.clone();
 
-                    let pl: SingleStructSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleStructSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleStructSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.single_optional_struct_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.single_optional_struct_sender.clone();
 
-                    let pl: SingleOptionalStructSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleOptionalStructSignalPayload>(&msg.payload)
+                    {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleOptionalStructSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.three_structs_signal.unwrap_or_default() {
                     let chan = sig_chans.three_structs_sender.clone();
 
-                    let pl: ThreeStructsSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<ThreeStructsSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into ThreeStructsSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.single_date_time_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.single_date_time_sender.clone();
 
-                    let pl: SingleDateTimeSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleDateTimeSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleDateTimeSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.single_optional_datetime_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.single_optional_datetime_sender.clone();
 
-                    let pl: SingleOptionalDatetimeSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleOptionalDatetimeSignalPayload>(
+                        &msg.payload,
+                    ) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleOptionalDatetimeSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.three_date_times_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.three_date_times_sender.clone();
 
-                    let pl: ThreeDateTimesSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<ThreeDateTimesSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into ThreeDateTimesSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.single_duration_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.single_duration_sender.clone();
 
-                    let pl: SingleDurationSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleDurationSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleDurationSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.single_optional_duration_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.single_optional_duration_sender.clone();
 
-                    let pl: SingleOptionalDurationSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleOptionalDurationSignalPayload>(
+                        &msg.payload,
+                    ) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleOptionalDurationSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.three_durations_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.three_durations_sender.clone();
 
-                    let pl: ThreeDurationsSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<ThreeDurationsSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into ThreeDurationsSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.single_binary_signal.unwrap_or_default() {
                     let chan = sig_chans.single_binary_sender.clone();
 
-                    let pl: SingleBinarySignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleBinarySignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleBinarySignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id
                     == sub_ids.single_optional_binary_signal.unwrap_or_default()
                 {
                     let chan = sig_chans.single_optional_binary_sender.clone();
 
-                    let pl: SingleOptionalBinarySignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.value);
+                    match serde_json::from_slice::<SingleOptionalBinarySignalPayload>(&msg.payload)
+                    {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.value);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into SingleOptionalBinarySignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.three_binaries_signal.unwrap_or_default() {
                     let chan = sig_chans.three_binaries_sender.clone();
 
-                    let pl: ThreeBinariesSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<ThreeBinariesSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to deserialize into ThreeBinariesSignalPayload: {}",
+                                e
+                            );
+                            continue;
+                        }
+                    }
                 }
 
                 if msg.subscription_id == sub_ids.read_write_integer_property_value {
-                    let deserialized_data: ReadWriteIntegerProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteIntegerProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.read_write_integer.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.read_write_integer.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_integer_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_write_integer_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_only_integer_property_value {
-                    let deserialized_data: ReadOnlyIntegerProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadOnlyIntegerProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.read_only_integer.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.read_only_integer.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_only_integer_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_only_integer_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_optional_integer_property_value
                 {
-                    let deserialized_data: ReadWriteOptionalIntegerProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteOptionalIntegerProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_optional_integer
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_optional_integer
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_optional_integer_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props
+                                .read_write_optional_integer_tx_channel
+                                .send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_two_integers_property_value {
-                    let pl: ReadWriteTwoIntegersProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<ReadWriteTwoIntegersProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_two_integers
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_two_integers
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_two_integers_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.read_write_two_integers_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_only_string_property_value {
-                    let deserialized_data: ReadOnlyStringProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadOnlyStringProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.read_only_string.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.read_only_string.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_only_string_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_only_string_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_string_property_value {
-                    let deserialized_data: ReadWriteStringProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteStringProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.read_write_string.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.read_write_string.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_string_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_write_string_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_optional_string_property_value {
-                    let deserialized_data: ReadWriteOptionalStringProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteOptionalStringProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_optional_string
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_optional_string
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_optional_string_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props
+                                .read_write_optional_string_tx_channel
+                                .send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_two_strings_property_value {
-                    let pl: ReadWriteTwoStringsProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<ReadWriteTwoStringsProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_two_strings
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_two_strings
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_two_strings_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.read_write_two_strings_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_struct_property_value {
-                    let deserialized_data: ReadWriteStructProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteStructProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.read_write_struct.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.read_write_struct.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_struct_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_write_struct_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_optional_struct_property_value {
-                    let deserialized_data: ReadWriteOptionalStructProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteOptionalStructProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_optional_struct
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_optional_struct
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_optional_struct_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props
+                                .read_write_optional_struct_tx_channel
+                                .send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_two_structs_property_value {
-                    let pl: ReadWriteTwoStructsProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<ReadWriteTwoStructsProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_two_structs
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_two_structs
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_two_structs_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.read_write_two_structs_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_only_enum_property_value {
-                    let deserialized_data: ReadOnlyEnumProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadOnlyEnumProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.read_only_enum.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.read_only_enum.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_only_enum_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_only_enum_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_enum_property_value {
-                    let deserialized_data: ReadWriteEnumProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteEnumProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.read_write_enum.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.read_write_enum.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_enum_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_write_enum_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_optional_enum_property_value {
-                    let deserialized_data: ReadWriteOptionalEnumProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteOptionalEnumProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_optional_enum
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_optional_enum
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_optional_enum_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props
+                                .read_write_optional_enum_tx_channel
+                                .send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_two_enums_property_value {
-                    let pl: ReadWriteTwoEnumsProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<ReadWriteTwoEnumsProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_two_enums
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_two_enums
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_two_enums_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.read_write_two_enums_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_datetime_property_value {
-                    let deserialized_data: ReadWriteDatetimeProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteDatetimeProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_datetime
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_datetime
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_datetime_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_write_datetime_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_optional_datetime_property_value
                 {
-                    let deserialized_data: ReadWriteOptionalDatetimeProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteOptionalDatetimeProperty>(&msg.payload)
+                    {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_optional_datetime
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_optional_datetime
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_optional_datetime_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props
+                                .read_write_optional_datetime_tx_channel
+                                .send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_two_datetimes_property_value {
-                    let pl: ReadWriteTwoDatetimesProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<ReadWriteTwoDatetimesProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_two_datetimes
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_two_datetimes
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_two_datetimes_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.read_write_two_datetimes_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_duration_property_value {
-                    let deserialized_data: ReadWriteDurationProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteDurationProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_duration
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_duration
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_duration_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_write_duration_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_optional_duration_property_value
                 {
-                    let deserialized_data: ReadWriteOptionalDurationProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteOptionalDurationProperty>(&msg.payload)
+                    {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_optional_duration
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_optional_duration
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_optional_duration_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props
+                                .read_write_optional_duration_tx_channel
+                                .send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_two_durations_property_value {
-                    let pl: ReadWriteTwoDurationsProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<ReadWriteTwoDurationsProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_two_durations
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_two_durations
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_two_durations_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.read_write_two_durations_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_binary_property_value {
-                    let deserialized_data: ReadWriteBinaryProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteBinaryProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.read_write_binary.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.read_write_binary.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_binary_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props.read_write_binary_tx_channel.send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_optional_binary_property_value {
-                    let deserialized_data: ReadWriteOptionalBinaryProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.value;
+                    match serde_json::from_slice::<ReadWriteOptionalBinaryProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_optional_binary
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_optional_binary
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_optional_binary_tx_channel.send(Some(pl));
+                            *guard = Some(pl.value.clone());
+                            let _ = props
+                                .read_write_optional_binary_tx_channel
+                                .send(Some(pl.value));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.read_write_two_binaries_property_value {
-                    let pl: ReadWriteTwoBinariesProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<ReadWriteTwoBinariesProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .read_write_two_binaries
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .read_write_two_binaries
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.read_write_two_binaries_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.read_write_two_binaries_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 }
             }
         });

@@ -275,6 +275,7 @@ void {{stinger.cpp.server_class_name}}::_advertisementThreadLoop()
         doc.SetObject();
         rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
 
+        doc.AddMember("interface_name", rapidjson::Value("{{stinger.name}}", allocator), allocator);
         doc.AddMember("instance", rapidjson::Value(_instanceId.c_str(), allocator), allocator);
         doc.AddMember("title", rapidjson::Value("{{stinger.title}}", allocator), allocator);
         doc.AddMember("version", rapidjson::Value("{{stinger.version}}", allocator), allocator);

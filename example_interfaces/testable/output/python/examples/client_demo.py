@@ -417,7 +417,7 @@ if __name__ == "__main__":
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=None,
+            optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
         )
@@ -441,7 +441,7 @@ if __name__ == "__main__":
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=None,
+            optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
         ),

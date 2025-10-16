@@ -38,7 +38,7 @@ def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
     return value
 
 class InterfaceInfo(BaseModel):
-    interfaceName: str = Field(default="{{stinger.name}}")
+    interface_name: str = Field(default="{{stinger.name}}")
     title: str = Field(default="{{stinger.title or stinger.name}}")
     version: str = Field(default="{{stinger.version}}")
     instance: str

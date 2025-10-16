@@ -1060,6 +1060,7 @@ void WeatherServer::_advertisementThreadLoop()
         doc.SetObject();
         rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
 
+        doc.AddMember("interface_name", rapidjson::Value("weather", allocator), allocator);
         doc.AddMember("instance", rapidjson::Value(_instanceId.c_str(), allocator), allocator);
         doc.AddMember("title", rapidjson::Value("NWS weather forecast", allocator), allocator);
         doc.AddMember("version", rapidjson::Value("0.1.2", allocator), allocator);

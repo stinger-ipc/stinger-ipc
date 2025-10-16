@@ -944,74 +944,117 @@ impl FullClient {
                 if msg.subscription_id == sub_ids.today_is_signal.unwrap_or_default() {
                     let chan = sig_chans.today_is_sender.clone();
 
-                    let pl: TodayIsSignalPayload =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<TodayIsSignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into TodayIsSignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 }
 
                 if msg.subscription_id == sub_ids.favorite_number_property_value {
-                    let deserialized_data: FavoriteNumberProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.number;
+                    match serde_json::from_slice::<FavoriteNumberProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.favorite_number.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.favorite_number.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.favorite_number_tx_channel.send(Some(pl));
+                            *guard = Some(pl.number.clone());
+                            let _ = props.favorite_number_tx_channel.send(Some(pl.number));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.favorite_foods_property_value {
-                    let pl: FavoriteFoodsProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<FavoriteFoodsProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.favorite_foods.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.favorite_foods.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.favorite_foods_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.favorite_foods_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.lunch_menu_property_value {
-                    let pl: LunchMenuProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<LunchMenuProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props.lunch_menu.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.lunch_menu.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.lunch_menu_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.lunch_menu_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.family_name_property_value {
-                    let deserialized_data: FamilyNameProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.family_name;
+                    match serde_json::from_slice::<FamilyNameProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props.family_name.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.family_name.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.family_name_tx_channel.send(Some(pl));
+                            *guard = Some(pl.family_name.clone());
+                            let _ = props.family_name_tx_channel.send(Some(pl.family_name));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.last_breakfast_time_property_value {
-                    let deserialized_data: LastBreakfastTimeProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.timestamp;
+                    match serde_json::from_slice::<LastBreakfastTimeProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props
+                                .last_breakfast_time
+                                .lock()
+                                .expect("Mutex was poisoned");
 
-                    let mut guard = props
-                        .last_breakfast_time
-                        .lock()
-                        .expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.last_breakfast_time_tx_channel.send(Some(pl));
+                            *guard = Some(pl.timestamp.clone());
+                            let _ = props
+                                .last_breakfast_time_tx_channel
+                                .send(Some(pl.timestamp));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.breakfast_length_property_value {
-                    let deserialized_data: BreakfastLengthProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.length;
+                    match serde_json::from_slice::<BreakfastLengthProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.breakfast_length.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.breakfast_length.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.breakfast_length_tx_channel.send(Some(pl));
+                            *guard = Some(pl.length.clone());
+                            let _ = props.breakfast_length_tx_channel.send(Some(pl.length));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 } else if msg.subscription_id == sub_ids.last_birthdays_property_value {
-                    let pl: LastBirthdaysProperty =
-                        serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
+                    match serde_json::from_slice::<LastBirthdaysProperty>(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard =
+                                props.last_birthdays.lock().expect("Mutex was poisoned");
 
-                    let mut guard = props.last_birthdays.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.last_birthdays_tx_channel.send(Some(pl));
+                            *guard = Some(pl.clone());
+                            let _ = props.last_birthdays_tx_channel.send(Some(pl));
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 }
             }
         });

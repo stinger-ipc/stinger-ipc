@@ -4427,6 +4427,7 @@ void TestAbleServer::_advertisementThreadLoop()
         doc.SetObject();
         rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
 
+        doc.AddMember("interface_name", rapidjson::Value("Test Able", allocator), allocator);
         doc.AddMember("instance", rapidjson::Value(_instanceId.c_str(), allocator), allocator);
         doc.AddMember("title", rapidjson::Value("Interface for testing", allocator), allocator);
         doc.AddMember("version", rapidjson::Value("0.0.1", allocator), allocator);

@@ -305,26 +305,46 @@ impl {{stinger.rust.client_struct_name}} {
                     {%if signal.arg_list | length == 0 %}
                     let _send_result = chan.send(());
                     {%elif signal.arg_list | length == 1 %}
-                    let pl: {{signal_name | UpperCamelCase}}SignalPayload =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl.{{signal.arg_list[0].name|snake_case}});
+                    match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl.{{signal.arg_list[0].name|snake_case}});
+                        },
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into {{signal_name | UpperCamelCase}}SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                     {%else%}
-                    let pl: {{signal_name | UpperCamelCase}}SignalPayload =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let _send_result = chan.send(pl);
+                    match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
+                        Ok(pl) => {
+                            let _send_result = chan.send(pl);
+                        },
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into {{signal_name | UpperCamelCase}}SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                     {%endif%}
                 }
                 {%endfor%}
                 {%-for prop_name, prop in stinger.properties.items()%}
                 {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
-                    {%if prop.arg_list | length == 1 %}
-                    let deserialized_data: {{prop_name | UpperCamelCase}}Property = serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    let pl = deserialized_data.{{prop.arg_list[0].name}};
-                    {%else%}
-                    let pl: {{prop.rust_type}} =  serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-                    {%endif%}
-                    let mut guard = props.{{prop_name | snake_case}}.lock().expect("Mutex was poisoned");
-                    *guard = Some(pl.clone());
-                    // Notify any watchers of the property that it has changed.
-                    let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl));
+                    match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property >(&msg.payload) {
+                        Ok(pl) => {
+                            let mut guard = props.{{prop_name | snake_case}}.lock().expect("Mutex was poisoned");
+                            {%if prop.arg_list | length == 1 %}
+                            *guard = Some(pl.{{prop.arg_list[0].name}}.clone());
+                            let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl.{{prop.arg_list[0].name}}));
+                            {%else%}
+                            *guard = Some(pl.clone());
+                            let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl));
+                            {%endif%}
+                        },
+                        Err(e) => {
+                            eprintln!("Failed to deserialize into {{signal_name | UpperCamelCase}}SignalPayload: {}", e);
+                            continue;
+                        }
+                    }
                 }
                 {%endfor%}
             }   

@@ -989,7 +989,7 @@ while let Some(new_value) = on_last_birthdays_changed.recv().await {
 
 ### Enum `DayOfTheWeek`
 
-<a name="Enum-DayOfTheWeek"></a>The days of the week.
+<a name="Enum-DayOfTheWeek"></a>_No description exists for this enumeration._
 
 * Sunday (1)
 * Monday (2)

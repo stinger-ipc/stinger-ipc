@@ -27,7 +27,7 @@ RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "op
 class Arg:
     def __init__(self, name: str, description: Optional[str] = None):
         self._name = name
-        self._description = description.strip()
+        self._description = description.strip() if description else None
         self._default_value = None
         self._type: ArgType = ArgType.UNKNOWN
         self._optional: bool = False
@@ -1052,7 +1052,7 @@ class InterfaceEnum:
 
     def add_value(self, value: str, description: Optional[str] = None):
         self._values.append(value)
-        self._value_descriptions.append(description.strip())
+        self._value_descriptions.append(description.strip() if description is not None else None)
 
     @property
     def name(self):
@@ -1121,7 +1121,7 @@ class InterfaceEnum:
                 )
         doc = enum_spec.get("documentation", None)
         if doc is not None and isinstance(doc, str):
-            ie.documentation = doc
+            ie._documentation = doc
         return ie
 
 

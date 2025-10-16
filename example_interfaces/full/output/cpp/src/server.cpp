@@ -1294,6 +1294,7 @@ void FullServer::_advertisementThreadLoop()
         doc.SetObject();
         rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
 
+        doc.AddMember("interface_name", rapidjson::Value("Full", allocator), allocator);
         doc.AddMember("instance", rapidjson::Value(_instanceId.c_str(), allocator), allocator);
         doc.AddMember("title", rapidjson::Value("Fully Featured Example Interface", allocator), allocator);
         doc.AddMember("version", rapidjson::Value("0.0.1", allocator), allocator);

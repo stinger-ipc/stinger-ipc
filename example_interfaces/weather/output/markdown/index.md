@@ -793,8 +793,7 @@ Structures are a group of values and may be used as an argument in signals, meth
 
 ### Struct `ForecastForHour`
 
-<a name="Struct-ForecastForHour"></a>This structure contains the forecast for a single hour.
-
+<a name="Struct-ForecastForHour"></a>_No general description exists for this structure_
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
@@ -804,9 +803,7 @@ Structures are a group of values and may be used as an argument in signals, meth
 
 ### Struct `ForecastForDay`
 
-<a name="Struct-ForecastForDay"></a>This structure contains the forecast for a single day.  The high or low temperature
-may be missing for the current day.
-
+<a name="Struct-ForecastForDay"></a>_No general description exists for this structure_
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
