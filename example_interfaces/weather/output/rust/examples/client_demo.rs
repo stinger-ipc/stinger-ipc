@@ -11,7 +11,7 @@ This is the Client for the Full interface.
 
 use mqttier::{Connection, MqttierClient, MqttierOptions};
 use tokio::join;
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 use weather_ipc::client::WeatherClient;

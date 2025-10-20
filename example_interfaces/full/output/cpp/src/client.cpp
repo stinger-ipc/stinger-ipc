@@ -476,7 +476,7 @@ boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::wh
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTheFirstTimeStringValue;
         std::string theFirstTimeIsoString = timePointToIsoString(theFirstTime);
         tempTheFirstTimeStringValue.SetString(theFirstTimeIsoString.c_str(), theFirstTimeIsoString.size(), doc.GetAllocator());
@@ -540,14 +540,14 @@ boost::future<SetTheTimeReturnValues> FullClient::setTheTime(std::chrono::time_p
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTheFirstTimeStringValue;
         std::string theFirstTimeIsoString = timePointToIsoString(theFirstTime);
         tempTheFirstTimeStringValue.SetString(theFirstTimeIsoString.c_str(), theFirstTimeIsoString.size(), doc.GetAllocator());
         doc.AddMember("the_first_time", tempTheFirstTimeStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTheSecondTimeStringValue;
         std::string theSecondTimeIsoString = timePointToIsoString(theSecondTime);
         tempTheSecondTimeStringValue.SetString(theSecondTimeIsoString.c_str(), theSecondTimeIsoString.size(), doc.GetAllocator());
@@ -611,7 +611,7 @@ boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::fo
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempAdjustmentStringValue;
         std::string adjustmentIsoString = durationToIsoString(adjustment);
         tempAdjustmentStringValue.SetString(adjustmentIsoString.c_str(), adjustmentIsoString.size(), doc.GetAllocator());
@@ -675,7 +675,7 @@ boost::future<std::chrono::duration<double>> FullClient::howOffIsTheClock(std::c
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempActualTimeStringValue;
         std::string actualTimeIsoString = timePointToIsoString(actualTime);
         tempActualTimeStringValue.SetString(actualTimeIsoString.c_str(), actualTimeIsoString.size(), doc.GetAllocator());
@@ -989,7 +989,7 @@ boost::future<bool> FullClient::updateLunchMenuProperty(Lunch monday, Lunch tues
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -998,7 +998,7 @@ boost::future<bool> FullClient::updateLunchMenuProperty(Lunch monday, Lunch tues
         doc.AddMember("monday", tempStructValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -1158,7 +1158,7 @@ boost::future<bool> FullClient::updateLastBreakfastTimeProperty(std::chrono::tim
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimestampStringValue;
         std::string timestampIsoString = timePointToIsoString(timestamp);
         tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), doc.GetAllocator());
@@ -1238,7 +1238,7 @@ boost::future<bool> FullClient::updateBreakfastLengthProperty(std::chrono::durat
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempLengthStringValue;
         std::string lengthIsoString = durationToIsoString(length);
         tempLengthStringValue.SetString(lengthIsoString.c_str(), lengthIsoString.size(), doc.GetAllocator());
@@ -1353,21 +1353,21 @@ boost::future<bool> FullClient::updateLastBirthdaysProperty(std::chrono::time_po
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempMomStringValue;
         std::string momIsoString = timePointToIsoString(mom);
         tempMomStringValue.SetString(momIsoString.c_str(), momIsoString.size(), doc.GetAllocator());
         doc.AddMember("mom", tempMomStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempDadStringValue;
         std::string dadIsoString = timePointToIsoString(dad);
         tempDadStringValue.SetString(dadIsoString.c_str(), dadIsoString.size(), doc.GetAllocator());
         doc.AddMember("dad", tempDadStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempSisterStringValue;
         std::string sisterIsoString = timePointToIsoString(*sister);
         tempSisterStringValue.SetString(sisterIsoString.c_str(), sisterIsoString.size(), doc.GetAllocator());

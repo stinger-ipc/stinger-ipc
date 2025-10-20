@@ -118,7 +118,7 @@ LunchMenuProperty LunchMenuProperty::FromRapidJsonObject(const rapidjson::Value&
 
 void LunchMenuProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -127,7 +127,7 @@ void LunchMenuProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson
         parent.AddMember("monday", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -187,7 +187,7 @@ LastBreakfastTimeProperty LastBreakfastTimeProperty::FromRapidJsonObject(const r
 
 void LastBreakfastTimeProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimestampStringValue;
         std::string timestampIsoString = timePointToIsoString(timestamp);
         tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), allocator);
@@ -217,7 +217,7 @@ BreakfastLengthProperty BreakfastLengthProperty::FromRapidJsonObject(const rapid
 
 void BreakfastLengthProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempLengthStringValue;
         std::string lengthIsoString = durationToIsoString(length);
         tempLengthStringValue.SetString(lengthIsoString.c_str(), lengthIsoString.size(), allocator);
@@ -282,21 +282,21 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
 
 void LastBirthdaysProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempMomStringValue;
         std::string momIsoString = timePointToIsoString(mom);
         tempMomStringValue.SetString(momIsoString.c_str(), momIsoString.size(), allocator);
         parent.AddMember("mom", tempMomStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempDadStringValue;
         std::string dadIsoString = timePointToIsoString(dad);
         tempDadStringValue.SetString(dadIsoString.c_str(), dadIsoString.size(), allocator);
         parent.AddMember("dad", tempDadStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempSisterStringValue;
         std::string sisterIsoString = timePointToIsoString(*sister);
         tempSisterStringValue.SetString(sisterIsoString.c_str(), sisterIsoString.size(), allocator);

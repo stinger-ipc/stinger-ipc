@@ -14,6 +14,7 @@ from .lang_symb import *
 from .args import ArgType, ArgPrimitiveType
 from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
+from copy import copy
 
 YamlArg = dict[str, str | bool]
 YamlArgList = list[YamlArg]
@@ -192,6 +193,22 @@ class Arg:
                 bin_arg.optional = opt
             bin_arg.try_set_description_from_spec(arg_spec)
             return bin_arg
+        
+        if arg_spec["type"] == "array":
+            if "itemType" not in arg_spec:
+                raise InvalidStingerStructure("Array args need an 'itemType'")
+            element_arg_spec = copy(arg_spec["itemType"])
+            if not isinstance(element_arg_spec, dict):
+                raise InvalidStingerStructure("'itemType' in arg structure must be a dict")
+            element_arg_spec["name"] = "name_not_used_in_array_element"
+            element_arg = Arg.new_arg_from_stinger(element_arg_spec, stinger_spec)
+            array_arg = ArgArray(arg_spec["name"], element_arg)
+            if opt := arg_spec.get("optional", False):
+                if not isinstance(opt, bool):
+                    raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
+                array_arg.optional = opt
+            array_arg.try_set_description_from_spec(arg_spec)
+            return array_arg
 
         raise RuntimeError(f"unknown arg type: {arg_spec['type']}")
 
@@ -644,49 +661,55 @@ class ArgBinary(Arg):
         return f"ArgBinary(name={self.name})"
     
 
-class ArgList(Arg):
+class ArgArray(Arg):
     def __init__(self, name: str, element_type: Arg):
         super().__init__(name)
-        self._element_type = element_type
-        self._type = ArgType.LIST
+        self._element = element_type
+        self._type = ArgType.ARRAY
 
     @property
-    def element_type(self) -> Arg:
-        return self._element_type
+    def element(self) -> Arg:
+        return self._element
 
     @property
     def cpp_type(self) -> str:
-        return f"std::vector<{self._element_type.cpp_type}>"
+        if self.optional:
+            return f"boost::optional<std::vector<{self.element.cpp_temp_type}>>"
+        return f"std::vector<{self.element.cpp_temp_type}>"
 
     @property
     def python_type(self) -> str:
-        return f"list[{self._element_type.python_type}]"
+        return f"list[{self.element.python_type}]"
 
     @property
     def rust_type(self) -> str:
         if self.optional:
-            return f"Option<Vec<{self._element_type.rust_type}>>"
-        return f"Vec<{self._element_type.rust_type}>"
+            return f"Option<Vec<{self.element.rust_type}>>"
+        return f"Vec<{self.element.rust_type}>"
 
     @property
     def markdown_type(self) -> str:
-        return f"List of {self._element_type.markdown_type}"
+        return f"Array of {self.element.markdown_type}"
+
+    @property
+    def cpp_rapidjson_type(self) -> str:
+        return "Array"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
-        example_value = self._element_type.get_random_example_value(lang, seed=seed)
+        example_value = self.element.get_random_example_value(lang, seed=seed)
         if lang == "python":
             return f"[{example_value}, {example_value}]"
         elif lang == "rust":
             return f"vec![{example_value}, {example_value}]"
         elif lang in ["c++", "cpp"]:
-            return f"std::vector<{self._element_type.cpp_type}>{{{example_value}, {example_value}}}"
+            return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value}}}"
         return None
 
     def __str__(self) -> str:
-        return f"<ArgList name={self.name} element_type={self._element_type}>"
+        return f"<ArgArray name={self.name} element_type={self.element}>"
 
     def __repr__(self):
-        return f"ArgList(name={self.name}, element_type={self._element_type})"
+        return f"ArgArray(name={self.name}, element_type={self.element})"
 
 
 class InterfaceComponent:

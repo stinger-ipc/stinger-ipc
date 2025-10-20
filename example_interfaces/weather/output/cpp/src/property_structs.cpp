@@ -148,7 +148,7 @@ DailyForecastProperty DailyForecastProperty::FromRapidJsonObject(const rapidjson
 
 void DailyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -157,7 +157,7 @@ void DailyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapid
         parent.AddMember("monday", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -166,7 +166,7 @@ void DailyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapid
         parent.AddMember("tuesday", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -230,7 +230,7 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
 
 void HourlyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -239,7 +239,7 @@ void HourlyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapi
         parent.AddMember("hour_0", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -248,7 +248,7 @@ void HourlyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapi
         parent.AddMember("hour_1", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -257,7 +257,7 @@ void HourlyForecastProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapi
         parent.AddMember("hour_2", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();

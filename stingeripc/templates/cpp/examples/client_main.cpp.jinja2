@@ -70,6 +70,8 @@ int main(int argc, char** argv)
                                             {{arg.name|lowerCamelCase}}Str
                                         {%-elif arg.arg_type.name.lower() == 'struct'-%}
                                             "[{{arg.cpp_type}} object]"
+                                        {%elif arg.arg_type.name.lower() == 'array'-%}
+                                            "[Array of " << {{arg.name|lowerCamelCase}}{%if arg.optional%}->{%else%}.{%endif%}size() << " {{arg.element.arg_type.name}} values]"
                                         {%-else-%}
                                             {%if arg.optional%}*{%endif%}{{arg.name|lowerCamelCase}}
                                         {%-endif-%}
@@ -112,6 +114,8 @@ int main(int argc, char** argv)
                                 {{arg.name|lowerCamelCase}}Str
                             {%elif arg.arg_type.name.lower() == 'binary'%}
                                 "[BINARY DATA]"
+                            {%elif arg.arg_type.name.lower() == 'array'%}
+                                "[Array of " << {{arg.name|lowerCamelCase}}{%if arg.optional%}->{%else%}.{%endif%}size() << " {{arg.element.arg_type.name}} values]"
                             {%-else%}{{arg.name|lowerCamelCase}} /* unhandled arg type*/ {%endif%}
                             {%-endif%} <<
                          {%-if not loop.last %} " | " << {%endif%}
@@ -124,7 +128,7 @@ int main(int argc, char** argv)
     {%-for method_name, method in stinger.methods.items() %}
     
     // ----------------------METHOD {{method_name|CONST_CASE}}-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `{{method_name}}` method call.
         std::cout << "CALLING {{method_name|CONST_CASE}}" << std::endl;
         {%-for arg in method.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}
         {{arg.cpp_type}} {{arg.name|lowerCamelCase}}Arg = {{arg.get_random_example_value('c++')}};
@@ -156,6 +160,8 @@ int main(int argc, char** argv)
                 "[{{arg.cpp_type}} object]"
                 {%-elif arg.arg_type.name.lower() == "binary"%}
                 "[BINARY DATA]"
+                {%elif arg.arg_type.name.lower() == 'array'%}
+                "[Array of " << {{var_name}}{%if arg.optional%}->{%else%}.{%endif%}size() << " {{arg.element.arg_type.name}} values]"
                 {%-else-%}
                 {%if arg.optional%}*{%endif%}{{var_name}}
                 {%-endif-%}{# arg type switcher#}

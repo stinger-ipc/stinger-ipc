@@ -36,6 +36,24 @@ class Numbers(IntEnum):
     THREE = 3
 
 
+class Entry(BaseModel):
+    """Interface struct `entry`."""
+
+    model_config = ConfigDict(populate_by_name=True)
+    key: Annotated[
+        int,
+        Field(
+            description="An identifier.",
+        ),
+    ]
+    value: Annotated[
+        str,
+        Field(
+            description="A name.",
+        ),
+    ]
+
+
 class AllTypes(BaseModel):
     """Interface struct `AllTypes`."""
 
@@ -58,6 +76,12 @@ class AllTypes(BaseModel):
         Numbers,
         Field(
             description="An enum type",
+        ),
+    ]
+    an_entry_object: Annotated[
+        Entry,
+        Field(
+            description="A struct type.",
         ),
     ]
     date_and_time: Annotated[
@@ -99,6 +123,13 @@ class AllTypes(BaseModel):
         Field(
             description="An optional enum type, one of the numbers.",
             alias="OptionalEnum",
+        ),
+    ]
+    optional_entry_object: Annotated[
+        Optional[Entry],
+        Field(
+            description="An optional struct type.",
+            alias="optionalEntryObject",
         ),
     ]
     optional_date_time: Annotated[
@@ -544,6 +575,30 @@ class ThreeBinariesSignalPayload(BaseModel):
     ]
 
 
+class SingleArrayOfIntegersSignalPayload(BaseModel):
+    """Interface signal `singleArrayOfIntegers`.
+
+    A signal with an array of integers.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class SingleOptionalArrayOfStringsSignalPayload(BaseModel):
+    """Interface signal `singleOptionalArrayOfStrings`.
+
+    A signal with an optional array of strings.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ArrayOfEveryTypeSignalPayload(BaseModel):
+    """Interface signal `arrayOfEveryType`."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class ReadWriteIntegerProperty(BaseModel):
     """Interface property `read_write_integer` (multi-value struct).
 
@@ -826,6 +881,24 @@ class ReadWriteTwoBinariesProperty(BaseModel):
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
     second: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
+
+
+class ReadWriteListOfStringsProperty(BaseModel):
+    """Interface property `read_write_list_of_strings` (multi-value struct).
+
+    A read-write property that is a list of strings.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ReadWriteListsProperty(BaseModel):
+    """Interface property `read_write_lists` (multi-value struct).
+
+    A read-write property containing two lists.  The second list is optional.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CallWithNothingMethodRequest(BaseModel):
@@ -1366,3 +1439,57 @@ class CallThreeBinariesMethodResponse(BaseModel):
     ]
     output2: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
     output3: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
+
+
+class CallOneListOfIntegersMethodRequest(BaseModel):
+    """Interface method `callOneListOfIntegers` request object.
+
+    Method that takes one list of integers argument and returns one list of integers value.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CallOneListOfIntegersMethodResponse(BaseModel):
+    """Interface method `callOneListOfIntegers` response object.
+
+    Method that takes one list of integers argument and returns one list of integers value.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CallOptionalListOfFloatsMethodRequest(BaseModel):
+    """Interface method `callOptionalListOfFloats` request object.
+
+    Method that takes one optional list of floats argument and returns one optional list of floats value.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CallOptionalListOfFloatsMethodResponse(BaseModel):
+    """Interface method `callOptionalListOfFloats` response object.
+
+    Method that takes one optional list of floats argument and returns one optional list of floats value.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CallTwoListsMethodRequest(BaseModel):
+    """Interface method `callTwoLists` request object.
+
+    Method that takes two list arguments, the second is optional, and returns two list values, the second is optional.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CallTwoListsMethodResponse(BaseModel):
+    """Interface method `callTwoLists` response object.
+
+    Method that takes two list arguments, the second is optional, and returns two list values, the second is optional.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)

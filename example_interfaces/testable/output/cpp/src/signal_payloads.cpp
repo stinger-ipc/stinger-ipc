@@ -362,7 +362,7 @@ SingleStructPayload SingleStructPayload::FromRapidJsonObject(const rapidjson::Va
 
 void SingleStructPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -394,7 +394,7 @@ SingleOptionalStructPayload SingleOptionalStructPayload::FromRapidJsonObject(con
 
 void SingleOptionalStructPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (value)
         {
@@ -453,7 +453,7 @@ ThreeStructsPayload ThreeStructsPayload::FromRapidJsonObject(const rapidjson::Va
 
 void ThreeStructsPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -462,7 +462,7 @@ void ThreeStructsPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjs
         parent.AddMember("first", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -471,7 +471,7 @@ void ThreeStructsPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjs
         parent.AddMember("second", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (third)
         {
@@ -509,7 +509,7 @@ SingleDateTimePayload SingleDateTimePayload::FromRapidJsonObject(const rapidjson
 
 void SingleDateTimePayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = timePointToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
@@ -540,7 +540,7 @@ SingleOptionalDatetimePayload SingleOptionalDatetimePayload::FromRapidJsonObject
 
 void SingleOptionalDatetimePayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = timePointToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
@@ -595,21 +595,21 @@ ThreeDateTimesPayload ThreeDateTimesPayload::FromRapidJsonObject(const rapidjson
 
 void ThreeDateTimesPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempFirstStringValue;
         std::string firstIsoString = timePointToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), allocator);
         parent.AddMember("first", tempFirstStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempSecondStringValue;
         std::string secondIsoString = timePointToIsoString(second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), allocator);
         parent.AddMember("second", tempSecondStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempThirdStringValue;
         std::string thirdIsoString = timePointToIsoString(*third);
         tempThirdStringValue.SetString(thirdIsoString.c_str(), thirdIsoString.size(), allocator);
@@ -640,7 +640,7 @@ SingleDurationPayload SingleDurationPayload::FromRapidJsonObject(const rapidjson
 
 void SingleDurationPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = durationToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
@@ -671,7 +671,7 @@ SingleOptionalDurationPayload SingleOptionalDurationPayload::FromRapidJsonObject
 
 void SingleOptionalDurationPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = durationToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
@@ -726,21 +726,21 @@ ThreeDurationsPayload ThreeDurationsPayload::FromRapidJsonObject(const rapidjson
 
 void ThreeDurationsPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempFirstStringValue;
         std::string firstIsoString = durationToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), allocator);
         parent.AddMember("first", tempFirstStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempSecondStringValue;
         std::string secondIsoString = durationToIsoString(second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), allocator);
         parent.AddMember("second", tempSecondStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempThirdStringValue;
         std::string thirdIsoString = durationToIsoString(*third);
         tempThirdStringValue.SetString(thirdIsoString.c_str(), thirdIsoString.size(), allocator);
@@ -771,7 +771,7 @@ SingleBinaryPayload SingleBinaryPayload::FromRapidJsonObject(const rapidjson::Va
 
 void SingleBinaryPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
         std::string valueB64String = base64Encode(value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), allocator);
@@ -802,7 +802,7 @@ SingleOptionalBinaryPayload SingleOptionalBinaryPayload::FromRapidJsonObject(con
 
 void SingleOptionalBinaryPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
         std::string valueB64String = base64Encode(*value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), allocator);
@@ -857,24 +857,393 @@ ThreeBinariesPayload ThreeBinariesPayload::FromRapidJsonObject(const rapidjson::
 
 void ThreeBinariesPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempFirstStringValue;
         std::string firstB64String = base64Encode(first);
         tempFirstStringValue.SetString(firstB64String.c_str(), firstB64String.size(), allocator);
         parent.AddMember("first", tempFirstStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempSecondStringValue;
         std::string secondB64String = base64Encode(second);
         tempSecondStringValue.SetString(secondB64String.c_str(), secondB64String.size(), allocator);
         parent.AddMember("second", tempSecondStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempThirdStringValue;
         std::string thirdB64String = base64Encode(*third);
         tempThirdStringValue.SetString(thirdB64String.c_str(), thirdB64String.size(), allocator);
         parent.AddMember("third", tempThirdStringValue, allocator);
+    }
+}
+
+// --- (De-)Serialization for singleArrayOfIntegers signal payload ---
+SingleArrayOfIntegersPayload SingleArrayOfIntegersPayload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    SingleArrayOfIntegersPayload singleArrayOfIntegersPayload;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("values");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<int> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsInt())
+                    {
+                        tempArray.push_back(item.GetInt());
+                    }
+                }
+                singleArrayOfIntegersPayload.values = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return singleArrayOfIntegersPayload;
+};
+
+void SingleArrayOfIntegersPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: values)
+        {
+            tempArrayValue.PushBack(item, allocator);
+        }
+        parent.AddMember("values", tempArrayValue, allocator);
+    }
+}
+
+// --- (De-)Serialization for singleOptionalArrayOfStrings signal payload ---
+SingleOptionalArrayOfStringsPayload SingleOptionalArrayOfStringsPayload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    SingleOptionalArrayOfStringsPayload singleOptionalArrayOfStringsPayload;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("values");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<int> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsInt())
+                    {
+                        tempArray.push_back(item.GetInt());
+                    }
+                }
+                singleOptionalArrayOfStringsPayload.values = std::move(tempArray);
+            }
+        }
+        else
+        {
+            singleOptionalArrayOfStringsPayload.values = boost::none;
+        }
+    }
+
+    return singleOptionalArrayOfStringsPayload;
+};
+
+void SingleOptionalArrayOfStringsPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: *values)
+        {
+            tempArrayValue.PushBack(item, allocator);
+        }
+        parent.AddMember("values", tempArrayValue, allocator);
+    }
+}
+
+// --- (De-)Serialization for arrayOfEveryType signal payload ---
+ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    ArrayOfEveryTypePayload arrayOfEveryTypePayload;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<int> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsInt())
+                    {
+                        tempArray.push_back(item.GetInt());
+                    }
+                }
+                arrayOfEveryTypePayload.first = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<double> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsDouble())
+                    {
+                        tempArray.push_back(item.GetDouble());
+                    }
+                }
+                arrayOfEveryTypePayload.second = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("third");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<std::string> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsString())
+                    {
+                        tempArray.push_back(item.GetString());
+                    }
+                }
+                arrayOfEveryTypePayload.third = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("fourth");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<Numbers> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsInt())
+                    {
+                        tempArray.push_back(static_cast<Numbers>(item.GetInt()));
+                    }
+                }
+                arrayOfEveryTypePayload.fourth = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("fifth");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<Entry> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsObject())
+                    {
+                        tempArray.push_back(Entry::FromRapidJsonObject(item));
+                    }
+                }
+                arrayOfEveryTypePayload.fifth = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("sixth");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<std::chrono::time_point<std::chrono::system_clock>> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsString())
+                    {
+                        {
+                            std::string tempIsoString = item.GetString();
+                            tempArray.push_back(parseIsoTimestamp(tempIsoString));
+                        }
+                    }
+                }
+                arrayOfEveryTypePayload.sixth = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("seventh");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<std::chrono::duration<double>> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsString())
+                    {
+                        {
+                            std::string tempIsoString = item.GetString();
+                            tempArray.push_back(parseIsoDuration(tempIsoString));
+                        }
+                    }
+                }
+                arrayOfEveryTypePayload.seventh = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("eighth");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<std::vector<uint8_t>> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsString())
+                    {
+                        {
+                            std::string tempB64String = item.GetString();
+                            tempArray.push_back(base64Decode(tempB64String));
+                        }
+                    }
+                }
+                arrayOfEveryTypePayload.eighth = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return arrayOfEveryTypePayload;
+};
+
+void ArrayOfEveryTypePayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: first)
+        {
+            tempArrayValue.PushBack(item, allocator);
+        }
+        parent.AddMember("first", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: second)
+        {
+            tempArrayValue.PushBack(item, allocator);
+        }
+        parent.AddMember("second", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: third)
+        {
+            rapidjson::Value tempThirdStringValue;
+            tempThirdStringValue.SetString(item.c_str(), item.size(), allocator);
+            tempArrayValue.PushBack(tempThirdStringValue, allocator);
+        }
+        parent.AddMember("third", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: fourth)
+        {
+            tempArrayValue.PushBack(static_cast<int>(item), allocator);
+        }
+        parent.AddMember("fourth", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: fifth)
+        {
+            rapidjson::Value tempFifthObjectValue;
+            tempFifthObjectValue.SetObject();
+            item.AddToRapidJsonObject(tempFifthObjectValue, allocator);
+            tempArrayValue.PushBack(tempFifthObjectValue, allocator);
+        }
+        parent.AddMember("fifth", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: sixth)
+        {
+            rapidjson::Value tempSixthStringValue;
+            std::string itemIsoString = timePointToIsoString(item);
+            tempSixthStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), allocator);
+            tempArrayValue.PushBack(tempSixthStringValue, allocator);
+        }
+        parent.AddMember("sixth", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: seventh)
+        {
+            rapidjson::Value tempSeventhStringValue;
+            std::string itemIsoString = durationToIsoString(item);
+            tempSeventhStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), allocator);
+            tempArrayValue.PushBack(tempSeventhStringValue, allocator);
+        }
+        parent.AddMember("seventh", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: eighth)
+        {
+            rapidjson::Value tempEighthStringValue;
+            std::string itemB64String = base64Encode(item);
+            tempEighthStringValue.SetString(itemB64String.c_str(), itemB64String.size(), allocator);
+            tempArrayValue.PushBack(tempEighthStringValue, allocator);
+        }
+        parent.AddMember("eighth", tempArrayValue, allocator);
     }
 }

@@ -126,6 +126,18 @@ public:
     // The provided method will be called whenever a `threeBinaries` is received.
     void registerThreeBinariesCallback(const std::function<void(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)>& cb);
 
+    // Register a callback for the `singleArrayOfIntegers` signal.
+    // The provided method will be called whenever a `singleArrayOfIntegers` is received.
+    void registerSingleArrayOfIntegersCallback(const std::function<void(std::vector<int>)>& cb);
+
+    // Register a callback for the `singleOptionalArrayOfStrings` signal.  The argument is optional.
+    // The provided method will be called whenever a `singleOptionalArrayOfStrings` is received.
+    void registerSingleOptionalArrayOfStringsCallback(const std::function<void(boost::optional<std::vector<int>>)>& cb);
+
+    // Register a callback for the `arrayOfEveryType` signal.
+    // The provided method will be called whenever a `arrayOfEveryType` is received.
+    void registerArrayOfEveryTypeCallback(const std::function<void(std::vector<int>, std::vector<double>, std::vector<std::string>, std::vector<Numbers>, std::vector<Entry>, std::vector<std::chrono::time_point<std::chrono::system_clock>>, std::vector<std::chrono::duration<double>>, std::vector<std::vector<uint8_t>>)>& cb);
+
     // ------------------- METHODS --------------------
 
     // Calls the `callWithNothing` method.
@@ -177,7 +189,7 @@ public:
     boost::future<boost::optional<AllTypes>> callOptionalStruct(boost::optional<AllTypes> input1);
 
     // Calls the `callThreeStructs` method.
-    // Returns a future.  When that future resolves, it will have the returned value. [ArgStruct(name=output1, iface_struct=<InterfaceStruct members=['the_bool', 'the_int', 'the_number', 'the_str', 'the_enum', 'date_and_time', 'time_duration', 'data', 'OptionalInteger', 'OptionalString', 'OptionalEnum', 'OptionalDateTime', 'OptionalDuration', 'OptionalBinary']>), ArgStruct(name=output2, iface_struct=<InterfaceStruct members=['the_bool', 'the_int', 'the_number', 'the_str', 'the_enum', 'date_and_time', 'time_duration', 'data', 'OptionalInteger', 'OptionalString', 'OptionalEnum', 'OptionalDateTime', 'OptionalDuration', 'OptionalBinary']>), ArgStruct(name=output3, iface_struct=<InterfaceStruct members=['the_bool', 'the_int', 'the_number', 'the_str', 'the_enum', 'date_and_time', 'time_duration', 'data', 'OptionalInteger', 'OptionalString', 'OptionalEnum', 'OptionalDateTime', 'OptionalDuration', 'OptionalBinary']>)]
+    // Returns a future.  When that future resolves, it will have the returned value. [ArgStruct(name=output1, iface_struct=<InterfaceStruct members=['the_bool', 'the_int', 'the_number', 'the_str', 'the_enum', 'an_entry_object', 'date_and_time', 'time_duration', 'data', 'OptionalInteger', 'OptionalString', 'OptionalEnum', 'optionalEntryObject', 'OptionalDateTime', 'OptionalDuration', 'OptionalBinary', 'array_of_integers', 'optional_array_of_integers', 'array_of_strings', 'optional_array_of_strings', 'array_of_enums', 'optional_array_of_enums', 'array_of_datetimes', 'optional_array_of_datetimes', 'array_of_durations', 'optional_array_of_durations', 'array_of_binaries', 'optional_array_of_binaries', 'array_of_entry_objects', 'optional_array_of_entry_objects']>), ArgStruct(name=output2, iface_struct=<InterfaceStruct members=['the_bool', 'the_int', 'the_number', 'the_str', 'the_enum', 'an_entry_object', 'date_and_time', 'time_duration', 'data', 'OptionalInteger', 'OptionalString', 'OptionalEnum', 'optionalEntryObject', 'OptionalDateTime', 'OptionalDuration', 'OptionalBinary', 'array_of_integers', 'optional_array_of_integers', 'array_of_strings', 'optional_array_of_strings', 'array_of_enums', 'optional_array_of_enums', 'array_of_datetimes', 'optional_array_of_datetimes', 'array_of_durations', 'optional_array_of_durations', 'array_of_binaries', 'optional_array_of_binaries', 'array_of_entry_objects', 'optional_array_of_entry_objects']>), ArgStruct(name=output3, iface_struct=<InterfaceStruct members=['the_bool', 'the_int', 'the_number', 'the_str', 'the_enum', 'an_entry_object', 'date_and_time', 'time_duration', 'data', 'OptionalInteger', 'OptionalString', 'OptionalEnum', 'optionalEntryObject', 'OptionalDateTime', 'OptionalDuration', 'OptionalBinary', 'array_of_integers', 'optional_array_of_integers', 'array_of_strings', 'optional_array_of_strings', 'array_of_enums', 'optional_array_of_enums', 'array_of_datetimes', 'optional_array_of_datetimes', 'array_of_durations', 'optional_array_of_durations', 'array_of_binaries', 'optional_array_of_binaries', 'array_of_entry_objects', 'optional_array_of_entry_objects']>)]
     boost::future<CallThreeStructsReturnValues> callThreeStructs(boost::optional<AllTypes> input1, AllTypes input2, AllTypes input3);
 
     // Calls the `callOneDateTime` method.
@@ -215,6 +227,18 @@ public:
     // Calls the `callThreeBinaries` method.
     // Returns a future.  When that future resolves, it will have the returned value. [ArgBinary(name=output1), ArgBinary(name=output2), ArgBinary(name=output3)]
     boost::future<CallThreeBinariesReturnValues> callThreeBinaries(std::vector<uint8_t> input1, std::vector<uint8_t> input2, boost::optional<std::vector<uint8_t>> input3);
+
+    // Calls the `callOneListOfIntegers` method.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgArray name=output1 element_type=<ArgPrimitive name=name_not_used_in_array_element type=int>>
+    boost::future<std::vector<int>> callOneListOfIntegers(std::vector<int> input1);
+
+    // Calls the `callOptionalListOfFloats` method.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgArray name=output1 element_type=<ArgPrimitive name=name_not_used_in_array_element type=float>>
+    boost::future<boost::optional<std::vector<double>>> callOptionalListOfFloats(boost::optional<std::vector<double>> input1);
+
+    // Calls the `callTwoLists` method.
+    // Returns a future.  When that future resolves, it will have the returned value. [ArgArray(name=output1, element_type=<ArgEnum name=name_not_used_in_array_element>), ArgArray(name=output2, element_type=<ArgPrimitive name=name_not_used_in_array_element type=str>)]
+    boost::future<CallTwoListsReturnValues> callTwoLists(std::vector<Numbers> input1, boost::optional<std::vector<std::string>> input2);
 
     // ---------------- PROPERTIES ------------------
 
@@ -524,6 +548,32 @@ public:
 
     boost::future<bool> updateReadWriteTwoBinariesProperty(std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>) const;
 
+    // ---read_write_list_of_strings Property---
+
+    // Gets the latest value of the `read_write_list_of_strings` property, if one has been received.
+    // If no value has been received yet, an empty optional is returned.
+
+    boost::optional<std::vector<std::string>> getReadWriteListOfStringsProperty() const;
+
+    // Add a callback that will be called whenever the `read_write_list_of_strings` property is updated.
+    // The provided method will be called whenever a new value for the `read_write_list_of_strings` property is received.
+    void registerReadWriteListOfStringsPropertyCallback(const std::function<void(std::vector<std::string>)>& cb);
+
+    boost::future<bool> updateReadWriteListOfStringsProperty(std::vector<std::string>) const;
+
+    // ---read_write_lists Property---
+
+    // Gets the latest value of the `read_write_lists` property, if one has been received.
+    // If no value has been received yet, an empty optional is returned.
+
+    boost::optional<ReadWriteListsProperty> getReadWriteListsProperty() const;
+
+    // Add a callback that will be called whenever the `read_write_lists` property is updated.
+    // The provided method will be called whenever a new value for the `read_write_lists` property is received.
+    void registerReadWriteListsPropertyCallback(const std::function<void(std::vector<Numbers>, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>>)>& cb);
+
+    boost::future<bool> updateReadWriteListsProperty(std::vector<Numbers>, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>>) const;
+
 private:
     // Pointer to the broker connection.
     std::shared_ptr<IBrokerConnection> _broker;
@@ -696,6 +746,27 @@ private:
     // MQTT Subscription ID for `threeBinaries` signal receptions.
     int _threeBinariesSignalSubscriptionId = -1;
 
+    // List of callbacks to be called whenever the `singleArrayOfIntegers` signal is received.
+    std::vector<std::function<void(std::vector<int>)>> _singleArrayOfIntegersSignalCallbacks;
+    std::mutex _singleArrayOfIntegersSignalCallbacksMutex;
+
+    // MQTT Subscription ID for `singleArrayOfIntegers` signal receptions.
+    int _singleArrayOfIntegersSignalSubscriptionId = -1;
+
+    // List of callbacks to be called whenever the `singleOptionalArrayOfStrings` signal is received.
+    std::vector<std::function<void(boost::optional<std::vector<int>>)>> _singleOptionalArrayOfStringsSignalCallbacks;
+    std::mutex _singleOptionalArrayOfStringsSignalCallbacksMutex;
+
+    // MQTT Subscription ID for `singleOptionalArrayOfStrings` signal receptions.
+    int _singleOptionalArrayOfStringsSignalSubscriptionId = -1;
+
+    // List of callbacks to be called whenever the `arrayOfEveryType` signal is received.
+    std::vector<std::function<void(std::vector<int>, std::vector<double>, std::vector<std::string>, std::vector<Numbers>, std::vector<Entry>, std::vector<std::chrono::time_point<std::chrono::system_clock>>, std::vector<std::chrono::duration<double>>, std::vector<std::vector<uint8_t>>)>> _arrayOfEveryTypeSignalCallbacks;
+    std::mutex _arrayOfEveryTypeSignalCallbacksMutex;
+
+    // MQTT Subscription ID for `arrayOfEveryType` signal receptions.
+    int _arrayOfEveryTypeSignalSubscriptionId = -1;
+
     // ------------------- METHODS --------------------
     // Holds promises for pending `callWithNothing` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingCallWithNothingMethodCalls;
@@ -828,6 +899,24 @@ private:
     int _callThreeBinariesMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeBinaries` method calls.
     void _handleCallThreeBinariesResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
+    // Holds promises for pending `callOneListOfIntegers` method calls.
+    std::map<boost::uuids::uuid, boost::promise<std::vector<int>>> _pendingCallOneListOfIntegersMethodCalls;
+    int _callOneListOfIntegersMethodSubscriptionId = -1;
+    // This is called internally to process responses to `callOneListOfIntegers` method calls.
+    void _handleCallOneListOfIntegersResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
+    // Holds promises for pending `callOptionalListOfFloats` method calls.
+    std::map<boost::uuids::uuid, boost::promise<boost::optional<std::vector<double>>>> _pendingCallOptionalListOfFloatsMethodCalls;
+    int _callOptionalListOfFloatsMethodSubscriptionId = -1;
+    // This is called internally to process responses to `callOptionalListOfFloats` method calls.
+    void _handleCallOptionalListOfFloatsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+
+    // Holds promises for pending `callTwoLists` method calls.
+    std::map<boost::uuids::uuid, boost::promise<CallTwoListsReturnValues>> _pendingCallTwoListsMethodCalls;
+    int _callTwoListsMethodSubscriptionId = -1;
+    // This is called internally to process responses to `callTwoLists` method calls.
+    void _handleCallTwoListsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
 
     // ---------------- PROPERTIES ------------------
 
@@ -1334,4 +1423,46 @@ private:
     // Callbacks registered for changes to the `read_write_two_binaries` property.
     std::vector<std::function<void(std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)>> _readWriteTwoBinariesPropertyCallbacks;
     std::mutex _readWriteTwoBinariesPropertyCallbacksMutex;
+
+    // ---read_write_list_of_strings Property---
+
+    // Last received value for the `read_write_list_of_strings` property.
+    boost::optional<ReadWriteListOfStringsProperty> _readWriteListOfStringsProperty;
+
+    // This is the property version of the last received `read_write_list_of_strings` property update.
+    int _lastReadWriteListOfStringsPropertyVersion = -1;
+
+    // Mutex for protecting access to the `read_write_list_of_strings` property and its version.
+    mutable std::mutex _readWriteListOfStringsPropertyMutex;
+
+    // MQTT Subscription ID for `read_write_list_of_strings` property updates.
+    int _readWriteListOfStringsPropertySubscriptionId;
+
+    // Method for parsing a JSON payload that updates the `read_write_list_of_strings` property.
+    void _receiveReadWriteListOfStringsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+    // Callbacks registered for changes to the `read_write_list_of_strings` property.
+    std::vector<std::function<void(std::vector<std::string>)>> _readWriteListOfStringsPropertyCallbacks;
+    std::mutex _readWriteListOfStringsPropertyCallbacksMutex;
+
+    // ---read_write_lists Property---
+
+    // Last received values for the `read_write_lists` property.
+    boost::optional<ReadWriteListsProperty> _readWriteListsProperty;
+
+    // This is the property version of the last received `read_write_lists` property update.
+    int _lastReadWriteListsPropertyVersion = -1;
+
+    // Mutex for protecting access to the `read_write_lists` property and its version.
+    mutable std::mutex _readWriteListsPropertyMutex;
+
+    // MQTT Subscription ID for `read_write_lists` property updates.
+    int _readWriteListsPropertySubscriptionId;
+
+    // Method for parsing a JSON payload that updates the `read_write_lists` property.
+    void _receiveReadWriteListsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+    // Callbacks registered for changes to the `read_write_lists` property.
+    std::vector<std::function<void(std::vector<Numbers>, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>>)>> _readWriteListsPropertyCallbacks;
+    std::mutex _readWriteListsPropertyCallbacksMutex;
 };

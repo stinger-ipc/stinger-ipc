@@ -164,7 +164,7 @@ NowPayload NowPayload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 
 void NowPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimestampStringValue;
         std::string timestampIsoString = timePointToIsoString(timestamp);
         tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), allocator);

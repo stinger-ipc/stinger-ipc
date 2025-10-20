@@ -22,6 +22,15 @@ enums:
 
 structures:
 
+  entry:
+    members:
+      - name: key
+        type: integer
+        description: An identifier.
+      - name: value
+        type: string
+        description: A name.
+
   AllTypes:
     members:
       - name: the_bool
@@ -38,6 +47,10 @@ structures:
         type: enum
         enumName: Numbers
         description: An enum type
+      - name: an_entry_object
+        type: struct
+        structName: entry
+        description: A struct type.
       - name: date_and_time
         type: datetime
         description: A date and time type.
@@ -60,6 +73,11 @@ structures:
         enumName: Numbers
         optional: true
         description: An optional enum type, one of the numbers.
+      - name: optionalEntryObject
+        type: struct
+        structName: entry
+        optional: true
+        description: An optional struct type.
       - name: OptionalDateTime
         type: datetime
         optional: true
@@ -72,6 +90,87 @@ structures:
         type: binary
         optional: true
         description: An optional binary type.
+      - name: array_of_integers
+        type: array
+        itemType:
+          type: integer
+        description: An array of integers.
+      - name: optional_array_of_integers
+        type: array
+        itemType:
+          type: integer
+        optional: true
+        description: An optional array of integers.
+      - name: array_of_strings
+        type: array
+        itemType:
+          type: string
+        description: An array of strings.
+      - name: optional_array_of_strings
+        type: array
+        itemType:
+          type: string
+        optional: true
+        description: An optional array of strings.
+      - name: array_of_enums
+        type: array
+        itemType:
+          type: enum
+          enumName: Numbers
+        description: An array of enums.
+      - name: optional_array_of_enums
+        type: array
+        itemType:
+          type: enum
+          enumName: Numbers
+        optional: true
+        description: An optional array of enums.
+      - name: array_of_datetimes
+        type: array
+        itemType:
+          type: datetime
+        description: An array of date and time values.
+      - name: optional_array_of_datetimes
+        type: array
+        itemType:
+          type: datetime
+        optional: true
+        description: An optional array of date and time values.
+      - name: array_of_durations
+        type: array
+        itemType:
+          type: duration
+        description: An array of duration values.
+      - name: optional_array_of_durations
+        type: array
+        itemType:
+          type: duration
+        optional: true
+        description: An optional array of duration values.
+      - name: array_of_binaries
+        type: array
+        itemType:
+          type: binary
+        description: An array of binary values.
+      - name: optional_array_of_binaries
+        type: array
+        itemType:
+          type: binary
+        optional: true
+        description: An optional array of binary values.
+      - name: array_of_entry_objects
+        type: array
+        itemType:
+          type: struct
+          structName: entry
+        description: An array of struct values.
+      - name: optional_array_of_entry_objects
+        type: array
+        itemType:
+          type: struct
+          structName: entry
+        optional: true
+        description: An optional array of struct values.
 
 signals:
 
@@ -291,6 +390,70 @@ signals:
         type: binary
         description: The third binary value.
         optional: true
+
+  singleArrayOfIntegers:
+    documentation: A signal with an array of integers.
+    payload:
+      - name: values
+        type: array
+        itemType:
+          type: integer
+        description: The array of integers.
+
+  singleOptionalArrayOfStrings:
+    documentation: A signal with an optional array of strings.
+    payload:
+      - name: values
+        type: array
+        itemType:
+          type: integer
+        optional: true
+        description: The array of integers.
+
+  arrayOfEveryType:
+    payload:
+      - name: first
+        type: array
+        itemType:
+          type: integer
+        description: The first array of integers.
+      - name: second
+        type: array
+        itemType:
+          type: float
+        description: The second array of floats.
+      - name: third
+        type: array
+        itemType:
+          type: string
+        description: The third array of strings.
+      - name: fourth
+        type: array
+        itemType:
+          type: enum
+          enumName: Numbers
+        description: The fourth array of enums.
+      - name: fifth
+        type: array
+        itemType:
+          type: struct
+          structName: entry
+        description: The fifth array of structs.
+      - name: sixth
+        type: array
+        itemType:
+          type: datetime
+        description: The sixth array of date and time values.
+      - name: seventh
+        type: array
+        itemType:
+          type: duration
+        description: The seventh array of duration values.
+      - name: eighth
+        type: array
+        itemType:
+          type: binary
+        description: The eighth array of binary values.
 
 methods:
 
@@ -606,6 +769,61 @@ methods:
         type: binary
         optional: true
 
+  callOneListOfIntegers:
+    documentation: Method that takes one list of integers argument and returns one list of integers value.
+    arguments:
+      - name: input1
+        type: array
+        itemType:
+          type: integer
+    returnValues:
+      - name: output1
+        type: array
+        itemType:
+          type: integer
+
+  callOptionalListOfFloats:
+    documentation: Method that takes one optional list of floats argument and returns one optional list of floats value.
+    arguments:
+      - name: input1
+        type: array
+        itemType:
+          type: float
+        optional: true
+    returnValues:
+      - name: output1
+        type: array
+        itemType:
+          type: float
+        optional: true
+
+  callTwoLists:
+    documentation: Method that takes two list arguments, the second is optional, and returns two list values, the second is optional.
+    arguments:
+      - name: input1
+        type: array
+        itemType:
+          type: enum
+          enumName: Numbers
+        description: The first list of enums.
+      - name: input2
+        type: array
+        itemType:
+          type: string
+        optional: true
+    returnValues:
+      - name: output1
+        type: array
+        itemType:
+          type: enum
+          enumName: Numbers
+        description: The first list of enums.
+      - name: output2
+        type: array
+        itemType:
+          type: string
+        optional: true
+
 properties:
 
   read_write_integer:
@@ -797,4 +1015,26 @@ properties:
         description: A binary blob of data.
       - name: second
         type: binary
+        optional: true
+
+  read_write_list_of_strings:
+    documentation: A read-write property that is a list of strings.
+    values:
+      - name: value
+        type: array
+        itemType:
+          type: string
+  
+  read_write_lists:
+    documentation: A read-write property containing two lists.  The second list is optional.
+    values:
+      - name: the_list
+        type: array
+        itemType:
+          type: enum
+          enumName: Numbers
+      - name: optionalList
+        type: array
+        itemType:
+          type: datetime
         optional: true

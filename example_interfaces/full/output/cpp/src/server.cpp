@@ -367,26 +367,27 @@ boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optiona
 
     doc.AddMember("dayOfWeek", static_cast<int>(*dayOfWeek), doc.GetAllocator());
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimestampStringValue;
         std::string timestampIsoString = timePointToIsoString(timestamp);
         tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), doc.GetAllocator());
         doc.AddMember("timestamp", tempTimestampStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempProcessTimeStringValue;
         std::string processTimeIsoString = durationToIsoString(processTime);
         tempProcessTimeStringValue.SetString(processTimeIsoString.c_str(), processTimeIsoString.size(), doc.GetAllocator());
         doc.AddMember("process_time", tempProcessTimeStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempMemorySegmentStringValue;
         std::string memorySegmentB64String = base64Encode(memorySegment);
         tempMemorySegmentStringValue.SetString(memorySegmentB64String.c_str(), memorySegmentB64String.size(), doc.GetAllocator());
         doc.AddMember("memory_segment", tempMemorySegmentStringValue, doc.GetAllocator());
     }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);

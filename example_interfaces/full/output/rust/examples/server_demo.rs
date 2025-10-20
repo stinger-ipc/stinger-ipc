@@ -8,7 +8,7 @@ use std::any::Any;
 
 use full_ipc::server::{FullMethodHandlers, FullServer};
 use mqttier::{Connection, MqttierClient, MqttierOptions};
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 
 use async_trait::async_trait;
 use std::sync::Arc;

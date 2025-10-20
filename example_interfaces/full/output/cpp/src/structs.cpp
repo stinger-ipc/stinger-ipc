@@ -106,14 +106,14 @@ void Lunch::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::
     if (orderNumber)
         parent.AddMember("order_number", *orderNumber, allocator);
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimeOfLunchStringValue;
         std::string timeOfLunchIsoString = timePointToIsoString(timeOfLunch);
         tempTimeOfLunchStringValue.SetString(timeOfLunchIsoString.c_str(), timeOfLunchIsoString.size(), allocator);
         parent.AddMember("time_of_lunch", tempTimeOfLunchStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempDurationOfLunchStringValue;
         std::string durationOfLunchIsoString = durationToIsoString(durationOfLunch);
         tempDurationOfLunchStringValue.SetString(durationOfLunchIsoString.c_str(), durationOfLunchIsoString.size(), allocator);

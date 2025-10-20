@@ -7,7 +7,7 @@ It contains enumerations used by the weather interface.
 use std::any::Any;
 
 use mqttier::{Connection, MqttierClient, MqttierOptions};
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 use weather_ipc::server::{WeatherMethodHandlers, WeatherServer};
 
 use async_trait::async_trait;

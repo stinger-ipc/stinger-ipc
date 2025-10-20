@@ -48,7 +48,7 @@ void ForecastForHour::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::
 {
     parent.AddMember("temperature", temperature, allocator);
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempStarttimeStringValue;
         std::string starttimeIsoString = timePointToIsoString(starttime);
         tempStarttimeStringValue.SetString(starttimeIsoString.c_str(), starttimeIsoString.size(), allocator);

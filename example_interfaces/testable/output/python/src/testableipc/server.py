@@ -172,6 +172,16 @@ class TestAbleServer:
             "testAble/{}/property/readWriteTwoBinaries/setValue".format(self._instance_id), self._receive_read_write_two_binaries_update_request_message
         )
 
+        self._property_read_write_list_of_strings: PropertyControls[list[str], list[str]] = PropertyControls()
+        self._property_read_write_list_of_strings.subscription_id = self._conn.subscribe(
+            "testAble/{}/property/readWriteListOfStrings/setValue".format(self._instance_id), self._receive_read_write_list_of_strings_update_request_message
+        )
+
+        self._property_read_write_lists: PropertyControls[interface_types.ReadWriteListsProperty, list[interface_types.Numbers], list[datetime.datetime]] = PropertyControls()
+        self._property_read_write_lists.subscription_id = self._conn.subscribe(
+            "testAble/{}/property/readWriteLists/setValue".format(self._instance_id), self._receive_read_write_lists_update_request_message
+        )
+
         self._method_call_with_nothing = MethodControls()
         self._method_call_with_nothing.subscription_id = self._conn.subscribe("testAble/{}/method/callWithNothing".format(self._instance_id), self._process_call_with_nothing_call)
 
@@ -237,6 +247,19 @@ class TestAbleServer:
 
         self._method_call_three_binaries = MethodControls()
         self._method_call_three_binaries.subscription_id = self._conn.subscribe("testAble/{}/method/callThreeBinaries".format(self._instance_id), self._process_call_three_binaries_call)
+
+        self._method_call_one_list_of_integers = MethodControls()
+        self._method_call_one_list_of_integers.subscription_id = self._conn.subscribe(
+            "testAble/{}/method/callOneListOfIntegers".format(self._instance_id), self._process_call_one_list_of_integers_call
+        )
+
+        self._method_call_optional_list_of_floats = MethodControls()
+        self._method_call_optional_list_of_floats.subscription_id = self._conn.subscribe(
+            "testAble/{}/method/callOptionalListOfFloats".format(self._instance_id), self._process_call_optional_list_of_floats_call
+        )
+
+        self._method_call_two_lists = MethodControls()
+        self._method_call_two_lists.subscription_id = self._conn.subscribe("testAble/{}/method/callTwoLists".format(self._instance_id), self._process_call_two_lists_call)
 
         self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
         self._advertise_thread.start()
@@ -507,6 +530,28 @@ class TestAbleServer:
             self._property_read_write_two_binaries.version += 1
         for callback in self._property_read_write_two_binaries.callbacks:
             callback(prop_value.first, prop_value.second)
+
+    def _receive_read_write_list_of_strings_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        payload_obj = json.loads(payload)
+        prop_value = list[str](payload_obj["value"])
+        with self._property_read_write_list_of_strings.mutex:
+            self._property_read_write_list_of_strings.value = prop_value
+            self._property_read_write_list_of_strings.version += 1
+        for callback in self._property_read_write_list_of_strings.callbacks:
+            callback(prop_value)
+
+    def _receive_read_write_lists_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        try:
+            prop_value = interface_types.ReadWriteListsProperty.model_validate_json(payload)
+        except ValidationError as e:
+            self._logger.error("Failed to validate payload for %s: %s", topic, e)
+            self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
+            return
+        with self._property_read_write_lists.mutex:
+            self._property_read_write_lists.value = prop_value
+            self._property_read_write_lists.version += 1
+        for callback in self._property_read_write_lists.callbacks:
+            callback(prop_value.the_list, prop_value.optional_list)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
@@ -837,6 +882,76 @@ class TestAbleServer:
             third=third if third is not None else None,
         )
         self._conn.publish("testAble/{}/signal/threeBinaries".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+
+    def emit_single_array_of_integers(self, values: list[int]):
+        """Server application code should call this method to emit the 'singleArrayOfIntegers' signal.
+
+        SingleArrayOfIntegersSignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
+
+        assert isinstance(values, list[int]), f"The 'values' argument must be of type list[int], but was {type(values)}"
+
+        payload = SingleArrayOfIntegersSignalPayload(
+            values=values,
+        )
+        self._conn.publish("testAble/{}/signal/singleArrayOfIntegers".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+
+    def emit_single_optional_array_of_strings(self, values: list[int]):
+        """Server application code should call this method to emit the 'singleOptionalArrayOfStrings' signal.
+
+        SingleOptionalArrayOfStringsSignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
+
+        assert isinstance(values, list[int]), f"The 'values' argument must be of type list[int], but was {type(values)}"
+
+        payload = SingleOptionalArrayOfStringsSignalPayload(
+            values=values if values is not None else None,
+        )
+        self._conn.publish("testAble/{}/signal/singleOptionalArrayOfStrings".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+
+    def emit_array_of_every_type(
+        self,
+        first: list[int],
+        second: list[float],
+        third: list[str],
+        fourth: list[interface_types.Numbers],
+        fifth: list[interface_types.Entry],
+        sixth: list[datetime.datetime],
+        seventh: list[datetime.timedelta],
+        eighth: list[bytes],
+    ):
+        """Server application code should call this method to emit the 'arrayOfEveryType' signal.
+
+        ArrayOfEveryTypeSignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
+
+        assert isinstance(first, list[int]), f"The 'first' argument must be of type list[int], but was {type(first)}"
+
+        assert isinstance(second, list[float]), f"The 'second' argument must be of type list[float], but was {type(second)}"
+
+        assert isinstance(third, list[str]), f"The 'third' argument must be of type list[str], but was {type(third)}"
+
+        assert isinstance(fourth, list[interface_types.Numbers]), f"The 'fourth' argument must be of type list[interface_types.Numbers], but was {type(fourth)}"
+
+        assert isinstance(fifth, list[interface_types.Entry]), f"The 'fifth' argument must be of type list[interface_types.Entry], but was {type(fifth)}"
+
+        assert isinstance(sixth, list[datetime.datetime]), f"The 'sixth' argument must be of type list[datetime.datetime], but was {type(sixth)}"
+
+        assert isinstance(seventh, list[datetime.timedelta]), f"The 'seventh' argument must be of type list[datetime.timedelta], but was {type(seventh)}"
+
+        assert isinstance(eighth, list[bytes]), f"The 'eighth' argument must be of type list[bytes], but was {type(eighth)}"
+
+        payload = ArrayOfEveryTypeSignalPayload(
+            first=first,
+            second=second,
+            third=third,
+            fourth=fourth,
+            fifth=fifth,
+            sixth=sixth,
+            seventh=seventh,
+            eighth=eighth,
+        )
+        self._conn.publish("testAble/{}/signal/arrayOfEveryType".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def handle_call_with_nothing(self, handler: Callable[[None], None]):
         """This is a decorator to decorate a method that will handle the 'callWithNothing' method calls."""
@@ -1808,6 +1923,138 @@ class TestAbleServer:
                 else:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
+    def handle_call_one_list_of_integers(self, handler: Callable[[list[int]], list[int]]):
+        """This is a decorator to decorate a method that will handle the 'callOneListOfIntegers' method calls."""
+        if self._method_call_one_list_of_integers.callback is None and handler is not None:
+            self._method_call_one_list_of_integers.callback = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def _process_call_one_list_of_integers_call(self, topic: str, payload_str: str, properties: Dict[str, Any]):
+        """This processes a call to the 'callOneListOfIntegers' method.  It deserializes the payload to find the method arguments,
+        then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
+        """
+        payload = CallOneListOfIntegersMethodRequest.model_validate_json(payload_str)
+        correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
+        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
+        self._logger.debug("Correlation data for 'callOneListOfIntegers' request: %s", correlation_id)
+        if self._method_call_one_list_of_integers.callback is not None:
+            method_args = [
+                payload.input1,
+            ]
+
+            if response_topic is not None:
+                return_json = ""
+                debug_msg = None  # type: Optional[str]
+                try:
+                    return_values = self._method_call_one_list_of_integers.callback(*method_args)
+
+                    if not isinstance(return_values, list[int]):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type list[int], but was {type(return_values)}")
+                    ret_obj = CallOneListOfIntegersMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOneListOfIntegers: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                except Exception as e:
+                    self._logger.exception("Exception while handling callOneListOfIntegers", exc_info=e)
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                else:
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
+
+    def handle_call_optional_list_of_floats(self, handler: Callable[[list[float]], list[float]]):
+        """This is a decorator to decorate a method that will handle the 'callOptionalListOfFloats' method calls."""
+        if self._method_call_optional_list_of_floats.callback is None and handler is not None:
+            self._method_call_optional_list_of_floats.callback = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def _process_call_optional_list_of_floats_call(self, topic: str, payload_str: str, properties: Dict[str, Any]):
+        """This processes a call to the 'callOptionalListOfFloats' method.  It deserializes the payload to find the method arguments,
+        then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
+        """
+        payload = CallOptionalListOfFloatsMethodRequest.model_validate_json(payload_str)
+        correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
+        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
+        self._logger.debug("Correlation data for 'callOptionalListOfFloats' request: %s", correlation_id)
+        if self._method_call_optional_list_of_floats.callback is not None:
+            method_args = [
+                payload.input1,
+            ]
+
+            if response_topic is not None:
+                return_json = ""
+                debug_msg = None  # type: Optional[str]
+                try:
+                    return_values = self._method_call_optional_list_of_floats.callback(*method_args)
+
+                    if not isinstance(return_values, list[float]) and return_values is not None:
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type list[float], but was {type(return_values)}")
+                    ret_obj = CallOptionalListOfFloatsMethodResponse(output1=return_values)
+                    return_json = ret_obj.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callOptionalListOfFloats: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                except Exception as e:
+                    self._logger.exception("Exception while handling callOptionalListOfFloats", exc_info=e)
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                else:
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
+
+    def handle_call_two_lists(self, handler: Callable[[list[interface_types.Numbers], list[str]], interface_types.CallTwoListsMethodResponse]):
+        """This is a decorator to decorate a method that will handle the 'callTwoLists' method calls."""
+        if self._method_call_two_lists.callback is None and handler is not None:
+            self._method_call_two_lists.callback = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def _process_call_two_lists_call(self, topic: str, payload_str: str, properties: Dict[str, Any]):
+        """This processes a call to the 'callTwoLists' method.  It deserializes the payload to find the method arguments,
+        then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
+        """
+        payload = CallTwoListsMethodRequest.model_validate_json(payload_str)
+        correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
+        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
+        self._logger.debug("Correlation data for 'callTwoLists' request: %s", correlation_id)
+        if self._method_call_two_lists.callback is not None:
+            method_args = [
+                payload.input1,
+                payload.input2,
+            ]
+
+            if response_topic is not None:
+                return_json = ""
+                debug_msg = None  # type: Optional[str]
+                try:
+                    return_values = self._method_call_two_lists.callback(*method_args)
+
+                    if not isinstance(return_values, CallTwoListsMethodResponse):
+                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallTwoListsMethodResponse, but was {type(return_values)}")
+                    return_json = return_values.model_dump_json(by_alias=True)
+
+                except StingerMethodException as sme:
+                    self._logger.warning("StingerMethodException while handling callTwoLists: %s", sme)
+                    return_code = sme.return_code
+                    debug_msg = str(sme)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                except Exception as e:
+                    self._logger.exception("Exception while handling callTwoLists", exc_info=e)
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    debug_msg = str(e)
+                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                else:
+                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
+
     @property
     def read_write_integer(self) -> Optional[int]:
         """This property returns the last received value for the 'read_write_integer' property."""
@@ -2772,6 +3019,88 @@ class TestAbleServer:
         if handler is not None:
             self._property_read_write_two_binaries.callbacks.append(handler)
 
+    @property
+    def read_write_list_of_strings(self) -> Optional[list[str]]:
+        """This property returns the last received value for the 'read_write_list_of_strings' property."""
+        with self._property_read_write_list_of_strings_mutex:
+            return self._property_read_write_list_of_strings
+
+    @read_write_list_of_strings.setter
+    def read_write_list_of_strings(self, value: list[str]):
+        """This property sets (publishes) a new value for the 'read_write_list_of_strings' property."""
+
+        if not isinstance(value, list[str]):
+            raise ValueError(f"The value must be list[str] .")
+
+        prop_obj = ReadWriteListOfStringsProperty(value=value)
+        payload = prop_obj.model_dump_json(by_alias=True)
+
+        if self._property_read_write_list_of_strings.value is None or value != self._property_read_write_list_of_strings.value.value:
+            with self._property_read_write_list_of_strings.mutex:
+                self._property_read_write_list_of_strings.value = prop_obj
+                self._property_read_write_list_of_strings.version += 1
+            self._conn.publish("testAble/{}/property/readWriteListOfStrings/value".format(self._instance_id), payload, qos=1, retain=True)
+            for callback in self._property_read_write_list_of_strings.callbacks:
+                callback(prop_obj.value)
+
+    def set_read_write_list_of_strings(self, value: list[str]):
+        """This method sets (publishes) a new value for the 'read_write_list_of_strings' property."""
+        if not isinstance(value, list[str]):
+            raise ValueError(f"The 'value' value must be list[str].")
+
+        obj = value
+
+        # Use the property.setter to do that actual work.
+        self.read_write_list_of_strings = obj
+
+    def on_read_write_list_of_strings_updates(self, handler: Callable[[list[str]], None]):
+        """This method registers a callback to be called whenever a new 'read_write_list_of_strings' property update is received."""
+        if handler is not None:
+            self._property_read_write_list_of_strings.callbacks.append(handler)
+
+    @property
+    def read_write_lists(self) -> Optional[interface_types.ReadWriteListsProperty]:
+        """This property returns the last received value for the 'read_write_lists' property."""
+        with self._property_read_write_lists_mutex:
+            return self._property_read_write_lists
+
+    @read_write_lists.setter
+    def read_write_lists(self, value: ReadWriteListsProperty):
+        """This property sets (publishes) a new value for the 'read_write_lists' property."""
+
+        if not isinstance(value, ReadWriteListsProperty):
+            raise ValueError(f"The value must be interface_types.ReadWriteListsProperty.")
+
+        payload = value.model_dump_json(by_alias=True)
+
+        if value != self._property_read_write_lists.value:
+            with self._property_read_write_lists.mutex:
+                self._property_read_write_lists.value = value
+                self._property_read_write_lists.version += 1
+            self._conn.publish("testAble/{}/property/readWriteLists/value".format(self._instance_id), payload, qos=1, retain=True)
+            for callback in self._property_read_write_lists.callbacks:
+                callback(value.the_list, value.optional_list)
+
+    def set_read_write_lists(self, the_list: list[interface_types.Numbers], optional_list: list[datetime.datetime]):
+        """This method sets (publishes) a new value for the 'read_write_lists' property."""
+        if not isinstance(the_list, list[interface_types.Numbers]):
+            raise ValueError(f"The 'the_list' value must be list[interface_types.Numbers].")
+        if not isinstance(optional_list, list[datetime.datetime]) and optional_list is not None:
+            raise ValueError(f"The 'optional_list' value must be list[datetime.datetime].")
+
+        obj = interface_types.ReadWriteListsProperty(
+            the_list=the_list,
+            optionalList=optional_list,
+        )
+
+        # Use the property.setter to do that actual work.
+        self.read_write_lists = obj
+
+    def on_read_write_lists_updates(self, handler: Callable[[list[interface_types.Numbers], list[datetime.datetime]], None]):
+        """This method registers a callback to be called whenever a new 'read_write_lists' property update is received."""
+        if handler is not None:
+            self._property_read_write_lists.callbacks.append(handler)
+
 
 class TestAbleServerBuilder:
     """
@@ -2806,6 +3135,9 @@ class TestAbleServerBuilder:
         self._call_one_binary_method_handler: Optional[Callable[[bytes], bytes]] = None
         self._call_optional_binary_method_handler: Optional[Callable[[bytes], bytes]] = None
         self._call_three_binaries_method_handler: Optional[Callable[[bytes, bytes, bytes], interface_types.CallThreeBinariesMethodResponse]] = None
+        self._call_one_list_of_integers_method_handler: Optional[Callable[[list[int]], list[int]]] = None
+        self._call_optional_list_of_floats_method_handler: Optional[Callable[[list[float]], list[float]]] = None
+        self._call_two_lists_method_handler: Optional[Callable[[list[interface_types.Numbers], list[str]], interface_types.CallTwoListsMethodResponse]] = None
 
         self._read_write_integer_property_callbacks: List[Callable[[int], None]] = []
         self._read_only_integer_property_callbacks: List[Callable[[int], None]] = []
@@ -2831,6 +3163,8 @@ class TestAbleServerBuilder:
         self._read_write_binary_property_callbacks: List[Callable[[bytes], None]] = []
         self._read_write_optional_binary_property_callbacks: List[Callable[[bytes], None]] = []
         self._read_write_two_binaries_property_callbacks: List[Callable[[bytes, bytes], None]] = []
+        self._read_write_list_of_strings_property_callbacks: List[Callable[[list[str]], None]] = []
+        self._read_write_lists_property_callbacks: List[Callable[[list[interface_types.Numbers], list[datetime.datetime]], None]] = []
 
     def handle_call_with_nothing(self, handler: Callable[[None], None]):
         if self._call_with_nothing_method_handler is None and handler is not None:
@@ -2964,6 +3298,24 @@ class TestAbleServerBuilder:
         else:
             raise Exception("Method handler already set")
 
+    def handle_call_one_list_of_integers(self, handler: Callable[[list[int]], list[int]]):
+        if self._call_one_list_of_integers_method_handler is None and handler is not None:
+            self._call_one_list_of_integers_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def handle_call_optional_list_of_floats(self, handler: Callable[[list[float]], list[float]]):
+        if self._call_optional_list_of_floats_method_handler is None and handler is not None:
+            self._call_optional_list_of_floats_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def handle_call_two_lists(self, handler: Callable[[list[interface_types.Numbers], list[str]], interface_types.CallTwoListsMethodResponse]):
+        if self._call_two_lists_method_handler is None and handler is not None:
+            self._call_two_lists_method_handler = handler
+        else:
+            raise Exception("Method handler already set")
+
     def on_read_write_integer_updates(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'read_write_integer' property update is received."""
         self._read_write_integer_property_callbacks.append(handler)
@@ -3060,6 +3412,14 @@ class TestAbleServerBuilder:
         """This method registers a callback to be called whenever a new 'read_write_two_binaries' property update is received."""
         self._read_write_two_binaries_property_callbacks.append(handler)
 
+    def on_read_write_list_of_strings_updates(self, handler: Callable[[list[str]], None]):
+        """This method registers a callback to be called whenever a new 'read_write_list_of_strings' property update is received."""
+        self._read_write_list_of_strings_property_callbacks.append(handler)
+
+    def on_read_write_lists_updates(self, handler: Callable[[list[interface_types.Numbers], list[datetime.datetime]], None]):
+        """This method registers a callback to be called whenever a new 'read_write_lists' property update is received."""
+        self._read_write_lists_property_callbacks.append(handler)
+
     def build(self, connection: IBrokerConnection) -> TestAbleServer:
         new_server = TestAbleServer(connection)
 
@@ -3107,6 +3467,12 @@ class TestAbleServerBuilder:
             new_server.handle_call_optional_binary(self._call_optional_binary_method_handler)
         if self._call_three_binaries_method_handler is not None:
             new_server.handle_call_three_binaries(self._call_three_binaries_method_handler)
+        if self._call_one_list_of_integers_method_handler is not None:
+            new_server.handle_call_one_list_of_integers(self._call_one_list_of_integers_method_handler)
+        if self._call_optional_list_of_floats_method_handler is not None:
+            new_server.handle_call_optional_list_of_floats(self._call_optional_list_of_floats_method_handler)
+        if self._call_two_lists_method_handler is not None:
+            new_server.handle_call_two_lists(self._call_two_lists_method_handler)
 
         for callback in self._read_write_integer_property_callbacks:
             new_server.on_read_write_integer_updates(callback)
@@ -3179,5 +3545,11 @@ class TestAbleServerBuilder:
 
         for callback in self._read_write_two_binaries_property_callbacks:
             new_server.on_read_write_two_binaries_updates(callback)
+
+        for callback in self._read_write_list_of_strings_property_callbacks:
+            new_server.on_read_write_list_of_strings_updates(callback)
+
+        for callback in self._read_write_lists_property_callbacks:
+            new_server.on_read_write_lists_updates(callback)
 
         return new_server

@@ -16,8 +16,8 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 pub mod base64_binary_format {
-    use base64::Engine;
     use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+    use base64::Engine;
     use serde::{Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>

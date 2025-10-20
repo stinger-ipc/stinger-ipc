@@ -44,15 +44,31 @@ if __name__ == "__main__":
         the_number=3.14,
         the_str="apples",
         the_enum=interface_types.Numbers.ONE,
+        an_entry_object=interface_types.Entry(key=42, value="apples"),
         date_and_time=datetime.now(),
         time_duration=timedelta(seconds=3536),
         data=b"example binary data",
         optional_integer=42,
         optional_string="apples",
         optional_enum=interface_types.Numbers.ONE,
+        optional_entry_object=interface_types.Entry(key=42, value="apples"),
         optional_date_time=datetime.now(),
         optional_duration=None,
         optional_binary=b"example binary data",
+        array_of_integers=[42, 42],
+        optional_array_of_integers=[42, 42],
+        array_of_strings=["apples", "apples"],
+        optional_array_of_strings=["apples", "apples"],
+        array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+        optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+        array_of_datetimes=[datetime.now(), datetime.now()],
+        optional_array_of_datetimes=[datetime.now(), datetime.now()],
+        array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+        optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+        array_of_binaries=[b"example binary data", b"example binary data"],
+        optional_array_of_binaries=[b"example binary data", b"example binary data"],
+        array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+        optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
     )
 
     server.read_write_optional_struct = interface_types.AllTypes(
@@ -61,15 +77,31 @@ if __name__ == "__main__":
         the_number=3.14,
         the_str="apples",
         the_enum=interface_types.Numbers.ONE,
+        an_entry_object=interface_types.Entry(key=42, value="apples"),
         date_and_time=datetime.now(),
         time_duration=timedelta(seconds=3536),
         data=b"example binary data",
         optional_integer=42,
         optional_string="apples",
         optional_enum=interface_types.Numbers.ONE,
+        optional_entry_object=interface_types.Entry(key=42, value="apples"),
         optional_date_time=datetime.now(),
         optional_duration=None,
         optional_binary=b"example binary data",
+        array_of_integers=[42, 42],
+        optional_array_of_integers=[42, 42],
+        array_of_strings=["apples", "apples"],
+        optional_array_of_strings=["apples", "apples"],
+        array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+        optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+        array_of_datetimes=[datetime.now(), datetime.now()],
+        optional_array_of_datetimes=[datetime.now(), datetime.now()],
+        array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+        optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+        array_of_binaries=[b"example binary data", b"example binary data"],
+        optional_array_of_binaries=[b"example binary data", b"example binary data"],
+        array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+        optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
     )
 
     server.read_write_two_structs = interface_types.ReadWriteTwoStructsProperty(
@@ -79,15 +111,31 @@ if __name__ == "__main__":
             the_number=3.14,
             the_str="apples",
             the_enum=interface_types.Numbers.ONE,
+            an_entry_object=interface_types.Entry(key=42, value="apples"),
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
+            optional_entry_object=interface_types.Entry(key=42, value="apples"),
             optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
+            array_of_integers=[42, 42],
+            optional_array_of_integers=[42, 42],
+            array_of_strings=["apples", "apples"],
+            optional_array_of_strings=["apples", "apples"],
+            array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            array_of_datetimes=[datetime.now(), datetime.now()],
+            optional_array_of_datetimes=[datetime.now(), datetime.now()],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
         ),
         second=interface_types.AllTypes(
             the_bool=True,
@@ -95,15 +143,31 @@ if __name__ == "__main__":
             the_number=3.14,
             the_str="apples",
             the_enum=interface_types.Numbers.ONE,
+            an_entry_object=interface_types.Entry(key=42, value="apples"),
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=None,
+            optional_entry_object=interface_types.Entry(key=42, value="apples"),
+            optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
+            array_of_integers=[42, 42],
+            optional_array_of_integers=[42, 42],
+            array_of_strings=["apples", "apples"],
+            optional_array_of_strings=["apples", "apples"],
+            array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            array_of_datetimes=[datetime.now(), datetime.now()],
+            optional_array_of_datetimes=[datetime.now(), datetime.now()],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
         ),
     )
 
@@ -143,6 +207,13 @@ if __name__ == "__main__":
     server.read_write_two_binaries = interface_types.ReadWriteTwoBinariesProperty(
         first=b"example binary data",
         second=b"example binary data",
+    )
+
+    server.read_write_list_of_strings = ["apples", "apples"]
+
+    server.read_write_lists = interface_types.ReadWriteListsProperty(
+        the_list=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+        optionalList=[datetime.now(), datetime.now()],
     )
 
     @server.handle_call_with_nothing
@@ -215,15 +286,31 @@ if __name__ == "__main__":
             the_number=3.14,
             the_str="apples",
             the_enum=interface_types.Numbers.ONE,
+            an_entry_object=interface_types.Entry(key=42, value="apples"),
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
+            optional_entry_object=interface_types.Entry(key=42, value="apples"),
             optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
+            array_of_integers=[42, 42],
+            optional_array_of_integers=[42, 42],
+            array_of_strings=["apples", "apples"],
+            optional_array_of_strings=["apples", "apples"],
+            array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            array_of_datetimes=[datetime.now(), datetime.now()],
+            optional_array_of_datetimes=[datetime.now(), datetime.now()],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
         )
 
     @server.handle_call_optional_struct
@@ -236,15 +323,31 @@ if __name__ == "__main__":
             the_number=3.14,
             the_str="apples",
             the_enum=interface_types.Numbers.ONE,
+            an_entry_object=interface_types.Entry(key=42, value="apples"),
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
+            optional_entry_object=interface_types.Entry(key=42, value="apples"),
             optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
+            array_of_integers=[42, 42],
+            optional_array_of_integers=[42, 42],
+            array_of_strings=["apples", "apples"],
+            optional_array_of_strings=["apples", "apples"],
+            array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            array_of_datetimes=[datetime.now(), datetime.now()],
+            optional_array_of_datetimes=[datetime.now(), datetime.now()],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
         )
 
     @server.handle_call_three_structs
@@ -258,15 +361,31 @@ if __name__ == "__main__":
                 the_number=3.14,
                 the_str="apples",
                 the_enum=interface_types.Numbers.ONE,
+                an_entry_object=interface_types.Entry(key=42, value="apples"),
                 date_and_time=datetime.now(),
                 time_duration=timedelta(seconds=3536),
                 data=b"example binary data",
                 optional_integer=42,
                 optional_string="apples",
                 optional_enum=interface_types.Numbers.ONE,
+                optional_entry_object=interface_types.Entry(key=42, value="apples"),
                 optional_date_time=datetime.now(),
                 optional_duration=None,
                 optional_binary=b"example binary data",
+                array_of_integers=[42, 42],
+                optional_array_of_integers=[42, 42],
+                array_of_strings=["apples", "apples"],
+                optional_array_of_strings=["apples", "apples"],
+                array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                array_of_datetimes=[datetime.now(), datetime.now()],
+                optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
             ),
             output2=interface_types.AllTypes(
                 the_bool=True,
@@ -274,15 +393,31 @@ if __name__ == "__main__":
                 the_number=3.14,
                 the_str="apples",
                 the_enum=interface_types.Numbers.ONE,
+                an_entry_object=interface_types.Entry(key=42, value="apples"),
                 date_and_time=datetime.now(),
                 time_duration=timedelta(seconds=3536),
                 data=b"example binary data",
                 optional_integer=42,
                 optional_string="apples",
                 optional_enum=interface_types.Numbers.ONE,
-                optional_date_time=datetime.now(),
+                optional_entry_object=interface_types.Entry(key=42, value="apples"),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
+                array_of_integers=[42, 42],
+                optional_array_of_integers=[42, 42],
+                array_of_strings=["apples", "apples"],
+                optional_array_of_strings=["apples", "apples"],
+                array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                array_of_datetimes=[datetime.now(), datetime.now()],
+                optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
             ),
             output3=interface_types.AllTypes(
                 the_bool=True,
@@ -290,15 +425,31 @@ if __name__ == "__main__":
                 the_number=3.14,
                 the_str="apples",
                 the_enum=interface_types.Numbers.ONE,
+                an_entry_object=interface_types.Entry(key=42, value="apples"),
                 date_and_time=datetime.now(),
                 time_duration=timedelta(seconds=3536),
                 data=b"example binary data",
                 optional_integer=42,
                 optional_string="apples",
                 optional_enum=interface_types.Numbers.ONE,
-                optional_date_time=None,
+                optional_entry_object=interface_types.Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(),
                 optional_duration=None,
                 optional_binary=b"example binary data",
+                array_of_integers=[42, 42],
+                optional_array_of_integers=[42, 42],
+                array_of_strings=["apples", "apples"],
+                optional_array_of_strings=["apples", "apples"],
+                array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                array_of_datetimes=[datetime.now(), datetime.now()],
+                optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
             ),
         )
 
@@ -312,13 +463,13 @@ if __name__ == "__main__":
     def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
         """This is an example handler for the 'callOptionalDateTime' method."""
         print(f"Running call_optional_date_time'({input1})'")
-        return datetime.now()
+        return None
 
     @server.handle_call_three_date_times
     def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> interface_types.CallThreeDateTimesMethodResponse:
         """This is an example handler for the 'callThreeDateTimes' method."""
         print(f"Running call_three_date_times'({input1}, {input2}, {input3})'")
-        return interface_types.CallThreeDateTimesMethodResponse(output1=datetime.now(), output2=datetime.now(), output3=datetime.now())
+        return interface_types.CallThreeDateTimesMethodResponse(output1=datetime.now(), output2=datetime.now(), output3=None)
 
     @server.handle_call_one_duration
     def call_one_duration(input1: timedelta) -> timedelta:
@@ -355,6 +506,24 @@ if __name__ == "__main__":
         """This is an example handler for the 'callThreeBinaries' method."""
         print(f"Running call_three_binaries'({input1}, {input2}, {input3})'")
         return interface_types.CallThreeBinariesMethodResponse(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
+
+    @server.handle_call_one_list_of_integers
+    def call_one_list_of_integers(input1: list[int]) -> list[int]:
+        """This is an example handler for the 'callOneListOfIntegers' method."""
+        print(f"Running call_one_list_of_integers'({input1})'")
+        return [42, 42]
+
+    @server.handle_call_optional_list_of_floats
+    def call_optional_list_of_floats(input1: list[float]) -> list[float]:
+        """This is an example handler for the 'callOptionalListOfFloats' method."""
+        print(f"Running call_optional_list_of_floats'({input1})'")
+        return [3.14, 3.14]
+
+    @server.handle_call_two_lists
+    def call_two_lists(input1: list[interface_types.Numbers], input2: list[str]) -> interface_types.CallTwoListsMethodResponse:
+        """This is an example handler for the 'callTwoLists' method."""
+        print(f"Running call_two_lists'({input1}, {input2})'")
+        return interface_types.CallTwoListsMethodResponse(output1=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], output2=["apples", "apples"])
 
     @server.on_read_write_integer_updates
     def on_read_write_integer_update(value: int):
@@ -452,6 +621,14 @@ if __name__ == "__main__":
     def on_read_write_two_binaries_update(first: bytes, second: bytes):
         print(f"Received update for 'read_write_two_binaries' property: { first= }, { second= }")
 
+    @server.on_read_write_list_of_strings_updates
+    def on_read_write_list_of_strings_update(value: list[str]):
+        print(f"Received update for 'read_write_list_of_strings' property: { value= }")
+
+    @server.on_read_write_lists_updates
+    def on_read_write_lists_update(the_list: list[interface_types.Numbers], optionalList: list[datetime.datetime]):
+        print(f"Received update for 'read_write_lists' property: { the_list= }, { optionalList= }")
+
     print("Ctrl-C will stop the program.")
 
     while True:
@@ -473,15 +650,31 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=None,
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
+                    optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 )
             )
             server.emit_single_optional_struct(
@@ -491,15 +684,31 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
                     optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 )
             )
             server.emit_three_structs(
@@ -509,15 +718,31 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
                     optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 ),
                 interface_types.AllTypes(
                     the_bool=True,
@@ -525,15 +750,31 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
                     optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 ),
                 interface_types.AllTypes(
                     the_bool=True,
@@ -541,26 +782,54 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=datetime.now(),
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 ),
             )
             server.emit_single_date_time(datetime.now())
-            server.emit_single_optional_datetime(None)
-            server.emit_three_date_times(datetime.now(), datetime.now(), datetime.now())
+            server.emit_single_optional_datetime(datetime.now())
+            server.emit_three_date_times(datetime.now(), datetime.now(), None)
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
             server.emit_three_durations(timedelta(seconds=3536), timedelta(seconds=3536), None)
             server.emit_single_binary(b"example binary data")
             server.emit_single_optional_binary(b"example binary data")
             server.emit_three_binaries(b"example binary data", b"example binary data", b"example binary data")
+            server.emit_single_array_of_integers([42, 42])
+            server.emit_single_optional_array_of_strings([42, 42])
+            server.emit_array_of_every_type(
+                [42, 42],
+                [3.14, 3.14],
+                ["apples", "apples"],
+                [interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                [interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                [datetime.now(), datetime.now()],
+                [timedelta(seconds=3536), timedelta(seconds=3536)],
+                [b"example binary data", b"example binary data"],
+            )
 
             sleep(4)
             server.emit_empty()
@@ -580,15 +849,31 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
                     optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 )
             )
             server.emit_single_optional_struct(
@@ -598,15 +883,31 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
                     optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 )
             )
             server.emit_three_structs(
@@ -616,15 +917,31 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=datetime.now(),
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 ),
                 second=interface_types.AllTypes(
                     the_bool=True,
@@ -632,15 +949,31 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
                     optional_date_time=datetime.now(),
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 ),
                 third=interface_types.AllTypes(
                     the_bool=True,
@@ -648,26 +981,54 @@ if __name__ == "__main__":
                     the_number=3.14,
                     the_str="apples",
                     the_enum=interface_types.Numbers.ONE,
+                    an_entry_object=interface_types.Entry(key=42, value="apples"),
                     date_and_time=datetime.now(),
                     time_duration=timedelta(seconds=3536),
                     data=b"example binary data",
                     optional_integer=42,
                     optional_string="apples",
                     optional_enum=interface_types.Numbers.ONE,
-                    optional_date_time=datetime.now(),
+                    optional_entry_object=interface_types.Entry(key=42, value="apples"),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
+                    array_of_integers=[42, 42],
+                    optional_array_of_integers=[42, 42],
+                    array_of_strings=["apples", "apples"],
+                    optional_array_of_strings=["apples", "apples"],
+                    array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                    array_of_datetimes=[datetime.now(), datetime.now()],
+                    optional_array_of_datetimes=[datetime.now(), datetime.now()],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                    optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
                 ),
             )
             server.emit_single_date_time(value=datetime.now())
             server.emit_single_optional_datetime(value=datetime.now())
-            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=datetime.now())
+            server.emit_three_date_times(first=datetime.now(), second=datetime.now(), third=None)
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)
             server.emit_three_durations(first=timedelta(seconds=3536), second=timedelta(seconds=3536), third=None)
             server.emit_single_binary(value=b"example binary data")
             server.emit_single_optional_binary(value=b"example binary data")
             server.emit_three_binaries(first=b"example binary data", second=b"example binary data", third=b"example binary data")
+            server.emit_single_array_of_integers(values=[42, 42])
+            server.emit_single_optional_array_of_strings(values=[42, 42])
+            server.emit_array_of_every_type(
+                first=[42, 42],
+                second=[3.14, 3.14],
+                third=["apples", "apples"],
+                fourth=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+                fifth=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+                sixth=[datetime.now(), datetime.now()],
+                seventh=[timedelta(seconds=3536), timedelta(seconds=3536)],
+                eighth=[b"example binary data", b"example binary data"],
+            )
 
             sleep(16)
         except KeyboardInterrupt:

@@ -266,7 +266,7 @@ ReadWriteStructProperty ReadWriteStructProperty::FromRapidJsonObject(const rapid
 
 void ReadWriteStructProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -297,7 +297,7 @@ ReadWriteOptionalStructProperty ReadWriteOptionalStructProperty::FromRapidJsonOb
 
 void ReadWriteOptionalStructProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (value)
         {
@@ -344,7 +344,7 @@ ReadWriteTwoStructsProperty ReadWriteTwoStructsProperty::FromRapidJsonObject(con
 
 void ReadWriteTwoStructsProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -353,7 +353,7 @@ void ReadWriteTwoStructsProperty::AddToRapidJsonObject(rapidjson::Value& parent,
         parent.AddMember("first", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (second)
         {
@@ -499,7 +499,7 @@ ReadWriteDatetimeProperty ReadWriteDatetimeProperty::FromRapidJsonObject(const r
 
 void ReadWriteDatetimeProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = timePointToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
@@ -529,7 +529,7 @@ ReadWriteOptionalDatetimeProperty ReadWriteOptionalDatetimeProperty::FromRapidJs
 
 void ReadWriteOptionalDatetimeProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = timePointToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
@@ -571,14 +571,14 @@ ReadWriteTwoDatetimesProperty ReadWriteTwoDatetimesProperty::FromRapidJsonObject
 
 void ReadWriteTwoDatetimesProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempFirstStringValue;
         std::string firstIsoString = timePointToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), allocator);
         parent.AddMember("first", tempFirstStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempSecondStringValue;
         std::string secondIsoString = timePointToIsoString(*second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), allocator);
@@ -608,7 +608,7 @@ ReadWriteDurationProperty ReadWriteDurationProperty::FromRapidJsonObject(const r
 
 void ReadWriteDurationProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = durationToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
@@ -638,7 +638,7 @@ ReadWriteOptionalDurationProperty ReadWriteOptionalDurationProperty::FromRapidJs
 
 void ReadWriteOptionalDurationProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = durationToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
@@ -680,14 +680,14 @@ ReadWriteTwoDurationsProperty ReadWriteTwoDurationsProperty::FromRapidJsonObject
 
 void ReadWriteTwoDurationsProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempFirstStringValue;
         std::string firstIsoString = durationToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), allocator);
         parent.AddMember("first", tempFirstStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempSecondStringValue;
         std::string secondIsoString = durationToIsoString(*second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), allocator);
@@ -717,7 +717,7 @@ ReadWriteBinaryProperty ReadWriteBinaryProperty::FromRapidJsonObject(const rapid
 
 void ReadWriteBinaryProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
         std::string valueB64String = base64Encode(value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), allocator);
@@ -747,7 +747,7 @@ ReadWriteOptionalBinaryProperty ReadWriteOptionalBinaryProperty::FromRapidJsonOb
 
 void ReadWriteOptionalBinaryProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
         std::string valueB64String = base64Encode(*value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), allocator);
@@ -789,17 +789,140 @@ ReadWriteTwoBinariesProperty ReadWriteTwoBinariesProperty::FromRapidJsonObject(c
 
 void ReadWriteTwoBinariesProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempFirstStringValue;
         std::string firstB64String = base64Encode(first);
         tempFirstStringValue.SetString(firstB64String.c_str(), firstB64String.size(), allocator);
         parent.AddMember("first", tempFirstStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempSecondStringValue;
         std::string secondB64String = base64Encode(*second);
         tempSecondStringValue.SetString(secondB64String.c_str(), secondB64String.size(), allocator);
         parent.AddMember("second", tempSecondStringValue, allocator);
+    }
+}
+
+ReadWriteListOfStringsProperty ReadWriteListOfStringsProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    ReadWriteListOfStringsProperty readWriteListOfStrings;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<std::string> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsString())
+                    {
+                        tempArray.push_back(item.GetString());
+                    }
+                }
+                readWriteListOfStrings.value = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return readWriteListOfStrings;
+};
+
+void ReadWriteListOfStringsProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: value)
+        {
+            rapidjson::Value tempValueStringValue;
+            tempValueStringValue.SetString(item.c_str(), item.size(), allocator);
+            tempArrayValue.PushBack(tempValueStringValue, allocator);
+        }
+        parent.AddMember("value", tempArrayValue, allocator);
+    }
+}
+
+ReadWriteListsProperty ReadWriteListsProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    ReadWriteListsProperty readWriteLists;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("the_list");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<Numbers> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsInt())
+                    {
+                        tempArray.push_back(static_cast<Numbers>(item.GetInt()));
+                    }
+                }
+                readWriteLists.theList = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("optionalList");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<std::chrono::time_point<std::chrono::system_clock>> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsString())
+                    {
+                        {
+                            std::string tempIsoString = item.GetString();
+                            tempArray.push_back(parseIsoTimestamp(tempIsoString));
+                        }
+                    }
+                }
+                readWriteLists.optionalList = std::move(tempArray);
+            }
+        }
+        else
+        {
+            readWriteLists.optionalList = boost::none;
+        }
+    }
+
+    return readWriteLists;
+};
+
+void ReadWriteListsProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: theList)
+        {
+            tempArrayValue.PushBack(static_cast<int>(item), allocator);
+        }
+        parent.AddMember("the_list", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: *optionalList)
+        {
+            rapidjson::Value tempOptionalListStringValue;
+            std::string itemIsoString = timePointToIsoString(item);
+            tempOptionalListStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), allocator);
+            tempArrayValue.PushBack(tempOptionalListStringValue, allocator);
+        }
+        parent.AddMember("optionalList", tempArrayValue, allocator);
     }
 }

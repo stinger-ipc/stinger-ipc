@@ -14,6 +14,39 @@ auto temp{{arg.name|UpperCamelCase}}IsoString = itr->value.GetString();
 {%-elif arg.arg_type.name.lower() == 'binary'%}
 auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
 {{target}} = base64Decode(temp{{arg.name|UpperCamelCase}}B64String);
+{%elif arg.arg_type.name.lower() == 'array'%}
+{
+    std::vector<{{arg.element.cpp_temp_type}}> tempArray;
+    for (const auto& item : itr->value.GetArray()) {
+        if (item.Is{{arg.element.cpp_rapidjson_type}}()) {
+            {%if arg.element.arg_type.name.lower() == 'primitive'%}
+            tempArray.push_back(item.Get{{arg.element.cpp_rapidjson_type}}());
+            {%elif arg.element.arg_type.name.lower() == 'enum'%}
+            tempArray.push_back(static_cast<{{arg.element.cpp_data_type}}>(item.Get{{arg.element.cpp_rapidjson_type}}()));
+            {%elif arg.element.arg_type.name.lower() == 'struct'%}
+            tempArray.push_back({{arg.element.cpp_type}}::FromRapidJsonObject(item));
+            {%elif arg.element.arg_type.name.lower() == 'datetime'%}
+            {
+                std::string tempIsoString = item.GetString();
+                tempArray.push_back(parseIsoTimestamp(tempIsoString));
+            }
+            {%elif arg.element.arg_type.name.lower() == 'duration'%}
+            {
+                std::string tempIsoString = item.GetString();
+                tempArray.push_back(parseIsoDuration(tempIsoString));
+            }
+            {%elif arg.element.arg_type.name.lower() == 'binary'%}
+            {
+                std::string tempB64String = item.GetString();
+                tempArray.push_back(base64Decode(tempB64String));
+            }
+            {%else%}
+            TEMPLATE ERROR BECAUSE {{arg.element.arg_type.name.lower()}} NOT HANDLED
+            {%endif%}
+        }
+    }
+    {{target}} = std::move(tempArray);
+}
 {%endif%}
 {%endmacro%}
 
