@@ -889,10 +889,7 @@ impl FullServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'favorite_number' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'favorite_number' property: {:?}", e);
                     return FullServer::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'favorite_number' payload".to_string(),
@@ -1014,10 +1011,7 @@ impl FullServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'favorite_foods' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'favorite_foods' property: {:?}", e);
                     return FullServer::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'favorite_foods' payload".to_string(),
@@ -1137,10 +1131,7 @@ impl FullServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'lunch_menu' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'lunch_menu' property: {:?}", e);
                     return FullServer::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'lunch_menu' payload".to_string(),
@@ -1260,10 +1251,7 @@ impl FullServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'family_name' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'family_name' property: {:?}", e);
                     return FullServer::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'family_name' payload".to_string(),
@@ -1385,10 +1373,7 @@ impl FullServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'last_breakfast_time' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'last_breakfast_time' property: {:?}", e);
                     return FullServer::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'last_breakfast_time' payload"
@@ -1517,10 +1502,7 @@ impl FullServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'breakfast_length' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'breakfast_length' property: {:?}", e);
                     return FullServer::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'breakfast_length' payload".to_string(),
@@ -1642,10 +1624,7 @@ impl FullServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'last_birthdays' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'last_birthdays' property: {:?}", e);
                     return FullServer::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'last_birthdays' payload".to_string(),
@@ -1929,9 +1908,7 @@ impl FullServer {
                                 )
                                 .await;
                             } else {
-                                warn!(
-                                    "No response topic found in message properties; cannot send error response."
-                                );
+                                warn!("No response topic found in message properties; cannot send error response.");
                             }
                         }
                     }

@@ -390,9 +390,7 @@ impl WeatherServer {
             }
         } else {
             // Without a response topic, we cannot send a response.
-            info!(
-                "No response topic provided, so no publishing response to `refresh_daily_forecast`."
-            );
+            info!("No response topic provided, so no publishing response to `refresh_daily_forecast`.");
         }
     }
 
@@ -437,9 +435,7 @@ impl WeatherServer {
             }
         } else {
             // Without a response topic, we cannot send a response.
-            info!(
-                "No response topic provided, so no publishing response to `refresh_hourly_forecast`."
-            );
+            info!("No response topic provided, so no publishing response to `refresh_hourly_forecast`.");
         }
     }
 
@@ -484,9 +480,7 @@ impl WeatherServer {
             }
         } else {
             // Without a response topic, we cannot send a response.
-            info!(
-                "No response topic provided, so no publishing response to `refresh_current_conditions`."
-            );
+            info!("No response topic provided, so no publishing response to `refresh_current_conditions`.");
         }
     }
 
@@ -515,10 +509,7 @@ impl WeatherServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'location' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'location' property: {:?}", e);
                     return WeatherServer::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'location' payload".to_string(),
@@ -887,10 +878,7 @@ impl WeatherServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'current_condition_refresh_interval' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'current_condition_refresh_interval' property: {:?}", e);
                     return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'current_condition_refresh_interval' payload".to_string())).await;
                 }
             }
@@ -915,10 +903,7 @@ impl WeatherServer {
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'current_condition_refresh_interval' property: {:?}",
-                    e
-                );
+                error!("Failed to notify local watchers for 'current_condition_refresh_interval' property: {:?}", e);
             }
         };
         WeatherServer::publish_current_condition_refresh_interval_value(
@@ -973,9 +958,7 @@ impl WeatherServer {
 
         // Send value to MQTT if it has changed.
         if !send_result {
-            debug!(
-                "Property 'current_condition_refresh_interval' value not changed, so not notifying watchers."
-            );
+            debug!("Property 'current_condition_refresh_interval' value not changed, so not notifying watchers.");
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
@@ -1023,10 +1006,7 @@ impl WeatherServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'hourly_forecast_refresh_interval' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'hourly_forecast_refresh_interval' property: {:?}", e);
                     return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'hourly_forecast_refresh_interval' payload".to_string())).await;
                 }
             }
@@ -1053,10 +1033,7 @@ impl WeatherServer {
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'hourly_forecast_refresh_interval' property: {:?}",
-                    e
-                );
+                error!("Failed to notify local watchers for 'hourly_forecast_refresh_interval' property: {:?}", e);
             }
         };
         WeatherServer::publish_hourly_forecast_refresh_interval_value(
@@ -1111,9 +1088,7 @@ impl WeatherServer {
 
         // Send value to MQTT if it has changed.
         if !send_result {
-            debug!(
-                "Property 'hourly_forecast_refresh_interval' value not changed, so not notifying watchers."
-            );
+            debug!("Property 'hourly_forecast_refresh_interval' value not changed, so not notifying watchers.");
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
@@ -1161,10 +1136,7 @@ impl WeatherServer {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'daily_forecast_refresh_interval' property: {:?}",
-                        e
-                    );
+                    error!("Failed to parse JSON received over MQTT to update 'daily_forecast_refresh_interval' property: {:?}", e);
                     return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'daily_forecast_refresh_interval' payload".to_string())).await;
                 }
             }
@@ -1191,10 +1163,7 @@ impl WeatherServer {
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
             Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'daily_forecast_refresh_interval' property: {:?}",
-                    e
-                );
+                error!("Failed to notify local watchers for 'daily_forecast_refresh_interval' property: {:?}", e);
             }
         };
         WeatherServer::publish_daily_forecast_refresh_interval_value(
@@ -1249,9 +1218,7 @@ impl WeatherServer {
 
         // Send value to MQTT if it has changed.
         if !send_result {
-            debug!(
-                "Property 'daily_forecast_refresh_interval' value not changed, so not notifying watchers."
-            );
+            debug!("Property 'daily_forecast_refresh_interval' value not changed, so not notifying watchers.");
             return WeatherServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
@@ -1419,9 +1386,7 @@ impl WeatherServer {
                                 )
                                 .await;
                             } else {
-                                warn!(
-                                    "No response topic found in message properties; cannot send error response."
-                                );
+                                warn!("No response topic found in message properties; cannot send error response.");
                             }
                         }
                     }

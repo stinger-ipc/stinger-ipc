@@ -15,7 +15,7 @@ use signal_only_ipc::discovery::SignalOnlyDiscovery;
 #[allow(unused_imports)]
 use signal_only_ipc::payloads::{MethodReturnCode, *};
 use tokio::join;
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 #[tokio::main]

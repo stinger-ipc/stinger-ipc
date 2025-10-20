@@ -246,7 +246,7 @@ WhatTimeIsItRequestArguments WhatTimeIsItRequestArguments::FromRapidJsonObject(c
 
 void WhatTimeIsItRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTheFirstTimeStringValue;
         std::string theFirstTimeIsoString = timePointToIsoString(theFirstTime);
         tempTheFirstTimeStringValue.SetString(theFirstTimeIsoString.c_str(), theFirstTimeIsoString.size(), allocator);
@@ -277,7 +277,7 @@ WhatTimeIsItReturnValues WhatTimeIsItReturnValues::FromRapidJsonObject(const rap
 
 void WhatTimeIsItReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimestampStringValue;
         std::string timestampIsoString = timePointToIsoString(timestamp);
         tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), allocator);
@@ -320,14 +320,14 @@ SetTheTimeRequestArguments SetTheTimeRequestArguments::FromRapidJsonObject(const
 
 void SetTheTimeRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTheFirstTimeStringValue;
         std::string theFirstTimeIsoString = timePointToIsoString(theFirstTime);
         tempTheFirstTimeStringValue.SetString(theFirstTimeIsoString.c_str(), theFirstTimeIsoString.size(), allocator);
         parent.AddMember("the_first_time", tempTheFirstTimeStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTheSecondTimeStringValue;
         std::string theSecondTimeIsoString = timePointToIsoString(theSecondTime);
         tempTheSecondTimeStringValue.SetString(theSecondTimeIsoString.c_str(), theSecondTimeIsoString.size(), allocator);
@@ -369,7 +369,7 @@ SetTheTimeReturnValues SetTheTimeReturnValues::FromRapidJsonObject(const rapidjs
 
 void SetTheTimeReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimestampStringValue;
         std::string timestampIsoString = timePointToIsoString(timestamp);
         tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), allocator);
@@ -406,7 +406,7 @@ ForwardTimeRequestArguments ForwardTimeRequestArguments::FromRapidJsonObject(con
 
 void ForwardTimeRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempAdjustmentStringValue;
         std::string adjustmentIsoString = durationToIsoString(adjustment);
         tempAdjustmentStringValue.SetString(adjustmentIsoString.c_str(), adjustmentIsoString.size(), allocator);
@@ -437,7 +437,7 @@ ForwardTimeReturnValues ForwardTimeReturnValues::FromRapidJsonObject(const rapid
 
 void ForwardTimeReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempNewTimeStringValue;
         std::string newTimeIsoString = timePointToIsoString(newTime);
         tempNewTimeStringValue.SetString(newTimeIsoString.c_str(), newTimeIsoString.size(), allocator);
@@ -468,7 +468,7 @@ HowOffIsTheClockRequestArguments HowOffIsTheClockRequestArguments::FromRapidJson
 
 void HowOffIsTheClockRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempActualTimeStringValue;
         std::string actualTimeIsoString = timePointToIsoString(actualTime);
         tempActualTimeStringValue.SetString(actualTimeIsoString.c_str(), actualTimeIsoString.size(), allocator);
@@ -499,7 +499,7 @@ HowOffIsTheClockReturnValues HowOffIsTheClockReturnValues::FromRapidJsonObject(c
 
 void HowOffIsTheClockReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempDifferenceStringValue;
         std::string differenceIsoString = durationToIsoString(difference);
         tempDifferenceStringValue.SetString(differenceIsoString.c_str(), differenceIsoString.size(), allocator);

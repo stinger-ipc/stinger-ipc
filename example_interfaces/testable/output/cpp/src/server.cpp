@@ -54,6 +54,9 @@ TestAbleServer::TestAbleServer(std::shared_ptr<IBrokerConnection> broker, const 
     _callOneBinaryMethodSubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/method/callOneBinary") % _instanceId).str(), 2);
     _callOptionalBinaryMethodSubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/method/callOptionalBinary") % _instanceId).str(), 2);
     _callThreeBinariesMethodSubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/method/callThreeBinaries") % _instanceId).str(), 2);
+    _callOneListOfIntegersMethodSubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/method/callOneListOfIntegers") % _instanceId).str(), 2);
+    _callOptionalListOfFloatsMethodSubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/method/callOptionalListOfFloats") % _instanceId).str(), 2);
+    _callTwoListsMethodSubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/method/callTwoLists") % _instanceId).str(), 2);
 
     _readWriteIntegerPropertySubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/property/readWriteInteger/setValue") % _instanceId).str(), 1);
     _readOnlyIntegerPropertySubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/property/readOnlyInteger/setValue") % _instanceId).str(), 1);
@@ -79,6 +82,8 @@ TestAbleServer::TestAbleServer(std::shared_ptr<IBrokerConnection> broker, const 
     _readWriteBinaryPropertySubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/property/readWriteBinary/setValue") % _instanceId).str(), 1);
     _readWriteOptionalBinaryPropertySubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/property/readWriteOptionalBinary/setValue") % _instanceId).str(), 1);
     _readWriteTwoBinariesPropertySubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/property/readWriteTwoBinaries/setValue") % _instanceId).str(), 1);
+    _readWriteListOfStringsPropertySubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/property/readWriteListOfStrings/setValue") % _instanceId).str(), 1);
+    _readWriteListsPropertySubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/property/readWriteLists/setValue") % _instanceId).str(), 1);
 
     // Start the service advertisement thread
     _advertisementThreadRunning = true;
@@ -126,6 +131,9 @@ TestAbleServer::~TestAbleServer()
     _broker->Unsubscribe((boost::format("testAble/%1%/method/callOneBinary") % _instanceId).str());
     _broker->Unsubscribe((boost::format("testAble/%1%/method/callOptionalBinary") % _instanceId).str());
     _broker->Unsubscribe((boost::format("testAble/%1%/method/callThreeBinaries") % _instanceId).str());
+    _broker->Unsubscribe((boost::format("testAble/%1%/method/callOneListOfIntegers") % _instanceId).str());
+    _broker->Unsubscribe((boost::format("testAble/%1%/method/callOptionalListOfFloats") % _instanceId).str());
+    _broker->Unsubscribe((boost::format("testAble/%1%/method/callTwoLists") % _instanceId).str());
 
     _broker->Unsubscribe((boost::format("testAble/%1%/property/readWriteInteger/setValue") % _instanceId).str());
     _broker->Unsubscribe((boost::format("testAble/%1%/property/readOnlyInteger/setValue") % _instanceId).str());
@@ -151,6 +159,8 @@ TestAbleServer::~TestAbleServer()
     _broker->Unsubscribe((boost::format("testAble/%1%/property/readWriteBinary/setValue") % _instanceId).str());
     _broker->Unsubscribe((boost::format("testAble/%1%/property/readWriteOptionalBinary/setValue") % _instanceId).str());
     _broker->Unsubscribe((boost::format("testAble/%1%/property/readWriteTwoBinaries/setValue") % _instanceId).str());
+    _broker->Unsubscribe((boost::format("testAble/%1%/property/readWriteListOfStrings/setValue") % _instanceId).str());
+    _broker->Unsubscribe((boost::format("testAble/%1%/property/readWriteLists/setValue") % _instanceId).str());
 }
 
 void TestAbleServer::_receiveMessage(
@@ -844,6 +854,99 @@ void TestAbleServer::_receiveMessage(
         }
     }
 
+    else if ((subscriptionId == _callOneListOfIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testAble/%1%/method/callOneListOfIntegers") % _instanceId).str())))
+    {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as callOneListOfIntegers method request.", topic.c_str());
+        rapidjson::Document doc;
+        try
+        {
+            if (_callOneListOfIntegersHandler)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse  signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject())
+                {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                _callCallOneListOfIntegersHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+
+    else if ((subscriptionId == _callOptionalListOfFloatsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testAble/%1%/method/callOptionalListOfFloats") % _instanceId).str())))
+    {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as callOptionalListOfFloats method request.", topic.c_str());
+        rapidjson::Document doc;
+        try
+        {
+            if (_callOptionalListOfFloatsHandler)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse  signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject())
+                {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                _callCallOptionalListOfFloatsHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+
+    else if ((subscriptionId == _callTwoListsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testAble/%1%/method/callTwoLists") % _instanceId).str())))
+    {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as callTwoLists method request.", topic.c_str());
+        rapidjson::Document doc;
+        try
+        {
+            if (_callTwoListsHandler)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    //Log("Could not JSON parse  signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject())
+                {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                _callCallTwoListsHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+
     if (subscriptionId == _readWriteIntegerPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testAble/%1%/property/readWriteInteger/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_integer property update.", topic.c_str());
@@ -986,6 +1089,18 @@ void TestAbleServer::_receiveMessage(
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_two_binaries property update.", topic.c_str());
         _receiveReadWriteTwoBinariesPropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    }
+
+    else if (subscriptionId == _readWriteListOfStringsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testAble/%1%/property/readWriteListOfStrings/setValue") % _instanceId).str())))
+    {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_list_of_strings property update.", topic.c_str());
+        _receiveReadWriteListOfStringsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    }
+
+    else if (subscriptionId == _readWriteListsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testAble/%1%/property/readWriteLists/setValue") % _instanceId).str())))
+    {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_lists property update.", topic.c_str());
+        _receiveReadWriteListsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 }
 
@@ -1165,7 +1280,7 @@ boost::future<bool> TestAbleServer::emitSingleStructSignal(AllTypes value)
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -1186,7 +1301,7 @@ boost::future<bool> TestAbleServer::emitSingleOptionalStructSignal(boost::option
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (value)
         {
@@ -1212,7 +1327,7 @@ boost::future<bool> TestAbleServer::emitThreeStructsSignal(AllTypes first, AllTy
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -1221,7 +1336,7 @@ boost::future<bool> TestAbleServer::emitThreeStructsSignal(AllTypes first, AllTy
         doc.AddMember("first", tempStructValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -1230,7 +1345,7 @@ boost::future<bool> TestAbleServer::emitThreeStructsSignal(AllTypes first, AllTy
         doc.AddMember("second", tempStructValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (third)
         {
@@ -1256,7 +1371,7 @@ boost::future<bool> TestAbleServer::emitSingleDateTimeSignal(std::chrono::time_p
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = timePointToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), doc.GetAllocator());
@@ -1275,7 +1390,7 @@ boost::future<bool> TestAbleServer::emitSingleOptionalDatetimeSignal(boost::opti
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = timePointToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), doc.GetAllocator());
@@ -1294,21 +1409,21 @@ boost::future<bool> TestAbleServer::emitThreeDateTimesSignal(std::chrono::time_p
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempFirstStringValue;
         std::string firstIsoString = timePointToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), doc.GetAllocator());
         doc.AddMember("first", tempFirstStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempSecondStringValue;
         std::string secondIsoString = timePointToIsoString(second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), doc.GetAllocator());
         doc.AddMember("second", tempSecondStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempThirdStringValue;
         std::string thirdIsoString = timePointToIsoString(*third);
         tempThirdStringValue.SetString(thirdIsoString.c_str(), thirdIsoString.size(), doc.GetAllocator());
@@ -1327,7 +1442,7 @@ boost::future<bool> TestAbleServer::emitSingleDurationSignal(std::chrono::durati
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = durationToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), doc.GetAllocator());
@@ -1346,7 +1461,7 @@ boost::future<bool> TestAbleServer::emitSingleOptionalDurationSignal(boost::opti
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
         std::string valueIsoString = durationToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), doc.GetAllocator());
@@ -1365,21 +1480,21 @@ boost::future<bool> TestAbleServer::emitThreeDurationsSignal(std::chrono::durati
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempFirstStringValue;
         std::string firstIsoString = durationToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), doc.GetAllocator());
         doc.AddMember("first", tempFirstStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempSecondStringValue;
         std::string secondIsoString = durationToIsoString(second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), doc.GetAllocator());
         doc.AddMember("second", tempSecondStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempThirdStringValue;
         std::string thirdIsoString = durationToIsoString(*third);
         tempThirdStringValue.SetString(thirdIsoString.c_str(), thirdIsoString.size(), doc.GetAllocator());
@@ -1398,12 +1513,13 @@ boost::future<bool> TestAbleServer::emitSingleBinarySignal(std::vector<uint8_t> 
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
         std::string valueB64String = base64Encode(value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), doc.GetAllocator());
         doc.AddMember("value", tempValueStringValue, doc.GetAllocator());
     }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -1416,12 +1532,13 @@ boost::future<bool> TestAbleServer::emitSingleOptionalBinarySignal(boost::option
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
         std::string valueB64String = base64Encode(*value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), doc.GetAllocator());
         doc.AddMember("value", tempValueStringValue, doc.GetAllocator());
     }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -1434,31 +1551,179 @@ boost::future<bool> TestAbleServer::emitThreeBinariesSignal(std::vector<uint8_t>
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempFirstStringValue;
         std::string firstB64String = base64Encode(first);
         tempFirstStringValue.SetString(firstB64String.c_str(), firstB64String.size(), doc.GetAllocator());
         doc.AddMember("first", tempFirstStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempSecondStringValue;
         std::string secondB64String = base64Encode(second);
         tempSecondStringValue.SetString(secondB64String.c_str(), secondB64String.size(), doc.GetAllocator());
         doc.AddMember("second", tempSecondStringValue, doc.GetAllocator());
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempThirdStringValue;
         std::string thirdB64String = base64Encode(*third);
         tempThirdStringValue.SetString(thirdB64String.c_str(), thirdB64String.size(), doc.GetAllocator());
         doc.AddMember("third", tempThirdStringValue, doc.GetAllocator());
     }
+
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
     return _broker->Publish((boost::format("testAble/%1%/signal/threeBinaries") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+}
+
+boost::future<bool> TestAbleServer::emitSingleArrayOfIntegersSignal(std::vector<int> values)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: values)
+        {
+            tempArrayValue.PushBack(item, doc.GetAllocator());
+        }
+        doc.AddMember("values", tempArrayValue, doc.GetAllocator());
+    }
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish((boost::format("testAble/%1%/signal/singleArrayOfIntegers") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+}
+
+boost::future<bool> TestAbleServer::emitSingleOptionalArrayOfStringsSignal(boost::optional<std::vector<int>> values)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: *values)
+        {
+            tempArrayValue.PushBack(item, doc.GetAllocator());
+        }
+        doc.AddMember("values", tempArrayValue, doc.GetAllocator());
+    }
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish((boost::format("testAble/%1%/signal/singleOptionalArrayOfStrings") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+}
+
+boost::future<bool> TestAbleServer::emitArrayOfEveryTypeSignal(std::vector<int> first, std::vector<double> second, std::vector<std::string> third, std::vector<Numbers> fourth, std::vector<Entry> fifth, std::vector<std::chrono::time_point<std::chrono::system_clock>> sixth, std::vector<std::chrono::duration<double>> seventh, std::vector<std::vector<uint8_t>> eighth)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: first)
+        {
+            tempArrayValue.PushBack(item, doc.GetAllocator());
+        }
+        doc.AddMember("first", tempArrayValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: second)
+        {
+            tempArrayValue.PushBack(item, doc.GetAllocator());
+        }
+        doc.AddMember("second", tempArrayValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: third)
+        {
+            rapidjson::Value tempThirdStringValue;
+            tempThirdStringValue.SetString(item.c_str(), item.size(), doc.GetAllocator());
+            tempArrayValue.PushBack(tempThirdStringValue, doc.GetAllocator());
+        }
+        doc.AddMember("third", tempArrayValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: fourth)
+        {
+            tempArrayValue.PushBack(static_cast<int>(item), doc.GetAllocator());
+        }
+        doc.AddMember("fourth", tempArrayValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: fifth)
+        {
+            rapidjson::Value tempFifthObjectValue;
+            tempFifthObjectValue.SetObject();
+            item.AddToRapidJsonObject(tempFifthObjectValue, doc.GetAllocator());
+            tempArrayValue.PushBack(tempFifthObjectValue, doc.GetAllocator());
+        }
+        doc.AddMember("fifth", tempArrayValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: sixth)
+        {
+            rapidjson::Value tempSixthStringValue;
+            std::string itemIsoString = timePointToIsoString(item);
+            tempSixthStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), doc.GetAllocator());
+            tempArrayValue.PushBack(tempSixthStringValue, doc.GetAllocator());
+        }
+        doc.AddMember("sixth", tempArrayValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: seventh)
+        {
+            rapidjson::Value tempSeventhStringValue;
+            std::string itemIsoString = durationToIsoString(item);
+            tempSeventhStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), doc.GetAllocator());
+            tempArrayValue.PushBack(tempSeventhStringValue, doc.GetAllocator());
+        }
+        doc.AddMember("seventh", tempArrayValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: eighth)
+        {
+            rapidjson::Value tempEighthStringValue;
+            std::string itemB64String = base64Encode(item);
+            tempEighthStringValue.SetString(itemB64String.c_str(), itemB64String.size(), doc.GetAllocator());
+            tempArrayValue.PushBack(tempEighthStringValue, doc.GetAllocator());
+        }
+        doc.AddMember("eighth", tempArrayValue, doc.GetAllocator());
+    }
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish((boost::format("testAble/%1%/signal/arrayOfEveryType") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestAbleServer::registerCallWithNothingHandler(std::function<void()> func)
@@ -1591,6 +1856,24 @@ void TestAbleServer::registerCallThreeBinariesHandler(std::function<CallThreeBin
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callThreeBinaries method requests.");
     _callThreeBinariesHandler = func;
+}
+
+void TestAbleServer::registerCallOneListOfIntegersHandler(std::function<std::vector<int>(std::vector<int>)> func)
+{
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callOneListOfIntegers method requests.");
+    _callOneListOfIntegersHandler = func;
+}
+
+void TestAbleServer::registerCallOptionalListOfFloatsHandler(std::function<boost::optional<std::vector<double>>(boost::optional<std::vector<double>>)> func)
+{
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callOptionalListOfFloats method requests.");
+    _callOptionalListOfFloatsHandler = func;
+}
+
+void TestAbleServer::registerCallTwoListsHandler(std::function<CallTwoListsReturnValues(std::vector<Numbers>, boost::optional<std::vector<std::string>>)> func)
+{
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle testAble/+/method/callTwoLists method requests.");
+    _callTwoListsHandler = func;
 }
 
 void TestAbleServer::_callCallWithNothingHandler(
@@ -2380,6 +2663,116 @@ void TestAbleServer::_callCallThreeBinariesHandler(
 
     // Method has multiple return values.
     auto returnValues = _callThreeBinariesHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
+
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
+    }
+}
+
+void TestAbleServer::_callCallOneListOfIntegersHandler(
+        const std::string& topic,
+        const rapidjson::Document& doc,
+        const boost::optional<std::string> optCorrelationId,
+        const boost::optional<std::string> optResponseTopic
+) const
+{
+    _broker->Log(LOG_INFO, "Handling call to callOneListOfIntegers");
+    if (!_callOneListOfIntegersHandler)
+    {
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
+
+    auto requestArgs = CallOneListOfIntegersRequestArguments::FromRapidJsonObject(doc);
+
+    // Method has a single return value.
+    auto returnValue = _callOneListOfIntegersHandler(requestArgs.input1);
+    CallOneListOfIntegersReturnValues returnValues = { returnValue };
+
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
+    }
+}
+
+void TestAbleServer::_callCallOptionalListOfFloatsHandler(
+        const std::string& topic,
+        const rapidjson::Document& doc,
+        const boost::optional<std::string> optCorrelationId,
+        const boost::optional<std::string> optResponseTopic
+) const
+{
+    _broker->Log(LOG_INFO, "Handling call to callOptionalListOfFloats");
+    if (!_callOptionalListOfFloatsHandler)
+    {
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
+
+    auto requestArgs = CallOptionalListOfFloatsRequestArguments::FromRapidJsonObject(doc);
+
+    // Method has a single return value.
+    auto returnValue = _callOptionalListOfFloatsHandler(requestArgs.input1);
+    CallOptionalListOfFloatsReturnValues returnValues = { returnValue };
+
+    if (optResponseTopic)
+    {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+        MqttProperties mqttProps;
+        mqttProps.correlationId = optCorrelationId;
+        mqttProps.returnCode = MethodReturnCode::SUCCESS;
+        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
+    }
+}
+
+void TestAbleServer::_callCallTwoListsHandler(
+        const std::string& topic,
+        const rapidjson::Document& doc,
+        const boost::optional<std::string> optCorrelationId,
+        const boost::optional<std::string> optResponseTopic
+) const
+{
+    _broker->Log(LOG_INFO, "Handling call to callTwoLists");
+    if (!_callTwoListsHandler)
+    {
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
+
+    auto requestArgs = CallTwoListsRequestArguments::FromRapidJsonObject(doc);
+
+    // Method has multiple return values.
+    auto returnValues = _callTwoListsHandler(requestArgs.input1, requestArgs.input2);
 
     if (optResponseTopic)
     {
@@ -4412,6 +4805,174 @@ void TestAbleServer::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
         _lastReadWriteTwoBinariesPropertyVersion++;
     }
     republishReadWriteTwoBinariesProperty();
+}
+
+boost::optional<std::vector<std::string>> TestAbleServer::getReadWriteListOfStringsProperty() const
+{
+    std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyMutex);
+    if (_readWriteListOfStringsProperty)
+    {
+        return _readWriteListOfStringsProperty->value;
+    }
+    return boost::none;
+}
+
+void TestAbleServer::registerReadWriteListOfStringsPropertyCallback(const std::function<void(std::vector<std::string> value)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyCallbacksMutex);
+    _readWriteListOfStringsPropertyCallbacks.push_back(cb);
+}
+
+void TestAbleServer::updateReadWriteListOfStringsProperty(std::vector<std::string> value)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyMutex);
+        _readWriteListOfStringsProperty = ReadWriteListOfStringsProperty{ value };
+        _lastReadWriteListOfStringsPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyCallbacksMutex);
+        for (const auto& cb: _readWriteListOfStringsPropertyCallbacks)
+        {
+            cb(value);
+        }
+    }
+    republishReadWriteListOfStringsProperty();
+}
+
+void TestAbleServer::republishReadWriteListOfStringsProperty() const
+{
+    std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyMutex);
+    rapidjson::Document doc;
+    if (_readWriteListOfStringsProperty)
+    {
+        doc.SetObject();
+        _readWriteListOfStringsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    }
+    else
+    {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    mqttProps.propertyVersion = _lastReadWriteListOfStringsPropertyVersion;
+    _broker->Publish((boost::format("testAble/%1%/property/readWriteListOfStrings/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+}
+
+void TestAbleServer::_receiveReadWriteListOfStringsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse read_write_list_of_strings property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull())
+    {
+        throw std::runtime_error("Received read_write_list_of_strings payload is not an object or null");
+    }
+
+    // TODO: Check _lastReadWriteListOfStringsPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 1 values into struct.
+    ReadWriteListOfStringsProperty tempValue = ReadWriteListOfStringsProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyMutex);
+        _readWriteListOfStringsProperty = tempValue;
+        _lastReadWriteListOfStringsPropertyVersion++;
+    }
+    republishReadWriteListOfStringsProperty();
+}
+
+boost::optional<ReadWriteListsProperty> TestAbleServer::getReadWriteListsProperty() const
+{
+    std::lock_guard<std::mutex> lock(_readWriteListsPropertyMutex);
+    if (_readWriteListsProperty)
+    {
+        return *_readWriteListsProperty;
+    }
+    return boost::none;
+}
+
+void TestAbleServer::registerReadWriteListsPropertyCallback(const std::function<void(std::vector<Numbers> theList, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_readWriteListsPropertyCallbacksMutex);
+    _readWriteListsPropertyCallbacks.push_back(cb);
+}
+
+void TestAbleServer::updateReadWriteListsProperty(std::vector<Numbers> theList, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_readWriteListsPropertyMutex);
+        _readWriteListsProperty = ReadWriteListsProperty{ theList, optionalList };
+        _lastReadWriteListsPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_readWriteListsPropertyCallbacksMutex);
+        for (const auto& cb: _readWriteListsPropertyCallbacks)
+        {
+            cb(theList, optionalList);
+        }
+    }
+    republishReadWriteListsProperty();
+}
+
+void TestAbleServer::republishReadWriteListsProperty() const
+{
+    std::lock_guard<std::mutex> lock(_readWriteListsPropertyMutex);
+    rapidjson::Document doc;
+    if (_readWriteListsProperty)
+    {
+        doc.SetObject();
+        _readWriteListsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    }
+    else
+    {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    mqttProps.propertyVersion = _lastReadWriteListsPropertyVersion;
+    _broker->Publish((boost::format("testAble/%1%/property/readWriteLists/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+}
+
+void TestAbleServer::_receiveReadWriteListsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse read_write_lists property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull())
+    {
+        throw std::runtime_error("Received read_write_lists payload is not an object or null");
+    }
+
+    // TODO: Check _lastReadWriteListsPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 2 values into struct.
+    ReadWriteListsProperty tempValue = ReadWriteListsProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_readWriteListsPropertyMutex);
+        _readWriteListsProperty = tempValue;
+        _lastReadWriteListsPropertyVersion++;
+    }
+    republishReadWriteListsProperty();
 }
 
 void TestAbleServer::_advertisementThreadLoop()

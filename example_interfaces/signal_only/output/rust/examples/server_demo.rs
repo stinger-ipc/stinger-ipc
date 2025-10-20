@@ -8,7 +8,7 @@ use std::any::Any;
 
 use mqttier::{Connection, MqttierClient, MqttierOptions};
 use signal_only_ipc::server::SignalOnlyServer;
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 
 #[allow(unused_imports)]
 use signal_only_ipc::payloads::{MethodReturnCode, *};

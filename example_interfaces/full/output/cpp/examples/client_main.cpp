@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     // Call each method with example values.
 
     // ----------------------METHOD ADD_NUMBERS-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `addNumbers` method call.
         std::cout << "CALLING ADD_NUMBERS" << std::endl;
         auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
         auto addNumbersStatus = addNumbersResultFuture.wait_for(boost::chrono::seconds(5));
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
     }
 
     // ----------------------METHOD DO_SOMETHING-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `doSomething` method call.
         std::cout << "CALLING DO_SOMETHING" << std::endl;
         auto doSomethingResultFuture = client.doSomething("apples");
         auto doSomethingStatus = doSomethingResultFuture.wait_for(boost::chrono::seconds(5));
@@ -141,7 +141,7 @@ int main(int argc, char** argv)
     }
 
     // ----------------------METHOD ECHO-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `echo` method call.
         std::cout << "CALLING ECHO" << std::endl;
         auto echoResultFuture = client.echo("apples");
         auto echoStatus = echoResultFuture.wait_for(boost::chrono::seconds(5));
@@ -158,7 +158,7 @@ int main(int argc, char** argv)
     }
 
     // ----------------------METHOD WHAT_TIME_IS_IT-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `what_time_is_it` method call.
         std::cout << "CALLING WHAT_TIME_IS_IT" << std::endl;
         auto whatTimeIsItResultFuture = client.whatTimeIsIt(std::chrono::system_clock::now());
         auto whatTimeIsItStatus = whatTimeIsItResultFuture.wait_for(boost::chrono::seconds(5));
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
     }
 
     // ----------------------METHOD SET_THE_TIME-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `set_the_time` method call.
         std::cout << "CALLING SET_THE_TIME" << std::endl;
         auto setTheTimeResultFuture = client.setTheTime(std::chrono::system_clock::now(), std::chrono::system_clock::now());
         auto setTheTimeStatus = setTheTimeResultFuture.wait_for(boost::chrono::seconds(5));
@@ -192,7 +192,7 @@ int main(int argc, char** argv)
     }
 
     // ----------------------METHOD FORWARD_TIME-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `forward_time` method call.
         std::cout << "CALLING FORWARD_TIME" << std::endl;
         auto forwardTimeResultFuture = client.forwardTime(std::chrono::duration<double>(3536));
         auto forwardTimeStatus = forwardTimeResultFuture.wait_for(boost::chrono::seconds(5));
@@ -209,7 +209,7 @@ int main(int argc, char** argv)
     }
 
     // ----------------------METHOD HOW_OFF_IS_THE_CLOCK-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `how_off_is_the_clock` method call.
         std::cout << "CALLING HOW_OFF_IS_THE_CLOCK" << std::endl;
         auto howOffIsTheClockResultFuture = client.howOffIsTheClock(std::chrono::system_clock::now());
         auto howOffIsTheClockStatus = howOffIsTheClockResultFuture.wait_for(boost::chrono::seconds(5));

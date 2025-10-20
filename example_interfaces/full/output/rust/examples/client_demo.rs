@@ -15,7 +15,7 @@ use full_ipc::discovery::FullDiscovery;
 use full_ipc::payloads::{MethodReturnCode, *};
 use mqttier::{Connection, MqttierClient, MqttierOptions};
 use tokio::join;
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 #[tokio::main]

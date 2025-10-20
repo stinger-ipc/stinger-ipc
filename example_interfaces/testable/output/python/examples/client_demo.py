@@ -179,6 +179,43 @@ if __name__ == "__main__":
         """
         print(f"Got a 'threeBinaries' signal: first={ first } second={ second } third={ third } ")
 
+    @client_builder.receive_single_array_of_integers
+    def print_singleArrayOfIntegers_receipt(values: list[int]):
+        """
+        @param values list[int] The array of integers.
+        """
+        print(f"Got a 'singleArrayOfIntegers' signal: values={ values } ")
+
+    @client_builder.receive_single_optional_array_of_strings
+    def print_singleOptionalArrayOfStrings_receipt(values: list[int]):
+        """
+        @param values list[int] The array of integers.
+        """
+        print(f"Got a 'singleOptionalArrayOfStrings' signal: values={ values } ")
+
+    @client_builder.receive_array_of_every_type
+    def print_arrayOfEveryType_receipt(
+        first: list[int],
+        second: list[float],
+        third: list[str],
+        fourth: list[interface_types.Numbers],
+        fifth: list[interface_types.Entry],
+        sixth: list[datetime.datetime],
+        seventh: list[datetime.timedelta],
+        eighth: list[bytes],
+    ):
+        """
+        @param first list[int] The first array of integers.
+        @param second list[float] The second array of floats.
+        @param third list[str] The third array of strings.
+        @param fourth list[interface_types.Numbers] The fourth array of enums.
+        @param fifth list[interface_types.Entry] The fifth array of structs.
+        @param sixth list[datetime.datetime] The sixth array of date and time values.
+        @param seventh list[datetime.timedelta] The seventh array of duration values.
+        @param eighth list[bytes] The eighth array of binary values.
+        """
+        print(f"Got a 'arrayOfEveryType' signal: first={ first } second={ second } third={ third } fourth={ fourth } fifth={ fifth } sixth={ sixth } seventh={ seventh } eighth={ eighth } ")
+
     @client_builder.read_write_integer_updated
     def print_new_read_write_integer_value(value: int):
         """ """
@@ -299,6 +336,16 @@ if __name__ == "__main__":
         """ """
         print(f"Property 'read_write_two_binaries' has been updated to: {value}")
 
+    @client_builder.read_write_list_of_strings_updated
+    def print_new_read_write_list_of_strings_value(value: list[str]):
+        """ """
+        print(f"Property 'read_write_list_of_strings' has been updated to: {value}")
+
+    @client_builder.read_write_lists_updated
+    def print_new_read_write_lists_value(value: interface_types.ReadWriteListsProperty):
+        """ """
+        print(f"Property 'read_write_lists' has been updated to: {value}")
+
     discovery = TestAbleClientDiscoverer(conn, client_builder)
     fut_client = discovery.get_singleton_client()
     try:
@@ -387,15 +434,31 @@ if __name__ == "__main__":
             the_number=3.14,
             the_str="apples",
             the_enum=interface_types.Numbers.ONE,
+            an_entry_object=interface_types.Entry(key=42, value="apples"),
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
-            optional_date_time=datetime.now(),
+            optional_entry_object=interface_types.Entry(key=42, value="apples"),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
+            array_of_integers=[42, 42],
+            optional_array_of_integers=[42, 42],
+            array_of_strings=["apples", "apples"],
+            optional_array_of_strings=["apples", "apples"],
+            array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            array_of_datetimes=[datetime.now(), datetime.now()],
+            optional_array_of_datetimes=[datetime.now(), datetime.now()],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
         )
     )
     try:
@@ -411,15 +474,31 @@ if __name__ == "__main__":
             the_number=3.14,
             the_str="apples",
             the_enum=interface_types.Numbers.ONE,
+            an_entry_object=interface_types.Entry(key=42, value="apples"),
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
+            optional_entry_object=interface_types.Entry(key=42, value="apples"),
             optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
+            array_of_integers=[42, 42],
+            optional_array_of_integers=[42, 42],
+            array_of_strings=["apples", "apples"],
+            optional_array_of_strings=["apples", "apples"],
+            array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            array_of_datetimes=[datetime.now(), datetime.now()],
+            optional_array_of_datetimes=[datetime.now(), datetime.now()],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
         )
     )
     try:
@@ -435,15 +514,31 @@ if __name__ == "__main__":
             the_number=3.14,
             the_str="apples",
             the_enum=interface_types.Numbers.ONE,
+            an_entry_object=interface_types.Entry(key=42, value="apples"),
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
+            optional_entry_object=interface_types.Entry(key=42, value="apples"),
             optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
+            array_of_integers=[42, 42],
+            optional_array_of_integers=[42, 42],
+            array_of_strings=["apples", "apples"],
+            optional_array_of_strings=["apples", "apples"],
+            array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            array_of_datetimes=[datetime.now(), datetime.now()],
+            optional_array_of_datetimes=[datetime.now(), datetime.now()],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
         ),
         input2=interface_types.AllTypes(
             the_bool=True,
@@ -451,15 +546,31 @@ if __name__ == "__main__":
             the_number=3.14,
             the_str="apples",
             the_enum=interface_types.Numbers.ONE,
+            an_entry_object=interface_types.Entry(key=42, value="apples"),
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
+            optional_entry_object=interface_types.Entry(key=42, value="apples"),
             optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
+            array_of_integers=[42, 42],
+            optional_array_of_integers=[42, 42],
+            array_of_strings=["apples", "apples"],
+            optional_array_of_strings=["apples", "apples"],
+            array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            array_of_datetimes=[datetime.now(), datetime.now()],
+            optional_array_of_datetimes=[datetime.now(), datetime.now()],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
         ),
         input3=interface_types.AllTypes(
             the_bool=True,
@@ -467,15 +578,31 @@ if __name__ == "__main__":
             the_number=3.14,
             the_str="apples",
             the_enum=interface_types.Numbers.ONE,
+            an_entry_object=interface_types.Entry(key=42, value="apples"),
             date_and_time=datetime.now(),
             time_duration=timedelta(seconds=3536),
             data=b"example binary data",
             optional_integer=42,
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
+            optional_entry_object=interface_types.Entry(key=42, value="apples"),
             optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
+            array_of_integers=[42, 42],
+            optional_array_of_integers=[42, 42],
+            array_of_strings=["apples", "apples"],
+            optional_array_of_strings=["apples", "apples"],
+            array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
+            array_of_datetimes=[datetime.now(), datetime.now()],
+            optional_array_of_datetimes=[datetime.now(), datetime.now()],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
         ),
     )
     try:
@@ -491,7 +618,7 @@ if __name__ == "__main__":
         print(f"Timed out waiting for response to 'call_one_date_time' call")
 
     print("Making call to 'call_optional_date_time'")
-    future_resp = client.call_optional_date_time(input1=datetime.now())
+    future_resp = client.call_optional_date_time(input1=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
@@ -545,6 +672,27 @@ if __name__ == "__main__":
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_three_binaries' call")
+
+    print("Making call to 'call_one_list_of_integers'")
+    future_resp = client.call_one_list_of_integers(input1=[42, 42])
+    try:
+        print(f"RESULT:  {future_resp.result(5)}")
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'call_one_list_of_integers' call")
+
+    print("Making call to 'call_optional_list_of_floats'")
+    future_resp = client.call_optional_list_of_floats(input1=[3.14, 3.14])
+    try:
+        print(f"RESULT:  {future_resp.result(5)}")
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'call_optional_list_of_floats' call")
+
+    print("Making call to 'call_two_lists'")
+    future_resp = client.call_two_lists(input1=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], input2=["apples", "apples"])
+    try:
+        print(f"RESULT:  {future_resp.result(5)}")
+    except futures.TimeoutError:
+        print(f"Timed out waiting for response to 'call_two_lists' call")
 
     print("Ctrl-C will stop the program.")
     signal.pause()

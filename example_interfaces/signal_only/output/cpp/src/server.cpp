@@ -144,7 +144,7 @@ boost::future<bool> SignalOnlyServer::emitNowSignal(std::chrono::time_point<std:
     rapidjson::Document doc;
     doc.SetObject();
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimestampStringValue;
         std::string timestampIsoString = timePointToIsoString(timestamp);
         tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), doc.GetAllocator());

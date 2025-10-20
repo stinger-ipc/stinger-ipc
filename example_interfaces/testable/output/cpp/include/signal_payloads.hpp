@@ -200,3 +200,34 @@ struct ThreeBinariesPayload
     std::vector<uint8_t> second;
     boost::optional<std::vector<uint8_t>> third;
 };
+
+struct SingleArrayOfIntegersPayload
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static SingleArrayOfIntegersPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    std::vector<int> values;
+};
+
+struct SingleOptionalArrayOfStringsPayload
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static SingleOptionalArrayOfStringsPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    boost::optional<std::vector<int>> values;
+};
+
+struct ArrayOfEveryTypePayload
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static ArrayOfEveryTypePayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    std::vector<int> first;
+    std::vector<double> second;
+    std::vector<std::string> third;
+    std::vector<Numbers> fourth;
+    std::vector<Entry> fifth;
+    std::vector<std::chrono::time_point<std::chrono::system_clock>> sixth;
+    std::vector<std::chrono::duration<double>> seventh;
+    std::vector<std::vector<uint8_t>> eighth;
+};

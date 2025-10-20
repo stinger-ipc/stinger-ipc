@@ -388,3 +388,53 @@ struct CallThreeBinariesReturnValues
     std::vector<uint8_t> output2;
     boost::optional<std::vector<uint8_t>> output3;
 };
+
+struct CallOneListOfIntegersRequestArguments
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static CallOneListOfIntegersRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    std::vector<int> input1;
+};
+
+struct CallOneListOfIntegersReturnValues
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static CallOneListOfIntegersReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    std::vector<int> output1;
+};
+
+struct CallOptionalListOfFloatsRequestArguments
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static CallOptionalListOfFloatsRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    boost::optional<std::vector<double>> input1;
+};
+
+struct CallOptionalListOfFloatsReturnValues
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static CallOptionalListOfFloatsReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    boost::optional<std::vector<double>> output1;
+};
+
+struct CallTwoListsRequestArguments
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static CallTwoListsRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    std::vector<Numbers> input1;
+    boost::optional<std::vector<std::string>> input2;
+};
+
+struct CallTwoListsReturnValues
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static CallTwoListsReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    std::vector<Numbers> output1;
+    boost::optional<std::vector<std::string>> output2;
+};

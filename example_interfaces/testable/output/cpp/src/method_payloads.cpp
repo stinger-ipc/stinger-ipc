@@ -704,7 +704,7 @@ CallOneStructRequestArguments CallOneStructRequestArguments::FromRapidJsonObject
 
 void CallOneStructRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -736,7 +736,7 @@ CallOneStructReturnValues CallOneStructReturnValues::FromRapidJsonObject(const r
 
 void CallOneStructReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -768,7 +768,7 @@ CallOptionalStructRequestArguments CallOptionalStructRequestArguments::FromRapid
 
 void CallOptionalStructRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (input1)
         {
@@ -805,7 +805,7 @@ CallOptionalStructReturnValues CallOptionalStructReturnValues::FromRapidJsonObje
 
 void CallOptionalStructReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (output1)
         {
@@ -864,7 +864,7 @@ CallThreeStructsRequestArguments CallThreeStructsRequestArguments::FromRapidJson
 
 void CallThreeStructsRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (input1)
         {
@@ -878,7 +878,7 @@ void CallThreeStructsRequestArguments::AddToRapidJsonObject(rapidjson::Value& pa
         parent.AddMember("input1", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -887,7 +887,7 @@ void CallThreeStructsRequestArguments::AddToRapidJsonObject(rapidjson::Value& pa
         parent.AddMember("input2", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -941,7 +941,7 @@ CallThreeStructsReturnValues CallThreeStructsReturnValues::FromRapidJsonObject(c
 
 void CallThreeStructsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
         if (output1)
         {
@@ -955,7 +955,7 @@ void CallThreeStructsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent
         parent.AddMember("output1", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -964,7 +964,7 @@ void CallThreeStructsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent
         parent.AddMember("output2", tempStructValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
 
         tempStructValue.SetObject();
@@ -997,7 +997,7 @@ CallOneDateTimeRequestArguments CallOneDateTimeRequestArguments::FromRapidJsonOb
 
 void CallOneDateTimeRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput1StringValue;
         std::string input1IsoString = timePointToIsoString(input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
@@ -1028,7 +1028,7 @@ CallOneDateTimeReturnValues CallOneDateTimeReturnValues::FromRapidJsonObject(con
 
 void CallOneDateTimeReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput1StringValue;
         std::string output1IsoString = timePointToIsoString(output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
@@ -1059,7 +1059,7 @@ CallOptionalDateTimeRequestArguments CallOptionalDateTimeRequestArguments::FromR
 
 void CallOptionalDateTimeRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput1StringValue;
         std::string input1IsoString = timePointToIsoString(*input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
@@ -1090,7 +1090,7 @@ CallOptionalDateTimeReturnValues CallOptionalDateTimeReturnValues::FromRapidJson
 
 void CallOptionalDateTimeReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput1StringValue;
         std::string output1IsoString = timePointToIsoString(*output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
@@ -1145,21 +1145,21 @@ CallThreeDateTimesRequestArguments CallThreeDateTimesRequestArguments::FromRapid
 
 void CallThreeDateTimesRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput1StringValue;
         std::string input1IsoString = timePointToIsoString(input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput2StringValue;
         std::string input2IsoString = timePointToIsoString(input2);
         tempInput2StringValue.SetString(input2IsoString.c_str(), input2IsoString.size(), allocator);
         parent.AddMember("input2", tempInput2StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput3StringValue;
         std::string input3IsoString = timePointToIsoString(*input3);
         tempInput3StringValue.SetString(input3IsoString.c_str(), input3IsoString.size(), allocator);
@@ -1214,21 +1214,21 @@ CallThreeDateTimesReturnValues CallThreeDateTimesReturnValues::FromRapidJsonObje
 
 void CallThreeDateTimesReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput1StringValue;
         std::string output1IsoString = timePointToIsoString(output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput2StringValue;
         std::string output2IsoString = timePointToIsoString(output2);
         tempOutput2StringValue.SetString(output2IsoString.c_str(), output2IsoString.size(), allocator);
         parent.AddMember("output2", tempOutput2StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput3StringValue;
         std::string output3IsoString = timePointToIsoString(*output3);
         tempOutput3StringValue.SetString(output3IsoString.c_str(), output3IsoString.size(), allocator);
@@ -1259,7 +1259,7 @@ CallOneDurationRequestArguments CallOneDurationRequestArguments::FromRapidJsonOb
 
 void CallOneDurationRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput1StringValue;
         std::string input1IsoString = durationToIsoString(input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
@@ -1290,7 +1290,7 @@ CallOneDurationReturnValues CallOneDurationReturnValues::FromRapidJsonObject(con
 
 void CallOneDurationReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput1StringValue;
         std::string output1IsoString = durationToIsoString(output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
@@ -1321,7 +1321,7 @@ CallOptionalDurationRequestArguments CallOptionalDurationRequestArguments::FromR
 
 void CallOptionalDurationRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput1StringValue;
         std::string input1IsoString = durationToIsoString(*input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
@@ -1352,7 +1352,7 @@ CallOptionalDurationReturnValues CallOptionalDurationReturnValues::FromRapidJson
 
 void CallOptionalDurationReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput1StringValue;
         std::string output1IsoString = durationToIsoString(*output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
@@ -1407,21 +1407,21 @@ CallThreeDurationsRequestArguments CallThreeDurationsRequestArguments::FromRapid
 
 void CallThreeDurationsRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput1StringValue;
         std::string input1IsoString = durationToIsoString(input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput2StringValue;
         std::string input2IsoString = durationToIsoString(input2);
         tempInput2StringValue.SetString(input2IsoString.c_str(), input2IsoString.size(), allocator);
         parent.AddMember("input2", tempInput2StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput3StringValue;
         std::string input3IsoString = durationToIsoString(*input3);
         tempInput3StringValue.SetString(input3IsoString.c_str(), input3IsoString.size(), allocator);
@@ -1476,21 +1476,21 @@ CallThreeDurationsReturnValues CallThreeDurationsReturnValues::FromRapidJsonObje
 
 void CallThreeDurationsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput1StringValue;
         std::string output1IsoString = durationToIsoString(output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput2StringValue;
         std::string output2IsoString = durationToIsoString(output2);
         tempOutput2StringValue.SetString(output2IsoString.c_str(), output2IsoString.size(), allocator);
         parent.AddMember("output2", tempOutput2StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput3StringValue;
         std::string output3IsoString = durationToIsoString(*output3);
         tempOutput3StringValue.SetString(output3IsoString.c_str(), output3IsoString.size(), allocator);
@@ -1521,7 +1521,7 @@ CallOneBinaryRequestArguments CallOneBinaryRequestArguments::FromRapidJsonObject
 
 void CallOneBinaryRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput1StringValue;
         std::string input1B64String = base64Encode(input1);
         tempInput1StringValue.SetString(input1B64String.c_str(), input1B64String.size(), allocator);
@@ -1552,7 +1552,7 @@ CallOneBinaryReturnValues CallOneBinaryReturnValues::FromRapidJsonObject(const r
 
 void CallOneBinaryReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput1StringValue;
         std::string output1B64String = base64Encode(output1);
         tempOutput1StringValue.SetString(output1B64String.c_str(), output1B64String.size(), allocator);
@@ -1583,7 +1583,7 @@ CallOptionalBinaryRequestArguments CallOptionalBinaryRequestArguments::FromRapid
 
 void CallOptionalBinaryRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput1StringValue;
         std::string input1B64String = base64Encode(*input1);
         tempInput1StringValue.SetString(input1B64String.c_str(), input1B64String.size(), allocator);
@@ -1614,7 +1614,7 @@ CallOptionalBinaryReturnValues CallOptionalBinaryReturnValues::FromRapidJsonObje
 
 void CallOptionalBinaryReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput1StringValue;
         std::string output1B64String = base64Encode(*output1);
         tempOutput1StringValue.SetString(output1B64String.c_str(), output1B64String.size(), allocator);
@@ -1669,21 +1669,21 @@ CallThreeBinariesRequestArguments CallThreeBinariesRequestArguments::FromRapidJs
 
 void CallThreeBinariesRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput1StringValue;
         std::string input1B64String = base64Encode(input1);
         tempInput1StringValue.SetString(input1B64String.c_str(), input1B64String.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput2StringValue;
         std::string input2B64String = base64Encode(input2);
         tempInput2StringValue.SetString(input2B64String.c_str(), input2B64String.size(), allocator);
         parent.AddMember("input2", tempInput2StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput3StringValue;
         std::string input3B64String = base64Encode(*input3);
         tempInput3StringValue.SetString(input3B64String.c_str(), input3B64String.size(), allocator);
@@ -1738,24 +1738,348 @@ CallThreeBinariesReturnValues CallThreeBinariesReturnValues::FromRapidJsonObject
 
 void CallThreeBinariesReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput1StringValue;
         std::string output1B64String = base64Encode(output1);
         tempOutput1StringValue.SetString(output1B64String.c_str(), output1B64String.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput2StringValue;
         std::string output2B64String = base64Encode(output2);
         tempOutput2StringValue.SetString(output2B64String.c_str(), output2B64String.size(), allocator);
         parent.AddMember("output2", tempOutput2StringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput3StringValue;
         std::string output3B64String = base64Encode(*output3);
         tempOutput3StringValue.SetString(output3B64String.c_str(), output3B64String.size(), allocator);
         parent.AddMember("output3", tempOutput3StringValue, allocator);
+    }
+}
+
+// --- (De-)Serialization for callOneListOfIntegers method request arguments ---
+CallOneListOfIntegersRequestArguments CallOneListOfIntegersRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    CallOneListOfIntegersRequestArguments callOneListOfIntegersArgs;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<int> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsInt())
+                    {
+                        tempArray.push_back(item.GetInt());
+                    }
+                }
+                callOneListOfIntegersArgs.input1 = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return callOneListOfIntegersArgs;
+};
+
+void CallOneListOfIntegersRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: input1)
+        {
+            tempArrayValue.PushBack(item, allocator);
+        }
+        parent.AddMember("input1", tempArrayValue, allocator);
+    }
+}
+
+// --- (De-)Serialization for callOneListOfIntegers method return type ---
+CallOneListOfIntegersReturnValues CallOneListOfIntegersReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    CallOneListOfIntegersReturnValues callOneListOfIntegersRc;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<int> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsInt())
+                    {
+                        tempArray.push_back(item.GetInt());
+                    }
+                }
+                callOneListOfIntegersRc.output1 = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+
+    return callOneListOfIntegersRc;
+};
+
+void CallOneListOfIntegersReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: output1)
+        {
+            tempArrayValue.PushBack(item, allocator);
+        }
+        parent.AddMember("output1", tempArrayValue, allocator);
+    }
+}
+
+// --- (De-)Serialization for callOptionalListOfFloats method request arguments ---
+CallOptionalListOfFloatsRequestArguments CallOptionalListOfFloatsRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    CallOptionalListOfFloatsRequestArguments callOptionalListOfFloatsArgs;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<double> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsDouble())
+                    {
+                        tempArray.push_back(item.GetDouble());
+                    }
+                }
+                callOptionalListOfFloatsArgs.input1 = std::move(tempArray);
+            }
+        }
+        else
+        {
+            callOptionalListOfFloatsArgs.input1 = boost::none;
+        }
+    }
+
+    return callOptionalListOfFloatsArgs;
+};
+
+void CallOptionalListOfFloatsRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: *input1)
+        {
+            tempArrayValue.PushBack(item, allocator);
+        }
+        parent.AddMember("input1", tempArrayValue, allocator);
+    }
+}
+
+// --- (De-)Serialization for callOptionalListOfFloats method return type ---
+CallOptionalListOfFloatsReturnValues CallOptionalListOfFloatsReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    CallOptionalListOfFloatsReturnValues callOptionalListOfFloatsRc;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<double> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsDouble())
+                    {
+                        tempArray.push_back(item.GetDouble());
+                    }
+                }
+                callOptionalListOfFloatsRc.output1 = std::move(tempArray);
+            }
+        }
+        else
+        {
+            callOptionalListOfFloatsRc.output1 = boost::none;
+        }
+    }
+
+    return callOptionalListOfFloatsRc;
+};
+
+void CallOptionalListOfFloatsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: *output1)
+        {
+            tempArrayValue.PushBack(item, allocator);
+        }
+        parent.AddMember("output1", tempArrayValue, allocator);
+    }
+}
+
+// --- (De-)Serialization for callTwoLists method request arguments ---
+CallTwoListsRequestArguments CallTwoListsRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    CallTwoListsRequestArguments callTwoListsArgs;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<Numbers> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsInt())
+                    {
+                        tempArray.push_back(static_cast<Numbers>(item.GetInt()));
+                    }
+                }
+                callTwoListsArgs.input1 = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input2");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<std::string> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsString())
+                    {
+                        tempArray.push_back(item.GetString());
+                    }
+                }
+                callTwoListsArgs.input2 = std::move(tempArray);
+            }
+        }
+        else
+        {
+            callTwoListsArgs.input2 = boost::none;
+        }
+    }
+
+    return callTwoListsArgs;
+};
+
+void CallTwoListsRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: input1)
+        {
+            tempArrayValue.PushBack(static_cast<int>(item), allocator);
+        }
+        parent.AddMember("input1", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: *input2)
+        {
+            rapidjson::Value tempInput2StringValue;
+            tempInput2StringValue.SetString(item.c_str(), item.size(), allocator);
+            tempArrayValue.PushBack(tempInput2StringValue, allocator);
+        }
+        parent.AddMember("input2", tempArrayValue, allocator);
+    }
+}
+
+// --- (De-)Serialization for callTwoLists method return type ---
+CallTwoListsReturnValues CallTwoListsReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    CallTwoListsReturnValues callTwoListsRc;
+
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<Numbers> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsInt())
+                    {
+                        tempArray.push_back(static_cast<Numbers>(item.GetInt()));
+                    }
+                }
+                callTwoListsRc.output1 = std::move(tempArray);
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Received payload doesn't have required value/type");
+        }
+    }
+    { // Scoping
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output2");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
+        {
+            {
+                std::vector<std::string> tempArray;
+                for (const auto& item: itr->value.GetArray())
+                {
+                    if (item.IsString())
+                    {
+                        tempArray.push_back(item.GetString());
+                    }
+                }
+                callTwoListsRc.output2 = std::move(tempArray);
+            }
+        }
+        else
+        {
+            callTwoListsRc.output2 = boost::none;
+        }
+    }
+
+    return callTwoListsRc;
+};
+
+void CallTwoListsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: output1)
+        {
+            tempArrayValue.PushBack(static_cast<int>(item), allocator);
+        }
+        parent.AddMember("output1", tempArrayValue, allocator);
+    }
+
+    { // Restrict Scope for array serialization
+        rapidjson::Value tempArrayValue;
+        tempArrayValue.SetArray();
+        for (const auto& item: *output2)
+        {
+            rapidjson::Value tempOutput2StringValue;
+            tempOutput2StringValue.SetString(item.c_str(), item.size(), allocator);
+            tempArrayValue.PushBack(tempOutput2StringValue, allocator);
+        }
+        parent.AddMember("output2", tempArrayValue, allocator);
     }
 }

@@ -95,7 +95,7 @@ int main(int argc, char** argv)
     // Call each method with example values.
 
     // ----------------------METHOD REFRESH_DAILY_FORECAST-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `refresh_daily_forecast` method call.
         std::cout << "CALLING REFRESH_DAILY_FORECAST" << std::endl;
         auto refreshDailyForecastResultFuture = client.refreshDailyForecast();
         auto refreshDailyForecastStatus = refreshDailyForecastResultFuture.wait_for(boost::chrono::seconds(5));
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     }
 
     // ----------------------METHOD REFRESH_HOURLY_FORECAST-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `refresh_hourly_forecast` method call.
         std::cout << "CALLING REFRESH_HOURLY_FORECAST" << std::endl;
         auto refreshHourlyForecastResultFuture = client.refreshHourlyForecast();
         auto refreshHourlyForecastStatus = refreshHourlyForecastResultFuture.wait_for(boost::chrono::seconds(5));
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
     }
 
     // ----------------------METHOD REFRESH_CURRENT_CONDITIONS-----------------------------------------
-    { // Restrict scope
+    { // Restrict scope for the `refresh_current_conditions` method call.
         std::cout << "CALLING REFRESH_CURRENT_CONDITIONS" << std::endl;
         auto refreshCurrentConditionsResultFuture = client.refreshCurrentConditions();
         auto refreshCurrentConditionsStatus = refreshCurrentConditionsResultFuture.wait_for(boost::chrono::seconds(5));

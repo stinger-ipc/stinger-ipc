@@ -81,6 +81,12 @@ public:
 
     boost::future<bool> emitThreeBinariesSignal(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>);
 
+    boost::future<bool> emitSingleArrayOfIntegersSignal(std::vector<int>);
+
+    boost::future<bool> emitSingleOptionalArrayOfStringsSignal(boost::optional<std::vector<int>>);
+
+    boost::future<bool> emitArrayOfEveryTypeSignal(std::vector<int>, std::vector<double>, std::vector<std::string>, std::vector<Numbers>, std::vector<Entry>, std::vector<std::chrono::time_point<std::chrono::system_clock>>, std::vector<std::chrono::duration<double>>, std::vector<std::vector<uint8_t>>);
+
     void registerCallWithNothingHandler(std::function<void()> func);
 
     void registerCallOneIntegerHandler(std::function<int(int)> func);
@@ -124,6 +130,12 @@ public:
     void registerCallOptionalBinaryHandler(std::function<boost::optional<std::vector<uint8_t>>(boost::optional<std::vector<uint8_t>>)> func);
 
     void registerCallThreeBinariesHandler(std::function<CallThreeBinariesReturnValues(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)> func);
+
+    void registerCallOneListOfIntegersHandler(std::function<std::vector<int>(std::vector<int>)> func);
+
+    void registerCallOptionalListOfFloatsHandler(std::function<boost::optional<std::vector<double>>(boost::optional<std::vector<double>>)> func);
+
+    void registerCallTwoListsHandler(std::function<CallTwoListsReturnValues(std::vector<Numbers>, boost::optional<std::vector<std::string>>)> func);
 
     // ---read_write_integer Property---
 
@@ -485,6 +497,36 @@ public:
 
     void republishReadWriteTwoBinariesProperty() const;
 
+    // ---read_write_list_of_strings Property---
+
+    // Gets the latest value of the `read_write_list_of_strings` property, if one has been received.
+    // If no value has been received yet, an empty optional is returned.
+
+    boost::optional<std::vector<std::string>> getReadWriteListOfStringsProperty() const;
+
+    // Add a callback that will be called whenever the `read_write_list_of_strings` property is updated.
+    // The provided method will be called whenever a new value for the `read_write_list_of_strings` property is received.
+    void registerReadWriteListOfStringsPropertyCallback(const std::function<void(std::vector<std::string>)>& cb);
+
+    void updateReadWriteListOfStringsProperty(std::vector<std::string>);
+
+    void republishReadWriteListOfStringsProperty() const;
+
+    // ---read_write_lists Property---
+
+    // Gets the latest value of the `read_write_lists` property, if one has been received.
+    // If no value has been received yet, an empty optional is returned.
+
+    boost::optional<ReadWriteListsProperty> getReadWriteListsProperty() const;
+
+    // Add a callback that will be called whenever the `read_write_lists` property is updated.
+    // The provided method will be called whenever a new value for the `read_write_lists` property is received.
+    void registerReadWriteListsPropertyCallback(const std::function<void(std::vector<Numbers>, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>>)>& cb);
+
+    void updateReadWriteListsProperty(std::vector<Numbers>, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>>);
+
+    void republishReadWriteListsProperty() const;
+
 private:
     std::shared_ptr<IBrokerConnection> _broker;
     std::string _instanceId;
@@ -582,6 +624,18 @@ private:
     void _callCallThreeBinariesHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
     std::function<CallThreeBinariesReturnValues(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)> _callThreeBinariesHandler;
     int _callThreeBinariesMethodSubscriptionId;
+
+    void _callCallOneListOfIntegersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    std::function<std::vector<int>(std::vector<int>)> _callOneListOfIntegersHandler;
+    int _callOneListOfIntegersMethodSubscriptionId;
+
+    void _callCallOptionalListOfFloatsHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    std::function<boost::optional<std::vector<double>>(boost::optional<std::vector<double>>)> _callOptionalListOfFloatsHandler;
+    int _callOptionalListOfFloatsMethodSubscriptionId;
+
+    void _callCallTwoListsHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    std::function<CallTwoListsReturnValues(std::vector<Numbers>, boost::optional<std::vector<std::string>>)> _callTwoListsHandler;
+    int _callTwoListsMethodSubscriptionId;
 
     // ---------------- PROPERTIES ------------------
 
@@ -1088,6 +1142,48 @@ private:
     // Callbacks registered for changes to the `read_write_two_binaries` property.
     std::vector<std::function<void(std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)>> _readWriteTwoBinariesPropertyCallbacks;
     std::mutex _readWriteTwoBinariesPropertyCallbacksMutex;
+
+    // ---read_write_list_of_strings Property---
+
+    // Current value for the `read_write_list_of_strings` property.
+    boost::optional<ReadWriteListOfStringsProperty> _readWriteListOfStringsProperty;
+
+    // This is the property version  of `read_write_list_of_strings`.
+    int _lastReadWriteListOfStringsPropertyVersion = -1;
+
+    // Mutex for protecting access to the `read_write_list_of_strings` property and its version.
+    mutable std::mutex _readWriteListOfStringsPropertyMutex;
+
+    // MQTT Subscription ID for `read_write_list_of_strings` property update requests.
+    int _readWriteListOfStringsPropertySubscriptionId;
+
+    // Method for parsing a JSON payload that updates the `read_write_list_of_strings` property.
+    void _receiveReadWriteListOfStringsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+    // Callbacks registered for changes to the `read_write_list_of_strings` property.
+    std::vector<std::function<void(std::vector<std::string>)>> _readWriteListOfStringsPropertyCallbacks;
+    std::mutex _readWriteListOfStringsPropertyCallbacksMutex;
+
+    // ---read_write_lists Property---
+
+    // Current values for the `read_write_lists` property.
+    boost::optional<ReadWriteListsProperty> _readWriteListsProperty;
+
+    // This is the property version  of `read_write_lists`.
+    int _lastReadWriteListsPropertyVersion = -1;
+
+    // Mutex for protecting access to the `read_write_lists` property and its version.
+    mutable std::mutex _readWriteListsPropertyMutex;
+
+    // MQTT Subscription ID for `read_write_lists` property update requests.
+    int _readWriteListsPropertySubscriptionId;
+
+    // Method for parsing a JSON payload that updates the `read_write_lists` property.
+    void _receiveReadWriteListsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+
+    // Callbacks registered for changes to the `read_write_lists` property.
+    std::vector<std::function<void(std::vector<Numbers>, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>>)>> _readWriteListsPropertyCallbacks;
+    std::mutex _readWriteListsPropertyCallbacksMutex;
 
     // ---------------- SERVICE ADVERTISEMENT ------------------
 

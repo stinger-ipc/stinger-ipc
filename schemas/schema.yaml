@@ -136,6 +136,7 @@ $defs:
           - datetime
           - duration
           - binary
+          - array
 
   enumArg:
     properties:
@@ -157,11 +158,11 @@ $defs:
     required:
       - structName
 
-  listArg:
+  arrayArg:
     properties:
       type:
         type: string
-        const: "list"
+        const: "array"
       itemType:
         oneOf:
           - $ref: "#/$defs/primitiveArg"
@@ -183,7 +184,7 @@ $defs:
         - $ref: "#/$defs/structArg"
       - allOf:
         - $ref: "#/$defs/genericArg"
-        - $ref: "#/$defs/listArg"
+        - $ref: "#/$defs/arrayArg"
 
   signal:
     type: object

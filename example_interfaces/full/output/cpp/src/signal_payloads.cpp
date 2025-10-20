@@ -74,21 +74,21 @@ void TodayIsPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::D
 
     parent.AddMember("dayOfWeek", static_cast<int>(*dayOfWeek), allocator);
 
-    { // Restrict Scope
+    { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimestampStringValue;
         std::string timestampIsoString = timePointToIsoString(timestamp);
         tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), allocator);
         parent.AddMember("timestamp", tempTimestampStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempProcessTimeStringValue;
         std::string processTimeIsoString = durationToIsoString(processTime);
         tempProcessTimeStringValue.SetString(processTimeIsoString.c_str(), processTimeIsoString.size(), allocator);
         parent.AddMember("process_time", tempProcessTimeStringValue, allocator);
     }
 
-    { // Restrict Scope
+    { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempMemorySegmentStringValue;
         std::string memorySegmentB64String = base64Encode(memorySegment);
         tempMemorySegmentStringValue.SetString(memorySegmentB64String.c_str(), memorySegmentB64String.size(), allocator);

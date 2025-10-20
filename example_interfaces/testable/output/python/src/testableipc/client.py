@@ -46,6 +46,11 @@ ThreeDurationsSignalCallbackType = Callable[[timedelta, timedelta, Optional[time
 SingleBinarySignalCallbackType = Callable[[bytes], None]
 SingleOptionalBinarySignalCallbackType = Callable[[bytes], None]
 ThreeBinariesSignalCallbackType = Callable[[bytes, bytes, bytes], None]
+SingleArrayOfIntegersSignalCallbackType = Callable[[list[int]], None]
+SingleOptionalArrayOfStringsSignalCallbackType = Callable[[list[int]], None]
+ArrayOfEveryTypeSignalCallbackType = Callable[
+    [list[int], list[float], list[str], list[interface_types.Numbers], list[interface_types.Entry], list[datetime.datetime], list[datetime.timedelta], list[bytes]], None
+]
 CallWithNothingMethodResponseCallbackType = Callable[[], None]
 CallOneIntegerMethodResponseCallbackType = Callable[[int], None]
 CallOptionalIntegerMethodResponseCallbackType = Callable[[Optional[int]], None]
@@ -68,6 +73,9 @@ CallThreeDurationsMethodResponseCallbackType = Callable[[interface_types.CallThr
 CallOneBinaryMethodResponseCallbackType = Callable[[bytes], None]
 CallOptionalBinaryMethodResponseCallbackType = Callable[[bytes], None]
 CallThreeBinariesMethodResponseCallbackType = Callable[[interface_types.CallThreeBinariesMethodResponse], None]
+CallOneListOfIntegersMethodResponseCallbackType = Callable[[list[int]], None]
+CallOptionalListOfFloatsMethodResponseCallbackType = Callable[[list[float]], None]
+CallTwoListsMethodResponseCallbackType = Callable[[interface_types.CallTwoListsMethodResponse], None]
 
 ReadWriteIntegerPropertyUpdatedCallbackType = Callable[[int], None]
 ReadOnlyIntegerPropertyUpdatedCallbackType = Callable[[int], None]
@@ -93,6 +101,8 @@ ReadWriteTwoDurationsPropertyUpdatedCallbackType = Callable[[interface_types.Rea
 ReadWriteBinaryPropertyUpdatedCallbackType = Callable[[bytes], None]
 ReadWriteOptionalBinaryPropertyUpdatedCallbackType = Callable[[bytes], None]
 ReadWriteTwoBinariesPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoBinariesProperty], None]
+ReadWriteListOfStringsPropertyUpdatedCallbackType = Callable[[list[str]], None]
+ReadWriteListsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteListsProperty], None]
 
 
 class TestAbleClient:
@@ -228,6 +238,16 @@ class TestAbleClient:
         self._property_read_write_two_binaries_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoBinaries/value".format(self._service_id), self._receive_read_write_two_binaries_property_update_message)
         self._changed_value_callbacks_for_read_write_two_binaries: list[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
+        self._property_read_write_list_of_strings = None  # type: Optional[list[str]]
+        self._property_read_write_list_of_strings_mutex = threading.Lock()
+        self._property_read_write_list_of_strings_version = -1
+        self._conn.subscribe("testAble/{}/property/readWriteListOfStrings/value".format(self._service_id), self._receive_read_write_list_of_strings_property_update_message)
+        self._changed_value_callbacks_for_read_write_list_of_strings: list[ReadWriteListOfStringsPropertyUpdatedCallbackType] = []
+        self._property_read_write_lists = None  # type: Optional[interface_types.ReadWriteListsProperty]
+        self._property_read_write_lists_mutex = threading.Lock()
+        self._property_read_write_lists_version = -1
+        self._conn.subscribe("testAble/{}/property/readWriteLists/value".format(self._service_id), self._receive_read_write_lists_property_update_message)
+        self._changed_value_callbacks_for_read_write_lists: list[ReadWriteListsPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_empty: list[EmptySignalCallbackType] = []
         self._signal_recv_callbacks_for_single_int: list[SingleIntSignalCallbackType] = []
         self._signal_recv_callbacks_for_single_optional_int: list[SingleOptionalIntSignalCallbackType] = []
@@ -250,6 +270,9 @@ class TestAbleClient:
         self._signal_recv_callbacks_for_single_binary: list[SingleBinarySignalCallbackType] = []
         self._signal_recv_callbacks_for_single_optional_binary: list[SingleOptionalBinarySignalCallbackType] = []
         self._signal_recv_callbacks_for_three_binaries: list[ThreeBinariesSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_array_of_integers: list[SingleArrayOfIntegersSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_optional_array_of_strings: list[SingleOptionalArrayOfStringsSignalCallbackType] = []
+        self._signal_recv_callbacks_for_array_of_every_type: list[ArrayOfEveryTypeSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/callWithNothing/response", self._receive_call_with_nothing_response_message)
         self._conn.subscribe(f"client/{self._conn.client_id}/callOneInteger/response", self._receive_call_one_integer_response_message)
         self._conn.subscribe(f"client/{self._conn.client_id}/callOptionalInteger/response", self._receive_call_optional_integer_response_message)
@@ -272,6 +295,9 @@ class TestAbleClient:
         self._conn.subscribe(f"client/{self._conn.client_id}/callOneBinary/response", self._receive_call_one_binary_response_message)
         self._conn.subscribe(f"client/{self._conn.client_id}/callOptionalBinary/response", self._receive_call_optional_binary_response_message)
         self._conn.subscribe(f"client/{self._conn.client_id}/callThreeBinaries/response", self._receive_call_three_binaries_response_message)
+        self._conn.subscribe(f"client/{self._conn.client_id}/callOneListOfIntegers/response", self._receive_call_one_list_of_integers_response_message)
+        self._conn.subscribe(f"client/{self._conn.client_id}/callOptionalListOfFloats/response", self._receive_call_optional_list_of_floats_response_message)
+        self._conn.subscribe(f"client/{self._conn.client_id}/callTwoLists/response", self._receive_call_two_lists_response_message)
 
     @property
     def read_write_integer(self) -> Optional[int]:
@@ -822,6 +848,54 @@ class TestAbleClient:
                 handler(self._property_read_write_two_binaries)
         return handler
 
+    @property
+    def read_write_list_of_strings(self) -> Optional[list[str]]:
+        """Property 'read_write_list_of_strings' getter."""
+        return self._property_read_write_list_of_strings
+
+    @read_write_list_of_strings.setter
+    def read_write_list_of_strings(self, value: list[str]):
+        """Serializes and publishes the 'read_write_list_of_strings' property."""
+        if not isinstance(value, list[str]):
+            raise ValueError("The 'read_write_list_of_strings' property must be a list[str]")
+        serialized = json.dumps({"value": value.value})
+        self._logger.debug("Setting 'read_write_list_of_strings' property to %s", serialized)
+        self._conn.publish("testAble/{}/property/readWriteListOfStrings/setValue".format(self._service_id), serialized, qos=1)
+
+    def read_write_list_of_strings_changed(self, handler: ReadWriteListOfStringsPropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'read_write_list_of_strings' property changes.
+        Can be used as a decorator.
+        """
+        with self._property_read_write_list_of_strings_mutex:
+            self._changed_value_callbacks_for_read_write_list_of_strings.append(handler)
+            if call_immediately and self._property_read_write_list_of_strings is not None:
+                handler(self._property_read_write_list_of_strings)
+        return handler
+
+    @property
+    def read_write_lists(self) -> Optional[interface_types.ReadWriteListsProperty]:
+        """Property 'read_write_lists' getter."""
+        return self._property_read_write_lists
+
+    @read_write_lists.setter
+    def read_write_lists(self, value: interface_types.ReadWriteListsProperty):
+        """Serializes and publishes the 'read_write_lists' property."""
+        if not isinstance(value, ReadWriteListsProperty):
+            raise ValueError("The 'read_write_lists' property must be a interface_types.ReadWriteListsProperty")
+        serialized = value.model_dump_json(exclude_none=True)
+        self._logger.debug("Setting 'read_write_lists' property to %s", serialized)
+        self._conn.publish("testAble/{}/property/readWriteLists/setValue".format(self._service_id), serialized, qos=1)
+
+    def read_write_lists_changed(self, handler: ReadWriteListsPropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'read_write_lists' property changes.
+        Can be used as a decorator.
+        """
+        with self._property_read_write_lists_mutex:
+            self._changed_value_callbacks_for_read_write_lists.append(handler)
+            if call_immediately and self._property_read_write_lists is not None:
+                handler(self._property_read_write_lists)
+        return handler
+
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """Call each callback in the callback dictionary with the provided args."""
         for cb in callbacks:
@@ -1055,6 +1129,36 @@ class TestAbleClient:
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_three_binaries, **kwargs)
+
+    def _receive_single_array_of_integers_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'singleArrayOfIntegers' signal with non-JSON content type")
+            return
+
+        model = SingleArrayOfIntegersSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
+
+        self._do_callbacks_for(self._signal_recv_callbacks_for_single_array_of_integers, **kwargs)
+
+    def _receive_single_optional_array_of_strings_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'singleOptionalArrayOfStrings' signal with non-JSON content type")
+            return
+
+        model = SingleOptionalArrayOfStringsSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
+
+        self._do_callbacks_for(self._signal_recv_callbacks_for_single_optional_array_of_strings, **kwargs)
+
+    def _receive_array_of_every_type_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'arrayOfEveryType' signal with non-JSON content type")
+            return
+
+        model = ArrayOfEveryTypeSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
+
+        self._do_callbacks_for(self._signal_recv_callbacks_for_array_of_every_type, **kwargs)
 
     def _receive_call_with_nothing_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'callWithNothing' method response.
@@ -1540,6 +1644,72 @@ class TestAbleClient:
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
 
+    def _receive_call_one_list_of_integers_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        # Handle 'callOneListOfIntegers' method response.
+        return_code = MethodReturnCode.SUCCESS
+        debug_message = None
+        if "UserProperty" in properties:
+            user_properties = properties["UserProperty"]
+            if "DebugInfo" in user_properties:
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
+        if "CorrelationData" in properties:
+            correlation_id = properties["CorrelationData"].decode()
+            if correlation_id in self._pending_method_responses:
+                cb = self._pending_method_responses[correlation_id]
+                del self._pending_method_responses[correlation_id]
+                cb(payload, return_code, debug_message)
+            else:
+                self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+        else:
+            self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+
+    def _receive_call_optional_list_of_floats_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        # Handle 'callOptionalListOfFloats' method response.
+        return_code = MethodReturnCode.SUCCESS
+        debug_message = None
+        if "UserProperty" in properties:
+            user_properties = properties["UserProperty"]
+            if "DebugInfo" in user_properties:
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
+        if "CorrelationData" in properties:
+            correlation_id = properties["CorrelationData"].decode()
+            if correlation_id in self._pending_method_responses:
+                cb = self._pending_method_responses[correlation_id]
+                del self._pending_method_responses[correlation_id]
+                cb(payload, return_code, debug_message)
+            else:
+                self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+        else:
+            self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+
+    def _receive_call_two_lists_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        # Handle 'callTwoLists' method response.
+        return_code = MethodReturnCode.SUCCESS
+        debug_message = None
+        if "UserProperty" in properties:
+            user_properties = properties["UserProperty"]
+            if "DebugInfo" in user_properties:
+                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                debug_message = user_properties["DebugInfo"]
+            if "ReturnCode" in user_properties:
+                return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
+        if "CorrelationData" in properties:
+            correlation_id = properties["CorrelationData"].decode()
+            if correlation_id in self._pending_method_responses:
+                cb = self._pending_method_responses[correlation_id]
+                del self._pending_method_responses[correlation_id]
+                cb(payload, return_code, debug_message)
+            else:
+                self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+        else:
+            self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+
     def _receive_read_write_integer_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_integer' property change.
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
@@ -1972,6 +2142,42 @@ class TestAbleClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_two_binaries' property change: %s", exc_info=e)
 
+    def _receive_read_write_list_of_strings_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        # Handle 'read_write_list_of_strings' property change.
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'read_write_list_of_strings' property change with non-JSON content type")
+            return
+        try:
+            prop_obj = ReadWriteListOfStringsProperty.model_validate_json(payload)
+            with self._property_read_write_list_of_strings_mutex:
+                self._property_read_write_list_of_strings = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_list_of_strings_version:
+                        self._property_read_write_list_of_strings_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_list_of_strings, value=prop_obj.value)
+
+        except Exception as e:
+            self._logger.exception("Error processing 'read_write_list_of_strings' property change: %s", exc_info=e)
+
+    def _receive_read_write_lists_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        # Handle 'read_write_lists' property change.
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'read_write_lists' property change with non-JSON content type")
+            return
+        try:
+            prop_obj = ReadWriteListsProperty.model_validate_json(payload)
+            with self._property_read_write_lists_mutex:
+                self._property_read_write_lists = prop_obj
+                if ver := properties.get("PropertyVersion", False):
+                    if int(ver) > self._property_read_write_lists_version:
+                        self._property_read_write_lists_version = int(ver)
+
+                self._do_callbacks_for(self._changed_value_callbacks_for_read_write_lists, value=prop_obj)
+
+        except Exception as e:
+            self._logger.exception("Error processing 'read_write_lists' property change: %s", exc_info=e)
+
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
@@ -2130,6 +2336,27 @@ class TestAbleClient:
         self._signal_recv_callbacks_for_three_binaries.append(handler)
         if len(self._signal_recv_callbacks_for_three_binaries) == 1:
             self._conn.subscribe("testAble/{}/signal/threeBinaries".format(self._service_id), self._receive_three_binaries_signal_message)
+        return handler
+
+    def receive_single_array_of_integers(self, handler: SingleArrayOfIntegersSignalCallbackType):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_single_array_of_integers.append(handler)
+        if len(self._signal_recv_callbacks_for_single_array_of_integers) == 1:
+            self._conn.subscribe("testAble/{}/signal/singleArrayOfIntegers".format(self._service_id), self._receive_single_array_of_integers_signal_message)
+        return handler
+
+    def receive_single_optional_array_of_strings(self, handler: SingleOptionalArrayOfStringsSignalCallbackType):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_single_optional_array_of_strings.append(handler)
+        if len(self._signal_recv_callbacks_for_single_optional_array_of_strings) == 1:
+            self._conn.subscribe("testAble/{}/signal/singleOptionalArrayOfStrings".format(self._service_id), self._receive_single_optional_array_of_strings_signal_message)
+        return handler
+
+    def receive_array_of_every_type(self, handler: ArrayOfEveryTypeSignalCallbackType):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_array_of_every_type.append(handler)
+        if len(self._signal_recv_callbacks_for_array_of_every_type) == 1:
+            self._conn.subscribe("testAble/{}/signal/arrayOfEveryType".format(self._service_id), self._receive_array_of_every_type_signal_message)
         return handler
 
     def call_with_nothing(
@@ -3005,6 +3232,124 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callThreeBinaries' method was already done!")
 
+    def call_one_list_of_integers(self, input1: list[int]) -> futures.Future:
+        """Calling this initiates a `callOneListOfIntegers` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_call_one_list_of_integers_response, fut)
+        payload = CallOneListOfIntegersMethodRequest(
+            input1=input1,
+        )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOneListOfIntegers' method with payload %s", json_payload)
+        self._conn.publish(
+            "testAble/{}/method/callOneListOfIntegers".format(self._service_id),
+            payload.model_dump_json(),
+            qos=2,
+            retain=False,
+            correlation_id=correlation_id,
+            response_topic=f"client/{self._conn.client_id}/callOneListOfIntegers/response",
+        )
+        return fut
+
+    def _handle_call_one_list_of_integers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `callOneListOfIntegers` IPC method call."""
+        self._logger.debug("Handling call_one_list_of_integers response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOneListOfIntegers' method: %s", return_value, debug_message)
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
+
+        try:
+            resp_model = CallOneListOfIntegersMethodResponse.model_validate_json(response_json_text)
+        except Exception as e:
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOneListOfIntegers' method: {e}"))
+
+        if not fut.done():
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOneListOfIntegers' method was already done!")
+
+    def call_optional_list_of_floats(self, input1: list[float]) -> futures.Future:
+        """Calling this initiates a `callOptionalListOfFloats` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_call_optional_list_of_floats_response, fut)
+        payload = CallOptionalListOfFloatsMethodRequest(
+            input1=input1,
+        )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callOptionalListOfFloats' method with payload %s", json_payload)
+        self._conn.publish(
+            "testAble/{}/method/callOptionalListOfFloats".format(self._service_id),
+            payload.model_dump_json(),
+            qos=2,
+            retain=False,
+            correlation_id=correlation_id,
+            response_topic=f"client/{self._conn.client_id}/callOptionalListOfFloats/response",
+        )
+        return fut
+
+    def _handle_call_optional_list_of_floats_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `callOptionalListOfFloats` IPC method call."""
+        self._logger.debug("Handling call_optional_list_of_floats response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callOptionalListOfFloats' method: %s", return_value, debug_message)
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
+
+        try:
+            resp_model = CallOptionalListOfFloatsMethodResponse.model_validate_json(response_json_text)
+        except Exception as e:
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callOptionalListOfFloats' method: {e}"))
+
+        if not fut.done():
+            fut.set_result(resp_model.output1)
+        else:
+            self._logger.warning("Future for 'callOptionalListOfFloats' method was already done!")
+
+    def call_two_lists(self, input1: list[interface_types.Numbers], input2: list[str]) -> futures.Future:
+        """Calling this initiates a `callTwoLists` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
+        correlation_id = str(uuid4())
+        self._pending_method_responses[correlation_id] = partial(self._handle_call_two_lists_response, fut)
+        payload = CallTwoListsMethodRequest(
+            input1=input1,
+            input2=input2,
+        )
+        json_payload = payload.model_dump_json()
+        self._logger.debug("Calling 'callTwoLists' method with payload %s", json_payload)
+        self._conn.publish(
+            "testAble/{}/method/callTwoLists".format(self._service_id),
+            payload.model_dump_json(),
+            qos=2,
+            retain=False,
+            correlation_id=correlation_id,
+            response_topic=f"client/{self._conn.client_id}/callTwoLists/response",
+        )
+        return fut
+
+    def _handle_call_two_lists_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `callTwoLists` IPC method call."""
+        self._logger.debug("Handling call_two_lists response message %s", fut)
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from 'callTwoLists' method: %s", return_value, debug_message)
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
+
+        try:
+            resp_model = CallTwoListsMethodResponse.model_validate_json(response_json_text)
+        except Exception as e:
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'callTwoLists' method: {e}"))
+
+        if not fut.done():
+            fut.set_result(resp_model)
+        else:
+            self._logger.warning("Future for 'callTwoLists' method was already done!")
+
 
 class TestAbleClientBuilder:
     """Using decorators from TestAbleClient doesn't work if you are trying to create multiple instances of TestAbleClient.
@@ -3038,6 +3383,9 @@ class TestAbleClientBuilder:
         self._signal_recv_callbacks_for_single_binary = []  # type: List[SingleBinarySignalCallbackType]
         self._signal_recv_callbacks_for_single_optional_binary = []  # type: List[SingleOptionalBinarySignalCallbackType]
         self._signal_recv_callbacks_for_three_binaries = []  # type: List[ThreeBinariesSignalCallbackType]
+        self._signal_recv_callbacks_for_single_array_of_integers = []  # type: List[SingleArrayOfIntegersSignalCallbackType]
+        self._signal_recv_callbacks_for_single_optional_array_of_strings = []  # type: List[SingleOptionalArrayOfStringsSignalCallbackType]
+        self._signal_recv_callbacks_for_array_of_every_type = []  # type: List[ArrayOfEveryTypeSignalCallbackType]
         self._property_updated_callbacks_for_read_write_integer: list[ReadWriteIntegerPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_read_only_integer: list[ReadOnlyIntegerPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_read_write_optional_integer: list[ReadWriteOptionalIntegerPropertyUpdatedCallbackType] = []
@@ -3062,6 +3410,8 @@ class TestAbleClientBuilder:
         self._property_updated_callbacks_for_read_write_binary: list[ReadWriteBinaryPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_read_write_optional_binary: list[ReadWriteOptionalBinaryPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_read_write_two_binaries: list[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_list_of_strings: list[ReadWriteListOfStringsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_lists: list[ReadWriteListsPropertyUpdatedCallbackType] = []
 
     def receive_empty(self, handler):
         """Used as a decorator for methods which handle particular signals."""
@@ -3150,6 +3500,18 @@ class TestAbleClientBuilder:
     def receive_three_binaries(self, handler):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_binaries.append(handler)
+
+    def receive_single_array_of_integers(self, handler):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_single_array_of_integers.append(handler)
+
+    def receive_single_optional_array_of_strings(self, handler):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_single_optional_array_of_strings.append(handler)
+
+    def receive_array_of_every_type(self, handler):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_array_of_every_type.append(handler)
 
     def read_write_integer_updated(self, handler: ReadWriteIntegerPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
@@ -3247,6 +3609,14 @@ class TestAbleClientBuilder:
         """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_read_write_two_binaries.append(handler)
 
+    def read_write_list_of_strings_updated(self, handler: ReadWriteListOfStringsPropertyUpdatedCallbackType):
+        """Used as a decorator for methods which handle updates to properties."""
+        self._property_updated_callbacks_for_read_write_list_of_strings.append(handler)
+
+    def read_write_lists_updated(self, handler: ReadWriteListsPropertyUpdatedCallbackType):
+        """Used as a decorator for methods which handle updates to properties."""
+        self._property_updated_callbacks_for_read_write_lists.append(handler)
+
     def build(self, broker: IBrokerConnection, service_instance_id: str) -> TestAbleClient:
         """Builds a new TestAbleClient."""
         self._logger.debug("Building TestAbleClient for service instance %s", service_instance_id)
@@ -3317,6 +3687,15 @@ class TestAbleClientBuilder:
 
         for cb in self._signal_recv_callbacks_for_three_binaries:
             client.receive_three_binaries(cb)
+
+        for cb in self._signal_recv_callbacks_for_single_array_of_integers:
+            client.receive_single_array_of_integers(cb)
+
+        for cb in self._signal_recv_callbacks_for_single_optional_array_of_strings:
+            client.receive_single_optional_array_of_strings(cb)
+
+        for cb in self._signal_recv_callbacks_for_array_of_every_type:
+            client.receive_array_of_every_type(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_integer:
             client.read_write_integer_changed(cb)
@@ -3389,6 +3768,12 @@ class TestAbleClientBuilder:
 
         for cb in self._property_updated_callbacks_for_read_write_two_binaries:
             client.read_write_two_binaries_changed(cb)
+
+        for cb in self._property_updated_callbacks_for_read_write_list_of_strings:
+            client.read_write_list_of_strings_changed(cb)
+
+        for cb in self._property_updated_callbacks_for_read_write_lists:
+            client.read_write_lists_changed(cb)
 
         return client
 

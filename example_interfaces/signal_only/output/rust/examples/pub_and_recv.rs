@@ -1,7 +1,7 @@
 use mqttier::{Connection, MqttierClient, MqttierOptions};
 use tokio::join;
 use tokio::sync::mpsc;
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() {

@@ -26,7 +26,7 @@ class ArgType(Enum):
     DATETIME = 4
     DURATION = 5
     BINARY = 6
-    LIST = 7
+    ARRAY = 7
 
 
 class ArgPrimitiveType(Enum):

@@ -257,3 +257,24 @@ struct ReadWriteTwoBinariesProperty
     std::vector<uint8_t> first; ///< A binary blob of data.
     boost::optional<std::vector<uint8_t>> second;
 };
+
+/**
+ * A read-write property that is a list of strings.
+ */
+struct ReadWriteListOfStringsProperty
+{
+    static ReadWriteListOfStringsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::vector<std::string> value;
+};
+
+/**
+ * A read-write property containing two lists.  The second list is optional.
+ */
+struct ReadWriteListsProperty
+{
+    static ReadWriteListsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    std::vector<Numbers> theList;
+    boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList;
+};
