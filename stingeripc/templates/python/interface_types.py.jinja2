@@ -7,7 +7,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 {%macro field_list(arg_list)%}
 model_config = ConfigDict(populate_by_name=True)
 {%for arg in arg_list-%}
-{%set field_desc %}Field({%if arg.description%}description="{{arg.description}}", {%endif%}{%if (arg.name|snake_case) != arg.name %}alias="{{arg.name}}", {%endif%}){%endset%}
+{%set field_desc %}Field({%if arg.description%}description="{{arg.description}}", {%endif%}{%if (arg.name|snake_case) != arg.name %}alias="{{arg.name}}"{%endif%}){%endset%}
 {%-if arg.arg_type.name.lower() == 'primitive' -%}
 {{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'enum'-%}
@@ -25,7 +25,7 @@ model_config = ConfigDict(populate_by_name=True)
 {{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[bytes]]{%else%}List[bytes]{%endif%}, {{field_desc}}, PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]), PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr])]
 
 {%else%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[{{arg.element.python_local_type}}]]{%else%}List[{{arg.element.python_local_type}}]{%endif%}, {{field_desc}}, ]
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[{{arg.element.python_local_type}}]]{%else%}List[{{arg.element.python_local_type}}]{%endif%}, {{field_desc}}]
 {%endif%}{# end array element cases #}
 
 {%endif-%}
@@ -34,7 +34,7 @@ model_config = ConfigDict(populate_by_name=True)
 
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Optional, Annotated, Union, List
 import base64
 {%if stinger.uses_enums()%}from enum import IntEnum{%endif%}

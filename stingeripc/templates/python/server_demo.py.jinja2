@@ -1,10 +1,10 @@
 from time import sleep
 import signal
-from typing import Optional, Union
-from datetime import datetime, timedelta
+from typing import Optional, Union, List
+from datetime import datetime, timedelta, UTC
 from {{stinger.python.package_name}}.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}
-from {{stinger.python.package_name}} import interface_types
+from {{stinger.python.package_name}}.interface_types import *
 
 if __name__ == '__main__':
     """

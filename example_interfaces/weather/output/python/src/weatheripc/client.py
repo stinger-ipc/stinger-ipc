@@ -20,7 +20,6 @@ from .interface_types import *
 import threading
 
 from .connection import IBrokerConnection
-from . import interface_types as interface_types
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -29,11 +28,11 @@ RefreshDailyForecastMethodResponseCallbackType = Callable[[], None]
 RefreshHourlyForecastMethodResponseCallbackType = Callable[[], None]
 RefreshCurrentConditionsMethodResponseCallbackType = Callable[[], None]
 
-LocationPropertyUpdatedCallbackType = Callable[[interface_types.LocationProperty], None]
+LocationPropertyUpdatedCallbackType = Callable[[LocationProperty], None]
 CurrentTemperaturePropertyUpdatedCallbackType = Callable[[float], None]
-CurrentConditionPropertyUpdatedCallbackType = Callable[[interface_types.CurrentConditionProperty], None]
-DailyForecastPropertyUpdatedCallbackType = Callable[[interface_types.DailyForecastProperty], None]
-HourlyForecastPropertyUpdatedCallbackType = Callable[[interface_types.HourlyForecastProperty], None]
+CurrentConditionPropertyUpdatedCallbackType = Callable[[CurrentConditionProperty], None]
+DailyForecastPropertyUpdatedCallbackType = Callable[[DailyForecastProperty], None]
+HourlyForecastPropertyUpdatedCallbackType = Callable[[HourlyForecastProperty], None]
 CurrentConditionRefreshIntervalPropertyUpdatedCallbackType = Callable[[int], None]
 HourlyForecastRefreshIntervalPropertyUpdatedCallbackType = Callable[[int], None]
 DailyForecastRefreshIntervalPropertyUpdatedCallbackType = Callable[[int], None]
@@ -52,7 +51,7 @@ class WeatherClient:
 
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
 
-        self._property_location = None  # type: Optional[interface_types.LocationProperty]
+        self._property_location = None  # type: Optional[LocationProperty]
         self._property_location_mutex = threading.Lock()
         self._property_location_version = -1
         self._conn.subscribe("weather/{}/property/location/value".format(self._service_id), self._receive_location_property_update_message)
@@ -62,17 +61,17 @@ class WeatherClient:
         self._property_current_temperature_version = -1
         self._conn.subscribe("weather/{}/property/currentTemperature/value".format(self._service_id), self._receive_current_temperature_property_update_message)
         self._changed_value_callbacks_for_current_temperature: list[CurrentTemperaturePropertyUpdatedCallbackType] = []
-        self._property_current_condition = None  # type: Optional[interface_types.CurrentConditionProperty]
+        self._property_current_condition = None  # type: Optional[CurrentConditionProperty]
         self._property_current_condition_mutex = threading.Lock()
         self._property_current_condition_version = -1
         self._conn.subscribe("weather/{}/property/currentCondition/value".format(self._service_id), self._receive_current_condition_property_update_message)
         self._changed_value_callbacks_for_current_condition: list[CurrentConditionPropertyUpdatedCallbackType] = []
-        self._property_daily_forecast = None  # type: Optional[interface_types.DailyForecastProperty]
+        self._property_daily_forecast = None  # type: Optional[DailyForecastProperty]
         self._property_daily_forecast_mutex = threading.Lock()
         self._property_daily_forecast_version = -1
         self._conn.subscribe("weather/{}/property/dailyForecast/value".format(self._service_id), self._receive_daily_forecast_property_update_message)
         self._changed_value_callbacks_for_daily_forecast: list[DailyForecastPropertyUpdatedCallbackType] = []
-        self._property_hourly_forecast = None  # type: Optional[interface_types.HourlyForecastProperty]
+        self._property_hourly_forecast = None  # type: Optional[HourlyForecastProperty]
         self._property_hourly_forecast_mutex = threading.Lock()
         self._property_hourly_forecast_version = -1
         self._conn.subscribe("weather/{}/property/hourlyForecast/value".format(self._service_id), self._receive_hourly_forecast_property_update_message)
@@ -98,16 +97,16 @@ class WeatherClient:
         self._conn.subscribe(f"client/{self._conn.client_id}/refresh_current_conditions/response", self._receive_refresh_current_conditions_response_message)
 
     @property
-    def location(self) -> Optional[interface_types.LocationProperty]:
+    def location(self) -> Optional[LocationProperty]:
         """Property 'location' getter."""
         return self._property_location
 
     @location.setter
-    def location(self, value: interface_types.LocationProperty):
+    def location(self, value: LocationProperty):
         """Serializes and publishes the 'location' property."""
         if not isinstance(value, LocationProperty):
-            raise ValueError("The 'location' property must be a interface_types.LocationProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'location' property must be a LocationProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'location' property to %s", serialized)
         self._conn.publish("weather/{}/property/location/setValue".format(self._service_id), serialized, qos=1)
 
@@ -137,7 +136,7 @@ class WeatherClient:
         return handler
 
     @property
-    def current_condition(self) -> Optional[interface_types.CurrentConditionProperty]:
+    def current_condition(self) -> Optional[CurrentConditionProperty]:
         """Property 'current_condition' getter."""
         return self._property_current_condition
 
@@ -152,7 +151,7 @@ class WeatherClient:
         return handler
 
     @property
-    def daily_forecast(self) -> Optional[interface_types.DailyForecastProperty]:
+    def daily_forecast(self) -> Optional[DailyForecastProperty]:
         """Property 'daily_forecast' getter."""
         return self._property_daily_forecast
 
@@ -167,7 +166,7 @@ class WeatherClient:
         return handler
 
     @property
-    def hourly_forecast(self) -> Optional[interface_types.HourlyForecastProperty]:
+    def hourly_forecast(self) -> Optional[HourlyForecastProperty]:
         """Property 'hourly_forecast' getter."""
         return self._property_hourly_forecast
 
@@ -508,11 +507,11 @@ class WeatherClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_daily_forecast_response, fut)
         payload = RefreshDailyForecastMethodRequest()
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'refresh_daily_forecast' method with payload %s", json_payload)
         self._conn.publish(
             "weather/{}/method/refreshDailyForecast".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -548,11 +547,11 @@ class WeatherClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_hourly_forecast_response, fut)
         payload = RefreshHourlyForecastMethodRequest()
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'refresh_hourly_forecast' method with payload %s", json_payload)
         self._conn.publish(
             "weather/{}/method/refreshHourlyForecast".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -588,11 +587,11 @@ class WeatherClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_current_conditions_response, fut)
         payload = RefreshCurrentConditionsMethodRequest()
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'refresh_current_conditions' method with payload %s", json_payload)
         self._conn.publish(
             "weather/{}/method/refreshCurrentConditions".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,

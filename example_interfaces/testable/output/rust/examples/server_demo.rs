@@ -1317,8 +1317,6 @@ async fn main() {
     let mut server_clone1 = server.clone();
     let signal_publish_task = tokio::spawn(async move {
         loop {
-            sleep(Duration::from_secs(9)).await;
-
             sleep(Duration::from_secs(1)).await;
             println!("Emitting signal 'empty'");
             let signal_result_future = server_clone1.emit_empty().await;
@@ -1992,13 +1990,15 @@ async fn main() {
                 .await;
             let signal_result = signal_result_future.await;
             println!("Signal 'arrayOfEveryType' was sent: {:?}", signal_result);
+
+            sleep(Duration::from_secs(67)).await;
         }
     });
 
     let mut server_clone2 = server.clone();
     let property_publish_task = tokio::spawn(async move {
         loop {
-            sleep(Duration::from_secs(11)).await;
+            sleep(Duration::from_secs(51)).await;
 
             sleep(Duration::from_secs(1)).await;
             println!("Changing property 'read_write_integer'");

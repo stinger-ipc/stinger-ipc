@@ -1,10 +1,11 @@
 import signal
 from time import sleep
-from typing import Optional, Union
-from datetime import datetime, timedelta
+import concurrent.futures as futures
+from typing import Optional, Union, List
+from datetime import datetime, timedelta, UTC
 from weatheripc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from weatheripc.client import WeatherClient, WeatherClientBuilder, WeatherClientDiscoverer
-from weatheripc import interface_types
+from weatheripc.interface_types import *
 
 if __name__ == "__main__":
 
@@ -21,7 +22,7 @@ if __name__ == "__main__":
         print(f"Got a 'current_time' signal: current_time={ current_time } ")
 
     @client_builder.location_updated
-    def print_new_location_value(value: interface_types.LocationProperty):
+    def print_new_location_value(value: LocationProperty):
         """ """
         print(f"Property 'location' has been updated to: {value}")
 
@@ -31,17 +32,17 @@ if __name__ == "__main__":
         print(f"Property 'current_temperature' has been updated to: {value}")
 
     @client_builder.current_condition_updated
-    def print_new_current_condition_value(value: interface_types.CurrentConditionProperty):
+    def print_new_current_condition_value(value: CurrentConditionProperty):
         """ """
         print(f"Property 'current_condition' has been updated to: {value}")
 
     @client_builder.daily_forecast_updated
-    def print_new_daily_forecast_value(value: interface_types.DailyForecastProperty):
+    def print_new_daily_forecast_value(value: DailyForecastProperty):
         """ """
         print(f"Property 'daily_forecast' has been updated to: {value}")
 
     @client_builder.hourly_forecast_updated
-    def print_new_hourly_forecast_value(value: interface_types.HourlyForecastProperty):
+    def print_new_hourly_forecast_value(value: HourlyForecastProperty):
         """ """
         print(f"Property 'hourly_forecast' has been updated to: {value}")
 

@@ -551,7 +551,7 @@ def on_now(timestamp: datetime):
 A server can emit a `now` signal simply by calling the server's `emit_now` method.
 
 ```python
-server.emit_now(datetime.now())
+server.emit_now(datetime.now(UTC))
 ```
 
 </details>

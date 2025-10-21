@@ -19,7 +19,6 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from .connection import IBrokerConnection
 from .method_codes import *
 from .interface_types import *
-from . import interface_types as interface_types
 
 
 T = TypeVar("T")
@@ -52,7 +51,7 @@ class WeatherServer:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
 
-        self._property_location: PropertyControls[interface_types.LocationProperty, float, float] = PropertyControls()
+        self._property_location: PropertyControls[LocationProperty, float, float] = PropertyControls()
         self._property_location.subscription_id = self._conn.subscribe("weather/{}/property/location/setValue".format(self._instance_id), self._receive_location_update_request_message)
 
         self._property_current_temperature: PropertyControls[float, float] = PropertyControls()
@@ -60,21 +59,17 @@ class WeatherServer:
             "weather/{}/property/currentTemperature/setValue".format(self._instance_id), self._receive_current_temperature_update_request_message
         )
 
-        self._property_current_condition: PropertyControls[interface_types.CurrentConditionProperty, interface_types.WeatherCondition, str] = PropertyControls()
+        self._property_current_condition: PropertyControls[CurrentConditionProperty, WeatherCondition, str] = PropertyControls()
         self._property_current_condition.subscription_id = self._conn.subscribe(
             "weather/{}/property/currentCondition/setValue".format(self._instance_id), self._receive_current_condition_update_request_message
         )
 
-        self._property_daily_forecast: PropertyControls[interface_types.DailyForecastProperty, interface_types.ForecastForDay, interface_types.ForecastForDay, interface_types.ForecastForDay] = (
-            PropertyControls()
-        )
+        self._property_daily_forecast: PropertyControls[DailyForecastProperty, ForecastForDay, ForecastForDay, ForecastForDay] = PropertyControls()
         self._property_daily_forecast.subscription_id = self._conn.subscribe(
             "weather/{}/property/dailyForecast/setValue".format(self._instance_id), self._receive_daily_forecast_update_request_message
         )
 
-        self._property_hourly_forecast: PropertyControls[
-            interface_types.HourlyForecastProperty, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour
-        ] = PropertyControls()
+        self._property_hourly_forecast: PropertyControls[HourlyForecastProperty, ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour] = PropertyControls()
         self._property_hourly_forecast.subscription_id = self._conn.subscribe(
             "weather/{}/property/hourlyForecast/setValue".format(self._instance_id), self._receive_hourly_forecast_update_request_message
         )
@@ -133,7 +128,7 @@ class WeatherServer:
 
     def _receive_location_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         try:
-            prop_value = interface_types.LocationProperty.model_validate_json(payload)
+            prop_value = LocationProperty.model_validate_json(payload)
         except ValidationError as e:
             self._logger.error("Failed to validate payload for %s: %s", topic, e)
             self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
@@ -155,7 +150,7 @@ class WeatherServer:
 
     def _receive_current_condition_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         try:
-            prop_value = interface_types.CurrentConditionProperty.model_validate_json(payload)
+            prop_value = CurrentConditionProperty.model_validate_json(payload)
         except ValidationError as e:
             self._logger.error("Failed to validate payload for %s: %s", topic, e)
             self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
@@ -168,7 +163,7 @@ class WeatherServer:
 
     def _receive_daily_forecast_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         try:
-            prop_value = interface_types.DailyForecastProperty.model_validate_json(payload)
+            prop_value = DailyForecastProperty.model_validate_json(payload)
         except ValidationError as e:
             self._logger.error("Failed to validate payload for %s: %s", topic, e)
             self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
@@ -181,7 +176,7 @@ class WeatherServer:
 
     def _receive_hourly_forecast_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         try:
-            prop_value = interface_types.HourlyForecastProperty.model_validate_json(payload)
+            prop_value = HourlyForecastProperty.model_validate_json(payload)
         except ValidationError as e:
             self._logger.error("Failed to validate payload for %s: %s", topic, e)
             self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
@@ -354,7 +349,7 @@ class WeatherServer:
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     @property
-    def location(self) -> Optional[interface_types.LocationProperty]:
+    def location(self) -> Optional[LocationProperty]:
         """This property returns the last received value for the 'location' property."""
         with self._property_location_mutex:
             return self._property_location
@@ -364,7 +359,7 @@ class WeatherServer:
         """This property sets (publishes) a new value for the 'location' property."""
 
         if not isinstance(value, LocationProperty):
-            raise ValueError(f"The value must be interface_types.LocationProperty.")
+            raise ValueError(f"The value must be LocationProperty.")
 
         payload = value.model_dump_json(by_alias=True)
 
@@ -436,7 +431,7 @@ class WeatherServer:
             self._property_current_temperature.callbacks.append(handler)
 
     @property
-    def current_condition(self) -> Optional[interface_types.CurrentConditionProperty]:
+    def current_condition(self) -> Optional[CurrentConditionProperty]:
         """This property returns the last received value for the 'current_condition' property."""
         with self._property_current_condition_mutex:
             return self._property_current_condition
@@ -446,7 +441,7 @@ class WeatherServer:
         """This property sets (publishes) a new value for the 'current_condition' property."""
 
         if not isinstance(value, CurrentConditionProperty):
-            raise ValueError(f"The value must be interface_types.CurrentConditionProperty.")
+            raise ValueError(f"The value must be CurrentConditionProperty.")
 
         payload = value.model_dump_json(by_alias=True)
 
@@ -458,10 +453,10 @@ class WeatherServer:
             for callback in self._property_current_condition.callbacks:
                 callback(value.condition, value.description)
 
-    def set_current_condition(self, condition: interface_types.WeatherCondition, description: str):
+    def set_current_condition(self, condition: WeatherCondition, description: str):
         """This method sets (publishes) a new value for the 'current_condition' property."""
-        if not isinstance(condition, interface_types.WeatherCondition):
-            raise ValueError(f"The 'condition' value must be interface_types.WeatherCondition.")
+        if not isinstance(condition, WeatherCondition):
+            raise ValueError(f"The 'condition' value must be WeatherCondition.")
         if not isinstance(description, str):
             raise ValueError(f"The 'description' value must be str.")
 
@@ -473,13 +468,13 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.current_condition = obj
 
-    def on_current_condition_updates(self, handler: Callable[[interface_types.WeatherCondition, str], None]):
+    def on_current_condition_updates(self, handler: Callable[[WeatherCondition, str], None]):
         """This method registers a callback to be called whenever a new 'current_condition' property update is received."""
         if handler is not None:
             self._property_current_condition.callbacks.append(handler)
 
     @property
-    def daily_forecast(self) -> Optional[interface_types.DailyForecastProperty]:
+    def daily_forecast(self) -> Optional[DailyForecastProperty]:
         """This property returns the last received value for the 'daily_forecast' property."""
         with self._property_daily_forecast_mutex:
             return self._property_daily_forecast
@@ -489,7 +484,7 @@ class WeatherServer:
         """This property sets (publishes) a new value for the 'daily_forecast' property."""
 
         if not isinstance(value, DailyForecastProperty):
-            raise ValueError(f"The value must be interface_types.DailyForecastProperty.")
+            raise ValueError(f"The value must be DailyForecastProperty.")
 
         payload = value.model_dump_json(by_alias=True)
 
@@ -501,14 +496,14 @@ class WeatherServer:
             for callback in self._property_daily_forecast.callbacks:
                 callback(value.monday, value.tuesday, value.wednesday)
 
-    def set_daily_forecast(self, monday: interface_types.ForecastForDay, tuesday: interface_types.ForecastForDay, wednesday: interface_types.ForecastForDay):
+    def set_daily_forecast(self, monday: ForecastForDay, tuesday: ForecastForDay, wednesday: ForecastForDay):
         """This method sets (publishes) a new value for the 'daily_forecast' property."""
-        if not isinstance(monday, interface_types.ForecastForDay):
-            raise ValueError(f"The 'monday' value must be interface_types.ForecastForDay.")
-        if not isinstance(tuesday, interface_types.ForecastForDay):
-            raise ValueError(f"The 'tuesday' value must be interface_types.ForecastForDay.")
-        if not isinstance(wednesday, interface_types.ForecastForDay):
-            raise ValueError(f"The 'wednesday' value must be interface_types.ForecastForDay.")
+        if not isinstance(monday, ForecastForDay):
+            raise ValueError(f"The 'monday' value must be ForecastForDay.")
+        if not isinstance(tuesday, ForecastForDay):
+            raise ValueError(f"The 'tuesday' value must be ForecastForDay.")
+        if not isinstance(wednesday, ForecastForDay):
+            raise ValueError(f"The 'wednesday' value must be ForecastForDay.")
 
         obj = interface_types.DailyForecastProperty(
             monday=monday,
@@ -519,13 +514,13 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.daily_forecast = obj
 
-    def on_daily_forecast_updates(self, handler: Callable[[interface_types.ForecastForDay, interface_types.ForecastForDay, interface_types.ForecastForDay], None]):
+    def on_daily_forecast_updates(self, handler: Callable[[ForecastForDay, ForecastForDay, ForecastForDay], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast' property update is received."""
         if handler is not None:
             self._property_daily_forecast.callbacks.append(handler)
 
     @property
-    def hourly_forecast(self) -> Optional[interface_types.HourlyForecastProperty]:
+    def hourly_forecast(self) -> Optional[HourlyForecastProperty]:
         """This property returns the last received value for the 'hourly_forecast' property."""
         with self._property_hourly_forecast_mutex:
             return self._property_hourly_forecast
@@ -535,7 +530,7 @@ class WeatherServer:
         """This property sets (publishes) a new value for the 'hourly_forecast' property."""
 
         if not isinstance(value, HourlyForecastProperty):
-            raise ValueError(f"The value must be interface_types.HourlyForecastProperty.")
+            raise ValueError(f"The value must be HourlyForecastProperty.")
 
         payload = value.model_dump_json(by_alias=True)
 
@@ -547,16 +542,16 @@ class WeatherServer:
             for callback in self._property_hourly_forecast.callbacks:
                 callback(value.hour_0, value.hour_1, value.hour_2, value.hour_3)
 
-    def set_hourly_forecast(self, hour_0: interface_types.ForecastForHour, hour_1: interface_types.ForecastForHour, hour_2: interface_types.ForecastForHour, hour_3: interface_types.ForecastForHour):
+    def set_hourly_forecast(self, hour_0: ForecastForHour, hour_1: ForecastForHour, hour_2: ForecastForHour, hour_3: ForecastForHour):
         """This method sets (publishes) a new value for the 'hourly_forecast' property."""
-        if not isinstance(hour_0, interface_types.ForecastForHour):
-            raise ValueError(f"The 'hour_0' value must be interface_types.ForecastForHour.")
-        if not isinstance(hour_1, interface_types.ForecastForHour):
-            raise ValueError(f"The 'hour_1' value must be interface_types.ForecastForHour.")
-        if not isinstance(hour_2, interface_types.ForecastForHour):
-            raise ValueError(f"The 'hour_2' value must be interface_types.ForecastForHour.")
-        if not isinstance(hour_3, interface_types.ForecastForHour):
-            raise ValueError(f"The 'hour_3' value must be interface_types.ForecastForHour.")
+        if not isinstance(hour_0, ForecastForHour):
+            raise ValueError(f"The 'hour_0' value must be ForecastForHour.")
+        if not isinstance(hour_1, ForecastForHour):
+            raise ValueError(f"The 'hour_1' value must be ForecastForHour.")
+        if not isinstance(hour_2, ForecastForHour):
+            raise ValueError(f"The 'hour_2' value must be ForecastForHour.")
+        if not isinstance(hour_3, ForecastForHour):
+            raise ValueError(f"The 'hour_3' value must be ForecastForHour.")
 
         obj = interface_types.HourlyForecastProperty(
             hour_0=hour_0,
@@ -568,7 +563,7 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.hourly_forecast = obj
 
-    def on_hourly_forecast_updates(self, handler: Callable[[interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour], None]):
+    def on_hourly_forecast_updates(self, handler: Callable[[ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast' property update is received."""
         if handler is not None:
             self._property_hourly_forecast.callbacks.append(handler)
@@ -704,11 +699,9 @@ class WeatherServerBuilder:
 
         self._location_property_callbacks: List[Callable[[float, float], None]] = []
         self._current_temperature_property_callbacks: List[Callable[[float], None]] = []
-        self._current_condition_property_callbacks: List[Callable[[interface_types.WeatherCondition, str], None]] = []
-        self._daily_forecast_property_callbacks: List[Callable[[interface_types.ForecastForDay, interface_types.ForecastForDay, interface_types.ForecastForDay], None]] = []
-        self._hourly_forecast_property_callbacks: List[
-            Callable[[interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour], None]
-        ] = []
+        self._current_condition_property_callbacks: List[Callable[[WeatherCondition, str], None]] = []
+        self._daily_forecast_property_callbacks: List[Callable[[ForecastForDay, ForecastForDay, ForecastForDay], None]] = []
+        self._hourly_forecast_property_callbacks: List[Callable[[ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour], None]] = []
         self._current_condition_refresh_interval_property_callbacks: List[Callable[[int], None]] = []
         self._hourly_forecast_refresh_interval_property_callbacks: List[Callable[[int], None]] = []
         self._daily_forecast_refresh_interval_property_callbacks: List[Callable[[int], None]] = []
@@ -739,15 +732,15 @@ class WeatherServerBuilder:
         """This method registers a callback to be called whenever a new 'current_temperature' property update is received."""
         self._current_temperature_property_callbacks.append(handler)
 
-    def on_current_condition_updates(self, handler: Callable[[interface_types.WeatherCondition, str], None]):
+    def on_current_condition_updates(self, handler: Callable[[WeatherCondition, str], None]):
         """This method registers a callback to be called whenever a new 'current_condition' property update is received."""
         self._current_condition_property_callbacks.append(handler)
 
-    def on_daily_forecast_updates(self, handler: Callable[[interface_types.ForecastForDay, interface_types.ForecastForDay, interface_types.ForecastForDay], None]):
+    def on_daily_forecast_updates(self, handler: Callable[[ForecastForDay, ForecastForDay, ForecastForDay], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast' property update is received."""
         self._daily_forecast_property_callbacks.append(handler)
 
-    def on_hourly_forecast_updates(self, handler: Callable[[interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour, interface_types.ForecastForHour], None]):
+    def on_hourly_forecast_updates(self, handler: Callable[[ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast' property update is received."""
         self._hourly_forecast_property_callbacks.append(handler)
 

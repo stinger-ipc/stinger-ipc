@@ -127,7 +127,6 @@ async fn main() {
     let mut server_clone1 = server.clone();{%endif%}
     let signal_publish_task = tokio::spawn(async move {
         loop {
-            sleep(Duration::from_secs(9)).await;
             {%for sig_name, sig in stinger.signals.items()%}
             sleep(Duration::from_secs(1)).await;
             println!("Emitting signal '{{sig_name}}'");
@@ -135,6 +134,7 @@ async fn main() {
             let signal_result = signal_result_future.await;
             println!("Signal '{{sig_name}}' was sent: {:?}", signal_result);
             {%endfor%}
+            sleep(Duration::from_secs(67)).await;
         }
     });
 
@@ -142,7 +142,7 @@ async fn main() {
     let mut server_clone2 = server.clone();{%endif%}
     let property_publish_task = tokio::spawn(async move {
         loop {
-            sleep(Duration::from_secs(11)).await;
+            sleep(Duration::from_secs(51)).await;
             
             {%for prop_name, prop in stinger.properties.items()%}
             sleep(Duration::from_secs(1)).await;

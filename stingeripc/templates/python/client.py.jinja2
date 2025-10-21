@@ -20,7 +20,6 @@ from .interface_types import *
 import threading
 {%endif%}
 from .connection import IBrokerConnection
-{%if stinger.uses_enums()%}from . import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}{%endif%}
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -49,7 +48,7 @@ class {{stinger.python.client_class_name}}:
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
-        self._property_{{prop_name|snake_case}} = None # type: Optional[{{prop_spec.python_class}}]
+        self._property_{{prop_name|snake_case}} = None # type: {%if 'Optional' in prop_spec.python_annotation%}{{prop_spec.python_annotation}}{%else%}Optional[{{prop_spec.python_annotation}}]{%endif%}
         self._property_{{prop_name|snake_case}}_mutex = threading.Lock()
         self._property_{{prop_name|snake_case}}_version = -1
         self._conn.subscribe("{{prop_spec.value_topic}}".format(self._service_id), self._receive_{{prop_name | snake_case}}_property_update_message)
@@ -76,7 +75,7 @@ class {{stinger.python.client_class_name}}:
         if not isinstance(value, {{prop_spec.python_local_type}}):
             raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}")
         {%if prop_spec.arg_list | length > 1 -%}
-        serialized = value.model_dump_json(exclude_none=True)
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         {%else-%}
         serialized = json.dumps({ "{{prop_spec.arg_list[0].name}}": value.{{prop_spec.arg_list[0].name}} })
         {%endif-%}
@@ -194,9 +193,9 @@ class {{stinger.python.client_class_name}}:
         payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}
             {{arg.name}}={{arg.name|snake_case}},{%endfor%}
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling '{{method_name}}' method with payload %s", json_payload)
-        self._conn.publish("{{method.topic}}".format(self._service_id), payload.model_dump_json(), qos=2, retain=False,
+        self._conn.publish("{{method.topic}}".format(self._service_id), json_payload, qos=2, retain=False,
                            correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._conn.client_id}')}}")
         return fut
 

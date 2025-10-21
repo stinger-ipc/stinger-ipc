@@ -20,26 +20,25 @@ from .interface_types import *
 import threading
 
 from .connection import IBrokerConnection
-from . import interface_types as interface_types
 
 logging.basicConfig(level=logging.DEBUG)
 
-TodayIsSignalCallbackType = Callable[[int, Optional[interface_types.DayOfTheWeek], datetime, timedelta, bytes], None]
+TodayIsSignalCallbackType = Callable[[int, Optional[DayOfTheWeek], datetime, timedelta, bytes], None]
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
-DoSomethingMethodResponseCallbackType = Callable[[interface_types.DoSomethingMethodResponse], None]
+DoSomethingMethodResponseCallbackType = Callable[[DoSomethingMethodResponse], None]
 EchoMethodResponseCallbackType = Callable[[str], None]
 WhatTimeIsItMethodResponseCallbackType = Callable[[datetime], None]
-SetTheTimeMethodResponseCallbackType = Callable[[interface_types.SetTheTimeMethodResponse], None]
+SetTheTimeMethodResponseCallbackType = Callable[[SetTheTimeMethodResponse], None]
 ForwardTimeMethodResponseCallbackType = Callable[[datetime], None]
 HowOffIsTheClockMethodResponseCallbackType = Callable[[timedelta], None]
 
 FavoriteNumberPropertyUpdatedCallbackType = Callable[[int], None]
-FavoriteFoodsPropertyUpdatedCallbackType = Callable[[interface_types.FavoriteFoodsProperty], None]
-LunchMenuPropertyUpdatedCallbackType = Callable[[interface_types.LunchMenuProperty], None]
+FavoriteFoodsPropertyUpdatedCallbackType = Callable[[FavoriteFoodsProperty], None]
+LunchMenuPropertyUpdatedCallbackType = Callable[[LunchMenuProperty], None]
 FamilyNamePropertyUpdatedCallbackType = Callable[[str], None]
 LastBreakfastTimePropertyUpdatedCallbackType = Callable[[datetime], None]
 BreakfastLengthPropertyUpdatedCallbackType = Callable[[timedelta], None]
-LastBirthdaysPropertyUpdatedCallbackType = Callable[[interface_types.LastBirthdaysProperty], None]
+LastBirthdaysPropertyUpdatedCallbackType = Callable[[LastBirthdaysProperty], None]
 
 
 class FullClient:
@@ -60,12 +59,12 @@ class FullClient:
         self._property_favorite_number_version = -1
         self._conn.subscribe("full/{}/property/favoriteNumber/value".format(self._service_id), self._receive_favorite_number_property_update_message)
         self._changed_value_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
-        self._property_favorite_foods = None  # type: Optional[interface_types.FavoriteFoodsProperty]
+        self._property_favorite_foods = None  # type: Optional[FavoriteFoodsProperty]
         self._property_favorite_foods_mutex = threading.Lock()
         self._property_favorite_foods_version = -1
         self._conn.subscribe("full/{}/property/favoriteFoods/value".format(self._service_id), self._receive_favorite_foods_property_update_message)
         self._changed_value_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
-        self._property_lunch_menu = None  # type: Optional[interface_types.LunchMenuProperty]
+        self._property_lunch_menu = None  # type: Optional[LunchMenuProperty]
         self._property_lunch_menu_mutex = threading.Lock()
         self._property_lunch_menu_version = -1
         self._conn.subscribe("full/{}/property/lunchMenu/value".format(self._service_id), self._receive_lunch_menu_property_update_message)
@@ -75,17 +74,17 @@ class FullClient:
         self._property_family_name_version = -1
         self._conn.subscribe("full/{}/property/familyName/value".format(self._service_id), self._receive_family_name_property_update_message)
         self._changed_value_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
-        self._property_last_breakfast_time = None  # type: Optional[datetime.datetime]
+        self._property_last_breakfast_time = None  # type: Optional[datetime]
         self._property_last_breakfast_time_mutex = threading.Lock()
         self._property_last_breakfast_time_version = -1
         self._conn.subscribe("full/{}/property/lastBreakfastTime/value".format(self._service_id), self._receive_last_breakfast_time_property_update_message)
         self._changed_value_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
-        self._property_breakfast_length = None  # type: Optional[datetime.timedelta]
+        self._property_breakfast_length = None  # type: Optional[timedelta]
         self._property_breakfast_length_mutex = threading.Lock()
         self._property_breakfast_length_version = -1
         self._conn.subscribe("full/{}/property/breakfastLength/value".format(self._service_id), self._receive_breakfast_length_property_update_message)
         self._changed_value_callbacks_for_breakfast_length: list[BreakfastLengthPropertyUpdatedCallbackType] = []
-        self._property_last_birthdays = None  # type: Optional[interface_types.LastBirthdaysProperty]
+        self._property_last_birthdays = None  # type: Optional[LastBirthdaysProperty]
         self._property_last_birthdays_mutex = threading.Lock()
         self._property_last_birthdays_version = -1
         self._conn.subscribe("full/{}/property/lastBirthdays/value".format(self._service_id), self._receive_last_birthdays_property_update_message)
@@ -124,16 +123,16 @@ class FullClient:
         return handler
 
     @property
-    def favorite_foods(self) -> Optional[interface_types.FavoriteFoodsProperty]:
+    def favorite_foods(self) -> Optional[FavoriteFoodsProperty]:
         """Property 'favorite_foods' getter."""
         return self._property_favorite_foods
 
     @favorite_foods.setter
-    def favorite_foods(self, value: interface_types.FavoriteFoodsProperty):
+    def favorite_foods(self, value: FavoriteFoodsProperty):
         """Serializes and publishes the 'favorite_foods' property."""
         if not isinstance(value, FavoriteFoodsProperty):
-            raise ValueError("The 'favorite_foods' property must be a interface_types.FavoriteFoodsProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'favorite_foods' property must be a FavoriteFoodsProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'favorite_foods' property to %s", serialized)
         self._conn.publish("full/{}/property/favoriteFoods/setValue".format(self._service_id), serialized, qos=1)
 
@@ -148,16 +147,16 @@ class FullClient:
         return handler
 
     @property
-    def lunch_menu(self) -> Optional[interface_types.LunchMenuProperty]:
+    def lunch_menu(self) -> Optional[LunchMenuProperty]:
         """Property 'lunch_menu' getter."""
         return self._property_lunch_menu
 
     @lunch_menu.setter
-    def lunch_menu(self, value: interface_types.LunchMenuProperty):
+    def lunch_menu(self, value: LunchMenuProperty):
         """Serializes and publishes the 'lunch_menu' property."""
         if not isinstance(value, LunchMenuProperty):
-            raise ValueError("The 'lunch_menu' property must be a interface_types.LunchMenuProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'lunch_menu' property must be a LunchMenuProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'lunch_menu' property to %s", serialized)
         self._conn.publish("full/{}/property/lunchMenu/setValue".format(self._service_id), serialized, qos=1)
 
@@ -204,7 +203,7 @@ class FullClient:
     def last_breakfast_time(self, value: datetime):
         """Serializes and publishes the 'last_breakfast_time' property."""
         if not isinstance(value, datetime):
-            raise ValueError("The 'last_breakfast_time' property must be a datetime.datetime")
+            raise ValueError("The 'last_breakfast_time' property must be a datetime")
         serialized = json.dumps({"timestamp": value.timestamp})
         self._logger.debug("Setting 'last_breakfast_time' property to %s", serialized)
         self._conn.publish("full/{}/property/lastBreakfastTime/setValue".format(self._service_id), serialized, qos=1)
@@ -228,7 +227,7 @@ class FullClient:
     def breakfast_length(self, value: timedelta):
         """Serializes and publishes the 'breakfast_length' property."""
         if not isinstance(value, timedelta):
-            raise ValueError("The 'breakfast_length' property must be a datetime.timedelta")
+            raise ValueError("The 'breakfast_length' property must be a timedelta")
         serialized = json.dumps({"length": value.length})
         self._logger.debug("Setting 'breakfast_length' property to %s", serialized)
         self._conn.publish("full/{}/property/breakfastLength/setValue".format(self._service_id), serialized, qos=1)
@@ -244,16 +243,16 @@ class FullClient:
         return handler
 
     @property
-    def last_birthdays(self) -> Optional[interface_types.LastBirthdaysProperty]:
+    def last_birthdays(self) -> Optional[LastBirthdaysProperty]:
         """Property 'last_birthdays' getter."""
         return self._property_last_birthdays
 
     @last_birthdays.setter
-    def last_birthdays(self, value: interface_types.LastBirthdaysProperty):
+    def last_birthdays(self, value: LastBirthdaysProperty):
         """Serializes and publishes the 'last_birthdays' property."""
         if not isinstance(value, LastBirthdaysProperty):
-            raise ValueError("The 'last_birthdays' property must be a interface_types.LastBirthdaysProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'last_birthdays' property must be a LastBirthdaysProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'last_birthdays' property to %s", serialized)
         self._conn.publish("full/{}/property/lastBirthdays/setValue".format(self._service_id), serialized, qos=1)
 
@@ -594,15 +593,10 @@ class FullClient:
             second=second,
             third=third,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'addNumbers' method with payload %s", json_payload)
         self._conn.publish(
-            "full/{}/method/addNumbers".format(self._service_id),
-            payload.model_dump_json(),
-            qos=2,
-            retain=False,
-            correlation_id=correlation_id,
-            response_topic=f"client/{self._conn.client_id}/addNumbers/response",
+            "full/{}/method/addNumbers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=f"client/{self._conn.client_id}/addNumbers/response"
         )
         return fut
 
@@ -633,11 +627,11 @@ class FullClient:
         payload = DoSomethingMethodRequest(
             aString=a_string,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'doSomething' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/doSomething".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -672,10 +666,10 @@ class FullClient:
         payload = EchoMethodRequest(
             message=message,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'echo' method with payload %s", json_payload)
         self._conn.publish(
-            "full/{}/method/echo".format(self._service_id), payload.model_dump_json(), qos=2, retain=False, correlation_id=correlation_id, response_topic=f"client/{self._conn.client_id}/echo/response"
+            "full/{}/method/echo".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=f"client/{self._conn.client_id}/echo/response"
         )
         return fut
 
@@ -706,11 +700,11 @@ class FullClient:
         payload = WhatTimeIsItMethodRequest(
             the_first_time=the_first_time,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'what_time_is_it' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/whatTimeIsIt".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -746,11 +740,11 @@ class FullClient:
             the_first_time=the_first_time,
             the_second_time=the_second_time,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'set_the_time' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/setTheTime".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -785,11 +779,11 @@ class FullClient:
         payload = ForwardTimeMethodRequest(
             adjustment=adjustment,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'forward_time' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/forwardTime".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -824,11 +818,11 @@ class FullClient:
         payload = HowOffIsTheClockMethodRequest(
             actual_time=actual_time,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'how_off_is_the_clock' method with payload %s", json_payload)
         self._conn.publish(
             "full/{}/method/howOffIsTheClock".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,

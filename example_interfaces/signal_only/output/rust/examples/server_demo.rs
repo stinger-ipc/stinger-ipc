@@ -41,8 +41,6 @@ async fn main() {
     let mut server_clone1 = server.clone();
     let signal_publish_task = tokio::spawn(async move {
         loop {
-            sleep(Duration::from_secs(9)).await;
-
             sleep(Duration::from_secs(1)).await;
             println!("Emitting signal 'anotherSignal'");
             let signal_result_future = server_clone1
@@ -76,12 +74,14 @@ async fn main() {
             let signal_result_future = server_clone1.emit_now(chrono::Utc::now()).await;
             let signal_result = signal_result_future.await;
             println!("Signal 'now' was sent: {:?}", signal_result);
+
+            sleep(Duration::from_secs(67)).await;
         }
     });
 
     let property_publish_task = tokio::spawn(async move {
         loop {
-            sleep(Duration::from_secs(11)).await;
+            sleep(Duration::from_secs(51)).await;
         }
     });
 

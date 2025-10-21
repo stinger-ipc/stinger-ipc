@@ -37,12 +37,11 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
         "connection.py",
         "__init__.py",
         "method_codes.py",
+        "interface_types.py",
     ]:
         of = generated_pkg_dir / output_file
         print(f"[bold green]Generating:[/bold green] {of}")
         output = t.render_template(f"{output_file}.jinja2", of, **params)
-
-    t.render_template("interface_types.py.jinja2", f"{generated_pkg_dir}/{stinger.get_enum_module_name()}.py", **params)
 
     os.makedirs(output_dir / "examples", exist_ok=True)
     for output_file in [

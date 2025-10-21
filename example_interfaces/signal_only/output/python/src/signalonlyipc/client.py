@@ -15,7 +15,6 @@ from isodate import parse_duration
 
 from .connection import IBrokerConnection
 
-
 logging.basicConfig(level=logging.DEBUG)
 
 AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]

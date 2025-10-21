@@ -1,10 +1,11 @@
 import signal
 from time import sleep
-from typing import Optional, Union
-from datetime import datetime, timedelta
+import concurrent.futures as futures
+from typing import Optional, Union, List
+from datetime import datetime, timedelta, UTC
 from fullipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from fullipc.client import FullClient, FullClientBuilder, FullClientDiscoverer
-from fullipc import interface_types
+from fullipc.interface_types import *
 
 if __name__ == "__main__":
 
@@ -14,10 +15,10 @@ if __name__ == "__main__":
     client_builder = FullClientBuilder()
 
     @client_builder.receive_today_is
-    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: Optional[interface_types.DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
+    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: Optional[DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
         """
         @param dayOfMonth int
-        @param dayOfWeek Optional[interface_types.DayOfTheWeek]
+        @param dayOfWeek Optional[DayOfTheWeek]
         @param timestamp datetime
         @param process_time timedelta
         @param memory_segment bytes
@@ -30,12 +31,12 @@ if __name__ == "__main__":
         print(f"Property 'favorite_number' has been updated to: {value}")
 
     @client_builder.favorite_foods_updated
-    def print_new_favorite_foods_value(value: interface_types.FavoriteFoodsProperty):
+    def print_new_favorite_foods_value(value: FavoriteFoodsProperty):
         """ """
         print(f"Property 'favorite_foods' has been updated to: {value}")
 
     @client_builder.lunch_menu_updated
-    def print_new_lunch_menu_value(value: interface_types.LunchMenuProperty):
+    def print_new_lunch_menu_value(value: LunchMenuProperty):
         """ """
         print(f"Property 'lunch_menu' has been updated to: {value}")
 
@@ -55,7 +56,7 @@ if __name__ == "__main__":
         print(f"Property 'breakfast_length' has been updated to: {value}")
 
     @client_builder.last_birthdays_updated
-    def print_new_last_birthdays_value(value: interface_types.LastBirthdaysProperty):
+    def print_new_last_birthdays_value(value: LastBirthdaysProperty):
         """ """
         print(f"Property 'last_birthdays' has been updated to: {value}")
 
@@ -91,14 +92,14 @@ if __name__ == "__main__":
         print(f"Timed out waiting for response to 'echo' call")
 
     print("Making call to 'what_time_is_it'")
-    future_resp = client.what_time_is_it(the_first_time=datetime.now())
+    future_resp = client.what_time_is_it(the_first_time=datetime.now(UTC))
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'what_time_is_it' call")
 
     print("Making call to 'set_the_time'")
-    future_resp = client.set_the_time(the_first_time=datetime.now(), the_second_time=datetime.now())
+    future_resp = client.set_the_time(the_first_time=datetime.now(UTC), the_second_time=datetime.now(UTC))
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
@@ -112,7 +113,7 @@ if __name__ == "__main__":
         print(f"Timed out waiting for response to 'forward_time' call")
 
     print("Making call to 'how_off_is_the_clock'")
-    future_resp = client.how_off_is_the_clock(actual_time=datetime.now())
+    future_resp = client.how_off_is_the_clock(actual_time=datetime.now(UTC))
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:

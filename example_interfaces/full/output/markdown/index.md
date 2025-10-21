@@ -187,7 +187,7 @@ The `todayIs` signal can be subscribed to by using the client's `receive_today_i
 
 ```python
 @client.receive_today_is
-def on_today_is(dayOfMonth: int, dayOfWeek: Optional[interface_types.DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
+def on_today_is(dayOfMonth: int, dayOfWeek: Optional[DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
     print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } timestamp={ timestamp } process_time={ process_time } memory_segment={ memory_segment } ")
 ```
 
@@ -199,7 +199,7 @@ def on_today_is(dayOfMonth: int, dayOfWeek: Optional[interface_types.DayOfTheWee
 A server can emit a `todayIs` signal simply by calling the server's `emit_today_is` method.
 
 ```python
-server.emit_today_is(42, interface_types.DayOfTheWeek.SATURDAY, datetime.now(), timedelta(seconds=3536), b"example binary data")
+server.emit_today_is(42, DayOfTheWeek.SATURDAY, datetime.now(UTC), timedelta(seconds=3536), b"example binary data")
 ```
 
 </details>
@@ -372,10 +372,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_do_something 
-def do_something(aString: str) -> interface_types.DoSomethingMethodResponse:
+def do_something(aString: str) -> DoSomethingMethodResponse:
     """ This is an example handler for the 'doSomething' method.  """
     print(f"Running do_something'({aString})'")
-    return interface_types.DoSomethingMethodResponse(label="apples", identifier=42, day=interface_types.DayOfTheWeek.SATURDAY)
+    return DoSomethingMethodResponse(label="apples", identifier=42, day=DayOfTheWeek.SATURDAY)
 ```
 
 </details>
@@ -477,7 +477,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.what_time_is_it(the_first_time=datetime.now())
+future = client.what_time_is_it(the_first_time=datetime.now(UTC))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -497,7 +497,7 @@ The decorated method is called everytime the a request for the method is receive
 def what_time_is_it(the_first_time: datetime) -> datetime:
     """ This is an example handler for the 'what_time_is_it' method.  """
     print(f"Running what_time_is_it'({the_first_time})'")
-    return datetime.now()
+    return datetime.now(UTC)
 ```
 
 </details>
@@ -539,7 +539,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.set_the_time(the_first_time=datetime.now(), the_second_time=datetime.now())
+future = client.set_the_time(the_first_time=datetime.now(UTC), the_second_time=datetime.now(UTC))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -556,10 +556,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_set_the_time 
-def set_the_time(the_first_time: datetime, the_second_time: datetime) -> interface_types.SetTheTimeMethodResponse:
+def set_the_time(the_first_time: datetime, the_second_time: datetime) -> SetTheTimeMethodResponse:
     """ This is an example handler for the 'set_the_time' method.  """
     print(f"Running set_the_time'({the_first_time}, {the_second_time})'")
-    return interface_types.SetTheTimeMethodResponse(timestamp=datetime.now(), confirmation_message="apples")
+    return SetTheTimeMethodResponse(timestamp=datetime.now(UTC), confirmation_message="apples")
 ```
 
 </details>
@@ -620,7 +620,7 @@ The decorated method is called everytime the a request for the method is receive
 def forward_time(adjustment: timedelta) -> datetime:
     """ This is an example handler for the 'forward_time' method.  """
     print(f"Running forward_time'({adjustment})'")
-    return datetime.now()
+    return datetime.now(UTC)
 ```
 
 </details>
@@ -661,7 +661,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.how_off_is_the_clock(actual_time=datetime.now())
+future = client.how_off_is_the_clock(actual_time=datetime.now(UTC))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:

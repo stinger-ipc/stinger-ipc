@@ -1,10 +1,10 @@
 from time import sleep
 import signal
-from typing import Optional, Union
-from datetime import datetime, timedelta
+from typing import Optional, Union, List
+from datetime import datetime, timedelta, UTC
 from signalonlyipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from signalonlyipc.server import SignalOnlyServer
-from signalonlyipc import interface_types
+from signalonlyipc.interface_types import *
 
 if __name__ == "__main__":
     """
@@ -24,14 +24,14 @@ if __name__ == "__main__":
             server.emit_bark("apples")
             server.emit_maybe_number(42)
             server.emit_maybe_name("apples")
-            server.emit_now(datetime.now())
+            server.emit_now(datetime.now(UTC))
 
             sleep(4)
             server.emit_another_signal(one=3.14, two=True, three="apples")
             server.emit_bark(word="apples")
             server.emit_maybe_number(number=42)
             server.emit_maybe_name(name="apples")
-            server.emit_now(timestamp=datetime.now())
+            server.emit_now(timestamp=datetime.now(UTC))
 
             sleep(16)
         except KeyboardInterrupt:

@@ -18,7 +18,6 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from .connection import IBrokerConnection
 from .method_codes import *
 from .interface_types import *
-from .  import {{stinger.get_enum_module_name()}} as {{stinger.get_enum_module_alias()}}
 {%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
 
 T = TypeVar('T')
@@ -115,17 +114,17 @@ class {{stinger.python.server_class_name}}:
         self._logger.warning("Received unexpected message to %s", topic)
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    def emit_{{sig_name|snake_case}}(self, {%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def emit_{{sig_name|snake_case}}(self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ Server application code should call this method to emit the '{{sig_name}}' signal.
 
         {{sig_name|UpperCamelCase}}SignalPayload is a pydantic BaseModel which will validate the arguments.
         """
         {%for arg in sig.arg_list%}
-        assert isinstance({{arg.name}}, {{arg.python_annotation}}), f"The '{{arg.name}}' argument must be of type {{arg.python_annotation}}, but was {type({{arg.name}})}"
+        assert isinstance({{arg.name|snake_case}}, {{arg.python_type}}){%if arg.optional%} or {{arg.name|snake_case}} is None{%endif%}, f"The '{{arg.name}}' argument must be of type {{arg.python_annotation}}, but was {type({{arg.name|snake_case}})}"
         {%endfor%}
 
         payload = {{sig_name|UpperCamelCase}}SignalPayload({%-for arg in sig.arg_list%}
-            {{arg.name}}={{arg.name}}{%if arg.optional%} if {{arg.name}} is not None else None{%endif%},
+            {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
         {%endfor%})
         self._conn.publish("{{sig.topic}}".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 

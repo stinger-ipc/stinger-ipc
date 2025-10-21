@@ -6,7 +6,7 @@ It contains enumerations used by the Test Able interface.
 """
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Optional, Annotated, Union, List
 import base64
 from enum import IntEnum
@@ -104,54 +104,15 @@ class AllTypes(BaseModel):
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
-    optional_integer: Annotated[
-        Optional[int],
-        Field(
-            description="An optional integer type.",
-            alias="OptionalInteger",
-        ),
-    ]
-    optional_string: Annotated[
-        Optional[str],
-        Field(
-            description="An optional string type.",
-            alias="OptionalString",
-        ),
-    ]
-    optional_enum: Annotated[
-        Optional[Numbers],
-        Field(
-            description="An optional enum type, one of the numbers.",
-            alias="OptionalEnum",
-        ),
-    ]
-    optional_entry_object: Annotated[
-        Optional[Entry],
-        Field(
-            description="An optional struct type.",
-            alias="optionalEntryObject",
-        ),
-    ]
-    optional_date_time: Annotated[
-        Optional[datetime],
-        Field(
-            description="An optional date and time type.",
-            alias="OptionalDateTime",
-        ),
-    ]
-    optional_duration: Annotated[
-        Optional[timedelta],
-        Field(
-            description="An optional duration type.",
-            alias="OptionalDuration",
-        ),
-    ]
+    optional_integer: Annotated[Optional[int], Field(description="An optional integer type.", alias="OptionalInteger")]
+    optional_string: Annotated[Optional[str], Field(description="An optional string type.", alias="OptionalString")]
+    optional_enum: Annotated[Optional[Numbers], Field(description="An optional enum type, one of the numbers.", alias="OptionalEnum")]
+    optional_entry_object: Annotated[Optional[Entry], Field(description="An optional struct type.", alias="optionalEntryObject")]
+    optional_date_time: Annotated[Optional[datetime], Field(description="An optional date and time type.", alias="OptionalDateTime")]
+    optional_duration: Annotated[Optional[timedelta], Field(description="An optional duration type.", alias="OptionalDuration")]
     optional_binary: Annotated[
         Optional[bytes],
-        Field(
-            description="An optional binary type.",
-            alias="OptionalBinary",
-        ),
+        Field(description="An optional binary type.", alias="OptionalBinary"),
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None),
     ]
@@ -1065,10 +1026,7 @@ class ReadWriteListOfStringsProperty(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    value: Annotated[
-        List[str],
-        Field(),
-    ]
+    value: Annotated[List[str], Field()]
 
 
 class ReadWriteListsProperty(BaseModel):
@@ -1079,17 +1037,9 @@ class ReadWriteListsProperty(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    the_list: Annotated[
-        List[Numbers],
-        Field(),
-    ]
+    the_list: Annotated[List[Numbers], Field()]
 
-    optional_list: Annotated[
-        Optional[List[datetime]],
-        Field(
-            alias="optionalList",
-        ),
-    ]
+    optional_list: Annotated[Optional[List[datetime]], Field(alias="optionalList")]
 
 
 class CallWithNothingMethodRequest(BaseModel):
@@ -1640,10 +1590,7 @@ class CallOneListOfIntegersMethodRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    input1: Annotated[
-        List[int],
-        Field(),
-    ]
+    input1: Annotated[List[int], Field()]
 
 
 class CallOneListOfIntegersMethodResponse(BaseModel):
@@ -1654,10 +1601,7 @@ class CallOneListOfIntegersMethodResponse(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    output1: Annotated[
-        List[int],
-        Field(),
-    ]
+    output1: Annotated[List[int], Field()]
 
 
 class CallOptionalListOfFloatsMethodRequest(BaseModel):
@@ -1668,10 +1612,7 @@ class CallOptionalListOfFloatsMethodRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    input1: Annotated[
-        Optional[List[float]],
-        Field(),
-    ]
+    input1: Annotated[Optional[List[float]], Field()]
 
 
 class CallOptionalListOfFloatsMethodResponse(BaseModel):
@@ -1682,10 +1623,7 @@ class CallOptionalListOfFloatsMethodResponse(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    output1: Annotated[
-        Optional[List[float]],
-        Field(),
-    ]
+    output1: Annotated[Optional[List[float]], Field()]
 
 
 class CallTwoListsMethodRequest(BaseModel):
@@ -1703,10 +1641,7 @@ class CallTwoListsMethodRequest(BaseModel):
         ),
     ]
 
-    input2: Annotated[
-        Optional[List[str]],
-        Field(),
-    ]
+    input2: Annotated[Optional[List[str]], Field()]
 
 
 class CallTwoListsMethodResponse(BaseModel):
@@ -1724,7 +1659,4 @@ class CallTwoListsMethodResponse(BaseModel):
         ),
     ]
 
-    output2: Annotated[
-        Optional[List[str]],
-        Field(),
-    ]
+    output2: Annotated[Optional[List[str]], Field()]

@@ -20,7 +20,6 @@ from .interface_types import *
 import threading
 
 from .connection import IBrokerConnection
-from . import interface_types as interface_types
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -31,12 +30,12 @@ ThreeIntegersSignalCallbackType = Callable[[int, int, Optional[int]], None]
 SingleStringSignalCallbackType = Callable[[str], None]
 SingleOptionalStringSignalCallbackType = Callable[[Optional[str]], None]
 ThreeStringsSignalCallbackType = Callable[[str, str, Optional[str]], None]
-SingleEnumSignalCallbackType = Callable[[interface_types.Numbers], None]
-SingleOptionalEnumSignalCallbackType = Callable[[Optional[interface_types.Numbers]], None]
-ThreeEnumsSignalCallbackType = Callable[[interface_types.Numbers, interface_types.Numbers, Optional[interface_types.Numbers]], None]
-SingleStructSignalCallbackType = Callable[[interface_types.AllTypes], None]
-SingleOptionalStructSignalCallbackType = Callable[[interface_types.AllTypes], None]
-ThreeStructsSignalCallbackType = Callable[[interface_types.AllTypes, interface_types.AllTypes, interface_types.AllTypes], None]
+SingleEnumSignalCallbackType = Callable[[Numbers], None]
+SingleOptionalEnumSignalCallbackType = Callable[[Optional[Numbers]], None]
+ThreeEnumsSignalCallbackType = Callable[[Numbers, Numbers, Optional[Numbers]], None]
+SingleStructSignalCallbackType = Callable[[AllTypes], None]
+SingleOptionalStructSignalCallbackType = Callable[[AllTypes], None]
+ThreeStructsSignalCallbackType = Callable[[AllTypes, AllTypes, AllTypes], None]
 SingleDateTimeSignalCallbackType = Callable[[datetime], None]
 SingleOptionalDatetimeSignalCallbackType = Callable[[Optional[datetime]], None]
 ThreeDateTimesSignalCallbackType = Callable[[datetime, datetime, Optional[datetime]], None]
@@ -46,63 +45,61 @@ ThreeDurationsSignalCallbackType = Callable[[timedelta, timedelta, Optional[time
 SingleBinarySignalCallbackType = Callable[[bytes], None]
 SingleOptionalBinarySignalCallbackType = Callable[[bytes], None]
 ThreeBinariesSignalCallbackType = Callable[[bytes, bytes, bytes], None]
-SingleArrayOfIntegersSignalCallbackType = Callable[[list[int]], None]
-SingleOptionalArrayOfStringsSignalCallbackType = Callable[[list[str]], None]
-ArrayOfEveryTypeSignalCallbackType = Callable[
-    [list[int], list[float], list[str], list[interface_types.Numbers], list[interface_types.Entry], list[datetime.datetime], list[datetime.timedelta], list[bytes]], None
-]
+SingleArrayOfIntegersSignalCallbackType = Callable[[List[int]], None]
+SingleOptionalArrayOfStringsSignalCallbackType = Callable[[List[str]], None]
+ArrayOfEveryTypeSignalCallbackType = Callable[[List[int], List[float], List[str], List[Numbers], List[Entry], List[datetime], List[timedelta], List[bytes]], None]
 CallWithNothingMethodResponseCallbackType = Callable[[], None]
 CallOneIntegerMethodResponseCallbackType = Callable[[int], None]
 CallOptionalIntegerMethodResponseCallbackType = Callable[[Optional[int]], None]
-CallThreeIntegersMethodResponseCallbackType = Callable[[interface_types.CallThreeIntegersMethodResponse], None]
+CallThreeIntegersMethodResponseCallbackType = Callable[[CallThreeIntegersMethodResponse], None]
 CallOneStringMethodResponseCallbackType = Callable[[str], None]
 CallOptionalStringMethodResponseCallbackType = Callable[[Optional[str]], None]
-CallThreeStringsMethodResponseCallbackType = Callable[[interface_types.CallThreeStringsMethodResponse], None]
-CallOneEnumMethodResponseCallbackType = Callable[[interface_types.Numbers], None]
-CallOptionalEnumMethodResponseCallbackType = Callable[[Optional[interface_types.Numbers]], None]
-CallThreeEnumsMethodResponseCallbackType = Callable[[interface_types.CallThreeEnumsMethodResponse], None]
-CallOneStructMethodResponseCallbackType = Callable[[interface_types.AllTypes], None]
-CallOptionalStructMethodResponseCallbackType = Callable[[interface_types.AllTypes], None]
-CallThreeStructsMethodResponseCallbackType = Callable[[interface_types.CallThreeStructsMethodResponse], None]
+CallThreeStringsMethodResponseCallbackType = Callable[[CallThreeStringsMethodResponse], None]
+CallOneEnumMethodResponseCallbackType = Callable[[Numbers], None]
+CallOptionalEnumMethodResponseCallbackType = Callable[[Optional[Numbers]], None]
+CallThreeEnumsMethodResponseCallbackType = Callable[[CallThreeEnumsMethodResponse], None]
+CallOneStructMethodResponseCallbackType = Callable[[AllTypes], None]
+CallOptionalStructMethodResponseCallbackType = Callable[[AllTypes], None]
+CallThreeStructsMethodResponseCallbackType = Callable[[CallThreeStructsMethodResponse], None]
 CallOneDateTimeMethodResponseCallbackType = Callable[[datetime], None]
 CallOptionalDateTimeMethodResponseCallbackType = Callable[[Optional[datetime]], None]
-CallThreeDateTimesMethodResponseCallbackType = Callable[[interface_types.CallThreeDateTimesMethodResponse], None]
+CallThreeDateTimesMethodResponseCallbackType = Callable[[CallThreeDateTimesMethodResponse], None]
 CallOneDurationMethodResponseCallbackType = Callable[[timedelta], None]
 CallOptionalDurationMethodResponseCallbackType = Callable[[Optional[timedelta]], None]
-CallThreeDurationsMethodResponseCallbackType = Callable[[interface_types.CallThreeDurationsMethodResponse], None]
+CallThreeDurationsMethodResponseCallbackType = Callable[[CallThreeDurationsMethodResponse], None]
 CallOneBinaryMethodResponseCallbackType = Callable[[bytes], None]
 CallOptionalBinaryMethodResponseCallbackType = Callable[[bytes], None]
-CallThreeBinariesMethodResponseCallbackType = Callable[[interface_types.CallThreeBinariesMethodResponse], None]
-CallOneListOfIntegersMethodResponseCallbackType = Callable[[list[int]], None]
-CallOptionalListOfFloatsMethodResponseCallbackType = Callable[[list[float]], None]
-CallTwoListsMethodResponseCallbackType = Callable[[interface_types.CallTwoListsMethodResponse], None]
+CallThreeBinariesMethodResponseCallbackType = Callable[[CallThreeBinariesMethodResponse], None]
+CallOneListOfIntegersMethodResponseCallbackType = Callable[[List[int]], None]
+CallOptionalListOfFloatsMethodResponseCallbackType = Callable[[List[float]], None]
+CallTwoListsMethodResponseCallbackType = Callable[[CallTwoListsMethodResponse], None]
 
 ReadWriteIntegerPropertyUpdatedCallbackType = Callable[[int], None]
 ReadOnlyIntegerPropertyUpdatedCallbackType = Callable[[int], None]
 ReadWriteOptionalIntegerPropertyUpdatedCallbackType = Callable[[Optional[int]], None]
-ReadWriteTwoIntegersPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoIntegersProperty], None]
+ReadWriteTwoIntegersPropertyUpdatedCallbackType = Callable[[ReadWriteTwoIntegersProperty], None]
 ReadOnlyStringPropertyUpdatedCallbackType = Callable[[str], None]
 ReadWriteStringPropertyUpdatedCallbackType = Callable[[str], None]
 ReadWriteOptionalStringPropertyUpdatedCallbackType = Callable[[Optional[str]], None]
-ReadWriteTwoStringsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoStringsProperty], None]
-ReadWriteStructPropertyUpdatedCallbackType = Callable[[interface_types.AllTypes], None]
-ReadWriteOptionalStructPropertyUpdatedCallbackType = Callable[[interface_types.AllTypes], None]
-ReadWriteTwoStructsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoStructsProperty], None]
-ReadOnlyEnumPropertyUpdatedCallbackType = Callable[[interface_types.Numbers], None]
-ReadWriteEnumPropertyUpdatedCallbackType = Callable[[interface_types.Numbers], None]
-ReadWriteOptionalEnumPropertyUpdatedCallbackType = Callable[[Optional[interface_types.Numbers]], None]
-ReadWriteTwoEnumsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoEnumsProperty], None]
+ReadWriteTwoStringsPropertyUpdatedCallbackType = Callable[[ReadWriteTwoStringsProperty], None]
+ReadWriteStructPropertyUpdatedCallbackType = Callable[[AllTypes], None]
+ReadWriteOptionalStructPropertyUpdatedCallbackType = Callable[[AllTypes], None]
+ReadWriteTwoStructsPropertyUpdatedCallbackType = Callable[[ReadWriteTwoStructsProperty], None]
+ReadOnlyEnumPropertyUpdatedCallbackType = Callable[[Numbers], None]
+ReadWriteEnumPropertyUpdatedCallbackType = Callable[[Numbers], None]
+ReadWriteOptionalEnumPropertyUpdatedCallbackType = Callable[[Optional[Numbers]], None]
+ReadWriteTwoEnumsPropertyUpdatedCallbackType = Callable[[ReadWriteTwoEnumsProperty], None]
 ReadWriteDatetimePropertyUpdatedCallbackType = Callable[[datetime], None]
 ReadWriteOptionalDatetimePropertyUpdatedCallbackType = Callable[[Optional[datetime]], None]
-ReadWriteTwoDatetimesPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoDatetimesProperty], None]
+ReadWriteTwoDatetimesPropertyUpdatedCallbackType = Callable[[ReadWriteTwoDatetimesProperty], None]
 ReadWriteDurationPropertyUpdatedCallbackType = Callable[[timedelta], None]
 ReadWriteOptionalDurationPropertyUpdatedCallbackType = Callable[[Optional[timedelta]], None]
-ReadWriteTwoDurationsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoDurationsProperty], None]
+ReadWriteTwoDurationsPropertyUpdatedCallbackType = Callable[[ReadWriteTwoDurationsProperty], None]
 ReadWriteBinaryPropertyUpdatedCallbackType = Callable[[bytes], None]
 ReadWriteOptionalBinaryPropertyUpdatedCallbackType = Callable[[bytes], None]
-ReadWriteTwoBinariesPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteTwoBinariesProperty], None]
-ReadWriteListOfStringsPropertyUpdatedCallbackType = Callable[[list[str]], None]
-ReadWriteListsPropertyUpdatedCallbackType = Callable[[interface_types.ReadWriteListsProperty], None]
+ReadWriteTwoBinariesPropertyUpdatedCallbackType = Callable[[ReadWriteTwoBinariesProperty], None]
+ReadWriteListOfStringsPropertyUpdatedCallbackType = Callable[[List[str]], None]
+ReadWriteListsPropertyUpdatedCallbackType = Callable[[ReadWriteListsProperty], None]
 
 
 class TestAbleClient:
@@ -133,7 +130,7 @@ class TestAbleClient:
         self._property_read_write_optional_integer_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalInteger/value".format(self._service_id), self._receive_read_write_optional_integer_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_integer: list[ReadWriteOptionalIntegerPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_integers = None  # type: Optional[interface_types.ReadWriteTwoIntegersProperty]
+        self._property_read_write_two_integers = None  # type: Optional[ReadWriteTwoIntegersProperty]
         self._property_read_write_two_integers_mutex = threading.Lock()
         self._property_read_write_two_integers_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoIntegers/value".format(self._service_id), self._receive_read_write_two_integers_property_update_message)
@@ -153,72 +150,72 @@ class TestAbleClient:
         self._property_read_write_optional_string_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalString/value".format(self._service_id), self._receive_read_write_optional_string_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_string: list[ReadWriteOptionalStringPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_strings = None  # type: Optional[interface_types.ReadWriteTwoStringsProperty]
+        self._property_read_write_two_strings = None  # type: Optional[ReadWriteTwoStringsProperty]
         self._property_read_write_two_strings_mutex = threading.Lock()
         self._property_read_write_two_strings_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoStrings/value".format(self._service_id), self._receive_read_write_two_strings_property_update_message)
         self._changed_value_callbacks_for_read_write_two_strings: list[ReadWriteTwoStringsPropertyUpdatedCallbackType] = []
-        self._property_read_write_struct = None  # type: Optional[interface_types.AllTypes]
+        self._property_read_write_struct = None  # type: Optional[AllTypes]
         self._property_read_write_struct_mutex = threading.Lock()
         self._property_read_write_struct_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteStruct/value".format(self._service_id), self._receive_read_write_struct_property_update_message)
         self._changed_value_callbacks_for_read_write_struct: list[ReadWriteStructPropertyUpdatedCallbackType] = []
-        self._property_read_write_optional_struct = None  # type: Optional[interface_types.AllTypes]
+        self._property_read_write_optional_struct = None  # type: Optional[AllTypes]
         self._property_read_write_optional_struct_mutex = threading.Lock()
         self._property_read_write_optional_struct_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalStruct/value".format(self._service_id), self._receive_read_write_optional_struct_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_struct: list[ReadWriteOptionalStructPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_structs = None  # type: Optional[interface_types.ReadWriteTwoStructsProperty]
+        self._property_read_write_two_structs = None  # type: Optional[ReadWriteTwoStructsProperty]
         self._property_read_write_two_structs_mutex = threading.Lock()
         self._property_read_write_two_structs_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoStructs/value".format(self._service_id), self._receive_read_write_two_structs_property_update_message)
         self._changed_value_callbacks_for_read_write_two_structs: list[ReadWriteTwoStructsPropertyUpdatedCallbackType] = []
-        self._property_read_only_enum = None  # type: Optional[interface_types.Numbers]
+        self._property_read_only_enum = None  # type: Optional[Numbers]
         self._property_read_only_enum_mutex = threading.Lock()
         self._property_read_only_enum_version = -1
         self._conn.subscribe("testAble/{}/property/readOnlyEnum/value".format(self._service_id), self._receive_read_only_enum_property_update_message)
         self._changed_value_callbacks_for_read_only_enum: list[ReadOnlyEnumPropertyUpdatedCallbackType] = []
-        self._property_read_write_enum = None  # type: Optional[interface_types.Numbers]
+        self._property_read_write_enum = None  # type: Optional[Numbers]
         self._property_read_write_enum_mutex = threading.Lock()
         self._property_read_write_enum_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteEnum/value".format(self._service_id), self._receive_read_write_enum_property_update_message)
         self._changed_value_callbacks_for_read_write_enum: list[ReadWriteEnumPropertyUpdatedCallbackType] = []
-        self._property_read_write_optional_enum = None  # type: Optional[interface_types.Numbers]
+        self._property_read_write_optional_enum = None  # type: Optional[Numbers]
         self._property_read_write_optional_enum_mutex = threading.Lock()
         self._property_read_write_optional_enum_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalEnum/value".format(self._service_id), self._receive_read_write_optional_enum_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_enum: list[ReadWriteOptionalEnumPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_enums = None  # type: Optional[interface_types.ReadWriteTwoEnumsProperty]
+        self._property_read_write_two_enums = None  # type: Optional[ReadWriteTwoEnumsProperty]
         self._property_read_write_two_enums_mutex = threading.Lock()
         self._property_read_write_two_enums_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoEnums/value".format(self._service_id), self._receive_read_write_two_enums_property_update_message)
         self._changed_value_callbacks_for_read_write_two_enums: list[ReadWriteTwoEnumsPropertyUpdatedCallbackType] = []
-        self._property_read_write_datetime = None  # type: Optional[datetime.datetime]
+        self._property_read_write_datetime = None  # type: Optional[datetime]
         self._property_read_write_datetime_mutex = threading.Lock()
         self._property_read_write_datetime_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteDatetime/value".format(self._service_id), self._receive_read_write_datetime_property_update_message)
         self._changed_value_callbacks_for_read_write_datetime: list[ReadWriteDatetimePropertyUpdatedCallbackType] = []
-        self._property_read_write_optional_datetime = None  # type: Optional[datetime.datetime]
+        self._property_read_write_optional_datetime = None  # type: Optional[datetime]
         self._property_read_write_optional_datetime_mutex = threading.Lock()
         self._property_read_write_optional_datetime_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalDatetime/value".format(self._service_id), self._receive_read_write_optional_datetime_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_datetime: list[ReadWriteOptionalDatetimePropertyUpdatedCallbackType] = []
-        self._property_read_write_two_datetimes = None  # type: Optional[interface_types.ReadWriteTwoDatetimesProperty]
+        self._property_read_write_two_datetimes = None  # type: Optional[ReadWriteTwoDatetimesProperty]
         self._property_read_write_two_datetimes_mutex = threading.Lock()
         self._property_read_write_two_datetimes_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoDatetimes/value".format(self._service_id), self._receive_read_write_two_datetimes_property_update_message)
         self._changed_value_callbacks_for_read_write_two_datetimes: list[ReadWriteTwoDatetimesPropertyUpdatedCallbackType] = []
-        self._property_read_write_duration = None  # type: Optional[datetime.timedelta]
+        self._property_read_write_duration = None  # type: Optional[timedelta]
         self._property_read_write_duration_mutex = threading.Lock()
         self._property_read_write_duration_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteDuration/value".format(self._service_id), self._receive_read_write_duration_property_update_message)
         self._changed_value_callbacks_for_read_write_duration: list[ReadWriteDurationPropertyUpdatedCallbackType] = []
-        self._property_read_write_optional_duration = None  # type: Optional[datetime.timedelta]
+        self._property_read_write_optional_duration = None  # type: Optional[timedelta]
         self._property_read_write_optional_duration_mutex = threading.Lock()
         self._property_read_write_optional_duration_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalDuration/value".format(self._service_id), self._receive_read_write_optional_duration_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_duration: list[ReadWriteOptionalDurationPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_durations = None  # type: Optional[interface_types.ReadWriteTwoDurationsProperty]
+        self._property_read_write_two_durations = None  # type: Optional[ReadWriteTwoDurationsProperty]
         self._property_read_write_two_durations_mutex = threading.Lock()
         self._property_read_write_two_durations_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoDurations/value".format(self._service_id), self._receive_read_write_two_durations_property_update_message)
@@ -233,17 +230,17 @@ class TestAbleClient:
         self._property_read_write_optional_binary_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteOptionalBinary/value".format(self._service_id), self._receive_read_write_optional_binary_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_binary: list[ReadWriteOptionalBinaryPropertyUpdatedCallbackType] = []
-        self._property_read_write_two_binaries = None  # type: Optional[interface_types.ReadWriteTwoBinariesProperty]
+        self._property_read_write_two_binaries = None  # type: Optional[ReadWriteTwoBinariesProperty]
         self._property_read_write_two_binaries_mutex = threading.Lock()
         self._property_read_write_two_binaries_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteTwoBinaries/value".format(self._service_id), self._receive_read_write_two_binaries_property_update_message)
         self._changed_value_callbacks_for_read_write_two_binaries: list[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
-        self._property_read_write_list_of_strings = None  # type: Optional[list[str]]
+        self._property_read_write_list_of_strings = None  # type: Optional[List[str]]
         self._property_read_write_list_of_strings_mutex = threading.Lock()
         self._property_read_write_list_of_strings_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteListOfStrings/value".format(self._service_id), self._receive_read_write_list_of_strings_property_update_message)
         self._changed_value_callbacks_for_read_write_list_of_strings: list[ReadWriteListOfStringsPropertyUpdatedCallbackType] = []
-        self._property_read_write_lists = None  # type: Optional[interface_types.ReadWriteListsProperty]
+        self._property_read_write_lists = None  # type: Optional[ReadWriteListsProperty]
         self._property_read_write_lists_mutex = threading.Lock()
         self._property_read_write_lists_version = -1
         self._conn.subscribe("testAble/{}/property/readWriteLists/value".format(self._service_id), self._receive_read_write_lists_property_update_message)
@@ -363,16 +360,16 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_integers(self) -> Optional[interface_types.ReadWriteTwoIntegersProperty]:
+    def read_write_two_integers(self) -> Optional[ReadWriteTwoIntegersProperty]:
         """Property 'read_write_two_integers' getter."""
         return self._property_read_write_two_integers
 
     @read_write_two_integers.setter
-    def read_write_two_integers(self, value: interface_types.ReadWriteTwoIntegersProperty):
+    def read_write_two_integers(self, value: ReadWriteTwoIntegersProperty):
         """Serializes and publishes the 'read_write_two_integers' property."""
         if not isinstance(value, ReadWriteTwoIntegersProperty):
-            raise ValueError("The 'read_write_two_integers' property must be a interface_types.ReadWriteTwoIntegersProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'read_write_two_integers' property must be a ReadWriteTwoIntegersProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'read_write_two_integers' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoIntegers/setValue".format(self._service_id), serialized, qos=1)
 
@@ -450,16 +447,16 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_strings(self) -> Optional[interface_types.ReadWriteTwoStringsProperty]:
+    def read_write_two_strings(self) -> Optional[ReadWriteTwoStringsProperty]:
         """Property 'read_write_two_strings' getter."""
         return self._property_read_write_two_strings
 
     @read_write_two_strings.setter
-    def read_write_two_strings(self, value: interface_types.ReadWriteTwoStringsProperty):
+    def read_write_two_strings(self, value: ReadWriteTwoStringsProperty):
         """Serializes and publishes the 'read_write_two_strings' property."""
         if not isinstance(value, ReadWriteTwoStringsProperty):
-            raise ValueError("The 'read_write_two_strings' property must be a interface_types.ReadWriteTwoStringsProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'read_write_two_strings' property must be a ReadWriteTwoStringsProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'read_write_two_strings' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoStrings/setValue".format(self._service_id), serialized, qos=1)
 
@@ -474,15 +471,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_struct(self) -> Optional[interface_types.AllTypes]:
+    def read_write_struct(self) -> Optional[AllTypes]:
         """Property 'read_write_struct' getter."""
         return self._property_read_write_struct
 
     @read_write_struct.setter
-    def read_write_struct(self, value: interface_types.AllTypes):
+    def read_write_struct(self, value: AllTypes):
         """Serializes and publishes the 'read_write_struct' property."""
         if not isinstance(value, AllTypes):
-            raise ValueError("The 'read_write_struct' property must be a interface_types.AllTypes")
+            raise ValueError("The 'read_write_struct' property must be a AllTypes")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_struct' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteStruct/setValue".format(self._service_id), serialized, qos=1)
@@ -498,15 +495,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_struct(self) -> Optional[interface_types.AllTypes]:
+    def read_write_optional_struct(self) -> Optional[AllTypes]:
         """Property 'read_write_optional_struct' getter."""
         return self._property_read_write_optional_struct
 
     @read_write_optional_struct.setter
-    def read_write_optional_struct(self, value: interface_types.AllTypes):
+    def read_write_optional_struct(self, value: AllTypes):
         """Serializes and publishes the 'read_write_optional_struct' property."""
         if not isinstance(value, AllTypes):
-            raise ValueError("The 'read_write_optional_struct' property must be a interface_types.AllTypes")
+            raise ValueError("The 'read_write_optional_struct' property must be a AllTypes")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_struct' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteOptionalStruct/setValue".format(self._service_id), serialized, qos=1)
@@ -522,16 +519,16 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_structs(self) -> Optional[interface_types.ReadWriteTwoStructsProperty]:
+    def read_write_two_structs(self) -> Optional[ReadWriteTwoStructsProperty]:
         """Property 'read_write_two_structs' getter."""
         return self._property_read_write_two_structs
 
     @read_write_two_structs.setter
-    def read_write_two_structs(self, value: interface_types.ReadWriteTwoStructsProperty):
+    def read_write_two_structs(self, value: ReadWriteTwoStructsProperty):
         """Serializes and publishes the 'read_write_two_structs' property."""
         if not isinstance(value, ReadWriteTwoStructsProperty):
-            raise ValueError("The 'read_write_two_structs' property must be a interface_types.ReadWriteTwoStructsProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'read_write_two_structs' property must be a ReadWriteTwoStructsProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'read_write_two_structs' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoStructs/setValue".format(self._service_id), serialized, qos=1)
 
@@ -546,7 +543,7 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_only_enum(self) -> Optional[interface_types.Numbers]:
+    def read_only_enum(self) -> Optional[Numbers]:
         """Property 'read_only_enum' getter."""
         return self._property_read_only_enum
 
@@ -561,15 +558,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_enum(self) -> Optional[interface_types.Numbers]:
+    def read_write_enum(self) -> Optional[Numbers]:
         """Property 'read_write_enum' getter."""
         return self._property_read_write_enum
 
     @read_write_enum.setter
-    def read_write_enum(self, value: interface_types.Numbers):
+    def read_write_enum(self, value: Numbers):
         """Serializes and publishes the 'read_write_enum' property."""
         if not isinstance(value, Numbers):
-            raise ValueError("The 'read_write_enum' property must be a interface_types.Numbers")
+            raise ValueError("The 'read_write_enum' property must be a Numbers")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_enum' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteEnum/setValue".format(self._service_id), serialized, qos=1)
@@ -585,15 +582,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_enum(self) -> Optional[Optional[interface_types.Numbers]]:
+    def read_write_optional_enum(self) -> Optional[Optional[Numbers]]:
         """Property 'read_write_optional_enum' getter."""
         return self._property_read_write_optional_enum
 
     @read_write_optional_enum.setter
-    def read_write_optional_enum(self, value: Optional[interface_types.Numbers]):
+    def read_write_optional_enum(self, value: Optional[Numbers]):
         """Serializes and publishes the 'read_write_optional_enum' property."""
         if not isinstance(value, Numbers):
-            raise ValueError("The 'read_write_optional_enum' property must be a interface_types.Numbers")
+            raise ValueError("The 'read_write_optional_enum' property must be a Numbers")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_enum' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteOptionalEnum/setValue".format(self._service_id), serialized, qos=1)
@@ -609,16 +606,16 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_enums(self) -> Optional[interface_types.ReadWriteTwoEnumsProperty]:
+    def read_write_two_enums(self) -> Optional[ReadWriteTwoEnumsProperty]:
         """Property 'read_write_two_enums' getter."""
         return self._property_read_write_two_enums
 
     @read_write_two_enums.setter
-    def read_write_two_enums(self, value: interface_types.ReadWriteTwoEnumsProperty):
+    def read_write_two_enums(self, value: ReadWriteTwoEnumsProperty):
         """Serializes and publishes the 'read_write_two_enums' property."""
         if not isinstance(value, ReadWriteTwoEnumsProperty):
-            raise ValueError("The 'read_write_two_enums' property must be a interface_types.ReadWriteTwoEnumsProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'read_write_two_enums' property must be a ReadWriteTwoEnumsProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'read_write_two_enums' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoEnums/setValue".format(self._service_id), serialized, qos=1)
 
@@ -641,7 +638,7 @@ class TestAbleClient:
     def read_write_datetime(self, value: datetime):
         """Serializes and publishes the 'read_write_datetime' property."""
         if not isinstance(value, datetime):
-            raise ValueError("The 'read_write_datetime' property must be a datetime.datetime")
+            raise ValueError("The 'read_write_datetime' property must be a datetime")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_datetime' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteDatetime/setValue".format(self._service_id), serialized, qos=1)
@@ -665,7 +662,7 @@ class TestAbleClient:
     def read_write_optional_datetime(self, value: Optional[datetime]):
         """Serializes and publishes the 'read_write_optional_datetime' property."""
         if not isinstance(value, datetime):
-            raise ValueError("The 'read_write_optional_datetime' property must be a datetime.datetime")
+            raise ValueError("The 'read_write_optional_datetime' property must be a datetime")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_datetime' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteOptionalDatetime/setValue".format(self._service_id), serialized, qos=1)
@@ -681,16 +678,16 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_datetimes(self) -> Optional[interface_types.ReadWriteTwoDatetimesProperty]:
+    def read_write_two_datetimes(self) -> Optional[ReadWriteTwoDatetimesProperty]:
         """Property 'read_write_two_datetimes' getter."""
         return self._property_read_write_two_datetimes
 
     @read_write_two_datetimes.setter
-    def read_write_two_datetimes(self, value: interface_types.ReadWriteTwoDatetimesProperty):
+    def read_write_two_datetimes(self, value: ReadWriteTwoDatetimesProperty):
         """Serializes and publishes the 'read_write_two_datetimes' property."""
         if not isinstance(value, ReadWriteTwoDatetimesProperty):
-            raise ValueError("The 'read_write_two_datetimes' property must be a interface_types.ReadWriteTwoDatetimesProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'read_write_two_datetimes' property must be a ReadWriteTwoDatetimesProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'read_write_two_datetimes' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoDatetimes/setValue".format(self._service_id), serialized, qos=1)
 
@@ -713,7 +710,7 @@ class TestAbleClient:
     def read_write_duration(self, value: timedelta):
         """Serializes and publishes the 'read_write_duration' property."""
         if not isinstance(value, timedelta):
-            raise ValueError("The 'read_write_duration' property must be a datetime.timedelta")
+            raise ValueError("The 'read_write_duration' property must be a timedelta")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_duration' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteDuration/setValue".format(self._service_id), serialized, qos=1)
@@ -737,7 +734,7 @@ class TestAbleClient:
     def read_write_optional_duration(self, value: Optional[timedelta]):
         """Serializes and publishes the 'read_write_optional_duration' property."""
         if not isinstance(value, timedelta):
-            raise ValueError("The 'read_write_optional_duration' property must be a datetime.timedelta")
+            raise ValueError("The 'read_write_optional_duration' property must be a timedelta")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_optional_duration' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteOptionalDuration/setValue".format(self._service_id), serialized, qos=1)
@@ -753,16 +750,16 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_durations(self) -> Optional[interface_types.ReadWriteTwoDurationsProperty]:
+    def read_write_two_durations(self) -> Optional[ReadWriteTwoDurationsProperty]:
         """Property 'read_write_two_durations' getter."""
         return self._property_read_write_two_durations
 
     @read_write_two_durations.setter
-    def read_write_two_durations(self, value: interface_types.ReadWriteTwoDurationsProperty):
+    def read_write_two_durations(self, value: ReadWriteTwoDurationsProperty):
         """Serializes and publishes the 'read_write_two_durations' property."""
         if not isinstance(value, ReadWriteTwoDurationsProperty):
-            raise ValueError("The 'read_write_two_durations' property must be a interface_types.ReadWriteTwoDurationsProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'read_write_two_durations' property must be a ReadWriteTwoDurationsProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'read_write_two_durations' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoDurations/setValue".format(self._service_id), serialized, qos=1)
 
@@ -825,16 +822,16 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_binaries(self) -> Optional[interface_types.ReadWriteTwoBinariesProperty]:
+    def read_write_two_binaries(self) -> Optional[ReadWriteTwoBinariesProperty]:
         """Property 'read_write_two_binaries' getter."""
         return self._property_read_write_two_binaries
 
     @read_write_two_binaries.setter
-    def read_write_two_binaries(self, value: interface_types.ReadWriteTwoBinariesProperty):
+    def read_write_two_binaries(self, value: ReadWriteTwoBinariesProperty):
         """Serializes and publishes the 'read_write_two_binaries' property."""
         if not isinstance(value, ReadWriteTwoBinariesProperty):
-            raise ValueError("The 'read_write_two_binaries' property must be a interface_types.ReadWriteTwoBinariesProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'read_write_two_binaries' property must be a ReadWriteTwoBinariesProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'read_write_two_binaries' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteTwoBinaries/setValue".format(self._service_id), serialized, qos=1)
 
@@ -849,15 +846,15 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_list_of_strings(self) -> Optional[list[str]]:
+    def read_write_list_of_strings(self) -> Optional[List[str]]:
         """Property 'read_write_list_of_strings' getter."""
         return self._property_read_write_list_of_strings
 
     @read_write_list_of_strings.setter
-    def read_write_list_of_strings(self, value: list[str]):
+    def read_write_list_of_strings(self, value: List[str]):
         """Serializes and publishes the 'read_write_list_of_strings' property."""
-        if not isinstance(value, list[str]):
-            raise ValueError("The 'read_write_list_of_strings' property must be a list[str]")
+        if not isinstance(value, list):
+            raise ValueError("The 'read_write_list_of_strings' property must be a list")
         serialized = json.dumps({"value": value.value})
         self._logger.debug("Setting 'read_write_list_of_strings' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteListOfStrings/setValue".format(self._service_id), serialized, qos=1)
@@ -873,16 +870,16 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_lists(self) -> Optional[interface_types.ReadWriteListsProperty]:
+    def read_write_lists(self) -> Optional[ReadWriteListsProperty]:
         """Property 'read_write_lists' getter."""
         return self._property_read_write_lists
 
     @read_write_lists.setter
-    def read_write_lists(self, value: interface_types.ReadWriteListsProperty):
+    def read_write_lists(self, value: ReadWriteListsProperty):
         """Serializes and publishes the 'read_write_lists' property."""
         if not isinstance(value, ReadWriteListsProperty):
-            raise ValueError("The 'read_write_lists' property must be a interface_types.ReadWriteListsProperty")
-        serialized = value.model_dump_json(exclude_none=True)
+            raise ValueError("The 'read_write_lists' property must be a ReadWriteListsProperty")
+        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'read_write_lists' property to %s", serialized)
         self._conn.publish("testAble/{}/property/readWriteLists/setValue".format(self._service_id), serialized, qos=1)
 
@@ -2367,11 +2364,11 @@ class TestAbleClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_call_with_nothing_response, fut)
         payload = CallWithNothingMethodRequest()
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callWithNothing' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callWithNothing".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2407,11 +2404,11 @@ class TestAbleClient:
         payload = CallOneIntegerMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneInteger' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneInteger".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2446,11 +2443,11 @@ class TestAbleClient:
         payload = CallOptionalIntegerMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalInteger' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalInteger".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2487,11 +2484,11 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeIntegers' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeIntegers".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2526,11 +2523,11 @@ class TestAbleClient:
         payload = CallOneStringMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneString' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneString".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2565,11 +2562,11 @@ class TestAbleClient:
         payload = CallOptionalStringMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalString' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalString".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2606,11 +2603,11 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeStrings' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeStrings".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2637,7 +2634,7 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callThreeStrings' method was already done!")
 
-    def call_one_enum(self, input1: interface_types.Numbers) -> futures.Future:
+    def call_one_enum(self, input1: Numbers) -> futures.Future:
         """Calling this initiates a `callOneEnum` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2645,11 +2642,11 @@ class TestAbleClient:
         payload = CallOneEnumMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneEnum' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneEnum".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2676,7 +2673,7 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callOneEnum' method was already done!")
 
-    def call_optional_enum(self, input1: Optional[interface_types.Numbers]) -> futures.Future:
+    def call_optional_enum(self, input1: Optional[Numbers]) -> futures.Future:
         """Calling this initiates a `callOptionalEnum` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2684,11 +2681,11 @@ class TestAbleClient:
         payload = CallOptionalEnumMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalEnum' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalEnum".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2715,7 +2712,7 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callOptionalEnum' method was already done!")
 
-    def call_three_enums(self, input1: interface_types.Numbers, input2: interface_types.Numbers, input3: Optional[interface_types.Numbers]) -> futures.Future:
+    def call_three_enums(self, input1: Numbers, input2: Numbers, input3: Optional[Numbers]) -> futures.Future:
         """Calling this initiates a `callThreeEnums` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2725,11 +2722,11 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeEnums' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeEnums".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2756,7 +2753,7 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callThreeEnums' method was already done!")
 
-    def call_one_struct(self, input1: interface_types.AllTypes) -> futures.Future:
+    def call_one_struct(self, input1: AllTypes) -> futures.Future:
         """Calling this initiates a `callOneStruct` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2764,11 +2761,11 @@ class TestAbleClient:
         payload = CallOneStructMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneStruct' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneStruct".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2795,7 +2792,7 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callOneStruct' method was already done!")
 
-    def call_optional_struct(self, input1: interface_types.AllTypes) -> futures.Future:
+    def call_optional_struct(self, input1: AllTypes) -> futures.Future:
         """Calling this initiates a `callOptionalStruct` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2803,11 +2800,11 @@ class TestAbleClient:
         payload = CallOptionalStructMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalStruct' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalStruct".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2834,7 +2831,7 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callOptionalStruct' method was already done!")
 
-    def call_three_structs(self, input1: interface_types.AllTypes, input2: interface_types.AllTypes, input3: interface_types.AllTypes) -> futures.Future:
+    def call_three_structs(self, input1: AllTypes, input2: AllTypes, input3: AllTypes) -> futures.Future:
         """Calling this initiates a `callThreeStructs` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -2844,11 +2841,11 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeStructs' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeStructs".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2883,11 +2880,11 @@ class TestAbleClient:
         payload = CallOneDateTimeMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneDateTime' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneDateTime".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2922,11 +2919,11 @@ class TestAbleClient:
         payload = CallOptionalDateTimeMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalDateTime' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalDateTime".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -2963,11 +2960,11 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeDateTimes' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeDateTimes".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -3002,11 +2999,11 @@ class TestAbleClient:
         payload = CallOneDurationMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneDuration' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneDuration".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -3041,11 +3038,11 @@ class TestAbleClient:
         payload = CallOptionalDurationMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalDuration' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalDuration".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -3082,11 +3079,11 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeDurations' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeDurations".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -3121,11 +3118,11 @@ class TestAbleClient:
         payload = CallOneBinaryMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneBinary' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneBinary".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -3160,11 +3157,11 @@ class TestAbleClient:
         payload = CallOptionalBinaryMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalBinary' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalBinary".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -3201,11 +3198,11 @@ class TestAbleClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeBinaries' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callThreeBinaries".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -3232,7 +3229,7 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callThreeBinaries' method was already done!")
 
-    def call_one_list_of_integers(self, input1: list[int]) -> futures.Future:
+    def call_one_list_of_integers(self, input1: List[int]) -> futures.Future:
         """Calling this initiates a `callOneListOfIntegers` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -3240,11 +3237,11 @@ class TestAbleClient:
         payload = CallOneListOfIntegersMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneListOfIntegers' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOneListOfIntegers".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -3271,7 +3268,7 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callOneListOfIntegers' method was already done!")
 
-    def call_optional_list_of_floats(self, input1: list[float]) -> futures.Future:
+    def call_optional_list_of_floats(self, input1: List[float]) -> futures.Future:
         """Calling this initiates a `callOptionalListOfFloats` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -3279,11 +3276,11 @@ class TestAbleClient:
         payload = CallOptionalListOfFloatsMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalListOfFloats' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callOptionalListOfFloats".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,
@@ -3310,7 +3307,7 @@ class TestAbleClient:
         else:
             self._logger.warning("Future for 'callOptionalListOfFloats' method was already done!")
 
-    def call_two_lists(self, input1: list[interface_types.Numbers], input2: list[str]) -> futures.Future:
+    def call_two_lists(self, input1: List[Numbers], input2: List[str]) -> futures.Future:
         """Calling this initiates a `callTwoLists` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
@@ -3319,11 +3316,11 @@ class TestAbleClient:
             input1=input1,
             input2=input2,
         )
-        json_payload = payload.model_dump_json()
+        json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callTwoLists' method with payload %s", json_payload)
         self._conn.publish(
             "testAble/{}/method/callTwoLists".format(self._service_id),
-            payload.model_dump_json(),
+            json_payload,
             qos=2,
             retain=False,
             correlation_id=correlation_id,

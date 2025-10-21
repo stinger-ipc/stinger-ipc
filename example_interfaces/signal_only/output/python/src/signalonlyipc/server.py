@@ -19,7 +19,6 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from .connection import IBrokerConnection
 from .method_codes import *
 from .interface_types import *
-from . import interface_types as interface_types
 
 
 T = TypeVar("T")
@@ -120,7 +119,7 @@ class SignalOnlyServer:
         MaybeNumberSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
 
-        assert isinstance(number, Optional[int]), f"The 'number' argument must be of type Optional[int], but was {type(number)}"
+        assert isinstance(number, int) or number is None, f"The 'number' argument must be of type Optional[int], but was {type(number)}"
 
         payload = MaybeNumberSignalPayload(
             number=number if number is not None else None,
@@ -133,7 +132,7 @@ class SignalOnlyServer:
         MaybeNameSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
 
-        assert isinstance(name, Optional[str]), f"The 'name' argument must be of type Optional[str], but was {type(name)}"
+        assert isinstance(name, str) or name is None, f"The 'name' argument must be of type Optional[str], but was {type(name)}"
 
         payload = MaybeNameSignalPayload(
             name=name if name is not None else None,

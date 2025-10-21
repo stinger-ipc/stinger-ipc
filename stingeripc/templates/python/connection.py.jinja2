@@ -191,7 +191,7 @@ class MqttBrokerConnection(IBrokerConnection):
             self._queued_messages.put((topic, msg, qos, retain, properties))
 
     def publish_status(self, topic, status_message: BaseModel, expiry_seconds: int):
-        self.publish(topic, status_message.model_dump_json(), qos=1, retain=True, expiry_seconds=expiry_seconds)
+        self.publish(topic, status_message.model_dump_json(by_alias=True), qos=1, retain=True, expiry_seconds=expiry_seconds)
 
     def publish_error_response(self, topic: str, return_code: MethodReturnCode, correlation_id: Union[str, bytes], debug_info: Optional[str] = None):
         user_props = dict()
@@ -203,19 +203,19 @@ class MqttBrokerConnection(IBrokerConnection):
                      user_properties=user_props)
 
     def publish_response(self, response_topic: str, response_obj: BaseModel, correlation_id: Union[str, bytes]):
-        self.publish(response_topic, response_obj.model_dump_json(), qos=1, retain=False,
+        self.publish(response_topic, response_obj.model_dump_json(by_alias=True), qos=1, retain=False,
                      correlation_id=correlation_id, user_properties={"ReturnCode": str(MethodReturnCode.SUCCESS.value)})
 
     def publish_property_state(self, topic: str, state_obj: BaseModel, state_version: int|None=None):
         props = dict()
         if state_version is not None:
             props["PropertyVersion"] = str(state_version)
-        self.publish(topic, state_obj.model_dump_json(), qos=1, retain=True, user_properties=props)
+        self.publish(topic, state_obj.model_dump_json(by_alias=True), qos=1, retain=True, user_properties=props)
 
     def publish_request(self, topic: str, request_obj: BaseModel, response_topic: str, correlation_id: Union[str, bytes, None]=None) -> Union[str, bytes]:
         if correlation_id is None:
             correlation_id = str(uuid.uuid4())
-        self.publish(topic, request_obj.model_dump_json(), qos=1, retain=False,
+        self.publish(topic, request_obj.model_dump_json(by_alias=True), qos=1, retain=False,
                      correlation_id=correlation_id,
                      response_topic=response_topic)
         return correlation_id

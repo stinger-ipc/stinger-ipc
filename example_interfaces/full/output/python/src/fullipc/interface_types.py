@@ -6,7 +6,7 @@ It contains enumerations used by the Full interface.
 """
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Optional, Annotated, Union, List
 import base64
 from enum import IntEnum
@@ -57,18 +57,8 @@ class TodayIsSignalPayload(BaseModel):
     """Interface signal `todayIs`."""
 
     model_config = ConfigDict(populate_by_name=True)
-    day_of_month: Annotated[
-        int,
-        Field(
-            alias="dayOfMonth",
-        ),
-    ]
-    day_of_week: Annotated[
-        Optional[DayOfTheWeek],
-        Field(
-            alias="dayOfWeek",
-        ),
-    ]
+    day_of_month: Annotated[int, Field(alias="dayOfMonth")]
+    day_of_week: Annotated[Optional[DayOfTheWeek], Field(alias="dayOfWeek")]
     timestamp: Annotated[datetime, Field()]
     process_time: Annotated[timedelta, Field()]
     memory_segment: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
@@ -170,12 +160,7 @@ class DoSomethingMethodRequest(BaseModel):
     """Interface method `doSomething` request object."""
 
     model_config = ConfigDict(populate_by_name=True)
-    a_string: Annotated[
-        str,
-        Field(
-            alias="aString",
-        ),
-    ]
+    a_string: Annotated[str, Field(alias="aString")]
 
 
 class DoSomethingMethodResponse(BaseModel):

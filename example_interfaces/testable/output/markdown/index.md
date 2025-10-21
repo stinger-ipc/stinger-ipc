@@ -809,7 +809,7 @@ The `singleEnum` signal can be subscribed to by using the client's `receive_sing
 
 ```python
 @client.receive_single_enum
-def on_single_enum(value: interface_types.Numbers):
+def on_single_enum(value: Numbers):
     print(f"Got a 'singleEnum' signal: value={ value } ")
 ```
 
@@ -821,7 +821,7 @@ def on_single_enum(value: interface_types.Numbers):
 A server can emit a `singleEnum` signal simply by calling the server's `emit_single_enum` method.
 
 ```python
-server.emit_single_enum(interface_types.Numbers.ONE)
+server.emit_single_enum(Numbers.ONE)
 ```
 
 </details>
@@ -898,7 +898,7 @@ The `singleOptionalEnum` signal can be subscribed to by using the client's `rece
 
 ```python
 @client.receive_single_optional_enum
-def on_single_optional_enum(value: Optional[interface_types.Numbers]):
+def on_single_optional_enum(value: Optional[Numbers]):
     print(f"Got a 'singleOptionalEnum' signal: value={ value } ")
 ```
 
@@ -910,7 +910,7 @@ def on_single_optional_enum(value: Optional[interface_types.Numbers]):
 A server can emit a `singleOptionalEnum` signal simply by calling the server's `emit_single_optional_enum` method.
 
 ```python
-server.emit_single_optional_enum(interface_types.Numbers.ONE)
+server.emit_single_optional_enum(Numbers.ONE)
 ```
 
 </details>
@@ -989,7 +989,7 @@ The `threeEnums` signal can be subscribed to by using the client's `receive_thre
 
 ```python
 @client.receive_three_enums
-def on_three_enums(first: interface_types.Numbers, second: interface_types.Numbers, third: Optional[interface_types.Numbers]):
+def on_three_enums(first: Numbers, second: Numbers, third: Optional[Numbers]):
     print(f"Got a 'threeEnums' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -1001,7 +1001,7 @@ def on_three_enums(first: interface_types.Numbers, second: interface_types.Numbe
 A server can emit a `threeEnums` signal simply by calling the server's `emit_three_enums` method.
 
 ```python
-server.emit_three_enums(interface_types.Numbers.ONE, interface_types.Numbers.ONE, interface_types.Numbers.ONE)
+server.emit_three_enums(Numbers.ONE, Numbers.ONE, Numbers.ONE)
 ```
 
 </details>
@@ -1078,7 +1078,7 @@ The `singleStruct` signal can be subscribed to by using the client's `receive_si
 
 ```python
 @client.receive_single_struct
-def on_single_struct(value: interface_types.AllTypes):
+def on_single_struct(value: AllTypes):
     print(f"Got a 'singleStruct' signal: value={ value } ")
 ```
 
@@ -1090,7 +1090,7 @@ def on_single_struct(value: interface_types.AllTypes):
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
 ```python
-server.emit_single_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]))
+server.emit_single_struct(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
@@ -1167,7 +1167,7 @@ The `singleOptionalStruct` signal can be subscribed to by using the client's `re
 
 ```python
 @client.receive_single_optional_struct
-def on_single_optional_struct(value: interface_types.AllTypes):
+def on_single_optional_struct(value: AllTypes):
     print(f"Got a 'singleOptionalStruct' signal: value={ value } ")
 ```
 
@@ -1179,7 +1179,7 @@ def on_single_optional_struct(value: interface_types.AllTypes):
 A server can emit a `singleOptionalStruct` signal simply by calling the server's `emit_single_optional_struct` method.
 
 ```python
-server.emit_single_optional_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]))
+server.emit_single_optional_struct(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
@@ -1258,7 +1258,7 @@ The `threeStructs` signal can be subscribed to by using the client's `receive_th
 
 ```python
 @client.receive_three_structs
-def on_three_structs(first: interface_types.AllTypes, second: interface_types.AllTypes, third: interface_types.AllTypes):
+def on_three_structs(first: AllTypes, second: AllTypes, third: AllTypes):
     print(f"Got a 'threeStructs' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -1270,7 +1270,7 @@ def on_three_structs(first: interface_types.AllTypes, second: interface_types.Al
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
 ```python
-server.emit_three_structs(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]))
+server.emit_three_structs(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
@@ -1359,7 +1359,7 @@ def on_single_date_time(value: datetime):
 A server can emit a `singleDateTime` signal simply by calling the server's `emit_single_date_time` method.
 
 ```python
-server.emit_single_date_time(datetime.now())
+server.emit_single_date_time(datetime.now(UTC))
 ```
 
 </details>
@@ -1448,7 +1448,7 @@ def on_single_optional_datetime(value: Optional[datetime]):
 A server can emit a `singleOptionalDatetime` signal simply by calling the server's `emit_single_optional_datetime` method.
 
 ```python
-server.emit_single_optional_datetime(datetime.now())
+server.emit_single_optional_datetime(datetime.now(UTC))
 ```
 
 </details>
@@ -1539,7 +1539,7 @@ def on_three_date_times(first: datetime, second: datetime, third: Optional[datet
 A server can emit a `threeDateTimes` signal simply by calling the server's `emit_three_date_times` method.
 
 ```python
-server.emit_three_date_times(datetime.now(), datetime.now(), datetime.now())
+server.emit_three_date_times(datetime.now(UTC), datetime.now(UTC), None)
 ```
 
 </details>
@@ -2154,7 +2154,7 @@ The `singleArrayOfIntegers` signal can be subscribed to by using the client's `r
 
 ```python
 @client.receive_single_array_of_integers
-def on_single_array_of_integers(values: list[int]):
+def on_single_array_of_integers(values: List[int]):
     print(f"Got a 'singleArrayOfIntegers' signal: values={ values } ")
 ```
 
@@ -2243,7 +2243,7 @@ The `singleOptionalArrayOfStrings` signal can be subscribed to by using the clie
 
 ```python
 @client.receive_single_optional_array_of_strings
-def on_single_optional_array_of_strings(values: list[str]):
+def on_single_optional_array_of_strings(values: List[str]):
     print(f"Got a 'singleOptionalArrayOfStrings' signal: values={ values } ")
 ```
 
@@ -2339,7 +2339,7 @@ The `arrayOfEveryType` signal can be subscribed to by using the client's `receiv
 
 ```python
 @client.receive_array_of_every_type
-def on_array_of_every_type(first_of_integers: list[int], second_of_floats: list[float], third_of_strings: list[str], fourth_of_enums: list[interface_types.Numbers], fifth_of_structs: list[interface_types.Entry], sixth_of_datetimes: list[datetime.datetime], seventh_of_durations: list[datetime.timedelta], eighth_of_binaries: list[bytes]):
+def on_array_of_every_type(first_of_integers: List[int], second_of_floats: List[float], third_of_strings: List[str], fourth_of_enums: List[Numbers], fifth_of_structs: List[Entry], sixth_of_datetimes: List[datetime], seventh_of_durations: List[timedelta], eighth_of_binaries: List[bytes]):
     print(f"Got a 'arrayOfEveryType' signal: first_of_integers={ first_of_integers } second_of_floats={ second_of_floats } third_of_strings={ third_of_strings } fourth_of_enums={ fourth_of_enums } fifth_of_structs={ fifth_of_structs } sixth_of_datetimes={ sixth_of_datetimes } seventh_of_durations={ seventh_of_durations } eighth_of_binaries={ eighth_of_binaries } ")
 ```
 
@@ -2351,7 +2351,7 @@ def on_array_of_every_type(first_of_integers: list[int], second_of_floats: list[
 A server can emit a `arrayOfEveryType` signal simply by calling the server's `emit_array_of_every_type` method.
 
 ```python
-server.emit_array_of_every_type([42, 2022], [3.14, 1.0], ["apples", "foo"], [interface_types.Numbers.ONE, interface_types.Numbers.ONE], [interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], [datetime.now(), datetime.now()], [timedelta(seconds=3536), timedelta(seconds=975)], [b"example binary data", b"example binary data"])
+server.emit_array_of_every_type([42, 2022], [3.14, 1.0], ["apples", "foo"], [Numbers.ONE, Numbers.ONE], [Entry(key=42, value="apples"), Entry(key=2022, value="foo")], [datetime.now(UTC), datetime.now(UTC)], [timedelta(seconds=3536), timedelta(seconds=975)], [b"example binary data", b"example binary data"])
 ```
 
 </details>
@@ -2645,10 +2645,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_integers 
-def call_three_integers(input1: int, input2: int, input3: Optional[int]) -> interface_types.CallThreeIntegersMethodResponse:
+def call_three_integers(input1: int, input2: int, input3: Optional[int]) -> CallThreeIntegersMethodResponse:
     """ This is an example handler for the 'callThreeIntegers' method.  """
     print(f"Running call_three_integers'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeIntegersMethodResponse(output1=42, output2=42, output3=42)
+    return CallThreeIntegersMethodResponse(output1=42, output2=42, output3=42)
 ```
 
 </details>
@@ -2830,10 +2830,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_strings 
-def call_three_strings(input1: str, input2: Optional[str], input3: str) -> interface_types.CallThreeStringsMethodResponse:
+def call_three_strings(input1: str, input2: Optional[str], input3: str) -> CallThreeStringsMethodResponse:
     """ This is an example handler for the 'callThreeStrings' method.  """
     print(f"Running call_three_strings'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeStringsMethodResponse(output1="apples", output2="apples", output3="apples")
+    return CallThreeStringsMethodResponse(output1="apples", output2="apples", output3="apples")
 ```
 
 </details>
@@ -2874,7 +2874,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_one_enum(input1=interface_types.Numbers.ONE)
+future = client.call_one_enum(input1=Numbers.ONE)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2891,10 +2891,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_enum 
-def call_one_enum(input1: interface_types.Numbers) -> interface_types.Numbers:
+def call_one_enum(input1: Numbers) -> Numbers:
     """ This is an example handler for the 'callOneEnum' method.  """
     print(f"Running call_one_enum'({input1})'")
-    return interface_types.Numbers.ONE
+    return Numbers.ONE
 ```
 
 </details>
@@ -2935,7 +2935,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_enum(input1=interface_types.Numbers.ONE)
+future = client.call_optional_enum(input1=Numbers.ONE)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2952,10 +2952,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_enum 
-def call_optional_enum(input1: Optional[interface_types.Numbers]) -> Optional[interface_types.Numbers]:
+def call_optional_enum(input1: Optional[Numbers]) -> Optional[Numbers]:
     """ This is an example handler for the 'callOptionalEnum' method.  """
     print(f"Running call_optional_enum'({input1})'")
-    return interface_types.Numbers.ONE
+    return Numbers.ONE
 ```
 
 </details>
@@ -2998,7 +2998,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_enums(input1=interface_types.Numbers.ONE, input2=interface_types.Numbers.ONE, input3=interface_types.Numbers.ONE)
+future = client.call_three_enums(input1=Numbers.ONE, input2=Numbers.ONE, input3=Numbers.ONE)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3015,10 +3015,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_enums 
-def call_three_enums(input1: interface_types.Numbers, input2: interface_types.Numbers, input3: Optional[interface_types.Numbers]) -> interface_types.CallThreeEnumsMethodResponse:
+def call_three_enums(input1: Numbers, input2: Numbers, input3: Optional[Numbers]) -> CallThreeEnumsMethodResponse:
     """ This is an example handler for the 'callThreeEnums' method.  """
     print(f"Running call_three_enums'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeEnumsMethodResponse(output1=interface_types.Numbers.ONE, output2=interface_types.Numbers.ONE, output3=interface_types.Numbers.ONE)
+    return CallThreeEnumsMethodResponse(output1=Numbers.ONE, output2=Numbers.ONE, output3=Numbers.ONE)
 ```
 
 </details>
@@ -3062,7 +3062,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_one_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]))
+future = client.call_one_struct(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3079,10 +3079,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_struct 
-def call_one_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
+def call_one_struct(input1: AllTypes) -> AllTypes:
     """ This is an example handler for the 'callOneStruct' method.  """
     print(f"Running call_one_struct'({input1})'")
-    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")])
+    return AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")])
 ```
 
 </details>
@@ -3126,7 +3126,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]))
+future = client.call_optional_struct(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3143,10 +3143,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_struct 
-def call_optional_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
+def call_optional_struct(input1: AllTypes) -> AllTypes:
     """ This is an example handler for the 'callOptionalStruct' method.  """
     print(f"Running call_optional_struct'({input1})'")
-    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")])
+    return AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")])
 ```
 
 </details>
@@ -3189,7 +3189,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]))
+future = client.call_three_structs(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3206,10 +3206,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_structs 
-def call_three_structs(input1: interface_types.AllTypes, input2: interface_types.AllTypes, input3: interface_types.AllTypes) -> interface_types.CallThreeStructsMethodResponse:
+def call_three_structs(input1: AllTypes, input2: AllTypes, input3: AllTypes) -> CallThreeStructsMethodResponse:
     """ This is an example handler for the 'callThreeStructs' method.  """
     print(f"Running call_three_structs'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeStructsMethodResponse(output1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]), output2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]), output3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")]))
+    return CallThreeStructsMethodResponse(output1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), output2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), output3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
@@ -3250,7 +3250,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_one_date_time(input1=datetime.now())
+future = client.call_one_date_time(input1=datetime.now(UTC))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3270,7 +3270,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_one_date_time(input1: datetime) -> datetime:
     """ This is an example handler for the 'callOneDateTime' method.  """
     print(f"Running call_one_date_time'({input1})'")
-    return datetime.now()
+    return datetime.now(UTC)
 ```
 
 </details>
@@ -3311,7 +3311,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_date_time(input1=datetime.now())
+future = client.call_optional_date_time(input1=datetime.now(UTC))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3331,7 +3331,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
     """ This is an example handler for the 'callOptionalDateTime' method.  """
     print(f"Running call_optional_date_time'({input1})'")
-    return datetime.now()
+    return None
 ```
 
 </details>
@@ -3374,7 +3374,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=datetime.now())
+future = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3391,10 +3391,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_date_times 
-def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> interface_types.CallThreeDateTimesMethodResponse:
+def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> CallThreeDateTimesMethodResponse:
     """ This is an example handler for the 'callThreeDateTimes' method.  """
     print(f"Running call_three_date_times'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeDateTimesMethodResponse(output1=datetime.now(), output2=datetime.now(), output3=datetime.now())
+    return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=datetime.now(UTC))
 ```
 
 </details>
@@ -3576,10 +3576,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_durations 
-def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[timedelta]) -> interface_types.CallThreeDurationsMethodResponse:
+def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[timedelta]) -> CallThreeDurationsMethodResponse:
     """ This is an example handler for the 'callThreeDurations' method.  """
     print(f"Running call_three_durations'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeDurationsMethodResponse(output1=timedelta(seconds=3536), output2=timedelta(seconds=3536), output3=None)
+    return CallThreeDurationsMethodResponse(output1=timedelta(seconds=3536), output2=timedelta(seconds=3536), output3=None)
 ```
 
 </details>
@@ -3761,10 +3761,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_binaries 
-def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> interface_types.CallThreeBinariesMethodResponse:
+def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> CallThreeBinariesMethodResponse:
     """ This is an example handler for the 'callThreeBinaries' method.  """
     print(f"Running call_three_binaries'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeBinariesMethodResponse(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
+    return CallThreeBinariesMethodResponse(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
 ```
 
 </details>
@@ -3822,7 +3822,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_list_of_integers 
-def call_one_list_of_integers(input1: list[int]) -> list[int]:
+def call_one_list_of_integers(input1: List[int]) -> List[int]:
     """ This is an example handler for the 'callOneListOfIntegers' method.  """
     print(f"Running call_one_list_of_integers'({input1})'")
     return [42, 2022]
@@ -3883,7 +3883,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_list_of_floats 
-def call_optional_list_of_floats(input1: list[float]) -> list[float]:
+def call_optional_list_of_floats(input1: List[float]) -> List[float]:
     """ This is an example handler for the 'callOptionalListOfFloats' method.  """
     print(f"Running call_optional_list_of_floats'({input1})'")
     return [3.14, 1.0]
@@ -3928,7 +3928,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_two_lists(input1=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], input2=["apples", "foo"])
+future = client.call_two_lists(input1=[Numbers.ONE, Numbers.ONE], input2=["apples", "foo"])
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3945,10 +3945,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_two_lists 
-def call_two_lists(input1: list[interface_types.Numbers], input2: list[str]) -> interface_types.CallTwoListsMethodResponse:
+def call_two_lists(input1: List[Numbers], input2: List[str]) -> CallTwoListsMethodResponse:
     """ This is an example handler for the 'callTwoLists' method.  """
     print(f"Running call_two_lists'({input1}, {input2})'")
-    return interface_types.CallTwoListsMethodResponse(output1=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], output2=["apples", "foo"])
+    return CallTwoListsMethodResponse(output1=[Numbers.ONE, Numbers.ONE], output2=["apples", "foo"])
 ```
 
 </details>

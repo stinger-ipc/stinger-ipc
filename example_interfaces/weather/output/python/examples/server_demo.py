@@ -1,10 +1,10 @@
 from time import sleep
 import signal
-from typing import Optional, Union
-from datetime import datetime, timedelta
+from typing import Optional, Union, List
+from datetime import datetime, timedelta, UTC
 from weatheripc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from weatheripc.server import WeatherServer
-from weatheripc import interface_types
+from weatheripc.interface_types import *
 
 if __name__ == "__main__":
     """
@@ -16,29 +16,29 @@ if __name__ == "__main__":
     conn = MqttBrokerConnection(transport, client_id="py-server-demo")
     server = WeatherServer(conn, "py-server-demo:1")
 
-    server.location = interface_types.LocationProperty(
+    server.location = LocationProperty(
         latitude=3.14,
         longitude=3.14,
     )
 
     server.current_temperature = 3.14
 
-    server.current_condition = interface_types.CurrentConditionProperty(
-        condition=interface_types.WeatherCondition.SNOWY,
+    server.current_condition = CurrentConditionProperty(
+        condition=WeatherCondition.SNOWY,
         description="apples",
     )
 
-    server.daily_forecast = interface_types.DailyForecastProperty(
-        monday=interface_types.ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=interface_types.WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
-        tuesday=interface_types.ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=interface_types.WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
-        wednesday=interface_types.ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=interface_types.WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+    server.daily_forecast = DailyForecastProperty(
+        monday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+        tuesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+        wednesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
     )
 
-    server.hourly_forecast = interface_types.HourlyForecastProperty(
-        hour_0=interface_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=interface_types.WeatherCondition.SNOWY),
-        hour_1=interface_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=interface_types.WeatherCondition.SNOWY),
-        hour_2=interface_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=interface_types.WeatherCondition.SNOWY),
-        hour_3=interface_types.ForecastForHour(temperature=3.14, starttime=datetime.now(), condition=interface_types.WeatherCondition.SNOWY),
+    server.hourly_forecast = HourlyForecastProperty(
+        hour_0=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+        hour_1=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+        hour_2=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+        hour_3=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
     )
 
     server.current_condition_refresh_interval = 42
@@ -74,15 +74,15 @@ if __name__ == "__main__":
         print(f"Received update for 'current_temperature' property: { temperature_f= }")
 
     @server.on_current_condition_updates
-    def on_current_condition_update(condition: interface_types.WeatherCondition, description: str):
+    def on_current_condition_update(condition: WeatherCondition, description: str):
         print(f"Received update for 'current_condition' property: { condition= }, { description= }")
 
     @server.on_daily_forecast_updates
-    def on_daily_forecast_update(monday: interface_types.ForecastForDay, tuesday: interface_types.ForecastForDay, wednesday: interface_types.ForecastForDay):
+    def on_daily_forecast_update(monday: ForecastForDay, tuesday: ForecastForDay, wednesday: ForecastForDay):
         print(f"Received update for 'daily_forecast' property: { monday= }, { tuesday= }, { wednesday= }")
 
     @server.on_hourly_forecast_updates
-    def on_hourly_forecast_update(hour_0: interface_types.ForecastForHour, hour_1: interface_types.ForecastForHour, hour_2: interface_types.ForecastForHour, hour_3: interface_types.ForecastForHour):
+    def on_hourly_forecast_update(hour_0: ForecastForHour, hour_1: ForecastForHour, hour_2: ForecastForHour, hour_3: ForecastForHour):
         print(f"Received update for 'hourly_forecast' property: { hour_0= }, { hour_1= }, { hour_2= }, { hour_3= }")
 
     @server.on_current_condition_refresh_interval_updates
