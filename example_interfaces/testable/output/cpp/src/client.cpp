@@ -1555,7 +1555,7 @@ void TestAbleClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<std::vector<int>> tempValues;
+                boost::optional<std::vector<std::string>> tempValues;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("values");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
@@ -1602,9 +1602,9 @@ void TestAbleClient::_receiveMessage(
                     return;
                 }
 
-                std::vector<int> tempFirst;
+                std::vector<int> tempFirstOfIntegers;
                 { // Scoping
-                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("first");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("first_of_integers");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
                     {
                     }
@@ -1614,9 +1614,9 @@ void TestAbleClient::_receiveMessage(
                     }
                 }
 
-                std::vector<double> tempSecond;
+                std::vector<double> tempSecondOfFloats;
                 { // Scoping
-                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("second");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("second_of_floats");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
                     {
                     }
@@ -1626,9 +1626,9 @@ void TestAbleClient::_receiveMessage(
                     }
                 }
 
-                std::vector<std::string> tempThird;
+                std::vector<std::string> tempThirdOfStrings;
                 { // Scoping
-                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third_of_strings");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
                     {
                     }
@@ -1638,9 +1638,9 @@ void TestAbleClient::_receiveMessage(
                     }
                 }
 
-                std::vector<Numbers> tempFourth;
+                std::vector<Numbers> tempFourthOfEnums;
                 { // Scoping
-                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("fourth");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("fourth_of_enums");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
                     {
                     }
@@ -1650,9 +1650,9 @@ void TestAbleClient::_receiveMessage(
                     }
                 }
 
-                std::vector<Entry> tempFifth;
+                std::vector<Entry> tempFifthOfStructs;
                 { // Scoping
-                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("fifth");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("fifth_of_structs");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
                     {
                     }
@@ -1662,9 +1662,9 @@ void TestAbleClient::_receiveMessage(
                     }
                 }
 
-                std::vector<std::chrono::time_point<std::chrono::system_clock>> tempSixth;
+                std::vector<std::chrono::time_point<std::chrono::system_clock>> tempSixthOfDatetimes;
                 { // Scoping
-                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("sixth");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("sixth_of_datetimes");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
                     {
                     }
@@ -1674,9 +1674,9 @@ void TestAbleClient::_receiveMessage(
                     }
                 }
 
-                std::vector<std::chrono::duration<double>> tempSeventh;
+                std::vector<std::chrono::duration<double>> tempSeventhOfDurations;
                 { // Scoping
-                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seventh");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("seventh_of_durations");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
                     {
                     }
@@ -1686,9 +1686,9 @@ void TestAbleClient::_receiveMessage(
                     }
                 }
 
-                std::vector<std::vector<uint8_t>> tempEighth;
+                std::vector<std::vector<uint8_t>> tempEighthOfBinaries;
                 { // Scoping
-                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("eighth");
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("eighth_of_binaries");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
                     {
                     }
@@ -1701,7 +1701,7 @@ void TestAbleClient::_receiveMessage(
                 std::lock_guard<std::mutex> lock(_arrayOfEveryTypeSignalCallbacksMutex);
                 for (const auto& cb: _arrayOfEveryTypeSignalCallbacks)
                 {
-                    cb(tempFirst, tempSecond, tempThird, tempFourth, tempFifth, tempSixth, tempSeventh, tempEighth);
+                    cb(tempFirstOfIntegers, tempSecondOfFloats, tempThirdOfStrings, tempFourthOfEnums, tempFifthOfStructs, tempSixthOfDatetimes, tempSeventhOfDurations, tempEighthOfBinaries);
                 }
             }
         }
@@ -2081,7 +2081,7 @@ void TestAbleClient::registerSingleArrayOfIntegersCallback(const std::function<v
     _singleArrayOfIntegersSignalCallbacks.push_back(cb);
 }
 
-void TestAbleClient::registerSingleOptionalArrayOfStringsCallback(const std::function<void(boost::optional<std::vector<int>>)>& cb)
+void TestAbleClient::registerSingleOptionalArrayOfStringsCallback(const std::function<void(boost::optional<std::vector<std::string>>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleOptionalArrayOfStringsSignalCallbacksMutex);
     _singleOptionalArrayOfStringsSignalCallbacks.push_back(cb);

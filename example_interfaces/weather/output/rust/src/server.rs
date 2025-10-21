@@ -50,28 +50,30 @@ struct WeatherServerSubscriptionIds {
 #[derive(Clone)]
 struct WeatherProperties {
     location_topic: Arc<String>,
-    location: Arc<Mutex<Option<LocationProperty>>>,
+    location: Arc<AsyncMutex<Option<LocationProperty>>>,
     location_tx_channel: watch::Sender<Option<LocationProperty>>,
     current_temperature_topic: Arc<String>,
-    current_temperature: Arc<Mutex<Option<CurrentTemperatureProperty>>>,
+    current_temperature: Arc<AsyncMutex<Option<CurrentTemperatureProperty>>>,
     current_temperature_tx_channel: watch::Sender<Option<f32>>,
     current_condition_topic: Arc<String>,
-    current_condition: Arc<Mutex<Option<CurrentConditionProperty>>>,
+    current_condition: Arc<AsyncMutex<Option<CurrentConditionProperty>>>,
     current_condition_tx_channel: watch::Sender<Option<CurrentConditionProperty>>,
     daily_forecast_topic: Arc<String>,
-    daily_forecast: Arc<Mutex<Option<DailyForecastProperty>>>,
+    daily_forecast: Arc<AsyncMutex<Option<DailyForecastProperty>>>,
     daily_forecast_tx_channel: watch::Sender<Option<DailyForecastProperty>>,
     hourly_forecast_topic: Arc<String>,
-    hourly_forecast: Arc<Mutex<Option<HourlyForecastProperty>>>,
+    hourly_forecast: Arc<AsyncMutex<Option<HourlyForecastProperty>>>,
     hourly_forecast_tx_channel: watch::Sender<Option<HourlyForecastProperty>>,
     current_condition_refresh_interval_topic: Arc<String>,
-    current_condition_refresh_interval: Arc<Mutex<Option<CurrentConditionRefreshIntervalProperty>>>,
+    current_condition_refresh_interval:
+        Arc<AsyncMutex<Option<CurrentConditionRefreshIntervalProperty>>>,
     current_condition_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
     hourly_forecast_refresh_interval_topic: Arc<String>,
-    hourly_forecast_refresh_interval: Arc<Mutex<Option<HourlyForecastRefreshIntervalProperty>>>,
+    hourly_forecast_refresh_interval:
+        Arc<AsyncMutex<Option<HourlyForecastRefreshIntervalProperty>>>,
     hourly_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
     daily_forecast_refresh_interval_topic: Arc<String>,
-    daily_forecast_refresh_interval: Arc<Mutex<Option<DailyForecastRefreshIntervalProperty>>>,
+    daily_forecast_refresh_interval: Arc<AsyncMutex<Option<DailyForecastRefreshIntervalProperty>>>,
     daily_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
 }
 
@@ -215,49 +217,49 @@ impl WeatherServer {
 
         let property_values = WeatherProperties {
             location_topic: Arc::new(format!("weather/{}/property/location/value", instance_id)),
-            location: Arc::new(Mutex::new(None)),
+            location: Arc::new(AsyncMutex::new(None)),
             location_tx_channel: watch::channel(None).0,
             current_temperature_topic: Arc::new(format!(
                 "weather/{}/property/currentTemperature/value",
                 instance_id
             )),
-            current_temperature: Arc::new(Mutex::new(None)),
+            current_temperature: Arc::new(AsyncMutex::new(None)),
             current_temperature_tx_channel: watch::channel(None).0,
             current_condition_topic: Arc::new(format!(
                 "weather/{}/property/currentCondition/value",
                 instance_id
             )),
-            current_condition: Arc::new(Mutex::new(None)),
+            current_condition: Arc::new(AsyncMutex::new(None)),
             current_condition_tx_channel: watch::channel(None).0,
             daily_forecast_topic: Arc::new(format!(
                 "weather/{}/property/dailyForecast/value",
                 instance_id
             )),
-            daily_forecast: Arc::new(Mutex::new(None)),
+            daily_forecast: Arc::new(AsyncMutex::new(None)),
             daily_forecast_tx_channel: watch::channel(None).0,
             hourly_forecast_topic: Arc::new(format!(
                 "weather/{}/property/hourlyForecast/value",
                 instance_id
             )),
-            hourly_forecast: Arc::new(Mutex::new(None)),
+            hourly_forecast: Arc::new(AsyncMutex::new(None)),
             hourly_forecast_tx_channel: watch::channel(None).0,
             current_condition_refresh_interval_topic: Arc::new(format!(
                 "weather/{}/property/currentConditionRefreshInterval/value",
                 instance_id
             )),
-            current_condition_refresh_interval: Arc::new(Mutex::new(None)),
+            current_condition_refresh_interval: Arc::new(AsyncMutex::new(None)),
             current_condition_refresh_interval_tx_channel: watch::channel(None).0,
             hourly_forecast_refresh_interval_topic: Arc::new(format!(
                 "weather/{}/property/hourlyForecastRefreshInterval/value",
                 instance_id
             )),
-            hourly_forecast_refresh_interval: Arc::new(Mutex::new(None)),
+            hourly_forecast_refresh_interval: Arc::new(AsyncMutex::new(None)),
             hourly_forecast_refresh_interval_tx_channel: watch::channel(None).0,
             daily_forecast_refresh_interval_topic: Arc::new(format!(
                 "weather/{}/property/dailyForecastRefreshInterval/value",
                 instance_id
             )),
-            daily_forecast_refresh_interval: Arc::new(Mutex::new(None)),
+            daily_forecast_refresh_interval: Arc::new(AsyncMutex::new(None)),
             daily_forecast_refresh_interval_tx_channel: watch::channel(None).0,
         };
 
@@ -499,7 +501,7 @@ impl WeatherServer {
     async fn update_location_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<LocationProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<LocationProperty>>>,
         watch_sender: watch::Sender<Option<LocationProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -520,20 +522,10 @@ impl WeatherServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'location'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -560,17 +552,10 @@ impl WeatherServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'location'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -623,17 +608,10 @@ impl WeatherServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'current_temperature'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -687,17 +665,10 @@ impl WeatherServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'current_condition'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -748,17 +719,10 @@ impl WeatherServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'daily_forecast'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -809,17 +773,10 @@ impl WeatherServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'hourly_forecast'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -868,7 +825,7 @@ impl WeatherServer {
     async fn update_current_condition_refresh_interval_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<CurrentConditionRefreshIntervalProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<CurrentConditionRefreshIntervalProperty>>>,
         watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -884,20 +841,10 @@ impl WeatherServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'current_condition_refresh_interval'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.seconds.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -930,17 +877,10 @@ impl WeatherServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'current_condition_refresh_interval'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -996,7 +936,7 @@ impl WeatherServer {
     async fn update_hourly_forecast_refresh_interval_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<HourlyForecastRefreshIntervalProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<HourlyForecastRefreshIntervalProperty>>>,
         watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -1012,22 +952,10 @@ impl WeatherServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!(
-                    "Failed to lock mutex for updating property 'hourly_forecast_refresh_interval'"
-                ),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.seconds.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -1060,17 +988,10 @@ impl WeatherServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'hourly_forecast_refresh_interval'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -1126,7 +1047,7 @@ impl WeatherServer {
     async fn update_daily_forecast_refresh_interval_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<DailyForecastRefreshIntervalProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<DailyForecastRefreshIntervalProperty>>>,
         watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -1142,22 +1063,10 @@ impl WeatherServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!(
-                    "Failed to lock mutex for updating property 'daily_forecast_refresh_interval'"
-                ),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.seconds.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -1190,17 +1099,10 @@ impl WeatherServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return WeatherServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'daily_forecast_refresh_interval'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());

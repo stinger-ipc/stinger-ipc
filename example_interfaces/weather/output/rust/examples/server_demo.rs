@@ -15,6 +15,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing_subscriber;
 
+use tokio::join;
 #[allow(unused_imports)]
 use weather_ipc::payloads::{MethodReturnCode, *};
 
@@ -201,116 +202,139 @@ async fn main() {
         );
     }
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Emitting signal 'current_time'");
-    let signal_result_future = server.emit_current_time("apples".to_string()).await;
-    let signal_result = signal_result_future.await;
-    println!("Signal 'current_time' was sent: {:?}", signal_result);
+    let mut server_clone1 = server.clone();
+    let signal_publish_task = tokio::spawn(async move {
+        loop {
+            sleep(Duration::from_secs(9)).await;
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Changing property 'location'");
-    let new_value = LocationProperty {
-        latitude: 1.0,
-        longitude: 1.0,
-    };
-    let _ = server.set_location(new_value).await;
+            sleep(Duration::from_secs(1)).await;
+            println!("Emitting signal 'current_time'");
+            let signal_result_future = server_clone1.emit_current_time("apples".to_string()).await;
+            let signal_result = signal_result_future.await;
+            println!("Signal 'current_time' was sent: {:?}", signal_result);
+        }
+    });
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Changing property 'current_temperature'");
-    let prop_change_future = server.set_current_temperature(1.0).await;
-    if let Err(e) = prop_change_future.await {
-        eprintln!("Error changing property 'current_temperature': {:?}", e);
-    }
+    let mut server_clone2 = server.clone();
+    let property_publish_task = tokio::spawn(async move {
+        loop {
+            sleep(Duration::from_secs(11)).await;
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Changing property 'current_condition'");
-    let new_value = CurrentConditionProperty {
-        condition: WeatherCondition::Sunny,
-        description: "foo".to_string(),
-    };
-    let _ = server.set_current_condition(new_value).await;
+            sleep(Duration::from_secs(1)).await;
+            println!("Changing property 'location'");
+            let new_value = LocationProperty {
+                latitude: 1.0,
+                longitude: 1.0,
+            };
+            let _ = server_clone2.set_location(new_value).await;
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Changing property 'daily_forecast'");
-    let new_value = DailyForecastProperty {
-        monday: ForecastForDay {
-            high_temperature: 1.0,
-            low_temperature: 1.0,
-            condition: WeatherCondition::Sunny,
-            start_time: "foo".to_string(),
-            end_time: "foo".to_string(),
-        },
-        tuesday: ForecastForDay {
-            high_temperature: 1.0,
-            low_temperature: 1.0,
-            condition: WeatherCondition::Sunny,
-            start_time: "foo".to_string(),
-            end_time: "foo".to_string(),
-        },
-        wednesday: ForecastForDay {
-            high_temperature: 1.0,
-            low_temperature: 1.0,
-            condition: WeatherCondition::Sunny,
-            start_time: "foo".to_string(),
-            end_time: "foo".to_string(),
-        },
-    };
-    let _ = server.set_daily_forecast(new_value).await;
+            sleep(Duration::from_secs(1)).await;
+            println!("Changing property 'current_temperature'");
+            let prop_change_future = server_clone2.set_current_temperature(1.0).await;
+            if let Err(e) = prop_change_future.await {
+                eprintln!("Error changing property 'current_temperature': {:?}", e);
+            }
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Changing property 'hourly_forecast'");
-    let new_value = HourlyForecastProperty {
-        hour_0: ForecastForHour {
-            temperature: 1.0,
-            starttime: chrono::Utc::now(),
-            condition: WeatherCondition::Sunny,
-        },
-        hour_1: ForecastForHour {
-            temperature: 1.0,
-            starttime: chrono::Utc::now(),
-            condition: WeatherCondition::Sunny,
-        },
-        hour_2: ForecastForHour {
-            temperature: 1.0,
-            starttime: chrono::Utc::now(),
-            condition: WeatherCondition::Sunny,
-        },
-        hour_3: ForecastForHour {
-            temperature: 1.0,
-            starttime: chrono::Utc::now(),
-            condition: WeatherCondition::Sunny,
-        },
-    };
-    let _ = server.set_hourly_forecast(new_value).await;
+            sleep(Duration::from_secs(1)).await;
+            println!("Changing property 'current_condition'");
+            let new_value = CurrentConditionProperty {
+                condition: WeatherCondition::Sunny,
+                description: "foo".to_string(),
+            };
+            let _ = server_clone2.set_current_condition(new_value).await;
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Changing property 'current_condition_refresh_interval'");
-    let prop_change_future = server.set_current_condition_refresh_interval(2022).await;
-    if let Err(e) = prop_change_future.await {
-        eprintln!(
-            "Error changing property 'current_condition_refresh_interval': {:?}",
-            e
-        );
-    }
+            sleep(Duration::from_secs(1)).await;
+            println!("Changing property 'daily_forecast'");
+            let new_value = DailyForecastProperty {
+                monday: ForecastForDay {
+                    high_temperature: 1.0,
+                    low_temperature: 1.0,
+                    condition: WeatherCondition::Sunny,
+                    start_time: "foo".to_string(),
+                    end_time: "foo".to_string(),
+                },
+                tuesday: ForecastForDay {
+                    high_temperature: 1.0,
+                    low_temperature: 1.0,
+                    condition: WeatherCondition::Sunny,
+                    start_time: "foo".to_string(),
+                    end_time: "foo".to_string(),
+                },
+                wednesday: ForecastForDay {
+                    high_temperature: 1.0,
+                    low_temperature: 1.0,
+                    condition: WeatherCondition::Sunny,
+                    start_time: "foo".to_string(),
+                    end_time: "foo".to_string(),
+                },
+            };
+            let _ = server_clone2.set_daily_forecast(new_value).await;
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Changing property 'hourly_forecast_refresh_interval'");
-    let prop_change_future = server.set_hourly_forecast_refresh_interval(2022).await;
-    if let Err(e) = prop_change_future.await {
-        eprintln!(
-            "Error changing property 'hourly_forecast_refresh_interval': {:?}",
-            e
-        );
-    }
+            sleep(Duration::from_secs(1)).await;
+            println!("Changing property 'hourly_forecast'");
+            let new_value = HourlyForecastProperty {
+                hour_0: ForecastForHour {
+                    temperature: 1.0,
+                    starttime: chrono::Utc::now(),
+                    condition: WeatherCondition::Sunny,
+                },
+                hour_1: ForecastForHour {
+                    temperature: 1.0,
+                    starttime: chrono::Utc::now(),
+                    condition: WeatherCondition::Sunny,
+                },
+                hour_2: ForecastForHour {
+                    temperature: 1.0,
+                    starttime: chrono::Utc::now(),
+                    condition: WeatherCondition::Sunny,
+                },
+                hour_3: ForecastForHour {
+                    temperature: 1.0,
+                    starttime: chrono::Utc::now(),
+                    condition: WeatherCondition::Sunny,
+                },
+            };
+            let _ = server_clone2.set_hourly_forecast(new_value).await;
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Changing property 'daily_forecast_refresh_interval'");
-    let prop_change_future = server.set_daily_forecast_refresh_interval(2022).await;
-    if let Err(e) = prop_change_future.await {
-        eprintln!(
-            "Error changing property 'daily_forecast_refresh_interval': {:?}",
-            e
-        );
-    }
+            sleep(Duration::from_secs(1)).await;
+            println!("Changing property 'current_condition_refresh_interval'");
+            let prop_change_future = server_clone2
+                .set_current_condition_refresh_interval(2022)
+                .await;
+            if let Err(e) = prop_change_future.await {
+                eprintln!(
+                    "Error changing property 'current_condition_refresh_interval': {:?}",
+                    e
+                );
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            println!("Changing property 'hourly_forecast_refresh_interval'");
+            let prop_change_future = server_clone2
+                .set_hourly_forecast_refresh_interval(2022)
+                .await;
+            if let Err(e) = prop_change_future.await {
+                eprintln!(
+                    "Error changing property 'hourly_forecast_refresh_interval': {:?}",
+                    e
+                );
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            println!("Changing property 'daily_forecast_refresh_interval'");
+            let prop_change_future = server_clone2
+                .set_daily_forecast_refresh_interval(2022)
+                .await;
+            if let Err(e) = prop_change_future.await {
+                eprintln!(
+                    "Error changing property 'daily_forecast_refresh_interval': {:?}",
+                    e
+                );
+            }
+        }
+    });
+
+    let _ = join!(signal_publish_task, property_publish_task);
+
     // Ctrl-C to stop
 }

@@ -406,50 +406,50 @@ signals:
       - name: values
         type: array
         itemType:
-          type: integer
+          type: string
         optional: true
-        description: The array of integers.
+        description: The array of strings.
 
   arrayOfEveryType:
     payload:
-      - name: first
+      - name: first_of_integers
         type: array
         itemType:
           type: integer
         description: The first array of integers.
-      - name: second
+      - name: second_of_floats
         type: array
         itemType:
           type: float
         description: The second array of floats.
-      - name: third
+      - name: third_of_strings
         type: array
         itemType:
           type: string
         description: The third array of strings.
-      - name: fourth
+      - name: fourth_of_enums
         type: array
         itemType:
           type: enum
           enumName: Numbers
         description: The fourth array of enums.
-      - name: fifth
+      - name: fifth_of_structs
         type: array
         itemType:
           type: struct
           structName: entry
         description: The fifth array of structs.
-      - name: sixth
+      - name: sixth_of_datetimes
         type: array
         itemType:
           type: datetime
         description: The sixth array of date and time values.
-      - name: seventh
+      - name: seventh_of_durations
         type: array
         itemType:
           type: duration
         description: The seventh array of duration values.
-      - name: eighth
+      - name: eighth_of_binaries
         type: array
         itemType:
           type: binary

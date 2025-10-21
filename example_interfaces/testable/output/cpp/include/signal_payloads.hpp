@@ -214,7 +214,7 @@ struct SingleOptionalArrayOfStringsPayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static SingleOptionalArrayOfStringsPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::vector<int>> values;
+    boost::optional<std::vector<std::string>> values;
 };
 
 struct ArrayOfEveryTypePayload
@@ -222,12 +222,12 @@ struct ArrayOfEveryTypePayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static ArrayOfEveryTypePayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    std::vector<int> first;
-    std::vector<double> second;
-    std::vector<std::string> third;
-    std::vector<Numbers> fourth;
-    std::vector<Entry> fifth;
-    std::vector<std::chrono::time_point<std::chrono::system_clock>> sixth;
-    std::vector<std::chrono::duration<double>> seventh;
-    std::vector<std::vector<uint8_t>> eighth;
+    std::vector<int> firstOfIntegers;
+    std::vector<double> secondOfFloats;
+    std::vector<std::string> thirdOfStrings;
+    std::vector<Numbers> fourthOfEnums;
+    std::vector<Entry> fifthOfStructs;
+    std::vector<std::chrono::time_point<std::chrono::system_clock>> sixthOfDatetimes;
+    std::vector<std::chrono::duration<double>> seventhOfDurations;
+    std::vector<std::vector<uint8_t>> eighthOfBinaries;
 };

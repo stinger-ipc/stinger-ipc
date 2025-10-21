@@ -136,7 +136,7 @@ struct TestAbleSignalChannels {
     single_optional_binary_sender: broadcast::Sender<Option<Vec<u8>>>,
     three_binaries_sender: broadcast::Sender<ThreeBinariesSignalPayload>,
     single_array_of_integers_sender: broadcast::Sender<Vec<i32>>,
-    single_optional_array_of_strings_sender: broadcast::Sender<Option<Vec<i32>>>,
+    single_optional_array_of_strings_sender: broadcast::Sender<Option<Vec<String>>>,
     array_of_every_type_sender: broadcast::Sender<ArrayOfEveryTypeSignalPayload>,
 }
 
@@ -1466,7 +1466,7 @@ impl TestAbleClient {
     /// The signal payload, `SingleOptionalArrayOfStringsSignalPayload`, will be put onto the channel whenever it is received.
     pub fn get_single_optional_array_of_strings_receiver(
         &self,
-    ) -> broadcast::Receiver<Option<Vec<i32>>> {
+    ) -> broadcast::Receiver<Option<Vec<String>>> {
         self.signal_channels
             .single_optional_array_of_strings_sender
             .subscribe()

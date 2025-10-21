@@ -187,34 +187,36 @@ if __name__ == "__main__":
         print(f"Got a 'singleArrayOfIntegers' signal: values={ values } ")
 
     @client_builder.receive_single_optional_array_of_strings
-    def print_singleOptionalArrayOfStrings_receipt(values: list[int]):
+    def print_singleOptionalArrayOfStrings_receipt(values: list[str]):
         """
-        @param values list[int] The array of integers.
+        @param values list[str] The array of strings.
         """
         print(f"Got a 'singleOptionalArrayOfStrings' signal: values={ values } ")
 
     @client_builder.receive_array_of_every_type
     def print_arrayOfEveryType_receipt(
-        first: list[int],
-        second: list[float],
-        third: list[str],
-        fourth: list[interface_types.Numbers],
-        fifth: list[interface_types.Entry],
-        sixth: list[datetime.datetime],
-        seventh: list[datetime.timedelta],
-        eighth: list[bytes],
+        first_of_integers: list[int],
+        second_of_floats: list[float],
+        third_of_strings: list[str],
+        fourth_of_enums: list[interface_types.Numbers],
+        fifth_of_structs: list[interface_types.Entry],
+        sixth_of_datetimes: list[datetime.datetime],
+        seventh_of_durations: list[datetime.timedelta],
+        eighth_of_binaries: list[bytes],
     ):
         """
-        @param first list[int] The first array of integers.
-        @param second list[float] The second array of floats.
-        @param third list[str] The third array of strings.
-        @param fourth list[interface_types.Numbers] The fourth array of enums.
-        @param fifth list[interface_types.Entry] The fifth array of structs.
-        @param sixth list[datetime.datetime] The sixth array of date and time values.
-        @param seventh list[datetime.timedelta] The seventh array of duration values.
-        @param eighth list[bytes] The eighth array of binary values.
+        @param first_of_integers list[int] The first array of integers.
+        @param second_of_floats list[float] The second array of floats.
+        @param third_of_strings list[str] The third array of strings.
+        @param fourth_of_enums list[interface_types.Numbers] The fourth array of enums.
+        @param fifth_of_structs list[interface_types.Entry] The fifth array of structs.
+        @param sixth_of_datetimes list[datetime.datetime] The sixth array of date and time values.
+        @param seventh_of_durations list[datetime.timedelta] The seventh array of duration values.
+        @param eighth_of_binaries list[bytes] The eighth array of binary values.
         """
-        print(f"Got a 'arrayOfEveryType' signal: first={ first } second={ second } third={ third } fourth={ fourth } fifth={ fifth } sixth={ sixth } seventh={ seventh } eighth={ eighth } ")
+        print(
+            f"Got a 'arrayOfEveryType' signal: first_of_integers={ first_of_integers } second_of_floats={ second_of_floats } third_of_strings={ third_of_strings } fourth_of_enums={ fourth_of_enums } fifth_of_structs={ fifth_of_structs } sixth_of_datetimes={ sixth_of_datetimes } seventh_of_durations={ seventh_of_durations } eighth_of_binaries={ eighth_of_binaries } "
+        )
 
     @client_builder.read_write_integer_updated
     def print_new_read_write_integer_value(value: int):
@@ -442,23 +444,23 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
             optional_entry_object=interface_types.Entry(key=42, value="apples"),
-            optional_date_time=None,
+            optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
-            array_of_integers=[42, 42],
-            optional_array_of_integers=[42, 42],
-            array_of_strings=["apples", "apples"],
-            optional_array_of_strings=["apples", "apples"],
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
             array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             array_of_datetimes=[datetime.now(), datetime.now()],
             optional_array_of_datetimes=[datetime.now(), datetime.now()],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
             array_of_binaries=[b"example binary data", b"example binary data"],
             optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
-            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
         )
     )
     try:
@@ -485,20 +487,20 @@ if __name__ == "__main__":
             optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
-            array_of_integers=[42, 42],
-            optional_array_of_integers=[42, 42],
-            array_of_strings=["apples", "apples"],
-            optional_array_of_strings=["apples", "apples"],
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
             array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             array_of_datetimes=[datetime.now(), datetime.now()],
             optional_array_of_datetimes=[datetime.now(), datetime.now()],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
             array_of_binaries=[b"example binary data", b"example binary data"],
             optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
-            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
         )
     )
     try:
@@ -525,20 +527,20 @@ if __name__ == "__main__":
             optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
-            array_of_integers=[42, 42],
-            optional_array_of_integers=[42, 42],
-            array_of_strings=["apples", "apples"],
-            optional_array_of_strings=["apples", "apples"],
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
             array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             array_of_datetimes=[datetime.now(), datetime.now()],
             optional_array_of_datetimes=[datetime.now(), datetime.now()],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
             array_of_binaries=[b"example binary data", b"example binary data"],
             optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
-            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
         ),
         input2=interface_types.AllTypes(
             the_bool=True,
@@ -557,20 +559,20 @@ if __name__ == "__main__":
             optional_date_time=datetime.now(),
             optional_duration=None,
             optional_binary=b"example binary data",
-            array_of_integers=[42, 42],
-            optional_array_of_integers=[42, 42],
-            array_of_strings=["apples", "apples"],
-            optional_array_of_strings=["apples", "apples"],
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
             array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             array_of_datetimes=[datetime.now(), datetime.now()],
             optional_array_of_datetimes=[datetime.now(), datetime.now()],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
             array_of_binaries=[b"example binary data", b"example binary data"],
             optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
-            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
         ),
         input3=interface_types.AllTypes(
             the_bool=True,
@@ -586,23 +588,23 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=interface_types.Numbers.ONE,
             optional_entry_object=interface_types.Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
-            array_of_integers=[42, 42],
-            optional_array_of_integers=[42, 42],
-            array_of_strings=["apples", "apples"],
-            optional_array_of_strings=["apples", "apples"],
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
             array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE],
             array_of_datetimes=[datetime.now(), datetime.now()],
             optional_array_of_datetimes=[datetime.now(), datetime.now()],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
             array_of_binaries=[b"example binary data", b"example binary data"],
             optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
-            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")],
+            array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=2022, value="foo")],
         ),
     )
     try:
@@ -674,21 +676,21 @@ if __name__ == "__main__":
         print(f"Timed out waiting for response to 'call_three_binaries' call")
 
     print("Making call to 'call_one_list_of_integers'")
-    future_resp = client.call_one_list_of_integers(input1=[42, 42])
+    future_resp = client.call_one_list_of_integers(input1=[42, 2022])
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_one_list_of_integers' call")
 
     print("Making call to 'call_optional_list_of_floats'")
-    future_resp = client.call_optional_list_of_floats(input1=[3.14, 3.14])
+    future_resp = client.call_optional_list_of_floats(input1=[3.14, 1.0])
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:
         print(f"Timed out waiting for response to 'call_optional_list_of_floats' call")
 
     print("Making call to 'call_two_lists'")
-    future_resp = client.call_two_lists(input1=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], input2=["apples", "apples"])
+    future_resp = client.call_two_lists(input1=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], input2=["apples", "foo"])
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:

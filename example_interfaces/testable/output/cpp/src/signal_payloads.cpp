@@ -932,12 +932,12 @@ SingleOptionalArrayOfStringsPayload SingleOptionalArrayOfStringsPayload::FromRap
         if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
         {
             {
-                std::vector<int> tempArray;
+                std::vector<std::string> tempArray;
                 for (const auto& item: itr->value.GetArray())
                 {
-                    if (item.IsInt())
+                    if (item.IsString())
                     {
-                        tempArray.push_back(item.GetInt());
+                        tempArray.push_back(item.GetString());
                     }
                 }
                 singleOptionalArrayOfStringsPayload.values = std::move(tempArray);
@@ -959,7 +959,9 @@ void SingleOptionalArrayOfStringsPayload::AddToRapidJsonObject(rapidjson::Value&
         tempArrayValue.SetArray();
         for (const auto& item: *values)
         {
-            tempArrayValue.PushBack(item, allocator);
+            rapidjson::Value tempValuesStringValue;
+            tempValuesStringValue.SetString(item.c_str(), item.size(), allocator);
+            tempArrayValue.PushBack(tempValuesStringValue, allocator);
         }
         parent.AddMember("values", tempArrayValue, allocator);
     }
@@ -971,7 +973,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
     ArrayOfEveryTypePayload arrayOfEveryTypePayload;
 
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first_of_integers");
         if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
         {
             {
@@ -983,7 +985,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
                         tempArray.push_back(item.GetInt());
                     }
                 }
-                arrayOfEveryTypePayload.first = std::move(tempArray);
+                arrayOfEveryTypePayload.firstOfIntegers = std::move(tempArray);
             }
         }
         else
@@ -992,7 +994,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
         }
     }
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second_of_floats");
         if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
         {
             {
@@ -1004,7 +1006,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
                         tempArray.push_back(item.GetDouble());
                     }
                 }
-                arrayOfEveryTypePayload.second = std::move(tempArray);
+                arrayOfEveryTypePayload.secondOfFloats = std::move(tempArray);
             }
         }
         else
@@ -1013,7 +1015,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
         }
     }
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("third");
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("third_of_strings");
         if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
         {
             {
@@ -1025,7 +1027,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
                         tempArray.push_back(item.GetString());
                     }
                 }
-                arrayOfEveryTypePayload.third = std::move(tempArray);
+                arrayOfEveryTypePayload.thirdOfStrings = std::move(tempArray);
             }
         }
         else
@@ -1034,7 +1036,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
         }
     }
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("fourth");
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("fourth_of_enums");
         if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
         {
             {
@@ -1046,7 +1048,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
                         tempArray.push_back(static_cast<Numbers>(item.GetInt()));
                     }
                 }
-                arrayOfEveryTypePayload.fourth = std::move(tempArray);
+                arrayOfEveryTypePayload.fourthOfEnums = std::move(tempArray);
             }
         }
         else
@@ -1055,7 +1057,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
         }
     }
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("fifth");
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("fifth_of_structs");
         if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
         {
             {
@@ -1067,7 +1069,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
                         tempArray.push_back(Entry::FromRapidJsonObject(item));
                     }
                 }
-                arrayOfEveryTypePayload.fifth = std::move(tempArray);
+                arrayOfEveryTypePayload.fifthOfStructs = std::move(tempArray);
             }
         }
         else
@@ -1076,7 +1078,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
         }
     }
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("sixth");
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("sixth_of_datetimes");
         if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
         {
             {
@@ -1091,7 +1093,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
                         }
                     }
                 }
-                arrayOfEveryTypePayload.sixth = std::move(tempArray);
+                arrayOfEveryTypePayload.sixthOfDatetimes = std::move(tempArray);
             }
         }
         else
@@ -1100,7 +1102,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
         }
     }
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("seventh");
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("seventh_of_durations");
         if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
         {
             {
@@ -1115,7 +1117,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
                         }
                     }
                 }
-                arrayOfEveryTypePayload.seventh = std::move(tempArray);
+                arrayOfEveryTypePayload.seventhOfDurations = std::move(tempArray);
             }
         }
         else
@@ -1124,7 +1126,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
         }
     }
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("eighth");
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("eighth_of_binaries");
         if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
         {
             {
@@ -1139,7 +1141,7 @@ ArrayOfEveryTypePayload ArrayOfEveryTypePayload::FromRapidJsonObject(const rapid
                         }
                     }
                 }
-                arrayOfEveryTypePayload.eighth = std::move(tempArray);
+                arrayOfEveryTypePayload.eighthOfBinaries = std::move(tempArray);
             }
         }
         else
@@ -1156,94 +1158,94 @@ void ArrayOfEveryTypePayload::AddToRapidJsonObject(rapidjson::Value& parent, rap
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: first)
+        for (const auto& item: firstOfIntegers)
         {
             tempArrayValue.PushBack(item, allocator);
         }
-        parent.AddMember("first", tempArrayValue, allocator);
+        parent.AddMember("first_of_integers", tempArrayValue, allocator);
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: second)
+        for (const auto& item: secondOfFloats)
         {
             tempArrayValue.PushBack(item, allocator);
         }
-        parent.AddMember("second", tempArrayValue, allocator);
+        parent.AddMember("second_of_floats", tempArrayValue, allocator);
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: third)
+        for (const auto& item: thirdOfStrings)
         {
-            rapidjson::Value tempThirdStringValue;
-            tempThirdStringValue.SetString(item.c_str(), item.size(), allocator);
-            tempArrayValue.PushBack(tempThirdStringValue, allocator);
+            rapidjson::Value tempThirdOfStringsStringValue;
+            tempThirdOfStringsStringValue.SetString(item.c_str(), item.size(), allocator);
+            tempArrayValue.PushBack(tempThirdOfStringsStringValue, allocator);
         }
-        parent.AddMember("third", tempArrayValue, allocator);
+        parent.AddMember("third_of_strings", tempArrayValue, allocator);
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: fourth)
+        for (const auto& item: fourthOfEnums)
         {
             tempArrayValue.PushBack(static_cast<int>(item), allocator);
         }
-        parent.AddMember("fourth", tempArrayValue, allocator);
+        parent.AddMember("fourth_of_enums", tempArrayValue, allocator);
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: fifth)
+        for (const auto& item: fifthOfStructs)
         {
-            rapidjson::Value tempFifthObjectValue;
-            tempFifthObjectValue.SetObject();
-            item.AddToRapidJsonObject(tempFifthObjectValue, allocator);
-            tempArrayValue.PushBack(tempFifthObjectValue, allocator);
+            rapidjson::Value tempFifthOfStructsObjectValue;
+            tempFifthOfStructsObjectValue.SetObject();
+            item.AddToRapidJsonObject(tempFifthOfStructsObjectValue, allocator);
+            tempArrayValue.PushBack(tempFifthOfStructsObjectValue, allocator);
         }
-        parent.AddMember("fifth", tempArrayValue, allocator);
+        parent.AddMember("fifth_of_structs", tempArrayValue, allocator);
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: sixth)
+        for (const auto& item: sixthOfDatetimes)
         {
-            rapidjson::Value tempSixthStringValue;
+            rapidjson::Value tempSixthOfDatetimesStringValue;
             std::string itemIsoString = timePointToIsoString(item);
-            tempSixthStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), allocator);
-            tempArrayValue.PushBack(tempSixthStringValue, allocator);
+            tempSixthOfDatetimesStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), allocator);
+            tempArrayValue.PushBack(tempSixthOfDatetimesStringValue, allocator);
         }
-        parent.AddMember("sixth", tempArrayValue, allocator);
+        parent.AddMember("sixth_of_datetimes", tempArrayValue, allocator);
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: seventh)
+        for (const auto& item: seventhOfDurations)
         {
-            rapidjson::Value tempSeventhStringValue;
+            rapidjson::Value tempSeventhOfDurationsStringValue;
             std::string itemIsoString = durationToIsoString(item);
-            tempSeventhStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), allocator);
-            tempArrayValue.PushBack(tempSeventhStringValue, allocator);
+            tempSeventhOfDurationsStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), allocator);
+            tempArrayValue.PushBack(tempSeventhOfDurationsStringValue, allocator);
         }
-        parent.AddMember("seventh", tempArrayValue, allocator);
+        parent.AddMember("seventh_of_durations", tempArrayValue, allocator);
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: eighth)
+        for (const auto& item: eighthOfBinaries)
         {
-            rapidjson::Value tempEighthStringValue;
+            rapidjson::Value tempEighthOfBinariesStringValue;
             std::string itemB64String = base64Encode(item);
-            tempEighthStringValue.SetString(itemB64String.c_str(), itemB64String.size(), allocator);
-            tempArrayValue.PushBack(tempEighthStringValue, allocator);
+            tempEighthOfBinariesStringValue.SetString(itemB64String.c_str(), itemB64String.size(), allocator);
+            tempArrayValue.PushBack(tempEighthOfBinariesStringValue, allocator);
         }
-        parent.AddMember("eighth", tempArrayValue, allocator);
+        parent.AddMember("eighth_of_binaries", tempArrayValue, allocator);
     }
 }

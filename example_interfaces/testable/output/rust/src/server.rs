@@ -110,83 +110,83 @@ struct TestAbleServerSubscriptionIds {
 #[derive(Clone)]
 struct TestAbleProperties {
     read_write_integer_topic: Arc<String>,
-    read_write_integer: Arc<Mutex<Option<ReadWriteIntegerProperty>>>,
+    read_write_integer: Arc<AsyncMutex<Option<ReadWriteIntegerProperty>>>,
     read_write_integer_tx_channel: watch::Sender<Option<i32>>,
     read_only_integer_topic: Arc<String>,
-    read_only_integer: Arc<Mutex<Option<ReadOnlyIntegerProperty>>>,
+    read_only_integer: Arc<AsyncMutex<Option<ReadOnlyIntegerProperty>>>,
     read_only_integer_tx_channel: watch::Sender<Option<i32>>,
     read_write_optional_integer_topic: Arc<String>,
-    read_write_optional_integer: Arc<Mutex<Option<ReadWriteOptionalIntegerProperty>>>,
+    read_write_optional_integer: Arc<AsyncMutex<Option<ReadWriteOptionalIntegerProperty>>>,
     read_write_optional_integer_tx_channel: watch::Sender<Option<Option<i32>>>,
     read_write_two_integers_topic: Arc<String>,
-    read_write_two_integers: Arc<Mutex<Option<ReadWriteTwoIntegersProperty>>>,
+    read_write_two_integers: Arc<AsyncMutex<Option<ReadWriteTwoIntegersProperty>>>,
     read_write_two_integers_tx_channel: watch::Sender<Option<ReadWriteTwoIntegersProperty>>,
     read_only_string_topic: Arc<String>,
-    read_only_string: Arc<Mutex<Option<ReadOnlyStringProperty>>>,
+    read_only_string: Arc<AsyncMutex<Option<ReadOnlyStringProperty>>>,
     read_only_string_tx_channel: watch::Sender<Option<String>>,
     read_write_string_topic: Arc<String>,
-    read_write_string: Arc<Mutex<Option<ReadWriteStringProperty>>>,
+    read_write_string: Arc<AsyncMutex<Option<ReadWriteStringProperty>>>,
     read_write_string_tx_channel: watch::Sender<Option<String>>,
     read_write_optional_string_topic: Arc<String>,
-    read_write_optional_string: Arc<Mutex<Option<ReadWriteOptionalStringProperty>>>,
+    read_write_optional_string: Arc<AsyncMutex<Option<ReadWriteOptionalStringProperty>>>,
     read_write_optional_string_tx_channel: watch::Sender<Option<Option<String>>>,
     read_write_two_strings_topic: Arc<String>,
-    read_write_two_strings: Arc<Mutex<Option<ReadWriteTwoStringsProperty>>>,
+    read_write_two_strings: Arc<AsyncMutex<Option<ReadWriteTwoStringsProperty>>>,
     read_write_two_strings_tx_channel: watch::Sender<Option<ReadWriteTwoStringsProperty>>,
     read_write_struct_topic: Arc<String>,
-    read_write_struct: Arc<Mutex<Option<ReadWriteStructProperty>>>,
+    read_write_struct: Arc<AsyncMutex<Option<ReadWriteStructProperty>>>,
     read_write_struct_tx_channel: watch::Sender<Option<AllTypes>>,
     read_write_optional_struct_topic: Arc<String>,
-    read_write_optional_struct: Arc<Mutex<Option<ReadWriteOptionalStructProperty>>>,
+    read_write_optional_struct: Arc<AsyncMutex<Option<ReadWriteOptionalStructProperty>>>,
     read_write_optional_struct_tx_channel: watch::Sender<Option<Option<AllTypes>>>,
     read_write_two_structs_topic: Arc<String>,
-    read_write_two_structs: Arc<Mutex<Option<ReadWriteTwoStructsProperty>>>,
+    read_write_two_structs: Arc<AsyncMutex<Option<ReadWriteTwoStructsProperty>>>,
     read_write_two_structs_tx_channel: watch::Sender<Option<ReadWriteTwoStructsProperty>>,
     read_only_enum_topic: Arc<String>,
-    read_only_enum: Arc<Mutex<Option<ReadOnlyEnumProperty>>>,
+    read_only_enum: Arc<AsyncMutex<Option<ReadOnlyEnumProperty>>>,
     read_only_enum_tx_channel: watch::Sender<Option<Numbers>>,
     read_write_enum_topic: Arc<String>,
-    read_write_enum: Arc<Mutex<Option<ReadWriteEnumProperty>>>,
+    read_write_enum: Arc<AsyncMutex<Option<ReadWriteEnumProperty>>>,
     read_write_enum_tx_channel: watch::Sender<Option<Numbers>>,
     read_write_optional_enum_topic: Arc<String>,
-    read_write_optional_enum: Arc<Mutex<Option<ReadWriteOptionalEnumProperty>>>,
+    read_write_optional_enum: Arc<AsyncMutex<Option<ReadWriteOptionalEnumProperty>>>,
     read_write_optional_enum_tx_channel: watch::Sender<Option<Option<Numbers>>>,
     read_write_two_enums_topic: Arc<String>,
-    read_write_two_enums: Arc<Mutex<Option<ReadWriteTwoEnumsProperty>>>,
+    read_write_two_enums: Arc<AsyncMutex<Option<ReadWriteTwoEnumsProperty>>>,
     read_write_two_enums_tx_channel: watch::Sender<Option<ReadWriteTwoEnumsProperty>>,
     read_write_datetime_topic: Arc<String>,
-    read_write_datetime: Arc<Mutex<Option<ReadWriteDatetimeProperty>>>,
+    read_write_datetime: Arc<AsyncMutex<Option<ReadWriteDatetimeProperty>>>,
     read_write_datetime_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
     read_write_optional_datetime_topic: Arc<String>,
-    read_write_optional_datetime: Arc<Mutex<Option<ReadWriteOptionalDatetimeProperty>>>,
+    read_write_optional_datetime: Arc<AsyncMutex<Option<ReadWriteOptionalDatetimeProperty>>>,
     read_write_optional_datetime_tx_channel:
         watch::Sender<Option<Option<chrono::DateTime<chrono::Utc>>>>,
     read_write_two_datetimes_topic: Arc<String>,
-    read_write_two_datetimes: Arc<Mutex<Option<ReadWriteTwoDatetimesProperty>>>,
+    read_write_two_datetimes: Arc<AsyncMutex<Option<ReadWriteTwoDatetimesProperty>>>,
     read_write_two_datetimes_tx_channel: watch::Sender<Option<ReadWriteTwoDatetimesProperty>>,
     read_write_duration_topic: Arc<String>,
-    read_write_duration: Arc<Mutex<Option<ReadWriteDurationProperty>>>,
+    read_write_duration: Arc<AsyncMutex<Option<ReadWriteDurationProperty>>>,
     read_write_duration_tx_channel: watch::Sender<Option<chrono::Duration>>,
     read_write_optional_duration_topic: Arc<String>,
-    read_write_optional_duration: Arc<Mutex<Option<ReadWriteOptionalDurationProperty>>>,
+    read_write_optional_duration: Arc<AsyncMutex<Option<ReadWriteOptionalDurationProperty>>>,
     read_write_optional_duration_tx_channel: watch::Sender<Option<Option<chrono::Duration>>>,
     read_write_two_durations_topic: Arc<String>,
-    read_write_two_durations: Arc<Mutex<Option<ReadWriteTwoDurationsProperty>>>,
+    read_write_two_durations: Arc<AsyncMutex<Option<ReadWriteTwoDurationsProperty>>>,
     read_write_two_durations_tx_channel: watch::Sender<Option<ReadWriteTwoDurationsProperty>>,
     read_write_binary_topic: Arc<String>,
-    read_write_binary: Arc<Mutex<Option<ReadWriteBinaryProperty>>>,
+    read_write_binary: Arc<AsyncMutex<Option<ReadWriteBinaryProperty>>>,
     read_write_binary_tx_channel: watch::Sender<Option<Vec<u8>>>,
     read_write_optional_binary_topic: Arc<String>,
-    read_write_optional_binary: Arc<Mutex<Option<ReadWriteOptionalBinaryProperty>>>,
+    read_write_optional_binary: Arc<AsyncMutex<Option<ReadWriteOptionalBinaryProperty>>>,
     read_write_optional_binary_tx_channel: watch::Sender<Option<Option<Vec<u8>>>>,
     read_write_two_binaries_topic: Arc<String>,
-    read_write_two_binaries: Arc<Mutex<Option<ReadWriteTwoBinariesProperty>>>,
+    read_write_two_binaries: Arc<AsyncMutex<Option<ReadWriteTwoBinariesProperty>>>,
     read_write_two_binaries_tx_channel: watch::Sender<Option<ReadWriteTwoBinariesProperty>>,
     read_write_list_of_strings_topic: Arc<String>,
-    read_write_list_of_strings: Arc<Mutex<Option<ReadWriteListOfStringsProperty>>>,
+    read_write_list_of_strings: Arc<AsyncMutex<Option<ReadWriteListOfStringsProperty>>>,
     read_write_list_of_strings_tx_channel: watch::Sender<Option<Vec<String>>>,
     read_write_lists_topic: Arc<String>,
-    read_write_lists: Arc<Mutex<Option<ReadWriteListsProperty>>>,
+    read_write_lists: Arc<AsyncMutex<Option<ReadWriteListsProperty>>>,
     read_write_lists_tx_channel: watch::Sender<Option<ReadWriteListsProperty>>,
 }
 
@@ -848,157 +848,157 @@ impl TestAbleServer {
                 "testAble/{}/property/readWriteInteger/value",
                 instance_id
             )),
-            read_write_integer: Arc::new(Mutex::new(None)),
+            read_write_integer: Arc::new(AsyncMutex::new(None)),
             read_write_integer_tx_channel: watch::channel(None).0,
             read_only_integer_topic: Arc::new(format!(
                 "testAble/{}/property/readOnlyInteger/value",
                 instance_id
             )),
-            read_only_integer: Arc::new(Mutex::new(None)),
+            read_only_integer: Arc::new(AsyncMutex::new(None)),
             read_only_integer_tx_channel: watch::channel(None).0,
             read_write_optional_integer_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteOptionalInteger/value",
                 instance_id
             )),
-            read_write_optional_integer: Arc::new(Mutex::new(None)),
+            read_write_optional_integer: Arc::new(AsyncMutex::new(None)),
             read_write_optional_integer_tx_channel: watch::channel(None).0,
             read_write_two_integers_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteTwoIntegers/value",
                 instance_id
             )),
-            read_write_two_integers: Arc::new(Mutex::new(None)),
+            read_write_two_integers: Arc::new(AsyncMutex::new(None)),
             read_write_two_integers_tx_channel: watch::channel(None).0,
             read_only_string_topic: Arc::new(format!(
                 "testAble/{}/property/readOnlyString/value",
                 instance_id
             )),
-            read_only_string: Arc::new(Mutex::new(None)),
+            read_only_string: Arc::new(AsyncMutex::new(None)),
             read_only_string_tx_channel: watch::channel(None).0,
             read_write_string_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteString/value",
                 instance_id
             )),
-            read_write_string: Arc::new(Mutex::new(None)),
+            read_write_string: Arc::new(AsyncMutex::new(None)),
             read_write_string_tx_channel: watch::channel(None).0,
             read_write_optional_string_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteOptionalString/value",
                 instance_id
             )),
-            read_write_optional_string: Arc::new(Mutex::new(None)),
+            read_write_optional_string: Arc::new(AsyncMutex::new(None)),
             read_write_optional_string_tx_channel: watch::channel(None).0,
             read_write_two_strings_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteTwoStrings/value",
                 instance_id
             )),
-            read_write_two_strings: Arc::new(Mutex::new(None)),
+            read_write_two_strings: Arc::new(AsyncMutex::new(None)),
             read_write_two_strings_tx_channel: watch::channel(None).0,
             read_write_struct_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteStruct/value",
                 instance_id
             )),
-            read_write_struct: Arc::new(Mutex::new(None)),
+            read_write_struct: Arc::new(AsyncMutex::new(None)),
             read_write_struct_tx_channel: watch::channel(None).0,
             read_write_optional_struct_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteOptionalStruct/value",
                 instance_id
             )),
-            read_write_optional_struct: Arc::new(Mutex::new(None)),
+            read_write_optional_struct: Arc::new(AsyncMutex::new(None)),
             read_write_optional_struct_tx_channel: watch::channel(None).0,
             read_write_two_structs_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteTwoStructs/value",
                 instance_id
             )),
-            read_write_two_structs: Arc::new(Mutex::new(None)),
+            read_write_two_structs: Arc::new(AsyncMutex::new(None)),
             read_write_two_structs_tx_channel: watch::channel(None).0,
             read_only_enum_topic: Arc::new(format!(
                 "testAble/{}/property/readOnlyEnum/value",
                 instance_id
             )),
-            read_only_enum: Arc::new(Mutex::new(None)),
+            read_only_enum: Arc::new(AsyncMutex::new(None)),
             read_only_enum_tx_channel: watch::channel(None).0,
             read_write_enum_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteEnum/value",
                 instance_id
             )),
-            read_write_enum: Arc::new(Mutex::new(None)),
+            read_write_enum: Arc::new(AsyncMutex::new(None)),
             read_write_enum_tx_channel: watch::channel(None).0,
             read_write_optional_enum_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteOptionalEnum/value",
                 instance_id
             )),
-            read_write_optional_enum: Arc::new(Mutex::new(None)),
+            read_write_optional_enum: Arc::new(AsyncMutex::new(None)),
             read_write_optional_enum_tx_channel: watch::channel(None).0,
             read_write_two_enums_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteTwoEnums/value",
                 instance_id
             )),
-            read_write_two_enums: Arc::new(Mutex::new(None)),
+            read_write_two_enums: Arc::new(AsyncMutex::new(None)),
             read_write_two_enums_tx_channel: watch::channel(None).0,
             read_write_datetime_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteDatetime/value",
                 instance_id
             )),
-            read_write_datetime: Arc::new(Mutex::new(None)),
+            read_write_datetime: Arc::new(AsyncMutex::new(None)),
             read_write_datetime_tx_channel: watch::channel(None).0,
             read_write_optional_datetime_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteOptionalDatetime/value",
                 instance_id
             )),
-            read_write_optional_datetime: Arc::new(Mutex::new(None)),
+            read_write_optional_datetime: Arc::new(AsyncMutex::new(None)),
             read_write_optional_datetime_tx_channel: watch::channel(None).0,
             read_write_two_datetimes_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteTwoDatetimes/value",
                 instance_id
             )),
-            read_write_two_datetimes: Arc::new(Mutex::new(None)),
+            read_write_two_datetimes: Arc::new(AsyncMutex::new(None)),
             read_write_two_datetimes_tx_channel: watch::channel(None).0,
             read_write_duration_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteDuration/value",
                 instance_id
             )),
-            read_write_duration: Arc::new(Mutex::new(None)),
+            read_write_duration: Arc::new(AsyncMutex::new(None)),
             read_write_duration_tx_channel: watch::channel(None).0,
             read_write_optional_duration_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteOptionalDuration/value",
                 instance_id
             )),
-            read_write_optional_duration: Arc::new(Mutex::new(None)),
+            read_write_optional_duration: Arc::new(AsyncMutex::new(None)),
             read_write_optional_duration_tx_channel: watch::channel(None).0,
             read_write_two_durations_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteTwoDurations/value",
                 instance_id
             )),
-            read_write_two_durations: Arc::new(Mutex::new(None)),
+            read_write_two_durations: Arc::new(AsyncMutex::new(None)),
             read_write_two_durations_tx_channel: watch::channel(None).0,
             read_write_binary_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteBinary/value",
                 instance_id
             )),
-            read_write_binary: Arc::new(Mutex::new(None)),
+            read_write_binary: Arc::new(AsyncMutex::new(None)),
             read_write_binary_tx_channel: watch::channel(None).0,
             read_write_optional_binary_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteOptionalBinary/value",
                 instance_id
             )),
-            read_write_optional_binary: Arc::new(Mutex::new(None)),
+            read_write_optional_binary: Arc::new(AsyncMutex::new(None)),
             read_write_optional_binary_tx_channel: watch::channel(None).0,
             read_write_two_binaries_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteTwoBinaries/value",
                 instance_id
             )),
-            read_write_two_binaries: Arc::new(Mutex::new(None)),
+            read_write_two_binaries: Arc::new(AsyncMutex::new(None)),
             read_write_two_binaries_tx_channel: watch::channel(None).0,
             read_write_list_of_strings_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteListOfStrings/value",
                 instance_id
             )),
-            read_write_list_of_strings: Arc::new(Mutex::new(None)),
+            read_write_list_of_strings: Arc::new(AsyncMutex::new(None)),
             read_write_list_of_strings_tx_channel: watch::channel(None).0,
             read_write_lists_topic: Arc::new(format!(
                 "testAble/{}/property/readWriteLists/value",
                 instance_id
             )),
-            read_write_lists: Arc::new(Mutex::new(None)),
+            read_write_lists: Arc::new(AsyncMutex::new(None)),
             read_write_lists_tx_channel: watch::channel(None).0,
         };
 
@@ -1452,7 +1452,7 @@ impl TestAbleServer {
     /// Emits the singleOptionalArrayOfStrings signal with the given arguments.
     pub async fn emit_single_optional_array_of_strings(
         &mut self,
-        values: Option<Vec<i32>>,
+        values: Option<Vec<String>>,
     ) -> SentMessageFuture {
         let data = SingleOptionalArrayOfStringsSignalPayload { values: values };
         let published_oneshot = self
@@ -1470,31 +1470,31 @@ impl TestAbleServer {
     /// Emits the arrayOfEveryType signal with the given arguments.
     pub async fn emit_array_of_every_type(
         &mut self,
-        first: Vec<i32>,
-        second: Vec<f32>,
-        third: Vec<String>,
-        fourth: Vec<Numbers>,
-        fifth: Vec<Entry>,
-        sixth: Vec<chrono::DateTime<chrono::Utc>>,
-        seventh: Vec<chrono::Duration>,
-        eighth: Vec<Vec<u8>>,
+        first_of_integers: Vec<i32>,
+        second_of_floats: Vec<f32>,
+        third_of_strings: Vec<String>,
+        fourth_of_enums: Vec<Numbers>,
+        fifth_of_structs: Vec<Entry>,
+        sixth_of_datetimes: Vec<chrono::DateTime<chrono::Utc>>,
+        seventh_of_durations: Vec<chrono::Duration>,
+        eighth_of_binaries: Vec<Vec<u8>>,
     ) -> SentMessageFuture {
         let data = ArrayOfEveryTypeSignalPayload {
-            first: first,
+            first_of_integers: first_of_integers,
 
-            second: second,
+            second_of_floats: second_of_floats,
 
-            third: third,
+            third_of_strings: third_of_strings,
 
-            fourth: fourth,
+            fourth_of_enums: fourth_of_enums,
 
-            fifth: fifth,
+            fifth_of_structs: fifth_of_structs,
 
-            sixth: sixth,
+            sixth_of_datetimes: sixth_of_datetimes,
 
-            seventh: seventh,
+            seventh_of_durations: seventh_of_durations,
 
-            eighth: eighth,
+            eighth_of_binaries: eighth_of_binaries,
         };
         let published_oneshot = self
             .mqttier_client
@@ -3105,7 +3105,7 @@ impl TestAbleServer {
     async fn update_read_write_integer_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteIntegerProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteIntegerProperty>>>,
         watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -3127,20 +3127,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_integer'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -3170,17 +3160,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_integer'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -3233,17 +3216,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_only_integer'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -3292,7 +3268,7 @@ impl TestAbleServer {
     async fn update_read_write_optional_integer_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteOptionalIntegerProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalIntegerProperty>>>,
         watch_sender: watch::Sender<Option<Option<i32>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -3314,20 +3290,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_optional_integer'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -3363,19 +3329,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!(
-                        "Failed to lock mutex for setting property 'read_write_optional_integer'"
-                    ),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -3431,7 +3388,7 @@ impl TestAbleServer {
     async fn update_read_write_two_integers_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteTwoIntegersProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoIntegersProperty>>>,
         watch_sender: watch::Sender<Option<ReadWriteTwoIntegersProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -3453,20 +3410,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_two_integers'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -3505,17 +3452,10 @@ impl TestAbleServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_two_integers'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -3575,17 +3515,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_only_string'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -3634,7 +3567,7 @@ impl TestAbleServer {
     async fn update_read_write_string_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteStringProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteStringProperty>>>,
         watch_sender: watch::Sender<Option<String>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -3656,20 +3589,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_string'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -3699,17 +3622,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_string'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -3758,7 +3674,7 @@ impl TestAbleServer {
     async fn update_read_write_optional_string_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteOptionalStringProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalStringProperty>>>,
         watch_sender: watch::Sender<Option<Option<String>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -3780,20 +3696,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_optional_string'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -3831,19 +3737,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!(
-                        "Failed to lock mutex for setting property 'read_write_optional_string'"
-                    ),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -3899,7 +3796,7 @@ impl TestAbleServer {
     async fn update_read_write_two_strings_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteTwoStringsProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoStringsProperty>>>,
         watch_sender: watch::Sender<Option<ReadWriteTwoStringsProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -3921,20 +3818,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_two_strings'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -3973,17 +3860,10 @@ impl TestAbleServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_two_strings'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -4039,7 +3919,7 @@ impl TestAbleServer {
     async fn update_read_write_struct_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteStructProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteStructProperty>>>,
         watch_sender: watch::Sender<Option<AllTypes>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -4061,20 +3941,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_struct'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -4104,17 +3974,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_struct'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -4163,7 +4026,7 @@ impl TestAbleServer {
     async fn update_read_write_optional_struct_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteOptionalStructProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalStructProperty>>>,
         watch_sender: watch::Sender<Option<Option<AllTypes>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -4185,20 +4048,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_optional_struct'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -4236,19 +4089,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!(
-                        "Failed to lock mutex for setting property 'read_write_optional_struct'"
-                    ),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -4304,7 +4148,7 @@ impl TestAbleServer {
     async fn update_read_write_two_structs_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteTwoStructsProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoStructsProperty>>>,
         watch_sender: watch::Sender<Option<ReadWriteTwoStructsProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -4326,20 +4170,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_two_structs'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -4378,17 +4212,10 @@ impl TestAbleServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_two_structs'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -4448,17 +4275,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_only_enum'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -4507,7 +4327,7 @@ impl TestAbleServer {
     async fn update_read_write_enum_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteEnumProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteEnumProperty>>>,
         watch_sender: watch::Sender<Option<Numbers>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -4528,20 +4348,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_enum'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -4571,17 +4381,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_enum'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -4630,7 +4433,7 @@ impl TestAbleServer {
     async fn update_read_write_optional_enum_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteOptionalEnumProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalEnumProperty>>>,
         watch_sender: watch::Sender<Option<Option<Numbers>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -4652,20 +4455,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_optional_enum'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -4704,17 +4497,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_optional_enum'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -4770,7 +4556,7 @@ impl TestAbleServer {
     async fn update_read_write_two_enums_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteTwoEnumsProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoEnumsProperty>>>,
         watch_sender: watch::Sender<Option<ReadWriteTwoEnumsProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -4792,20 +4578,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_two_enums'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -4842,17 +4618,10 @@ impl TestAbleServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_two_enums'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -4902,7 +4671,7 @@ impl TestAbleServer {
     async fn update_read_write_datetime_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteDatetimeProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteDatetimeProperty>>>,
         watch_sender: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -4924,20 +4693,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_datetime'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -4972,17 +4731,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_datetime'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -5032,7 +4784,7 @@ impl TestAbleServer {
     async fn update_read_write_optional_datetime_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteOptionalDatetimeProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalDatetimeProperty>>>,
         watch_sender: watch::Sender<Option<Option<chrono::DateTime<chrono::Utc>>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -5054,22 +4806,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!(
-                    "Failed to lock mutex for updating property 'read_write_optional_datetime'"
-                ),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -5107,19 +4847,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!(
-                        "Failed to lock mutex for setting property 'read_write_optional_datetime'"
-                    ),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -5175,7 +4906,7 @@ impl TestAbleServer {
     async fn update_read_write_two_datetimes_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteTwoDatetimesProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoDatetimesProperty>>>,
         watch_sender: watch::Sender<Option<ReadWriteTwoDatetimesProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -5197,20 +4928,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_two_datetimes'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -5249,17 +4970,10 @@ impl TestAbleServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_two_datetimes'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -5315,7 +5029,7 @@ impl TestAbleServer {
     async fn update_read_write_duration_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteDurationProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteDurationProperty>>>,
         watch_sender: watch::Sender<Option<chrono::Duration>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -5337,20 +5051,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_duration'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -5380,17 +5084,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_duration'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -5440,7 +5137,7 @@ impl TestAbleServer {
     async fn update_read_write_optional_duration_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteOptionalDurationProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalDurationProperty>>>,
         watch_sender: watch::Sender<Option<Option<chrono::Duration>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -5462,22 +5159,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!(
-                    "Failed to lock mutex for updating property 'read_write_optional_duration'"
-                ),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -5515,19 +5200,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!(
-                        "Failed to lock mutex for setting property 'read_write_optional_duration'"
-                    ),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -5583,7 +5259,7 @@ impl TestAbleServer {
     async fn update_read_write_two_durations_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteTwoDurationsProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoDurationsProperty>>>,
         watch_sender: watch::Sender<Option<ReadWriteTwoDurationsProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -5605,20 +5281,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_two_durations'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -5657,17 +5323,10 @@ impl TestAbleServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_two_durations'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -5723,7 +5382,7 @@ impl TestAbleServer {
     async fn update_read_write_binary_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteBinaryProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteBinaryProperty>>>,
         watch_sender: watch::Sender<Option<Vec<u8>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -5745,20 +5404,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_binary'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -5788,17 +5437,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_binary'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -5847,7 +5489,7 @@ impl TestAbleServer {
     async fn update_read_write_optional_binary_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteOptionalBinaryProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalBinaryProperty>>>,
         watch_sender: watch::Sender<Option<Option<Vec<u8>>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -5869,20 +5511,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_optional_binary'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -5920,19 +5552,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!(
-                        "Failed to lock mutex for setting property 'read_write_optional_binary'"
-                    ),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -5988,7 +5611,7 @@ impl TestAbleServer {
     async fn update_read_write_two_binaries_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteTwoBinariesProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoBinariesProperty>>>,
         watch_sender: watch::Sender<Option<ReadWriteTwoBinariesProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -6010,20 +5633,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_two_binaries'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -6062,17 +5675,10 @@ impl TestAbleServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_two_binaries'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -6128,7 +5734,7 @@ impl TestAbleServer {
     async fn update_read_write_list_of_strings_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteListOfStringsProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteListOfStringsProperty>>>,
         watch_sender: watch::Sender<Option<Vec<String>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -6150,20 +5756,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_list_of_strings'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.value.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -6196,19 +5792,10 @@ impl TestAbleServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!(
-                        "Failed to lock mutex for setting property 'read_write_list_of_strings'"
-                    ),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -6264,7 +5851,7 @@ impl TestAbleServer {
     async fn update_read_write_lists_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<ReadWriteListsProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<ReadWriteListsProperty>>>,
         watch_sender: watch::Sender<Option<ReadWriteListsProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -6285,20 +5872,10 @@ impl TestAbleServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property 'read_write_lists'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -6329,17 +5906,10 @@ impl TestAbleServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'read_write_lists'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();

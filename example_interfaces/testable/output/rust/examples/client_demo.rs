@@ -804,50 +804,64 @@ async fn main() {
             optional_date_time: Some(chrono::Utc::now()),
             optional_duration: Some(chrono::Duration::seconds(3536)),
             optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-            array_of_integers: vec![42, 42],
-            optional_array_of_integers: vec![42, 42],
-            array_of_strings: vec!["apples".to_string(), "apples".to_string()],
-            optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()],
+            array_of_integers: vec![42, 2022],
+            optional_array_of_integers: Some(vec![42, 2022, 2022]),
+            array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+            optional_array_of_strings: Some(vec![
+                "apples".to_string(),
+                "foo".to_string(),
+                "foo".to_string(),
+            ]),
             array_of_enums: vec![Numbers::One, Numbers::One],
-            optional_array_of_enums: vec![Numbers::One, Numbers::One],
+            optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
             array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-            optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+            optional_array_of_datetimes: Some(vec![
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+            ]),
             array_of_durations: vec![
                 chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
+                chrono::Duration::seconds(975),
             ],
-            optional_array_of_durations: vec![
+            optional_array_of_durations: Some(vec![
                 chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
-            ],
+                chrono::Duration::seconds(975),
+                chrono::Duration::seconds(967),
+            ]),
             array_of_binaries: vec![
                 vec![101, 120, 97, 109, 112, 108, 101],
                 vec![101, 120, 97, 109, 112, 108, 101],
             ],
-            optional_array_of_binaries: vec![
+            optional_array_of_binaries: Some(vec![
                 vec![101, 120, 97, 109, 112, 108, 101],
                 vec![101, 120, 97, 109, 112, 108, 101],
-            ],
+                vec![101, 120, 97, 109, 112, 108, 101],
+            ]),
             array_of_entry_objects: vec![
                 Entry {
                     key: 42,
                     value: "apples".to_string(),
                 },
                 Entry {
-                    key: 42,
-                    value: "apples".to_string(),
+                    key: 2022,
+                    value: "foo".to_string(),
                 },
             ],
-            optional_array_of_entry_objects: vec![
+            optional_array_of_entry_objects: Some(vec![
                 Entry {
                     key: 42,
                     value: "apples".to_string(),
                 },
                 Entry {
-                    key: 42,
-                    value: "apples".to_string(),
+                    key: 2022,
+                    value: "foo".to_string(),
                 },
-            ],
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+            ]),
         })
         .await
         .expect("Failed to call callOneStruct");
@@ -878,50 +892,64 @@ async fn main() {
             optional_date_time: Some(chrono::Utc::now()),
             optional_duration: Some(chrono::Duration::seconds(3536)),
             optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-            array_of_integers: vec![42, 42],
-            optional_array_of_integers: vec![42, 42],
-            array_of_strings: vec!["apples".to_string(), "apples".to_string()],
-            optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()],
+            array_of_integers: vec![42, 2022],
+            optional_array_of_integers: Some(vec![42, 2022, 2022]),
+            array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+            optional_array_of_strings: Some(vec![
+                "apples".to_string(),
+                "foo".to_string(),
+                "foo".to_string(),
+            ]),
             array_of_enums: vec![Numbers::One, Numbers::One],
-            optional_array_of_enums: vec![Numbers::One, Numbers::One],
+            optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
             array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-            optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+            optional_array_of_datetimes: Some(vec![
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+            ]),
             array_of_durations: vec![
                 chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
+                chrono::Duration::seconds(975),
             ],
-            optional_array_of_durations: vec![
+            optional_array_of_durations: Some(vec![
                 chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
-            ],
+                chrono::Duration::seconds(975),
+                chrono::Duration::seconds(967),
+            ]),
             array_of_binaries: vec![
                 vec![101, 120, 97, 109, 112, 108, 101],
                 vec![101, 120, 97, 109, 112, 108, 101],
             ],
-            optional_array_of_binaries: vec![
+            optional_array_of_binaries: Some(vec![
                 vec![101, 120, 97, 109, 112, 108, 101],
                 vec![101, 120, 97, 109, 112, 108, 101],
-            ],
+                vec![101, 120, 97, 109, 112, 108, 101],
+            ]),
             array_of_entry_objects: vec![
                 Entry {
                     key: 42,
                     value: "apples".to_string(),
                 },
                 Entry {
-                    key: 42,
-                    value: "apples".to_string(),
+                    key: 2022,
+                    value: "foo".to_string(),
                 },
             ],
-            optional_array_of_entry_objects: vec![
+            optional_array_of_entry_objects: Some(vec![
                 Entry {
                     key: 42,
                     value: "apples".to_string(),
                 },
                 Entry {
-                    key: 42,
-                    value: "apples".to_string(),
+                    key: 2022,
+                    value: "foo".to_string(),
                 },
-            ],
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+            ]),
         }))
         .await
         .expect("Failed to call callOptionalStruct");
@@ -953,50 +981,64 @@ async fn main() {
                 optional_date_time: Some(chrono::Utc::now()),
                 optional_duration: Some(chrono::Duration::seconds(3536)),
                 optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-                array_of_integers: vec![42, 42],
-                optional_array_of_integers: vec![42, 42],
-                array_of_strings: vec!["apples".to_string(), "apples".to_string()],
-                optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()],
+                array_of_integers: vec![42, 2022],
+                optional_array_of_integers: Some(vec![42, 2022, 2022]),
+                array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+                optional_array_of_strings: Some(vec![
+                    "apples".to_string(),
+                    "foo".to_string(),
+                    "foo".to_string(),
+                ]),
                 array_of_enums: vec![Numbers::One, Numbers::One],
-                optional_array_of_enums: vec![Numbers::One, Numbers::One],
+                optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
                 array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-                optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                optional_array_of_datetimes: Some(vec![
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                ]),
                 array_of_durations: vec![
                     chrono::Duration::seconds(3536),
-                    chrono::Duration::seconds(3536),
+                    chrono::Duration::seconds(975),
                 ],
-                optional_array_of_durations: vec![
+                optional_array_of_durations: Some(vec![
                     chrono::Duration::seconds(3536),
-                    chrono::Duration::seconds(3536),
-                ],
+                    chrono::Duration::seconds(975),
+                    chrono::Duration::seconds(967),
+                ]),
                 array_of_binaries: vec![
                     vec![101, 120, 97, 109, 112, 108, 101],
                     vec![101, 120, 97, 109, 112, 108, 101],
                 ],
-                optional_array_of_binaries: vec![
+                optional_array_of_binaries: Some(vec![
                     vec![101, 120, 97, 109, 112, 108, 101],
                     vec![101, 120, 97, 109, 112, 108, 101],
-                ],
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                ]),
                 array_of_entry_objects: vec![
                     Entry {
                         key: 42,
                         value: "apples".to_string(),
                     },
                     Entry {
-                        key: 42,
-                        value: "apples".to_string(),
+                        key: 2022,
+                        value: "foo".to_string(),
                     },
                 ],
-                optional_array_of_entry_objects: vec![
+                optional_array_of_entry_objects: Some(vec![
                     Entry {
                         key: 42,
                         value: "apples".to_string(),
                     },
                     Entry {
-                        key: 42,
-                        value: "apples".to_string(),
+                        key: 2022,
+                        value: "foo".to_string(),
                     },
-                ],
+                    Entry {
+                        key: 2022,
+                        value: "foo".to_string(),
+                    },
+                ]),
             }),
             AllTypes {
                 the_bool: true,
@@ -1021,50 +1063,64 @@ async fn main() {
                 optional_date_time: Some(chrono::Utc::now()),
                 optional_duration: Some(chrono::Duration::seconds(3536)),
                 optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-                array_of_integers: vec![42, 42],
-                optional_array_of_integers: vec![42, 42],
-                array_of_strings: vec!["apples".to_string(), "apples".to_string()],
-                optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()],
+                array_of_integers: vec![42, 2022],
+                optional_array_of_integers: Some(vec![42, 2022, 2022]),
+                array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+                optional_array_of_strings: Some(vec![
+                    "apples".to_string(),
+                    "foo".to_string(),
+                    "foo".to_string(),
+                ]),
                 array_of_enums: vec![Numbers::One, Numbers::One],
-                optional_array_of_enums: vec![Numbers::One, Numbers::One],
+                optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
                 array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-                optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                optional_array_of_datetimes: Some(vec![
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                ]),
                 array_of_durations: vec![
                     chrono::Duration::seconds(3536),
-                    chrono::Duration::seconds(3536),
+                    chrono::Duration::seconds(975),
                 ],
-                optional_array_of_durations: vec![
+                optional_array_of_durations: Some(vec![
                     chrono::Duration::seconds(3536),
-                    chrono::Duration::seconds(3536),
-                ],
+                    chrono::Duration::seconds(975),
+                    chrono::Duration::seconds(967),
+                ]),
                 array_of_binaries: vec![
                     vec![101, 120, 97, 109, 112, 108, 101],
                     vec![101, 120, 97, 109, 112, 108, 101],
                 ],
-                optional_array_of_binaries: vec![
+                optional_array_of_binaries: Some(vec![
                     vec![101, 120, 97, 109, 112, 108, 101],
                     vec![101, 120, 97, 109, 112, 108, 101],
-                ],
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                ]),
                 array_of_entry_objects: vec![
                     Entry {
                         key: 42,
                         value: "apples".to_string(),
                     },
                     Entry {
-                        key: 42,
-                        value: "apples".to_string(),
+                        key: 2022,
+                        value: "foo".to_string(),
                     },
                 ],
-                optional_array_of_entry_objects: vec![
+                optional_array_of_entry_objects: Some(vec![
                     Entry {
                         key: 42,
                         value: "apples".to_string(),
                     },
                     Entry {
-                        key: 42,
-                        value: "apples".to_string(),
+                        key: 2022,
+                        value: "foo".to_string(),
                     },
-                ],
+                    Entry {
+                        key: 2022,
+                        value: "foo".to_string(),
+                    },
+                ]),
             },
             AllTypes {
                 the_bool: true,
@@ -1089,50 +1145,64 @@ async fn main() {
                 optional_date_time: Some(chrono::Utc::now()),
                 optional_duration: Some(chrono::Duration::seconds(3536)),
                 optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-                array_of_integers: vec![42, 42],
-                optional_array_of_integers: vec![42, 42],
-                array_of_strings: vec!["apples".to_string(), "apples".to_string()],
-                optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()],
+                array_of_integers: vec![42, 2022],
+                optional_array_of_integers: Some(vec![42, 2022, 2022]),
+                array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+                optional_array_of_strings: Some(vec![
+                    "apples".to_string(),
+                    "foo".to_string(),
+                    "foo".to_string(),
+                ]),
                 array_of_enums: vec![Numbers::One, Numbers::One],
-                optional_array_of_enums: vec![Numbers::One, Numbers::One],
+                optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
                 array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-                optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                optional_array_of_datetimes: Some(vec![
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                ]),
                 array_of_durations: vec![
                     chrono::Duration::seconds(3536),
-                    chrono::Duration::seconds(3536),
+                    chrono::Duration::seconds(975),
                 ],
-                optional_array_of_durations: vec![
+                optional_array_of_durations: Some(vec![
                     chrono::Duration::seconds(3536),
-                    chrono::Duration::seconds(3536),
-                ],
+                    chrono::Duration::seconds(975),
+                    chrono::Duration::seconds(967),
+                ]),
                 array_of_binaries: vec![
                     vec![101, 120, 97, 109, 112, 108, 101],
                     vec![101, 120, 97, 109, 112, 108, 101],
                 ],
-                optional_array_of_binaries: vec![
+                optional_array_of_binaries: Some(vec![
                     vec![101, 120, 97, 109, 112, 108, 101],
                     vec![101, 120, 97, 109, 112, 108, 101],
-                ],
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                ]),
                 array_of_entry_objects: vec![
                     Entry {
                         key: 42,
                         value: "apples".to_string(),
                     },
                     Entry {
-                        key: 42,
-                        value: "apples".to_string(),
+                        key: 2022,
+                        value: "foo".to_string(),
                     },
                 ],
-                optional_array_of_entry_objects: vec![
+                optional_array_of_entry_objects: Some(vec![
                     Entry {
                         key: 42,
                         value: "apples".to_string(),
                     },
                     Entry {
-                        key: 42,
-                        value: "apples".to_string(),
+                        key: 2022,
+                        value: "foo".to_string(),
                     },
-                ],
+                    Entry {
+                        key: 2022,
+                        value: "foo".to_string(),
+                    },
+                ]),
             },
         )
         .await
@@ -1216,14 +1286,14 @@ async fn main() {
 
     println!("Calling callOneListOfIntegers with example values...");
     let result = api_client
-        .call_one_list_of_integers(vec![42, 42])
+        .call_one_list_of_integers(vec![42, 2022])
         .await
         .expect("Failed to call callOneListOfIntegers");
     println!("callOneListOfIntegers response: {:?}", result);
 
     println!("Calling callOptionalListOfFloats with example values...");
     let result = api_client
-        .call_optional_list_of_floats(vec![3.14, 3.14])
+        .call_optional_list_of_floats(Some(vec![3.14, 1.0, 1.0]))
         .await
         .expect("Failed to call callOptionalListOfFloats");
     println!("callOptionalListOfFloats response: {:?}", result);
@@ -1232,7 +1302,11 @@ async fn main() {
     let result = api_client
         .call_two_lists(
             vec![Numbers::One, Numbers::One],
-            vec!["apples".to_string(), "apples".to_string()],
+            Some(vec![
+                "apples".to_string(),
+                "foo".to_string(),
+                "foo".to_string(),
+            ]),
         )
         .await
         .expect("Failed to call callTwoLists");
@@ -1281,50 +1355,64 @@ async fn main() {
         optional_date_time: Some(chrono::Utc::now()),
         optional_duration: Some(chrono::Duration::seconds(3536)),
         optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-        array_of_integers: vec![42, 42],
-        optional_array_of_integers: vec![42, 42],
-        array_of_strings: vec!["apples".to_string(), "apples".to_string()],
-        optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()],
+        array_of_integers: vec![42, 2022],
+        optional_array_of_integers: Some(vec![42, 2022, 2022]),
+        array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+        optional_array_of_strings: Some(vec![
+            "apples".to_string(),
+            "foo".to_string(),
+            "foo".to_string(),
+        ]),
         array_of_enums: vec![Numbers::One, Numbers::One],
-        optional_array_of_enums: vec![Numbers::One, Numbers::One],
+        optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
         array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-        optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+        optional_array_of_datetimes: Some(vec![
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+        ]),
         array_of_durations: vec![
             chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(3536),
+            chrono::Duration::seconds(975),
         ],
-        optional_array_of_durations: vec![
+        optional_array_of_durations: Some(vec![
             chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(3536),
-        ],
+            chrono::Duration::seconds(975),
+            chrono::Duration::seconds(967),
+        ]),
         array_of_binaries: vec![
             vec![101, 120, 97, 109, 112, 108, 101],
             vec![101, 120, 97, 109, 112, 108, 101],
         ],
-        optional_array_of_binaries: vec![
+        optional_array_of_binaries: Some(vec![
             vec![101, 120, 97, 109, 112, 108, 101],
             vec![101, 120, 97, 109, 112, 108, 101],
-        ],
+            vec![101, 120, 97, 109, 112, 108, 101],
+        ]),
         array_of_entry_objects: vec![
             Entry {
                 key: 42,
                 value: "apples".to_string(),
             },
             Entry {
-                key: 42,
-                value: "apples".to_string(),
+                key: 2022,
+                value: "foo".to_string(),
             },
         ],
-        optional_array_of_entry_objects: vec![
+        optional_array_of_entry_objects: Some(vec![
             Entry {
                 key: 42,
                 value: "apples".to_string(),
             },
             Entry {
-                key: 42,
-                value: "apples".to_string(),
+                key: 2022,
+                value: "foo".to_string(),
             },
-        ],
+            Entry {
+                key: 2022,
+                value: "foo".to_string(),
+            },
+        ]),
     });
 
     let _ = api_client.set_read_write_optional_struct(Some(AllTypes {
@@ -1350,50 +1438,64 @@ async fn main() {
         optional_date_time: Some(chrono::Utc::now()),
         optional_duration: Some(chrono::Duration::seconds(3536)),
         optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-        array_of_integers: vec![42, 42],
-        optional_array_of_integers: vec![42, 42],
-        array_of_strings: vec!["apples".to_string(), "apples".to_string()],
-        optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()],
+        array_of_integers: vec![42, 2022],
+        optional_array_of_integers: Some(vec![42, 2022, 2022]),
+        array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+        optional_array_of_strings: Some(vec![
+            "apples".to_string(),
+            "foo".to_string(),
+            "foo".to_string(),
+        ]),
         array_of_enums: vec![Numbers::One, Numbers::One],
-        optional_array_of_enums: vec![Numbers::One, Numbers::One],
+        optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
         array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-        optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+        optional_array_of_datetimes: Some(vec![
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+        ]),
         array_of_durations: vec![
             chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(3536),
+            chrono::Duration::seconds(975),
         ],
-        optional_array_of_durations: vec![
+        optional_array_of_durations: Some(vec![
             chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(3536),
-        ],
+            chrono::Duration::seconds(975),
+            chrono::Duration::seconds(967),
+        ]),
         array_of_binaries: vec![
             vec![101, 120, 97, 109, 112, 108, 101],
             vec![101, 120, 97, 109, 112, 108, 101],
         ],
-        optional_array_of_binaries: vec![
+        optional_array_of_binaries: Some(vec![
             vec![101, 120, 97, 109, 112, 108, 101],
             vec![101, 120, 97, 109, 112, 108, 101],
-        ],
+            vec![101, 120, 97, 109, 112, 108, 101],
+        ]),
         array_of_entry_objects: vec![
             Entry {
                 key: 42,
                 value: "apples".to_string(),
             },
             Entry {
-                key: 42,
-                value: "apples".to_string(),
+                key: 2022,
+                value: "foo".to_string(),
             },
         ],
-        optional_array_of_entry_objects: vec![
+        optional_array_of_entry_objects: Some(vec![
             Entry {
                 key: 42,
                 value: "apples".to_string(),
             },
             Entry {
-                key: 42,
-                value: "apples".to_string(),
+                key: 2022,
+                value: "foo".to_string(),
             },
-        ],
+            Entry {
+                key: 2022,
+                value: "foo".to_string(),
+            },
+        ]),
     }));
 
     let read_write_two_structs_new_value = ReadWriteTwoStructsProperty {
@@ -1420,50 +1522,64 @@ async fn main() {
             optional_date_time: Some(chrono::Utc::now()),
             optional_duration: Some(chrono::Duration::seconds(3536)),
             optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-            array_of_integers: vec![42, 42],
-            optional_array_of_integers: vec![42, 42],
-            array_of_strings: vec!["apples".to_string(), "apples".to_string()],
-            optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()],
+            array_of_integers: vec![42, 2022],
+            optional_array_of_integers: Some(vec![42, 2022, 2022]),
+            array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+            optional_array_of_strings: Some(vec![
+                "apples".to_string(),
+                "foo".to_string(),
+                "foo".to_string(),
+            ]),
             array_of_enums: vec![Numbers::One, Numbers::One],
-            optional_array_of_enums: vec![Numbers::One, Numbers::One],
+            optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
             array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-            optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+            optional_array_of_datetimes: Some(vec![
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+            ]),
             array_of_durations: vec![
                 chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
+                chrono::Duration::seconds(975),
             ],
-            optional_array_of_durations: vec![
+            optional_array_of_durations: Some(vec![
                 chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
-            ],
+                chrono::Duration::seconds(975),
+                chrono::Duration::seconds(967),
+            ]),
             array_of_binaries: vec![
                 vec![101, 120, 97, 109, 112, 108, 101],
                 vec![101, 120, 97, 109, 112, 108, 101],
             ],
-            optional_array_of_binaries: vec![
+            optional_array_of_binaries: Some(vec![
                 vec![101, 120, 97, 109, 112, 108, 101],
                 vec![101, 120, 97, 109, 112, 108, 101],
-            ],
+                vec![101, 120, 97, 109, 112, 108, 101],
+            ]),
             array_of_entry_objects: vec![
                 Entry {
                     key: 42,
                     value: "apples".to_string(),
                 },
                 Entry {
-                    key: 42,
-                    value: "apples".to_string(),
+                    key: 2022,
+                    value: "foo".to_string(),
                 },
             ],
-            optional_array_of_entry_objects: vec![
+            optional_array_of_entry_objects: Some(vec![
                 Entry {
                     key: 42,
                     value: "apples".to_string(),
                 },
                 Entry {
-                    key: 42,
-                    value: "apples".to_string(),
+                    key: 2022,
+                    value: "foo".to_string(),
                 },
-            ],
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+            ]),
         },
         second: Some(AllTypes {
             the_bool: true,
@@ -1488,50 +1604,64 @@ async fn main() {
             optional_date_time: Some(chrono::Utc::now()),
             optional_duration: Some(chrono::Duration::seconds(3536)),
             optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-            array_of_integers: vec![42, 42],
-            optional_array_of_integers: vec![42, 42],
-            array_of_strings: vec!["apples".to_string(), "apples".to_string()],
-            optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()],
+            array_of_integers: vec![42, 2022],
+            optional_array_of_integers: Some(vec![42, 2022, 2022]),
+            array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+            optional_array_of_strings: Some(vec![
+                "apples".to_string(),
+                "foo".to_string(),
+                "foo".to_string(),
+            ]),
             array_of_enums: vec![Numbers::One, Numbers::One],
-            optional_array_of_enums: vec![Numbers::One, Numbers::One],
+            optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
             array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-            optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+            optional_array_of_datetimes: Some(vec![
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+            ]),
             array_of_durations: vec![
                 chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
+                chrono::Duration::seconds(975),
             ],
-            optional_array_of_durations: vec![
+            optional_array_of_durations: Some(vec![
                 chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(3536),
-            ],
+                chrono::Duration::seconds(975),
+                chrono::Duration::seconds(967),
+            ]),
             array_of_binaries: vec![
                 vec![101, 120, 97, 109, 112, 108, 101],
                 vec![101, 120, 97, 109, 112, 108, 101],
             ],
-            optional_array_of_binaries: vec![
+            optional_array_of_binaries: Some(vec![
                 vec![101, 120, 97, 109, 112, 108, 101],
                 vec![101, 120, 97, 109, 112, 108, 101],
-            ],
+                vec![101, 120, 97, 109, 112, 108, 101],
+            ]),
             array_of_entry_objects: vec![
                 Entry {
                     key: 42,
                     value: "apples".to_string(),
                 },
                 Entry {
-                    key: 42,
-                    value: "apples".to_string(),
+                    key: 2022,
+                    value: "foo".to_string(),
                 },
             ],
-            optional_array_of_entry_objects: vec![
+            optional_array_of_entry_objects: Some(vec![
                 Entry {
                     key: 42,
                     value: "apples".to_string(),
                 },
                 Entry {
-                    key: 42,
-                    value: "apples".to_string(),
+                    key: 2022,
+                    value: "foo".to_string(),
                 },
-            ],
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+            ]),
         }),
     };
     let _ = api_client.set_read_write_two_structs(read_write_two_structs_new_value);
@@ -1577,11 +1707,15 @@ async fn main() {
     let _ = api_client.set_read_write_two_binaries(read_write_two_binaries_new_value);
 
     let _ =
-        api_client.set_read_write_list_of_strings(vec!["apples".to_string(), "apples".to_string()]);
+        api_client.set_read_write_list_of_strings(vec!["apples".to_string(), "foo".to_string()]);
 
     let read_write_lists_new_value = ReadWriteListsProperty {
         the_list: vec![Numbers::One, Numbers::One],
-        optionalList: vec![chrono::Utc::now(), chrono::Utc::now()],
+        optional_list: Some(vec![
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+        ]),
     };
     let _ = api_client.set_read_write_lists(read_write_lists_new_value);
 

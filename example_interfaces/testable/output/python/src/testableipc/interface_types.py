@@ -702,9 +702,9 @@ class SingleOptionalArrayOfStringsSignalPayload(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     values: Annotated[
-        Optional[List[int]],
+        Optional[List[str]],
         Field(
-            description="The array of integers.",
+            description="The array of strings.",
         ),
     ]
 
@@ -714,56 +714,56 @@ class ArrayOfEveryTypeSignalPayload(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    first: Annotated[
+    first_of_integers: Annotated[
         List[int],
         Field(
             description="The first array of integers.",
         ),
     ]
 
-    second: Annotated[
+    second_of_floats: Annotated[
         List[float],
         Field(
             description="The second array of floats.",
         ),
     ]
 
-    third: Annotated[
+    third_of_strings: Annotated[
         List[str],
         Field(
             description="The third array of strings.",
         ),
     ]
 
-    fourth: Annotated[
+    fourth_of_enums: Annotated[
         List[Numbers],
         Field(
             description="The fourth array of enums.",
         ),
     ]
 
-    fifth: Annotated[
+    fifth_of_structs: Annotated[
         List[Entry],
         Field(
             description="The fifth array of structs.",
         ),
     ]
 
-    sixth: Annotated[
+    sixth_of_datetimes: Annotated[
         List[datetime],
         Field(
             description="The sixth array of date and time values.",
         ),
     ]
 
-    seventh: Annotated[
+    seventh_of_durations: Annotated[
         List[timedelta],
         Field(
             description="The seventh array of duration values.",
         ),
     ]
 
-    eighth: Annotated[
+    eighth_of_binaries: Annotated[
         List[bytes],
         Field(
             description="The eighth array of binary values.",

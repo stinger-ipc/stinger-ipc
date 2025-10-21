@@ -47,7 +47,7 @@ SingleBinarySignalCallbackType = Callable[[bytes], None]
 SingleOptionalBinarySignalCallbackType = Callable[[bytes], None]
 ThreeBinariesSignalCallbackType = Callable[[bytes, bytes, bytes], None]
 SingleArrayOfIntegersSignalCallbackType = Callable[[list[int]], None]
-SingleOptionalArrayOfStringsSignalCallbackType = Callable[[list[int]], None]
+SingleOptionalArrayOfStringsSignalCallbackType = Callable[[list[str]], None]
 ArrayOfEveryTypeSignalCallbackType = Callable[
     [list[int], list[float], list[str], list[interface_types.Numbers], list[interface_types.Entry], list[datetime.datetime], list[datetime.timedelta], list[bytes]], None
 ]

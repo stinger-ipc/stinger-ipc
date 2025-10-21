@@ -60,25 +60,25 @@ struct FullServerSubscriptionIds {
 #[derive(Clone)]
 struct FullProperties {
     favorite_number_topic: Arc<String>,
-    favorite_number: Arc<Mutex<Option<FavoriteNumberProperty>>>,
+    favorite_number: Arc<AsyncMutex<Option<FavoriteNumberProperty>>>,
     favorite_number_tx_channel: watch::Sender<Option<i32>>,
     favorite_foods_topic: Arc<String>,
-    favorite_foods: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
+    favorite_foods: Arc<AsyncMutex<Option<FavoriteFoodsProperty>>>,
     favorite_foods_tx_channel: watch::Sender<Option<FavoriteFoodsProperty>>,
     lunch_menu_topic: Arc<String>,
-    lunch_menu: Arc<Mutex<Option<LunchMenuProperty>>>,
+    lunch_menu: Arc<AsyncMutex<Option<LunchMenuProperty>>>,
     lunch_menu_tx_channel: watch::Sender<Option<LunchMenuProperty>>,
     family_name_topic: Arc<String>,
-    family_name: Arc<Mutex<Option<FamilyNameProperty>>>,
+    family_name: Arc<AsyncMutex<Option<FamilyNameProperty>>>,
     family_name_tx_channel: watch::Sender<Option<String>>,
     last_breakfast_time_topic: Arc<String>,
-    last_breakfast_time: Arc<Mutex<Option<LastBreakfastTimeProperty>>>,
+    last_breakfast_time: Arc<AsyncMutex<Option<LastBreakfastTimeProperty>>>,
     last_breakfast_time_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
     breakfast_length_topic: Arc<String>,
-    breakfast_length: Arc<Mutex<Option<BreakfastLengthProperty>>>,
+    breakfast_length: Arc<AsyncMutex<Option<BreakfastLengthProperty>>>,
     breakfast_length_tx_channel: watch::Sender<Option<chrono::Duration>>,
     last_birthdays_topic: Arc<String>,
-    last_birthdays: Arc<Mutex<Option<LastBirthdaysProperty>>>,
+    last_birthdays: Arc<AsyncMutex<Option<LastBirthdaysProperty>>>,
     last_birthdays_tx_channel: watch::Sender<Option<LastBirthdaysProperty>>,
 }
 
@@ -287,37 +287,37 @@ impl FullServer {
                 "full/{}/property/favoriteNumber/value",
                 instance_id
             )),
-            favorite_number: Arc::new(Mutex::new(None)),
+            favorite_number: Arc::new(AsyncMutex::new(None)),
             favorite_number_tx_channel: watch::channel(None).0,
             favorite_foods_topic: Arc::new(format!(
                 "full/{}/property/favoriteFoods/value",
                 instance_id
             )),
-            favorite_foods: Arc::new(Mutex::new(None)),
+            favorite_foods: Arc::new(AsyncMutex::new(None)),
             favorite_foods_tx_channel: watch::channel(None).0,
             lunch_menu_topic: Arc::new(format!("full/{}/property/lunchMenu/value", instance_id)),
-            lunch_menu: Arc::new(Mutex::new(None)),
+            lunch_menu: Arc::new(AsyncMutex::new(None)),
             lunch_menu_tx_channel: watch::channel(None).0,
             family_name_topic: Arc::new(format!("full/{}/property/familyName/value", instance_id)),
-            family_name: Arc::new(Mutex::new(None)),
+            family_name: Arc::new(AsyncMutex::new(None)),
             family_name_tx_channel: watch::channel(None).0,
             last_breakfast_time_topic: Arc::new(format!(
                 "full/{}/property/lastBreakfastTime/value",
                 instance_id
             )),
-            last_breakfast_time: Arc::new(Mutex::new(None)),
+            last_breakfast_time: Arc::new(AsyncMutex::new(None)),
             last_breakfast_time_tx_channel: watch::channel(None).0,
             breakfast_length_topic: Arc::new(format!(
                 "full/{}/property/breakfastLength/value",
                 instance_id
             )),
-            breakfast_length: Arc::new(Mutex::new(None)),
+            breakfast_length: Arc::new(AsyncMutex::new(None)),
             breakfast_length_tx_channel: watch::channel(None).0,
             last_birthdays_topic: Arc::new(format!(
                 "full/{}/property/lastBirthdays/value",
                 instance_id
             )),
-            last_birthdays: Arc::new(Mutex::new(None)),
+            last_birthdays: Arc::new(AsyncMutex::new(None)),
             last_birthdays_tx_channel: watch::channel(None).0,
         };
 
@@ -879,7 +879,7 @@ impl FullServer {
     async fn update_favorite_number_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<FavoriteNumberProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<FavoriteNumberProperty>>>,
         watch_sender: watch::Sender<Option<i32>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -900,20 +900,10 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(format!(
-                "Failed to lock mutex for updating property 'favorite_number'"
-            )))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.number.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -942,17 +932,10 @@ impl FullServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'favorite_number'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -1001,7 +984,7 @@ impl FullServer {
     async fn update_favorite_foods_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<FavoriteFoodsProperty>>>,
         watch_sender: watch::Sender<Option<FavoriteFoodsProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -1022,20 +1005,10 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(format!(
-                "Failed to lock mutex for updating property 'favorite_foods'"
-            )))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -1062,17 +1035,10 @@ impl FullServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'favorite_foods'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -1121,7 +1087,7 @@ impl FullServer {
     async fn update_lunch_menu_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<LunchMenuProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<LunchMenuProperty>>>,
         watch_sender: watch::Sender<Option<LunchMenuProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -1142,20 +1108,10 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(format!(
-                "Failed to lock mutex for updating property 'lunch_menu'"
-            )))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -1182,17 +1138,10 @@ impl FullServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'lunch_menu'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();
@@ -1241,7 +1190,7 @@ impl FullServer {
     async fn update_family_name_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<FamilyNameProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<FamilyNameProperty>>>,
         watch_sender: watch::Sender<Option<String>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -1262,20 +1211,10 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(format!(
-                "Failed to lock mutex for updating property 'family_name'"
-            )))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.family_name.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -1304,17 +1243,10 @@ impl FullServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'family_name'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -1363,7 +1295,7 @@ impl FullServer {
     async fn update_last_breakfast_time_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<LastBreakfastTimeProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<LastBreakfastTimeProperty>>>,
         watch_sender: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -1385,20 +1317,10 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(format!(
-                "Failed to lock mutex for updating property 'last_breakfast_time'"
-            )))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.timestamp.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -1433,17 +1355,10 @@ impl FullServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'last_breakfast_time'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -1492,7 +1407,7 @@ impl FullServer {
     async fn update_breakfast_length_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<BreakfastLengthProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<BreakfastLengthProperty>>>,
         watch_sender: watch::Sender<Option<chrono::Duration>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -1513,20 +1428,10 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(format!(
-                "Failed to lock mutex for updating property 'breakfast_length'"
-            )))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.length.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -1555,17 +1460,10 @@ impl FullServer {
         };
 
         // Set the server's copy of the property value.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'breakfast_length'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
@@ -1614,7 +1512,7 @@ impl FullServer {
     async fn update_last_birthdays_value(
         publisher: MqttierClient,
         topic: Arc<String>,
-        property_pointer: Arc<Mutex<Option<LastBirthdaysProperty>>>,
+        property_pointer: Arc<AsyncMutex<Option<LastBirthdaysProperty>>>,
         watch_sender: watch::Sender<Option<LastBirthdaysProperty>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
@@ -1635,20 +1533,10 @@ impl FullServer {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => Err(()),
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(format!(
-                "Failed to lock mutex for updating property 'last_birthdays'"
-            )))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -1675,17 +1563,10 @@ impl FullServer {
         let new_prop_obj = data.clone();
 
         // Set the server's copy of the property values.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return FullServer::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property 'last_birthdays'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = property_obj.clone();

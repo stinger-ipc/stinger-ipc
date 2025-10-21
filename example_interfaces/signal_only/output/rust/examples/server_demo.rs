@@ -12,6 +12,7 @@ use tokio::time::{sleep, Duration};
 
 #[allow(unused_imports)]
 use signal_only_ipc::payloads::{MethodReturnCode, *};
+use tokio::join;
 
 #[tokio::main]
 async fn main() {
@@ -37,37 +38,54 @@ async fn main() {
         let _conn_loop = looping_server.run_loop().await;
     });
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Emitting signal 'anotherSignal'");
-    let signal_result_future = server
-        .emit_another_signal(3.14, true, "apples".to_string())
-        .await;
-    let signal_result = signal_result_future.await;
-    println!("Signal 'anotherSignal' was sent: {:?}", signal_result);
+    let mut server_clone1 = server.clone();
+    let signal_publish_task = tokio::spawn(async move {
+        loop {
+            sleep(Duration::from_secs(9)).await;
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Emitting signal 'bark'");
-    let signal_result_future = server.emit_bark("apples".to_string()).await;
-    let signal_result = signal_result_future.await;
-    println!("Signal 'bark' was sent: {:?}", signal_result);
+            sleep(Duration::from_secs(1)).await;
+            println!("Emitting signal 'anotherSignal'");
+            let signal_result_future = server_clone1
+                .emit_another_signal(3.14, true, "apples".to_string())
+                .await;
+            let signal_result = signal_result_future.await;
+            println!("Signal 'anotherSignal' was sent: {:?}", signal_result);
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Emitting signal 'maybe_number'");
-    let signal_result_future = server.emit_maybe_number(Some(42)).await;
-    let signal_result = signal_result_future.await;
-    println!("Signal 'maybe_number' was sent: {:?}", signal_result);
+            sleep(Duration::from_secs(1)).await;
+            println!("Emitting signal 'bark'");
+            let signal_result_future = server_clone1.emit_bark("apples".to_string()).await;
+            let signal_result = signal_result_future.await;
+            println!("Signal 'bark' was sent: {:?}", signal_result);
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Emitting signal 'maybe_name'");
-    let signal_result_future = server.emit_maybe_name(Some("apples".to_string())).await;
-    let signal_result = signal_result_future.await;
-    println!("Signal 'maybe_name' was sent: {:?}", signal_result);
+            sleep(Duration::from_secs(1)).await;
+            println!("Emitting signal 'maybe_number'");
+            let signal_result_future = server_clone1.emit_maybe_number(Some(42)).await;
+            let signal_result = signal_result_future.await;
+            println!("Signal 'maybe_number' was sent: {:?}", signal_result);
 
-    sleep(Duration::from_secs(1)).await;
-    println!("Emitting signal 'now'");
-    let signal_result_future = server.emit_now(chrono::Utc::now()).await;
-    let signal_result = signal_result_future.await;
-    println!("Signal 'now' was sent: {:?}", signal_result);
+            sleep(Duration::from_secs(1)).await;
+            println!("Emitting signal 'maybe_name'");
+            let signal_result_future = server_clone1
+                .emit_maybe_name(Some("apples".to_string()))
+                .await;
+            let signal_result = signal_result_future.await;
+            println!("Signal 'maybe_name' was sent: {:?}", signal_result);
+
+            sleep(Duration::from_secs(1)).await;
+            println!("Emitting signal 'now'");
+            let signal_result_future = server_clone1.emit_now(chrono::Utc::now()).await;
+            let signal_result = signal_result_future.await;
+            println!("Signal 'now' was sent: {:?}", signal_result);
+        }
+    });
+
+    let property_publish_task = tokio::spawn(async move {
+        loop {
+            sleep(Duration::from_secs(11)).await;
+        }
+    });
+
+    let _ = join!(signal_publish_task, property_publish_task);
 
     // Ctrl-C to stop
 }

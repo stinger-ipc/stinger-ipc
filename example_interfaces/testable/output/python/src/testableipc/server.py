@@ -896,13 +896,13 @@ class TestAbleServer:
         )
         self._conn.publish("testAble/{}/signal/singleArrayOfIntegers".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
-    def emit_single_optional_array_of_strings(self, values: list[int]):
+    def emit_single_optional_array_of_strings(self, values: list[str]):
         """Server application code should call this method to emit the 'singleOptionalArrayOfStrings' signal.
 
         SingleOptionalArrayOfStringsSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
 
-        assert isinstance(values, list[int]), f"The 'values' argument must be of type list[int], but was {type(values)}"
+        assert isinstance(values, list[str]), f"The 'values' argument must be of type list[str], but was {type(values)}"
 
         payload = SingleOptionalArrayOfStringsSignalPayload(
             values=values if values is not None else None,
@@ -911,45 +911,45 @@ class TestAbleServer:
 
     def emit_array_of_every_type(
         self,
-        first: list[int],
-        second: list[float],
-        third: list[str],
-        fourth: list[interface_types.Numbers],
-        fifth: list[interface_types.Entry],
-        sixth: list[datetime.datetime],
-        seventh: list[datetime.timedelta],
-        eighth: list[bytes],
+        first_of_integers: list[int],
+        second_of_floats: list[float],
+        third_of_strings: list[str],
+        fourth_of_enums: list[interface_types.Numbers],
+        fifth_of_structs: list[interface_types.Entry],
+        sixth_of_datetimes: list[datetime.datetime],
+        seventh_of_durations: list[datetime.timedelta],
+        eighth_of_binaries: list[bytes],
     ):
         """Server application code should call this method to emit the 'arrayOfEveryType' signal.
 
         ArrayOfEveryTypeSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
 
-        assert isinstance(first, list[int]), f"The 'first' argument must be of type list[int], but was {type(first)}"
+        assert isinstance(first_of_integers, list[int]), f"The 'first_of_integers' argument must be of type list[int], but was {type(first_of_integers)}"
 
-        assert isinstance(second, list[float]), f"The 'second' argument must be of type list[float], but was {type(second)}"
+        assert isinstance(second_of_floats, list[float]), f"The 'second_of_floats' argument must be of type list[float], but was {type(second_of_floats)}"
 
-        assert isinstance(third, list[str]), f"The 'third' argument must be of type list[str], but was {type(third)}"
+        assert isinstance(third_of_strings, list[str]), f"The 'third_of_strings' argument must be of type list[str], but was {type(third_of_strings)}"
 
-        assert isinstance(fourth, list[interface_types.Numbers]), f"The 'fourth' argument must be of type list[interface_types.Numbers], but was {type(fourth)}"
+        assert isinstance(fourth_of_enums, list[interface_types.Numbers]), f"The 'fourth_of_enums' argument must be of type list[interface_types.Numbers], but was {type(fourth_of_enums)}"
 
-        assert isinstance(fifth, list[interface_types.Entry]), f"The 'fifth' argument must be of type list[interface_types.Entry], but was {type(fifth)}"
+        assert isinstance(fifth_of_structs, list[interface_types.Entry]), f"The 'fifth_of_structs' argument must be of type list[interface_types.Entry], but was {type(fifth_of_structs)}"
 
-        assert isinstance(sixth, list[datetime.datetime]), f"The 'sixth' argument must be of type list[datetime.datetime], but was {type(sixth)}"
+        assert isinstance(sixth_of_datetimes, list[datetime.datetime]), f"The 'sixth_of_datetimes' argument must be of type list[datetime.datetime], but was {type(sixth_of_datetimes)}"
 
-        assert isinstance(seventh, list[datetime.timedelta]), f"The 'seventh' argument must be of type list[datetime.timedelta], but was {type(seventh)}"
+        assert isinstance(seventh_of_durations, list[datetime.timedelta]), f"The 'seventh_of_durations' argument must be of type list[datetime.timedelta], but was {type(seventh_of_durations)}"
 
-        assert isinstance(eighth, list[bytes]), f"The 'eighth' argument must be of type list[bytes], but was {type(eighth)}"
+        assert isinstance(eighth_of_binaries, list[bytes]), f"The 'eighth_of_binaries' argument must be of type list[bytes], but was {type(eighth_of_binaries)}"
 
         payload = ArrayOfEveryTypeSignalPayload(
-            first=first,
-            second=second,
-            third=third,
-            fourth=fourth,
-            fifth=fifth,
-            sixth=sixth,
-            seventh=seventh,
-            eighth=eighth,
+            first_of_integers=first_of_integers,
+            second_of_floats=second_of_floats,
+            third_of_strings=third_of_strings,
+            fourth_of_enums=fourth_of_enums,
+            fifth_of_structs=fifth_of_structs,
+            sixth_of_datetimes=sixth_of_datetimes,
+            seventh_of_durations=seventh_of_durations,
+            eighth_of_binaries=eighth_of_binaries,
         )
         self._conn.publish("testAble/{}/signal/arrayOfEveryType".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 

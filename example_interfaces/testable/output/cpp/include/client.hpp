@@ -132,7 +132,7 @@ public:
 
     // Register a callback for the `singleOptionalArrayOfStrings` signal.  The argument is optional.
     // The provided method will be called whenever a `singleOptionalArrayOfStrings` is received.
-    void registerSingleOptionalArrayOfStringsCallback(const std::function<void(boost::optional<std::vector<int>>)>& cb);
+    void registerSingleOptionalArrayOfStringsCallback(const std::function<void(boost::optional<std::vector<std::string>>)>& cb);
 
     // Register a callback for the `arrayOfEveryType` signal.
     // The provided method will be called whenever a `arrayOfEveryType` is received.
@@ -754,7 +754,7 @@ private:
     int _singleArrayOfIntegersSignalSubscriptionId = -1;
 
     // List of callbacks to be called whenever the `singleOptionalArrayOfStrings` signal is received.
-    std::vector<std::function<void(boost::optional<std::vector<int>>)>> _singleOptionalArrayOfStringsSignalCallbacks;
+    std::vector<std::function<void(boost::optional<std::vector<std::string>>)>> _singleOptionalArrayOfStringsSignalCallbacks;
     std::mutex _singleOptionalArrayOfStringsSignalCallbacksMutex;
 
     // MQTT Subscription ID for `singleOptionalArrayOfStrings` signal receptions.

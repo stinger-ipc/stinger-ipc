@@ -50,7 +50,7 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
     {{prop_name | snake_case}}_topic: Arc<String>,
-    {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop_name|UpperCamelCase}}Property>>>,
+    {{prop_name | snake_case}}: Arc<AsyncMutex<Option<{{prop_name|UpperCamelCase}}Property>>>,
     {{prop_name | snake_case}}_tx_channel: watch::Sender<Option<{%if prop.arg_list|length == 1%}{{prop.arg_list[0].rust_type}}{%else%}{{prop_name|UpperCamelCase}}Property{%endif%}>>,
     {%-endfor%}
 }
@@ -125,7 +125,7 @@ impl {{stinger.rust.server_struct_name}} {
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
             {{prop_name | snake_case}}_topic: Arc::new(format!("{{prop.value_topic}}", instance_id)),
-            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
+            {{prop_name | snake_case}}: Arc::new(AsyncMutex::new(None)),
             {{prop_name | snake_case}}_tx_channel: watch::channel(None).0,
 
         {%-endfor%}
@@ -275,7 +275,7 @@ impl {{stinger.rust.server_struct_name}} {
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
-    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, property_pointer: Arc<Mutex<Option<{{prop_name|UpperCamelCase}}Property>>>, watch_sender: watch::Sender<Option<{%if prop.arg_list|length == 1%}{{prop.arg_list[0].rust_type}}{%else%}{{prop_name|UpperCamelCase}}Property{%endif%}>>, msg: ReceivedMessage) -> SentMessageFuture
+    async fn update_{{prop_name}}_value(publisher: MqttierClient, topic: Arc<String>, property_pointer: Arc<AsyncMutex<Option<{{prop_name|UpperCamelCase}}Property>>>, watch_sender: watch::Sender<Option<{%if prop.arg_list|length == 1%}{{prop.arg_list[0].rust_type}}{%else%}{{prop_name|UpperCamelCase}}Property{%endif%}>>, msg: ReceivedMessage) -> SentMessageFuture
     {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
@@ -289,22 +289,10 @@ impl {{stinger.rust.server_struct_name}} {
             }
         };
 
-        let assignment_result = match property_pointer.lock() {
-            Ok(mut guard) => {
-                *guard = Some(new_property_structure.clone());
-                Ok(())
-            }
-            Err(_e) => {
-                Err(())
-            }
-        };
-        // Since the lock is not Send, we need to be completely removed from it before calling the async method.
-        if let Err(()) = assignment_result {
-            return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                format!("Failed to lock mutex for updating property '{{prop_name}}'"),
-            ))
-            .await;
-        }
+        let mut property_guard = property_pointer.lock().await;
+        *property_guard = Some(new_property_structure.clone());
+        drop(property_guard);
+
         let topic2: String = topic.as_ref().clone();
         let data_to_send_to_watchers = {%if prop.arg_list|length == 1%}new_property_structure.{{prop.arg_list[0].name|snake_case}}.clone(){%else%}new_property_structure.clone(){%endif%};
         match watch_sender.send(Some(data_to_send_to_watchers)) {
@@ -331,17 +319,10 @@ impl {{stinger.rust.server_struct_name}} {
         }{% else %}data.clone(){% endif %};
 
         // Set the server's copy of the property value{%if prop.arg_list|length > 1%}s{%endif%}.
-        let property_obj = {
-            if let Ok(mut locked_data) = prop.lock() {
-                *locked_data = Some(new_prop_obj);
-                locked_data.clone()
-            } else {
-                return {{stinger.rust.server_struct_name}}::wrap_return_code_in_future(MethodReturnCode::ServerError(
-                    format!("Failed to lock mutex for setting property '{{prop_name}}'"),
-                ))
-                .await;
-            }
-        };
+        let mut property_data_guard = prop.lock().await;
+        *property_data_guard = Some(new_prop_obj.clone());
+        let property_obj = property_data_guard.clone();
+        drop(property_data_guard);
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = {%if prop.arg_list|length == 1%}Some(data.clone()){%else%}property_obj.clone(){%endif%};

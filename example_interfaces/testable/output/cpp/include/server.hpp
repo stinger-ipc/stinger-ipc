@@ -83,7 +83,7 @@ public:
 
     boost::future<bool> emitSingleArrayOfIntegersSignal(std::vector<int>);
 
-    boost::future<bool> emitSingleOptionalArrayOfStringsSignal(boost::optional<std::vector<int>>);
+    boost::future<bool> emitSingleOptionalArrayOfStringsSignal(boost::optional<std::vector<std::string>>);
 
     boost::future<bool> emitArrayOfEveryTypeSignal(std::vector<int>, std::vector<double>, std::vector<std::string>, std::vector<Numbers>, std::vector<Entry>, std::vector<std::chrono::time_point<std::chrono::system_clock>>, std::vector<std::chrono::duration<double>>, std::vector<std::vector<uint8_t>>);
 

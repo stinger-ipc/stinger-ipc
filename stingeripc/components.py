@@ -697,12 +697,16 @@ class ArgArray(Arg):
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         example_value = self.element.get_random_example_value(lang, seed=seed)
+        example_value2 = self.element.get_random_example_value(lang, seed=seed+1)
+        example_value3 = self.element.get_random_example_value(lang, seed=seed+2)
         if lang == "python":
-            return f"[{example_value}, {example_value}]"
+            return f"[{example_value}, {example_value2}]"
         elif lang == "rust":
-            return f"vec![{example_value}, {example_value}]"
+            if self.optional:
+                return f"Some(vec![{example_value}, {example_value2}, {example_value3}])"
+            return f"vec![{example_value}, {example_value2}]"
         elif lang in ["c++", "cpp"]:
-            return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value}}}"
+            return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value2}}}"
         return None
 
     def __str__(self) -> str:

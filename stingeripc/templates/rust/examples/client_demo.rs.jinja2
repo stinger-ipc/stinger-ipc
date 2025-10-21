@@ -94,7 +94,7 @@ async fn main() {
     {%else%}
     let {{prop_name|snake_case}}_new_value = {{prop.rust_type}} {
         {%-for arg in prop.arg_list %}
-            {{arg.name}}: {{arg.get_random_example_value(lang="rust")}},
+            {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
         {%-endfor%}
     };
     let _ = api_client.set_{{prop_name | snake_case}}({{prop_name|snake_case}}_new_value);

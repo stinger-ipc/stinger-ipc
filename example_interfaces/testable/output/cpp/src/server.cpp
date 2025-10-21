@@ -1600,7 +1600,7 @@ boost::future<bool> TestAbleServer::emitSingleArrayOfIntegersSignal(std::vector<
     return _broker->Publish((boost::format("testAble/%1%/signal/singleArrayOfIntegers") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-boost::future<bool> TestAbleServer::emitSingleOptionalArrayOfStringsSignal(boost::optional<std::vector<int>> values)
+boost::future<bool> TestAbleServer::emitSingleOptionalArrayOfStringsSignal(boost::optional<std::vector<std::string>> values)
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -1610,7 +1610,9 @@ boost::future<bool> TestAbleServer::emitSingleOptionalArrayOfStringsSignal(boost
         tempArrayValue.SetArray();
         for (const auto& item: *values)
         {
-            tempArrayValue.PushBack(item, doc.GetAllocator());
+            rapidjson::Value tempValuesStringValue;
+            tempValuesStringValue.SetString(item.c_str(), item.size(), doc.GetAllocator());
+            tempArrayValue.PushBack(tempValuesStringValue, doc.GetAllocator());
         }
         doc.AddMember("values", tempArrayValue, doc.GetAllocator());
     }
@@ -1621,7 +1623,7 @@ boost::future<bool> TestAbleServer::emitSingleOptionalArrayOfStringsSignal(boost
     return _broker->Publish((boost::format("testAble/%1%/signal/singleOptionalArrayOfStrings") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-boost::future<bool> TestAbleServer::emitArrayOfEveryTypeSignal(std::vector<int> first, std::vector<double> second, std::vector<std::string> third, std::vector<Numbers> fourth, std::vector<Entry> fifth, std::vector<std::chrono::time_point<std::chrono::system_clock>> sixth, std::vector<std::chrono::duration<double>> seventh, std::vector<std::vector<uint8_t>> eighth)
+boost::future<bool> TestAbleServer::emitArrayOfEveryTypeSignal(std::vector<int> firstOfIntegers, std::vector<double> secondOfFloats, std::vector<std::string> thirdOfStrings, std::vector<Numbers> fourthOfEnums, std::vector<Entry> fifthOfStructs, std::vector<std::chrono::time_point<std::chrono::system_clock>> sixthOfDatetimes, std::vector<std::chrono::duration<double>> seventhOfDurations, std::vector<std::vector<uint8_t>> eighthOfBinaries)
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -1629,95 +1631,95 @@ boost::future<bool> TestAbleServer::emitArrayOfEveryTypeSignal(std::vector<int> 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: first)
+        for (const auto& item: firstOfIntegers)
         {
             tempArrayValue.PushBack(item, doc.GetAllocator());
         }
-        doc.AddMember("first", tempArrayValue, doc.GetAllocator());
+        doc.AddMember("first_of_integers", tempArrayValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: second)
+        for (const auto& item: secondOfFloats)
         {
             tempArrayValue.PushBack(item, doc.GetAllocator());
         }
-        doc.AddMember("second", tempArrayValue, doc.GetAllocator());
+        doc.AddMember("second_of_floats", tempArrayValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: third)
+        for (const auto& item: thirdOfStrings)
         {
-            rapidjson::Value tempThirdStringValue;
-            tempThirdStringValue.SetString(item.c_str(), item.size(), doc.GetAllocator());
-            tempArrayValue.PushBack(tempThirdStringValue, doc.GetAllocator());
+            rapidjson::Value tempThirdOfStringsStringValue;
+            tempThirdOfStringsStringValue.SetString(item.c_str(), item.size(), doc.GetAllocator());
+            tempArrayValue.PushBack(tempThirdOfStringsStringValue, doc.GetAllocator());
         }
-        doc.AddMember("third", tempArrayValue, doc.GetAllocator());
+        doc.AddMember("third_of_strings", tempArrayValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: fourth)
+        for (const auto& item: fourthOfEnums)
         {
             tempArrayValue.PushBack(static_cast<int>(item), doc.GetAllocator());
         }
-        doc.AddMember("fourth", tempArrayValue, doc.GetAllocator());
+        doc.AddMember("fourth_of_enums", tempArrayValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: fifth)
+        for (const auto& item: fifthOfStructs)
         {
-            rapidjson::Value tempFifthObjectValue;
-            tempFifthObjectValue.SetObject();
-            item.AddToRapidJsonObject(tempFifthObjectValue, doc.GetAllocator());
-            tempArrayValue.PushBack(tempFifthObjectValue, doc.GetAllocator());
+            rapidjson::Value tempFifthOfStructsObjectValue;
+            tempFifthOfStructsObjectValue.SetObject();
+            item.AddToRapidJsonObject(tempFifthOfStructsObjectValue, doc.GetAllocator());
+            tempArrayValue.PushBack(tempFifthOfStructsObjectValue, doc.GetAllocator());
         }
-        doc.AddMember("fifth", tempArrayValue, doc.GetAllocator());
+        doc.AddMember("fifth_of_structs", tempArrayValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: sixth)
+        for (const auto& item: sixthOfDatetimes)
         {
-            rapidjson::Value tempSixthStringValue;
+            rapidjson::Value tempSixthOfDatetimesStringValue;
             std::string itemIsoString = timePointToIsoString(item);
-            tempSixthStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), doc.GetAllocator());
-            tempArrayValue.PushBack(tempSixthStringValue, doc.GetAllocator());
+            tempSixthOfDatetimesStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), doc.GetAllocator());
+            tempArrayValue.PushBack(tempSixthOfDatetimesStringValue, doc.GetAllocator());
         }
-        doc.AddMember("sixth", tempArrayValue, doc.GetAllocator());
+        doc.AddMember("sixth_of_datetimes", tempArrayValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: seventh)
+        for (const auto& item: seventhOfDurations)
         {
-            rapidjson::Value tempSeventhStringValue;
+            rapidjson::Value tempSeventhOfDurationsStringValue;
             std::string itemIsoString = durationToIsoString(item);
-            tempSeventhStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), doc.GetAllocator());
-            tempArrayValue.PushBack(tempSeventhStringValue, doc.GetAllocator());
+            tempSeventhOfDurationsStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), doc.GetAllocator());
+            tempArrayValue.PushBack(tempSeventhOfDurationsStringValue, doc.GetAllocator());
         }
-        doc.AddMember("seventh", tempArrayValue, doc.GetAllocator());
+        doc.AddMember("seventh_of_durations", tempArrayValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: eighth)
+        for (const auto& item: eighthOfBinaries)
         {
-            rapidjson::Value tempEighthStringValue;
+            rapidjson::Value tempEighthOfBinariesStringValue;
             std::string itemB64String = base64Encode(item);
-            tempEighthStringValue.SetString(itemB64String.c_str(), itemB64String.size(), doc.GetAllocator());
-            tempArrayValue.PushBack(tempEighthStringValue, doc.GetAllocator());
+            tempEighthOfBinariesStringValue.SetString(itemB64String.c_str(), itemB64String.size(), doc.GetAllocator());
+            tempArrayValue.PushBack(tempEighthOfBinariesStringValue, doc.GetAllocator());
         }
-        doc.AddMember("eighth", tempArrayValue, doc.GetAllocator());
+        doc.AddMember("eighth_of_binaries", tempArrayValue, doc.GetAllocator());
     }
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);

@@ -1403,8 +1403,8 @@ pub struct SingleArrayOfIntegersSignalPayload {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SingleOptionalArrayOfStringsSignalPayload {
-    /// The array of integers.
-    pub values: Option<Vec<i32>>,
+    /// The array of strings.
+    pub values: Option<Vec<String>>,
 }
 
 // Structures for `arrayOfEveryType` signal
@@ -1412,40 +1412,40 @@ pub struct SingleOptionalArrayOfStringsSignalPayload {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ArrayOfEveryTypeSignalPayload {
     /// The first array of integers.
-    pub first: Vec<i32>,
+    pub first_of_integers: Vec<i32>,
 
     /// The second array of floats.
-    pub second: Vec<f32>,
+    pub second_of_floats: Vec<f32>,
 
     /// The third array of strings.
-    pub third: Vec<String>,
+    pub third_of_strings: Vec<String>,
 
     /// The fourth array of enums.
-    pub fourth: Vec<Numbers>,
+    pub fourth_of_enums: Vec<Numbers>,
 
     /// The fifth array of structs.
-    pub fifth: Vec<Entry>,
+    pub fifth_of_structs: Vec<Entry>,
 
     /// The sixth array of date and time values.
     #[serde(
         serialize_with = "datetime_iso_format::serialize_vec",
         deserialize_with = "datetime_iso_format::deserialize_vec"
     )]
-    pub sixth: Vec<chrono::DateTime<chrono::Utc>>,
+    pub sixth_of_datetimes: Vec<chrono::DateTime<chrono::Utc>>,
 
     /// The seventh array of duration values.
     #[serde(
         serialize_with = "duration_iso_format::serialize_vec",
         deserialize_with = "duration_iso_format::deserialize_vec"
     )]
-    pub seventh: Vec<chrono::Duration>,
+    pub seventh_of_durations: Vec<chrono::Duration>,
 
     /// The eighth array of binary values.
     #[serde(
         serialize_with = "base64_binary_format::serialize_vec",
         deserialize_with = "base64_binary_format::deserialize_vec"
     )]
-    pub eighth: Vec<Vec<u8>>,
+    pub eighth_of_binaries: Vec<Vec<u8>>,
 }
 
 // `read_write_integer` property structure.
