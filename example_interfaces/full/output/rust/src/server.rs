@@ -404,9 +404,9 @@ impl FullServer {
         memory_segment: Vec<u8>,
     ) -> SentMessageFuture {
         let data = TodayIsSignalPayload {
-            dayOfMonth: day_of_month,
+            day_of_month: day_of_month,
 
-            dayOfWeek: day_of_week,
+            day_of_week: day_of_week,
 
             timestamp: timestamp,
 
@@ -517,7 +517,7 @@ impl FullServer {
         // call the method handler
         let rc: Result<DoSomethingReturnValues, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
-            handler_guard.handle_do_something(payload.aString).await
+            handler_guard.handle_do_something(payload.a_string).await
         };
 
         if let Some(resp_topic) = opt_resp_topic {

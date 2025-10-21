@@ -19,6 +19,8 @@ use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc};
 use tokio::task::JoinError;
+#[allow(unused_imports)]
+use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -189,8 +191,9 @@ impl SignalOnlyClient {
                             let _send_result = chan.send(pl);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into AnotherSignalSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into AnotherSignalSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -204,7 +207,11 @@ impl SignalOnlyClient {
                             let _send_result = chan.send(pl.word);
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into BarkSignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into BarkSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -216,7 +223,11 @@ impl SignalOnlyClient {
                             let _send_result = chan.send(pl.number);
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into MaybeNumberSignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into MaybeNumberSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -228,7 +239,11 @@ impl SignalOnlyClient {
                             let _send_result = chan.send(pl.name);
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into MaybeNameSignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into MaybeNameSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -240,7 +255,11 @@ impl SignalOnlyClient {
                             let _send_result = chan.send(pl.timestamp);
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into NowSignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into NowSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -248,7 +267,6 @@ impl SignalOnlyClient {
             }
         });
 
-        println!("Started client receive task");
         Ok(())
     }
 }

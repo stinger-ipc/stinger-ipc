@@ -21,6 +21,8 @@ use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
 use tokio::task::JoinError;
+#[allow(unused_imports)]
+use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -648,7 +650,11 @@ impl WeatherClient {
                             let _send_result = chan.send(pl.current_time);
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into CurrentTimeSignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into CurrentTimeSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -663,7 +669,11 @@ impl WeatherClient {
                             let _ = props.location_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -681,7 +691,11 @@ impl WeatherClient {
                                 .send(Some(pl.temperature_f));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -695,7 +709,11 @@ impl WeatherClient {
                             let _ = props.current_condition_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -709,7 +727,11 @@ impl WeatherClient {
                             let _ = props.daily_forecast_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -723,7 +745,11 @@ impl WeatherClient {
                             let _ = props.hourly_forecast_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -745,7 +771,11 @@ impl WeatherClient {
                                 .send(Some(pl.seconds));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -767,7 +797,11 @@ impl WeatherClient {
                                 .send(Some(pl.seconds));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -789,7 +823,11 @@ impl WeatherClient {
                                 .send(Some(pl.seconds));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -797,7 +835,6 @@ impl WeatherClient {
             }
         });
 
-        println!("Started client receive task");
         Ok(())
     }
 }

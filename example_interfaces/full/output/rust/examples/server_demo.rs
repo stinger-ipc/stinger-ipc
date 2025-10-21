@@ -206,7 +206,7 @@ async fn main() {
     let new_value = LastBirthdaysProperty {
         mom: chrono::Utc::now(),
         dad: chrono::Utc::now(),
-        sister: chrono::Utc::now(),
+        sister: Some(chrono::Utc::now()),
         brothers_age: Some(42),
     };
     let prop_init_future = server.set_last_birthdays(new_value).await;
@@ -297,7 +297,7 @@ async fn main() {
     let new_value = LastBirthdaysProperty {
         mom: chrono::Utc::now(),
         dad: chrono::Utc::now(),
-        sister: chrono::Utc::now(),
+        sister: Some(chrono::Utc::now()),
         brothers_age: Some(2022),
     };
     let _ = server.set_last_birthdays(new_value).await;

@@ -74,10 +74,10 @@ function generate_rust() {
     return $RC
 }
 
+generate_rust testable || exit 1
 generate_rust signal_only || exit 1
 generate_rust full || exit 1
 generate_rust weather || exit 1
-generate_rust testable || exit 1
 
 (cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example full_connection_demo --features payloads)
 

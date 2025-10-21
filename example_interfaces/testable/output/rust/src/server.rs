@@ -131,7 +131,7 @@ struct TestAbleProperties {
     read_write_struct_tx_channel: watch::Sender<Option<AllTypes>>,
     read_write_optional_struct_topic: Arc<String>,
     read_write_optional_struct: Arc<Mutex<Option<ReadWriteOptionalStructProperty>>>,
-    read_write_optional_struct_tx_channel: watch::Sender<Option<AllTypes>>,
+    read_write_optional_struct_tx_channel: watch::Sender<Option<Option<AllTypes>>>,
     read_write_two_structs_topic: Arc<String>,
     read_write_two_structs: Arc<Mutex<Option<ReadWriteTwoStructsProperty>>>,
     read_write_two_structs_tx_channel: watch::Sender<Option<ReadWriteTwoStructsProperty>>,
@@ -152,7 +152,8 @@ struct TestAbleProperties {
     read_write_datetime_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
     read_write_optional_datetime_topic: Arc<String>,
     read_write_optional_datetime: Arc<Mutex<Option<ReadWriteOptionalDatetimeProperty>>>,
-    read_write_optional_datetime_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+    read_write_optional_datetime_tx_channel:
+        watch::Sender<Option<Option<chrono::DateTime<chrono::Utc>>>>,
     read_write_two_datetimes_topic: Arc<String>,
     read_write_two_datetimes: Arc<Mutex<Option<ReadWriteTwoDatetimesProperty>>>,
     read_write_two_datetimes_tx_channel: watch::Sender<Option<ReadWriteTwoDatetimesProperty>>,
@@ -161,7 +162,7 @@ struct TestAbleProperties {
     read_write_duration_tx_channel: watch::Sender<Option<chrono::Duration>>,
     read_write_optional_duration_topic: Arc<String>,
     read_write_optional_duration: Arc<Mutex<Option<ReadWriteOptionalDurationProperty>>>,
-    read_write_optional_duration_tx_channel: watch::Sender<Option<chrono::Duration>>,
+    read_write_optional_duration_tx_channel: watch::Sender<Option<Option<chrono::Duration>>>,
     read_write_two_durations_topic: Arc<String>,
     read_write_two_durations: Arc<Mutex<Option<ReadWriteTwoDurationsProperty>>>,
     read_write_two_durations_tx_channel: watch::Sender<Option<ReadWriteTwoDurationsProperty>>,
@@ -170,7 +171,7 @@ struct TestAbleProperties {
     read_write_binary_tx_channel: watch::Sender<Option<Vec<u8>>>,
     read_write_optional_binary_topic: Arc<String>,
     read_write_optional_binary: Arc<Mutex<Option<ReadWriteOptionalBinaryProperty>>>,
-    read_write_optional_binary_tx_channel: watch::Sender<Option<Vec<u8>>>,
+    read_write_optional_binary_tx_channel: watch::Sender<Option<Option<Vec<u8>>>>,
     read_write_two_binaries_topic: Arc<String>,
     read_write_two_binaries: Arc<Mutex<Option<ReadWriteTwoBinariesProperty>>>,
     read_write_two_binaries_tx_channel: watch::Sender<Option<ReadWriteTwoBinariesProperty>>,
@@ -1153,7 +1154,10 @@ impl TestAbleServer {
         TestAbleServer::oneshot_to_future(published_oneshot).await
     }
     /// Emits the singleOptionalStruct signal with the given arguments.
-    pub async fn emit_single_optional_struct(&mut self, value: AllTypes) -> SentMessageFuture {
+    pub async fn emit_single_optional_struct(
+        &mut self,
+        value: Option<AllTypes>,
+    ) -> SentMessageFuture {
         let data = SingleOptionalStructSignalPayload { value: value };
         let published_oneshot = self
             .mqttier_client
@@ -1169,7 +1173,7 @@ impl TestAbleServer {
         &mut self,
         first: AllTypes,
         second: AllTypes,
-        third: AllTypes,
+        third: Option<AllTypes>,
     ) -> SentMessageFuture {
         let data = ThreeStructsSignalPayload {
             first: first,
@@ -1205,7 +1209,7 @@ impl TestAbleServer {
     /// Emits the singleOptionalDatetime signal with the given arguments.
     pub async fn emit_single_optional_datetime(
         &mut self,
-        value: chrono::DateTime<chrono::Utc>,
+        value: Option<chrono::DateTime<chrono::Utc>>,
     ) -> SentMessageFuture {
         let data = SingleOptionalDatetimeSignalPayload { value: value };
         let published_oneshot = self
@@ -1225,7 +1229,7 @@ impl TestAbleServer {
         &mut self,
         first: chrono::DateTime<chrono::Utc>,
         second: chrono::DateTime<chrono::Utc>,
-        third: chrono::DateTime<chrono::Utc>,
+        third: Option<chrono::DateTime<chrono::Utc>>,
     ) -> SentMessageFuture {
         let data = ThreeDateTimesSignalPayload {
             first: first,
@@ -1258,7 +1262,7 @@ impl TestAbleServer {
     /// Emits the singleOptionalDuration signal with the given arguments.
     pub async fn emit_single_optional_duration(
         &mut self,
-        value: chrono::Duration,
+        value: Option<chrono::Duration>,
     ) -> SentMessageFuture {
         let data = SingleOptionalDurationSignalPayload { value: value };
         let published_oneshot = self
@@ -1278,7 +1282,7 @@ impl TestAbleServer {
         &mut self,
         first: chrono::Duration,
         second: chrono::Duration,
-        third: chrono::Duration,
+        third: Option<chrono::Duration>,
     ) -> SentMessageFuture {
         let data = ThreeDurationsSignalPayload {
             first: first,
@@ -1309,7 +1313,10 @@ impl TestAbleServer {
         TestAbleServer::oneshot_to_future(published_oneshot).await
     }
     /// Emits the singleOptionalBinary signal with the given arguments.
-    pub async fn emit_single_optional_binary(&mut self, value: Vec<u8>) -> SentMessageFuture {
+    pub async fn emit_single_optional_binary(
+        &mut self,
+        value: Option<Vec<u8>>,
+    ) -> SentMessageFuture {
         let data = SingleOptionalBinarySignalPayload { value: value };
         let published_oneshot = self
             .mqttier_client
@@ -1325,7 +1332,7 @@ impl TestAbleServer {
         &mut self,
         first: Vec<u8>,
         second: Vec<u8>,
-        third: Vec<u8>,
+        third: Option<Vec<u8>>,
     ) -> SentMessageFuture {
         let data = ThreeBinariesSignalPayload {
             first: first,
@@ -2047,7 +2054,7 @@ impl TestAbleServer {
         let payload = payload_obj.unwrap();
 
         // call the method handler
-        let rc: Result<AllTypes, MethodReturnCode> = {
+        let rc: Result<Option<AllTypes>, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard
                 .handle_call_optional_struct(payload.input1)
@@ -2238,7 +2245,7 @@ impl TestAbleServer {
         let payload = payload_obj.unwrap();
 
         // call the method handler
-        let rc: Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> = {
+        let rc: Result<Option<chrono::DateTime<chrono::Utc>>, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard
                 .handle_call_optional_date_time(payload.input1)
@@ -2434,7 +2441,7 @@ impl TestAbleServer {
         let payload = payload_obj.unwrap();
 
         // call the method handler
-        let rc: Result<chrono::Duration, MethodReturnCode> = {
+        let rc: Result<Option<chrono::Duration>, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard
                 .handle_call_optional_duration(payload.input1)
@@ -2630,7 +2637,7 @@ impl TestAbleServer {
         let payload = payload_obj.unwrap();
 
         // call the method handler
-        let rc: Result<Vec<u8>, MethodReturnCode> = {
+        let rc: Result<Option<Vec<u8>>, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard
                 .handle_call_optional_binary(payload.input1)
@@ -3837,7 +3844,7 @@ impl TestAbleServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         property_pointer: Arc<Mutex<Option<ReadWriteOptionalStructProperty>>>,
-        watch_sender: watch::Sender<Option<AllTypes>>,
+        watch_sender: watch::Sender<Option<Option<AllTypes>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -3894,7 +3901,9 @@ impl TestAbleServer {
         .await
     }
 
-    pub async fn watch_read_write_optional_struct(&self) -> watch::Receiver<Option<AllTypes>> {
+    pub async fn watch_read_write_optional_struct(
+        &self,
+    ) -> watch::Receiver<Option<Option<AllTypes>>> {
         self.properties
             .read_write_optional_struct_tx_channel
             .subscribe()
@@ -3902,7 +3911,10 @@ impl TestAbleServer {
 
     /// Sets the value of the read_write_optional_struct property.
     /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_write_optional_struct(&mut self, data: AllTypes) -> SentMessageFuture {
+    pub async fn set_read_write_optional_struct(
+        &mut self,
+        data: Option<AllTypes>,
+    ) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_struct.clone();
 
         let new_prop_obj = ReadWriteOptionalStructProperty {
@@ -4724,7 +4736,7 @@ impl TestAbleServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         property_pointer: Arc<Mutex<Option<ReadWriteOptionalDatetimeProperty>>>,
-        watch_sender: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+        watch_sender: watch::Sender<Option<Option<chrono::DateTime<chrono::Utc>>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -4785,7 +4797,7 @@ impl TestAbleServer {
 
     pub async fn watch_read_write_optional_datetime(
         &self,
-    ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
+    ) -> watch::Receiver<Option<Option<chrono::DateTime<chrono::Utc>>>> {
         self.properties
             .read_write_optional_datetime_tx_channel
             .subscribe()
@@ -4795,7 +4807,7 @@ impl TestAbleServer {
     /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_optional_datetime(
         &mut self,
-        data: chrono::DateTime<chrono::Utc>,
+        data: Option<chrono::DateTime<chrono::Utc>>,
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_datetime.clone();
 
@@ -5146,7 +5158,7 @@ impl TestAbleServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         property_pointer: Arc<Mutex<Option<ReadWriteOptionalDurationProperty>>>,
-        watch_sender: watch::Sender<Option<chrono::Duration>>,
+        watch_sender: watch::Sender<Option<Option<chrono::Duration>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -5207,7 +5219,7 @@ impl TestAbleServer {
 
     pub async fn watch_read_write_optional_duration(
         &self,
-    ) -> watch::Receiver<Option<chrono::Duration>> {
+    ) -> watch::Receiver<Option<Option<chrono::Duration>>> {
         self.properties
             .read_write_optional_duration_tx_channel
             .subscribe()
@@ -5217,7 +5229,7 @@ impl TestAbleServer {
     /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_optional_duration(
         &mut self,
-        data: chrono::Duration,
+        data: Option<chrono::Duration>,
     ) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_duration.clone();
 
@@ -5567,7 +5579,7 @@ impl TestAbleServer {
         publisher: MqttierClient,
         topic: Arc<String>,
         property_pointer: Arc<Mutex<Option<ReadWriteOptionalBinaryProperty>>>,
-        watch_sender: watch::Sender<Option<Vec<u8>>>,
+        watch_sender: watch::Sender<Option<Option<Vec<u8>>>>,
         msg: ReceivedMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
@@ -5624,7 +5636,9 @@ impl TestAbleServer {
         .await
     }
 
-    pub async fn watch_read_write_optional_binary(&self) -> watch::Receiver<Option<Vec<u8>>> {
+    pub async fn watch_read_write_optional_binary(
+        &self,
+    ) -> watch::Receiver<Option<Option<Vec<u8>>>> {
         self.properties
             .read_write_optional_binary_tx_channel
             .subscribe()
@@ -5632,7 +5646,10 @@ impl TestAbleServer {
 
     /// Sets the value of the read_write_optional_binary property.
     /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_write_optional_binary(&mut self, data: Vec<u8>) -> SentMessageFuture {
+    pub async fn set_read_write_optional_binary(
+        &mut self,
+        data: Option<Vec<u8>>,
+    ) -> SentMessageFuture {
         let prop = self.properties.read_write_optional_binary.clone();
 
         let new_prop_obj = ReadWriteOptionalBinaryProperty {
@@ -6367,13 +6384,13 @@ pub trait TestAbleMethodHandlers: Send + Sync {
     /// Pointer to a function to handle the callOptionalStruct method request.
     async fn handle_call_optional_struct(
         &self,
-        input1: AllTypes,
-    ) -> Result<AllTypes, MethodReturnCode>;
+        input1: Option<AllTypes>,
+    ) -> Result<Option<AllTypes>, MethodReturnCode>;
 
     /// Pointer to a function to handle the callThreeStructs method request.
     async fn handle_call_three_structs(
         &self,
-        input1: AllTypes,
+        input1: Option<AllTypes>,
         input2: AllTypes,
         input3: AllTypes,
     ) -> Result<CallThreeStructsReturnValues, MethodReturnCode>;
@@ -6387,15 +6404,15 @@ pub trait TestAbleMethodHandlers: Send + Sync {
     /// Pointer to a function to handle the callOptionalDateTime method request.
     async fn handle_call_optional_date_time(
         &self,
-        input1: chrono::DateTime<chrono::Utc>,
-    ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode>;
+        input1: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<Option<chrono::DateTime<chrono::Utc>>, MethodReturnCode>;
 
     /// Pointer to a function to handle the callThreeDateTimes method request.
     async fn handle_call_three_date_times(
         &self,
         input1: chrono::DateTime<chrono::Utc>,
         input2: chrono::DateTime<chrono::Utc>,
-        input3: chrono::DateTime<chrono::Utc>,
+        input3: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Result<CallThreeDateTimesReturnValues, MethodReturnCode>;
 
     /// Pointer to a function to handle the callOneDuration method request.
@@ -6407,15 +6424,15 @@ pub trait TestAbleMethodHandlers: Send + Sync {
     /// Pointer to a function to handle the callOptionalDuration method request.
     async fn handle_call_optional_duration(
         &self,
-        input1: chrono::Duration,
-    ) -> Result<chrono::Duration, MethodReturnCode>;
+        input1: Option<chrono::Duration>,
+    ) -> Result<Option<chrono::Duration>, MethodReturnCode>;
 
     /// Pointer to a function to handle the callThreeDurations method request.
     async fn handle_call_three_durations(
         &self,
         input1: chrono::Duration,
         input2: chrono::Duration,
-        input3: chrono::Duration,
+        input3: Option<chrono::Duration>,
     ) -> Result<CallThreeDurationsReturnValues, MethodReturnCode>;
 
     /// Pointer to a function to handle the callOneBinary method request.
@@ -6424,15 +6441,15 @@ pub trait TestAbleMethodHandlers: Send + Sync {
     /// Pointer to a function to handle the callOptionalBinary method request.
     async fn handle_call_optional_binary(
         &self,
-        input1: Vec<u8>,
-    ) -> Result<Vec<u8>, MethodReturnCode>;
+        input1: Option<Vec<u8>>,
+    ) -> Result<Option<Vec<u8>>, MethodReturnCode>;
 
     /// Pointer to a function to handle the callThreeBinaries method request.
     async fn handle_call_three_binaries(
         &self,
         input1: Vec<u8>,
         input2: Vec<u8>,
-        input3: Vec<u8>,
+        input3: Option<Vec<u8>>,
     ) -> Result<CallThreeBinariesReturnValues, MethodReturnCode>;
 
     fn as_any(&self) -> &dyn Any;

@@ -90,6 +90,34 @@ pub mod datetime_iso_format {
             .map(|dt| dt.with_timezone(&Utc))
             .map_err(serde::de::Error::custom)
     }
+
+    // For Option<DateTime<Utc>>
+    pub fn serialize_option<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match dt {
+            Some(d) => serialize(d, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_string) => {
+                let dt = DateTime::parse_from_rfc3339(&iso_string)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .map_err(serde::de::Error::custom)?;
+                Ok(Some(dt))
+            }
+            None => Ok(None),
+        }
+    }
+
 }
 
 pub mod duration_iso_format {
@@ -116,6 +144,37 @@ pub mod duration_iso_format {
         let std_duration: std::time::Duration = iso_dur.to_std()
             .ok_or_else(|| serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration"))?;
         chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
+    }
+
+    // For Option<Duration>
+    pub fn serialize_option<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match duration {
+            Some(d) => serialize(d, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_string) => {
+                let iso_dur: IsoDuration = iso_string
+                    .parse::<IsoDuration>()
+                    .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
+                let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
+                    serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration")
+                })?;
+                let chrono_duration = chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)?;
+                Ok(Some(chrono_duration))
+            }
+            None => Ok(None),
+        }
     }
 }
 
@@ -193,30 +252,66 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 }
 {%endfor%}
 
+{%macro arg_members(arg_list) -%}
+{%-for arg in arg_list -%}
+    {%-if arg.description%}
+    /// {{arg.description}}
+    {%-endif%}{# end arg description -#}
+    {%-if arg.name != (arg.name | snake_case) -%}
+    #[serde(rename = "{{arg.name}}")]
+    {%-endif%} {# end rename if needed #}
+    {%-if arg.arg_type.name.lower() == 'primitive'%}
+    pub {{arg.name|snake_case}}: {{arg.rust_type}},
+    {%-elif arg.arg_type.name.lower() == 'struct'%}
+    pub {{arg.name|snake_case}}: {{arg.rust_type}},
+    {%elif arg.arg_type.name.lower() == 'enum'%}
+    pub {{arg.name|snake_case}}: {{arg.rust_local_type}},
+    {%elif arg.arg_type.name.lower() == 'datetime'%}
+    {%-if arg.optional %}
+    #[serde(
+        serialize_with = "datetime_iso_format::serialize_option",
+        deserialize_with = "datetime_iso_format::deserialize_option"
+    )]
+    pub {{arg.name|snake_case}}: Option<chrono::DateTime<chrono::Utc>>,
+    {%else%}{# not optional datetime #}
+    #[serde(with = "datetime_iso_format")]
+    pub {{arg.name|snake_case}}: chrono::DateTime<chrono::Utc>,
+    {%-endif%} {# datetime optionality #}
+    {%-elif arg.arg_type.name.lower() == 'duration'%}
+    {%-if arg.optional %}
+    #[serde(
+        serialize_with = "duration_iso_format::serialize_option",
+        deserialize_with = "duration_iso_format::deserialize_option"
+    )]
+    pub {{arg.name|snake_case}}: Option<chrono::Duration>,
+    {%else%}{# not optional duration #}
+    #[serde(with = "duration_iso_format")]
+    pub {{arg.name|snake_case}}: chrono::Duration,
+    {%-endif%}{# duration optionality #}
+    {%-elif arg.arg_type.name.lower() == 'binary'%}
+    {%-if arg.optional %}
+    #[serde(
+        serialize_with = "base64_binary_format::serialize_option",
+        deserialize_with = "base64_binary_format::deserialize_option"
+    )]
+    pub {{arg.name|snake_case}}: Option<Vec<u8>>,
+    {%else%}{# not optional binary #}
+    #[serde(with = "base64_binary_format")]
+    pub {{arg.name|snake_case}}: Vec<u8>,
+    {%-endif%}{# binary optionality #}
+    {%-else%} 
+    TEMPLATE ERROR {{arg.arg_type.name}} NOT HANDLED
+    {%-endif-%}
+{%endfor%}
+{%-endmacro %}
+
 // --- INTERFACE STRUCTURES ---
 
 {%for struct_name, struct in stinger.structs.items() %}
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct {{struct_name | UpperCamelCase}} {
-    {%-for arg in struct.members%}
-    {%if arg.description%} /// {{arg.description}}{%endif%}
-    {%-if arg.name != (arg.name | snake_case) -%}#[serde(rename = "{{arg.name}}")]{%-endif%}
-    {%-if arg.arg_type.name.lower() == 'primitive'%}
-    pub {{arg.name|snake_case}}: {{arg.rust_type}},
-    {%-elif arg.arg_type.name.lower() == 'enum'%}
-    pub {{arg.name|snake_case}}: {{arg.rust_local_type}},
-    {%elif arg.arg_type.name.lower() == 'datetime'%}
-    #[serde(with = "datetime_iso_format")]
-    pub {{arg.name|snake_case}}: chrono::DateTime<chrono::Utc>,
-    {%elif arg.arg_type.name.lower() == 'duration'%}
-    #[serde(with = "duration_iso_format")]
-    pub {{arg.name|snake_case}}: chrono::Duration,
-    {%elif arg.arg_type.name.lower() == 'binary'%}
-    #[serde(with = "base64_binary_format")]
-    pub {{arg.name|snake_case}}: Vec<u8>,
-    {%endif-%}
-    {%endfor%}
+    {{ arg_members(struct.members) }}
 }
 {%-endfor%}
 
@@ -230,28 +325,7 @@ pub struct {{struct_name | UpperCamelCase}} {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `{{method_name}}` method.
 pub struct {{method_name | UpperCamelCase}}RequestObject {
-    {%-for arg in method.arg_list%}
-    {%if arg.description%} /// {{arg.description}}{%endif%}
-    {%-if arg.name != (arg.name | snake_case) -%}#[serde(rename = "{{arg.name}}")]{%-endif%}
-    {%-if arg.arg_type.name.lower() == 'primitive'%}
-    pub {{arg.name}}: {{arg.rust_type}},
-    {%-elif arg.arg_type.name.lower() == 'enum'%}
-    pub {{arg.name}}: {{arg.rust_local_type}},
-    {%-elif arg.arg_type.name.lower() == 'datetime'%}
-    #[serde(with = "datetime_iso_format")]
-    pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
-    {%-elif arg.arg_type.name.lower() == 'duration'%}
-    #[serde(with = "duration_iso_format")]
-    pub {{arg.name}}: chrono::Duration,
-    {%-elif arg.arg_type.name.lower() == 'struct'%}
-    pub {{arg.name}}: {{arg.rust_type}},
-    {%-elif arg.arg_type.name.lower() == 'binary'%}
-    #[serde(with = "base64_binary_format")]
-    pub {{arg.name}}: Vec<u8>,
-    {%else%}
-    TEMPLATE ERROR CASE NOT HANDLED for {{arg.arg_type.name}} - please report a bug.
-    {%endif%}
-    {%endfor%}
+    {{ arg_members(method.arg_list) }}
 }
 
 
@@ -259,14 +333,7 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `{{method_name}}` method.
 pub struct {{method.return_value_name | UpperCamelCase}} {
-{%-for arg in method.return_arg_list %}
-    {%if arg.arg_type.name.lower() == 'datetime'%}#[serde(with = "datetime_iso_format")]
-    {%-elif arg.arg_type.name.lower() == 'duration'%}#[serde(with = "duration_iso_format")]
-    {%-elif arg.arg_type.name.lower() == 'binary'-%}#[serde(with = "base64_binary_format")]{%endif%}
-    {%-if arg.name != (arg.name | snake_case) -%}#[serde(rename = "{{arg.name}}")]{%-endif%}
-    {%if arg.description%} /// {{arg.description}}{%endif%}
-    pub {{arg.name|snake_case}}: {{arg.rust_local_type}},
-{%-endfor%}
+    {{ arg_members(method.return_arg_list) }}
 }
 {%-endfor%}
 
@@ -276,26 +343,7 @@ pub struct {{method.return_value_name | UpperCamelCase}} {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct {{sig_name | UpperCamelCase}}SignalPayload {
-    {%-for arg in sig.arg_list%}
-    {%if arg.description%} /// {{arg.description}}{%endif%}
-    {%-if arg.name != (arg.name | snake_case) -%}#[serde(rename = "{{arg.name}}")]{%-endif%}
-    {%-if arg.arg_type.name.lower() == 'primitive'%}
-    pub {{arg.name}}: {{arg.rust_type}}, 
-    {%-elif arg.arg_type.name.lower() == 'struct'%}
-    pub {{arg.name}}: {{arg.rust_type}}, 
-    {%-elif arg.arg_type.name.lower() == 'enum'%}
-    pub {{arg.name}}: {{arg.rust_local_type}}, 
-    {%-elif arg.arg_type.name.lower() == 'datetime'%}
-    #[serde(with = "datetime_iso_format")]
-    pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
-    {%-elif arg.arg_type.name.lower() == 'duration'%}
-    #[serde(with = "duration_iso_format")]
-    pub {{arg.name}}: chrono::Duration, 
-    {%-elif arg.arg_type.name.lower() == 'binary'%} 
-    #[serde(with = "base64_binary_format")]
-    pub {{arg.name}}: Vec<u8>,
-    {%-endif-%}
-    {%endfor%}
+    {{ arg_members(sig.arg_list) }}
 }
 {%endfor%}
 
@@ -304,24 +352,7 @@ pub struct {{sig_name | UpperCamelCase}}SignalPayload {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct {{prop_name | UpperCamelCase}}Property {
-    {%for arg in prop.arg_list%}
-    {%-if arg.arg_type.name.lower() == 'primitive' -%}
-    pub {{arg.name}}: {{arg.rust_type}},
-    {%elif arg.arg_type.name.lower() == 'enum'-%}
-    pub {{arg.name}}: {{arg.rust_local_type}},
-    {%elif arg.arg_type.name.lower() == 'struct'-%}
-    pub {{arg.name}}: {{arg.rust_local_type}},
-    {%elif arg.arg_type.name.lower() == 'datetime'%}
-    #[serde(with = "datetime_iso_format")]
-    pub {{arg.name}}: chrono::DateTime<chrono::Utc>,
-    {%elif arg.arg_type.name.lower() == 'duration'%}
-    #[serde(with = "duration_iso_format")]
-    pub {{arg.name}}: chrono::Duration,
-    {%elif arg.arg_type.name.lower() == 'binary'%}
-    #[serde(with = "base64_binary_format")]
-    pub {{arg.name}}: Vec<u8>,
-    {%endif-%}
-    {%endfor%}
+    {{ arg_members(prop.arg_list) }}
 }
 {%endfor%}
 

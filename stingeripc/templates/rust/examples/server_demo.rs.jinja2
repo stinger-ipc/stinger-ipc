@@ -43,12 +43,16 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | Upper
     async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode> {
         println!("Handling {{method_name}}");
         {%-if method.return_value_type == 'struct'%}
-        let rv = {{method.return_value_rust_type}} {
+        let rv = {{method.return_arg_list[0].rust_temp_type}} {
             {%for arg in method.return_value.members-%}
             {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
             {%endfor%}
         };
+        {%if method.return_arg_list[0].optional %}
+        Ok(Some(rv))
+        {%else%}
         Ok(rv)
+        {%endif%}
         {%-elif method.return_value_type == 'multiple'%}
         let rv = {{method.return_value_rust_type}} {
             {%for arg in method.return_value-%}

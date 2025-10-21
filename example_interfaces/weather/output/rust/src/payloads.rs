@@ -88,6 +88,33 @@ pub mod datetime_iso_format {
             .map(|dt| dt.with_timezone(&Utc))
             .map_err(serde::de::Error::custom)
     }
+
+    // For Option<DateTime<Utc>>
+    pub fn serialize_option<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match dt {
+            Some(d) => serialize(d, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_string) => {
+                let dt = DateTime::parse_from_rfc3339(&iso_string)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .map_err(serde::de::Error::custom)?;
+                Ok(Some(dt))
+            }
+            None => Ok(None),
+        }
+    }
 }
 
 pub mod duration_iso_format {
@@ -116,6 +143,43 @@ pub mod duration_iso_format {
             serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration")
         })?;
         chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
+    }
+
+    // For Option<Duration>
+    pub fn serialize_option<S>(
+        duration: &Option<Duration>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match duration {
+            Some(d) => serialize(d, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_string) => {
+                let iso_dur: IsoDuration = iso_string
+                    .parse::<IsoDuration>()
+                    .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
+                let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Failed to convert ISO duration to std::time::Duration",
+                    )
+                })?;
+                let chrono_duration =
+                    chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)?;
+                Ok(Some(chrono_duration))
+            }
+            None => Ok(None),
+        }
     }
 }
 
@@ -237,7 +301,6 @@ pub struct ForecastForHour {
     /// Forecast is valid for the hour starting at this time.
     #[serde(with = "datetime_iso_format")]
     pub starttime: chrono::DateTime<chrono::Utc>,
-
     pub condition: WeatherCondition,
 }
 #[allow(dead_code, non_snake_case)]
@@ -247,11 +310,9 @@ pub struct ForecastForDay {
     pub high_temperature: f32,
     /// Low temperature for the day in degrees fahrenheit.
     pub low_temperature: f32,
-
     pub condition: WeatherCondition,
 
     pub start_time: String,
-
     pub end_time: String,
 }
 
@@ -322,6 +383,7 @@ pub struct CurrentTemperatureProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CurrentConditionProperty {
     pub condition: WeatherCondition,
+
     pub description: String,
 }
 
@@ -329,8 +391,11 @@ pub struct CurrentConditionProperty {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DailyForecastProperty {
+    /// This is the forecast for Monday.
     pub monday: ForecastForDay,
+
     pub tuesday: ForecastForDay,
+
     pub wednesday: ForecastForDay,
 }
 
@@ -338,9 +403,14 @@ pub struct DailyForecastProperty {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct HourlyForecastProperty {
+    /// This is the forecast for the current hour.
     pub hour_0: ForecastForHour,
+
+    /// This is the forecast for the next hour.
     pub hour_1: ForecastForHour,
+
     pub hour_2: ForecastForHour,
+
     pub hour_3: ForecastForHour,
 }
 
@@ -355,6 +425,7 @@ pub struct CurrentConditionRefreshIntervalProperty {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct HourlyForecastRefreshIntervalProperty {
+    /// Interval duration in seconds.
     pub seconds: i32,
 }
 

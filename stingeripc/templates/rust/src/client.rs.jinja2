@@ -23,6 +23,8 @@ use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc{%if stinger.methods|length > 0 -%}, oneshot{%endif-%}{%if stinger.properties|length > 0 -%}, watch{%endif-%}};
 use tokio::task::JoinError;
+#[allow(unused_imports)]
+use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -201,7 +203,7 @@ impl {{stinger.rust.client_struct_name}} {
 
         let data = {{method_name | UpperCamelCase}}RequestObject {
             {%-for arg in method.arg_list%}
-            {{arg.name}}: {{arg.name|snake_case}},
+            {{arg.name|snake_case}}: {{arg.name|snake_case}},
             {%-endfor%}
         };
 
@@ -310,7 +312,7 @@ impl {{stinger.rust.client_struct_name}} {
                             let _send_result = chan.send(pl.{{signal.arg_list[0].name|snake_case}});
                         },
                         Err(e) => {
-                            eprintln!("Failed to deserialize into {{signal_name | UpperCamelCase}}SignalPayload: {}", e);
+                            warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
                             continue;
                         }
                     }
@@ -320,7 +322,7 @@ impl {{stinger.rust.client_struct_name}} {
                             let _send_result = chan.send(pl);
                         },
                         Err(e) => {
-                            eprintln!("Failed to deserialize into {{signal_name | UpperCamelCase}}SignalPayload: {}", e);
+                            warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
                             continue;
                         }
                     }
@@ -341,7 +343,7 @@ impl {{stinger.rust.client_struct_name}} {
                             {%endif%}
                         },
                         Err(e) => {
-                            eprintln!("Failed to deserialize into {{signal_name | UpperCamelCase}}SignalPayload: {}", e);
+                            warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
                             continue;
                         }
                     }
@@ -350,7 +352,6 @@ impl {{stinger.rust.client_struct_name}} {
             }   
         });
 
-        println!("Started client receive task");
         Ok(())
     }
 }

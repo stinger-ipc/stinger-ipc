@@ -1090,7 +1090,7 @@ def on_single_struct(value: interface_types.AllTypes):
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
 ```python
-server.emit_single_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
+server.emit_single_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"))
 ```
 
 </details>
@@ -1115,7 +1115,7 @@ print("Got a 'singleStruct' signal: {:?}", single_struct_signal_rx.recv().await)
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
 ```rust
-let publish_result = server.emit_single_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}).await;
+let publish_result = server.emit_single_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -1204,7 +1204,7 @@ print("Got a 'singleOptionalStruct' signal: {:?}", single_optional_struct_signal
 A server can emit a `singleOptionalStruct` signal simply by calling the server's `emit_single_optional_struct` method.
 
 ```rust
-let publish_result = server.emit_single_optional_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}).await;
+let publish_result = server.emit_single_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])})).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -1295,7 +1295,7 @@ print("Got a 'threeStructs' signal: {:?}", three_structs_signal_rx.recv().await)
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
 ```rust
-let publish_result = server.emit_three_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}).await;
+let publish_result = server.emit_three_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}, Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])})).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -1473,7 +1473,7 @@ print("Got a 'singleOptionalDatetime' signal: {:?}", single_optional_datetime_si
 A server can emit a `singleOptionalDatetime` signal simply by calling the server's `emit_single_optional_datetime` method.
 
 ```rust
-let publish_result = server.emit_single_optional_datetime(chrono::Utc::now()).await;
+let publish_result = server.emit_single_optional_datetime(Some(chrono::Utc::now())).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -1564,7 +1564,7 @@ print("Got a 'threeDateTimes' signal: {:?}", three_date_times_signal_rx.recv().a
 A server can emit a `threeDateTimes` signal simply by calling the server's `emit_three_date_times` method.
 
 ```rust
-let publish_result = server.emit_three_date_times(chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()).await;
+let publish_result = server.emit_three_date_times(chrono::Utc::now(), chrono::Utc::now(), Some(chrono::Utc::now())).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -1742,7 +1742,7 @@ print("Got a 'singleOptionalDuration' signal: {:?}", single_optional_duration_si
 A server can emit a `singleOptionalDuration` signal simply by calling the server's `emit_single_optional_duration` method.
 
 ```rust
-let publish_result = server.emit_single_optional_duration(chrono::Duration::seconds(3536)).await;
+let publish_result = server.emit_single_optional_duration(Some(chrono::Duration::seconds(3536))).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -1833,7 +1833,7 @@ print("Got a 'threeDurations' signal: {:?}", three_durations_signal_rx.recv().aw
 A server can emit a `threeDurations` signal simply by calling the server's `emit_three_durations` method.
 
 ```rust
-let publish_result = server.emit_three_durations(chrono::Duration::seconds(3536), chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)).await;
+let publish_result = server.emit_three_durations(chrono::Duration::seconds(3536), chrono::Duration::seconds(3536), Some(chrono::Duration::seconds(3536))).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -2011,7 +2011,7 @@ print("Got a 'singleOptionalBinary' signal: {:?}", single_optional_binary_signal
 A server can emit a `singleOptionalBinary` signal simply by calling the server's `emit_single_optional_binary` method.
 
 ```rust
-let publish_result = server.emit_single_optional_binary(vec![101, 120, 97, 109, 112, 108, 101]).await;
+let publish_result = server.emit_single_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101])).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -2102,7 +2102,7 @@ print("Got a 'threeBinaries' signal: {:?}", three_binaries_signal_rx.recv().awai
 A server can emit a `threeBinaries` signal simply by calling the server's `emit_three_binaries` method.
 
 ```rust
-let publish_result = server.emit_three_binaries(vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]).await;
+let publish_result = server.emit_three_binaries(vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], Some(vec![101, 120, 97, 109, 112, 108, 101])).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -2808,7 +2808,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_one_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
     """ This is an example handler for the 'callOneStruct' method.  """
     print(f"Running call_one_struct'({input1})'")
-    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data")
+    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data")
 ```
 
 </details>
@@ -2819,7 +2819,7 @@ def call_one_struct(input1: interface_types.AllTypes) -> interface_types.AllType
 The `TestAbleClient` provides an implementation for the `callOneStruct` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_one_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}).await.expect("Failed to call callOneStruct");
+let result = api_client.call_one_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await.expect("Failed to call callOneStruct");
 println!("callOneStruct response: {:?}", result);
 ```
 
@@ -2872,7 +2872,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_optional_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
     """ This is an example handler for the 'callOptionalStruct' method.  """
     print(f"Running call_optional_struct'({input1})'")
-    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data")
+    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data")
 ```
 
 </details>
@@ -2883,7 +2883,7 @@ def call_optional_struct(input1: interface_types.AllTypes) -> interface_types.Al
 The `TestAbleClient` provides an implementation for the `callOptionalStruct` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_optional_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}).await.expect("Failed to call callOptionalStruct");
+let result = api_client.call_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])})).await.expect("Failed to call callOptionalStruct");
 println!("callOptionalStruct response: {:?}", result);
 ```
 
@@ -2915,7 +2915,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
+future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2935,7 +2935,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_three_structs(input1: interface_types.AllTypes, input2: interface_types.AllTypes, input3: interface_types.AllTypes) -> interface_types.CallThreeStructsMethodResponse:
     """ This is an example handler for the 'callThreeStructs' method.  """
     print(f"Running call_three_structs'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeStructsMethodResponse(output1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), output2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"), output3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"))
+    return interface_types.CallThreeStructsMethodResponse(output1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), output2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"), output3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
 ```
 
 </details>
@@ -2946,7 +2946,7 @@ def call_three_structs(input1: interface_types.AllTypes, input2: interface_types
 The `TestAbleClient` provides an implementation for the `callThreeStructs` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_three_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}).await.expect("Failed to call callThreeStructs");
+let result = api_client.call_three_structs(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}), AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await.expect("Failed to call callThreeStructs");
 println!("callThreeStructs response: {:?}", result);
 ```
 
@@ -3037,7 +3037,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_date_time(input1=None)
+future = client.call_optional_date_time(input1=datetime.now())
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3057,7 +3057,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
     """ This is an example handler for the 'callOptionalDateTime' method.  """
     print(f"Running call_optional_date_time'({input1})'")
-    return None
+    return datetime.now()
 ```
 
 </details>
@@ -3068,7 +3068,7 @@ def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
 The `TestAbleClient` provides an implementation for the `callOptionalDateTime` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_optional_date_time(chrono::Utc::now()).await.expect("Failed to call callOptionalDateTime");
+let result = api_client.call_optional_date_time(Some(chrono::Utc::now())).await.expect("Failed to call callOptionalDateTime");
 println!("callOptionalDateTime response: {:?}", result);
 ```
 
@@ -3131,7 +3131,7 @@ def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[d
 The `TestAbleClient` provides an implementation for the `callThreeDateTimes` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_three_date_times(chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()).await.expect("Failed to call callThreeDateTimes");
+let result = api_client.call_three_date_times(chrono::Utc::now(), chrono::Utc::now(), Some(chrono::Utc::now())).await.expect("Failed to call callThreeDateTimes");
 println!("callThreeDateTimes response: {:?}", result);
 ```
 
@@ -3253,7 +3253,7 @@ def call_optional_duration(input1: Optional[timedelta]) -> Optional[timedelta]:
 The `TestAbleClient` provides an implementation for the `callOptionalDuration` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_optional_duration(chrono::Duration::seconds(3536)).await.expect("Failed to call callOptionalDuration");
+let result = api_client.call_optional_duration(Some(chrono::Duration::seconds(3536))).await.expect("Failed to call callOptionalDuration");
 println!("callOptionalDuration response: {:?}", result);
 ```
 
@@ -3316,7 +3316,7 @@ def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[
 The `TestAbleClient` provides an implementation for the `callThreeDurations` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_three_durations(chrono::Duration::seconds(3536), chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)).await.expect("Failed to call callThreeDurations");
+let result = api_client.call_three_durations(chrono::Duration::seconds(3536), chrono::Duration::seconds(3536), Some(chrono::Duration::seconds(3536))).await.expect("Failed to call callThreeDurations");
 println!("callThreeDurations response: {:?}", result);
 ```
 
@@ -3438,7 +3438,7 @@ def call_optional_binary(input1: bytes) -> bytes:
 The `TestAbleClient` provides an implementation for the `callOptionalBinary` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_optional_binary(vec![101, 120, 97, 109, 112, 108, 101]).await.expect("Failed to call callOptionalBinary");
+let result = api_client.call_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101])).await.expect("Failed to call callOptionalBinary");
 println!("callOptionalBinary response: {:?}", result);
 ```
 
@@ -3501,7 +3501,7 @@ def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> interfac
 The `TestAbleClient` provides an implementation for the `callThreeBinaries` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_three_binaries(vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]).await.expect("Failed to call callThreeBinaries");
+let result = api_client.call_three_binaries(vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], Some(vec![101, 120, 97, 109, 112, 108, 101])).await.expect("Failed to call callThreeBinaries");
 println!("callThreeBinaries response: {:?}", result);
 ```
 
@@ -3823,7 +3823,7 @@ A read-write struct property.
 A server hold the "source of truth" for the value of `read_write_struct`.  The value can be changed by calling the server's `set_read_write_struct` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}).await;
+let property_set_future: SentMessageFuture = server.set_read_write_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -3861,7 +3861,7 @@ A read-write optional struct property.
 A server hold the "source of truth" for the value of `read_write_optional_struct`.  The value can be changed by calling the server's `set_read_write_optional_struct` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}).await;
+let property_set_future: SentMessageFuture = server.set_read_write_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])})).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -3870,7 +3870,7 @@ The future is resolved with `Ok(())` if the value didn't change or when the MQTT
 The application code should call the `set_read_write_optional_struct()` method with an initial value when starting up, and then whenever the value changes.
 
 The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<AllTypes>>` by calling the server's `get_read_write_optional_struct_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+Application code can get a `watch::Receiver<Option<Option<AllTypes>>>` by calling the server's `get_read_write_optional_struct_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
 
 ```rust
 let mut on_read_write_optional_struct_changed = server.watch_read_write_optional_struct();
@@ -3900,7 +3900,7 @@ A read-write property with two struct values. The second is optional.
 A server hold the "source of truth" for the value of `read_write_two_structs`.  The value can be changed by calling the server's `set_read_write_two_structs` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_two_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: chrono::Utc::now(), optional_duration: chrono::Duration::seconds(3536), optional_binary: vec![101, 120, 97, 109, 112, 108, 101]}).await;
+let property_set_future: SentMessageFuture = server.set_read_write_two_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -4120,7 +4120,7 @@ A read-write optional datetime property.
 A server hold the "source of truth" for the value of `read_write_optional_datetime`.  The value can be changed by calling the server's `set_read_write_optional_datetime` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_datetime(chrono::Utc::now()).await;
+let property_set_future: SentMessageFuture = server.set_read_write_optional_datetime(Some(chrono::Utc::now())).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -4129,7 +4129,7 @@ The future is resolved with `Ok(())` if the value didn't change or when the MQTT
 The application code should call the `set_read_write_optional_datetime()` method with an initial value when starting up, and then whenever the value changes.
 
 The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<chrono::DateTime<chrono::Utc>>>` by calling the server's `get_read_write_optional_datetime_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+Application code can get a `watch::Receiver<Option<Option<chrono::DateTime<chrono::Utc>>>>` by calling the server's `get_read_write_optional_datetime_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
 
 ```rust
 let mut on_read_write_optional_datetime_changed = server.watch_read_write_optional_datetime();
@@ -4235,7 +4235,7 @@ A read-write optional duration property.
 A server hold the "source of truth" for the value of `read_write_optional_duration`.  The value can be changed by calling the server's `set_read_write_optional_duration` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_duration(chrono::Duration::seconds(3536)).await;
+let property_set_future: SentMessageFuture = server.set_read_write_optional_duration(Some(chrono::Duration::seconds(3536))).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -4244,7 +4244,7 @@ The future is resolved with `Ok(())` if the value didn't change or when the MQTT
 The application code should call the `set_read_write_optional_duration()` method with an initial value when starting up, and then whenever the value changes.
 
 The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<chrono::Duration>>` by calling the server's `get_read_write_optional_duration_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+Application code can get a `watch::Receiver<Option<Option<chrono::Duration>>>` by calling the server's `get_read_write_optional_duration_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
 
 ```rust
 let mut on_read_write_optional_duration_changed = server.watch_read_write_optional_duration();
@@ -4350,7 +4350,7 @@ A read-write optional binary property.
 A server hold the "source of truth" for the value of `read_write_optional_binary`.  The value can be changed by calling the server's `set_read_write_optional_binary` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_binary(vec![101, 120, 97, 109, 112, 108, 101]).await;
+let property_set_future: SentMessageFuture = server.set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101])).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -4359,7 +4359,7 @@ The future is resolved with `Ok(())` if the value didn't change or when the MQTT
 The application code should call the `set_read_write_optional_binary()` method with an initial value when starting up, and then whenever the value changes.
 
 The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Vec<u8>>>` by calling the server's `get_read_write_optional_binary_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+Application code can get a `watch::Receiver<Option<Option<Vec<u8>>>>` by calling the server's `get_read_write_optional_binary_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
 
 ```rust
 let mut on_read_write_optional_binary_changed = server.watch_read_write_optional_binary();

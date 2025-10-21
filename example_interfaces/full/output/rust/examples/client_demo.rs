@@ -190,7 +190,7 @@ async fn main() {
     let last_birthdays_new_value = LastBirthdaysProperty {
         mom: chrono::Utc::now(),
         dad: chrono::Utc::now(),
-        sister: chrono::Utc::now(),
+        sister: Some(chrono::Utc::now()),
         brothers_age: Some(42),
     };
     let _ = api_client.set_last_birthdays(last_birthdays_new_value);

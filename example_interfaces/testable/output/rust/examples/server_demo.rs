@@ -141,17 +141,18 @@ impl TestAbleMethodHandlers for TestAbleMethodImpl {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         };
+
         Ok(rv)
     }
 
     async fn handle_call_optional_struct(
         &self,
-        _input1: AllTypes,
-    ) -> Result<AllTypes, MethodReturnCode> {
+        _input1: Option<AllTypes>,
+    ) -> Result<Option<AllTypes>, MethodReturnCode> {
         println!("Handling callOptionalStruct");
         let rv = AllTypes {
             the_bool: true,
@@ -165,22 +166,23 @@ impl TestAbleMethodHandlers for TestAbleMethodImpl {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         };
-        Ok(rv)
+
+        Ok(Some(rv))
     }
 
     async fn handle_call_three_structs(
         &self,
-        _input1: AllTypes,
+        _input1: Option<AllTypes>,
         _input2: AllTypes,
         _input3: AllTypes,
     ) -> Result<CallThreeStructsReturnValues, MethodReturnCode> {
         println!("Handling callThreeStructs");
         let rv = CallThreeStructsReturnValues {
-            output1: AllTypes {
+            output1: Some(AllTypes {
                 the_bool: true,
                 the_int: 42,
                 the_number: 3.14,
@@ -192,10 +194,10 @@ impl TestAbleMethodHandlers for TestAbleMethodImpl {
                 optional_integer: Some(42),
                 optional_string: Some("apples".to_string()),
                 optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            },
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+            }),
             output2: AllTypes {
                 the_bool: true,
                 the_int: 42,
@@ -208,9 +210,9 @@ impl TestAbleMethodHandlers for TestAbleMethodImpl {
                 optional_integer: Some(42),
                 optional_string: Some("apples".to_string()),
                 optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
             },
             output3: AllTypes {
                 the_bool: true,
@@ -224,9 +226,9 @@ impl TestAbleMethodHandlers for TestAbleMethodImpl {
                 optional_integer: Some(42),
                 optional_string: Some("apples".to_string()),
                 optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
             },
         };
         Ok(rv)
@@ -242,23 +244,23 @@ impl TestAbleMethodHandlers for TestAbleMethodImpl {
 
     async fn handle_call_optional_date_time(
         &self,
-        _input1: chrono::DateTime<chrono::Utc>,
-    ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
+        _input1: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<Option<chrono::DateTime<chrono::Utc>>, MethodReturnCode> {
         println!("Handling callOptionalDateTime");
-        Ok(chrono::Utc::now())
+        Ok(Some(chrono::Utc::now()))
     }
 
     async fn handle_call_three_date_times(
         &self,
         _input1: chrono::DateTime<chrono::Utc>,
         _input2: chrono::DateTime<chrono::Utc>,
-        _input3: chrono::DateTime<chrono::Utc>,
+        _input3: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Result<CallThreeDateTimesReturnValues, MethodReturnCode> {
         println!("Handling callThreeDateTimes");
         let rv = CallThreeDateTimesReturnValues {
             output1: chrono::Utc::now(),
             output2: chrono::Utc::now(),
-            output3: chrono::Utc::now(),
+            output3: Some(chrono::Utc::now()),
         };
         Ok(rv)
     }
@@ -273,23 +275,23 @@ impl TestAbleMethodHandlers for TestAbleMethodImpl {
 
     async fn handle_call_optional_duration(
         &self,
-        _input1: chrono::Duration,
-    ) -> Result<chrono::Duration, MethodReturnCode> {
+        _input1: Option<chrono::Duration>,
+    ) -> Result<Option<chrono::Duration>, MethodReturnCode> {
         println!("Handling callOptionalDuration");
-        Ok(chrono::Duration::seconds(3536))
+        Ok(Some(chrono::Duration::seconds(3536)))
     }
 
     async fn handle_call_three_durations(
         &self,
         _input1: chrono::Duration,
         _input2: chrono::Duration,
-        _input3: chrono::Duration,
+        _input3: Option<chrono::Duration>,
     ) -> Result<CallThreeDurationsReturnValues, MethodReturnCode> {
         println!("Handling callThreeDurations");
         let rv = CallThreeDurationsReturnValues {
             output1: chrono::Duration::seconds(3536),
             output2: chrono::Duration::seconds(3536),
-            output3: chrono::Duration::seconds(3536),
+            output3: Some(chrono::Duration::seconds(3536)),
         };
         Ok(rv)
     }
@@ -301,23 +303,23 @@ impl TestAbleMethodHandlers for TestAbleMethodImpl {
 
     async fn handle_call_optional_binary(
         &self,
-        _input1: Vec<u8>,
-    ) -> Result<Vec<u8>, MethodReturnCode> {
+        _input1: Option<Vec<u8>>,
+    ) -> Result<Option<Vec<u8>>, MethodReturnCode> {
         println!("Handling callOptionalBinary");
-        Ok(vec![101, 120, 97, 109, 112, 108, 101])
+        Ok(Some(vec![101, 120, 97, 109, 112, 108, 101]))
     }
 
     async fn handle_call_three_binaries(
         &self,
         _input1: Vec<u8>,
         _input2: Vec<u8>,
-        _input3: Vec<u8>,
+        _input3: Option<Vec<u8>>,
     ) -> Result<CallThreeBinariesReturnValues, MethodReturnCode> {
         println!("Handling callThreeBinaries");
         let rv = CallThreeBinariesReturnValues {
             output1: vec![101, 120, 97, 109, 112, 108, 101],
             output2: vec![101, 120, 97, 109, 112, 108, 101],
-            output3: vec![101, 120, 97, 109, 112, 108, 101],
+            output3: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         };
         Ok(rv)
     }
@@ -445,9 +447,9 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         })
         .await;
     if let Err(e) = prop_init_future.await {
@@ -456,7 +458,7 @@ async fn main() {
 
     println!("Setting initial value for property 'read_write_optional_struct'");
     let prop_init_future = server
-        .set_read_write_optional_struct(AllTypes {
+        .set_read_write_optional_struct(Some(AllTypes {
             the_bool: true,
             the_int: 42,
             the_number: 3.14,
@@ -468,10 +470,10 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-        })
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        }))
         .await;
     if let Err(e) = prop_init_future.await {
         eprintln!(
@@ -494,11 +496,11 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         },
-        second: AllTypes {
+        second: Some(AllTypes {
             the_bool: true,
             the_int: 42,
             the_number: 3.14,
@@ -510,10 +512,10 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-        },
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        }),
     };
     let prop_init_future = server.set_read_write_two_structs(new_value).await;
 
@@ -569,7 +571,7 @@ async fn main() {
 
     println!("Setting initial value for property 'read_write_optional_datetime'");
     let prop_init_future = server
-        .set_read_write_optional_datetime(chrono::Utc::now())
+        .set_read_write_optional_datetime(Some(chrono::Utc::now()))
         .await;
     if let Err(e) = prop_init_future.await {
         eprintln!(
@@ -581,7 +583,7 @@ async fn main() {
     println!("Setting initial value for property 'read_write_two_datetimes'");
     let new_value = ReadWriteTwoDatetimesProperty {
         first: chrono::Utc::now(),
-        second: chrono::Utc::now(),
+        second: Some(chrono::Utc::now()),
     };
     let prop_init_future = server.set_read_write_two_datetimes(new_value).await;
 
@@ -602,7 +604,7 @@ async fn main() {
 
     println!("Setting initial value for property 'read_write_optional_duration'");
     let prop_init_future = server
-        .set_read_write_optional_duration(chrono::Duration::seconds(3536))
+        .set_read_write_optional_duration(Some(chrono::Duration::seconds(3536)))
         .await;
     if let Err(e) = prop_init_future.await {
         eprintln!(
@@ -614,7 +616,7 @@ async fn main() {
     println!("Setting initial value for property 'read_write_two_durations'");
     let new_value = ReadWriteTwoDurationsProperty {
         first: chrono::Duration::seconds(3536),
-        second: chrono::Duration::seconds(3536),
+        second: Some(chrono::Duration::seconds(3536)),
     };
     let prop_init_future = server.set_read_write_two_durations(new_value).await;
 
@@ -635,7 +637,7 @@ async fn main() {
 
     println!("Setting initial value for property 'read_write_optional_binary'");
     let prop_init_future = server
-        .set_read_write_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]))
         .await;
     if let Err(e) = prop_init_future.await {
         eprintln!(
@@ -647,7 +649,7 @@ async fn main() {
     println!("Setting initial value for property 'read_write_two_binaries'");
     let new_value = ReadWriteTwoBinariesProperty {
         first: vec![101, 120, 97, 109, 112, 108, 101],
-        second: vec![101, 120, 97, 109, 112, 108, 101],
+        second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
     };
     let prop_init_future = server.set_read_write_two_binaries(new_value).await;
 
@@ -746,9 +748,9 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         })
         .await;
     let signal_result = signal_result_future.await;
@@ -757,7 +759,7 @@ async fn main() {
     sleep(Duration::from_secs(1)).await;
     println!("Emitting signal 'singleOptionalStruct'");
     let signal_result_future = server
-        .emit_single_optional_struct(AllTypes {
+        .emit_single_optional_struct(Some(AllTypes {
             the_bool: true,
             the_int: 42,
             the_number: 3.14,
@@ -769,10 +771,10 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-        })
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        }))
         .await;
     let signal_result = signal_result_future.await;
     println!(
@@ -796,9 +798,9 @@ async fn main() {
                 optional_integer: Some(42),
                 optional_string: Some("apples".to_string()),
                 optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
             },
             AllTypes {
                 the_bool: true,
@@ -812,11 +814,11 @@ async fn main() {
                 optional_integer: Some(42),
                 optional_string: Some("apples".to_string()),
                 optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
             },
-            AllTypes {
+            Some(AllTypes {
                 the_bool: true,
                 the_int: 42,
                 the_number: 3.14,
@@ -828,10 +830,10 @@ async fn main() {
                 optional_integer: Some(42),
                 optional_string: Some("apples".to_string()),
                 optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            },
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+            }),
         )
         .await;
     let signal_result = signal_result_future.await;
@@ -846,7 +848,7 @@ async fn main() {
     sleep(Duration::from_secs(1)).await;
     println!("Emitting signal 'singleOptionalDatetime'");
     let signal_result_future = server
-        .emit_single_optional_datetime(chrono::Utc::now())
+        .emit_single_optional_datetime(Some(chrono::Utc::now()))
         .await;
     let signal_result = signal_result_future.await;
     println!(
@@ -857,7 +859,11 @@ async fn main() {
     sleep(Duration::from_secs(1)).await;
     println!("Emitting signal 'threeDateTimes'");
     let signal_result_future = server
-        .emit_three_date_times(chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now())
+        .emit_three_date_times(
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+            Some(chrono::Utc::now()),
+        )
         .await;
     let signal_result = signal_result_future.await;
     println!("Signal 'threeDateTimes' was sent: {:?}", signal_result);
@@ -873,7 +879,7 @@ async fn main() {
     sleep(Duration::from_secs(1)).await;
     println!("Emitting signal 'singleOptionalDuration'");
     let signal_result_future = server
-        .emit_single_optional_duration(chrono::Duration::seconds(3536))
+        .emit_single_optional_duration(Some(chrono::Duration::seconds(3536)))
         .await;
     let signal_result = signal_result_future.await;
     println!(
@@ -887,7 +893,7 @@ async fn main() {
         .emit_three_durations(
             chrono::Duration::seconds(3536),
             chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(3536),
+            Some(chrono::Duration::seconds(3536)),
         )
         .await;
     let signal_result = signal_result_future.await;
@@ -904,7 +910,7 @@ async fn main() {
     sleep(Duration::from_secs(1)).await;
     println!("Emitting signal 'singleOptionalBinary'");
     let signal_result_future = server
-        .emit_single_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .emit_single_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]))
         .await;
     let signal_result = signal_result_future.await;
     println!(
@@ -918,7 +924,7 @@ async fn main() {
         .emit_three_binaries(
             vec![101, 120, 97, 109, 112, 108, 101],
             vec![101, 120, 97, 109, 112, 108, 101],
-            vec![101, 120, 97, 109, 112, 108, 101],
+            Some(vec![101, 120, 97, 109, 112, 108, 101]),
         )
         .await;
     let signal_result = signal_result_future.await;
@@ -1005,9 +1011,9 @@ async fn main() {
             optional_integer: Some(2022),
             optional_string: Some("foo".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(975),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(975)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         })
         .await;
     if let Err(e) = prop_change_future.await {
@@ -1017,7 +1023,7 @@ async fn main() {
     sleep(Duration::from_secs(1)).await;
     println!("Changing property 'read_write_optional_struct'");
     let prop_change_future = server
-        .set_read_write_optional_struct(AllTypes {
+        .set_read_write_optional_struct(Some(AllTypes {
             the_bool: true,
             the_int: 2022,
             the_number: 1.0,
@@ -1029,10 +1035,10 @@ async fn main() {
             optional_integer: Some(2022),
             optional_string: Some("foo".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(975),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-        })
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(975)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        }))
         .await;
     if let Err(e) = prop_change_future.await {
         eprintln!(
@@ -1056,11 +1062,11 @@ async fn main() {
             optional_integer: Some(2022),
             optional_string: Some("foo".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(967),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(967)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         },
-        second: AllTypes {
+        second: Some(AllTypes {
             the_bool: true,
             the_int: 2022,
             the_number: 1.0,
@@ -1072,10 +1078,10 @@ async fn main() {
             optional_integer: Some(2022),
             optional_string: Some("foo".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(967),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-        },
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(967)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        }),
     };
     let _ = server.set_read_write_two_structs(new_value).await;
 
@@ -1123,7 +1129,7 @@ async fn main() {
     sleep(Duration::from_secs(1)).await;
     println!("Changing property 'read_write_optional_datetime'");
     let prop_change_future = server
-        .set_read_write_optional_datetime(chrono::Utc::now())
+        .set_read_write_optional_datetime(Some(chrono::Utc::now()))
         .await;
     if let Err(e) = prop_change_future.await {
         eprintln!(
@@ -1136,7 +1142,7 @@ async fn main() {
     println!("Changing property 'read_write_two_datetimes'");
     let new_value = ReadWriteTwoDatetimesProperty {
         first: chrono::Utc::now(),
-        second: chrono::Utc::now(),
+        second: Some(chrono::Utc::now()),
     };
     let _ = server.set_read_write_two_datetimes(new_value).await;
 
@@ -1152,7 +1158,7 @@ async fn main() {
     sleep(Duration::from_secs(1)).await;
     println!("Changing property 'read_write_optional_duration'");
     let prop_change_future = server
-        .set_read_write_optional_duration(chrono::Duration::seconds(975))
+        .set_read_write_optional_duration(Some(chrono::Duration::seconds(975)))
         .await;
     if let Err(e) = prop_change_future.await {
         eprintln!(
@@ -1165,7 +1171,7 @@ async fn main() {
     println!("Changing property 'read_write_two_durations'");
     let new_value = ReadWriteTwoDurationsProperty {
         first: chrono::Duration::seconds(967),
-        second: chrono::Duration::seconds(967),
+        second: Some(chrono::Duration::seconds(967)),
     };
     let _ = server.set_read_write_two_durations(new_value).await;
 
@@ -1181,7 +1187,7 @@ async fn main() {
     sleep(Duration::from_secs(1)).await;
     println!("Changing property 'read_write_optional_binary'");
     let prop_change_future = server
-        .set_read_write_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]))
         .await;
     if let Err(e) = prop_change_future.await {
         eprintln!(
@@ -1194,7 +1200,7 @@ async fn main() {
     println!("Changing property 'read_write_two_binaries'");
     let new_value = ReadWriteTwoBinariesProperty {
         first: vec![101, 120, 97, 109, 112, 108, 101],
-        second: vec![101, 120, 97, 109, 112, 108, 101],
+        second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
     };
     let _ = server.set_read_write_two_binaries(new_value).await;
 

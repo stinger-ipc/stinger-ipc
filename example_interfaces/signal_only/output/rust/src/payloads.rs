@@ -84,6 +84,33 @@ pub mod datetime_iso_format {
             .map(|dt| dt.with_timezone(&Utc))
             .map_err(serde::de::Error::custom)
     }
+
+    // For Option<DateTime<Utc>>
+    pub fn serialize_option<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match dt {
+            Some(d) => serialize(d, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_string) => {
+                let dt = DateTime::parse_from_rfc3339(&iso_string)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .map_err(serde::de::Error::custom)?;
+                Ok(Some(dt))
+            }
+            None => Ok(None),
+        }
+    }
 }
 
 pub mod duration_iso_format {
@@ -112,6 +139,43 @@ pub mod duration_iso_format {
             serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration")
         })?;
         chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
+    }
+
+    // For Option<Duration>
+    pub fn serialize_option<S>(
+        duration: &Option<Duration>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match duration {
+            Some(d) => serialize(d, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_string) => {
+                let iso_dur: IsoDuration = iso_string
+                    .parse::<IsoDuration>()
+                    .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
+                let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Failed to convert ISO duration to std::time::Duration",
+                    )
+                })?;
+                let chrono_duration =
+                    chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)?;
+                Ok(Some(chrono_duration))
+            }
+            None => Ok(None),
+        }
     }
 }
 
@@ -194,9 +258,7 @@ impl MethodReturnCode {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnotherSignalSignalPayload {
     pub one: f32,
-
     pub two: bool,
-
     pub three: String,
 }
 

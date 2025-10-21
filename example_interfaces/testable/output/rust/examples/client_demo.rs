@@ -712,9 +712,9 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         })
         .await
         .expect("Failed to call callOneStruct");
@@ -722,7 +722,7 @@ async fn main() {
 
     println!("Calling callOptionalStruct with example values...");
     let result = api_client
-        .call_optional_struct(AllTypes {
+        .call_optional_struct(Some(AllTypes {
             the_bool: true,
             the_int: 42,
             the_number: 3.14,
@@ -734,10 +734,10 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-        })
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        }))
         .await
         .expect("Failed to call callOptionalStruct");
     println!("callOptionalStruct response: {:?}", result);
@@ -745,6 +745,22 @@ async fn main() {
     println!("Calling callThreeStructs with example values...");
     let result = api_client
         .call_three_structs(
+            Some(AllTypes {
+                the_bool: true,
+                the_int: 42,
+                the_number: 3.14,
+                the_str: "apples".to_string(),
+                the_enum: Numbers::One,
+                date_and_time: chrono::Utc::now(),
+                time_duration: chrono::Duration::seconds(3536),
+                data: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_integer: Some(42),
+                optional_string: Some("apples".to_string()),
+                optional_enum: Some(Numbers::One),
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+            }),
             AllTypes {
                 the_bool: true,
                 the_int: 42,
@@ -757,9 +773,9 @@ async fn main() {
                 optional_integer: Some(42),
                 optional_string: Some("apples".to_string()),
                 optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
             },
             AllTypes {
                 the_bool: true,
@@ -773,25 +789,9 @@ async fn main() {
                 optional_integer: Some(42),
                 optional_string: Some("apples".to_string()),
                 optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-            },
-            AllTypes {
-                the_bool: true,
-                the_int: 42,
-                the_number: 3.14,
-                the_str: "apples".to_string(),
-                the_enum: Numbers::One,
-                date_and_time: chrono::Utc::now(),
-                time_duration: chrono::Duration::seconds(3536),
-                data: vec![101, 120, 97, 109, 112, 108, 101],
-                optional_integer: Some(42),
-                optional_string: Some("apples".to_string()),
-                optional_enum: Some(Numbers::One),
-                optional_date_time: chrono::Utc::now(),
-                optional_duration: chrono::Duration::seconds(3536),
-                optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
             },
         )
         .await
@@ -807,14 +807,18 @@ async fn main() {
 
     println!("Calling callOptionalDateTime with example values...");
     let result = api_client
-        .call_optional_date_time(chrono::Utc::now())
+        .call_optional_date_time(Some(chrono::Utc::now()))
         .await
         .expect("Failed to call callOptionalDateTime");
     println!("callOptionalDateTime response: {:?}", result);
 
     println!("Calling callThreeDateTimes with example values...");
     let result = api_client
-        .call_three_date_times(chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now())
+        .call_three_date_times(
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+            Some(chrono::Utc::now()),
+        )
         .await
         .expect("Failed to call callThreeDateTimes");
     println!("callThreeDateTimes response: {:?}", result);
@@ -828,7 +832,7 @@ async fn main() {
 
     println!("Calling callOptionalDuration with example values...");
     let result = api_client
-        .call_optional_duration(chrono::Duration::seconds(3536))
+        .call_optional_duration(Some(chrono::Duration::seconds(3536)))
         .await
         .expect("Failed to call callOptionalDuration");
     println!("callOptionalDuration response: {:?}", result);
@@ -838,7 +842,7 @@ async fn main() {
         .call_three_durations(
             chrono::Duration::seconds(3536),
             chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(3536),
+            Some(chrono::Duration::seconds(3536)),
         )
         .await
         .expect("Failed to call callThreeDurations");
@@ -853,7 +857,7 @@ async fn main() {
 
     println!("Calling callOptionalBinary with example values...");
     let result = api_client
-        .call_optional_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .call_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]))
         .await
         .expect("Failed to call callOptionalBinary");
     println!("callOptionalBinary response: {:?}", result);
@@ -863,7 +867,7 @@ async fn main() {
         .call_three_binaries(
             vec![101, 120, 97, 109, 112, 108, 101],
             vec![101, 120, 97, 109, 112, 108, 101],
-            vec![101, 120, 97, 109, 112, 108, 101],
+            Some(vec![101, 120, 97, 109, 112, 108, 101]),
         )
         .await
         .expect("Failed to call callThreeBinaries");
@@ -901,12 +905,12 @@ async fn main() {
         optional_integer: Some(42),
         optional_string: Some("apples".to_string()),
         optional_enum: Some(Numbers::One),
-        optional_date_time: chrono::Utc::now(),
-        optional_duration: chrono::Duration::seconds(3536),
-        optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        optional_date_time: Some(chrono::Utc::now()),
+        optional_duration: Some(chrono::Duration::seconds(3536)),
+        optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
     });
 
-    let _ = api_client.set_read_write_optional_struct(AllTypes {
+    let _ = api_client.set_read_write_optional_struct(Some(AllTypes {
         the_bool: true,
         the_int: 42,
         the_number: 3.14,
@@ -918,10 +922,10 @@ async fn main() {
         optional_integer: Some(42),
         optional_string: Some("apples".to_string()),
         optional_enum: Some(Numbers::One),
-        optional_date_time: chrono::Utc::now(),
-        optional_duration: chrono::Duration::seconds(3536),
-        optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-    });
+        optional_date_time: Some(chrono::Utc::now()),
+        optional_duration: Some(chrono::Duration::seconds(3536)),
+        optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+    }));
 
     let read_write_two_structs_new_value = ReadWriteTwoStructsProperty {
         first: AllTypes {
@@ -936,11 +940,11 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         },
-        second: AllTypes {
+        second: Some(AllTypes {
             the_bool: true,
             the_int: 42,
             the_number: 3.14,
@@ -952,10 +956,10 @@ async fn main() {
             optional_integer: Some(42),
             optional_string: Some("apples".to_string()),
             optional_enum: Some(Numbers::One),
-            optional_date_time: chrono::Utc::now(),
-            optional_duration: chrono::Duration::seconds(3536),
-            optional_binary: vec![101, 120, 97, 109, 112, 108, 101],
-        },
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        }),
     };
     let _ = api_client.set_read_write_two_structs(read_write_two_structs_new_value);
 
@@ -971,31 +975,31 @@ async fn main() {
 
     let _ = api_client.set_read_write_datetime(chrono::Utc::now());
 
-    let _ = api_client.set_read_write_optional_datetime(chrono::Utc::now());
+    let _ = api_client.set_read_write_optional_datetime(Some(chrono::Utc::now()));
 
     let read_write_two_datetimes_new_value = ReadWriteTwoDatetimesProperty {
         first: chrono::Utc::now(),
-        second: chrono::Utc::now(),
+        second: Some(chrono::Utc::now()),
     };
     let _ = api_client.set_read_write_two_datetimes(read_write_two_datetimes_new_value);
 
     let _ = api_client.set_read_write_duration(chrono::Duration::seconds(3536));
 
-    let _ = api_client.set_read_write_optional_duration(chrono::Duration::seconds(3536));
+    let _ = api_client.set_read_write_optional_duration(Some(chrono::Duration::seconds(3536)));
 
     let read_write_two_durations_new_value = ReadWriteTwoDurationsProperty {
         first: chrono::Duration::seconds(3536),
-        second: chrono::Duration::seconds(3536),
+        second: Some(chrono::Duration::seconds(3536)),
     };
     let _ = api_client.set_read_write_two_durations(read_write_two_durations_new_value);
 
     let _ = api_client.set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101]);
 
-    let _ = api_client.set_read_write_optional_binary(vec![101, 120, 97, 109, 112, 108, 101]);
+    let _ = api_client.set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]));
 
     let read_write_two_binaries_new_value = ReadWriteTwoBinariesProperty {
         first: vec![101, 120, 97, 109, 112, 108, 101],
-        second: vec![101, 120, 97, 109, 112, 108, 101],
+        second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
     };
     let _ = api_client.set_read_write_two_binaries(read_write_two_binaries_new_value);
 

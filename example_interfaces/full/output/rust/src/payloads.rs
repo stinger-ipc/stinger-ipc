@@ -88,6 +88,33 @@ pub mod datetime_iso_format {
             .map(|dt| dt.with_timezone(&Utc))
             .map_err(serde::de::Error::custom)
     }
+
+    // For Option<DateTime<Utc>>
+    pub fn serialize_option<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match dt {
+            Some(d) => serialize(d, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_string) => {
+                let dt = DateTime::parse_from_rfc3339(&iso_string)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .map_err(serde::de::Error::custom)?;
+                Ok(Some(dt))
+            }
+            None => Ok(None),
+        }
+    }
 }
 
 pub mod duration_iso_format {
@@ -116,6 +143,43 @@ pub mod duration_iso_format {
             serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration")
         })?;
         chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
+    }
+
+    // For Option<Duration>
+    pub fn serialize_option<S>(
+        duration: &Option<Duration>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match duration {
+            Some(d) => serialize(d, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<String>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_string) => {
+                let iso_dur: IsoDuration = iso_string
+                    .parse::<IsoDuration>()
+                    .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
+                let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Failed to convert ISO duration to std::time::Duration",
+                    )
+                })?;
+                let chrono_duration =
+                    chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)?;
+                Ok(Some(chrono_duration))
+            }
+            None => Ok(None),
+        }
     }
 }
 
@@ -232,18 +296,13 @@ impl fmt::Display for DayOfTheWeek {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Lunch {
     pub drink: bool,
-
     pub sandwich: String,
-
     pub crackers: f32,
-
     pub day: DayOfTheWeek,
 
     pub order_number: Option<i32>,
-
     #[serde(with = "datetime_iso_format")]
     pub time_of_lunch: chrono::DateTime<chrono::Utc>,
-
     #[serde(with = "duration_iso_format")]
     pub duration_of_lunch: chrono::Duration,
 }
@@ -257,9 +316,7 @@ pub struct Lunch {
 /// Request Object for `addNumbers` method.
 pub struct AddNumbersRequestObject {
     pub first: i32,
-
     pub second: i32,
-
     pub third: Option<i32>,
 }
 
@@ -277,7 +334,7 @@ pub struct AddNumbersReturnValues {
 /// Request Object for `doSomething` method.
 pub struct DoSomethingRequestObject {
     #[serde(rename = "aString")]
-    pub aString: String,
+    pub a_string: String,
 }
 
 #[allow(dead_code)]
@@ -285,9 +342,7 @@ pub struct DoSomethingRequestObject {
 /// Return Object for `doSomething` method.
 pub struct DoSomethingReturnValues {
     pub label: String,
-
     pub identifier: i32,
-
     pub day: DayOfTheWeek,
 }
 
@@ -333,7 +388,6 @@ pub struct WhatTimeIsItReturnValues {
 pub struct SetTheTimeRequestObject {
     #[serde(with = "datetime_iso_format")]
     pub the_first_time: chrono::DateTime<chrono::Utc>,
-
     #[serde(with = "datetime_iso_format")]
     pub the_second_time: chrono::DateTime<chrono::Utc>,
 }
@@ -344,7 +398,6 @@ pub struct SetTheTimeRequestObject {
 pub struct SetTheTimeReturnValues {
     #[serde(with = "datetime_iso_format")]
     pub timestamp: chrono::DateTime<chrono::Utc>,
-
     pub confirmation_message: String,
 }
 
@@ -391,16 +444,14 @@ pub struct HowOffIsTheClockReturnValues {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TodayIsSignalPayload {
     #[serde(rename = "dayOfMonth")]
-    pub dayOfMonth: i32,
+    pub day_of_month: i32,
     #[serde(rename = "dayOfWeek")]
-    pub dayOfWeek: Option<DayOfTheWeek>,
+    pub day_of_week: Option<DayOfTheWeek>,
 
     #[serde(with = "datetime_iso_format")]
     pub timestamp: chrono::DateTime<chrono::Utc>,
-
     #[serde(with = "duration_iso_format")]
     pub process_time: chrono::Duration,
-
     #[serde(with = "base64_binary_format")]
     pub memory_segment: Vec<u8>,
 }
@@ -426,6 +477,8 @@ pub struct FavoriteFoodsProperty {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct LunchMenuProperty {
     pub monday: Lunch,
+
+    /// Tuesday's lunch menu.
     pub tuesday: Lunch,
 }
 
@@ -458,12 +511,14 @@ pub struct BreakfastLengthProperty {
 pub struct LastBirthdaysProperty {
     #[serde(with = "datetime_iso_format")]
     pub mom: chrono::DateTime<chrono::Utc>,
-
     #[serde(with = "datetime_iso_format")]
     pub dad: chrono::DateTime<chrono::Utc>,
+    #[serde(
+        serialize_with = "datetime_iso_format::serialize_option",
+        deserialize_with = "datetime_iso_format::deserialize_option"
+    )]
+    pub sister: Option<chrono::DateTime<chrono::Utc>>,
 
-    #[serde(with = "datetime_iso_format")]
-    pub sister: chrono::DateTime<chrono::Utc>,
     pub brothers_age: Option<i32>,
 }
 

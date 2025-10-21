@@ -409,10 +409,18 @@ class ArgStruct(Arg):
 
     @property
     def rust_type(self) -> str:
+        if self.optional:
+            return f"Option<{self._interface_struct.rust_type}>"
         return self._interface_struct.rust_type
 
     @property
     def rust_local_type(self) -> str:
+        if self.optional:
+            return f"Option<{self._interface_struct.rust_local_type}>"
+        return self._interface_struct.rust_local_type
+
+    @property
+    def rust_temp_type(self) -> str:
         return self._interface_struct.rust_local_type
 
     @property
@@ -440,9 +448,11 @@ class ArgStruct(Arg):
             init_list = ", ".join([f"{k}={v}" for k, v in example_list.items()])
             return f"{self.python_type}({init_list})"
         elif lang == "rust":
-            return "%s {%s}" % (
-                self.rust_type,
+            return "%s%s {%s}%s" % (
+                "Some(" if self.optional else "",
+                self._interface_struct.rust_type,
                 ", ".join([f"{k}: {v}" for k, v in example_list.items()]),
+                ")" if self.optional else "",
             )
         elif lang == "json":
             return "{" + ", ".join([f'"{k}": {v}' for k, v in example_list.items()]) + "}"
@@ -489,6 +499,8 @@ class ArgDateTime(Arg):
 
     @property
     def rust_type(self) -> str:
+        if self.optional:
+            return "Option<chrono::DateTime<chrono::Utc>>"
         return "chrono::DateTime<chrono::Utc>"
 
     @property
@@ -501,6 +513,8 @@ class ArgDateTime(Arg):
                 return "None"
             return f"datetime.now()"
         elif lang == "rust":
+            if self.optional:
+                return "Some(chrono::Utc::now())"
             return "chrono::Utc::now()"
         elif lang in ["c++", "cpp"]:
             return "std::chrono::system_clock::now()"
@@ -541,6 +555,8 @@ class ArgDuration(Arg):
 
     @property
     def rust_type(self) -> str:
+        if self.optional:
+            return "Option<chrono::Duration>"
         return "chrono::Duration"
 
     @property
@@ -561,7 +577,10 @@ class ArgDuration(Arg):
             else:
                 retval = f"timedelta(seconds={random.randint(1, 3600)})"
         elif lang == "rust":
-            retval = f"chrono::Duration::seconds({random.randint(1, 3600)})"
+            if self.optional:
+                retval = f"Some(chrono::Duration::seconds({random.randint(1, 3600)}))"
+            else:
+                retval = f"chrono::Duration::seconds({random.randint(1, 3600)})"
         elif lang in ["c++", "cpp"]:
             retval = f"std::chrono::duration<double>({random.randint(1, 3600)})"
         random.setstate(random_state)
@@ -585,6 +604,8 @@ class ArgBinary(Arg):
 
     @property
     def rust_type(self) -> str:
+        if self.optional:
+            return "Option<Vec<u8>>"
         return "Vec<u8>"
 
     @property
@@ -609,6 +630,8 @@ class ArgBinary(Arg):
         if lang == "python":
             return f'b"example binary data"'
         elif lang == "rust":
+            if self.optional:
+                return 'Some(vec![101, 120, 97, 109, 112, 108, 101])'  # "example" in ASCII bytes
             return 'vec![101, 120, 97, 109, 112, 108, 101]'  # "example" in ASCII bytes
         elif lang in ["c++", "cpp"]:
             return 'std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
@@ -641,6 +664,8 @@ class ArgList(Arg):
 
     @property
     def rust_type(self) -> str:
+        if self.optional:
+            return f"Option<Vec<{self._element_type.rust_type}>>"
         return f"Vec<{self._element_type.rust_type}>"
 
     @property

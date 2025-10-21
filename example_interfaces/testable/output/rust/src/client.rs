@@ -21,6 +21,8 @@ use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
 use tokio::task::JoinError;
+#[allow(unused_imports)]
+use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -114,16 +116,16 @@ struct TestAbleSignalChannels {
     single_optional_enum_sender: broadcast::Sender<Option<Numbers>>,
     three_enums_sender: broadcast::Sender<ThreeEnumsSignalPayload>,
     single_struct_sender: broadcast::Sender<AllTypes>,
-    single_optional_struct_sender: broadcast::Sender<AllTypes>,
+    single_optional_struct_sender: broadcast::Sender<Option<AllTypes>>,
     three_structs_sender: broadcast::Sender<ThreeStructsSignalPayload>,
     single_date_time_sender: broadcast::Sender<chrono::DateTime<chrono::Utc>>,
-    single_optional_datetime_sender: broadcast::Sender<chrono::DateTime<chrono::Utc>>,
+    single_optional_datetime_sender: broadcast::Sender<Option<chrono::DateTime<chrono::Utc>>>,
     three_date_times_sender: broadcast::Sender<ThreeDateTimesSignalPayload>,
     single_duration_sender: broadcast::Sender<chrono::Duration>,
-    single_optional_duration_sender: broadcast::Sender<chrono::Duration>,
+    single_optional_duration_sender: broadcast::Sender<Option<chrono::Duration>>,
     three_durations_sender: broadcast::Sender<ThreeDurationsSignalPayload>,
     single_binary_sender: broadcast::Sender<Vec<u8>>,
-    single_optional_binary_sender: broadcast::Sender<Vec<u8>>,
+    single_optional_binary_sender: broadcast::Sender<Option<Vec<u8>>>,
     three_binaries_sender: broadcast::Sender<ThreeBinariesSignalPayload>,
 }
 
@@ -154,9 +156,9 @@ pub struct TestAbleProperties {
     pub read_write_struct: Arc<Mutex<Option<AllTypes>>>,
 
     read_write_struct_tx_channel: watch::Sender<Option<AllTypes>>,
-    pub read_write_optional_struct: Arc<Mutex<Option<AllTypes>>>,
+    pub read_write_optional_struct: Arc<Mutex<Option<Option<AllTypes>>>>,
 
-    read_write_optional_struct_tx_channel: watch::Sender<Option<AllTypes>>,
+    read_write_optional_struct_tx_channel: watch::Sender<Option<Option<AllTypes>>>,
     pub read_write_two_structs: Arc<Mutex<Option<ReadWriteTwoStructsProperty>>>,
     read_write_two_structs_tx_channel: watch::Sender<Option<ReadWriteTwoStructsProperty>>,
     pub read_only_enum: Arc<Mutex<Option<Numbers>>>,
@@ -173,25 +175,26 @@ pub struct TestAbleProperties {
     pub read_write_datetime: Arc<Mutex<Option<chrono::DateTime<chrono::Utc>>>>,
 
     read_write_datetime_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
-    pub read_write_optional_datetime: Arc<Mutex<Option<chrono::DateTime<chrono::Utc>>>>,
+    pub read_write_optional_datetime: Arc<Mutex<Option<Option<chrono::DateTime<chrono::Utc>>>>>,
 
-    read_write_optional_datetime_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+    read_write_optional_datetime_tx_channel:
+        watch::Sender<Option<Option<chrono::DateTime<chrono::Utc>>>>,
     pub read_write_two_datetimes: Arc<Mutex<Option<ReadWriteTwoDatetimesProperty>>>,
     read_write_two_datetimes_tx_channel: watch::Sender<Option<ReadWriteTwoDatetimesProperty>>,
     pub read_write_duration: Arc<Mutex<Option<chrono::Duration>>>,
 
     read_write_duration_tx_channel: watch::Sender<Option<chrono::Duration>>,
-    pub read_write_optional_duration: Arc<Mutex<Option<chrono::Duration>>>,
+    pub read_write_optional_duration: Arc<Mutex<Option<Option<chrono::Duration>>>>,
 
-    read_write_optional_duration_tx_channel: watch::Sender<Option<chrono::Duration>>,
+    read_write_optional_duration_tx_channel: watch::Sender<Option<Option<chrono::Duration>>>,
     pub read_write_two_durations: Arc<Mutex<Option<ReadWriteTwoDurationsProperty>>>,
     read_write_two_durations_tx_channel: watch::Sender<Option<ReadWriteTwoDurationsProperty>>,
     pub read_write_binary: Arc<Mutex<Option<Vec<u8>>>>,
 
     read_write_binary_tx_channel: watch::Sender<Option<Vec<u8>>>,
-    pub read_write_optional_binary: Arc<Mutex<Option<Vec<u8>>>>,
+    pub read_write_optional_binary: Arc<Mutex<Option<Option<Vec<u8>>>>>,
 
-    read_write_optional_binary_tx_channel: watch::Sender<Option<Vec<u8>>>,
+    read_write_optional_binary_tx_channel: watch::Sender<Option<Option<Vec<u8>>>>,
     pub read_write_two_binaries: Arc<Mutex<Option<ReadWriteTwoBinariesProperty>>>,
     read_write_two_binaries_tx_channel: watch::Sender<Option<ReadWriteTwoBinariesProperty>>,
 }
@@ -1247,7 +1250,7 @@ impl TestAbleClient {
     }
     /// Get the RX receiver side of the broadcast channel for the singleOptionalStruct signal.
     /// The signal payload, `SingleOptionalStructSignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_single_optional_struct_receiver(&self) -> broadcast::Receiver<AllTypes> {
+    pub fn get_single_optional_struct_receiver(&self) -> broadcast::Receiver<Option<AllTypes>> {
         self.signal_channels
             .single_optional_struct_sender
             .subscribe()
@@ -1268,7 +1271,7 @@ impl TestAbleClient {
     /// The signal payload, `SingleOptionalDatetimeSignalPayload`, will be put onto the channel whenever it is received.
     pub fn get_single_optional_datetime_receiver(
         &self,
-    ) -> broadcast::Receiver<chrono::DateTime<chrono::Utc>> {
+    ) -> broadcast::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
         self.signal_channels
             .single_optional_datetime_sender
             .subscribe()
@@ -1287,7 +1290,9 @@ impl TestAbleClient {
     }
     /// Get the RX receiver side of the broadcast channel for the singleOptionalDuration signal.
     /// The signal payload, `SingleOptionalDurationSignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_single_optional_duration_receiver(&self) -> broadcast::Receiver<chrono::Duration> {
+    pub fn get_single_optional_duration_receiver(
+        &self,
+    ) -> broadcast::Receiver<Option<chrono::Duration>> {
         self.signal_channels
             .single_optional_duration_sender
             .subscribe()
@@ -1304,7 +1309,7 @@ impl TestAbleClient {
     }
     /// Get the RX receiver side of the broadcast channel for the singleOptionalBinary signal.
     /// The signal payload, `SingleOptionalBinarySignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_single_optional_binary_receiver(&self) -> broadcast::Receiver<Vec<u8>> {
+    pub fn get_single_optional_binary_receiver(&self) -> broadcast::Receiver<Option<Vec<u8>>> {
         self.signal_channels
             .single_optional_binary_sender
             .subscribe()
@@ -1853,7 +1858,10 @@ impl TestAbleClient {
         Ok(return_values.output1)
     }
 
-    async fn start_call_optional_struct(&mut self, input1: AllTypes) -> oneshot::Receiver<String> {
+    async fn start_call_optional_struct(
+        &mut self,
+        input1: Option<AllTypes>,
+    ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -1889,8 +1897,8 @@ impl TestAbleClient {
     /// This method awaits on the response to the call before returning.
     pub async fn call_optional_struct(
         &mut self,
-        input1: AllTypes,
-    ) -> Result<AllTypes, MethodReturnCode> {
+        input1: Option<AllTypes>,
+    ) -> Result<Option<AllTypes>, MethodReturnCode> {
         let receiver = self.start_call_optional_struct(input1).await;
 
         let resp_str: String = receiver.await.unwrap();
@@ -1903,7 +1911,7 @@ impl TestAbleClient {
 
     async fn start_call_three_structs(
         &mut self,
-        input1: AllTypes,
+        input1: Option<AllTypes>,
         input2: AllTypes,
         input3: AllTypes,
     ) -> oneshot::Receiver<String> {
@@ -1945,7 +1953,7 @@ impl TestAbleClient {
     /// This method awaits on the response to the call before returning.
     pub async fn call_three_structs(
         &mut self,
-        input1: AllTypes,
+        input1: Option<AllTypes>,
         input2: AllTypes,
         input3: AllTypes,
     ) -> Result<CallThreeStructsReturnValues, MethodReturnCode> {
@@ -2011,7 +2019,7 @@ impl TestAbleClient {
 
     async fn start_call_optional_date_time(
         &mut self,
-        input1: chrono::DateTime<chrono::Utc>,
+        input1: Option<chrono::DateTime<chrono::Utc>>,
     ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
@@ -2048,8 +2056,8 @@ impl TestAbleClient {
     /// This method awaits on the response to the call before returning.
     pub async fn call_optional_date_time(
         &mut self,
-        input1: chrono::DateTime<chrono::Utc>,
-    ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
+        input1: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<Option<chrono::DateTime<chrono::Utc>>, MethodReturnCode> {
         let receiver = self.start_call_optional_date_time(input1).await;
 
         let resp_str: String = receiver.await.unwrap();
@@ -2064,7 +2072,7 @@ impl TestAbleClient {
         &mut self,
         input1: chrono::DateTime<chrono::Utc>,
         input2: chrono::DateTime<chrono::Utc>,
-        input3: chrono::DateTime<chrono::Utc>,
+        input3: Option<chrono::DateTime<chrono::Utc>>,
     ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
@@ -2107,7 +2115,7 @@ impl TestAbleClient {
         &mut self,
         input1: chrono::DateTime<chrono::Utc>,
         input2: chrono::DateTime<chrono::Utc>,
-        input3: chrono::DateTime<chrono::Utc>,
+        input3: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Result<CallThreeDateTimesReturnValues, MethodReturnCode> {
         let receiver = self
             .start_call_three_date_times(input1, input2, input3)
@@ -2173,7 +2181,7 @@ impl TestAbleClient {
 
     async fn start_call_optional_duration(
         &mut self,
-        input1: chrono::Duration,
+        input1: Option<chrono::Duration>,
     ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
@@ -2210,8 +2218,8 @@ impl TestAbleClient {
     /// This method awaits on the response to the call before returning.
     pub async fn call_optional_duration(
         &mut self,
-        input1: chrono::Duration,
-    ) -> Result<chrono::Duration, MethodReturnCode> {
+        input1: Option<chrono::Duration>,
+    ) -> Result<Option<chrono::Duration>, MethodReturnCode> {
         let receiver = self.start_call_optional_duration(input1).await;
 
         let resp_str: String = receiver.await.unwrap();
@@ -2226,7 +2234,7 @@ impl TestAbleClient {
         &mut self,
         input1: chrono::Duration,
         input2: chrono::Duration,
-        input3: chrono::Duration,
+        input3: Option<chrono::Duration>,
     ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
@@ -2269,7 +2277,7 @@ impl TestAbleClient {
         &mut self,
         input1: chrono::Duration,
         input2: chrono::Duration,
-        input3: chrono::Duration,
+        input3: Option<chrono::Duration>,
     ) -> Result<CallThreeDurationsReturnValues, MethodReturnCode> {
         let receiver = self
             .start_call_three_durations(input1, input2, input3)
@@ -2324,7 +2332,10 @@ impl TestAbleClient {
         Ok(return_values.output1)
     }
 
-    async fn start_call_optional_binary(&mut self, input1: Vec<u8>) -> oneshot::Receiver<String> {
+    async fn start_call_optional_binary(
+        &mut self,
+        input1: Option<Vec<u8>>,
+    ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let correlation_data = correlation_id.as_bytes().to_vec();
@@ -2360,8 +2371,8 @@ impl TestAbleClient {
     /// This method awaits on the response to the call before returning.
     pub async fn call_optional_binary(
         &mut self,
-        input1: Vec<u8>,
-    ) -> Result<Vec<u8>, MethodReturnCode> {
+        input1: Option<Vec<u8>>,
+    ) -> Result<Option<Vec<u8>>, MethodReturnCode> {
         let receiver = self.start_call_optional_binary(input1).await;
 
         let resp_str: String = receiver.await.unwrap();
@@ -2376,7 +2387,7 @@ impl TestAbleClient {
         &mut self,
         input1: Vec<u8>,
         input2: Vec<u8>,
-        input3: Vec<u8>,
+        input3: Option<Vec<u8>>,
     ) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
@@ -2419,7 +2430,7 @@ impl TestAbleClient {
         &mut self,
         input1: Vec<u8>,
         input2: Vec<u8>,
-        input3: Vec<u8>,
+        input3: Option<Vec<u8>>,
     ) -> Result<CallThreeBinariesReturnValues, MethodReturnCode> {
         let receiver = self.start_call_three_binaries(input1, input2, input3).await;
 
@@ -2574,7 +2585,7 @@ impl TestAbleClient {
 
     /// Watch for changes to the `read_write_optional_struct` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_optional_struct(&self) -> watch::Receiver<Option<AllTypes>> {
+    pub fn watch_read_write_optional_struct(&self) -> watch::Receiver<Option<Option<AllTypes>>> {
         self.properties
             .read_write_optional_struct_tx_channel
             .subscribe()
@@ -2582,7 +2593,7 @@ impl TestAbleClient {
 
     pub fn set_read_write_optional_struct(
         &mut self,
-        value: AllTypes,
+        value: Option<AllTypes>,
     ) -> Result<(), MethodReturnCode> {
         let data = ReadWriteOptionalStructProperty { value: value };
         let _publish_result = self.mqttier_client.publish_structure(
@@ -2697,7 +2708,7 @@ impl TestAbleClient {
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_read_write_optional_datetime(
         &self,
-    ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
+    ) -> watch::Receiver<Option<Option<chrono::DateTime<chrono::Utc>>>> {
         self.properties
             .read_write_optional_datetime_tx_channel
             .subscribe()
@@ -2705,7 +2716,7 @@ impl TestAbleClient {
 
     pub fn set_read_write_optional_datetime(
         &mut self,
-        value: chrono::DateTime<chrono::Utc>,
+        value: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Result<(), MethodReturnCode> {
         let data = ReadWriteOptionalDatetimeProperty { value: value };
         let _publish_result = self.mqttier_client.publish_structure(
@@ -2757,7 +2768,9 @@ impl TestAbleClient {
 
     /// Watch for changes to the `read_write_optional_duration` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_optional_duration(&self) -> watch::Receiver<Option<chrono::Duration>> {
+    pub fn watch_read_write_optional_duration(
+        &self,
+    ) -> watch::Receiver<Option<Option<chrono::Duration>>> {
         self.properties
             .read_write_optional_duration_tx_channel
             .subscribe()
@@ -2765,7 +2778,7 @@ impl TestAbleClient {
 
     pub fn set_read_write_optional_duration(
         &mut self,
-        value: chrono::Duration,
+        value: Option<chrono::Duration>,
     ) -> Result<(), MethodReturnCode> {
         let data = ReadWriteOptionalDurationProperty { value: value };
         let _publish_result = self.mqttier_client.publish_structure(
@@ -2814,7 +2827,7 @@ impl TestAbleClient {
 
     /// Watch for changes to the `read_write_optional_binary` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_optional_binary(&self) -> watch::Receiver<Option<Vec<u8>>> {
+    pub fn watch_read_write_optional_binary(&self) -> watch::Receiver<Option<Option<Vec<u8>>>> {
         self.properties
             .read_write_optional_binary_tx_channel
             .subscribe()
@@ -2822,7 +2835,7 @@ impl TestAbleClient {
 
     pub fn set_read_write_optional_binary(
         &mut self,
-        value: Vec<u8>,
+        value: Option<Vec<u8>>,
     ) -> Result<(), MethodReturnCode> {
         let data = ReadWriteOptionalBinaryProperty { value: value };
         let _publish_result = self.mqttier_client.publish_structure(
@@ -3225,7 +3238,11 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SingleIntSignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SingleIntSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3239,8 +3256,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleOptionalIntSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleOptionalIntSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3254,8 +3272,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into ThreeIntegersSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into ThreeIntegersSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3269,8 +3288,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleStringSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleStringSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3287,8 +3307,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleOptionalStringSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleOptionalStringSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3302,8 +3323,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into ThreeStringsSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into ThreeStringsSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3317,7 +3339,11 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SingleEnumSignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SingleEnumSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3331,8 +3357,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleOptionalEnumSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleOptionalEnumSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3346,7 +3373,11 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl);
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into ThreeEnumsSignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into ThreeEnumsSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3358,8 +3389,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleStructSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleStructSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3376,8 +3408,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleOptionalStructSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleOptionalStructSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3391,8 +3424,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into ThreeStructsSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into ThreeStructsSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3407,8 +3441,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleDateTimeSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleDateTimeSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3426,8 +3461,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleOptionalDatetimeSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleOptionalDatetimeSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3442,8 +3478,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into ThreeDateTimesSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into ThreeDateTimesSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3458,8 +3495,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleDurationSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleDurationSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3477,8 +3515,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleOptionalDurationSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleOptionalDurationSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3493,8 +3532,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into ThreeDurationsSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into ThreeDurationsSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3508,8 +3548,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleBinarySignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleBinarySignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3526,8 +3567,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl.value);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into SingleOptionalBinarySignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into SingleOptionalBinarySignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3541,8 +3583,9 @@ impl TestAbleClient {
                             let _send_result = chan.send(pl);
                         }
                         Err(e) => {
-                            eprintln!(
-                                "Failed to deserialize into ThreeBinariesSignalPayload: {}",
+                            warn!(
+                                "Failed to deserialize '{}' into ThreeBinariesSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
                                 e
                             );
                             continue;
@@ -3560,7 +3603,11 @@ impl TestAbleClient {
                             let _ = props.read_write_integer_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3574,7 +3621,11 @@ impl TestAbleClient {
                             let _ = props.read_only_integer_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3593,7 +3644,11 @@ impl TestAbleClient {
                                 .send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3609,7 +3664,11 @@ impl TestAbleClient {
                             let _ = props.read_write_two_integers_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3623,7 +3682,11 @@ impl TestAbleClient {
                             let _ = props.read_only_string_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3637,7 +3700,11 @@ impl TestAbleClient {
                             let _ = props.read_write_string_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3655,7 +3722,11 @@ impl TestAbleClient {
                                 .send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3671,7 +3742,11 @@ impl TestAbleClient {
                             let _ = props.read_write_two_strings_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3685,7 +3760,11 @@ impl TestAbleClient {
                             let _ = props.read_write_struct_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3703,7 +3782,11 @@ impl TestAbleClient {
                                 .send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3719,7 +3802,11 @@ impl TestAbleClient {
                             let _ = props.read_write_two_structs_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3733,7 +3820,11 @@ impl TestAbleClient {
                             let _ = props.read_only_enum_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3747,7 +3838,11 @@ impl TestAbleClient {
                             let _ = props.read_write_enum_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3765,7 +3860,11 @@ impl TestAbleClient {
                                 .send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3781,7 +3880,11 @@ impl TestAbleClient {
                             let _ = props.read_write_two_enums_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3797,7 +3900,11 @@ impl TestAbleClient {
                             let _ = props.read_write_datetime_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3817,7 +3924,11 @@ impl TestAbleClient {
                                 .send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3833,7 +3944,11 @@ impl TestAbleClient {
                             let _ = props.read_write_two_datetimes_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3849,7 +3964,11 @@ impl TestAbleClient {
                             let _ = props.read_write_duration_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3869,7 +3988,11 @@ impl TestAbleClient {
                                 .send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3885,7 +4008,11 @@ impl TestAbleClient {
                             let _ = props.read_write_two_durations_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3899,7 +4026,11 @@ impl TestAbleClient {
                             let _ = props.read_write_binary_tx_channel.send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3917,7 +4048,11 @@ impl TestAbleClient {
                                 .send(Some(pl.value));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3933,7 +4068,11 @@ impl TestAbleClient {
                             let _ = props.read_write_two_binaries_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -3941,7 +4080,6 @@ impl TestAbleClient {
             }
         });
 
-        println!("Started client receive task");
         Ok(())
     }
 }

@@ -21,6 +21,8 @@ use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
 use tokio::task::JoinError;
+#[allow(unused_imports)]
+use tracing::{debug, error, info, warn};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -415,7 +417,7 @@ impl FullClient {
             hashmap.insert(correlation_id.clone(), sender);
         }
 
-        let data = DoSomethingRequestObject { aString: a_string };
+        let data = DoSomethingRequestObject { a_string: a_string };
 
         let response_topic: String = format!("client/{}/doSomething/response", self.client_id);
         let _ = self
@@ -949,7 +951,11 @@ impl FullClient {
                             let _send_result = chan.send(pl);
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into TodayIsSignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into TodayIsSignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -965,7 +971,11 @@ impl FullClient {
                             let _ = props.favorite_number_tx_channel.send(Some(pl.number));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -979,7 +989,11 @@ impl FullClient {
                             let _ = props.favorite_foods_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -992,7 +1006,11 @@ impl FullClient {
                             let _ = props.lunch_menu_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -1005,7 +1023,11 @@ impl FullClient {
                             let _ = props.family_name_tx_channel.send(Some(pl.family_name));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -1023,7 +1045,11 @@ impl FullClient {
                                 .send(Some(pl.timestamp));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -1037,7 +1063,11 @@ impl FullClient {
                             let _ = props.breakfast_length_tx_channel.send(Some(pl.length));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -1051,7 +1081,11 @@ impl FullClient {
                             let _ = props.last_birthdays_tx_channel.send(Some(pl));
                         }
                         Err(e) => {
-                            eprintln!("Failed to deserialize into SignalPayload: {}", e);
+                            warn!(
+                                "Failed to deserialize '{}' into SignalPayload: {}",
+                                String::from_utf8_lossy(&msg.payload),
+                                e
+                            );
                             continue;
                         }
                     }
@@ -1059,7 +1093,6 @@ impl FullClient {
             }
         });
 
-        println!("Started client receive task");
         Ok(())
     }
 }
