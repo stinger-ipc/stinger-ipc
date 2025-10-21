@@ -1,9 +1,13 @@
 [project]
 name = "stinger-ipc"
-version = "0.1.5"
+version = "0.1.6"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+]
 dependencies = [
     "jacobs-jinja-too>=0.2.5",
     "jacobs-json-schema>=0.4.2",
