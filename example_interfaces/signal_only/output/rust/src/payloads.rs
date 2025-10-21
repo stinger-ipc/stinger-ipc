@@ -60,6 +60,70 @@ pub mod base64_binary_format {
             None => Ok(None),
         }
     }
+
+    // For Vec<Vec<u8>> - serializes as array of base64 strings
+    pub fn serialize_vec<S>(bytes_vec: &Vec<Vec<u8>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        let mut seq = serializer.serialize_seq(Some(bytes_vec.len()))?;
+        for bytes in bytes_vec {
+            let b64_string = BASE64_STANDARD.encode(bytes);
+            seq.serialize_element(&b64_string)?;
+        }
+        seq.end()
+    }
+
+    pub fn deserialize_vec<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let b64_strings = Vec::<String>::deserialize(deserializer)?;
+        b64_strings
+            .into_iter()
+            .map(|b64_string| {
+                BASE64_STANDARD
+                    .decode(b64_string.as_bytes())
+                    .map_err(serde::de::Error::custom)
+            })
+            .collect()
+    }
+
+    // For Option<Vec<Vec<u8>>>
+    pub fn serialize_option_vec<S>(
+        bytes_vec: &Option<Vec<Vec<u8>>>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match bytes_vec {
+            Some(v) => serialize_vec(v, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option_vec<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<Vec<String>>::deserialize(deserializer)?;
+        match opt {
+            Some(b64_strings) => {
+                let decoded: Result<Vec<Vec<u8>>, _> = b64_strings
+                    .into_iter()
+                    .map(|b64_string| {
+                        BASE64_STANDARD
+                            .decode(b64_string.as_bytes())
+                            .map_err(serde::de::Error::custom)
+                    })
+                    .collect();
+                Ok(Some(decoded?))
+            }
+            None => Ok(None),
+        }
+    }
 }
 
 // Helper functions for DateTime serialization/deserialization
@@ -107,6 +171,71 @@ pub mod datetime_iso_format {
                     .map(|dt| dt.with_timezone(&Utc))
                     .map_err(serde::de::Error::custom)?;
                 Ok(Some(dt))
+            }
+            None => Ok(None),
+        }
+    }
+    // For Vec<DateTime<Utc>> - serializes as array of ISO 8601 strings
+    pub fn serialize_vec<S>(dt_vec: &Vec<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        let mut seq = serializer.serialize_seq(Some(dt_vec.len()))?;
+        for dt in dt_vec {
+            let iso_string = dt.to_rfc3339();
+            seq.serialize_element(&iso_string)?;
+        }
+        seq.end()
+    }
+
+    pub fn deserialize_vec<'de, D>(deserializer: D) -> Result<Vec<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let iso_strings = Vec::<String>::deserialize(deserializer)?;
+        iso_strings
+            .into_iter()
+            .map(|iso_string| {
+                DateTime::parse_from_rfc3339(&iso_string)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .map_err(serde::de::Error::custom)
+            })
+            .collect()
+    }
+
+    // For Option<Vec<DateTime<Utc>>>
+    pub fn serialize_option_vec<S>(
+        dt_vec: &Option<Vec<DateTime<Utc>>>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match dt_vec {
+            Some(v) => serialize_vec(v, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option_vec<'de, D>(
+        deserializer: D,
+    ) -> Result<Option<Vec<DateTime<Utc>>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<Vec<String>>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_strings) => {
+                let decoded: Result<Vec<DateTime<Utc>>, _> = iso_strings
+                    .into_iter()
+                    .map(|iso_string| {
+                        DateTime::parse_from_rfc3339(&iso_string)
+                            .map(|dt| dt.with_timezone(&Utc))
+                            .map_err(serde::de::Error::custom)
+                    })
+                    .collect();
+                Ok(Some(decoded?))
             }
             None => Ok(None),
         }
@@ -173,6 +302,86 @@ pub mod duration_iso_format {
                 let chrono_duration =
                     chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)?;
                 Ok(Some(chrono_duration))
+            }
+            None => Ok(None),
+        }
+    }
+
+    // For Vec<Duration> - serializes as array of ISO 8601 duration strings
+    pub fn serialize_vec<S>(duration_vec: &Vec<Duration>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        let mut seq = serializer.serialize_seq(Some(duration_vec.len()))?;
+        for duration in duration_vec {
+            let seconds = duration.num_seconds();
+            let iso_string = format!("PT{}S", seconds);
+            seq.serialize_element(&iso_string)?;
+        }
+        seq.end()
+    }
+
+    pub fn deserialize_vec<'de, D>(deserializer: D) -> Result<Vec<Duration>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let iso_strings = Vec::<String>::deserialize(deserializer)?;
+        iso_strings
+            .into_iter()
+            .map(|iso_string| {
+                let iso_dur: IsoDuration = iso_string
+                    .parse::<IsoDuration>()
+                    .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
+                let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Failed to convert ISO duration to std::time::Duration",
+                    )
+                })?;
+                chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
+            })
+            .collect()
+    }
+
+    // For Option<Vec<Duration>>
+    pub fn serialize_option_vec<S>(
+        duration_vec: &Option<Vec<Duration>>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match duration_vec {
+            Some(v) => serialize_vec(v, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option_vec<'de, D>(
+        deserializer: D,
+    ) -> Result<Option<Vec<Duration>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<Vec<String>>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_strings) => {
+                let decoded: Result<Vec<Duration>, _> = iso_strings
+                    .into_iter()
+                    .map(|iso_string| {
+                        let iso_dur: IsoDuration = iso_string
+                            .parse::<IsoDuration>()
+                            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
+                        let std_duration: std::time::Duration =
+                            iso_dur.to_std().ok_or_else(|| {
+                                serde::de::Error::custom(
+                                    "Failed to convert ISO duration to std::time::Duration",
+                                )
+                            })?;
+                        chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
+                    })
+                    .collect();
+                Ok(Some(decoded?))
             }
             None => Ok(None),
         }

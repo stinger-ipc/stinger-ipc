@@ -7,7 +7,7 @@ It contains enumerations used by the weather interface.
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta
-from typing import Optional, Annotated, Union
+from typing import Optional, Annotated, Union, List
 import base64
 from enum import IntEnum
 

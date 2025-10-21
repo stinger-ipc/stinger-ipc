@@ -7,7 +7,7 @@ It contains enumerations used by the Test Able interface.
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta
-from typing import Optional, Annotated, Union
+from typing import Optional, Annotated, Union, List
 import base64
 from enum import IntEnum
 
@@ -154,6 +154,108 @@ class AllTypes(BaseModel):
         ),
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None),
+    ]
+
+    array_of_integers: Annotated[
+        List[int],
+        Field(
+            description="An array of integers.",
+        ),
+    ]
+
+    optional_array_of_integers: Annotated[
+        Optional[List[int]],
+        Field(
+            description="An optional array of integers.",
+        ),
+    ]
+
+    array_of_strings: Annotated[
+        List[str],
+        Field(
+            description="An array of strings.",
+        ),
+    ]
+
+    optional_array_of_strings: Annotated[
+        Optional[List[str]],
+        Field(
+            description="An optional array of strings.",
+        ),
+    ]
+
+    array_of_enums: Annotated[
+        List[Numbers],
+        Field(
+            description="An array of enums.",
+        ),
+    ]
+
+    optional_array_of_enums: Annotated[
+        Optional[List[Numbers]],
+        Field(
+            description="An optional array of enums.",
+        ),
+    ]
+
+    array_of_datetimes: Annotated[
+        List[datetime],
+        Field(
+            description="An array of date and time values.",
+        ),
+    ]
+
+    optional_array_of_datetimes: Annotated[
+        Optional[List[datetime]],
+        Field(
+            description="An optional array of date and time values.",
+        ),
+    ]
+
+    array_of_durations: Annotated[
+        List[timedelta],
+        Field(
+            description="An array of duration values.",
+        ),
+    ]
+
+    optional_array_of_durations: Annotated[
+        Optional[List[timedelta]],
+        Field(
+            description="An optional array of duration values.",
+        ),
+    ]
+
+    array_of_binaries: Annotated[
+        List[bytes],
+        Field(
+            description="An array of binary values.",
+        ),
+        PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]),
+        PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr]),
+    ]
+
+    optional_array_of_binaries: Annotated[
+        Optional[List[bytes]],
+        Field(
+            description="An optional array of binary values.",
+        ),
+        PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]),
+        PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr]),
+    ]
+
+    array_of_entry_objects: Annotated[
+        List[Entry],
+        Field(
+            description="An array of struct values.",
+        ),
+    ]
+
+    optional_array_of_entry_objects: Annotated[
+        Optional[List[Entry]],
+        Field(
+            description="An optional array of struct values.",
+        ),
     ]
 
 
@@ -583,6 +685,13 @@ class SingleArrayOfIntegersSignalPayload(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    values: Annotated[
+        List[int],
+        Field(
+            description="The array of integers.",
+        ),
+    ]
+
 
 class SingleOptionalArrayOfStringsSignalPayload(BaseModel):
     """Interface signal `singleOptionalArrayOfStrings`.
@@ -592,11 +701,76 @@ class SingleOptionalArrayOfStringsSignalPayload(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    values: Annotated[
+        Optional[List[int]],
+        Field(
+            description="The array of integers.",
+        ),
+    ]
+
 
 class ArrayOfEveryTypeSignalPayload(BaseModel):
     """Interface signal `arrayOfEveryType`."""
 
     model_config = ConfigDict(populate_by_name=True)
+
+    first: Annotated[
+        List[int],
+        Field(
+            description="The first array of integers.",
+        ),
+    ]
+
+    second: Annotated[
+        List[float],
+        Field(
+            description="The second array of floats.",
+        ),
+    ]
+
+    third: Annotated[
+        List[str],
+        Field(
+            description="The third array of strings.",
+        ),
+    ]
+
+    fourth: Annotated[
+        List[Numbers],
+        Field(
+            description="The fourth array of enums.",
+        ),
+    ]
+
+    fifth: Annotated[
+        List[Entry],
+        Field(
+            description="The fifth array of structs.",
+        ),
+    ]
+
+    sixth: Annotated[
+        List[datetime],
+        Field(
+            description="The sixth array of date and time values.",
+        ),
+    ]
+
+    seventh: Annotated[
+        List[timedelta],
+        Field(
+            description="The seventh array of duration values.",
+        ),
+    ]
+
+    eighth: Annotated[
+        List[bytes],
+        Field(
+            description="The eighth array of binary values.",
+        ),
+        PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]),
+        PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr]),
+    ]
 
 
 class ReadWriteIntegerProperty(BaseModel):
@@ -891,6 +1065,11 @@ class ReadWriteListOfStringsProperty(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    value: Annotated[
+        List[str],
+        Field(),
+    ]
+
 
 class ReadWriteListsProperty(BaseModel):
     """Interface property `read_write_lists` (multi-value struct).
@@ -899,6 +1078,18 @@ class ReadWriteListsProperty(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
+
+    the_list: Annotated[
+        List[Numbers],
+        Field(),
+    ]
+
+    optional_list: Annotated[
+        Optional[List[datetime]],
+        Field(
+            alias="optionalList",
+        ),
+    ]
 
 
 class CallWithNothingMethodRequest(BaseModel):
@@ -1449,6 +1640,11 @@ class CallOneListOfIntegersMethodRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    input1: Annotated[
+        List[int],
+        Field(),
+    ]
+
 
 class CallOneListOfIntegersMethodResponse(BaseModel):
     """Interface method `callOneListOfIntegers` response object.
@@ -1457,6 +1653,11 @@ class CallOneListOfIntegersMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
+
+    output1: Annotated[
+        List[int],
+        Field(),
+    ]
 
 
 class CallOptionalListOfFloatsMethodRequest(BaseModel):
@@ -1467,6 +1668,11 @@ class CallOptionalListOfFloatsMethodRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    input1: Annotated[
+        Optional[List[float]],
+        Field(),
+    ]
+
 
 class CallOptionalListOfFloatsMethodResponse(BaseModel):
     """Interface method `callOptionalListOfFloats` response object.
@@ -1475,6 +1681,11 @@ class CallOptionalListOfFloatsMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
+
+    output1: Annotated[
+        Optional[List[float]],
+        Field(),
+    ]
 
 
 class CallTwoListsMethodRequest(BaseModel):
@@ -1485,6 +1696,18 @@ class CallTwoListsMethodRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    input1: Annotated[
+        List[Numbers],
+        Field(
+            description="The first list of enums.",
+        ),
+    ]
+
+    input2: Annotated[
+        Optional[List[str]],
+        Field(),
+    ]
+
 
 class CallTwoListsMethodResponse(BaseModel):
     """Interface method `callTwoLists` response object.
@@ -1493,3 +1716,15 @@ class CallTwoListsMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
+
+    output1: Annotated[
+        List[Numbers],
+        Field(
+            description="The first list of enums.",
+        ),
+    ]
+
+    output2: Annotated[
+        Optional[List[str]],
+        Field(),
+    ]

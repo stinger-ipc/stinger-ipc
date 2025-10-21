@@ -66,6 +66,73 @@ pub mod base64_binary_format {
             None => Ok(None),
         }
     }
+
+
+    // For Vec<Vec<u8>> - serializes as array of base64 strings
+    pub fn serialize_vec<S>(bytes_vec: &Vec<Vec<u8>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        let mut seq = serializer.serialize_seq(Some(bytes_vec.len()))?;
+        for bytes in bytes_vec {
+            let b64_string = BASE64_STANDARD.encode(bytes);
+            seq.serialize_element(&b64_string)?;
+        }
+        seq.end()
+    }
+
+    pub fn deserialize_vec<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let b64_strings = Vec::<String>::deserialize(deserializer)?;
+        b64_strings
+            .into_iter()
+            .map(|b64_string| {
+                BASE64_STANDARD
+                    .decode(b64_string.as_bytes())
+                    .map_err(serde::de::Error::custom)
+            })
+            .collect()
+    }
+
+    // For Option<Vec<Vec<u8>>>
+    pub fn serialize_option_vec<S>(
+        bytes_vec: &Option<Vec<Vec<u8>>>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match bytes_vec {
+            Some(v) => serialize_vec(v, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option_vec<'de, D>(
+        deserializer: D,
+    ) -> Result<Option<Vec<Vec<u8>>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<Vec<String>>::deserialize(deserializer)?;
+        match opt {
+            Some(b64_strings) => {
+                let decoded: Result<Vec<Vec<u8>>, _> = b64_strings
+                    .into_iter()
+                    .map(|b64_string| {
+                        BASE64_STANDARD
+                            .decode(b64_string.as_bytes())
+                            .map_err(serde::de::Error::custom)
+                    })
+                    .collect();
+                Ok(Some(decoded?))
+            }
+            None => Ok(None),
+        }
+    }
 }
 
 // Helper functions for DateTime serialization/deserialization
@@ -117,6 +184,73 @@ pub mod datetime_iso_format {
             None => Ok(None),
         }
     }
+    // For Vec<DateTime<Utc>> - serializes as array of ISO 8601 strings
+    pub fn serialize_vec<S>(dt_vec: &Vec<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        let mut seq = serializer.serialize_seq(Some(dt_vec.len()))?;
+        for dt in dt_vec {
+            let iso_string = dt.to_rfc3339();
+            seq.serialize_element(&iso_string)?;
+        }
+        seq.end()
+    }
+
+    pub fn deserialize_vec<'de, D>(deserializer: D) -> Result<Vec<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let iso_strings = Vec::<String>::deserialize(deserializer)?;
+        iso_strings
+            .into_iter()
+            .map(|iso_string| {
+                DateTime::parse_from_rfc3339(&iso_string)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .map_err(serde::de::Error::custom)
+            })
+            .collect()
+    }
+
+    // For Option<Vec<DateTime<Utc>>>
+    pub fn serialize_option_vec<S>(
+        dt_vec: &Option<Vec<DateTime<Utc>>>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match dt_vec {
+            Some(v) => serialize_vec(v, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option_vec<'de, D>(
+        deserializer: D,
+    ) -> Result<Option<Vec<DateTime<Utc>>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<Vec<String>>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_strings) => {
+                let decoded: Result<Vec<DateTime<Utc>>, _> = iso_strings
+                    .into_iter()
+                    .map(|iso_string| {
+                        DateTime::parse_from_rfc3339(&iso_string)
+                            .map(|dt| dt.with_timezone(&Utc))
+                            .map_err(serde::de::Error::custom)
+                    })
+                    .collect();
+                Ok(Some(decoded?))
+            }
+            None => Ok(None),
+        }
+    }
+
+
 
 }
 
@@ -176,6 +310,90 @@ pub mod duration_iso_format {
             None => Ok(None),
         }
     }
+
+    // For Vec<Duration> - serializes as array of ISO 8601 duration strings
+    pub fn serialize_vec<S>(duration_vec: &Vec<Duration>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        let mut seq = serializer.serialize_seq(Some(duration_vec.len()))?;
+        for duration in duration_vec {
+            let seconds = duration.num_seconds();
+            let iso_string = format!("PT{}S", seconds);
+            seq.serialize_element(&iso_string)?;
+        }
+        seq.end()
+    }
+
+    pub fn deserialize_vec<'de, D>(deserializer: D) -> Result<Vec<Duration>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let iso_strings = Vec::<String>::deserialize(deserializer)?;
+        iso_strings
+            .into_iter()
+            .map(|iso_string| {
+                let iso_dur: IsoDuration = iso_string
+                    .parse::<IsoDuration>()
+                    .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
+                let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Failed to convert ISO duration to std::time::Duration",
+                    )
+                })?;
+                chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
+            })
+            .collect()
+    }
+
+    // For Option<Vec<Duration>>
+    pub fn serialize_option_vec<S>(
+        duration_vec: &Option<Vec<Duration>>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match duration_vec {
+            Some(v) => serialize_vec(v, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_option_vec<'de, D>(
+        deserializer: D,
+    ) -> Result<Option<Vec<Duration>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt = Option::<Vec<String>>::deserialize(deserializer)?;
+        match opt {
+            Some(iso_strings) => {
+                let decoded: Result<Vec<Duration>, _> = iso_strings
+                    .into_iter()
+                    .map(|iso_string| {
+                        let iso_dur: IsoDuration = iso_string
+                            .parse::<IsoDuration>()
+                            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
+                        let std_duration: std::time::Duration =
+                            iso_dur.to_std().ok_or_else(|| {
+                                serde::de::Error::custom(
+                                    "Failed to convert ISO duration to std::time::Duration",
+                                )
+                            })?;
+                        chrono::Duration::from_std(std_duration)
+                            .map_err(serde::de::Error::custom)
+                    })
+                    .collect();
+                Ok(Some(decoded?))
+            }
+            None => Ok(None),
+        }
+    }
+
+
+
 }
 
 
@@ -259,7 +477,7 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
     {%-endif%}{# end arg description -#}
     {%-if arg.name != (arg.name | snake_case) -%}
     #[serde(rename = "{{arg.name}}")]
-    {%-endif%} {# end rename if needed #}
+    {%endif%} {# end rename if needed #}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
     pub {{arg.name|snake_case}}: {{arg.rust_type}},
     {%-elif arg.arg_type.name.lower() == 'struct'%}
@@ -299,6 +517,44 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
     #[serde(with = "base64_binary_format")]
     pub {{arg.name|snake_case}}: Vec<u8>,
     {%-endif%}{# binary optionality #}
+    {%-elif arg.arg_type.name.lower() == 'array'%}
+    {%- if arg.element.arg_type.name.lower() == 'datetime' %}
+    {%-if arg.optional %}
+    #[serde(serialize_with = "datetime_iso_format::serialize_option_vec",   
+            deserialize_with = "datetime_iso_format::deserialize_option_vec")]
+    pub {{arg.name|snake_case}}: Option<Vec<chrono::DateTime<chrono::Utc>>>,
+    {%else%}{# not optional array #}
+    #[serde(serialize_with = "datetime_iso_format::serialize_vec", 
+            deserialize_with = "datetime_iso_format::deserialize_vec")]
+    pub {{arg.name|snake_case}}: Vec<chrono::DateTime<chrono::Utc>>,
+    {%endif%}{# array optionality #}
+    {%- elif arg.element.arg_type.name.lower() == 'duration' %}
+    {%-if arg.optional %}
+    #[serde(serialize_with = "duration_iso_format::serialize_option_vec", 
+            deserialize_with = "duration_iso_format::deserialize_option_vec")]
+    pub {{arg.name|snake_case}}: Option<Vec<chrono::Duration>>,
+    {%else%}{# not optional array #}
+    #[serde(serialize_with = "duration_iso_format::serialize_vec", 
+            deserialize_with = "duration_iso_format::deserialize_vec")]
+    pub {{arg.name|snake_case}}: Vec<chrono::Duration>,
+    {%endif%}{# array optionality #}
+    {%- elif arg.element.arg_type.name.lower() == 'binary' %}
+    {%-if arg.optional %}
+    #[serde(serialize_with = "base64_binary_format::serialize_option_vec", 
+            deserialize_with = "base64_binary_format::deserialize_option_vec")]
+    pub {{arg.name|snake_case}}: Option<Vec<Vec<u8>>>,
+    {%else%}{# not optional array #}
+    #[serde(serialize_with = "base64_binary_format::serialize_vec", 
+            deserialize_with = "base64_binary_format::deserialize_vec")]
+    pub {{arg.name|snake_case}}: Vec<Vec<u8>>,
+    {%endif%}{# array optionality #}
+    {%else%}
+    {%-if arg.optional %}
+    pub {{arg.name|snake_case}}: Option<Vec<{{arg.element.rust_type}}>>,
+    {%else%}{# not optional array #}
+    pub {{arg.name|snake_case}}: Vec<{{arg.element.rust_type}}>,
+    {%endif%}{# array optionality #}
+    {%endif%} {# array element cases #}
     {%-else%} 
     TEMPLATE ERROR {{arg.arg_type.name}} NOT HANDLED
     {%-endif-%}
@@ -313,7 +569,7 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 pub struct {{struct_name | UpperCamelCase}} {
     {{ arg_members(struct.members) }}
 }
-{%-endfor%}
+{%endfor%}
 
 // ---- METHODS ----
 

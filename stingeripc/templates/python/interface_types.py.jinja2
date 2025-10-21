@@ -20,6 +20,14 @@ model_config = ConfigDict(populate_by_name=True)
 {{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[timedelta]{%else%}timedelta{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'binary'-%}
 {{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[bytes]{%else%}bytes{%endif%}, {{field_desc}}, PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode('utf-8'){%if arg.optional%} if v is not None else None{%endif%})]
+{%elif arg.arg_type.name.lower() == 'array'-%}
+{%if arg.element.arg_type.name.lower() == 'binary'-%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[bytes]]{%else%}List[bytes]{%endif%}, {{field_desc}}, PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]), PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr])]
+
+{%else%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[{{arg.element.python_local_type}}]]{%else%}List[{{arg.element.python_local_type}}]{%endif%}, {{field_desc}}, ]
+{%endif%}{# end array element cases #}
+
 {%endif-%}
 {%endfor%}
 {%endmacro%}
@@ -27,7 +35,7 @@ model_config = ConfigDict(populate_by_name=True)
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta
-from typing import Optional, Annotated, Union
+from typing import Optional, Annotated, Union, List
 import base64
 {%if stinger.uses_enums()%}from enum import IntEnum{%endif%}
 

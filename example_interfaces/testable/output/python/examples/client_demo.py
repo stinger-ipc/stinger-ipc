@@ -625,7 +625,7 @@ if __name__ == "__main__":
         print(f"Timed out waiting for response to 'call_optional_date_time' call")
 
     print("Making call to 'call_three_date_times'")
-    future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=datetime.now())
+    future_resp = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=None)
     try:
         print(f"RESULT:  {future_resp.result(5)}")
     except futures.TimeoutError:

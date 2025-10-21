@@ -1090,7 +1090,7 @@ def on_single_struct(value: interface_types.AllTypes):
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
 ```python
-server.emit_single_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"))
+server.emit_single_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]))
 ```
 
 </details>
@@ -1115,7 +1115,7 @@ print("Got a 'singleStruct' signal: {:?}", single_struct_signal_rx.recv().await)
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
 ```rust
-let publish_result = server.emit_single_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await;
+let publish_result = server.emit_single_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -1141,7 +1141,7 @@ client.registerSingleStructCallback([](AllTypes value) {
 A `singleStruct` signal can be emitted by calling the server's `emitSingleStructSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
 ```cpp
-auto singleStructFuture = server.emitSingleStructSignal(AllTypes{true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}});
+auto singleStructFuture = server.emitSingleStructSignal(AllTypes{true, 42, 3.14, "apples", Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<int>{42, 42}, std::vector<int>{42, 42}, std::vector<std::string>{"apples", "apples"}, std::vector<std::string>{"apples", "apples"}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}});
 singleStructFuture.wait(); // Optional, to block until signal is sent.
 ```
 
@@ -1179,7 +1179,7 @@ def on_single_optional_struct(value: interface_types.AllTypes):
 A server can emit a `singleOptionalStruct` signal simply by calling the server's `emit_single_optional_struct` method.
 
 ```python
-server.emit_single_optional_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
+server.emit_single_optional_struct(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]))
 ```
 
 </details>
@@ -1204,7 +1204,7 @@ print("Got a 'singleOptionalStruct' signal: {:?}", single_optional_struct_signal
 A server can emit a `singleOptionalStruct` signal simply by calling the server's `emit_single_optional_struct` method.
 
 ```rust
-let publish_result = server.emit_single_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])})).await;
+let publish_result = server.emit_single_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]})).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -1230,7 +1230,7 @@ client.registerSingleOptionalStructCallback([](AllTypes value) {
 A `singleOptionalStruct` signal can be emitted by calling the server's `emitSingleOptionalStructSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
 ```cpp
-auto singleOptionalStructFuture = server.emitSingleOptionalStructSignal(AllTypes{true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}});
+auto singleOptionalStructFuture = server.emitSingleOptionalStructSignal(AllTypes{true, 42, 3.14, "apples", Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<int>{42, 42}, std::vector<int>{42, 42}, std::vector<std::string>{"apples", "apples"}, std::vector<std::string>{"apples", "apples"}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}});
 singleOptionalStructFuture.wait(); // Optional, to block until signal is sent.
 ```
 
@@ -1270,7 +1270,7 @@ def on_three_structs(first: interface_types.AllTypes, second: interface_types.Al
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
 ```python
-server.emit_three_structs(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
+server.emit_three_structs(interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]), interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]))
 ```
 
 </details>
@@ -1295,7 +1295,7 @@ print("Got a 'threeStructs' signal: {:?}", three_structs_signal_rx.recv().await)
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
 ```rust
-let publish_result = server.emit_three_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}, Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])})).await;
+let publish_result = server.emit_three_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]}, Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]})).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -1321,7 +1321,7 @@ client.registerThreeStructsCallback([](AllTypes first, AllTypes second, AllTypes
 A `threeStructs` signal can be emitted by calling the server's `emitThreeStructsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
 ```cpp
-auto threeStructsFuture = server.emitThreeStructsSignal(AllTypes{true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, AllTypes{true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, AllTypes{true, 42, 3.14, "apples", Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}});
+auto threeStructsFuture = server.emitThreeStructsSignal(AllTypes{true, 42, 3.14, "apples", Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<int>{42, 42}, std::vector<int>{42, 42}, std::vector<std::string>{"apples", "apples"}, std::vector<std::string>{"apples", "apples"}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}}, AllTypes{true, 42, 3.14, "apples", Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<int>{42, 42}, std::vector<int>{42, 42}, std::vector<std::string>{"apples", "apples"}, std::vector<std::string>{"apples", "apples"}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}}, AllTypes{true, 42, 3.14, "apples", Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{42, "apples"}, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<int>{42, 42}, std::vector<int>{42, 42}, std::vector<std::string>{"apples", "apples"}, std::vector<std::string>{"apples", "apples"}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}});
 threeStructsFuture.wait(); // Optional, to block until signal is sent.
 ```
 
@@ -1448,7 +1448,7 @@ def on_single_optional_datetime(value: Optional[datetime]):
 A server can emit a `singleOptionalDatetime` signal simply by calling the server's `emit_single_optional_datetime` method.
 
 ```python
-server.emit_single_optional_datetime(datetime.now())
+server.emit_single_optional_datetime(None)
 ```
 
 </details>
@@ -2135,6 +2135,280 @@ threeBinariesFuture.wait(); // Optional, to block until signal is sent.
 </details>
 
 
+### Signal `singleArrayOfIntegers`
+
+A signal with an array of integers.
+
+#### Signal Parameters for `singleArrayOfIntegers`
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     values    |          |The array of integers.|
+
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `singleArrayOfIntegers` signal can be subscribed to by using the client's `receive_single_array_of_integers` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
+
+```python
+@client.receive_single_array_of_integers
+def on_single_array_of_integers(values: list[int]):
+    print(f"Got a 'singleArrayOfIntegers' signal: values={ values } ")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+A server can emit a `singleArrayOfIntegers` signal simply by calling the server's `emit_single_array_of_integers` method.
+
+```python
+server.emit_single_array_of_integers([42, 42])
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
+
+Since receiving a message through the channel blocks, it may be best to put this into a separate async task.
+
+```rust
+let mut single_array_of_integers_signal_rx = client.get_single_array_of_integers_receiver();
+print("Got a 'singleArrayOfIntegers' signal: {:?}", single_array_of_integers_signal_rx.recv().await);
+```
+
+</details>
+
+<details>
+  <summary>Rust Server</summary>
+
+A server can emit a `singleArrayOfIntegers` signal simply by calling the server's `emit_single_array_of_integers` method.
+
+```rust
+let publish_result = server.emit_single_array_of_integers(vec![42, 42]).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A client can register a callback function to be called when a `singleArrayOfIntegers` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
+
+```cpp
+client.registerSingleArrayOfIntegersCallback([](std::vector<int> values) {
+    std::cout << "values=" <<values <<  std::endl;
+});
+```
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+A `singleArrayOfIntegers` signal can be emitted by calling the server's `emitSingleArrayOfIntegersSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
+
+```cpp
+auto singleArrayOfIntegersFuture = server.emitSingleArrayOfIntegersSignal(std::vector<int>{42, 42});
+singleArrayOfIntegersFuture.wait(); // Optional, to block until signal is sent.
+```
+
+</details>
+
+
+### Signal `singleOptionalArrayOfStrings`
+
+A signal with an optional array of strings.
+
+#### Signal Parameters for `singleOptionalArrayOfStrings`
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     values    |           (optional)|The array of integers.|
+
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `singleOptionalArrayOfStrings` signal can be subscribed to by using the client's `receive_single_optional_array_of_strings` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
+
+```python
+@client.receive_single_optional_array_of_strings
+def on_single_optional_array_of_strings(values: list[int]):
+    print(f"Got a 'singleOptionalArrayOfStrings' signal: values={ values } ")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+A server can emit a `singleOptionalArrayOfStrings` signal simply by calling the server's `emit_single_optional_array_of_strings` method.
+
+```python
+server.emit_single_optional_array_of_strings([42, 42])
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
+
+Since receiving a message through the channel blocks, it may be best to put this into a separate async task.
+
+```rust
+let mut single_optional_array_of_strings_signal_rx = client.get_single_optional_array_of_strings_receiver();
+print("Got a 'singleOptionalArrayOfStrings' signal: {:?}", single_optional_array_of_strings_signal_rx.recv().await);
+```
+
+</details>
+
+<details>
+  <summary>Rust Server</summary>
+
+A server can emit a `singleOptionalArrayOfStrings` signal simply by calling the server's `emit_single_optional_array_of_strings` method.
+
+```rust
+let publish_result = server.emit_single_optional_array_of_strings(vec![42, 42]).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A client can register a callback function to be called when a `singleOptionalArrayOfStrings` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
+
+```cpp
+client.registerSingleOptionalArrayOfStringsCallback([](boost::optional<std::vector<int>> values) {
+    std::cout << "values=" << "None" <<  std::endl;
+});
+```
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+A `singleOptionalArrayOfStrings` signal can be emitted by calling the server's `emitSingleOptionalArrayOfStringsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
+
+```cpp
+auto singleOptionalArrayOfStringsFuture = server.emitSingleOptionalArrayOfStringsSignal(std::vector<int>{42, 42});
+singleOptionalArrayOfStringsFuture.wait(); // Optional, to block until signal is sent.
+```
+
+</details>
+
+
+### Signal `arrayOfEveryType`
+
+_No documentation for this signal_
+
+#### Signal Parameters for `arrayOfEveryType`
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     first     |          |The first array of integers.|
+|     second    |          |The second array of floats.|
+|     third     |          |The third array of strings.|
+|     fourth    |          |The fourth array of enums.|
+|     fifth     |          |The fifth array of structs.|
+|     sixth     |          |The sixth array of date and time values.|
+|    seventh    |          |The seventh array of duration values.|
+|     eighth    |          |The eighth array of binary values.|
+
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `arrayOfEveryType` signal can be subscribed to by using the client's `receive_array_of_every_type` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
+
+```python
+@client.receive_array_of_every_type
+def on_array_of_every_type(first: list[int], second: list[float], third: list[str], fourth: list[interface_types.Numbers], fifth: list[interface_types.Entry], sixth: list[datetime.datetime], seventh: list[datetime.timedelta], eighth: list[bytes]):
+    print(f"Got a 'arrayOfEveryType' signal: first={ first } second={ second } third={ third } fourth={ fourth } fifth={ fifth } sixth={ sixth } seventh={ seventh } eighth={ eighth } ")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+A server can emit a `arrayOfEveryType` signal simply by calling the server's `emit_array_of_every_type` method.
+
+```python
+server.emit_array_of_every_type([42, 42], [3.14, 3.14], ["apples", "apples"], [interface_types.Numbers.ONE, interface_types.Numbers.ONE], [interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], [datetime.now(), datetime.now()], [timedelta(seconds=3536), timedelta(seconds=3536)], [b"example binary data", b"example binary data"])
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
+
+Since receiving a message through the channel blocks, it may be best to put this into a separate async task.
+
+```rust
+let mut array_of_every_type_signal_rx = client.get_array_of_every_type_receiver();
+print("Got a 'arrayOfEveryType' signal: {:?}", array_of_every_type_signal_rx.recv().await);
+```
+
+</details>
+
+<details>
+  <summary>Rust Server</summary>
+
+A server can emit a `arrayOfEveryType` signal simply by calling the server's `emit_array_of_every_type` method.
+
+```rust
+let publish_result = server.emit_array_of_every_type(vec![42, 42], vec![3.14, 3.14], vec!["apples".to_string(), "apples".to_string()], vec![Numbers::One, Numbers::One], vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], vec![chrono::Utc::now(), chrono::Utc::now()], vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
+
+</details>
+
+<details>
+  <summary>C++ Client</summary>
+
+A client can register a callback function to be called when a `arrayOfEveryType` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
+
+```cpp
+client.registerArrayOfEveryTypeCallback([](std::vector<int> first, std::vector<double> second, std::vector<std::string> third, std::vector<Numbers> fourth, std::vector<Entry> fifth, std::vector<std::chrono::time_point<std::chrono::system_clock>> sixth, std::vector<std::chrono::duration<double>> seventh, std::vector<std::vector<uint8_t>> eighth) {
+    std::cout << "first=" <<first << " | " << "second=" <<second << " | " << "third=" <<third << " | " << "fourth=" <<fourth << " | " << "fifth=" <<fifth << " | " << "sixth=" <<sixth << " | " << "seventh=" <<seventh << " | " << "eighth=" <<eighth <<  std::endl;
+});
+```
+
+</details>
+
+<details>
+  <summary>C++ Server</summary>
+
+A `arrayOfEveryType` signal can be emitted by calling the server's `emitArrayOfEveryTypeSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
+
+```cpp
+auto arrayOfEveryTypeFuture = server.emitArrayOfEveryTypeSignal(std::vector<int>{42, 42}, std::vector<double>{3.14, 3.14}, std::vector<std::string>{"apples", "apples"}, std::vector<Numbers>{Numbers::ONE, Numbers::ONE}, std::vector<Entry>{Entry{42, "apples"}, Entry{42, "apples"}}, std::vector<std::chrono::time_point<std::chrono::system_clock>>{std::chrono::system_clock::now(), std::chrono::system_clock::now()}, std::vector<std::chrono::duration<double>>{std::chrono::duration<double>(3536), std::chrono::duration<double>(3536)}, std::vector<std::vector<uint8_t>>{std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}, std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}});
+arrayOfEveryTypeFuture.wait(); // Optional, to block until signal is sent.
+```
+
+</details>
+
+
 ## Methods
 
 Methods are requests from a client to a server and the server provides a response back to the client:
@@ -2788,7 +3062,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_one_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
+future = client.call_one_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2808,7 +3082,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_one_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
     """ This is an example handler for the 'callOneStruct' method.  """
     print(f"Running call_one_struct'({input1})'")
-    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data")
+    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")])
 ```
 
 </details>
@@ -2819,7 +3093,7 @@ def call_one_struct(input1: interface_types.AllTypes) -> interface_types.AllType
 The `TestAbleClient` provides an implementation for the `callOneStruct` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_one_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await.expect("Failed to call callOneStruct");
+let result = api_client.call_one_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]}).await.expect("Failed to call callOneStruct");
 println!("callOneStruct response: {:?}", result);
 ```
 
@@ -2852,7 +3126,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
+future = client.call_optional_struct(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2872,7 +3146,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_optional_struct(input1: interface_types.AllTypes) -> interface_types.AllTypes:
     """ This is an example handler for the 'callOptionalStruct' method.  """
     print(f"Running call_optional_struct'({input1})'")
-    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data")
+    return interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")])
 ```
 
 </details>
@@ -2883,7 +3157,7 @@ def call_optional_struct(input1: interface_types.AllTypes) -> interface_types.Al
 The `TestAbleClient` provides an implementation for the `callOptionalStruct` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])})).await.expect("Failed to call callOptionalStruct");
+let result = api_client.call_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]})).await.expect("Failed to call callOptionalStruct");
 println!("callOptionalStruct response: {:?}", result);
 ```
 
@@ -2915,7 +3189,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
+future = client.call_three_structs(input1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]), input2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]), input3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -2935,7 +3209,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_three_structs(input1: interface_types.AllTypes, input2: interface_types.AllTypes, input3: interface_types.AllTypes) -> interface_types.CallThreeStructsMethodResponse:
     """ This is an example handler for the 'callThreeStructs' method.  """
     print(f"Running call_three_structs'({input1}, {input2}, {input3})'")
-    return interface_types.CallThreeStructsMethodResponse(output1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"), output2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=None, optional_duration=None, optional_binary=b"example binary data"), output3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data"))
+    return interface_types.CallThreeStructsMethodResponse(output1=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]), output2=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=datetime.now(), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]), output3=interface_types.AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=interface_types.Numbers.ONE, an_entry_object=interface_types.Entry(key=42, value="apples"), date_and_time=datetime.now(), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=interface_types.Numbers.ONE, optional_entry_object=interface_types.Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 42], optional_array_of_integers=[42, 42], array_of_strings=["apples", "apples"], optional_array_of_strings=["apples", "apples"], array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], optional_array_of_enums=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], array_of_datetimes=[datetime.now(), datetime.now()], optional_array_of_datetimes=[datetime.now(), datetime.now()], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=3536)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")], optional_array_of_entry_objects=[interface_types.Entry(key=42, value="apples"), interface_types.Entry(key=42, value="apples")]))
 ```
 
 </details>
@@ -2946,7 +3220,7 @@ def call_three_structs(input1: interface_types.AllTypes, input2: interface_types
 The `TestAbleClient` provides an implementation for the `callThreeStructs` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.call_three_structs(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}), AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await.expect("Failed to call callThreeStructs");
+let result = api_client.call_three_structs(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]}), AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]}).await.expect("Failed to call callThreeStructs");
 println!("callThreeStructs response: {:?}", result);
 ```
 
@@ -3100,7 +3374,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=datetime.now())
+future = client.call_three_date_times(input1=datetime.now(), input2=datetime.now(), input3=None)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3508,6 +3782,190 @@ println!("callThreeBinaries response: {:?}", result);
 </details>
 
 
+### Method `callOneListOfIntegers`
+
+Method that takes one list of integers argument and returns one list of integers value.
+
+#### Request Parameters
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     input1    |          ||
+
+#### Return Parameters
+
+The return value type is ``.
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `callOneListOfIntegers` method can be called by calling the clients's `call_one_list_of_integers` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.call_one_list_of_integers(input1=[42, 42])
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'call_one_list_of_integers' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `callOneListOfIntegers` method by using the `@server.handle_call_one_list_of_integers` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_call_one_list_of_integers 
+def call_one_list_of_integers(input1: list[int]) -> list[int]:
+    """ This is an example handler for the 'callOneListOfIntegers' method.  """
+    print(f"Running call_one_list_of_integers'({input1})'")
+    return [42, 42]
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `TestAbleClient` provides an implementation for the `callOneListOfIntegers` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.call_one_list_of_integers(vec![42, 42]).await.expect("Failed to call callOneListOfIntegers");
+println!("callOneListOfIntegers response: {:?}", result);
+```
+
+</details>
+
+
+### Method `callOptionalListOfFloats`
+
+Method that takes one optional list of floats argument and returns one optional list of floats value.
+
+#### Request Parameters
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     input1    |           (optional)||
+
+#### Return Parameters
+
+The return value type is ``.
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `callOptionalListOfFloats` method can be called by calling the clients's `call_optional_list_of_floats` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.call_optional_list_of_floats(input1=[3.14, 3.14])
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'call_optional_list_of_floats' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `callOptionalListOfFloats` method by using the `@server.handle_call_optional_list_of_floats` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_call_optional_list_of_floats 
+def call_optional_list_of_floats(input1: list[float]) -> list[float]:
+    """ This is an example handler for the 'callOptionalListOfFloats' method.  """
+    print(f"Running call_optional_list_of_floats'({input1})'")
+    return [3.14, 3.14]
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `TestAbleClient` provides an implementation for the `callOptionalListOfFloats` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.call_optional_list_of_floats(vec![3.14, 3.14]).await.expect("Failed to call callOptionalListOfFloats");
+println!("callOptionalListOfFloats response: {:?}", result);
+```
+
+</details>
+
+
+### Method `callTwoLists`
+
+Method that takes two list arguments, the second is optional, and returns two list values, the second is optional.
+
+#### Request Parameters
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     input1    |          |The first list of enums.|
+|     input2    |           (optional)||
+
+#### Return Parameters
+
+The return value type is ``.
+#### Code Examples
+
+<details>
+  <summary>Python Client</summary>
+
+The `callTwoLists` method can be called by calling the clients's `call_two_lists` method.
+This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+
+```python
+from futures import Future
+
+future = client.call_two_lists(input1=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], input2=["apples", "apples"])
+try:
+    print(f"RESULT:  {future.result(5)}")
+except futures.TimeoutError:
+    print(f"Timed out waiting for response to 'call_two_lists' call")
+```
+
+</details>
+
+<details>
+  <summary>Python Server</summary>
+
+The server provides an implementation for the `callTwoLists` method by using the `@server.handle_call_two_lists` decorator on a function.  The name of the function does not matter. 
+The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+
+```python
+@server.handle_call_two_lists 
+def call_two_lists(input1: list[interface_types.Numbers], input2: list[str]) -> interface_types.CallTwoListsMethodResponse:
+    """ This is an example handler for the 'callTwoLists' method.  """
+    print(f"Running call_two_lists'({input1}, {input2})'")
+    return interface_types.CallTwoListsMethodResponse(output1=[interface_types.Numbers.ONE, interface_types.Numbers.ONE], output2=["apples", "apples"])
+```
+
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+The `TestAbleClient` provides an implementation for the `callTwoLists` method.  It will block and return a Result object of either the return payload value, or an error.
+
+```rust
+let result = api_client.call_two_lists(vec![Numbers::One, Numbers::One], vec!["apples".to_string(), "apples".to_string()]).await.expect("Failed to call callTwoLists");
+println!("callTwoLists response: {:?}", result);
+```
+
+</details>
+
+
 ## Properties
 
 Properties are values (or a set of values) held by the server.   They are re-published when the value changes. 
@@ -3823,7 +4281,7 @@ A read-write struct property.
 A server hold the "source of truth" for the value of `read_write_struct`.  The value can be changed by calling the server's `set_read_write_struct` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await;
+let property_set_future: SentMessageFuture = server.set_read_write_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -3861,7 +4319,7 @@ A read-write optional struct property.
 A server hold the "source of truth" for the value of `read_write_optional_struct`.  The value can be changed by calling the server's `set_read_write_optional_struct` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])})).await;
+let property_set_future: SentMessageFuture = server.set_read_write_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]})).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -3900,7 +4358,7 @@ A read-write property with two struct values. The second is optional.
 A server hold the "source of truth" for the value of `read_write_two_structs`.  The value can be changed by calling the server's `set_read_write_two_structs` method:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_two_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101])}).await;
+let property_set_future: SentMessageFuture = server.set_read_write_two_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 42], optional_array_of_integers: vec![42, 42], array_of_strings: vec!["apples".to_string(), "apples".to_string()], optional_array_of_strings: vec!["apples".to_string(), "apples".to_string()], array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: vec![Numbers::One, Numbers::One], array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], optional_array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(3536)], array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}], optional_array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 42, value: "apples".to_string()}]}).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
@@ -4411,6 +4869,83 @@ while let Some(new_value) = on_read_write_two_binaries_changed.recv().await {
 </details>
 
 
+### Property `read_write_list_of_strings`
+
+A read-write property that is a list of strings.
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|     value     |          ||
+
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `read_write_list_of_strings`.  The value can be changed by calling the server's `set_read_write_list_of_strings` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_read_write_list_of_strings(vec!["apples".to_string(), "apples".to_string()]).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_read_write_list_of_strings()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<Vec<String>>>` by calling the server's `get_read_write_list_of_strings_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_read_write_list_of_strings_changed = server.watch_read_write_list_of_strings();
+
+while let Some(new_value) = on_read_write_list_of_strings_changed.recv().await {
+    println!("Property 'read_write_list_of_strings' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
+### Property `read_write_lists`
+
+A read-write property containing two lists.  The second list is optional.
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|    the_list   |          ||
+|  optionalList |           (optional)||
+
+### Code Examples
+
+<details>
+  <summary>Rust Server</summary>
+
+A server hold the "source of truth" for the value of `read_write_lists`.  The value can be changed by calling the server's `set_read_write_lists` method:
+
+```rust
+let property_set_future: SentMessageFuture = server.set_read_write_lists(vec![Numbers::One, Numbers::One]).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
+The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+
+The application code should call the `set_read_write_lists()` method with an initial value when starting up, and then whenever the value changes.
+
+The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
+Application code can get a `watch::Receiver<Option<ReadWriteListsProperty>>` by calling the server's `get_read_write_lists_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+
+```rust
+let mut on_read_write_lists_changed = server.watch_read_write_lists();
+
+while let Some(new_value) = on_read_write_lists_changed.recv().await {
+    println!("Property 'read_write_lists' changed to: {:?}", new_value);
+}
+```
+
+</details>
+
+
 
 ## Enums
 
@@ -4429,6 +4964,15 @@ while let Some(new_value) = on_read_write_two_binaries_changed.recv().await {
 
 Structures are a group of values and may be used as an argument in signals, methods, or properties.  Defining a structure allows for easy reuse.
 
+### Struct `Entry`
+
+<a name="Struct-Entry"></a>_No general description exists for this structure_
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|      key      | integer  |An identifier.|
+|     value     |  string  |A name.|
+
 ### Struct `AllTypes`
 
 <a name="Struct-AllTypes"></a>_No general description exists for this structure_
@@ -4440,12 +4984,28 @@ Structures are a group of values and may be used as an argument in signals, meth
 |   the_number  |  number  |A floating point number.  Bool and int do not have descriptions.|
 |    the_str    |  string  |A string type.|
 |    the_enum   |[Enum Numbers](#enum-Numbers)|An enum type|
+|an_entry_object|[Struct Entry](#enum-Entry)|A struct type.|
 | date_and_time |          |A date and time type.|
 | time_duration |          |A duration type.|
 |      data     |          |A binary type.|
 |OptionalInteger| integer   (optional)|An optional integer type.|
 | OptionalString|  string   (optional)|An optional string type.|
 |  OptionalEnum |[Enum Numbers](#enum-Numbers) (optional)|An optional enum type, one of the numbers.|
+|optionalEntryObject|[Struct Entry](#enum-Entry) (optional)|An optional struct type.|
 |OptionalDateTime|           (optional)|An optional date and time type.|
 |OptionalDuration|           (optional)|An optional duration type.|
 | OptionalBinary|           (optional)|An optional binary type.|
+|array_of_integers|          |An array of integers.|
+|optional_array_of_integers|           (optional)|An optional array of integers.|
+|array_of_strings|          |An array of strings.|
+|optional_array_of_strings|           (optional)|An optional array of strings.|
+| array_of_enums|          |An array of enums.|
+|optional_array_of_enums|           (optional)|An optional array of enums.|
+|array_of_datetimes|          |An array of date and time values.|
+|optional_array_of_datetimes|           (optional)|An optional array of date and time values.|
+|array_of_durations|          |An array of duration values.|
+|optional_array_of_durations|           (optional)|An optional array of duration values.|
+|array_of_binaries|          |An array of binary values.|
+|optional_array_of_binaries|           (optional)|An optional array of binary values.|
+|array_of_entry_objects|          |An array of struct values.|
+|optional_array_of_entry_objects|           (optional)|An optional array of struct values.|

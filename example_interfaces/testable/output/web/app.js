@@ -208,6 +208,30 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null,
             "mqtt_topic": "testAble/{}/signal/threeBinaries"
+        },
+    
+        "single_array_of_integers": {
+            "subscription_id": null,
+            "name": "singleArrayOfIntegers",
+            "received": null,
+            "received_time": null,
+            "mqtt_topic": "testAble/{}/signal/singleArrayOfIntegers"
+        },
+    
+        "single_optional_array_of_strings": {
+            "subscription_id": null,
+            "name": "singleOptionalArrayOfStrings",
+            "received": null,
+            "received_time": null,
+            "mqtt_topic": "testAble/{}/signal/singleOptionalArrayOfStrings"
+        },
+    
+        "array_of_every_type": {
+            "subscription_id": null,
+            "name": "arrayOfEveryType",
+            "received": null,
+            "received_time": null,
+            "mqtt_topic": "testAble/{}/signal/arrayOfEveryType"
         }
     };
 
@@ -309,6 +333,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "the_enum": "",
                 
+                    "an_entry_object": "",
+                
                     "date_and_time": "",
                 
                     "time_duration": "",
@@ -321,11 +347,41 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "optional_enum": "",
                 
+                    "optional_entry_object": "",
+                
                     "optional_date_time": "",
                 
                     "optional_duration": "",
                 
-                    "optional_binary": ""
+                    "optional_binary": "",
+                
+                    "array_of_integers": "",
+                
+                    "optional_array_of_integers": "",
+                
+                    "array_of_strings": "",
+                
+                    "optional_array_of_strings": "",
+                
+                    "array_of_enums": "",
+                
+                    "optional_array_of_enums": "",
+                
+                    "array_of_datetimes": "",
+                
+                    "optional_array_of_datetimes": "",
+                
+                    "array_of_durations": "",
+                
+                    "optional_array_of_durations": "",
+                
+                    "array_of_binaries": "",
+                
+                    "optional_array_of_binaries": "",
+                
+                    "array_of_entry_objects": "",
+                
+                    "optional_array_of_entry_objects": ""
                  }
              },
             "mqtt_topic": "testAble/{}/property/readWriteStruct/value",
@@ -347,6 +403,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "the_enum": "",
                 
+                    "an_entry_object": "",
+                
                     "date_and_time": "",
                 
                     "time_duration": "",
@@ -359,11 +417,41 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "optional_enum": "",
                 
+                    "optional_entry_object": "",
+                
                     "optional_date_time": "",
                 
                     "optional_duration": "",
                 
-                    "optional_binary": ""
+                    "optional_binary": "",
+                
+                    "array_of_integers": "",
+                
+                    "optional_array_of_integers": "",
+                
+                    "array_of_strings": "",
+                
+                    "optional_array_of_strings": "",
+                
+                    "array_of_enums": "",
+                
+                    "optional_array_of_enums": "",
+                
+                    "array_of_datetimes": "",
+                
+                    "optional_array_of_datetimes": "",
+                
+                    "array_of_durations": "",
+                
+                    "optional_array_of_durations": "",
+                
+                    "array_of_binaries": "",
+                
+                    "optional_array_of_binaries": "",
+                
+                    "array_of_entry_objects": "",
+                
+                    "optional_array_of_entry_objects": ""
                  }
              },
             "mqtt_topic": "testAble/{}/property/readWriteOptionalStruct/value",
@@ -385,6 +473,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "the_enum": "",
                 
+                    "an_entry_object": "",
+                
                     "date_and_time": "",
                 
                     "time_duration": "",
@@ -397,11 +487,41 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "optional_enum": "",
                 
+                    "optional_entry_object": "",
+                
                     "optional_date_time": "",
                 
                     "optional_duration": "",
                 
-                    "optional_binary": ""
+                    "optional_binary": "",
+                
+                    "array_of_integers": "",
+                
+                    "optional_array_of_integers": "",
+                
+                    "array_of_strings": "",
+                
+                    "optional_array_of_strings": "",
+                
+                    "array_of_enums": "",
+                
+                    "optional_array_of_enums": "",
+                
+                    "array_of_datetimes": "",
+                
+                    "optional_array_of_datetimes": "",
+                
+                    "array_of_durations": "",
+                
+                    "optional_array_of_durations": "",
+                
+                    "array_of_binaries": "",
+                
+                    "optional_array_of_binaries": "",
+                
+                    "array_of_entry_objects": "",
+                
+                    "optional_array_of_entry_objects": ""
                  },
             
                 "second": { 
@@ -415,6 +535,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "the_enum": "",
                 
+                    "an_entry_object": "",
+                
                     "date_and_time": "",
                 
                     "time_duration": "",
@@ -427,11 +549,41 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "optional_enum": "",
                 
+                    "optional_entry_object": "",
+                
                     "optional_date_time": "",
                 
                     "optional_duration": "",
                 
-                    "optional_binary": ""
+                    "optional_binary": "",
+                
+                    "array_of_integers": "",
+                
+                    "optional_array_of_integers": "",
+                
+                    "array_of_strings": "",
+                
+                    "optional_array_of_strings": "",
+                
+                    "array_of_enums": "",
+                
+                    "optional_array_of_enums": "",
+                
+                    "array_of_datetimes": "",
+                
+                    "optional_array_of_datetimes": "",
+                
+                    "array_of_durations": "",
+                
+                    "optional_array_of_durations": "",
+                
+                    "array_of_binaries": "",
+                
+                    "optional_array_of_binaries": "",
+                
+                    "array_of_entry_objects": "",
+                
+                    "optional_array_of_entry_objects": ""
                  }
              },
             "mqtt_topic": "testAble/{}/property/readWriteTwoStructs/value",
@@ -573,6 +725,28 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
              },
             "mqtt_topic": "testAble/{}/property/readWriteTwoBinaries/value",
             "update_topic": "testAble/{}/property/readWriteTwoBinaries/setValue"
+        },
+    
+        "read_write_list_of_strings": {
+            "subscription_id": null,
+            "name": "read_write_list_of_strings",
+            "received": { 
+                "value": {  }
+             },
+            "mqtt_topic": "testAble/{}/property/readWriteListOfStrings/value",
+            "update_topic": "testAble/{}/property/readWriteListOfStrings/setValue"
+        },
+    
+        "read_write_lists": {
+            "subscription_id": null,
+            "name": "read_write_lists",
+            "received": { 
+                "the_list": {  },
+            
+                "optional_list": {  }
+             },
+            "mqtt_topic": "testAble/{}/property/readWriteLists/value",
+            "update_topic": "testAble/{}/property/readWriteLists/setValue"
         }
     };
 
@@ -949,6 +1123,53 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             },
             "received": null,
             "received_time": null
+        },
+        "call_one_list_of_integers": {
+            "name": "callOneListOfIntegers",
+            "mqtt_topic": "testAble/{}/method/callOneListOfIntegers",
+            "response_topic": "client/"+clientId+"/callOneListOfIntegers/response",
+            "pending_correlation_id": null,
+            "args": {
+                "input1": {
+                    "type": "",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
+        },
+        "call_optional_list_of_floats": {
+            "name": "callOptionalListOfFloats",
+            "mqtt_topic": "testAble/{}/method/callOptionalListOfFloats",
+            "response_topic": "client/"+clientId+"/callOptionalListOfFloats/response",
+            "pending_correlation_id": null,
+            "args": {
+                "input1": {
+                    "type": "",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
+        },
+        "call_two_lists": {
+            "name": "callTwoLists",
+            "mqtt_topic": "testAble/{}/method/callTwoLists",
+            "response_topic": "client/"+clientId+"/callTwoLists/response",
+            "pending_correlation_id": null,
+            "args": {
+                "input1": {
+                    "type": "",
+                    "value": null
+                },
+            
+                "input2": {
+                    "type": "",
+                    "value": null
+                }
+            },
+            "received": null,
+            "received_time": null
         }
     };
 
@@ -1294,6 +1515,39 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         $scope.signals["threeBinaries"].subscription_id = subscription_count;
         client.subscribe("testAble/{}/signal/threeBinaries", three_binaries_sub_opts);
         console.log("Subscribing to signal testAble/{}/signal/threeBinaries with id ", subscription_count);
+        subscription_count++;
+        
+        const single_array_of_integers_sub_opts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": subscription_count
+            }
+        };
+        $scope.signals["singleArrayOfIntegers"].subscription_id = subscription_count;
+        client.subscribe("testAble/{}/signal/singleArrayOfIntegers", single_array_of_integers_sub_opts);
+        console.log("Subscribing to signal testAble/{}/signal/singleArrayOfIntegers with id ", subscription_count);
+        subscription_count++;
+        
+        const single_optional_array_of_strings_sub_opts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": subscription_count
+            }
+        };
+        $scope.signals["singleOptionalArrayOfStrings"].subscription_id = subscription_count;
+        client.subscribe("testAble/{}/signal/singleOptionalArrayOfStrings", single_optional_array_of_strings_sub_opts);
+        console.log("Subscribing to signal testAble/{}/signal/singleOptionalArrayOfStrings with id ", subscription_count);
+        subscription_count++;
+        
+        const array_of_every_type_sub_opts = {
+            "qos": 1,
+            "properties": {
+                "subscriptionIdentifier": subscription_count
+            }
+        };
+        $scope.signals["arrayOfEveryType"].subscription_id = subscription_count;
+        client.subscribe("testAble/{}/signal/arrayOfEveryType", array_of_every_type_sub_opts);
+        console.log("Subscribing to signal testAble/{}/signal/arrayOfEveryType with id ", subscription_count);
         subscription_count++;
         
 
