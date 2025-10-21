@@ -8,11 +8,12 @@
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
+#include "interface_exceptions.hpp"
 
 int main(int argc, char** argv)
 {
     // Create a connection to the broker
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "{{stinger.name}}-client-demo");
+    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "{{stinger.name|snake_case|replace('_', '-')}}-client-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg) {
         std::cout << "[" << level << "] " << msg << std::endl;
@@ -142,39 +143,51 @@ int main(int argc, char** argv)
         else
         {
         {%if method.return_arg_list|length > 0%}
-            {{method.return_value_cpp_class}} returnValue = {{method_name|camelCase}}ResultFuture.get();
-            std::cout << "{{method_name|CONST_CASE}} Response: "
-            {%for arg in method.return_arg_list-%}
-            {%set var_name%}{%if method.return_arg_list|length == 1%}returnValue{%else%}returnValue.{{arg.name|lowerCamelCase}}{%endif%}{%endset-%}
-            << " {{arg.name}}="{%if arg.optional%};
-            if ({{var_name}})
+            {{method.return_value_cpp_class}} returnValue;
+            bool success = false;
+            try
             {
-                std::cout {%-endif-%}<<
-                {%-if arg.arg_type.name.lower() == "datetime"%}
-                timePointToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
-                {%-elif arg.arg_type.name.lower() == "duration"%}
-                durationToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
-                {%-elif arg.arg_type.name.lower() == "enum"%}
-                {{arg.enum.name | camelCase }}Strings[static_cast<int>({%if arg.optional%}*{%endif%}{{var_name}})]
-                {%-elif arg.arg_type.name.lower() == "struct"%}
-                "[{{arg.cpp_type}} object]"
-                {%-elif arg.arg_type.name.lower() == "binary"%}
-                "[BINARY DATA]"
-                {%elif arg.arg_type.name.lower() == 'array'%}
-                "[Array of " << {{var_name}}{%if arg.optional%}->{%else%}.{%endif%}size() << " {{arg.element.arg_type.name}} values]"
-                {%-else-%}
-                {%if arg.optional%}*{%endif%}{{var_name}}
-                {%-endif-%}{# arg type switcher#}
-            {%-if arg.optional%};
-            }
-            else
+                returnValue = {{method_name|camelCase}}ResultFuture.get();
+                success = true;
+            } catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "{{method_name|CONST_CASE}} Exception: " << ex.what() << std::endl;
             }
-            std::cout
-            {%endif-%}
-            {%endfor-%}
-            << std::endl;
+            if (success)
+            {
+                std::cout << "{{method_name|CONST_CASE}} Response: "
+                {%for arg in method.return_arg_list-%}
+                {%set var_name%}{%if method.return_arg_list|length == 1%}returnValue{%else%}returnValue.{{arg.name|lowerCamelCase}}{%endif%}{%endset-%}
+                << " {{arg.name}}="{%if arg.optional%};
+                if ({{var_name}})
+                {
+                    std::cout {%-endif-%}<<
+                    {%-if arg.arg_type.name.lower() == "datetime"%}
+                    timePointToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
+                    {%-elif arg.arg_type.name.lower() == "duration"%}
+                    durationToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
+                    {%-elif arg.arg_type.name.lower() == "enum"%}
+                    {{arg.enum.name | camelCase }}Strings[static_cast<int>({%if arg.optional%}*{%endif%}{{var_name}})]
+                    {%-elif arg.arg_type.name.lower() == "struct"%}
+                    "[{{arg.cpp_type}} object]"
+                    {%-elif arg.arg_type.name.lower() == "binary"%}
+                    "[BINARY DATA]"
+                    {%elif arg.arg_type.name.lower() == 'array'%}
+                    "[Array of " << {{var_name}}{%if arg.optional%}->{%else%}.{%endif%}size() << " {{arg.element.arg_type.name}} values]"
+                    {%-else-%}
+                    {%if arg.optional%}*{%endif%}{{var_name}}
+                    {%-endif-%}{# arg type switcher#}
+                {%-if arg.optional%};
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                {%endif-%}
+                {%endfor-%}
+                << std::endl;
+            }
         {%else%}
         std::cout << "{{method_name|CONST_CASE}} Completed.  It has not return values." << std::endl;
         {%endif%}

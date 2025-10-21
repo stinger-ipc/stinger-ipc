@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(include)
  
-set(CLIENT_SOURCE_FILES src/broker.cpp src/client.cpp src/conversions.cpp src/discovery.cpp src/method_payloads.cpp src/property_structs.cpp src/signal_payloads.cpp src/structs.cpp )
-set(SERVER_SOURCE_FILES src/broker.cpp src/conversions.cpp src/discovery.cpp src/method_payloads.cpp src/property_structs.cpp src/server.cpp src/signal_payloads.cpp src/structs.cpp )
+set(CLIENT_SOURCE_FILES src/broker.cpp src/client.cpp src/conversions.cpp src/discovery.cpp src/interface_exceptions.cpp src/method_payloads.cpp src/property_structs.cpp src/signal_payloads.cpp src/structs.cpp )
+set(SERVER_SOURCE_FILES src/broker.cpp src/conversions.cpp src/discovery.cpp src/interface_exceptions.cpp src/method_payloads.cpp src/property_structs.cpp src/server.cpp src/signal_payloads.cpp src/structs.cpp )
 
 add_library(lib-full-ipc-server ${SERVER_SOURCE_FILES})
 add_library(lib-full-ipc-client ${CLIENT_SOURCE_FILES})

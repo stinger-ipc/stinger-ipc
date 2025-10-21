@@ -1524,11 +1524,10 @@ impl TestAbleServer {
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
-                Ok(_) => {
-                    let retval = CallWithNothingReturnValues {};
-
+                Ok(_retval) => {
+                    let empty_resp = CallWithNothingReturnValues {};
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &empty_resp, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -1587,10 +1586,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOneIntegerReturnValues { output1: retval };
-
+                    let resp_obj = CallOneIntegerReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -1651,10 +1649,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOptionalIntegerReturnValues { output1: retval };
-
+                    let resp_obj = CallOptionalIntegerReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -1783,10 +1780,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOneStringReturnValues { output1: retval };
-
+                    let resp_obj = CallOneStringReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -1847,10 +1843,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOptionalStringReturnValues { output1: retval };
-
+                    let resp_obj = CallOptionalStringReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -1974,8 +1969,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
+                    let resp_obj = CallOneEnumReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2036,8 +2032,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
+                    let resp_obj = CallOptionalEnumReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2158,8 +2155,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
+                    let resp_obj = CallOneStructReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2220,8 +2218,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
+                    let resp_obj = CallOptionalStructReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2347,10 +2346,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOneDateTimeReturnValues { output1: retval };
-
+                    let resp_obj = CallOneDateTimeReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2411,10 +2409,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOptionalDateTimeReturnValues { output1: retval };
-
+                    let resp_obj = CallOptionalDateTimeReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2543,10 +2540,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOneDurationReturnValues { output1: retval };
-
+                    let resp_obj = CallOneDurationReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2607,10 +2603,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOptionalDurationReturnValues { output1: retval };
-
+                    let resp_obj = CallOptionalDurationReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2739,10 +2734,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOneBinaryReturnValues { output1: retval };
-
+                    let resp_obj = CallOneBinaryReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2803,10 +2797,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = CallOptionalBinaryReturnValues { output1: retval };
-
+                    let resp_obj = CallOptionalBinaryReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -2936,8 +2929,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
+                    let resp_obj = CallOneListOfIntegersReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -3004,8 +2998,9 @@ impl TestAbleServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
+                    let resp_obj = CallOptionalListOfFloatsReturnValues { output1: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {

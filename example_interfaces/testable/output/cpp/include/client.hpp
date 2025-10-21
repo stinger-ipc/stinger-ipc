@@ -772,151 +772,151 @@ private:
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingCallWithNothingMethodCalls;
     int _callWithNothingMethodSubscriptionId = -1;
     // This is called internally to process responses to `callWithNothing` method calls.
-    void _handleCallWithNothingResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallWithNothingResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOneInteger` method calls.
     std::map<boost::uuids::uuid, boost::promise<int>> _pendingCallOneIntegerMethodCalls;
     int _callOneIntegerMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneInteger` method calls.
-    void _handleCallOneIntegerResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOneIntegerResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOptionalInteger` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<int>>> _pendingCallOptionalIntegerMethodCalls;
     int _callOptionalIntegerMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalInteger` method calls.
-    void _handleCallOptionalIntegerResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOptionalIntegerResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callThreeIntegers` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeIntegersReturnValues>> _pendingCallThreeIntegersMethodCalls;
     int _callThreeIntegersMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeIntegers` method calls.
-    void _handleCallThreeIntegersResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallThreeIntegersResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOneString` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::string>> _pendingCallOneStringMethodCalls;
     int _callOneStringMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneString` method calls.
-    void _handleCallOneStringResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOneStringResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOptionalString` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<std::string>>> _pendingCallOptionalStringMethodCalls;
     int _callOptionalStringMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalString` method calls.
-    void _handleCallOptionalStringResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOptionalStringResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callThreeStrings` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeStringsReturnValues>> _pendingCallThreeStringsMethodCalls;
     int _callThreeStringsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeStrings` method calls.
-    void _handleCallThreeStringsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallThreeStringsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOneEnum` method calls.
     std::map<boost::uuids::uuid, boost::promise<Numbers>> _pendingCallOneEnumMethodCalls;
     int _callOneEnumMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneEnum` method calls.
-    void _handleCallOneEnumResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOneEnumResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOptionalEnum` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<Numbers>>> _pendingCallOptionalEnumMethodCalls;
     int _callOptionalEnumMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalEnum` method calls.
-    void _handleCallOptionalEnumResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOptionalEnumResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callThreeEnums` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeEnumsReturnValues>> _pendingCallThreeEnumsMethodCalls;
     int _callThreeEnumsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeEnums` method calls.
-    void _handleCallThreeEnumsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallThreeEnumsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOneStruct` method calls.
     std::map<boost::uuids::uuid, boost::promise<AllTypes>> _pendingCallOneStructMethodCalls;
     int _callOneStructMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneStruct` method calls.
-    void _handleCallOneStructResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOneStructResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOptionalStruct` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<AllTypes>>> _pendingCallOptionalStructMethodCalls;
     int _callOptionalStructMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalStruct` method calls.
-    void _handleCallOptionalStructResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOptionalStructResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callThreeStructs` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeStructsReturnValues>> _pendingCallThreeStructsMethodCalls;
     int _callThreeStructsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeStructs` method calls.
-    void _handleCallThreeStructsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallThreeStructsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOneDateTime` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingCallOneDateTimeMethodCalls;
     int _callOneDateTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneDateTime` method calls.
-    void _handleCallOneDateTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOneDateTimeResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOptionalDateTime` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<std::chrono::time_point<std::chrono::system_clock>>>> _pendingCallOptionalDateTimeMethodCalls;
     int _callOptionalDateTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalDateTime` method calls.
-    void _handleCallOptionalDateTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOptionalDateTimeResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callThreeDateTimes` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeDateTimesReturnValues>> _pendingCallThreeDateTimesMethodCalls;
     int _callThreeDateTimesMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeDateTimes` method calls.
-    void _handleCallThreeDateTimesResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallThreeDateTimesResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOneDuration` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::duration<double>>> _pendingCallOneDurationMethodCalls;
     int _callOneDurationMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneDuration` method calls.
-    void _handleCallOneDurationResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOneDurationResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOptionalDuration` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<std::chrono::duration<double>>>> _pendingCallOptionalDurationMethodCalls;
     int _callOptionalDurationMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalDuration` method calls.
-    void _handleCallOptionalDurationResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOptionalDurationResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callThreeDurations` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeDurationsReturnValues>> _pendingCallThreeDurationsMethodCalls;
     int _callThreeDurationsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeDurations` method calls.
-    void _handleCallThreeDurationsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallThreeDurationsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOneBinary` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::vector<uint8_t>>> _pendingCallOneBinaryMethodCalls;
     int _callOneBinaryMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneBinary` method calls.
-    void _handleCallOneBinaryResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOneBinaryResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOptionalBinary` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<std::vector<uint8_t>>>> _pendingCallOptionalBinaryMethodCalls;
     int _callOptionalBinaryMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalBinary` method calls.
-    void _handleCallOptionalBinaryResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOptionalBinaryResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callThreeBinaries` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallThreeBinariesReturnValues>> _pendingCallThreeBinariesMethodCalls;
     int _callThreeBinariesMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeBinaries` method calls.
-    void _handleCallThreeBinariesResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallThreeBinariesResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOneListOfIntegers` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::vector<int>>> _pendingCallOneListOfIntegersMethodCalls;
     int _callOneListOfIntegersMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneListOfIntegers` method calls.
-    void _handleCallOneListOfIntegersResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOneListOfIntegersResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callOptionalListOfFloats` method calls.
     std::map<boost::uuids::uuid, boost::promise<boost::optional<std::vector<double>>>> _pendingCallOptionalListOfFloatsMethodCalls;
     int _callOptionalListOfFloatsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalListOfFloats` method calls.
-    void _handleCallOptionalListOfFloatsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallOptionalListOfFloatsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `callTwoLists` method calls.
     std::map<boost::uuids::uuid, boost::promise<CallTwoListsReturnValues>> _pendingCallTwoListsMethodCalls;
     int _callTwoListsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callTwoLists` method calls.
-    void _handleCallTwoListsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleCallTwoListsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // ---------------- PROPERTIES ------------------
 

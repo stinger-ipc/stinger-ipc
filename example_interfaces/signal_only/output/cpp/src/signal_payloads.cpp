@@ -14,7 +14,7 @@ AnotherSignalPayload AnotherSignalPayload::FromRapidJsonObject(const rapidjson::
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'one' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -25,7 +25,7 @@ AnotherSignalPayload AnotherSignalPayload::FromRapidJsonObject(const rapidjson::
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'two' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -36,7 +36,7 @@ AnotherSignalPayload AnotherSignalPayload::FromRapidJsonObject(const rapidjson::
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'three' argument doesn't have required value/type");
         }
     }
 
@@ -69,7 +69,7 @@ BarkPayload BarkPayload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'word' argument doesn't have required value/type");
         }
     }
 
@@ -155,7 +155,7 @@ NowPayload NowPayload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'timestamp' argument doesn't have required value/type");
         }
     }
 

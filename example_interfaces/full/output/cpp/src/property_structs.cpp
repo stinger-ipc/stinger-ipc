@@ -15,7 +15,7 @@ FavoriteNumberProperty FavoriteNumberProperty::FromRapidJsonObject(const rapidjs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'number' argument doesn't have required value/type");
         }
     }
 
@@ -39,7 +39,7 @@ FavoriteFoodsProperty FavoriteFoodsProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'drink' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -50,7 +50,7 @@ FavoriteFoodsProperty FavoriteFoodsProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'slices_of_pizza' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -98,7 +98,7 @@ LunchMenuProperty LunchMenuProperty::FromRapidJsonObject(const rapidjson::Value&
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'monday' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -109,7 +109,7 @@ LunchMenuProperty LunchMenuProperty::FromRapidJsonObject(const rapidjson::Value&
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'tuesday' argument doesn't have required value/type");
         }
     }
 
@@ -149,7 +149,7 @@ FamilyNameProperty FamilyNameProperty::FromRapidJsonObject(const rapidjson::Valu
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'family_name' argument doesn't have required value/type");
         }
     }
 
@@ -178,7 +178,7 @@ LastBreakfastTimeProperty LastBreakfastTimeProperty::FromRapidJsonObject(const r
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'timestamp' argument doesn't have required value/type");
         }
     }
 
@@ -208,7 +208,7 @@ BreakfastLengthProperty BreakfastLengthProperty::FromRapidJsonObject(const rapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'length' argument doesn't have required value/type");
         }
     }
 
@@ -238,7 +238,7 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'mom' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -250,7 +250,7 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'dad' argument doesn't have required value/type");
         }
     }
     { // Scoping

@@ -530,34 +530,38 @@ pub struct AllTypes {
     /// A binary type.
     #[serde(with = "base64_binary_format")]
     pub data: Vec<u8>,
-    /// An optional integer type.#[serde(rename = "OptionalInteger")]
+    /// An optional integer type.
+    #[serde(rename = "OptionalInteger")]
     pub optional_integer: Option<i32>,
-    /// An optional string type.#[serde(rename = "OptionalString")]
+    /// An optional string type.
+    #[serde(rename = "OptionalString")]
     pub optional_string: Option<String>,
-    /// An optional enum type, one of the numbers.#[serde(rename = "OptionalEnum")]
+    /// An optional enum type, one of the numbers.
+    #[serde(rename = "OptionalEnum")]
     pub optional_enum: Option<Numbers>,
 
-    /// An optional struct type.#[serde(rename = "optionalEntryObject")]
+    /// An optional struct type.
+    #[serde(rename = "optionalEntryObject")]
     pub optional_entry_object: Option<Entry>,
 
-    /// An optional date and time type.#[serde(rename = "OptionalDateTime")]
-
+    /// An optional date and time type.
+    #[serde(rename = "OptionalDateTime")]
     #[serde(
         serialize_with = "datetime_iso_format::serialize_option",
         deserialize_with = "datetime_iso_format::deserialize_option"
     )]
     pub optional_date_time: Option<chrono::DateTime<chrono::Utc>>,
 
-    /// An optional duration type.#[serde(rename = "OptionalDuration")]
-
+    /// An optional duration type.
+    #[serde(rename = "OptionalDuration")]
     #[serde(
         serialize_with = "duration_iso_format::serialize_option",
         deserialize_with = "duration_iso_format::deserialize_option"
     )]
     pub optional_duration: Option<chrono::Duration>,
 
-    /// An optional binary type.#[serde(rename = "OptionalBinary")]
-
+    /// An optional binary type.
+    #[serde(rename = "OptionalBinary")]
     #[serde(
         serialize_with = "base64_binary_format::serialize_option",
         deserialize_with = "base64_binary_format::deserialize_option"

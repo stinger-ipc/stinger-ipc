@@ -8,11 +8,12 @@
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
+#include "interface_exceptions.hpp"
 
 int main(int argc, char** argv)
 {
     // Create a connection to the broker
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "Test Able-client-demo");
+    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "test--able-client-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg)
                          {
@@ -439,9 +440,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            int returnValue = callOneIntegerResultFuture.get();
-            std::cout << "CALL_ONE_INTEGER Response: "
-                      << " output1=" << returnValue << std::endl;
+            int returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = callOneIntegerResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "CALL_ONE_INTEGER Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "CALL_ONE_INTEGER Response: "
+                          << " output1=" << returnValue << std::endl;
+            }
         }
     }
 
@@ -456,19 +470,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            boost::optional<int> returnValue = callOptionalIntegerResultFuture.get();
-            std::cout << "CALL_OPTIONAL_INTEGER Response: "
-                      << " output1=";
-            if (returnValue)
+            boost::optional<int> returnValue;
+            bool success = false;
+            try
             {
-                std::cout << *returnValue;
+                returnValue = callOptionalIntegerResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_OPTIONAL_INTEGER Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_OPTIONAL_INTEGER Response: "
+                          << " output1=";
+                if (returnValue)
+                {
+                    std::cout << *returnValue;
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -483,19 +510,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            CallThreeIntegersReturnValues returnValue = callThreeIntegersResultFuture.get();
-            std::cout << "CALL_THREE_INTEGERS Response: "
-                      << " output1=" << returnValue.output1 << " output2=" << returnValue.output2 << " output3=";
-            if (returnValue.output3)
+            CallThreeIntegersReturnValues returnValue;
+            bool success = false;
+            try
             {
-                std::cout << *returnValue.output3;
+                returnValue = callThreeIntegersResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_THREE_INTEGERS Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_THREE_INTEGERS Response: "
+                          << " output1=" << returnValue.output1 << " output2=" << returnValue.output2 << " output3=";
+                if (returnValue.output3)
+                {
+                    std::cout << *returnValue.output3;
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -510,9 +550,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::string returnValue = callOneStringResultFuture.get();
-            std::cout << "CALL_ONE_STRING Response: "
-                      << " output1=" << returnValue << std::endl;
+            std::string returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = callOneStringResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "CALL_ONE_STRING Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "CALL_ONE_STRING Response: "
+                          << " output1=" << returnValue << std::endl;
+            }
         }
     }
 
@@ -527,19 +580,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            boost::optional<std::string> returnValue = callOptionalStringResultFuture.get();
-            std::cout << "CALL_OPTIONAL_STRING Response: "
-                      << " output1=";
-            if (returnValue)
+            boost::optional<std::string> returnValue;
+            bool success = false;
+            try
             {
-                std::cout << *returnValue;
+                returnValue = callOptionalStringResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_OPTIONAL_STRING Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_OPTIONAL_STRING Response: "
+                          << " output1=";
+                if (returnValue)
+                {
+                    std::cout << *returnValue;
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -554,19 +620,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            CallThreeStringsReturnValues returnValue = callThreeStringsResultFuture.get();
-            std::cout << "CALL_THREE_STRINGS Response: "
-                      << " output1=" << returnValue.output1 << " output2=";
-            if (returnValue.output2)
+            CallThreeStringsReturnValues returnValue;
+            bool success = false;
+            try
             {
-                std::cout << *returnValue.output2;
+                returnValue = callThreeStringsResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_THREE_STRINGS Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << " output3=" << returnValue.output3 << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_THREE_STRINGS Response: "
+                          << " output1=" << returnValue.output1 << " output2=";
+                if (returnValue.output2)
+                {
+                    std::cout << *returnValue.output2;
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << " output3=" << returnValue.output3 << std::endl;
+            }
         }
     }
 
@@ -581,9 +660,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            Numbers returnValue = callOneEnumResultFuture.get();
-            std::cout << "CALL_ONE_ENUM Response: "
-                      << " output1=" << numbersStrings[static_cast<int>(returnValue)] << std::endl;
+            Numbers returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = callOneEnumResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "CALL_ONE_ENUM Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "CALL_ONE_ENUM Response: "
+                          << " output1=" << numbersStrings[static_cast<int>(returnValue)] << std::endl;
+            }
         }
     }
 
@@ -598,19 +690,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            boost::optional<Numbers> returnValue = callOptionalEnumResultFuture.get();
-            std::cout << "CALL_OPTIONAL_ENUM Response: "
-                      << " output1=";
-            if (returnValue)
+            boost::optional<Numbers> returnValue;
+            bool success = false;
+            try
             {
-                std::cout << numbersStrings[static_cast<int>(*returnValue)];
+                returnValue = callOptionalEnumResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_OPTIONAL_ENUM Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_OPTIONAL_ENUM Response: "
+                          << " output1=";
+                if (returnValue)
+                {
+                    std::cout << numbersStrings[static_cast<int>(*returnValue)];
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -625,19 +730,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            CallThreeEnumsReturnValues returnValue = callThreeEnumsResultFuture.get();
-            std::cout << "CALL_THREE_ENUMS Response: "
-                      << " output1=" << numbersStrings[static_cast<int>(returnValue.output1)] << " output2=" << numbersStrings[static_cast<int>(returnValue.output2)] << " output3=";
-            if (returnValue.output3)
+            CallThreeEnumsReturnValues returnValue;
+            bool success = false;
+            try
             {
-                std::cout << numbersStrings[static_cast<int>(*returnValue.output3)];
+                returnValue = callThreeEnumsResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_THREE_ENUMS Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_THREE_ENUMS Response: "
+                          << " output1=" << numbersStrings[static_cast<int>(returnValue.output1)] << " output2=" << numbersStrings[static_cast<int>(returnValue.output2)] << " output3=";
+                if (returnValue.output3)
+                {
+                    std::cout << numbersStrings[static_cast<int>(*returnValue.output3)];
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -653,9 +771,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            AllTypes returnValue = callOneStructResultFuture.get();
-            std::cout << "CALL_ONE_STRUCT Response: "
-                      << " output1=" << "[AllTypes object]" << std::endl;
+            AllTypes returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = callOneStructResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "CALL_ONE_STRUCT Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "CALL_ONE_STRUCT Response: "
+                          << " output1=" << "[AllTypes object]" << std::endl;
+            }
         }
     }
 
@@ -671,19 +802,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            boost::optional<AllTypes> returnValue = callOptionalStructResultFuture.get();
-            std::cout << "CALL_OPTIONAL_STRUCT Response: "
-                      << " output1=";
-            if (returnValue)
+            boost::optional<AllTypes> returnValue;
+            bool success = false;
+            try
             {
-                std::cout << "[AllTypes object]";
+                returnValue = callOptionalStructResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_OPTIONAL_STRUCT Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_OPTIONAL_STRUCT Response: "
+                          << " output1=";
+                if (returnValue)
+                {
+                    std::cout << "[AllTypes object]";
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -703,19 +847,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            CallThreeStructsReturnValues returnValue = callThreeStructsResultFuture.get();
-            std::cout << "CALL_THREE_STRUCTS Response: "
-                      << " output1=";
-            if (returnValue.output1)
+            CallThreeStructsReturnValues returnValue;
+            bool success = false;
+            try
             {
-                std::cout << "[AllTypes object]";
+                returnValue = callThreeStructsResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_THREE_STRUCTS Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << " output2=" << "[AllTypes object]" << " output3=" << "[AllTypes object]" << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_THREE_STRUCTS Response: "
+                          << " output1=";
+                if (returnValue.output1)
+                {
+                    std::cout << "[AllTypes object]";
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << " output2=" << "[AllTypes object]" << " output3=" << "[AllTypes object]" << std::endl;
+            }
         }
     }
 
@@ -730,9 +887,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::chrono::time_point<std::chrono::system_clock> returnValue = callOneDateTimeResultFuture.get();
-            std::cout << "CALL_ONE_DATE_TIME Response: "
-                      << " output1=" << timePointToIsoString(returnValue) << std::endl;
+            std::chrono::time_point<std::chrono::system_clock> returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = callOneDateTimeResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "CALL_ONE_DATE_TIME Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "CALL_ONE_DATE_TIME Response: "
+                          << " output1=" << timePointToIsoString(returnValue) << std::endl;
+            }
         }
     }
 
@@ -747,19 +917,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            boost::optional<std::chrono::time_point<std::chrono::system_clock>> returnValue = callOptionalDateTimeResultFuture.get();
-            std::cout << "CALL_OPTIONAL_DATE_TIME Response: "
-                      << " output1=";
-            if (returnValue)
+            boost::optional<std::chrono::time_point<std::chrono::system_clock>> returnValue;
+            bool success = false;
+            try
             {
-                std::cout << timePointToIsoString(*returnValue);
+                returnValue = callOptionalDateTimeResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_OPTIONAL_DATE_TIME Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_OPTIONAL_DATE_TIME Response: "
+                          << " output1=";
+                if (returnValue)
+                {
+                    std::cout << timePointToIsoString(*returnValue);
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -774,19 +957,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            CallThreeDateTimesReturnValues returnValue = callThreeDateTimesResultFuture.get();
-            std::cout << "CALL_THREE_DATE_TIMES Response: "
-                      << " output1=" << timePointToIsoString(returnValue.output1) << " output2=" << timePointToIsoString(returnValue.output2) << " output3=";
-            if (returnValue.output3)
+            CallThreeDateTimesReturnValues returnValue;
+            bool success = false;
+            try
             {
-                std::cout << timePointToIsoString(*returnValue.output3);
+                returnValue = callThreeDateTimesResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_THREE_DATE_TIMES Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_THREE_DATE_TIMES Response: "
+                          << " output1=" << timePointToIsoString(returnValue.output1) << " output2=" << timePointToIsoString(returnValue.output2) << " output3=";
+                if (returnValue.output3)
+                {
+                    std::cout << timePointToIsoString(*returnValue.output3);
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -801,9 +997,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::chrono::duration<double> returnValue = callOneDurationResultFuture.get();
-            std::cout << "CALL_ONE_DURATION Response: "
-                      << " output1=" << durationToIsoString(returnValue) << std::endl;
+            std::chrono::duration<double> returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = callOneDurationResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "CALL_ONE_DURATION Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "CALL_ONE_DURATION Response: "
+                          << " output1=" << durationToIsoString(returnValue) << std::endl;
+            }
         }
     }
 
@@ -818,19 +1027,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            boost::optional<std::chrono::duration<double>> returnValue = callOptionalDurationResultFuture.get();
-            std::cout << "CALL_OPTIONAL_DURATION Response: "
-                      << " output1=";
-            if (returnValue)
+            boost::optional<std::chrono::duration<double>> returnValue;
+            bool success = false;
+            try
             {
-                std::cout << durationToIsoString(*returnValue);
+                returnValue = callOptionalDurationResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_OPTIONAL_DURATION Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_OPTIONAL_DURATION Response: "
+                          << " output1=";
+                if (returnValue)
+                {
+                    std::cout << durationToIsoString(*returnValue);
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -845,19 +1067,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            CallThreeDurationsReturnValues returnValue = callThreeDurationsResultFuture.get();
-            std::cout << "CALL_THREE_DURATIONS Response: "
-                      << " output1=" << durationToIsoString(returnValue.output1) << " output2=" << durationToIsoString(returnValue.output2) << " output3=";
-            if (returnValue.output3)
+            CallThreeDurationsReturnValues returnValue;
+            bool success = false;
+            try
             {
-                std::cout << durationToIsoString(*returnValue.output3);
+                returnValue = callThreeDurationsResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_THREE_DURATIONS Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_THREE_DURATIONS Response: "
+                          << " output1=" << durationToIsoString(returnValue.output1) << " output2=" << durationToIsoString(returnValue.output2) << " output3=";
+                if (returnValue.output3)
+                {
+                    std::cout << durationToIsoString(*returnValue.output3);
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -872,10 +1107,23 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::vector<uint8_t> returnValue = callOneBinaryResultFuture.get();
-            std::cout << "CALL_ONE_BINARY Response: "
-                      << " output1=" << "[BINARY DATA]"
-                      << std::endl;
+            std::vector<uint8_t> returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = callOneBinaryResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "CALL_ONE_BINARY Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "CALL_ONE_BINARY Response: "
+                          << " output1=" << "[BINARY DATA]"
+                          << std::endl;
+            }
         }
     }
 
@@ -890,19 +1138,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            boost::optional<std::vector<uint8_t>> returnValue = callOptionalBinaryResultFuture.get();
-            std::cout << "CALL_OPTIONAL_BINARY Response: "
-                      << " output1=";
-            if (returnValue)
+            boost::optional<std::vector<uint8_t>> returnValue;
+            bool success = false;
+            try
             {
-                std::cout << "[BINARY DATA]";
+                returnValue = callOptionalBinaryResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_OPTIONAL_BINARY Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_OPTIONAL_BINARY Response: "
+                          << " output1=";
+                if (returnValue)
+                {
+                    std::cout << "[BINARY DATA]";
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -917,21 +1178,34 @@ int main(int argc, char** argv)
         }
         else
         {
-            CallThreeBinariesReturnValues returnValue = callThreeBinariesResultFuture.get();
-            std::cout << "CALL_THREE_BINARIES Response: "
-                      << " output1=" << "[BINARY DATA]"
-                      << " output2=" << "[BINARY DATA]"
-                      << " output3=";
-            if (returnValue.output3)
+            CallThreeBinariesReturnValues returnValue;
+            bool success = false;
+            try
             {
-                std::cout << "[BINARY DATA]";
+                returnValue = callThreeBinariesResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_THREE_BINARIES Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_THREE_BINARIES Response: "
+                          << " output1=" << "[BINARY DATA]"
+                          << " output2=" << "[BINARY DATA]"
+                          << " output3=";
+                if (returnValue.output3)
+                {
+                    std::cout << "[BINARY DATA]";
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -946,9 +1220,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::vector<int> returnValue = callOneListOfIntegersResultFuture.get();
-            std::cout << "CALL_ONE_LIST_OF_INTEGERS Response: "
-                      << " output1=" << "[Array of " << returnValue.size() << " PRIMITIVE values]" << std::endl;
+            std::vector<int> returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = callOneListOfIntegersResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "CALL_ONE_LIST_OF_INTEGERS Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "CALL_ONE_LIST_OF_INTEGERS Response: "
+                          << " output1=" << "[Array of " << returnValue.size() << " PRIMITIVE values]" << std::endl;
+            }
         }
     }
 
@@ -963,19 +1250,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            boost::optional<std::vector<double>> returnValue = callOptionalListOfFloatsResultFuture.get();
-            std::cout << "CALL_OPTIONAL_LIST_OF_FLOATS Response: "
-                      << " output1=";
-            if (returnValue)
+            boost::optional<std::vector<double>> returnValue;
+            bool success = false;
+            try
             {
-                std::cout << "[Array of " << returnValue->size() << " PRIMITIVE values]";
+                returnValue = callOptionalListOfFloatsResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_OPTIONAL_LIST_OF_FLOATS Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_OPTIONAL_LIST_OF_FLOATS Response: "
+                          << " output1=";
+                if (returnValue)
+                {
+                    std::cout << "[Array of " << returnValue->size() << " PRIMITIVE values]";
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 
@@ -990,19 +1290,32 @@ int main(int argc, char** argv)
         }
         else
         {
-            CallTwoListsReturnValues returnValue = callTwoListsResultFuture.get();
-            std::cout << "CALL_TWO_LISTS Response: "
-                      << " output1=" << "[Array of " << returnValue.output1.size() << " ENUM values]" << " output2=";
-            if (returnValue.output2)
+            CallTwoListsReturnValues returnValue;
+            bool success = false;
+            try
             {
-                std::cout << "[Array of " << returnValue.output2->size() << " PRIMITIVE values]";
+                returnValue = callTwoListsResultFuture.get();
+                success = true;
             }
-            else
+            catch (const StingerMethodException& ex)
             {
-                std::cout << "None";
+                std::cout << "CALL_TWO_LISTS Exception: " << ex.what() << std::endl;
             }
-            std::cout
-                    << std::endl;
+            if (success)
+            {
+                std::cout << "CALL_TWO_LISTS Response: "
+                          << " output1=" << "[Array of " << returnValue.output1.size() << " ENUM values]" << " output2=";
+                if (returnValue.output2)
+                {
+                    std::cout << "[Array of " << returnValue.output2->size() << " PRIMITIVE values]";
+                }
+                else
+                {
+                    std::cout << "None";
+                }
+                std::cout
+                        << std::endl;
+            }
         }
     }
 

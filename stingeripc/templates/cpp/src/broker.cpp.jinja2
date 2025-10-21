@@ -166,6 +166,10 @@ MqttBrokerConnection::MqttBrokerConnection(const std::string& host, int port, co
                         int propertyVersionInt = boost::lexical_cast<int>(value);
                         mqttProps.propertyVersion = propertyVersionInt;
                     }
+                    else if (strcmp(name, "DebugInfo") == 0)
+                    {
+                        mqttProps.debugInfo = std::string(value);
+                    }
                     free(name);
                     free(value);
                 }

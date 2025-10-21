@@ -21,6 +21,7 @@
 #include "client.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
+#include "interface_exceptions.hpp"
 
 constexpr const char WeatherClient::NAME[];
 constexpr const char WeatherClient::INTERFACE_VERSION[];
@@ -110,7 +111,7 @@ void WeatherClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'current_time' doesn't have required value/type");
                     }
                 }
 
@@ -131,17 +132,17 @@ void WeatherClient::_receiveMessage(
     if ((subscriptionId == _refreshDailyForecastMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refresh_daily_forecast/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for refresh_daily_forecast response");
-        _handleRefreshDailyForecastResponse(topic, payload, *mqttProps.correlationId);
+        _handleRefreshDailyForecastResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _refreshHourlyForecastMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refresh_hourly_forecast/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for refresh_hourly_forecast response");
-        _handleRefreshHourlyForecastResponse(topic, payload, *mqttProps.correlationId);
+        _handleRefreshHourlyForecastResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _refreshCurrentConditionsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refresh_current_conditions/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for refresh_current_conditions response");
-        _handleRefreshCurrentConditionsResponse(topic, payload, *mqttProps.correlationId);
+        _handleRefreshCurrentConditionsResponse(topic, payload, mqttProps);
     }
     if ((subscriptionId == _locationPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("weather/%1%/property/location/value") % _instanceId).str()))
     {
@@ -209,15 +210,22 @@ boost::future<void> WeatherClient::refreshDailyForecast()
 void WeatherClient::_handleRefreshDailyForecastResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for refresh_daily_forecast");
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingRefreshDailyForecastMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshDailyForecastMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method doesn't have any return values.
@@ -253,15 +261,22 @@ boost::future<void> WeatherClient::refreshHourlyForecast()
 void WeatherClient::_handleRefreshHourlyForecastResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for refresh_hourly_forecast");
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingRefreshHourlyForecastMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshHourlyForecastMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method doesn't have any return values.
@@ -297,15 +312,22 @@ boost::future<void> WeatherClient::refreshCurrentConditions()
 void WeatherClient::_handleRefreshCurrentConditionsResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for refresh_current_conditions");
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingRefreshCurrentConditionsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingRefreshCurrentConditionsMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method doesn't have any return values.
@@ -327,7 +349,7 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received location payload is not an object");
+        throw std::runtime_error("Received 'location' property update payload is not an object");
     }
     LocationProperty tempValue;
 
@@ -339,7 +361,7 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'latitude' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -350,7 +372,7 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'longitude' argument doesn't have required value/type");
         }
     }
 
@@ -414,7 +436,7 @@ void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received current_temperature payload is not an object");
+        throw std::runtime_error("Received 'current_temperature' property update payload is not an object");
     }
     CurrentTemperatureProperty tempValue;
 
@@ -426,7 +448,7 @@ void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'temperature_f' argument doesn't have required value/type");
         }
     }
 
@@ -474,7 +496,7 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received current_condition payload is not an object");
+        throw std::runtime_error("Received 'current_condition' property update payload is not an object");
     }
     CurrentConditionProperty tempValue;
 
@@ -486,7 +508,7 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'condition' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -497,7 +519,7 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'description' argument doesn't have required value/type");
         }
     }
 
@@ -545,7 +567,7 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received daily_forecast payload is not an object");
+        throw std::runtime_error("Received 'daily_forecast' property update payload is not an object");
     }
     DailyForecastProperty tempValue;
 
@@ -557,7 +579,7 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'monday' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -568,7 +590,7 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'tuesday' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -579,7 +601,7 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'wednesday' argument doesn't have required value/type");
         }
     }
 
@@ -627,7 +649,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received hourly_forecast payload is not an object");
+        throw std::runtime_error("Received 'hourly_forecast' property update payload is not an object");
     }
     HourlyForecastProperty tempValue;
 
@@ -639,7 +661,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'hour_0' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -650,7 +672,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'hour_1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -661,7 +683,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'hour_2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -672,7 +694,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'hour_3' argument doesn't have required value/type");
         }
     }
 
@@ -720,7 +742,7 @@ void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const 
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received current_condition_refresh_interval payload is not an object");
+        throw std::runtime_error("Received 'current_condition_refresh_interval' property update payload is not an object");
     }
     CurrentConditionRefreshIntervalProperty tempValue;
 
@@ -732,7 +754,7 @@ void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const 
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'seconds' argument doesn't have required value/type");
         }
     }
 
@@ -794,7 +816,7 @@ void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const st
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received hourly_forecast_refresh_interval payload is not an object");
+        throw std::runtime_error("Received 'hourly_forecast_refresh_interval' property update payload is not an object");
     }
     HourlyForecastRefreshIntervalProperty tempValue;
 
@@ -806,7 +828,7 @@ void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const st
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'seconds' argument doesn't have required value/type");
         }
     }
 
@@ -868,7 +890,7 @@ void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received daily_forecast_refresh_interval payload is not an object");
+        throw std::runtime_error("Received 'daily_forecast_refresh_interval' property update payload is not an object");
     }
     DailyForecastRefreshIntervalProperty tempValue;
 
@@ -880,7 +902,7 @@ void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'seconds' argument doesn't have required value/type");
         }
     }
 

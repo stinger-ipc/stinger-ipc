@@ -14,7 +14,7 @@ TodayIsPayload TodayIsPayload::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'dayOfMonth' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -37,7 +37,7 @@ TodayIsPayload TodayIsPayload::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'timestamp' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -49,7 +49,7 @@ TodayIsPayload TodayIsPayload::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'process_time' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -61,7 +61,7 @@ TodayIsPayload TodayIsPayload::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'memory_segment' argument doesn't have required value/type");
         }
     }
 

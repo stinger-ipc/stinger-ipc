@@ -94,7 +94,7 @@ private:
     std::map<boost::uuids::uuid, boost::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
     int _{{method_name | lowerCamelCase}}MethodSubscriptionId = -1;
     // This is called internally to process responses to `{{method_name}}` method calls.
-    void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
     {%endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}

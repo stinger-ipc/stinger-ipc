@@ -62,7 +62,7 @@ auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
     {%-if arg.optional%}
         {{arg_target}} = boost::none;
     {%-else%}
-        throw std::runtime_error("Received payload doesn't have required value/type");
+        throw std::runtime_error("Received payload for the '{{arg.name}}' argument doesn't have required value/type");
     {%endif%}
     }
 }

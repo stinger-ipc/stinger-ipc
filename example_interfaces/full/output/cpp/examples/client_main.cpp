@@ -8,11 +8,12 @@
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
+#include "interface_exceptions.hpp"
 
 int main(int argc, char** argv)
 {
     // Create a connection to the broker
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "Full-client-demo");
+    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "full-client-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg)
                          {
@@ -117,9 +118,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            int returnValue = addNumbersResultFuture.get();
-            std::cout << "ADD_NUMBERS Response: "
-                      << " sum=" << returnValue << std::endl;
+            int returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = addNumbersResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "ADD_NUMBERS Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "ADD_NUMBERS Response: "
+                          << " sum=" << returnValue << std::endl;
+            }
         }
     }
 
@@ -134,9 +148,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            DoSomethingReturnValues returnValue = doSomethingResultFuture.get();
-            std::cout << "DO_SOMETHING Response: "
-                      << " label=" << returnValue.label << " identifier=" << returnValue.identifier << " day=" << dayOfTheWeekStrings[static_cast<int>(returnValue.day)] << std::endl;
+            DoSomethingReturnValues returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = doSomethingResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "DO_SOMETHING Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "DO_SOMETHING Response: "
+                          << " label=" << returnValue.label << " identifier=" << returnValue.identifier << " day=" << dayOfTheWeekStrings[static_cast<int>(returnValue.day)] << std::endl;
+            }
         }
     }
 
@@ -151,9 +178,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::string returnValue = echoResultFuture.get();
-            std::cout << "ECHO Response: "
-                      << " message=" << returnValue << std::endl;
+            std::string returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = echoResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "ECHO Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "ECHO Response: "
+                          << " message=" << returnValue << std::endl;
+            }
         }
     }
 
@@ -168,9 +208,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::chrono::time_point<std::chrono::system_clock> returnValue = whatTimeIsItResultFuture.get();
-            std::cout << "WHAT_TIME_IS_IT Response: "
-                      << " timestamp=" << timePointToIsoString(returnValue) << std::endl;
+            std::chrono::time_point<std::chrono::system_clock> returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = whatTimeIsItResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "WHAT_TIME_IS_IT Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "WHAT_TIME_IS_IT Response: "
+                          << " timestamp=" << timePointToIsoString(returnValue) << std::endl;
+            }
         }
     }
 
@@ -185,9 +238,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            SetTheTimeReturnValues returnValue = setTheTimeResultFuture.get();
-            std::cout << "SET_THE_TIME Response: "
-                      << " timestamp=" << timePointToIsoString(returnValue.timestamp) << " confirmation_message=" << returnValue.confirmationMessage << std::endl;
+            SetTheTimeReturnValues returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = setTheTimeResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "SET_THE_TIME Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "SET_THE_TIME Response: "
+                          << " timestamp=" << timePointToIsoString(returnValue.timestamp) << " confirmation_message=" << returnValue.confirmationMessage << std::endl;
+            }
         }
     }
 
@@ -202,9 +268,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::chrono::time_point<std::chrono::system_clock> returnValue = forwardTimeResultFuture.get();
-            std::cout << "FORWARD_TIME Response: "
-                      << " new_time=" << timePointToIsoString(returnValue) << std::endl;
+            std::chrono::time_point<std::chrono::system_clock> returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = forwardTimeResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "FORWARD_TIME Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "FORWARD_TIME Response: "
+                          << " new_time=" << timePointToIsoString(returnValue) << std::endl;
+            }
         }
     }
 
@@ -219,9 +298,22 @@ int main(int argc, char** argv)
         }
         else
         {
-            std::chrono::duration<double> returnValue = howOffIsTheClockResultFuture.get();
-            std::cout << "HOW_OFF_IS_THE_CLOCK Response: "
-                      << " difference=" << durationToIsoString(returnValue) << std::endl;
+            std::chrono::duration<double> returnValue;
+            bool success = false;
+            try
+            {
+                returnValue = howOffIsTheClockResultFuture.get();
+                success = true;
+            }
+            catch (const StingerMethodException& ex)
+            {
+                std::cout << "HOW_OFF_IS_THE_CLOCK Exception: " << ex.what() << std::endl;
+            }
+            if (success)
+            {
+                std::cout << "HOW_OFF_IS_THE_CLOCK Response: "
+                          << " difference=" << durationToIsoString(returnValue) << std::endl;
+            }
         }
     }
 

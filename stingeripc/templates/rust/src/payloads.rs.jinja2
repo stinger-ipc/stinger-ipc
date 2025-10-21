@@ -475,9 +475,9 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
     {%-if arg.description%}
     /// {{arg.description}}
     {%-endif%}{# end arg description -#}
-    {%-if arg.name != (arg.name | snake_case) -%}
+    {%-if arg.name != (arg.name | snake_case) %}
     #[serde(rename = "{{arg.name}}")]
-    {%endif%} {# end rename if needed #}
+    {%-endif%} {# end rename if needed #}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
     pub {{arg.name|snake_case}}: {{arg.rust_type}},
     {%-elif arg.arg_type.name.lower() == 'struct'%}

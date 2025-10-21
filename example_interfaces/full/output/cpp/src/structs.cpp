@@ -14,7 +14,7 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'drink' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -25,7 +25,7 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'sandwich' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -36,7 +36,7 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'crackers' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -47,7 +47,7 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'day' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -70,7 +70,7 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'time_of_lunch' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -82,7 +82,7 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'duration_of_lunch' argument doesn't have required value/type");
         }
     }
 

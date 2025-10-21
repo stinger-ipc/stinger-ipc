@@ -21,6 +21,7 @@
 #include "client.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
+#include "interface_exceptions.hpp"
 
 constexpr const char SignalOnlyClient::NAME[];
 constexpr const char SignalOnlyClient::INTERFACE_VERSION[];
@@ -91,7 +92,7 @@ void SignalOnlyClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'anotherSignal' doesn't have required value/type");
                     }
                 }
 
@@ -104,7 +105,7 @@ void SignalOnlyClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'anotherSignal' doesn't have required value/type");
                     }
                 }
 
@@ -117,7 +118,7 @@ void SignalOnlyClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'anotherSignal' doesn't have required value/type");
                     }
                 }
 
@@ -165,7 +166,7 @@ void SignalOnlyClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'bark' doesn't have required value/type");
                     }
                 }
 
@@ -316,7 +317,7 @@ void SignalOnlyClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'now' doesn't have required value/type");
                     }
                 }
 

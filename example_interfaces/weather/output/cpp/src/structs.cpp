@@ -14,7 +14,7 @@ ForecastForHour ForecastForHour::FromRapidJsonObject(const rapidjson::Value& jso
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'temperature' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -26,7 +26,7 @@ ForecastForHour ForecastForHour::FromRapidJsonObject(const rapidjson::Value& jso
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'starttime' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -37,7 +37,7 @@ ForecastForHour ForecastForHour::FromRapidJsonObject(const rapidjson::Value& jso
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'condition' argument doesn't have required value/type");
         }
     }
 
@@ -70,7 +70,7 @@ ForecastForDay ForecastForDay::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'high_temperature' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -81,7 +81,7 @@ ForecastForDay ForecastForDay::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'low_temperature' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -92,7 +92,7 @@ ForecastForDay ForecastForDay::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'condition' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -103,7 +103,7 @@ ForecastForDay ForecastForDay::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'start_time' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -114,7 +114,7 @@ ForecastForDay ForecastForDay::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'end_time' argument doesn't have required value/type");
         }
     }
 

@@ -184,19 +184,19 @@ private:
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshDailyForecastMethodCalls;
     int _refreshDailyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_daily_forecast` method calls.
-    void _handleRefreshDailyForecastResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleRefreshDailyForecastResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `refresh_hourly_forecast` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshHourlyForecastMethodCalls;
     int _refreshHourlyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_hourly_forecast` method calls.
-    void _handleRefreshHourlyForecastResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleRefreshHourlyForecastResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `refresh_current_conditions` method calls.
     std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshCurrentConditionsMethodCalls;
     int _refreshCurrentConditionsMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_current_conditions` method calls.
-    void _handleRefreshCurrentConditionsResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleRefreshCurrentConditionsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // ---------------- PROPERTIES ------------------
 

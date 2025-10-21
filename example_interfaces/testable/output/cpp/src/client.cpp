@@ -21,6 +21,7 @@
 #include "client.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
+#include "interface_exceptions.hpp"
 
 constexpr const char TestAbleClient::NAME[];
 constexpr const char TestAbleClient::INTERFACE_VERSION[];
@@ -297,7 +298,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'singleInt' doesn't have required value/type");
                     }
                 }
 
@@ -393,7 +394,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeIntegers' doesn't have required value/type");
                     }
                 }
 
@@ -406,7 +407,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeIntegers' doesn't have required value/type");
                     }
                 }
 
@@ -467,7 +468,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'singleString' doesn't have required value/type");
                     }
                 }
 
@@ -563,7 +564,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeStrings' doesn't have required value/type");
                     }
                 }
 
@@ -576,7 +577,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeStrings' doesn't have required value/type");
                     }
                 }
 
@@ -637,7 +638,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'singleEnum' doesn't have required value/type");
                     }
                 }
 
@@ -733,7 +734,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeEnums' doesn't have required value/type");
                     }
                 }
 
@@ -746,7 +747,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeEnums' doesn't have required value/type");
                     }
                 }
 
@@ -806,7 +807,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'singleStruct' doesn't have required value/type");
                     }
                 }
 
@@ -900,7 +901,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeStructs' doesn't have required value/type");
                     }
                 }
 
@@ -912,7 +913,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeStructs' doesn't have required value/type");
                     }
                 }
 
@@ -979,7 +980,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'singleDateTime' doesn't have required value/type");
                     }
                 }
 
@@ -1089,7 +1090,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeDateTimes' doesn't have required value/type");
                     }
                 }
 
@@ -1109,7 +1110,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeDateTimes' doesn't have required value/type");
                     }
                 }
 
@@ -1177,7 +1178,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'singleDuration' doesn't have required value/type");
                     }
                 }
 
@@ -1273,7 +1274,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeDurations' doesn't have required value/type");
                     }
                 }
 
@@ -1286,7 +1287,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeDurations' doesn't have required value/type");
                     }
                 }
 
@@ -1347,7 +1348,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'singleBinary' doesn't have required value/type");
                     }
                 }
 
@@ -1443,7 +1444,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeBinaries' doesn't have required value/type");
                     }
                 }
 
@@ -1456,7 +1457,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'threeBinaries' doesn't have required value/type");
                     }
                 }
 
@@ -1516,7 +1517,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'singleArrayOfIntegers' doesn't have required value/type");
                     }
                 }
 
@@ -1610,7 +1611,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'arrayOfEveryType' doesn't have required value/type");
                     }
                 }
 
@@ -1622,7 +1623,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'arrayOfEveryType' doesn't have required value/type");
                     }
                 }
 
@@ -1634,7 +1635,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'arrayOfEveryType' doesn't have required value/type");
                     }
                 }
 
@@ -1646,7 +1647,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'arrayOfEveryType' doesn't have required value/type");
                     }
                 }
 
@@ -1658,7 +1659,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'arrayOfEveryType' doesn't have required value/type");
                     }
                 }
 
@@ -1670,7 +1671,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'arrayOfEveryType' doesn't have required value/type");
                     }
                 }
 
@@ -1682,7 +1683,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'arrayOfEveryType' doesn't have required value/type");
                     }
                 }
 
@@ -1694,7 +1695,7 @@ void TestAbleClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'arrayOfEveryType' doesn't have required value/type");
                     }
                 }
 
@@ -1715,127 +1716,127 @@ void TestAbleClient::_receiveMessage(
     if ((subscriptionId == _callWithNothingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callWithNothing/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callWithNothing response");
-        _handleCallWithNothingResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallWithNothingResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOneIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneInteger/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneInteger response");
-        _handleCallOneIntegerResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOneIntegerResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOptionalIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalInteger/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalInteger response");
-        _handleCallOptionalIntegerResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOptionalIntegerResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callThreeIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeIntegers/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeIntegers response");
-        _handleCallThreeIntegersResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallThreeIntegersResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOneStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneString/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneString response");
-        _handleCallOneStringResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOneStringResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOptionalStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalString/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalString response");
-        _handleCallOptionalStringResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOptionalStringResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callThreeStringsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeStrings/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeStrings response");
-        _handleCallThreeStringsResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallThreeStringsResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOneEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneEnum/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneEnum response");
-        _handleCallOneEnumResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOneEnumResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOptionalEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalEnum/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalEnum response");
-        _handleCallOptionalEnumResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOptionalEnumResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callThreeEnumsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeEnums/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeEnums response");
-        _handleCallThreeEnumsResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallThreeEnumsResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOneStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneStruct/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneStruct response");
-        _handleCallOneStructResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOneStructResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOptionalStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalStruct/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalStruct response");
-        _handleCallOptionalStructResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOptionalStructResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callThreeStructsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeStructs/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeStructs response");
-        _handleCallThreeStructsResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallThreeStructsResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOneDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneDateTime/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneDateTime response");
-        _handleCallOneDateTimeResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOneDateTimeResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOptionalDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalDateTime/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalDateTime response");
-        _handleCallOptionalDateTimeResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOptionalDateTimeResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callThreeDateTimesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeDateTimes/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeDateTimes response");
-        _handleCallThreeDateTimesResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallThreeDateTimesResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOneDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneDuration/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneDuration response");
-        _handleCallOneDurationResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOneDurationResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOptionalDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalDuration/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalDuration response");
-        _handleCallOptionalDurationResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOptionalDurationResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callThreeDurationsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeDurations/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeDurations response");
-        _handleCallThreeDurationsResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallThreeDurationsResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOneBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneBinary/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneBinary response");
-        _handleCallOneBinaryResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOneBinaryResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOptionalBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalBinary/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalBinary response");
-        _handleCallOptionalBinaryResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOptionalBinaryResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callThreeBinariesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeBinaries/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeBinaries response");
-        _handleCallThreeBinariesResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallThreeBinariesResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOneListOfIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneListOfIntegers/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneListOfIntegers response");
-        _handleCallOneListOfIntegersResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOneListOfIntegersResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callOptionalListOfFloatsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalListOfFloats/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalListOfFloats response");
-        _handleCallOptionalListOfFloatsResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallOptionalListOfFloatsResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _callTwoListsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callTwoLists/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callTwoLists response");
-        _handleCallTwoListsResponse(topic, payload, *mqttProps.correlationId);
+        _handleCallTwoListsResponse(topic, payload, mqttProps);
     }
     if ((subscriptionId == _readWriteIntegerPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testAble/%1%/property/readWriteInteger/value") % _instanceId).str()))
     {
@@ -2119,15 +2120,22 @@ boost::future<void> TestAbleClient::callWithNothing()
 void TestAbleClient::_handleCallWithNothingResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callWithNothing");
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallWithNothingMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallWithNothingMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method doesn't have any return values.
@@ -2165,7 +2173,7 @@ boost::future<int> TestAbleClient::callOneInteger(int input1)
 void TestAbleClient::_handleCallOneIntegerResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOneInteger");
@@ -2179,13 +2187,20 @@ void TestAbleClient::_handleCallOneIntegerResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOneInteger' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOneIntegerMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneIntegerMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -2225,7 +2240,7 @@ boost::future<boost::optional<int>> TestAbleClient::callOptionalInteger(boost::o
 void TestAbleClient::_handleCallOptionalIntegerResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOptionalInteger");
@@ -2239,13 +2254,20 @@ void TestAbleClient::_handleCallOptionalIntegerResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOptionalInteger' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOptionalIntegerMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalIntegerMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -2289,7 +2311,7 @@ boost::future<CallThreeIntegersReturnValues> TestAbleClient::callThreeIntegers(i
 void TestAbleClient::_handleCallThreeIntegersResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callThreeIntegers");
@@ -2303,13 +2325,20 @@ void TestAbleClient::_handleCallThreeIntegersResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callThreeIntegers' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallThreeIntegersMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeIntegersMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -2352,7 +2381,7 @@ boost::future<std::string> TestAbleClient::callOneString(std::string input1)
 void TestAbleClient::_handleCallOneStringResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOneString");
@@ -2366,13 +2395,20 @@ void TestAbleClient::_handleCallOneStringResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOneString' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOneStringMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneStringMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -2416,7 +2452,7 @@ boost::future<boost::optional<std::string>> TestAbleClient::callOptionalString(b
 void TestAbleClient::_handleCallOptionalStringResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOptionalString");
@@ -2430,13 +2466,20 @@ void TestAbleClient::_handleCallOptionalStringResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOptionalString' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOptionalStringMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalStringMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -2492,7 +2535,7 @@ boost::future<CallThreeStringsReturnValues> TestAbleClient::callThreeStrings(std
 void TestAbleClient::_handleCallThreeStringsResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callThreeStrings");
@@ -2506,13 +2549,20 @@ void TestAbleClient::_handleCallThreeStringsResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callThreeStrings' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallThreeStringsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeStringsMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -2551,7 +2601,7 @@ boost::future<Numbers> TestAbleClient::callOneEnum(Numbers input1)
 void TestAbleClient::_handleCallOneEnumResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOneEnum");
@@ -2565,13 +2615,20 @@ void TestAbleClient::_handleCallOneEnumResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOneEnum' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOneEnumMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneEnumMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -2610,7 +2667,7 @@ boost::future<boost::optional<Numbers>> TestAbleClient::callOptionalEnum(boost::
 void TestAbleClient::_handleCallOptionalEnumResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOptionalEnum");
@@ -2624,13 +2681,20 @@ void TestAbleClient::_handleCallOptionalEnumResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOptionalEnum' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOptionalEnumMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalEnumMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -2673,7 +2737,7 @@ boost::future<CallThreeEnumsReturnValues> TestAbleClient::callThreeEnums(Numbers
 void TestAbleClient::_handleCallThreeEnumsResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callThreeEnums");
@@ -2687,13 +2751,20 @@ void TestAbleClient::_handleCallThreeEnumsResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callThreeEnums' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallThreeEnumsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeEnumsMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -2739,7 +2810,7 @@ boost::future<AllTypes> TestAbleClient::callOneStruct(AllTypes input1)
 void TestAbleClient::_handleCallOneStructResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOneStruct");
@@ -2753,13 +2824,20 @@ void TestAbleClient::_handleCallOneStructResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOneStruct' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOneStructMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneStructMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -2810,7 +2888,7 @@ boost::future<boost::optional<AllTypes>> TestAbleClient::callOptionalStruct(boos
 void TestAbleClient::_handleCallOptionalStructResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOptionalStruct");
@@ -2824,13 +2902,20 @@ void TestAbleClient::_handleCallOptionalStructResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOptionalStruct' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOptionalStructMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalStructMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -2899,7 +2984,7 @@ boost::future<CallThreeStructsReturnValues> TestAbleClient::callThreeStructs(boo
 void TestAbleClient::_handleCallThreeStructsResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callThreeStructs");
@@ -2913,13 +2998,20 @@ void TestAbleClient::_handleCallThreeStructsResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callThreeStructs' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallThreeStructsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeStructsMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -2963,7 +3055,7 @@ boost::future<std::chrono::time_point<std::chrono::system_clock>> TestAbleClient
 void TestAbleClient::_handleCallOneDateTimeResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOneDateTime");
@@ -2977,13 +3069,20 @@ void TestAbleClient::_handleCallOneDateTimeResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOneDateTime' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOneDateTimeMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneDateTimeMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -3027,7 +3126,7 @@ boost::future<boost::optional<std::chrono::time_point<std::chrono::system_clock>
 void TestAbleClient::_handleCallOptionalDateTimeResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOptionalDateTime");
@@ -3041,13 +3140,20 @@ void TestAbleClient::_handleCallOptionalDateTimeResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOptionalDateTime' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOptionalDateTimeMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalDateTimeMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -3105,7 +3211,7 @@ boost::future<CallThreeDateTimesReturnValues> TestAbleClient::callThreeDateTimes
 void TestAbleClient::_handleCallThreeDateTimesResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callThreeDateTimes");
@@ -3119,13 +3225,20 @@ void TestAbleClient::_handleCallThreeDateTimesResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callThreeDateTimes' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallThreeDateTimesMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeDateTimesMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -3169,7 +3282,7 @@ boost::future<std::chrono::duration<double>> TestAbleClient::callOneDuration(std
 void TestAbleClient::_handleCallOneDurationResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOneDuration");
@@ -3183,13 +3296,20 @@ void TestAbleClient::_handleCallOneDurationResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOneDuration' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOneDurationMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneDurationMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -3233,7 +3353,7 @@ boost::future<boost::optional<std::chrono::duration<double>>> TestAbleClient::ca
 void TestAbleClient::_handleCallOptionalDurationResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOptionalDuration");
@@ -3247,13 +3367,20 @@ void TestAbleClient::_handleCallOptionalDurationResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOptionalDuration' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOptionalDurationMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalDurationMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -3311,7 +3438,7 @@ boost::future<CallThreeDurationsReturnValues> TestAbleClient::callThreeDurations
 void TestAbleClient::_handleCallThreeDurationsResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callThreeDurations");
@@ -3325,13 +3452,20 @@ void TestAbleClient::_handleCallThreeDurationsResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callThreeDurations' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallThreeDurationsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeDurationsMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -3375,7 +3509,7 @@ boost::future<std::vector<uint8_t>> TestAbleClient::callOneBinary(std::vector<ui
 void TestAbleClient::_handleCallOneBinaryResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOneBinary");
@@ -3389,13 +3523,20 @@ void TestAbleClient::_handleCallOneBinaryResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOneBinary' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOneBinaryMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneBinaryMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -3439,7 +3580,7 @@ boost::future<boost::optional<std::vector<uint8_t>>> TestAbleClient::callOptiona
 void TestAbleClient::_handleCallOptionalBinaryResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOptionalBinary");
@@ -3453,13 +3594,20 @@ void TestAbleClient::_handleCallOptionalBinaryResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOptionalBinary' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOptionalBinaryMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalBinaryMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -3517,7 +3665,7 @@ boost::future<CallThreeBinariesReturnValues> TestAbleClient::callThreeBinaries(s
 void TestAbleClient::_handleCallThreeBinariesResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callThreeBinaries");
@@ -3531,13 +3679,20 @@ void TestAbleClient::_handleCallThreeBinariesResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callThreeBinaries' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallThreeBinariesMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallThreeBinariesMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -3584,7 +3739,7 @@ boost::future<std::vector<int>> TestAbleClient::callOneListOfIntegers(std::vecto
 void TestAbleClient::_handleCallOneListOfIntegersResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOneListOfIntegers");
@@ -3598,13 +3753,20 @@ void TestAbleClient::_handleCallOneListOfIntegersResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOneListOfIntegers' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOneListOfIntegersMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOneListOfIntegersMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -3651,7 +3813,7 @@ boost::future<boost::optional<std::vector<double>>> TestAbleClient::callOptional
 void TestAbleClient::_handleCallOptionalListOfFloatsResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callOptionalListOfFloats");
@@ -3665,13 +3827,20 @@ void TestAbleClient::_handleCallOptionalListOfFloatsResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callOptionalListOfFloats' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallOptionalListOfFloatsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallOptionalListOfFloatsMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -3730,7 +3899,7 @@ boost::future<CallTwoListsReturnValues> TestAbleClient::callTwoLists(std::vector
 void TestAbleClient::_handleCallTwoListsResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for callTwoLists");
@@ -3744,13 +3913,20 @@ void TestAbleClient::_handleCallTwoListsResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'callTwoLists' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingCallTwoListsMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingCallTwoListsMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -3773,7 +3949,7 @@ void TestAbleClient::_receiveReadWriteIntegerPropertyUpdate(const std::string& t
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_integer payload is not an object");
+        throw std::runtime_error("Received 'read_write_integer' property update payload is not an object");
     }
     ReadWriteIntegerProperty tempValue;
 
@@ -3785,7 +3961,7 @@ void TestAbleClient::_receiveReadWriteIntegerPropertyUpdate(const std::string& t
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -3847,7 +4023,7 @@ void TestAbleClient::_receiveReadOnlyIntegerPropertyUpdate(const std::string& to
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_only_integer payload is not an object");
+        throw std::runtime_error("Received 'read_only_integer' property update payload is not an object");
     }
     ReadOnlyIntegerProperty tempValue;
 
@@ -3859,7 +4035,7 @@ void TestAbleClient::_receiveReadOnlyIntegerPropertyUpdate(const std::string& to
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -3907,7 +4083,7 @@ void TestAbleClient::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_optional_integer payload is not an object");
+        throw std::runtime_error("Received 'read_write_optional_integer' property update payload is not an object");
     }
     ReadWriteOptionalIntegerProperty tempValue;
 
@@ -3982,7 +4158,7 @@ void TestAbleClient::_receiveReadWriteTwoIntegersPropertyUpdate(const std::strin
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_two_integers payload is not an object");
+        throw std::runtime_error("Received 'read_write_two_integers' property update payload is not an object");
     }
     ReadWriteTwoIntegersProperty tempValue;
 
@@ -3994,7 +4170,7 @@ void TestAbleClient::_receiveReadWriteTwoIntegersPropertyUpdate(const std::strin
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -4070,7 +4246,7 @@ void TestAbleClient::_receiveReadOnlyStringPropertyUpdate(const std::string& top
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_only_string payload is not an object");
+        throw std::runtime_error("Received 'read_only_string' property update payload is not an object");
     }
     ReadOnlyStringProperty tempValue;
 
@@ -4082,7 +4258,7 @@ void TestAbleClient::_receiveReadOnlyStringPropertyUpdate(const std::string& top
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -4130,7 +4306,7 @@ void TestAbleClient::_receiveReadWriteStringPropertyUpdate(const std::string& to
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_string payload is not an object");
+        throw std::runtime_error("Received 'read_write_string' property update payload is not an object");
     }
     ReadWriteStringProperty tempValue;
 
@@ -4142,7 +4318,7 @@ void TestAbleClient::_receiveReadWriteStringPropertyUpdate(const std::string& to
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -4208,7 +4384,7 @@ void TestAbleClient::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_optional_string payload is not an object");
+        throw std::runtime_error("Received 'read_write_optional_string' property update payload is not an object");
     }
     ReadWriteOptionalStringProperty tempValue;
 
@@ -4287,7 +4463,7 @@ void TestAbleClient::_receiveReadWriteTwoStringsPropertyUpdate(const std::string
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_two_strings payload is not an object");
+        throw std::runtime_error("Received 'read_write_two_strings' property update payload is not an object");
     }
     ReadWriteTwoStringsProperty tempValue;
 
@@ -4299,7 +4475,7 @@ void TestAbleClient::_receiveReadWriteTwoStringsPropertyUpdate(const std::string
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -4383,7 +4559,7 @@ void TestAbleClient::_receiveReadWriteStructPropertyUpdate(const std::string& to
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_struct payload is not an object");
+        throw std::runtime_error("Received 'read_write_struct' property update payload is not an object");
     }
     ReadWriteStructProperty tempValue;
 
@@ -4395,7 +4571,7 @@ void TestAbleClient::_receiveReadWriteStructPropertyUpdate(const std::string& to
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -4464,7 +4640,7 @@ void TestAbleClient::_receiveReadWriteOptionalStructPropertyUpdate(const std::st
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_optional_struct payload is not an object");
+        throw std::runtime_error("Received 'read_write_optional_struct' property update payload is not an object");
     }
     ReadWriteOptionalStructProperty tempValue;
 
@@ -4550,7 +4726,7 @@ void TestAbleClient::_receiveReadWriteTwoStructsPropertyUpdate(const std::string
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_two_structs payload is not an object");
+        throw std::runtime_error("Received 'read_write_two_structs' property update payload is not an object");
     }
     ReadWriteTwoStructsProperty tempValue;
 
@@ -4562,7 +4738,7 @@ void TestAbleClient::_receiveReadWriteTwoStructsPropertyUpdate(const std::string
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -4656,7 +4832,7 @@ void TestAbleClient::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_only_enum payload is not an object");
+        throw std::runtime_error("Received 'read_only_enum' property update payload is not an object");
     }
     ReadOnlyEnumProperty tempValue;
 
@@ -4668,7 +4844,7 @@ void TestAbleClient::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -4716,7 +4892,7 @@ void TestAbleClient::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_enum payload is not an object");
+        throw std::runtime_error("Received 'read_write_enum' property update payload is not an object");
     }
     ReadWriteEnumProperty tempValue;
 
@@ -4728,7 +4904,7 @@ void TestAbleClient::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -4790,7 +4966,7 @@ void TestAbleClient::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_optional_enum payload is not an object");
+        throw std::runtime_error("Received 'read_write_optional_enum' property update payload is not an object");
     }
     ReadWriteOptionalEnumProperty tempValue;
 
@@ -4864,7 +5040,7 @@ void TestAbleClient::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& 
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_two_enums payload is not an object");
+        throw std::runtime_error("Received 'read_write_two_enums' property update payload is not an object");
     }
     ReadWriteTwoEnumsProperty tempValue;
 
@@ -4876,7 +5052,7 @@ void TestAbleClient::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& 
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -4951,7 +5127,7 @@ void TestAbleClient::_receiveReadWriteDatetimePropertyUpdate(const std::string& 
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_datetime payload is not an object");
+        throw std::runtime_error("Received 'read_write_datetime' property update payload is not an object");
     }
     ReadWriteDatetimeProperty tempValue;
 
@@ -4964,7 +5140,7 @@ void TestAbleClient::_receiveReadWriteDatetimePropertyUpdate(const std::string& 
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -5031,7 +5207,7 @@ void TestAbleClient::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_optional_datetime payload is not an object");
+        throw std::runtime_error("Received 'read_write_optional_datetime' property update payload is not an object");
     }
     ReadWriteOptionalDatetimeProperty tempValue;
 
@@ -5111,7 +5287,7 @@ void TestAbleClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_two_datetimes payload is not an object");
+        throw std::runtime_error("Received 'read_write_two_datetimes' property update payload is not an object");
     }
     ReadWriteTwoDatetimesProperty tempValue;
 
@@ -5124,7 +5300,7 @@ void TestAbleClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -5210,7 +5386,7 @@ void TestAbleClient::_receiveReadWriteDurationPropertyUpdate(const std::string& 
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_duration payload is not an object");
+        throw std::runtime_error("Received 'read_write_duration' property update payload is not an object");
     }
     ReadWriteDurationProperty tempValue;
 
@@ -5223,7 +5399,7 @@ void TestAbleClient::_receiveReadWriteDurationPropertyUpdate(const std::string& 
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -5290,7 +5466,7 @@ void TestAbleClient::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_optional_duration payload is not an object");
+        throw std::runtime_error("Received 'read_write_optional_duration' property update payload is not an object");
     }
     ReadWriteOptionalDurationProperty tempValue;
 
@@ -5370,7 +5546,7 @@ void TestAbleClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_two_durations payload is not an object");
+        throw std::runtime_error("Received 'read_write_two_durations' property update payload is not an object");
     }
     ReadWriteTwoDurationsProperty tempValue;
 
@@ -5383,7 +5559,7 @@ void TestAbleClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -5469,7 +5645,7 @@ void TestAbleClient::_receiveReadWriteBinaryPropertyUpdate(const std::string& to
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_binary payload is not an object");
+        throw std::runtime_error("Received 'read_write_binary' property update payload is not an object");
     }
     ReadWriteBinaryProperty tempValue;
 
@@ -5482,7 +5658,7 @@ void TestAbleClient::_receiveReadWriteBinaryPropertyUpdate(const std::string& to
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -5549,7 +5725,7 @@ void TestAbleClient::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_optional_binary payload is not an object");
+        throw std::runtime_error("Received 'read_write_optional_binary' property update payload is not an object");
     }
     ReadWriteOptionalBinaryProperty tempValue;
 
@@ -5629,7 +5805,7 @@ void TestAbleClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_two_binaries payload is not an object");
+        throw std::runtime_error("Received 'read_write_two_binaries' property update payload is not an object");
     }
     ReadWriteTwoBinariesProperty tempValue;
 
@@ -5642,7 +5818,7 @@ void TestAbleClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -5728,7 +5904,7 @@ void TestAbleClient::_receiveReadWriteListOfStringsPropertyUpdate(const std::str
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_list_of_strings payload is not an object");
+        throw std::runtime_error("Received 'read_write_list_of_strings' property update payload is not an object");
     }
     ReadWriteListOfStringsProperty tempValue;
 
@@ -5750,7 +5926,7 @@ void TestAbleClient::_receiveReadWriteListOfStringsPropertyUpdate(const std::str
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -5822,7 +5998,7 @@ void TestAbleClient::_receiveReadWriteListsPropertyUpdate(const std::string& top
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received read_write_lists payload is not an object");
+        throw std::runtime_error("Received 'read_write_lists' property update payload is not an object");
     }
     ReadWriteListsProperty tempValue;
 
@@ -5844,7 +6020,7 @@ void TestAbleClient::_receiveReadWriteListsPropertyUpdate(const std::string& top
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'the_list' argument doesn't have required value/type");
         }
     }
     { // Scoping

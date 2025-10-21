@@ -14,7 +14,7 @@ CurrentTimePayload CurrentTimePayload::FromRapidJsonObject(const rapidjson::Valu
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'current_time' argument doesn't have required value/type");
         }
     }
 

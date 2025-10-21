@@ -21,6 +21,7 @@
 #include "client.hpp"
 #include "enums.hpp"
 #include "ibrokerconnection.hpp"
+#include "interface_exceptions.hpp"
 
 constexpr const char FullClient::NAME[];
 constexpr const char FullClient::INTERFACE_VERSION[];
@@ -129,7 +130,7 @@ void FullClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'todayIs' doesn't have required value/type");
                     }
                 }
 
@@ -162,7 +163,7 @@ void FullClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'todayIs' doesn't have required value/type");
                     }
                 }
 
@@ -175,7 +176,7 @@ void FullClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'todayIs' doesn't have required value/type");
                     }
                 }
 
@@ -188,7 +189,7 @@ void FullClient::_receiveMessage(
                     }
                     else
                     {
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for 'todayIs' doesn't have required value/type");
                     }
                 }
 
@@ -209,37 +210,37 @@ void FullClient::_receiveMessage(
     if ((subscriptionId == _addNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/addNumbers/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for addNumbers response");
-        _handleAddNumbersResponse(topic, payload, *mqttProps.correlationId);
+        _handleAddNumbersResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _doSomethingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/doSomething/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for doSomething response");
-        _handleDoSomethingResponse(topic, payload, *mqttProps.correlationId);
+        _handleDoSomethingResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _echoMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/echo/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for echo response");
-        _handleEchoResponse(topic, payload, *mqttProps.correlationId);
+        _handleEchoResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _whatTimeIsItMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/what_time_is_it/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for what_time_is_it response");
-        _handleWhatTimeIsItResponse(topic, payload, *mqttProps.correlationId);
+        _handleWhatTimeIsItResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _setTheTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/set_the_time/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for set_the_time response");
-        _handleSetTheTimeResponse(topic, payload, *mqttProps.correlationId);
+        _handleSetTheTimeResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _forwardTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/forward_time/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for forward_time response");
-        _handleForwardTimeResponse(topic, payload, *mqttProps.correlationId);
+        _handleForwardTimeResponse(topic, payload, mqttProps);
     }
     else if ((subscriptionId == _howOffIsTheClockMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/how_off_is_the_clock/response") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for how_off_is_the_clock response");
-        _handleHowOffIsTheClockResponse(topic, payload, *mqttProps.correlationId);
+        _handleHowOffIsTheClockResponse(topic, payload, mqttProps);
     }
     if ((subscriptionId == _favoriteNumberPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("full/%1%/property/favoriteNumber/value") % _instanceId).str()))
     {
@@ -310,7 +311,7 @@ boost::future<int> FullClient::addNumbers(int first, int second, boost::optional
 void FullClient::_handleAddNumbersResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for addNumbers");
@@ -324,13 +325,20 @@ void FullClient::_handleAddNumbersResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'addNumbers' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingAddNumbersMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingAddNumbersMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -373,7 +381,7 @@ boost::future<DoSomethingReturnValues> FullClient::doSomething(std::string aStri
 void FullClient::_handleDoSomethingResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for doSomething");
@@ -387,13 +395,20 @@ void FullClient::_handleDoSomethingResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'doSomething' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingDoSomethingMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingDoSomethingMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -436,7 +451,7 @@ boost::future<std::string> FullClient::echo(std::string message)
 void FullClient::_handleEchoResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for echo");
@@ -450,13 +465,20 @@ void FullClient::_handleEchoResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'echo' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingEchoMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingEchoMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -500,7 +522,7 @@ boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::wh
 void FullClient::_handleWhatTimeIsItResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for what_time_is_it");
@@ -514,13 +536,20 @@ void FullClient::_handleWhatTimeIsItResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'what_time_is_it' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingWhatTimeIsItMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingWhatTimeIsItMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -571,7 +600,7 @@ boost::future<SetTheTimeReturnValues> FullClient::setTheTime(std::chrono::time_p
 void FullClient::_handleSetTheTimeResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for set_the_time");
@@ -585,13 +614,20 @@ void FullClient::_handleSetTheTimeResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'set_the_time' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingSetTheTimeMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingSetTheTimeMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has multiple return values.
@@ -635,7 +671,7 @@ boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::fo
 void FullClient::_handleForwardTimeResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for forward_time");
@@ -649,13 +685,20 @@ void FullClient::_handleForwardTimeResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'forward_time' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingForwardTimeMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingForwardTimeMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -699,7 +742,7 @@ boost::future<std::chrono::duration<double>> FullClient::howOffIsTheClock(std::c
 void FullClient::_handleHowOffIsTheClockResponse(
         const std::string& topic,
         const std::string& payload,
-        const std::string& correlationId
+        const MqttProperties& mqttProps
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for how_off_is_the_clock");
@@ -713,13 +756,20 @@ void FullClient::_handleHowOffIsTheClockResponse(
     }
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for 'how_off_is_the_clock' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pendingHowOffIsTheClockMethodCalls.find(correlationIdUuid);
     if (promiseItr != _pendingHowOffIsTheClockMethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
 
         // Method has a single return value.
@@ -742,7 +792,7 @@ void FullClient::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, 
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received favorite_number payload is not an object");
+        throw std::runtime_error("Received 'favorite_number' property update payload is not an object");
     }
     FavoriteNumberProperty tempValue;
 
@@ -754,7 +804,7 @@ void FullClient::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, 
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'number' argument doesn't have required value/type");
         }
     }
 
@@ -816,7 +866,7 @@ void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, c
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received favorite_foods payload is not an object");
+        throw std::runtime_error("Received 'favorite_foods' property update payload is not an object");
     }
     FavoriteFoodsProperty tempValue;
 
@@ -828,7 +878,7 @@ void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'drink' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -839,7 +889,7 @@ void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'slices_of_pizza' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -925,7 +975,7 @@ void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received lunch_menu payload is not an object");
+        throw std::runtime_error("Received 'lunch_menu' property update payload is not an object");
     }
     LunchMenuProperty tempValue;
 
@@ -937,7 +987,7 @@ void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'monday' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -948,7 +998,7 @@ void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'tuesday' argument doesn't have required value/type");
         }
     }
 
@@ -1026,7 +1076,7 @@ void FullClient::_receiveFamilyNamePropertyUpdate(const std::string& topic, cons
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received family_name payload is not an object");
+        throw std::runtime_error("Received 'family_name' property update payload is not an object");
     }
     FamilyNameProperty tempValue;
 
@@ -1038,7 +1088,7 @@ void FullClient::_receiveFamilyNamePropertyUpdate(const std::string& topic, cons
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'family_name' argument doesn't have required value/type");
         }
     }
 
@@ -1104,7 +1154,7 @@ void FullClient::_receiveLastBreakfastTimePropertyUpdate(const std::string& topi
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received last_breakfast_time payload is not an object");
+        throw std::runtime_error("Received 'last_breakfast_time' property update payload is not an object");
     }
     LastBreakfastTimeProperty tempValue;
 
@@ -1117,7 +1167,7 @@ void FullClient::_receiveLastBreakfastTimePropertyUpdate(const std::string& topi
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'timestamp' argument doesn't have required value/type");
         }
     }
 
@@ -1184,7 +1234,7 @@ void FullClient::_receiveBreakfastLengthPropertyUpdate(const std::string& topic,
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received breakfast_length payload is not an object");
+        throw std::runtime_error("Received 'breakfast_length' property update payload is not an object");
     }
     BreakfastLengthProperty tempValue;
 
@@ -1197,7 +1247,7 @@ void FullClient::_receiveBreakfastLengthPropertyUpdate(const std::string& topic,
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'length' argument doesn't have required value/type");
         }
     }
 
@@ -1264,7 +1314,7 @@ void FullClient::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, c
 
     if (!doc.IsObject())
     {
-        throw std::runtime_error("Received last_birthdays payload is not an object");
+        throw std::runtime_error("Received 'last_birthdays' property update payload is not an object");
     }
     LastBirthdaysProperty tempValue;
 
@@ -1277,7 +1327,7 @@ void FullClient::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'mom' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1289,7 +1339,7 @@ void FullClient::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'dad' argument doesn't have required value/type");
         }
     }
     { // Scoping

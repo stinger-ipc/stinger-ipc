@@ -24,6 +24,7 @@
 #include "client.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include "ibrokerconnection.hpp"
+#include "interface_exceptions.hpp"
 
 constexpr const char {{stinger.cpp.client_class_name}}::NAME[];
 constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
@@ -117,7 +118,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
                     {%-if arg.optional%}
                         temp{{arg.name|UpperCamelCase}} = boost::none;
                     {%else%}
-                        throw std::runtime_error("Received payload doesn't have required value/type");
+                        throw std::runtime_error("Received payload for '{{sig_name}}' doesn't have required value/type");
                     {%endif%}
                     }
                 }
@@ -142,7 +143,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
     {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | lowerCamelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for {{method_name}} response");
-        _handle{{method_name|UpperCamelCase}}Response(topic, payload, *mqttProps.correlationId);
+        _handle{{method_name|UpperCamelCase}}Response(topic, payload, mqttProps);
     }
     {%-endfor%}{# for methods #}
 
@@ -193,7 +194,7 @@ boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name
 void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Response(
         const std::string& topic, 
         const std::string& payload, 
-        const std::string &correlationId) 
+        const MqttProperties& mqttProps) 
 {
     _broker->Log(LOG_DEBUG, "In response handler for {{method_name}}");
     
@@ -206,13 +207,20 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
     if (!doc.IsObject()) {
-        throw std::runtime_error("Received payload is not an object");
+        throw std::runtime_error("Received payload for '{{method_name}}' response is not an object");
     }
     {%endif%}
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(correlationId);
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
     auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationIdUuid);
     if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())
     {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
         // Found the promise for this correlation ID.
         {%if method.return_arg_list | length == 0 %}
         // Method doesn't have any return values.
@@ -243,7 +251,7 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     }
 
     if (!doc.IsObject()) {
-        throw std::runtime_error("Received {{prop_name}} payload is not an object");
+        throw std::runtime_error("Received '{{prop_name}}' property update payload is not an object");
     }
     {{prop.name | UpperCamelCase}}Property tempValue;
     {{deser.deserialize('tempValue', prop.arg_list, 'doc') | indent(4)}}
@@ -271,7 +279,6 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
 {% if not prop.read_only %}
 boost::future<bool> {{stinger.cpp.client_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
 {
-
     rapidjson::Document doc;
     doc.SetObject();
     {%for item in prop.arg_list %}

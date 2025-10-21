@@ -462,10 +462,9 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = AddNumbersReturnValues { sum: retval };
-
+                    let resp_obj = AddNumbersReturnValues { sum: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -584,10 +583,9 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = EchoReturnValues { message: retval };
-
+                    let resp_obj = EchoReturnValues { message: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -648,10 +646,9 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = WhatTimeIsItReturnValues { timestamp: retval };
-
+                    let resp_obj = WhatTimeIsItReturnValues { timestamp: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -772,10 +769,9 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = ForwardTimeReturnValues { new_time: retval };
-
+                    let resp_obj = ForwardTimeReturnValues { new_time: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -836,10 +832,9 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let retval = HowOffIsTheClockReturnValues { difference: retval };
-
+                    let resp_obj = HowOffIsTheClockReturnValues { difference: retval };
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &resp_obj, corr_data)
                         .await;
                 }
                 Err(err) => {

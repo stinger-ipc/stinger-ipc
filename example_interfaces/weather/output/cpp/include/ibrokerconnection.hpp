@@ -42,7 +42,8 @@ struct MqttProperties
         returnCode(boost::none),
         subscriptionId(boost::none),
         propertyVersion(boost::none),
-        messageExpiryInterval(boost::none)
+        messageExpiryInterval(boost::none),
+        debugInfo(boost::none)
     {
     }
 
@@ -52,6 +53,7 @@ struct MqttProperties
     boost::optional<int> subscriptionId;
     boost::optional<int> propertyVersion;
     boost::optional<int> messageExpiryInterval;
+    boost::optional<std::string> debugInfo;
 };
 
 typedef std::function<void(int, const char*)> LogFunctionType;

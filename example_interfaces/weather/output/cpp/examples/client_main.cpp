@@ -8,6 +8,7 @@
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
+#include "interface_exceptions.hpp"
 
 int main(int argc, char** argv)
 {

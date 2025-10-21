@@ -369,11 +369,10 @@ impl WeatherServer {
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
-                Ok(_) => {
-                    let retval = RefreshDailyForecastReturnValues {};
-
+                Ok(_retval) => {
+                    let empty_resp = RefreshDailyForecastReturnValues {};
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &empty_resp, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -414,11 +413,10 @@ impl WeatherServer {
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
-                Ok(_) => {
-                    let retval = RefreshHourlyForecastReturnValues {};
-
+                Ok(_retval) => {
+                    let empty_resp = RefreshHourlyForecastReturnValues {};
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &empty_resp, corr_data)
                         .await;
                 }
                 Err(err) => {
@@ -459,11 +457,10 @@ impl WeatherServer {
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
-                Ok(_) => {
-                    let retval = RefreshCurrentConditionsReturnValues {};
-
+                Ok(_retval) => {
+                    let empty_resp = RefreshCurrentConditionsReturnValues {};
                     let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
+                        .publish_response(resp_topic, &empty_resp, corr_data)
                         .await;
                 }
                 Err(err) => {

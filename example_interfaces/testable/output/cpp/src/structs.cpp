@@ -14,7 +14,7 @@ Entry Entry::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'key' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -25,7 +25,7 @@ Entry Entry::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
 
@@ -55,7 +55,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'the_bool' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -66,7 +66,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'the_int' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -77,7 +77,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'the_number' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -88,7 +88,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'the_str' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -99,7 +99,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'the_enum' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -110,7 +110,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'an_entry_object' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -122,7 +122,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'date_and_time' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -134,7 +134,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'time_duration' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -146,7 +146,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'data' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -247,7 +247,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'array_of_integers' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -289,7 +289,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'array_of_strings' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -331,7 +331,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'array_of_enums' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -376,7 +376,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'array_of_datetimes' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -424,7 +424,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'array_of_durations' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -472,7 +472,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'array_of_binaries' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -517,7 +517,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'array_of_entry_objects' argument doesn't have required value/type");
         }
     }
     { // Scoping

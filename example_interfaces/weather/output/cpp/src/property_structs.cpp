@@ -15,7 +15,7 @@ LocationProperty LocationProperty::FromRapidJsonObject(const rapidjson::Value& j
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'latitude' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -26,7 +26,7 @@ LocationProperty LocationProperty::FromRapidJsonObject(const rapidjson::Value& j
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'longitude' argument doesn't have required value/type");
         }
     }
 
@@ -52,7 +52,7 @@ CurrentTemperatureProperty CurrentTemperatureProperty::FromRapidJsonObject(const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'temperature_f' argument doesn't have required value/type");
         }
     }
 
@@ -76,7 +76,7 @@ CurrentConditionProperty CurrentConditionProperty::FromRapidJsonObject(const rap
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'condition' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -87,7 +87,7 @@ CurrentConditionProperty CurrentConditionProperty::FromRapidJsonObject(const rap
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'description' argument doesn't have required value/type");
         }
     }
 
@@ -117,7 +117,7 @@ DailyForecastProperty DailyForecastProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'monday' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -128,7 +128,7 @@ DailyForecastProperty DailyForecastProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'tuesday' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -139,7 +139,7 @@ DailyForecastProperty DailyForecastProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'wednesday' argument doesn't have required value/type");
         }
     }
 
@@ -188,7 +188,7 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'hour_0' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -199,7 +199,7 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'hour_1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -210,7 +210,7 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'hour_2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -221,7 +221,7 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'hour_3' argument doesn't have required value/type");
         }
     }
 
@@ -279,7 +279,7 @@ CurrentConditionRefreshIntervalProperty CurrentConditionRefreshIntervalProperty:
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'seconds' argument doesn't have required value/type");
         }
     }
 
@@ -303,7 +303,7 @@ HourlyForecastRefreshIntervalProperty HourlyForecastRefreshIntervalProperty::Fro
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'seconds' argument doesn't have required value/type");
         }
     }
 
@@ -327,7 +327,7 @@ DailyForecastRefreshIntervalProperty DailyForecastRefreshIntervalProperty::FromR
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'seconds' argument doesn't have required value/type");
         }
     }
 

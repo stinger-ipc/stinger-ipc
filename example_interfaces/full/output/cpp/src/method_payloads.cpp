@@ -17,7 +17,7 @@ AddNumbersRequestArguments AddNumbersRequestArguments::FromRapidJsonObject(const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -28,7 +28,7 @@ AddNumbersRequestArguments AddNumbersRequestArguments::FromRapidJsonObject(const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'second' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -69,7 +69,7 @@ AddNumbersReturnValues AddNumbersReturnValues::FromRapidJsonObject(const rapidjs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'sum' argument doesn't have required value/type");
         }
     }
 
@@ -94,7 +94,7 @@ DoSomethingRequestArguments DoSomethingRequestArguments::FromRapidJsonObject(con
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'aString' argument doesn't have required value/type");
         }
     }
 
@@ -123,7 +123,7 @@ DoSomethingReturnValues DoSomethingReturnValues::FromRapidJsonObject(const rapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'label' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -134,7 +134,7 @@ DoSomethingReturnValues DoSomethingReturnValues::FromRapidJsonObject(const rapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'identifier' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -145,7 +145,7 @@ DoSomethingReturnValues DoSomethingReturnValues::FromRapidJsonObject(const rapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'day' argument doesn't have required value/type");
         }
     }
 
@@ -178,7 +178,7 @@ EchoRequestArguments EchoRequestArguments::FromRapidJsonObject(const rapidjson::
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'message' argument doesn't have required value/type");
         }
     }
 
@@ -207,7 +207,7 @@ EchoReturnValues EchoReturnValues::FromRapidJsonObject(const rapidjson::Value& j
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'message' argument doesn't have required value/type");
         }
     }
 
@@ -237,7 +237,7 @@ WhatTimeIsItRequestArguments WhatTimeIsItRequestArguments::FromRapidJsonObject(c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'the_first_time' argument doesn't have required value/type");
         }
     }
 
@@ -268,7 +268,7 @@ WhatTimeIsItReturnValues WhatTimeIsItReturnValues::FromRapidJsonObject(const rap
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'timestamp' argument doesn't have required value/type");
         }
     }
 
@@ -299,7 +299,7 @@ SetTheTimeRequestArguments SetTheTimeRequestArguments::FromRapidJsonObject(const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'the_first_time' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -311,7 +311,7 @@ SetTheTimeRequestArguments SetTheTimeRequestArguments::FromRapidJsonObject(const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'the_second_time' argument doesn't have required value/type");
         }
     }
 
@@ -349,7 +349,7 @@ SetTheTimeReturnValues SetTheTimeReturnValues::FromRapidJsonObject(const rapidjs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'timestamp' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -360,7 +360,7 @@ SetTheTimeReturnValues SetTheTimeReturnValues::FromRapidJsonObject(const rapidjs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'confirmation_message' argument doesn't have required value/type");
         }
     }
 
@@ -397,7 +397,7 @@ ForwardTimeRequestArguments ForwardTimeRequestArguments::FromRapidJsonObject(con
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'adjustment' argument doesn't have required value/type");
         }
     }
 
@@ -428,7 +428,7 @@ ForwardTimeReturnValues ForwardTimeReturnValues::FromRapidJsonObject(const rapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'new_time' argument doesn't have required value/type");
         }
     }
 
@@ -459,7 +459,7 @@ HowOffIsTheClockRequestArguments HowOffIsTheClockRequestArguments::FromRapidJson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'actual_time' argument doesn't have required value/type");
         }
     }
 
@@ -490,7 +490,7 @@ HowOffIsTheClockReturnValues HowOffIsTheClockReturnValues::FromRapidJsonObject(c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'difference' argument doesn't have required value/type");
         }
     }
 

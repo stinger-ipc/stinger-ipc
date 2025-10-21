@@ -41,7 +41,7 @@ CallOneIntegerRequestArguments CallOneIntegerRequestArguments::FromRapidJsonObje
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
 
@@ -66,7 +66,7 @@ CallOneIntegerReturnValues CallOneIntegerReturnValues::FromRapidJsonObject(const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
 
@@ -143,7 +143,7 @@ CallThreeIntegersRequestArguments CallThreeIntegersRequestArguments::FromRapidJs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -154,7 +154,7 @@ CallThreeIntegersRequestArguments CallThreeIntegersRequestArguments::FromRapidJs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -195,7 +195,7 @@ CallThreeIntegersReturnValues CallThreeIntegersReturnValues::FromRapidJsonObject
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -206,7 +206,7 @@ CallThreeIntegersReturnValues CallThreeIntegersReturnValues::FromRapidJsonObject
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -247,7 +247,7 @@ CallOneStringRequestArguments CallOneStringRequestArguments::FromRapidJsonObject
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
 
@@ -276,7 +276,7 @@ CallOneStringReturnValues CallOneStringReturnValues::FromRapidJsonObject(const r
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
 
@@ -365,7 +365,7 @@ CallThreeStringsRequestArguments CallThreeStringsRequestArguments::FromRapidJson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -387,7 +387,7 @@ CallThreeStringsRequestArguments CallThreeStringsRequestArguments::FromRapidJson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input3' argument doesn't have required value/type");
         }
     }
 
@@ -429,7 +429,7 @@ CallThreeStringsReturnValues CallThreeStringsReturnValues::FromRapidJsonObject(c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -451,7 +451,7 @@ CallThreeStringsReturnValues CallThreeStringsReturnValues::FromRapidJsonObject(c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output3' argument doesn't have required value/type");
         }
     }
 
@@ -493,7 +493,7 @@ CallOneEnumRequestArguments CallOneEnumRequestArguments::FromRapidJsonObject(con
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
 
@@ -518,7 +518,7 @@ CallOneEnumReturnValues CallOneEnumReturnValues::FromRapidJsonObject(const rapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
 
@@ -593,7 +593,7 @@ CallThreeEnumsRequestArguments CallThreeEnumsRequestArguments::FromRapidJsonObje
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -604,7 +604,7 @@ CallThreeEnumsRequestArguments CallThreeEnumsRequestArguments::FromRapidJsonObje
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -644,7 +644,7 @@ CallThreeEnumsReturnValues CallThreeEnumsReturnValues::FromRapidJsonObject(const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -655,7 +655,7 @@ CallThreeEnumsReturnValues CallThreeEnumsReturnValues::FromRapidJsonObject(const
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -695,7 +695,7 @@ CallOneStructRequestArguments CallOneStructRequestArguments::FromRapidJsonObject
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
 
@@ -727,7 +727,7 @@ CallOneStructReturnValues CallOneStructReturnValues::FromRapidJsonObject(const r
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
 
@@ -844,7 +844,7 @@ CallThreeStructsRequestArguments CallThreeStructsRequestArguments::FromRapidJson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -855,7 +855,7 @@ CallThreeStructsRequestArguments CallThreeStructsRequestArguments::FromRapidJson
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input3' argument doesn't have required value/type");
         }
     }
 
@@ -921,7 +921,7 @@ CallThreeStructsReturnValues CallThreeStructsReturnValues::FromRapidJsonObject(c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -932,7 +932,7 @@ CallThreeStructsReturnValues CallThreeStructsReturnValues::FromRapidJsonObject(c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output3' argument doesn't have required value/type");
         }
     }
 
@@ -988,7 +988,7 @@ CallOneDateTimeRequestArguments CallOneDateTimeRequestArguments::FromRapidJsonOb
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
 
@@ -1019,7 +1019,7 @@ CallOneDateTimeReturnValues CallOneDateTimeReturnValues::FromRapidJsonObject(con
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
 
@@ -1112,7 +1112,7 @@ CallThreeDateTimesRequestArguments CallThreeDateTimesRequestArguments::FromRapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1124,7 +1124,7 @@ CallThreeDateTimesRequestArguments CallThreeDateTimesRequestArguments::FromRapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1181,7 +1181,7 @@ CallThreeDateTimesReturnValues CallThreeDateTimesReturnValues::FromRapidJsonObje
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1193,7 +1193,7 @@ CallThreeDateTimesReturnValues CallThreeDateTimesReturnValues::FromRapidJsonObje
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1250,7 +1250,7 @@ CallOneDurationRequestArguments CallOneDurationRequestArguments::FromRapidJsonOb
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
 
@@ -1281,7 +1281,7 @@ CallOneDurationReturnValues CallOneDurationReturnValues::FromRapidJsonObject(con
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
 
@@ -1374,7 +1374,7 @@ CallThreeDurationsRequestArguments CallThreeDurationsRequestArguments::FromRapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1386,7 +1386,7 @@ CallThreeDurationsRequestArguments CallThreeDurationsRequestArguments::FromRapid
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1443,7 +1443,7 @@ CallThreeDurationsReturnValues CallThreeDurationsReturnValues::FromRapidJsonObje
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1455,7 +1455,7 @@ CallThreeDurationsReturnValues CallThreeDurationsReturnValues::FromRapidJsonObje
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1512,7 +1512,7 @@ CallOneBinaryRequestArguments CallOneBinaryRequestArguments::FromRapidJsonObject
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
 
@@ -1543,7 +1543,7 @@ CallOneBinaryReturnValues CallOneBinaryReturnValues::FromRapidJsonObject(const r
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
 
@@ -1636,7 +1636,7 @@ CallThreeBinariesRequestArguments CallThreeBinariesRequestArguments::FromRapidJs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1648,7 +1648,7 @@ CallThreeBinariesRequestArguments CallThreeBinariesRequestArguments::FromRapidJs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1705,7 +1705,7 @@ CallThreeBinariesReturnValues CallThreeBinariesReturnValues::FromRapidJsonObject
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1717,7 +1717,7 @@ CallThreeBinariesReturnValues CallThreeBinariesReturnValues::FromRapidJsonObject
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -1783,7 +1783,7 @@ CallOneListOfIntegersRequestArguments CallOneListOfIntegersRequestArguments::Fro
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
 
@@ -1826,7 +1826,7 @@ CallOneListOfIntegersReturnValues CallOneListOfIntegersReturnValues::FromRapidJs
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
 
@@ -1955,7 +1955,7 @@ CallTwoListsRequestArguments CallTwoListsRequestArguments::FromRapidJsonObject(c
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
@@ -2031,7 +2031,7 @@ CallTwoListsReturnValues CallTwoListsReturnValues::FromRapidJsonObject(const rap
         }
         else
         {
-            throw std::runtime_error("Received payload doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping

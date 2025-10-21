@@ -195,43 +195,43 @@ private:
     std::map<boost::uuids::uuid, boost::promise<int>> _pendingAddNumbersMethodCalls;
     int _addNumbersMethodSubscriptionId = -1;
     // This is called internally to process responses to `addNumbers` method calls.
-    void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `doSomething` method calls.
     std::map<boost::uuids::uuid, boost::promise<DoSomethingReturnValues>> _pendingDoSomethingMethodCalls;
     int _doSomethingMethodSubscriptionId = -1;
     // This is called internally to process responses to `doSomething` method calls.
-    void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `echo` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::string>> _pendingEchoMethodCalls;
     int _echoMethodSubscriptionId = -1;
     // This is called internally to process responses to `echo` method calls.
-    void _handleEchoResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleEchoResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `what_time_is_it` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingWhatTimeIsItMethodCalls;
     int _whatTimeIsItMethodSubscriptionId = -1;
     // This is called internally to process responses to `what_time_is_it` method calls.
-    void _handleWhatTimeIsItResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleWhatTimeIsItResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `set_the_time` method calls.
     std::map<boost::uuids::uuid, boost::promise<SetTheTimeReturnValues>> _pendingSetTheTimeMethodCalls;
     int _setTheTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `set_the_time` method calls.
-    void _handleSetTheTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleSetTheTimeResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `forward_time` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingForwardTimeMethodCalls;
     int _forwardTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `forward_time` method calls.
-    void _handleForwardTimeResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleForwardTimeResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `how_off_is_the_clock` method calls.
     std::map<boost::uuids::uuid, boost::promise<std::chrono::duration<double>>> _pendingHowOffIsTheClockMethodCalls;
     int _howOffIsTheClockMethodSubscriptionId = -1;
     // This is called internally to process responses to `how_off_is_the_clock` method calls.
-    void _handleHowOffIsTheClockResponse(const std::string& topic, const std::string& payload, const std::string& correlationId);
+    void _handleHowOffIsTheClockResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // ---------------- PROPERTIES ------------------
 

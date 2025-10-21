@@ -8,11 +8,12 @@
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
+#include "interface_exceptions.hpp"
 
 int main(int argc, char** argv)
 {
     // Create a connection to the broker
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "SignalOnly-client-demo");
+    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "signal-only-client-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg)
                          {
