@@ -404,12 +404,12 @@ int main(int argc, char** argv)
 
     client.registerReadWriteListOfStringsPropertyCallback([](std::vector<std::string> value)
                                                           {
-                                                              std::cout << "Received update for read_write_list_of_strings property: " << "value=" << "[Array of " << value.size() << " PRIMITIVE values]" << std::endl;
+                                                              std::cout << "Received update for read_write_list_of_strings property: " << "value=" << "[Array of " <<.size() << "PRIMITIVE values]" << std::endl;
                                                           });
 
     client.registerReadWriteListsPropertyCallback([](std::vector<Numbers> theList, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList)
                                                   {
-                                                      std::cout << "Received update for read_write_lists property: " << "the_list=" << "[Array of " << theList.size() << " ENUM values]" << " | " << "optionalList=" << "None" << std::endl;
+                                                      std::cout << "Received update for read_write_lists property: " << "the_list=" << "[Array of " <<.size() << "ENUM values]" << " | " << "optionalList=" << "None" << std::endl;
                                                   });
 
     // Call each method with example values.
@@ -1234,7 +1234,7 @@ int main(int argc, char** argv)
             if (success)
             {
                 std::cout << "CALL_ONE_LIST_OF_INTEGERS Response: "
-                          << " output1=" << "[Array of " << returnValue.size() << " PRIMITIVE values]" << std::endl;
+                          << " output1=" << "[Array of " << returnValue.size() << "PRIMITIVE values]" << std::endl;
             }
         }
     }
@@ -1267,7 +1267,7 @@ int main(int argc, char** argv)
                           << " output1=";
                 if (returnValue)
                 {
-                    std::cout << "[Array of " << returnValue->size() << " PRIMITIVE values]";
+                    std::cout << (returnValue ? "[Array of PRIMITIVE values]" : "None");
                 }
                 else
                 {
@@ -1304,10 +1304,10 @@ int main(int argc, char** argv)
             if (success)
             {
                 std::cout << "CALL_TWO_LISTS Response: "
-                          << " output1=" << "[Array of " << returnValue.output1.size() << " ENUM values]" << " output2=";
+                          << " output1=" << "[Array of " << returnValue.output1.size() << "ENUM values]" << " output2=";
                 if (returnValue.output2)
                 {
-                    std::cout << "[Array of " << returnValue.output2->size() << " PRIMITIVE values]";
+                    std::cout << (returnValue.output2 ? "[Array of PRIMITIVE values]" : "None");
                 }
                 else
                 {
