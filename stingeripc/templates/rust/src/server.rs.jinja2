@@ -8,6 +8,9 @@ DO NOT MODIFY THIS FILE{# <-- Ignore this because you are editing the template f
 on the next generation.
 
 This is the Server for the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions.
+You may use, modify, and distribute it under any license of your choosing.
 */
 
 use mqttier::{MqttierClient{%if stinger.methods|length > 0 or stinger.properties|length > 0 %}, ReceivedMessage{%endif%}, PublishResult};
