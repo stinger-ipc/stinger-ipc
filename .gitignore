@@ -11,8 +11,14 @@ example_interfaces/*/output/rust/target/
 example_interfaces/*/output/rust/**/target/
 Cargo.lock
 
-# CPP
+# C++ Generated Code
 example_interfaces/*/output/cpp/build/*
+
+# Python generated code
+example_interfaces/*/output/python/__pycache__/
+example_interfaces/*/output/python/*.egg-info/
+example_interfaces/*/output/python/dist/
+example_interfaces/*/output/python/src/*.egg-info/
 
 .vscode/
 build/
