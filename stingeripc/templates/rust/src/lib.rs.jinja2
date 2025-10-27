@@ -8,7 +8,7 @@
 //! - `payloads`: Includes only payloads module
 
 pub mod interface;
-
+mod message;
 #[cfg(feature = "client")]
 pub mod discovery;
 
@@ -24,3 +24,4 @@ pub mod server;
 // Re-export commonly used types from payloads when available
 #[cfg(feature = "payloads")]
 pub use payloads::*;
+

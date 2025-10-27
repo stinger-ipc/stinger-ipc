@@ -116,7 +116,7 @@ int main(int argc, char** argv)
                             {%elif arg.arg_type.name.lower() == 'binary'%}
                                 "[BINARY DATA]"
                             {%elif arg.arg_type.name.lower() == 'array'%}
-                                {%if arg.optional%}({{var_name}} ? "[Array of {{arg.element.arg_type.name}} values]" : "None"){%else%}"[Array of " << {{var_name}}.size() << "{{arg.element.arg_type.name}} values]"{%endif%}
+                                {%if arg.optional%}({{arg.name|lowerCamelCase}} ? "[Array of {{arg.element.arg_type.name}} values]" : "None"){%else%}"[Array of " << {{arg.name|lowerCamelCase}}.size() << "{{arg.element.arg_type.name}} values]"{%endif%}
                             {%-else%}{{arg.name|lowerCamelCase}} /* unhandled arg type*/ {%endif%}
                             {%-endif%} <<
                          {%-if not loop.last %} " | " << {%endif%}

@@ -3,6 +3,9 @@ DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over
 on the next generation.
 
 It contains enumerations used by the weather interface.
+
+LICENSE: This generated code is not subject to any license restrictions.
+You may use, modify, and distribute it under any license of your choosing.
 """
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict

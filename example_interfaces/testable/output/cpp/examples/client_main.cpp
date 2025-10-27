@@ -404,12 +404,12 @@ int main(int argc, char** argv)
 
     client.registerReadWriteListOfStringsPropertyCallback([](std::vector<std::string> value)
                                                           {
-                                                              std::cout << "Received update for read_write_list_of_strings property: " << "value=" << "[Array of " <<.size() << "PRIMITIVE values]" << std::endl;
+                                                              std::cout << "Received update for read_write_list_of_strings property: " << "value=" << "[Array of " << value.size() << "PRIMITIVE values]" << std::endl;
                                                           });
 
     client.registerReadWriteListsPropertyCallback([](std::vector<Numbers> theList, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList)
                                                   {
-                                                      std::cout << "Received update for read_write_lists property: " << "the_list=" << "[Array of " <<.size() << "ENUM values]" << " | " << "optionalList=" << "None" << std::endl;
+                                                      std::cout << "Received update for read_write_lists property: " << "the_list=" << "[Array of " << theList.size() << "ENUM values]" << " | " << "optionalList=" << "None" << std::endl;
                                                   });
 
     // Call each method with example values.

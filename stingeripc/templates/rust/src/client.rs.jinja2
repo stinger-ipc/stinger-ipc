@@ -12,7 +12,9 @@ LICENSE: This generated code is not subject to any license restrictions.
 You may use, modify, and distribute it under any license of your choosing.
 */
 #[cfg(feature = "client")]
-use mqttier::{MqttierClient, ReceivedMessage};
+use stinger_mqtt_trait::{MqttClient};
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+use crate::message;
 {%if stinger.methods|length > 0 -%}
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -24,23 +26,25 @@ use crate::payloads::{MethodReturnCode, *};
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
-use tokio::sync::{broadcast, mpsc{%if stinger.methods|length > 0 -%}, oneshot{%endif-%}{%if stinger.properties|length > 0 -%}, watch{%endif-%}};
+use tokio::sync::{broadcast{%if stinger.methods|length > 0 -%}, oneshot{%endif-%}{%if stinger.properties|length > 0 -%}, watch{%endif-%}};
 use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
-
+{% if stinger.properties|length > 0 %}
+use std::sync::atomic::{AtomicU32, Ordering};
+{%endif%}
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
     {%for method_name, method in stinger.methods.items()-%}
-    {{method_name | snake_case}}_method_resp: usize,
+    {{method_name | snake_case}}_method_resp: u32,
     {%endfor%}
     {%for sig_name, sig in stinger.signals.items()-%}
-    {{sig_name | snake_case}}_signal: Option<usize>,
+    {{sig_name | snake_case}}_signal: Option<u32>,
     {%-endfor%}
     {%for prop_name, prop in stinger.properties.items()-%}
-    {{prop_name | snake_case}}_property_value: usize,
+    {{prop_name | snake_case}}_property_value: u32,
     {%endfor%}
 }
 
@@ -65,26 +69,27 @@ pub struct {{stinger.name | UpperCamelCase}}Properties {
     pub {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.arg_list[0].rust_type}}>>>,
     {%endif%}
     {{prop_name | snake_case}}_tx_channel: watch::Sender<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>>,
+    pub {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%-endfor%}
 }
 {%endif%}
 
 /// This is the struct for our API client.
 #[derive(Clone)]
-pub struct {{stinger.rust.client_struct_name}} {
-    mqttier_client: MqttierClient,
+pub struct {{stinger.rust.client_struct_name}}<C: MqttClient> {
+    mqtt_client: C,
     {%if stinger.methods | length > 0 %}/// Temporarily holds oneshot channels for responses to method calls.
     pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>>,
     {%endif%}
 
-    /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
+    /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
-    msg_streamer_rx: Arc<Mutex<Option<mpsc::Receiver<ReceivedMessage>>>>,
+    msg_streamer_rx: Arc<Mutex<Option<broadcast::Receiver<MqttMessage>>>>,
 
     /// The Sender side of MQTT messages that are received from the broker.  This tx
     /// side is cloned for each subscription made.
     #[allow(dead_code)]
-    msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
+    msg_streamer_tx: broadcast::Sender<MqttMessage>,
     {%if stinger.properties|length > 0%}
     /// Struct contains all the properties.
     pub properties: {{stinger.name | UpperCamelCase}}Properties,
@@ -104,33 +109,35 @@ pub struct {{stinger.rust.client_struct_name}} {
     {%endif%}
 }
 
-impl {{stinger.rust.client_struct_name}} {
+impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
 
-    /// Creates a new {{stinger.rust.client_struct_name}} that uses an MqttierClient.
-    pub async fn new(connection: &mut MqttierClient, service_id: String) -> Self {
+    /// Creates a new {{stinger.rust.client_struct_name}} that uses an MqttClient.
+    pub async fn new(mut connection: C, service_id: String) -> Self {
 
         // Create a channel for messages to get from the Connection object to this {{stinger.rust.client_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
-        let (message_received_tx, message_received_rx) = mpsc::channel(64);
+        let (message_received_tx, message_received_rx) = broadcast::channel(64);
+
+        let client_id = connection.get_client_id();
 
         {%for method_name, method in stinger.methods.items()-%}
-        let topic_{{method_name | snake_case}}_method_resp = format!("{{method.response_topic('{}')}}", connection.client_id);
-        let subscription_id_{{method_name | snake_case}}_method_resp = connection.subscribe(topic_{{method_name | snake_case}}_method_resp, 2, message_received_tx.clone()).await;
-        let subscription_id_{{method_name | snake_case}}_method_resp = subscription_id_{{method_name | snake_case}}_method_resp.unwrap_or_else(|_| usize::MAX);
+        let topic_{{method_name | snake_case}}_method_resp = format!("{{method.response_topic('{}')}}", client_id);
+        let subscription_id_{{method_name | snake_case}}_method_resp = connection.subscribe(topic_{{method_name | snake_case}}_method_resp, QoS::ExactlyOnce, message_received_tx.clone()).await;
+        let subscription_id_{{method_name | snake_case}}_method_resp = subscription_id_{{method_name | snake_case}}_method_resp.unwrap_or_else(|_| u32::MAX);
         {%endfor%}
 
         // Subscribe to all the topics needed for signals.
         {%for signal_name, signal in stinger.signals.items()-%}
         let topic_{{signal_name | snake_case}}_signal = format!("{{signal.topic}}", service_id);
-        let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(topic_{{signal_name | snake_case}}_signal, 2, message_received_tx.clone()).await;
-        let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| usize::MAX);
+        let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(topic_{{signal_name | snake_case}}_signal, QoS::ExactlyOnce, message_received_tx.clone()).await;
+        let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| u32::MAX);
         {%endfor%}
 
         // Subscribe to all the topics needed for properties.
         {% for prop_name, prop in stinger.properties.items() %}
         let topic_{{prop_name | snake_case}}_property_value = format!("{{prop.value_topic}}", service_id);
-        let subscription_id_{{prop_name | snake_case}}_property_value = connection.subscribe(topic_{{prop_name | snake_case}}_property_value, 1, message_received_tx.clone()).await;
-        let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or_else(|_| usize::MAX);
+        let subscription_id_{{prop_name | snake_case}}_property_value = connection.subscribe(topic_{{prop_name | snake_case}}_property_value, QoS::AtLeastOnce, message_received_tx.clone()).await;
+        let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or_else(|_| u32::MAX);
         {% endfor %}
 
         {%if stinger.properties|length > 0%}
@@ -142,6 +149,7 @@ impl {{stinger.rust.client_struct_name}} {
             {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
             {%-endif-%}
             {{prop_name | snake_case}}_tx_channel: watch::channel(None).0,
+            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(0)),
         {%-endfor%}
         };
         {%endif%}
@@ -167,7 +175,7 @@ impl {{stinger.rust.client_struct_name}} {
 
         // Create {{stinger.rust.client_struct_name}} structure.
         let inst = {{stinger.rust.client_struct_name}} {
-            mqttier_client: connection.clone(),
+            mqtt_client: connection,
             {%if stinger.methods | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
@@ -176,7 +184,7 @@ impl {{stinger.rust.client_struct_name}} {
             {%endif%}
             subscription_ids: sub_ids,
             {%if stinger.signals | length > 0 %}signal_channels: signal_channels,{%endif%}
-            client_id: connection.client_id.to_string(),
+            client_id: client_id,
             {%if stinger.methods | length > 0 %}
             service_instance_id: service_id,
             {%endif%}
@@ -197,7 +205,6 @@ impl {{stinger.rust.client_struct_name}} {
     async fn start_{{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> oneshot::Receiver<String> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
-        let correlation_data = correlation_id.as_bytes().to_vec();
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
@@ -211,7 +218,8 @@ impl {{stinger.rust.client_struct_name}} {
         };
 
         let response_topic: String = format!("{{method.response_topic('{}')}}", self.client_id);
-        let _ = self.mqttier_client.publish_request(format!("{{method.topic}}", self.service_instance_id), &data, response_topic, correlation_data).await;
+        let msg = message::request(&format!("{{method.topic}}", self.service_instance_id), &data, correlation_id, response_topic).unwrap();
+        let _ = self.mqtt_client.publish(msg).await;
         receiver
     }
 
@@ -252,16 +260,18 @@ impl {{stinger.rust.client_struct_name}} {
         let data = {%if prop.arg_list | length > 1 %}value{% else %}{{prop_name | UpperCamelCase}}Property { 
             {{prop.arg_list[0].name}}: value
         } {%- endif %};
-        let _publish_result = self.mqttier_client.publish_structure("{{prop.update_topic}}".to_string(), &data);
+        let topic: String = format!("{{prop.update_topic}}", self.client_id);
+        let msg = message::property_update_message(&topic, &data, self.properties.{{prop_name | snake_case}}_version.load(Ordering::Relaxed).to_string()).unwrap();
+        let _publish_result = self.mqtt_client.publish(msg);
         Ok(())
     }
     {%endif%}
     {%endfor%}
 
     /// Starts the tasks that process messages received.
-    pub async fn run_loop(&self) -> Result<(), JoinError> {
-        // Make sure the MqttierClient is connected and running.
-        let _ = self.mqttier_client.run_loop().await;
+    pub async fn run_loop(&mut self) -> Result<(), JoinError> {
+        // Make sure the MqttClient is connected and running.
+        let _ = self.mqtt_client.start().await;
 
         {%if stinger.methods | length > 0%}// Clone the Arc pointer to the map.  This will be moved into the loop_task.
         let resp_map: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<String>>>> = self.pending_responses.clone();
@@ -279,79 +289,81 @@ impl {{stinger.rust.client_struct_name}} {
         let props = self.properties.clone();
         {%endif%}
         let _loop_task = tokio::spawn(async move {
-            while let Some(msg) = message_receiver.recv().await {
+            while let Ok(msg) = message_receiver.recv().await {
                 {% if stinger.methods|length > 0 %}
-                let opt_corr_data: Option<Vec<u8>> = msg.correlation_data.clone();
+                let opt_corr_data: Option<Vec<u8>> = msg.correlation_data.clone().map(|b| b.to_vec());
                 let opt_corr_id: Option<Uuid> = opt_corr_data.and_then(|b| Uuid::from_slice(b.as_slice()).ok());
+                if let Some(subscription_id) = msg.subscription_id {
 
-                let payload = String::from_utf8_lossy(&msg.payload).to_string();
-                {%-for method_name, method in stinger.methods.items()%}
-                {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{method_name | snake_case}}_method_resp { // TODO: Simplify subscription because we'll always look up by correlation id.
-                    if opt_corr_id.is_some() {
-                        let opt_sender = opt_corr_id
-                            .and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                        if let Some(sender) = opt_sender {
-                            let oss: oneshot::Sender<String> = sender;
-                            match oss.send(payload) {
-                                Ok(_) => (),
-                                Err(_) => (),
+                    let payload = String::from_utf8_lossy(&msg.payload).to_string();
+                    {%-for method_name, method in stinger.methods.items()%}
+                    {%if not loop.first%}else {%endif%}if subscription_id == sub_ids.{{method_name | snake_case}}_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id
+                                .and_then(|uuid| {
+                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                    hashmap.remove(&uuid)
+                                });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
                             }
                         }
                     }
-                }
-                {%-endfor%}
-                {%endif%}
-                {%-for signal_name, signal in stinger.signals.items()%}
-                {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{signal_name | snake_case}}_signal.unwrap_or_default() {
-                    let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
-                    {%if signal.arg_list | length == 0 %}
-                    let _send_result = chan.send(());
-                    {%elif signal.arg_list | length == 1 %}
-                    match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
-                        Ok(pl) => {
-                            let _send_result = chan.send(pl.{{signal.arg_list[0].name|snake_case}});
-                        },
-                        Err(e) => {
-                            warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                            continue;
-                        }
-                    }
-                    {%else%}
-                    match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
-                        Ok(pl) => {
-                            let _send_result = chan.send(pl);
-                        },
-                        Err(e) => {
-                            warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                            continue;
-                        }
-                    }
+                    {%-endfor%}
                     {%endif%}
-                }
-                {%endfor%}
-                {%-for prop_name, prop in stinger.properties.items()%}
-                {%if not loop.first%}else {%endif%}if msg.subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
-                    match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property >(&msg.payload) {
-                        Ok(pl) => {
-                            let mut guard = props.{{prop_name | snake_case}}.lock().expect("Mutex was poisoned");
-                            {%if prop.arg_list | length == 1 %}
-                            *guard = Some(pl.{{prop.arg_list[0].name}}.clone());
-                            let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl.{{prop.arg_list[0].name}}));
-                            {%else%}
-                            *guard = Some(pl.clone());
-                            let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl));
-                            {%endif%}
-                        },
-                        Err(e) => {
-                            warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                            continue;
+                    {%-for signal_name, signal in stinger.signals.items()%}
+                    {%if not loop.first%}else {%endif%}if Some(subscription_id) == sub_ids.{{signal_name | snake_case}}_signal {
+                        let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
+                        {%if signal.arg_list | length == 0 %}
+                        let _send_result = chan.send(());
+                        {%elif signal.arg_list | length == 1 %}
+                        match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
+                            Ok(pl) => {
+                                let _send_result = chan.send(pl.{{signal.arg_list[0].name|snake_case}});
+                            },
+                            Err(e) => {
+                                warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                continue;
+                            }
+                        }
+                        {%else%}
+                        match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
+                            Ok(pl) => {
+                                let _send_result = chan.send(pl);
+                            },
+                            Err(e) => {
+                                warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                continue;
+                            }
+                        }
+                        {%endif%}
+                    }
+                    {%endfor%}
+                    {%-for prop_name, prop in stinger.properties.items()%}
+                    {%if not loop.first%}else {%endif%}if subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
+                        match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property >(&msg.payload) {
+                            Ok(pl) => {
+                                let mut guard = props.{{prop_name | snake_case}}.lock().expect("Mutex was poisoned");
+                                {%if prop.arg_list | length == 1 %}
+                                *guard = Some(pl.{{prop.arg_list[0].name}}.clone());
+                                let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl.{{prop.arg_list[0].name}}));
+                                {%else%}
+                                *guard = Some(pl.clone());
+                                let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl));
+                                {%endif%}
+                            },
+                            Err(e) => {
+                                warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                continue;
+                            }
                         }
                     }
+                    {%endfor%}
                 }
-                {%endfor%}
             }   
         });
 

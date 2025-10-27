@@ -7,12 +7,14 @@ DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over
 on the next generation.
 
 This is the Server for the Test Able interface.
-*/
 
-use mqttier::{MqttierClient, PublishResult, ReceivedMessage};
+LICENSE: This generated code is not subject to any license restrictions.
+You may use, modify, and distribute it under any license of your choosing.
+*/
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+use bytes::Bytes;
 
 use async_trait::async_trait;
 use std::any::Any;
@@ -20,12 +22,17 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::Mutex as AsyncMutex;
 
 use serde_json;
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{broadcast, watch};
+
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use std::future::Future;
 use std::pin::Pin;
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+use stinger_mqtt_trait::{MqttClient, MqttError, MqttPublishSuccess};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
+use crate::message;
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -34,177 +41,177 @@ use tracing::{debug, error, info, warn};
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct TestAbleServerSubscriptionIds {
-    call_with_nothing_method_req: usize,
-    call_one_integer_method_req: usize,
-    call_optional_integer_method_req: usize,
-    call_three_integers_method_req: usize,
-    call_one_string_method_req: usize,
-    call_optional_string_method_req: usize,
-    call_three_strings_method_req: usize,
-    call_one_enum_method_req: usize,
-    call_optional_enum_method_req: usize,
-    call_three_enums_method_req: usize,
-    call_one_struct_method_req: usize,
-    call_optional_struct_method_req: usize,
-    call_three_structs_method_req: usize,
-    call_one_date_time_method_req: usize,
-    call_optional_date_time_method_req: usize,
-    call_three_date_times_method_req: usize,
-    call_one_duration_method_req: usize,
-    call_optional_duration_method_req: usize,
-    call_three_durations_method_req: usize,
-    call_one_binary_method_req: usize,
-    call_optional_binary_method_req: usize,
-    call_three_binaries_method_req: usize,
-    call_one_list_of_integers_method_req: usize,
-    call_optional_list_of_floats_method_req: usize,
-    call_two_lists_method_req: usize,
+    call_with_nothing_method_req: u32,
+    call_one_integer_method_req: u32,
+    call_optional_integer_method_req: u32,
+    call_three_integers_method_req: u32,
+    call_one_string_method_req: u32,
+    call_optional_string_method_req: u32,
+    call_three_strings_method_req: u32,
+    call_one_enum_method_req: u32,
+    call_optional_enum_method_req: u32,
+    call_three_enums_method_req: u32,
+    call_one_struct_method_req: u32,
+    call_optional_struct_method_req: u32,
+    call_three_structs_method_req: u32,
+    call_one_date_time_method_req: u32,
+    call_optional_date_time_method_req: u32,
+    call_three_date_times_method_req: u32,
+    call_one_duration_method_req: u32,
+    call_optional_duration_method_req: u32,
+    call_three_durations_method_req: u32,
+    call_one_binary_method_req: u32,
+    call_optional_binary_method_req: u32,
+    call_three_binaries_method_req: u32,
+    call_one_list_of_integers_method_req: u32,
+    call_optional_list_of_floats_method_req: u32,
+    call_two_lists_method_req: u32,
 
-    read_write_integer_property_update: usize,
+    read_write_integer_property_update: u32,
 
-    read_write_optional_integer_property_update: usize,
+    read_write_optional_integer_property_update: u32,
 
-    read_write_two_integers_property_update: usize,
+    read_write_two_integers_property_update: u32,
 
-    read_write_string_property_update: usize,
+    read_write_string_property_update: u32,
 
-    read_write_optional_string_property_update: usize,
+    read_write_optional_string_property_update: u32,
 
-    read_write_two_strings_property_update: usize,
+    read_write_two_strings_property_update: u32,
 
-    read_write_struct_property_update: usize,
+    read_write_struct_property_update: u32,
 
-    read_write_optional_struct_property_update: usize,
+    read_write_optional_struct_property_update: u32,
 
-    read_write_two_structs_property_update: usize,
+    read_write_two_structs_property_update: u32,
 
-    read_write_enum_property_update: usize,
+    read_write_enum_property_update: u32,
 
-    read_write_optional_enum_property_update: usize,
+    read_write_optional_enum_property_update: u32,
 
-    read_write_two_enums_property_update: usize,
+    read_write_two_enums_property_update: u32,
 
-    read_write_datetime_property_update: usize,
+    read_write_datetime_property_update: u32,
 
-    read_write_optional_datetime_property_update: usize,
+    read_write_optional_datetime_property_update: u32,
 
-    read_write_two_datetimes_property_update: usize,
+    read_write_two_datetimes_property_update: u32,
 
-    read_write_duration_property_update: usize,
+    read_write_duration_property_update: u32,
 
-    read_write_optional_duration_property_update: usize,
+    read_write_optional_duration_property_update: u32,
 
-    read_write_two_durations_property_update: usize,
+    read_write_two_durations_property_update: u32,
 
-    read_write_binary_property_update: usize,
+    read_write_binary_property_update: u32,
 
-    read_write_optional_binary_property_update: usize,
+    read_write_optional_binary_property_update: u32,
 
-    read_write_two_binaries_property_update: usize,
+    read_write_two_binaries_property_update: u32,
 
-    read_write_list_of_strings_property_update: usize,
+    read_write_list_of_strings_property_update: u32,
 
-    read_write_lists_property_update: usize,
+    read_write_lists_property_update: u32,
 }
 
 #[derive(Clone)]
 struct TestAbleProperties {
-    read_write_integer_topic: Arc<String>,
     read_write_integer: Arc<AsyncMutex<Option<ReadWriteIntegerProperty>>>,
     read_write_integer_tx_channel: watch::Sender<Option<i32>>,
-    read_only_integer_topic: Arc<String>,
+    read_write_integer_version: Arc<AtomicU32>,
     read_only_integer: Arc<AsyncMutex<Option<ReadOnlyIntegerProperty>>>,
     read_only_integer_tx_channel: watch::Sender<Option<i32>>,
-    read_write_optional_integer_topic: Arc<String>,
+    read_only_integer_version: Arc<AtomicU32>,
     read_write_optional_integer: Arc<AsyncMutex<Option<ReadWriteOptionalIntegerProperty>>>,
     read_write_optional_integer_tx_channel: watch::Sender<Option<Option<i32>>>,
-    read_write_two_integers_topic: Arc<String>,
+    read_write_optional_integer_version: Arc<AtomicU32>,
     read_write_two_integers: Arc<AsyncMutex<Option<ReadWriteTwoIntegersProperty>>>,
     read_write_two_integers_tx_channel: watch::Sender<Option<ReadWriteTwoIntegersProperty>>,
-    read_only_string_topic: Arc<String>,
+    read_write_two_integers_version: Arc<AtomicU32>,
     read_only_string: Arc<AsyncMutex<Option<ReadOnlyStringProperty>>>,
     read_only_string_tx_channel: watch::Sender<Option<String>>,
-    read_write_string_topic: Arc<String>,
+    read_only_string_version: Arc<AtomicU32>,
     read_write_string: Arc<AsyncMutex<Option<ReadWriteStringProperty>>>,
     read_write_string_tx_channel: watch::Sender<Option<String>>,
-    read_write_optional_string_topic: Arc<String>,
+    read_write_string_version: Arc<AtomicU32>,
     read_write_optional_string: Arc<AsyncMutex<Option<ReadWriteOptionalStringProperty>>>,
     read_write_optional_string_tx_channel: watch::Sender<Option<Option<String>>>,
-    read_write_two_strings_topic: Arc<String>,
+    read_write_optional_string_version: Arc<AtomicU32>,
     read_write_two_strings: Arc<AsyncMutex<Option<ReadWriteTwoStringsProperty>>>,
     read_write_two_strings_tx_channel: watch::Sender<Option<ReadWriteTwoStringsProperty>>,
-    read_write_struct_topic: Arc<String>,
+    read_write_two_strings_version: Arc<AtomicU32>,
     read_write_struct: Arc<AsyncMutex<Option<ReadWriteStructProperty>>>,
     read_write_struct_tx_channel: watch::Sender<Option<AllTypes>>,
-    read_write_optional_struct_topic: Arc<String>,
+    read_write_struct_version: Arc<AtomicU32>,
     read_write_optional_struct: Arc<AsyncMutex<Option<ReadWriteOptionalStructProperty>>>,
     read_write_optional_struct_tx_channel: watch::Sender<Option<Option<AllTypes>>>,
-    read_write_two_structs_topic: Arc<String>,
+    read_write_optional_struct_version: Arc<AtomicU32>,
     read_write_two_structs: Arc<AsyncMutex<Option<ReadWriteTwoStructsProperty>>>,
     read_write_two_structs_tx_channel: watch::Sender<Option<ReadWriteTwoStructsProperty>>,
-    read_only_enum_topic: Arc<String>,
+    read_write_two_structs_version: Arc<AtomicU32>,
     read_only_enum: Arc<AsyncMutex<Option<ReadOnlyEnumProperty>>>,
     read_only_enum_tx_channel: watch::Sender<Option<Numbers>>,
-    read_write_enum_topic: Arc<String>,
+    read_only_enum_version: Arc<AtomicU32>,
     read_write_enum: Arc<AsyncMutex<Option<ReadWriteEnumProperty>>>,
     read_write_enum_tx_channel: watch::Sender<Option<Numbers>>,
-    read_write_optional_enum_topic: Arc<String>,
+    read_write_enum_version: Arc<AtomicU32>,
     read_write_optional_enum: Arc<AsyncMutex<Option<ReadWriteOptionalEnumProperty>>>,
     read_write_optional_enum_tx_channel: watch::Sender<Option<Option<Numbers>>>,
-    read_write_two_enums_topic: Arc<String>,
+    read_write_optional_enum_version: Arc<AtomicU32>,
     read_write_two_enums: Arc<AsyncMutex<Option<ReadWriteTwoEnumsProperty>>>,
     read_write_two_enums_tx_channel: watch::Sender<Option<ReadWriteTwoEnumsProperty>>,
-    read_write_datetime_topic: Arc<String>,
+    read_write_two_enums_version: Arc<AtomicU32>,
     read_write_datetime: Arc<AsyncMutex<Option<ReadWriteDatetimeProperty>>>,
     read_write_datetime_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
-    read_write_optional_datetime_topic: Arc<String>,
+    read_write_datetime_version: Arc<AtomicU32>,
     read_write_optional_datetime: Arc<AsyncMutex<Option<ReadWriteOptionalDatetimeProperty>>>,
     read_write_optional_datetime_tx_channel:
         watch::Sender<Option<Option<chrono::DateTime<chrono::Utc>>>>,
-    read_write_two_datetimes_topic: Arc<String>,
+    read_write_optional_datetime_version: Arc<AtomicU32>,
     read_write_two_datetimes: Arc<AsyncMutex<Option<ReadWriteTwoDatetimesProperty>>>,
     read_write_two_datetimes_tx_channel: watch::Sender<Option<ReadWriteTwoDatetimesProperty>>,
-    read_write_duration_topic: Arc<String>,
+    read_write_two_datetimes_version: Arc<AtomicU32>,
     read_write_duration: Arc<AsyncMutex<Option<ReadWriteDurationProperty>>>,
     read_write_duration_tx_channel: watch::Sender<Option<chrono::Duration>>,
-    read_write_optional_duration_topic: Arc<String>,
+    read_write_duration_version: Arc<AtomicU32>,
     read_write_optional_duration: Arc<AsyncMutex<Option<ReadWriteOptionalDurationProperty>>>,
     read_write_optional_duration_tx_channel: watch::Sender<Option<Option<chrono::Duration>>>,
-    read_write_two_durations_topic: Arc<String>,
+    read_write_optional_duration_version: Arc<AtomicU32>,
     read_write_two_durations: Arc<AsyncMutex<Option<ReadWriteTwoDurationsProperty>>>,
     read_write_two_durations_tx_channel: watch::Sender<Option<ReadWriteTwoDurationsProperty>>,
-    read_write_binary_topic: Arc<String>,
+    read_write_two_durations_version: Arc<AtomicU32>,
     read_write_binary: Arc<AsyncMutex<Option<ReadWriteBinaryProperty>>>,
     read_write_binary_tx_channel: watch::Sender<Option<Vec<u8>>>,
-    read_write_optional_binary_topic: Arc<String>,
+    read_write_binary_version: Arc<AtomicU32>,
     read_write_optional_binary: Arc<AsyncMutex<Option<ReadWriteOptionalBinaryProperty>>>,
     read_write_optional_binary_tx_channel: watch::Sender<Option<Option<Vec<u8>>>>,
-    read_write_two_binaries_topic: Arc<String>,
+    read_write_optional_binary_version: Arc<AtomicU32>,
     read_write_two_binaries: Arc<AsyncMutex<Option<ReadWriteTwoBinariesProperty>>>,
     read_write_two_binaries_tx_channel: watch::Sender<Option<ReadWriteTwoBinariesProperty>>,
-    read_write_list_of_strings_topic: Arc<String>,
+    read_write_two_binaries_version: Arc<AtomicU32>,
     read_write_list_of_strings: Arc<AsyncMutex<Option<ReadWriteListOfStringsProperty>>>,
     read_write_list_of_strings_tx_channel: watch::Sender<Option<Vec<String>>>,
-    read_write_lists_topic: Arc<String>,
+    read_write_list_of_strings_version: Arc<AtomicU32>,
     read_write_lists: Arc<AsyncMutex<Option<ReadWriteListsProperty>>>,
     read_write_lists_tx_channel: watch::Sender<Option<ReadWriteListsProperty>>,
+    read_write_lists_version: Arc<AtomicU32>,
 }
 
 #[derive(Clone)]
-pub struct TestAbleServer {
-    mqttier_client: MqttierClient,
+pub struct TestAbleServer<C: MqttClient> {
+    mqtt_client: C,
 
-    /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
+    /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
-    msg_streamer_rx: Arc<Mutex<Option<mpsc::Receiver<ReceivedMessage>>>>,
+    msg_streamer_rx: Arc<Mutex<Option<broadcast::Receiver<MqttMessage>>>>,
 
     /// The Sender side of MQTT messages that are received from the broker.  This tx
     /// side is cloned for each subscription made.
     #[allow(dead_code)]
-    msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
+    msg_streamer_tx: broadcast::Sender<MqttMessage>,
 
     /// Struct contains all the method handlers.
-    method_handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
+    method_handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
 
     /// Struct contains all the properties.
     properties: TestAbleProperties,
@@ -219,266 +226,266 @@ pub struct TestAbleServer {
     pub instance_id: String,
 }
 
-impl TestAbleServer {
+impl<C: MqttClient + Clone + Send> TestAbleServer<C> {
     pub async fn new(
-        connection: &mut MqttierClient,
-        method_handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
+        mut connection: C,
+        method_handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
         instance_id: String,
     ) -> Self {
-        // Create a channel for messages to get from the MqttierClient object to this TestAbleServer object.
+        // Create a channel for messages to get from the MqttClient object to this TestAbleServer object.
         // The Connection object uses a clone of the tx side of the channel.
-        let (message_received_tx, message_received_rx) = mpsc::channel::<ReceivedMessage>(64);
+        let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
         // Create method handler struct
         let subscription_id_call_with_nothing_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callWithNothing", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_with_nothing_method_req =
-            subscription_id_call_with_nothing_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_with_nothing_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_one_integer_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOneInteger", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_one_integer_method_req =
-            subscription_id_call_one_integer_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_one_integer_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_optional_integer_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOptionalInteger", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_optional_integer_method_req =
-            subscription_id_call_optional_integer_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_optional_integer_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_three_integers_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callThreeIntegers", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_three_integers_method_req =
-            subscription_id_call_three_integers_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_three_integers_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_one_string_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOneString", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_one_string_method_req =
-            subscription_id_call_one_string_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_one_string_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_optional_string_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOptionalString", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_optional_string_method_req =
-            subscription_id_call_optional_string_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_optional_string_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_three_strings_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callThreeStrings", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_three_strings_method_req =
-            subscription_id_call_three_strings_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_three_strings_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_one_enum_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOneEnum", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_one_enum_method_req =
-            subscription_id_call_one_enum_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_one_enum_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_optional_enum_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOptionalEnum", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_optional_enum_method_req =
-            subscription_id_call_optional_enum_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_optional_enum_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_three_enums_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callThreeEnums", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_three_enums_method_req =
-            subscription_id_call_three_enums_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_three_enums_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_one_struct_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOneStruct", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_one_struct_method_req =
-            subscription_id_call_one_struct_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_one_struct_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_optional_struct_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOptionalStruct", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_optional_struct_method_req =
-            subscription_id_call_optional_struct_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_optional_struct_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_three_structs_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callThreeStructs", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_three_structs_method_req =
-            subscription_id_call_three_structs_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_three_structs_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_one_date_time_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOneDateTime", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_one_date_time_method_req =
-            subscription_id_call_one_date_time_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_one_date_time_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_optional_date_time_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOptionalDateTime", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_optional_date_time_method_req =
-            subscription_id_call_optional_date_time_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_optional_date_time_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_three_date_times_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callThreeDateTimes", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_three_date_times_method_req =
-            subscription_id_call_three_date_times_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_three_date_times_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_one_duration_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOneDuration", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_one_duration_method_req =
-            subscription_id_call_one_duration_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_one_duration_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_optional_duration_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOptionalDuration", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_optional_duration_method_req =
-            subscription_id_call_optional_duration_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_optional_duration_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_three_durations_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callThreeDurations", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_three_durations_method_req =
-            subscription_id_call_three_durations_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_three_durations_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_one_binary_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOneBinary", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_one_binary_method_req =
-            subscription_id_call_one_binary_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_one_binary_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_optional_binary_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOptionalBinary", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_optional_binary_method_req =
-            subscription_id_call_optional_binary_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_optional_binary_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_three_binaries_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callThreeBinaries", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_three_binaries_method_req =
-            subscription_id_call_three_binaries_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_three_binaries_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_one_list_of_integers_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOneListOfIntegers", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_one_list_of_integers_method_req =
-            subscription_id_call_one_list_of_integers_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_one_list_of_integers_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_optional_list_of_floats_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callOptionalListOfFloats", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_optional_list_of_floats_method_req =
-            subscription_id_call_optional_list_of_floats_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_optional_list_of_floats_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_call_two_lists_method_req = connection
             .subscribe(
                 format!("testAble/{}/method/callTwoLists", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_call_two_lists_method_req =
-            subscription_id_call_two_lists_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_call_two_lists_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_integer_property_update = connection
             .subscribe(
@@ -486,12 +493,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteInteger/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_integer_property_update =
-            subscription_id_read_write_integer_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_integer_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_optional_integer_property_update = connection
             .subscribe(
@@ -499,13 +506,13 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteOptionalInteger/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_optional_integer_property_update =
             subscription_id_read_write_optional_integer_property_update
-                .unwrap_or_else(|_| usize::MAX);
+                .unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_two_integers_property_update = connection
             .subscribe(
@@ -513,22 +520,22 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteTwoIntegers/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_two_integers_property_update =
-            subscription_id_read_write_two_integers_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_two_integers_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_string_property_update = connection
             .subscribe(
                 format!("testAble/{}/property/readWriteString/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_string_property_update =
-            subscription_id_read_write_string_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_string_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_optional_string_property_update = connection
             .subscribe(
@@ -536,13 +543,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteOptionalString/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_optional_string_property_update =
-            subscription_id_read_write_optional_string_property_update
-                .unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_optional_string_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_two_strings_property_update = connection
             .subscribe(
@@ -550,22 +556,22 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteTwoStrings/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_two_strings_property_update =
-            subscription_id_read_write_two_strings_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_two_strings_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_struct_property_update = connection
             .subscribe(
                 format!("testAble/{}/property/readWriteStruct/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_struct_property_update =
-            subscription_id_read_write_struct_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_struct_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_optional_struct_property_update = connection
             .subscribe(
@@ -573,13 +579,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteOptionalStruct/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_optional_struct_property_update =
-            subscription_id_read_write_optional_struct_property_update
-                .unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_optional_struct_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_two_structs_property_update = connection
             .subscribe(
@@ -587,22 +592,22 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteTwoStructs/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_two_structs_property_update =
-            subscription_id_read_write_two_structs_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_two_structs_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_enum_property_update = connection
             .subscribe(
                 format!("testAble/{}/property/readWriteEnum/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_enum_property_update =
-            subscription_id_read_write_enum_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_enum_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_optional_enum_property_update = connection
             .subscribe(
@@ -610,12 +615,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteOptionalEnum/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_optional_enum_property_update =
-            subscription_id_read_write_optional_enum_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_optional_enum_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_two_enums_property_update = connection
             .subscribe(
@@ -623,12 +628,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteTwoEnums/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_two_enums_property_update =
-            subscription_id_read_write_two_enums_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_two_enums_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_datetime_property_update = connection
             .subscribe(
@@ -636,12 +641,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteDatetime/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_datetime_property_update =
-            subscription_id_read_write_datetime_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_datetime_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_optional_datetime_property_update = connection
             .subscribe(
@@ -649,13 +654,13 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteOptionalDatetime/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_optional_datetime_property_update =
             subscription_id_read_write_optional_datetime_property_update
-                .unwrap_or_else(|_| usize::MAX);
+                .unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_two_datetimes_property_update = connection
             .subscribe(
@@ -663,12 +668,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteTwoDatetimes/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_two_datetimes_property_update =
-            subscription_id_read_write_two_datetimes_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_two_datetimes_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_duration_property_update = connection
             .subscribe(
@@ -676,12 +681,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteDuration/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_duration_property_update =
-            subscription_id_read_write_duration_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_duration_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_optional_duration_property_update = connection
             .subscribe(
@@ -689,13 +694,13 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteOptionalDuration/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_optional_duration_property_update =
             subscription_id_read_write_optional_duration_property_update
-                .unwrap_or_else(|_| usize::MAX);
+                .unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_two_durations_property_update = connection
             .subscribe(
@@ -703,22 +708,22 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteTwoDurations/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_two_durations_property_update =
-            subscription_id_read_write_two_durations_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_two_durations_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_binary_property_update = connection
             .subscribe(
                 format!("testAble/{}/property/readWriteBinary/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_binary_property_update =
-            subscription_id_read_write_binary_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_binary_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_optional_binary_property_update = connection
             .subscribe(
@@ -726,13 +731,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteOptionalBinary/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_optional_binary_property_update =
-            subscription_id_read_write_optional_binary_property_update
-                .unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_optional_binary_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_two_binaries_property_update = connection
             .subscribe(
@@ -740,12 +744,12 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteTwoBinaries/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_two_binaries_property_update =
-            subscription_id_read_write_two_binaries_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_two_binaries_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_list_of_strings_property_update = connection
             .subscribe(
@@ -753,23 +757,22 @@ impl TestAbleServer {
                     "testAble/{}/property/readWriteListOfStrings/setValue",
                     instance_id
                 ),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_list_of_strings_property_update =
-            subscription_id_read_write_list_of_strings_property_update
-                .unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_list_of_strings_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_read_write_lists_property_update = connection
             .subscribe(
                 format!("testAble/{}/property/readWriteLists/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_read_write_lists_property_update =
-            subscription_id_read_write_lists_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_read_write_lists_property_update.unwrap_or_else(|_| u32::MAX);
 
         // Create structure for subscription ids.
         let sub_ids = TestAbleServerSubscriptionIds {
@@ -844,166 +847,88 @@ impl TestAbleServer {
         };
 
         let property_values = TestAbleProperties {
-            read_write_integer_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteInteger/value",
-                instance_id
-            )),
             read_write_integer: Arc::new(AsyncMutex::new(None)),
             read_write_integer_tx_channel: watch::channel(None).0,
-            read_only_integer_topic: Arc::new(format!(
-                "testAble/{}/property/readOnlyInteger/value",
-                instance_id
-            )),
+            read_write_integer_version: Arc::new(AtomicU32::new(0)),
             read_only_integer: Arc::new(AsyncMutex::new(None)),
             read_only_integer_tx_channel: watch::channel(None).0,
-            read_write_optional_integer_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteOptionalInteger/value",
-                instance_id
-            )),
+            read_only_integer_version: Arc::new(AtomicU32::new(0)),
             read_write_optional_integer: Arc::new(AsyncMutex::new(None)),
             read_write_optional_integer_tx_channel: watch::channel(None).0,
-            read_write_two_integers_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteTwoIntegers/value",
-                instance_id
-            )),
+            read_write_optional_integer_version: Arc::new(AtomicU32::new(0)),
             read_write_two_integers: Arc::new(AsyncMutex::new(None)),
             read_write_two_integers_tx_channel: watch::channel(None).0,
-            read_only_string_topic: Arc::new(format!(
-                "testAble/{}/property/readOnlyString/value",
-                instance_id
-            )),
+            read_write_two_integers_version: Arc::new(AtomicU32::new(0)),
             read_only_string: Arc::new(AsyncMutex::new(None)),
             read_only_string_tx_channel: watch::channel(None).0,
-            read_write_string_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteString/value",
-                instance_id
-            )),
+            read_only_string_version: Arc::new(AtomicU32::new(0)),
             read_write_string: Arc::new(AsyncMutex::new(None)),
             read_write_string_tx_channel: watch::channel(None).0,
-            read_write_optional_string_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteOptionalString/value",
-                instance_id
-            )),
+            read_write_string_version: Arc::new(AtomicU32::new(0)),
             read_write_optional_string: Arc::new(AsyncMutex::new(None)),
             read_write_optional_string_tx_channel: watch::channel(None).0,
-            read_write_two_strings_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteTwoStrings/value",
-                instance_id
-            )),
+            read_write_optional_string_version: Arc::new(AtomicU32::new(0)),
             read_write_two_strings: Arc::new(AsyncMutex::new(None)),
             read_write_two_strings_tx_channel: watch::channel(None).0,
-            read_write_struct_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteStruct/value",
-                instance_id
-            )),
+            read_write_two_strings_version: Arc::new(AtomicU32::new(0)),
             read_write_struct: Arc::new(AsyncMutex::new(None)),
             read_write_struct_tx_channel: watch::channel(None).0,
-            read_write_optional_struct_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteOptionalStruct/value",
-                instance_id
-            )),
+            read_write_struct_version: Arc::new(AtomicU32::new(0)),
             read_write_optional_struct: Arc::new(AsyncMutex::new(None)),
             read_write_optional_struct_tx_channel: watch::channel(None).0,
-            read_write_two_structs_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteTwoStructs/value",
-                instance_id
-            )),
+            read_write_optional_struct_version: Arc::new(AtomicU32::new(0)),
             read_write_two_structs: Arc::new(AsyncMutex::new(None)),
             read_write_two_structs_tx_channel: watch::channel(None).0,
-            read_only_enum_topic: Arc::new(format!(
-                "testAble/{}/property/readOnlyEnum/value",
-                instance_id
-            )),
+            read_write_two_structs_version: Arc::new(AtomicU32::new(0)),
             read_only_enum: Arc::new(AsyncMutex::new(None)),
             read_only_enum_tx_channel: watch::channel(None).0,
-            read_write_enum_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteEnum/value",
-                instance_id
-            )),
+            read_only_enum_version: Arc::new(AtomicU32::new(0)),
             read_write_enum: Arc::new(AsyncMutex::new(None)),
             read_write_enum_tx_channel: watch::channel(None).0,
-            read_write_optional_enum_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteOptionalEnum/value",
-                instance_id
-            )),
+            read_write_enum_version: Arc::new(AtomicU32::new(0)),
             read_write_optional_enum: Arc::new(AsyncMutex::new(None)),
             read_write_optional_enum_tx_channel: watch::channel(None).0,
-            read_write_two_enums_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteTwoEnums/value",
-                instance_id
-            )),
+            read_write_optional_enum_version: Arc::new(AtomicU32::new(0)),
             read_write_two_enums: Arc::new(AsyncMutex::new(None)),
             read_write_two_enums_tx_channel: watch::channel(None).0,
-            read_write_datetime_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteDatetime/value",
-                instance_id
-            )),
+            read_write_two_enums_version: Arc::new(AtomicU32::new(0)),
             read_write_datetime: Arc::new(AsyncMutex::new(None)),
             read_write_datetime_tx_channel: watch::channel(None).0,
-            read_write_optional_datetime_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteOptionalDatetime/value",
-                instance_id
-            )),
+            read_write_datetime_version: Arc::new(AtomicU32::new(0)),
             read_write_optional_datetime: Arc::new(AsyncMutex::new(None)),
             read_write_optional_datetime_tx_channel: watch::channel(None).0,
-            read_write_two_datetimes_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteTwoDatetimes/value",
-                instance_id
-            )),
+            read_write_optional_datetime_version: Arc::new(AtomicU32::new(0)),
             read_write_two_datetimes: Arc::new(AsyncMutex::new(None)),
             read_write_two_datetimes_tx_channel: watch::channel(None).0,
-            read_write_duration_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteDuration/value",
-                instance_id
-            )),
+            read_write_two_datetimes_version: Arc::new(AtomicU32::new(0)),
             read_write_duration: Arc::new(AsyncMutex::new(None)),
             read_write_duration_tx_channel: watch::channel(None).0,
-            read_write_optional_duration_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteOptionalDuration/value",
-                instance_id
-            )),
+            read_write_duration_version: Arc::new(AtomicU32::new(0)),
             read_write_optional_duration: Arc::new(AsyncMutex::new(None)),
             read_write_optional_duration_tx_channel: watch::channel(None).0,
-            read_write_two_durations_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteTwoDurations/value",
-                instance_id
-            )),
+            read_write_optional_duration_version: Arc::new(AtomicU32::new(0)),
             read_write_two_durations: Arc::new(AsyncMutex::new(None)),
             read_write_two_durations_tx_channel: watch::channel(None).0,
-            read_write_binary_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteBinary/value",
-                instance_id
-            )),
+            read_write_two_durations_version: Arc::new(AtomicU32::new(0)),
             read_write_binary: Arc::new(AsyncMutex::new(None)),
             read_write_binary_tx_channel: watch::channel(None).0,
-            read_write_optional_binary_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteOptionalBinary/value",
-                instance_id
-            )),
+            read_write_binary_version: Arc::new(AtomicU32::new(0)),
             read_write_optional_binary: Arc::new(AsyncMutex::new(None)),
             read_write_optional_binary_tx_channel: watch::channel(None).0,
-            read_write_two_binaries_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteTwoBinaries/value",
-                instance_id
-            )),
+            read_write_optional_binary_version: Arc::new(AtomicU32::new(0)),
             read_write_two_binaries: Arc::new(AsyncMutex::new(None)),
             read_write_two_binaries_tx_channel: watch::channel(None).0,
-            read_write_list_of_strings_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteListOfStrings/value",
-                instance_id
-            )),
+            read_write_two_binaries_version: Arc::new(AtomicU32::new(0)),
             read_write_list_of_strings: Arc::new(AsyncMutex::new(None)),
             read_write_list_of_strings_tx_channel: watch::channel(None).0,
-            read_write_lists_topic: Arc::new(format!(
-                "testAble/{}/property/readWriteLists/value",
-                instance_id
-            )),
+            read_write_list_of_strings_version: Arc::new(AtomicU32::new(0)),
             read_write_lists: Arc::new(AsyncMutex::new(None)),
             read_write_lists_tx_channel: watch::channel(None).0,
+            read_write_lists_version: Arc::new(AtomicU32::new(0)),
         };
 
         TestAbleServer {
-            mqttier_client: connection.clone(),
+            mqtt_client: connection.clone(),
 
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
@@ -1011,35 +936,41 @@ impl TestAbleServer {
             properties: property_values,
             subscription_ids: sub_ids,
 
-            client_id: connection.client_id.to_string(),
+            client_id: connection.get_client_id(),
             instance_id,
         }
     }
 
-    /// Converts a oneshot receiver for the publish result into a Future that resolves to
-    pub async fn oneshot_to_future(
-        publish_oneshot: tokio::sync::oneshot::Receiver<PublishResult>,
+    pub async fn task_to_future(
+        task: tokio::task::JoinHandle<Result<MqttPublishSuccess, MqttError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
-            let publish_result = publish_oneshot.await;
-            match publish_result {
-                Ok(PublishResult::Acknowledged(_))
-                | Ok(PublishResult::Completed(_))
-                | Ok(PublishResult::Sent(_)) => Ok(()),
+            match task.await {
+                Ok(MqttPublishSuccess::Acknowledged) => Ok(()),
+                Ok(MqttPublishSuccess::Completed) => Ok(()),
+                Ok(MqttPublishSuccess::Sent) => Ok(()),
+                Ok(MqttPublishSuccess::Queued) => Ok(()),
+                Err(e) => Err(MethodReturnCode::TransportError(format!(
+                    "MQTT publish error: {:?}",
+                    e
+                ))),
+            }
+        })
+    }
 
-                Ok(PublishResult::TimedOut) => Err(MethodReturnCode::Timeout(
-                    "Timed out publishing signal".to_string(),
-                )),
-
-                Ok(PublishResult::SerializationError(s)) => {
-                    Err(MethodReturnCode::ServerSerializationError(s))
-                }
-
-                Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
-
-                Err(_) => Err(MethodReturnCode::UnknownError(
-                    "Error publishing signal".to_string(),
-                )),
+    pub async fn async_publish_to_future(
+        fut: std::pin::Pin<Box<dyn Future<Output = Result<MqttPublishSuccess, MqttError>> + Send>>,
+    ) -> SentMessageFuture {
+        Box::pin(async move {
+            match fut.await {
+                Ok(MqttPublishSuccess::Acknowledged) => Ok(()),
+                Ok(MqttPublishSuccess::Completed) => Ok(()),
+                Ok(MqttPublishSuccess::Sent) => Ok(()),
+                Ok(MqttPublishSuccess::Queued) => Ok(()),
+                Err(e) => Err(MethodReturnCode::TransportError(format!(
+                    "MQTT publish error: {:?}",
+                    e
+                ))),
             }
         })
     }
@@ -1055,22 +986,17 @@ impl TestAbleServer {
 
     /// Publishes an error response to the given response topic with the given correlation data.
     async fn publish_error_response(
-        publisher: MqttierClient,
+        mut publisher: C,
         response_topic: Option<String>,
         correlation_data: Option<Vec<u8>>,
-        err: &MethodReturnCode,
+        err: MethodReturnCode,
     ) {
         if let Some(resp_topic) = response_topic {
             let corr_data = correlation_data.unwrap_or_default();
-            let (return_code, debug_message) = err.to_code();
-            let _ = publisher
-                .publish_error_response(
-                    resp_topic,
-                    debug_message.unwrap_or_default(),
-                    corr_data,
-                    return_code,
-                )
-                .await;
+            let (_, debug_msg) = err.to_code();
+            let msg = message::error_response(&resp_topic, Bytes::from(corr_data), err, debug_msg)
+                .unwrap();
+            let _ = publisher.publish(msg).await;
         } else {
             info!("No response topic found in message properties; cannot send error response.");
         }
@@ -1078,35 +1004,29 @@ impl TestAbleServer {
     /// Emits the empty signal with the given arguments.
     pub async fn emit_empty(&mut self) -> SentMessageFuture {
         let data = EmptySignalPayload {};
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(format!("testAble/{}/signal/empty", self.instance_id), &data)
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/empty", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleInt signal with the given arguments.
     pub async fn emit_single_int(&mut self, value: i32) -> SentMessageFuture {
         let data = SingleIntSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleInt", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleInt", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleOptionalInt signal with the given arguments.
     pub async fn emit_single_optional_int(&mut self, value: Option<i32>) -> SentMessageFuture {
         let data = SingleOptionalIntSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleOptionalInt", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleOptionalInt", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the threeIntegers signal with the given arguments.
     pub async fn emit_three_integers(
@@ -1122,26 +1042,20 @@ impl TestAbleServer {
 
             third: third,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/threeIntegers", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/threeIntegers", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleString signal with the given arguments.
     pub async fn emit_single_string(&mut self, value: String) -> SentMessageFuture {
         let data = SingleStringSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleString", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleString", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleOptionalString signal with the given arguments.
     pub async fn emit_single_optional_string(
@@ -1149,14 +1063,11 @@ impl TestAbleServer {
         value: Option<String>,
     ) -> SentMessageFuture {
         let data = SingleOptionalStringSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleOptionalString", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleOptionalString", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the threeStrings signal with the given arguments.
     pub async fn emit_three_strings(
@@ -1172,38 +1083,29 @@ impl TestAbleServer {
 
             third: third,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/threeStrings", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/threeStrings", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleEnum signal with the given arguments.
     pub async fn emit_single_enum(&mut self, value: Numbers) -> SentMessageFuture {
         let data = SingleEnumSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleEnum", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleEnum", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleOptionalEnum signal with the given arguments.
     pub async fn emit_single_optional_enum(&mut self, value: Option<Numbers>) -> SentMessageFuture {
         let data = SingleOptionalEnumSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleOptionalEnum", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleOptionalEnum", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the threeEnums signal with the given arguments.
     pub async fn emit_three_enums(
@@ -1219,26 +1121,20 @@ impl TestAbleServer {
 
             third: third,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/threeEnums", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/threeEnums", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleStruct signal with the given arguments.
     pub async fn emit_single_struct(&mut self, value: AllTypes) -> SentMessageFuture {
         let data = SingleStructSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleStruct", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleStruct", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleOptionalStruct signal with the given arguments.
     pub async fn emit_single_optional_struct(
@@ -1246,14 +1142,11 @@ impl TestAbleServer {
         value: Option<AllTypes>,
     ) -> SentMessageFuture {
         let data = SingleOptionalStructSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleOptionalStruct", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleOptionalStruct", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the threeStructs signal with the given arguments.
     pub async fn emit_three_structs(
@@ -1269,14 +1162,11 @@ impl TestAbleServer {
 
             third: third,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/threeStructs", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/threeStructs", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleDateTime signal with the given arguments.
     pub async fn emit_single_date_time(
@@ -1284,14 +1174,11 @@ impl TestAbleServer {
         value: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
         let data = SingleDateTimeSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleDateTime", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleDateTime", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleOptionalDatetime signal with the given arguments.
     pub async fn emit_single_optional_datetime(
@@ -1299,17 +1186,14 @@ impl TestAbleServer {
         value: Option<chrono::DateTime<chrono::Utc>>,
     ) -> SentMessageFuture {
         let data = SingleOptionalDatetimeSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!(
-                    "testAble/{}/signal/singleOptionalDatetime",
-                    self.instance_id
-                ),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!(
+            "testAble/{}/signal/singleOptionalDatetime",
+            self.instance_id
+        );
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the threeDateTimes signal with the given arguments.
     pub async fn emit_three_date_times(
@@ -1325,26 +1209,20 @@ impl TestAbleServer {
 
             third: third,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/threeDateTimes", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/threeDateTimes", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleDuration signal with the given arguments.
     pub async fn emit_single_duration(&mut self, value: chrono::Duration) -> SentMessageFuture {
         let data = SingleDurationSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleDuration", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleDuration", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleOptionalDuration signal with the given arguments.
     pub async fn emit_single_optional_duration(
@@ -1352,17 +1230,14 @@ impl TestAbleServer {
         value: Option<chrono::Duration>,
     ) -> SentMessageFuture {
         let data = SingleOptionalDurationSignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!(
-                    "testAble/{}/signal/singleOptionalDuration",
-                    self.instance_id
-                ),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!(
+            "testAble/{}/signal/singleOptionalDuration",
+            self.instance_id
+        );
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the threeDurations signal with the given arguments.
     pub async fn emit_three_durations(
@@ -1378,26 +1253,20 @@ impl TestAbleServer {
 
             third: third,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/threeDurations", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/threeDurations", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleBinary signal with the given arguments.
     pub async fn emit_single_binary(&mut self, value: Vec<u8>) -> SentMessageFuture {
         let data = SingleBinarySignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleBinary", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleBinary", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleOptionalBinary signal with the given arguments.
     pub async fn emit_single_optional_binary(
@@ -1405,14 +1274,11 @@ impl TestAbleServer {
         value: Option<Vec<u8>>,
     ) -> SentMessageFuture {
         let data = SingleOptionalBinarySignalPayload { value: value };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleOptionalBinary", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleOptionalBinary", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the threeBinaries signal with the given arguments.
     pub async fn emit_three_binaries(
@@ -1428,26 +1294,20 @@ impl TestAbleServer {
 
             third: third,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/threeBinaries", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/threeBinaries", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleArrayOfIntegers signal with the given arguments.
     pub async fn emit_single_array_of_integers(&mut self, values: Vec<i32>) -> SentMessageFuture {
         let data = SingleArrayOfIntegersSignalPayload { values: values };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/singleArrayOfIntegers", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/singleArrayOfIntegers", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the singleOptionalArrayOfStrings signal with the given arguments.
     pub async fn emit_single_optional_array_of_strings(
@@ -1455,17 +1315,14 @@ impl TestAbleServer {
         values: Option<Vec<String>>,
     ) -> SentMessageFuture {
         let data = SingleOptionalArrayOfStringsSignalPayload { values: values };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!(
-                    "testAble/{}/signal/singleOptionalArrayOfStrings",
-                    self.instance_id
-                ),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!(
+            "testAble/{}/signal/singleOptionalArrayOfStrings",
+            self.instance_id
+        );
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
     /// Emits the arrayOfEveryType signal with the given arguments.
     pub async fn emit_array_of_every_type(
@@ -1496,21 +1353,18 @@ impl TestAbleServer {
 
             eighth_of_binaries: eighth_of_binaries,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("testAble/{}/signal/arrayOfEveryType", self.instance_id),
-                &data,
-            )
-            .await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("testAble/{}/signal/arrayOfEveryType", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let task = tokio::spawn(async move { publisher.publish(msg).await });
+        Self::task_to_future(task).await
     }
 
     /// Handles a request message for the callWithNothing method.
     async fn handle_call_with_nothing_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -1549,9 +1403,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOneInteger method.
     async fn handle_call_one_integer_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -1566,7 +1420,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1610,9 +1464,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOptionalInteger method.
     async fn handle_call_optional_integer_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -1627,7 +1481,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1678,9 +1532,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callThreeIntegers method.
     async fn handle_call_three_integers_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -1695,7 +1549,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1743,9 +1597,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOneString method.
     async fn handle_call_one_string_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -1760,7 +1614,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1804,9 +1658,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOptionalString method.
     async fn handle_call_optional_string_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -1821,7 +1675,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1870,9 +1724,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callThreeStrings method.
     async fn handle_call_three_strings_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -1887,7 +1741,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1932,9 +1786,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOneEnum method.
     async fn handle_call_one_enum_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -1949,7 +1803,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -1993,9 +1847,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOptionalEnum method.
     async fn handle_call_optional_enum_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2010,7 +1864,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2056,9 +1910,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callThreeEnums method.
     async fn handle_call_three_enums_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2073,7 +1927,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2118,9 +1972,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOneStruct method.
     async fn handle_call_one_struct_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2135,7 +1989,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2179,9 +2033,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOptionalStruct method.
     async fn handle_call_optional_struct_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2196,7 +2050,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2245,9 +2099,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callThreeStructs method.
     async fn handle_call_three_structs_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2262,7 +2116,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2307,9 +2161,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOneDateTime method.
     async fn handle_call_one_date_time_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2324,7 +2178,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2370,9 +2224,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOptionalDateTime method.
     async fn handle_call_optional_date_time_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2387,7 +2241,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2438,9 +2292,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callThreeDateTimes method.
     async fn handle_call_three_date_times_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2455,7 +2309,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2503,9 +2357,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOneDuration method.
     async fn handle_call_one_duration_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2520,7 +2374,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2564,9 +2418,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOptionalDuration method.
     async fn handle_call_optional_duration_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2581,7 +2435,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2632,9 +2486,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callThreeDurations method.
     async fn handle_call_three_durations_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2649,7 +2503,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2697,9 +2551,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOneBinary method.
     async fn handle_call_one_binary_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2714,7 +2568,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2758,9 +2612,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOptionalBinary method.
     async fn handle_call_optional_binary_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2775,7 +2629,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2824,9 +2678,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callThreeBinaries method.
     async fn handle_call_three_binaries_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2841,7 +2695,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2889,9 +2743,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOneListOfIntegers method.
     async fn handle_call_one_list_of_integers_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2907,7 +2761,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -2958,9 +2812,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callOptionalListOfFloats method.
     async fn handle_call_optional_list_of_floats_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -2976,7 +2830,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -3025,9 +2879,9 @@ impl TestAbleServer {
 
     /// Handles a request message for the callTwoLists method.
     async fn handle_call_two_lists_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers>>>,
-        msg: ReceivedMessage,
+        publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -3042,7 +2896,7 @@ impl TestAbleServer {
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -3086,26 +2940,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_integer_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteIntegerProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_integer_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteIntegerProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<i32>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteIntegerProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -3137,8 +2994,14 @@ impl TestAbleServer {
                 );
             }
         };
-        TestAbleServer::publish_read_write_integer_value(publisher, topic2, new_property_structure)
-            .await
+
+        TestAbleServer::publish_read_write_integer_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_read_write_integer(&self) -> watch::Receiver<Option<i32>> {
@@ -3180,7 +3043,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_write_integer_topic.as_ref().clone();
                 TestAbleServer::publish_read_write_integer_value(publisher2, topic2, prop_obj).await
             } else {
@@ -3193,12 +3056,14 @@ impl TestAbleServer {
     }
 
     async fn publish_read_only_integer_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadOnlyIntegerProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// Sets the value of the read_only_integer property.
@@ -3236,7 +3101,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_only_integer_topic.as_ref().clone();
                 TestAbleServer::publish_read_only_integer_value(publisher2, topic2, prop_obj).await
             } else {
@@ -3249,26 +3114,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_optional_integer_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteOptionalIntegerProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_integer_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalIntegerProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Option<i32>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteOptionalIntegerProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -3297,10 +3165,12 @@ impl TestAbleServer {
                 error!("Failed to notify local watchers for 'read_write_optional_integer' property: {:?}", e);
             }
         };
+
         TestAbleServer::publish_read_write_optional_integer_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -3349,7 +3219,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_optional_integer_topic
@@ -3369,26 +3239,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_two_integers_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteTwoIntegersProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_integers_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoIntegersProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<ReadWriteTwoIntegersProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteTwoIntegersProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -3420,10 +3293,12 @@ impl TestAbleServer {
                 );
             }
         };
+
         TestAbleServer::publish_read_write_two_integers_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -3474,7 +3349,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_two_integers_topic
@@ -3492,12 +3367,14 @@ impl TestAbleServer {
     }
 
     async fn publish_read_only_string_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadOnlyStringProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// Sets the value of the read_only_string property.
@@ -3535,7 +3412,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_only_string_topic.as_ref().clone();
                 TestAbleServer::publish_read_only_string_value(publisher2, topic2, prop_obj).await
             } else {
@@ -3548,26 +3425,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_string_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteStringProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_string_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteStringProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<String>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteStringProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -3599,8 +3479,14 @@ impl TestAbleServer {
                 );
             }
         };
-        TestAbleServer::publish_read_write_string_value(publisher, topic2, new_property_structure)
-            .await
+
+        TestAbleServer::publish_read_write_string_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_read_write_string(&self) -> watch::Receiver<Option<String>> {
@@ -3642,7 +3528,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_write_string_topic.as_ref().clone();
                 TestAbleServer::publish_read_write_string_value(publisher2, topic2, prop_obj).await
             } else {
@@ -3655,26 +3541,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_optional_string_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteOptionalStringProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_string_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalStringProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Option<String>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteOptionalStringProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -3703,10 +3592,12 @@ impl TestAbleServer {
                 error!("Failed to notify local watchers for 'read_write_optional_string' property: {:?}", e);
             }
         };
+
         TestAbleServer::publish_read_write_optional_string_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -3757,7 +3648,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_optional_string_topic
@@ -3777,26 +3668,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_two_strings_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteTwoStringsProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_strings_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoStringsProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<ReadWriteTwoStringsProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteTwoStringsProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -3828,10 +3722,12 @@ impl TestAbleServer {
                 );
             }
         };
+
         TestAbleServer::publish_read_write_two_strings_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -3882,7 +3778,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_two_strings_topic
@@ -3900,26 +3796,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_struct_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteStructProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_struct_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteStructProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<AllTypes>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteStructProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -3951,8 +3850,14 @@ impl TestAbleServer {
                 );
             }
         };
-        TestAbleServer::publish_read_write_struct_value(publisher, topic2, new_property_structure)
-            .await
+
+        TestAbleServer::publish_read_write_struct_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_read_write_struct(&self) -> watch::Receiver<Option<AllTypes>> {
@@ -3994,7 +3899,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_write_struct_topic.as_ref().clone();
                 TestAbleServer::publish_read_write_struct_value(publisher2, topic2, prop_obj).await
             } else {
@@ -4007,26 +3912,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_optional_struct_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteOptionalStructProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_struct_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalStructProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Option<AllTypes>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteOptionalStructProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -4055,10 +3963,12 @@ impl TestAbleServer {
                 error!("Failed to notify local watchers for 'read_write_optional_struct' property: {:?}", e);
             }
         };
+
         TestAbleServer::publish_read_write_optional_struct_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -4109,7 +4019,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_optional_struct_topic
@@ -4129,26 +4039,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_two_structs_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteTwoStructsProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_structs_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoStructsProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<ReadWriteTwoStructsProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteTwoStructsProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -4180,10 +4093,12 @@ impl TestAbleServer {
                 );
             }
         };
+
         TestAbleServer::publish_read_write_two_structs_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -4234,7 +4149,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_two_structs_topic
@@ -4252,12 +4167,14 @@ impl TestAbleServer {
     }
 
     async fn publish_read_only_enum_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadOnlyEnumProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// Sets the value of the read_only_enum property.
@@ -4295,7 +4212,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_only_enum_topic.as_ref().clone();
                 TestAbleServer::publish_read_only_enum_value(publisher2, topic2, prop_obj).await
             } else {
@@ -4308,26 +4225,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_enum_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteEnumProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_enum_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteEnumProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Numbers>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteEnumProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -4358,8 +4278,14 @@ impl TestAbleServer {
                 );
             }
         };
-        TestAbleServer::publish_read_write_enum_value(publisher, topic2, new_property_structure)
-            .await
+
+        TestAbleServer::publish_read_write_enum_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_read_write_enum(&self) -> watch::Receiver<Option<Numbers>> {
@@ -4401,7 +4327,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_write_enum_topic.as_ref().clone();
                 TestAbleServer::publish_read_write_enum_value(publisher2, topic2, prop_obj).await
             } else {
@@ -4414,26 +4340,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_optional_enum_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteOptionalEnumProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_enum_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalEnumProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Option<Numbers>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteOptionalEnumProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -4465,10 +4394,12 @@ impl TestAbleServer {
                 );
             }
         };
+
         TestAbleServer::publish_read_write_optional_enum_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -4519,7 +4450,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_optional_enum_topic
@@ -4537,26 +4468,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_two_enums_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteTwoEnumsProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_enums_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoEnumsProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<ReadWriteTwoEnumsProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteTwoEnumsProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -4588,10 +4522,12 @@ impl TestAbleServer {
                 );
             }
         };
+
         TestAbleServer::publish_read_write_two_enums_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -4638,7 +4574,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_write_two_enums_topic.as_ref().clone();
                 TestAbleServer::publish_read_write_two_enums_value(publisher2, topic2, prop_obj)
                     .await
@@ -4652,26 +4588,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_datetime_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteDatetimeProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_datetime_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteDatetimeProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteDatetimeProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -4703,8 +4642,14 @@ impl TestAbleServer {
                 );
             }
         };
-        TestAbleServer::publish_read_write_datetime_value(publisher, topic2, new_property_structure)
-            .await
+
+        TestAbleServer::publish_read_write_datetime_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_read_write_datetime(
@@ -4751,7 +4696,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_write_datetime_topic.as_ref().clone();
                 TestAbleServer::publish_read_write_datetime_value(publisher2, topic2, prop_obj)
                     .await
@@ -4765,26 +4710,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_optional_datetime_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteOptionalDatetimeProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_datetime_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalDatetimeProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Option<chrono::DateTime<chrono::Utc>>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteOptionalDatetimeProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -4813,10 +4761,12 @@ impl TestAbleServer {
                 error!("Failed to notify local watchers for 'read_write_optional_datetime' property: {:?}", e);
             }
         };
+
         TestAbleServer::publish_read_write_optional_datetime_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -4867,7 +4817,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_optional_datetime_topic
@@ -4887,26 +4837,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_two_datetimes_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteTwoDatetimesProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_datetimes_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoDatetimesProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<ReadWriteTwoDatetimesProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteTwoDatetimesProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -4938,10 +4891,12 @@ impl TestAbleServer {
                 );
             }
         };
+
         TestAbleServer::publish_read_write_two_datetimes_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -4992,7 +4947,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_two_datetimes_topic
@@ -5010,26 +4965,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_duration_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteDurationProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_duration_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteDurationProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<chrono::Duration>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteDurationProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -5061,8 +5019,14 @@ impl TestAbleServer {
                 );
             }
         };
-        TestAbleServer::publish_read_write_duration_value(publisher, topic2, new_property_structure)
-            .await
+
+        TestAbleServer::publish_read_write_duration_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_read_write_duration(&self) -> watch::Receiver<Option<chrono::Duration>> {
@@ -5104,7 +5068,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_write_duration_topic.as_ref().clone();
                 TestAbleServer::publish_read_write_duration_value(publisher2, topic2, prop_obj)
                     .await
@@ -5118,26 +5082,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_optional_duration_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteOptionalDurationProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_duration_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalDurationProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Option<chrono::Duration>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteOptionalDurationProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -5166,10 +5133,12 @@ impl TestAbleServer {
                 error!("Failed to notify local watchers for 'read_write_optional_duration' property: {:?}", e);
             }
         };
+
         TestAbleServer::publish_read_write_optional_duration_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -5220,7 +5189,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_optional_duration_topic
@@ -5240,26 +5209,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_two_durations_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteTwoDurationsProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_durations_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoDurationsProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<ReadWriteTwoDurationsProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteTwoDurationsProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -5291,10 +5263,12 @@ impl TestAbleServer {
                 );
             }
         };
+
         TestAbleServer::publish_read_write_two_durations_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -5345,7 +5319,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_two_durations_topic
@@ -5363,26 +5337,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_binary_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteBinaryProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_binary_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteBinaryProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Vec<u8>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteBinaryProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -5414,8 +5391,14 @@ impl TestAbleServer {
                 );
             }
         };
-        TestAbleServer::publish_read_write_binary_value(publisher, topic2, new_property_structure)
-            .await
+
+        TestAbleServer::publish_read_write_binary_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_read_write_binary(&self) -> watch::Receiver<Option<Vec<u8>>> {
@@ -5457,7 +5440,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_write_binary_topic.as_ref().clone();
                 TestAbleServer::publish_read_write_binary_value(publisher2, topic2, prop_obj).await
             } else {
@@ -5470,26 +5453,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_optional_binary_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteOptionalBinaryProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_binary_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalBinaryProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Option<Vec<u8>>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteOptionalBinaryProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -5518,10 +5504,12 @@ impl TestAbleServer {
                 error!("Failed to notify local watchers for 'read_write_optional_binary' property: {:?}", e);
             }
         };
+
         TestAbleServer::publish_read_write_optional_binary_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -5572,7 +5560,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_optional_binary_topic
@@ -5592,26 +5580,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_two_binaries_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteTwoBinariesProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_binaries_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoBinariesProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<ReadWriteTwoBinariesProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteTwoBinariesProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -5643,10 +5634,12 @@ impl TestAbleServer {
                 );
             }
         };
+
         TestAbleServer::publish_read_write_two_binaries_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -5697,7 +5690,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_two_binaries_topic
@@ -5715,26 +5708,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_list_of_strings_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteListOfStringsProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_list_of_strings_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteListOfStringsProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<Vec<String>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteListOfStringsProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -5763,10 +5759,12 @@ impl TestAbleServer {
                 error!("Failed to notify local watchers for 'read_write_list_of_strings' property: {:?}", e);
             }
         };
+
         TestAbleServer::publish_read_write_list_of_strings_value(
             publisher,
             topic2,
             new_property_structure,
+            new_version,
         )
         .await
     }
@@ -5812,7 +5810,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self
                     .properties
                     .read_write_list_of_strings_topic
@@ -5832,26 +5830,29 @@ impl TestAbleServer {
     }
 
     async fn publish_read_write_lists_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: String,
         data: ReadWriteListsProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        TestAbleServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(topic, &data, property_version);
+        let publish_fut = publisher.publish(msg);
+        TestAbleServer::async_publish_to_future(publish_fut).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_lists_value(
-        publisher: MqttierClient,
+        publisher: C,
         topic: Arc<String>,
         property_pointer: Arc<AsyncMutex<Option<ReadWriteListsProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<ReadWriteListsProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: ReadWriteListsProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
@@ -5882,8 +5883,14 @@ impl TestAbleServer {
                 );
             }
         };
-        TestAbleServer::publish_read_write_lists_value(publisher, topic2, new_property_structure)
-            .await
+
+        TestAbleServer::publish_read_write_lists_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_read_write_lists(&self) -> watch::Receiver<Option<ReadWriteListsProperty>> {
@@ -5926,7 +5933,7 @@ impl TestAbleServer {
             return TestAbleServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
+                let publisher2 = self.mqtt_client.clone();
                 let topic2 = self.properties.read_write_lists_topic.as_ref().clone();
                 TestAbleServer::publish_read_write_lists_value(publisher2, topic2, prop_obj).await
             } else {
@@ -5943,8 +5950,8 @@ impl TestAbleServer {
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
     pub async fn run_loop(&mut self) -> Result<(), JoinError> {
-        // Make sure the MqttierClient is connected and running.
-        let _ = self.mqttier_client.run_loop().await;
+        // Make sure the MqttClient is connected and running.
+        let _ = self.mqtt_client.run_loop().await;
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
@@ -5963,11 +5970,11 @@ impl TestAbleServer {
             .initialize(self.clone())
             .await;
         let sub_ids = self.subscription_ids.clone();
-        let publisher = self.mqttier_client.clone();
+        let publisher = self.mqtt_client.clone();
 
         let properties = self.properties.clone();
 
-        let interface_publisher = self.mqttier_client.clone();
+        let interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(120));
@@ -5990,448 +5997,545 @@ impl TestAbleServer {
                 let opt_resp_topic = msg.response_topic.clone();
                 let opt_corr_data = msg.correlation_data.clone();
 
-                if msg.subscription_id == sub_ids.call_with_nothing_method_req {
-                    TestAbleServer::handle_call_with_nothing_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_one_integer_method_req {
-                    TestAbleServer::handle_call_one_integer_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_optional_integer_method_req {
-                    TestAbleServer::handle_call_optional_integer_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_three_integers_method_req {
-                    TestAbleServer::handle_call_three_integers_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_one_string_method_req {
-                    TestAbleServer::handle_call_one_string_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_optional_string_method_req {
-                    TestAbleServer::handle_call_optional_string_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_three_strings_method_req {
-                    TestAbleServer::handle_call_three_strings_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_one_enum_method_req {
-                    TestAbleServer::handle_call_one_enum_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_optional_enum_method_req {
-                    TestAbleServer::handle_call_optional_enum_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_three_enums_method_req {
-                    TestAbleServer::handle_call_three_enums_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_one_struct_method_req {
-                    TestAbleServer::handle_call_one_struct_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_optional_struct_method_req {
-                    TestAbleServer::handle_call_optional_struct_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_three_structs_method_req {
-                    TestAbleServer::handle_call_three_structs_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_one_date_time_method_req {
-                    TestAbleServer::handle_call_one_date_time_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_optional_date_time_method_req {
-                    TestAbleServer::handle_call_optional_date_time_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_three_date_times_method_req {
-                    TestAbleServer::handle_call_three_date_times_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_one_duration_method_req {
-                    TestAbleServer::handle_call_one_duration_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_optional_duration_method_req {
-                    TestAbleServer::handle_call_optional_duration_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_three_durations_method_req {
-                    TestAbleServer::handle_call_three_durations_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_one_binary_method_req {
-                    TestAbleServer::handle_call_one_binary_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_optional_binary_method_req {
-                    TestAbleServer::handle_call_optional_binary_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_three_binaries_method_req {
-                    TestAbleServer::handle_call_three_binaries_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_one_list_of_integers_method_req {
-                    TestAbleServer::handle_call_one_list_of_integers_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_optional_list_of_floats_method_req {
-                    TestAbleServer::handle_call_optional_list_of_floats_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.call_two_lists_method_req {
-                    TestAbleServer::handle_call_two_lists_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else {
-                    let update_prop_future = {
-                        if msg.subscription_id == sub_ids.read_write_integer_property_update {
-                            TestAbleServer::update_read_write_integer_value(
-                                publisher.clone(),
-                                properties.read_write_integer_topic.clone(),
-                                properties.read_write_integer.clone(),
-                                properties.read_write_integer_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_optional_integer_property_update
-                        {
-                            TestAbleServer::update_read_write_optional_integer_value(
-                                publisher.clone(),
-                                properties.read_write_optional_integer_topic.clone(),
-                                properties.read_write_optional_integer.clone(),
-                                properties.read_write_optional_integer_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_two_integers_property_update
-                        {
-                            TestAbleServer::update_read_write_two_integers_value(
-                                publisher.clone(),
-                                properties.read_write_two_integers_topic.clone(),
-                                properties.read_write_two_integers.clone(),
-                                properties.read_write_two_integers_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.read_write_string_property_update {
-                            TestAbleServer::update_read_write_string_value(
-                                publisher.clone(),
-                                properties.read_write_string_topic.clone(),
-                                properties.read_write_string.clone(),
-                                properties.read_write_string_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_optional_string_property_update
-                        {
-                            TestAbleServer::update_read_write_optional_string_value(
-                                publisher.clone(),
-                                properties.read_write_optional_string_topic.clone(),
-                                properties.read_write_optional_string.clone(),
-                                properties.read_write_optional_string_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_two_strings_property_update
-                        {
-                            TestAbleServer::update_read_write_two_strings_value(
-                                publisher.clone(),
-                                properties.read_write_two_strings_topic.clone(),
-                                properties.read_write_two_strings.clone(),
-                                properties.read_write_two_strings_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.read_write_struct_property_update {
-                            TestAbleServer::update_read_write_struct_value(
-                                publisher.clone(),
-                                properties.read_write_struct_topic.clone(),
-                                properties.read_write_struct.clone(),
-                                properties.read_write_struct_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_optional_struct_property_update
-                        {
-                            TestAbleServer::update_read_write_optional_struct_value(
-                                publisher.clone(),
-                                properties.read_write_optional_struct_topic.clone(),
-                                properties.read_write_optional_struct.clone(),
-                                properties.read_write_optional_struct_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_two_structs_property_update
-                        {
-                            TestAbleServer::update_read_write_two_structs_value(
-                                publisher.clone(),
-                                properties.read_write_two_structs_topic.clone(),
-                                properties.read_write_two_structs.clone(),
-                                properties.read_write_two_structs_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.read_write_enum_property_update {
-                            TestAbleServer::update_read_write_enum_value(
-                                publisher.clone(),
-                                properties.read_write_enum_topic.clone(),
-                                properties.read_write_enum.clone(),
-                                properties.read_write_enum_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_optional_enum_property_update
-                        {
-                            TestAbleServer::update_read_write_optional_enum_value(
-                                publisher.clone(),
-                                properties.read_write_optional_enum_topic.clone(),
-                                properties.read_write_optional_enum.clone(),
-                                properties.read_write_optional_enum_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_two_enums_property_update
-                        {
-                            TestAbleServer::update_read_write_two_enums_value(
-                                publisher.clone(),
-                                properties.read_write_two_enums_topic.clone(),
-                                properties.read_write_two_enums.clone(),
-                                properties.read_write_two_enums_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.read_write_datetime_property_update
-                        {
-                            TestAbleServer::update_read_write_datetime_value(
-                                publisher.clone(),
-                                properties.read_write_datetime_topic.clone(),
-                                properties.read_write_datetime.clone(),
-                                properties.read_write_datetime_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_optional_datetime_property_update
-                        {
-                            TestAbleServer::update_read_write_optional_datetime_value(
-                                publisher.clone(),
-                                properties.read_write_optional_datetime_topic.clone(),
-                                properties.read_write_optional_datetime.clone(),
-                                properties.read_write_optional_datetime_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_two_datetimes_property_update
-                        {
-                            TestAbleServer::update_read_write_two_datetimes_value(
-                                publisher.clone(),
-                                properties.read_write_two_datetimes_topic.clone(),
-                                properties.read_write_two_datetimes.clone(),
-                                properties.read_write_two_datetimes_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.read_write_duration_property_update
-                        {
-                            TestAbleServer::update_read_write_duration_value(
-                                publisher.clone(),
-                                properties.read_write_duration_topic.clone(),
-                                properties.read_write_duration.clone(),
-                                properties.read_write_duration_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_optional_duration_property_update
-                        {
-                            TestAbleServer::update_read_write_optional_duration_value(
-                                publisher.clone(),
-                                properties.read_write_optional_duration_topic.clone(),
-                                properties.read_write_optional_duration.clone(),
-                                properties.read_write_optional_duration_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_two_durations_property_update
-                        {
-                            TestAbleServer::update_read_write_two_durations_value(
-                                publisher.clone(),
-                                properties.read_write_two_durations_topic.clone(),
-                                properties.read_write_two_durations.clone(),
-                                properties.read_write_two_durations_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.read_write_binary_property_update {
-                            TestAbleServer::update_read_write_binary_value(
-                                publisher.clone(),
-                                properties.read_write_binary_topic.clone(),
-                                properties.read_write_binary.clone(),
-                                properties.read_write_binary_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_optional_binary_property_update
-                        {
-                            TestAbleServer::update_read_write_optional_binary_value(
-                                publisher.clone(),
-                                properties.read_write_optional_binary_topic.clone(),
-                                properties.read_write_optional_binary.clone(),
-                                properties.read_write_optional_binary_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_two_binaries_property_update
-                        {
-                            TestAbleServer::update_read_write_two_binaries_value(
-                                publisher.clone(),
-                                properties.read_write_two_binaries_topic.clone(),
-                                properties.read_write_two_binaries.clone(),
-                                properties.read_write_two_binaries_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id
-                            == sub_ids.read_write_list_of_strings_property_update
-                        {
-                            TestAbleServer::update_read_write_list_of_strings_value(
-                                publisher.clone(),
-                                properties.read_write_list_of_strings_topic.clone(),
-                                properties.read_write_list_of_strings.clone(),
-                                properties.read_write_list_of_strings_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.read_write_lists_property_update {
-                            TestAbleServer::update_read_write_lists_value(
-                                publisher.clone(),
-                                properties.read_write_lists_topic.clone(),
-                                properties.read_write_lists.clone(),
-                                properties.read_write_lists_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else {
-                            TestAbleServer::wrap_return_code_in_future(
-                                MethodReturnCode::NotImplemented(
-                                    "Could not find a property matching the request".to_string(),
-                                ),
-                            )
-                            .await
-                        }
-                    };
-                    match update_prop_future.await {
-                        Ok(_) => debug!("Successfully processed update  property"),
-                        Err(e) => {
-                            error!("Error processing update to '' property: {:?}", e);
-                            if let Some(resp_topic) = opt_resp_topic {
-                                TestAbleServer::publish_error_response(
+                if let Some(subscription_id) = msg.subscription_id {
+                    if subscription_id == sub_ids.call_with_nothing_method_req {
+                        TestAbleServer::handle_call_with_nothing_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_one_integer_method_req {
+                        TestAbleServer::handle_call_one_integer_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_optional_integer_method_req {
+                        TestAbleServer::handle_call_optional_integer_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_three_integers_method_req {
+                        TestAbleServer::handle_call_three_integers_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_one_string_method_req {
+                        TestAbleServer::handle_call_one_string_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_optional_string_method_req {
+                        TestAbleServer::handle_call_optional_string_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_three_strings_method_req {
+                        TestAbleServer::handle_call_three_strings_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_one_enum_method_req {
+                        TestAbleServer::handle_call_one_enum_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_optional_enum_method_req {
+                        TestAbleServer::handle_call_optional_enum_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_three_enums_method_req {
+                        TestAbleServer::handle_call_three_enums_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_one_struct_method_req {
+                        TestAbleServer::handle_call_one_struct_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_optional_struct_method_req {
+                        TestAbleServer::handle_call_optional_struct_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_three_structs_method_req {
+                        TestAbleServer::handle_call_three_structs_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_one_date_time_method_req {
+                        TestAbleServer::handle_call_one_date_time_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_optional_date_time_method_req {
+                        TestAbleServer::handle_call_optional_date_time_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_three_date_times_method_req {
+                        TestAbleServer::handle_call_three_date_times_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_one_duration_method_req {
+                        TestAbleServer::handle_call_one_duration_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_optional_duration_method_req {
+                        TestAbleServer::handle_call_optional_duration_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_three_durations_method_req {
+                        TestAbleServer::handle_call_three_durations_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_one_binary_method_req {
+                        TestAbleServer::handle_call_one_binary_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_optional_binary_method_req {
+                        TestAbleServer::handle_call_optional_binary_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_three_binaries_method_req {
+                        TestAbleServer::handle_call_three_binaries_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_one_list_of_integers_method_req {
+                        TestAbleServer::handle_call_one_list_of_integers_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_optional_list_of_floats_method_req {
+                        TestAbleServer::handle_call_optional_list_of_floats_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else if subscription_id == sub_ids.call_two_lists_method_req {
+                        TestAbleServer::handle_call_two_lists_request(
+                            publisher.clone(),
+                            method_handlers.clone(),
+                            msg,
+                        )
+                        .await;
+                    } else {
+                        let update_prop_future = {
+                            if subscription_id == sub_ids.read_write_integer_property_update {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteInteger/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_integer_value(
                                     publisher.clone(),
-                                    Some(resp_topic),
-                                    opt_corr_data,
-                                    &e,
+                                    prop_topic,
+                                    properties.read_write_integer.clone(),
+                                    properties.read_write_integer_tx_channel.clone(),
+                                    msg,
                                 )
-                                .await;
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_optional_integer_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteOptionalInteger/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_optional_integer_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_optional_integer.clone(),
+                                    properties.read_write_optional_integer_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_two_integers_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteTwoIntegers/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_two_integers_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_two_integers.clone(),
+                                    properties.read_write_two_integers_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id == sub_ids.read_write_string_property_update {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteString/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_string_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_string.clone(),
+                                    properties.read_write_string_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_optional_string_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteOptionalString/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_optional_string_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_optional_string.clone(),
+                                    properties.read_write_optional_string_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_two_strings_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteTwoStrings/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_two_strings_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_two_strings.clone(),
+                                    properties.read_write_two_strings_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id == sub_ids.read_write_struct_property_update {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteStruct/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_struct_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_struct.clone(),
+                                    properties.read_write_struct_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_optional_struct_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteOptionalStruct/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_optional_struct_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_optional_struct.clone(),
+                                    properties.read_write_optional_struct_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_two_structs_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteTwoStructs/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_two_structs_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_two_structs.clone(),
+                                    properties.read_write_two_structs_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id == sub_ids.read_write_enum_property_update {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteEnum/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_enum_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_enum.clone(),
+                                    properties.read_write_enum_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_optional_enum_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteOptionalEnum/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_optional_enum_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_optional_enum.clone(),
+                                    properties.read_write_optional_enum_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_two_enums_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteTwoEnums/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_two_enums_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_two_enums.clone(),
+                                    properties.read_write_two_enums_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id == sub_ids.read_write_datetime_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteDatetime/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_datetime_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_datetime.clone(),
+                                    properties.read_write_datetime_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_optional_datetime_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteOptionalDatetime/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_optional_datetime_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_optional_datetime.clone(),
+                                    properties.read_write_optional_datetime_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_two_datetimes_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteTwoDatetimes/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_two_datetimes_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_two_datetimes.clone(),
+                                    properties.read_write_two_datetimes_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id == sub_ids.read_write_duration_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteDuration/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_duration_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_duration.clone(),
+                                    properties.read_write_duration_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_optional_duration_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteOptionalDuration/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_optional_duration_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_optional_duration.clone(),
+                                    properties.read_write_optional_duration_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_two_durations_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteTwoDurations/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_two_durations_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_two_durations.clone(),
+                                    properties.read_write_two_durations_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id == sub_ids.read_write_binary_property_update {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteBinary/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_binary_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_binary.clone(),
+                                    properties.read_write_binary_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_optional_binary_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteOptionalBinary/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_optional_binary_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_optional_binary.clone(),
+                                    properties.read_write_optional_binary_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_two_binaries_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteTwoBinaries/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_two_binaries_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_two_binaries.clone(),
+                                    properties.read_write_two_binaries_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id
+                                == sub_ids.read_write_list_of_strings_property_update
+                            {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteListOfStrings/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_list_of_strings_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_list_of_strings.clone(),
+                                    properties.read_write_list_of_strings_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
+                            } else if subscription_id == sub_ids.read_write_lists_property_update {
+                                let prop_topic = format!(
+                                    "testAble/{}/property/readWriteLists/value",
+                                    instance_id
+                                );
+                                TestAbleServer::update_read_write_lists_value(
+                                    publisher.clone(),
+                                    prop_topic,
+                                    properties.read_write_lists.clone(),
+                                    properties.read_write_lists_tx_channel.clone(),
+                                    msg,
+                                )
+                                .await
                             } else {
-                                warn!("No response topic found in message properties; cannot send error response.");
+                                TestAbleServer::wrap_return_code_in_future(
+                                    MethodReturnCode::NotImplemented(
+                                        "Could not find a property matching the request"
+                                            .to_string(),
+                                    ),
+                                )
+                                .await
+                            }
+                        };
+                        match update_prop_future.await {
+                            Ok(_) => debug!("Successfully processed update  property"),
+                            Err(e) => {
+                                error!("Error processing update to '' property: {:?}", e);
+                                if let Some(resp_topic) = opt_resp_topic {
+                                    TestAbleServer::publish_error_response(
+                                        publisher.clone(),
+                                        Some(resp_topic),
+                                        opt_corr_data,
+                                        e,
+                                    )
+                                    .await;
+                                } else {
+                                    warn!("No response topic found in message properties; cannot send error response.");
+                                }
                             }
                         }
                     }
+                } else {
+                    warn!("Received MQTT message without subscription id; cannot process.");
                 }
             }
         });
@@ -6443,8 +6547,8 @@ impl TestAbleServer {
 }
 
 #[async_trait]
-pub trait TestAbleMethodHandlers: Send + Sync {
-    async fn initialize(&mut self, server: TestAbleServer) -> Result<(), MethodReturnCode>;
+pub trait TestAbleMethodHandlers<C: MqttClient>: Send + Sync {
+    async fn initialize(&mut self, server: TestAbleServer<C>) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the callWithNothing method request.
     async fn handle_call_with_nothing(&self) -> Result<(), MethodReturnCode>;

@@ -12,7 +12,7 @@ payloads = []
 [dependencies]
 # Core dependencies (always available)
 futures = "0.3.31"
-mqttier = "0.4.5"
+stinger-mqtt-trait = "0.2.3"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 tokio = { version = "1", features = ["full"] }
@@ -24,9 +24,8 @@ builder-pattern = "0.4"
 base64 = "0.22.1"
 tracing = { version = "0.1.41", optional = true }
 tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter", "fmt"] }
-
-# Server specific dependencies
-async-trait = { version = "0.1", optional = true }
+bytes = "1.10.1"
+async-trait = { version = "0.1", optional = true } # For server-side async traits
 
 
 [dependencies.uuid]
