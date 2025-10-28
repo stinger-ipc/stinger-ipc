@@ -37,7 +37,7 @@ features = [
 ]
 
 [dev-dependencies]
-mqttier = "0.6.1"
+mqttier = "0.6.2"
 
 [[example]]
 name = "signal_only_client_demo"
