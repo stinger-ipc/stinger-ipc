@@ -8,8 +8,8 @@ on the next generation.
 
 This is the Client for the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions.
-You may use, modify, and distribute it under any license of your choosing.
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 #[cfg(feature = "client")]
 use stinger_mqtt_trait::{MqttClient};
@@ -261,7 +261,7 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
             {{prop.arg_list[0].name}}: value
         } {%- endif %};
         let topic: String = format!("{{prop.update_topic}}", self.client_id);
-        let msg = message::property_update_message(&topic, &data, self.properties.{{prop_name | snake_case}}_version.load(Ordering::Relaxed).to_string()).unwrap();
+        let msg = message::property_update_message(&topic, &data, self.properties.{{prop_name | snake_case}}_version.load(Ordering::Relaxed)).unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
         Ok(())
     }
@@ -293,6 +293,7 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
                 {% if stinger.methods|length > 0 %}
                 let opt_corr_data: Option<Vec<u8>> = msg.correlation_data.clone().map(|b| b.to_vec());
                 let opt_corr_id: Option<Uuid> = opt_corr_data.and_then(|b| Uuid::from_slice(b.as_slice()).ok());
+                {%endif%} {# if there are some methods #}
                 if let Some(subscription_id) = msg.subscription_id {
 
                     let payload = String::from_utf8_lossy(&msg.payload).to_string();
@@ -312,9 +313,8 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
                                 }
                             }
                         }
-                    }
-                    {%-endfor%}
-                    {%endif%}
+                    } // end {{method_name}} method response handling
+                    {%-endfor%} {# end for each method #}
                     {%-for signal_name, signal in stinger.signals.items()%}
                     {%if not loop.first%}else {%endif%}if Some(subscription_id) == sub_ids.{{signal_name | snake_case}}_signal {
                         let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
@@ -341,7 +341,7 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
                             }
                         }
                         {%endif%}
-                    }
+                    } // end {{signal_name}} signal handling
                     {%endfor%}
                     {%-for prop_name, prop in stinger.properties.items()%}
                     {%if not loop.first%}else {%endif%}if subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
@@ -361,7 +361,7 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
                                 continue;
                             }
                         }
-                    }
+                    } // end {{prop_name}} property value update
                     {%endfor%}
                 }
             }   

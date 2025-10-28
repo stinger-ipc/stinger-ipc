@@ -7,12 +7,15 @@ DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over
 on the next generation.
 
 This is the Server for the Full interface.
-*/
 
-use mqttier::{MqttierClient, PublishResult, ReceivedMessage};
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+use bytes::Bytes;
+use tokio::sync::oneshot;
 
 use async_trait::async_trait;
 use std::any::Any;
@@ -20,12 +23,17 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::Mutex as AsyncMutex;
 
 use serde_json;
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{broadcast, watch};
+
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use std::future::Future;
 use std::pin::Pin;
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+use stinger_mqtt_trait::{MqttClient, MqttError, MqttPublishSuccess};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
+use crate::message;
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -34,69 +42,69 @@ use tracing::{debug, error, info, warn};
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct FullServerSubscriptionIds {
-    add_numbers_method_req: usize,
-    do_something_method_req: usize,
-    echo_method_req: usize,
-    what_time_is_it_method_req: usize,
-    set_the_time_method_req: usize,
-    forward_time_method_req: usize,
-    how_off_is_the_clock_method_req: usize,
+    add_numbers_method_req: u32,
+    do_something_method_req: u32,
+    echo_method_req: u32,
+    what_time_is_it_method_req: u32,
+    set_the_time_method_req: u32,
+    forward_time_method_req: u32,
+    how_off_is_the_clock_method_req: u32,
 
-    favorite_number_property_update: usize,
+    favorite_number_property_update: u32,
 
-    favorite_foods_property_update: usize,
+    favorite_foods_property_update: u32,
 
-    lunch_menu_property_update: usize,
+    lunch_menu_property_update: u32,
 
-    family_name_property_update: usize,
+    family_name_property_update: u32,
 
-    last_breakfast_time_property_update: usize,
+    last_breakfast_time_property_update: u32,
 
-    breakfast_length_property_update: usize,
+    breakfast_length_property_update: u32,
 
-    last_birthdays_property_update: usize,
+    last_birthdays_property_update: u32,
 }
 
 #[derive(Clone)]
 struct FullProperties {
-    favorite_number_topic: Arc<String>,
     favorite_number: Arc<AsyncMutex<Option<FavoriteNumberProperty>>>,
     favorite_number_tx_channel: watch::Sender<Option<i32>>,
-    favorite_foods_topic: Arc<String>,
+    favorite_number_version: Arc<AtomicU32>,
     favorite_foods: Arc<AsyncMutex<Option<FavoriteFoodsProperty>>>,
     favorite_foods_tx_channel: watch::Sender<Option<FavoriteFoodsProperty>>,
-    lunch_menu_topic: Arc<String>,
+    favorite_foods_version: Arc<AtomicU32>,
     lunch_menu: Arc<AsyncMutex<Option<LunchMenuProperty>>>,
     lunch_menu_tx_channel: watch::Sender<Option<LunchMenuProperty>>,
-    family_name_topic: Arc<String>,
+    lunch_menu_version: Arc<AtomicU32>,
     family_name: Arc<AsyncMutex<Option<FamilyNameProperty>>>,
     family_name_tx_channel: watch::Sender<Option<String>>,
-    last_breakfast_time_topic: Arc<String>,
+    family_name_version: Arc<AtomicU32>,
     last_breakfast_time: Arc<AsyncMutex<Option<LastBreakfastTimeProperty>>>,
     last_breakfast_time_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
-    breakfast_length_topic: Arc<String>,
+    last_breakfast_time_version: Arc<AtomicU32>,
     breakfast_length: Arc<AsyncMutex<Option<BreakfastLengthProperty>>>,
     breakfast_length_tx_channel: watch::Sender<Option<chrono::Duration>>,
-    last_birthdays_topic: Arc<String>,
+    breakfast_length_version: Arc<AtomicU32>,
     last_birthdays: Arc<AsyncMutex<Option<LastBirthdaysProperty>>>,
     last_birthdays_tx_channel: watch::Sender<Option<LastBirthdaysProperty>>,
+    last_birthdays_version: Arc<AtomicU32>,
 }
 
 #[derive(Clone)]
-pub struct FullServer {
-    mqttier_client: MqttierClient,
+pub struct FullServer<C: MqttClient> {
+    mqtt_client: C,
 
-    /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
+    /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
-    msg_streamer_rx: Arc<Mutex<Option<mpsc::Receiver<ReceivedMessage>>>>,
+    msg_streamer_rx: Arc<Mutex<Option<broadcast::Receiver<MqttMessage>>>>,
 
     /// The Sender side of MQTT messages that are received from the broker.  This tx
     /// side is cloned for each subscription made.
     #[allow(dead_code)]
-    msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
+    msg_streamer_tx: broadcast::Sender<MqttMessage>,
 
     /// Struct contains all the method handlers.
-    method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
+    method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
 
     /// Struct contains all the properties.
     properties: FullProperties,
@@ -111,156 +119,156 @@ pub struct FullServer {
     pub instance_id: String,
 }
 
-impl FullServer {
+impl<C: MqttClient + Clone + Send> FullServer<C> {
     pub async fn new(
-        connection: &mut MqttierClient,
-        method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
+        mut connection: C,
+        method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
         instance_id: String,
     ) -> Self {
-        // Create a channel for messages to get from the MqttierClient object to this FullServer object.
+        // Create a channel for messages to get from the MqttClient object to this FullServer object.
         // The Connection object uses a clone of the tx side of the channel.
-        let (message_received_tx, message_received_rx) = mpsc::channel::<ReceivedMessage>(64);
+        let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
         // Create method handler struct
         let subscription_id_add_numbers_method_req = connection
             .subscribe(
                 format!("full/{}/method/addNumbers", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_add_numbers_method_req =
-            subscription_id_add_numbers_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_add_numbers_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_do_something_method_req = connection
             .subscribe(
                 format!("full/{}/method/doSomething", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_do_something_method_req =
-            subscription_id_do_something_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_do_something_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_echo_method_req = connection
             .subscribe(
                 format!("full/{}/method/echo", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_echo_method_req =
-            subscription_id_echo_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_echo_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_what_time_is_it_method_req = connection
             .subscribe(
                 format!("full/{}/method/whatTimeIsIt", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_what_time_is_it_method_req =
-            subscription_id_what_time_is_it_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_what_time_is_it_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_set_the_time_method_req = connection
             .subscribe(
                 format!("full/{}/method/setTheTime", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_set_the_time_method_req =
-            subscription_id_set_the_time_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_set_the_time_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_forward_time_method_req = connection
             .subscribe(
                 format!("full/{}/method/forwardTime", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_forward_time_method_req =
-            subscription_id_forward_time_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_forward_time_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_how_off_is_the_clock_method_req = connection
             .subscribe(
                 format!("full/{}/method/howOffIsTheClock", instance_id),
-                2,
+                QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_how_off_is_the_clock_method_req =
-            subscription_id_how_off_is_the_clock_method_req.unwrap_or_else(|_| usize::MAX);
+            subscription_id_how_off_is_the_clock_method_req.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_favorite_number_property_update = connection
             .subscribe(
                 format!("full/{}/property/favoriteNumber/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_favorite_number_property_update =
-            subscription_id_favorite_number_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_favorite_number_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_favorite_foods_property_update = connection
             .subscribe(
                 format!("full/{}/property/favoriteFoods/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_favorite_foods_property_update =
-            subscription_id_favorite_foods_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_favorite_foods_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_lunch_menu_property_update = connection
             .subscribe(
                 format!("full/{}/property/lunchMenu/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_lunch_menu_property_update =
-            subscription_id_lunch_menu_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_lunch_menu_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_family_name_property_update = connection
             .subscribe(
                 format!("full/{}/property/familyName/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_family_name_property_update =
-            subscription_id_family_name_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_family_name_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_last_breakfast_time_property_update = connection
             .subscribe(
                 format!("full/{}/property/lastBreakfastTime/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_last_breakfast_time_property_update =
-            subscription_id_last_breakfast_time_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_last_breakfast_time_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_breakfast_length_property_update = connection
             .subscribe(
                 format!("full/{}/property/breakfastLength/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_breakfast_length_property_update =
-            subscription_id_breakfast_length_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_breakfast_length_property_update.unwrap_or_else(|_| u32::MAX);
 
         let subscription_id_last_birthdays_property_update = connection
             .subscribe(
                 format!("full/{}/property/lastBirthdays/setValue", instance_id),
-                1,
+                QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
             .await;
         let subscription_id_last_birthdays_property_update =
-            subscription_id_last_birthdays_property_update.unwrap_or_else(|_| usize::MAX);
+            subscription_id_last_birthdays_property_update.unwrap_or_else(|_| u32::MAX);
 
         // Create structure for subscription ids.
         let sub_ids = FullServerSubscriptionIds {
@@ -283,46 +291,31 @@ impl FullServer {
         };
 
         let property_values = FullProperties {
-            favorite_number_topic: Arc::new(format!(
-                "full/{}/property/favoriteNumber/value",
-                instance_id
-            )),
             favorite_number: Arc::new(AsyncMutex::new(None)),
             favorite_number_tx_channel: watch::channel(None).0,
-            favorite_foods_topic: Arc::new(format!(
-                "full/{}/property/favoriteFoods/value",
-                instance_id
-            )),
+            favorite_number_version: Arc::new(AtomicU32::new(0)),
             favorite_foods: Arc::new(AsyncMutex::new(None)),
             favorite_foods_tx_channel: watch::channel(None).0,
-            lunch_menu_topic: Arc::new(format!("full/{}/property/lunchMenu/value", instance_id)),
+            favorite_foods_version: Arc::new(AtomicU32::new(0)),
             lunch_menu: Arc::new(AsyncMutex::new(None)),
             lunch_menu_tx_channel: watch::channel(None).0,
-            family_name_topic: Arc::new(format!("full/{}/property/familyName/value", instance_id)),
+            lunch_menu_version: Arc::new(AtomicU32::new(0)),
             family_name: Arc::new(AsyncMutex::new(None)),
             family_name_tx_channel: watch::channel(None).0,
-            last_breakfast_time_topic: Arc::new(format!(
-                "full/{}/property/lastBreakfastTime/value",
-                instance_id
-            )),
+            family_name_version: Arc::new(AtomicU32::new(0)),
             last_breakfast_time: Arc::new(AsyncMutex::new(None)),
             last_breakfast_time_tx_channel: watch::channel(None).0,
-            breakfast_length_topic: Arc::new(format!(
-                "full/{}/property/breakfastLength/value",
-                instance_id
-            )),
+            last_breakfast_time_version: Arc::new(AtomicU32::new(0)),
             breakfast_length: Arc::new(AsyncMutex::new(None)),
             breakfast_length_tx_channel: watch::channel(None).0,
-            last_birthdays_topic: Arc::new(format!(
-                "full/{}/property/lastBirthdays/value",
-                instance_id
-            )),
+            breakfast_length_version: Arc::new(AtomicU32::new(0)),
             last_birthdays: Arc::new(AsyncMutex::new(None)),
             last_birthdays_tx_channel: watch::channel(None).0,
+            last_birthdays_version: Arc::new(AtomicU32::new(0)),
         };
 
         FullServer {
-            mqttier_client: connection.clone(),
+            mqtt_client: connection.clone(),
 
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
@@ -330,35 +323,31 @@ impl FullServer {
             properties: property_values,
             subscription_ids: sub_ids,
 
-            client_id: connection.client_id.to_string(),
+            client_id: connection.get_client_id(),
             instance_id,
         }
     }
 
-    /// Converts a oneshot receiver for the publish result into a Future that resolves to
     pub async fn oneshot_to_future(
-        publish_oneshot: tokio::sync::oneshot::Receiver<PublishResult>,
+        ch: oneshot::Receiver<Result<MqttPublishSuccess, MqttError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
-            let publish_result = publish_oneshot.await;
-            match publish_result {
-                Ok(PublishResult::Acknowledged(_))
-                | Ok(PublishResult::Completed(_))
-                | Ok(PublishResult::Sent(_)) => Ok(()),
-
-                Ok(PublishResult::TimedOut) => Err(MethodReturnCode::Timeout(
-                    "Timed out publishing signal".to_string(),
-                )),
-
-                Ok(PublishResult::SerializationError(s)) => {
-                    Err(MethodReturnCode::ServerSerializationError(s))
-                }
-
-                Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
-
-                Err(_) => Err(MethodReturnCode::UnknownError(
-                    "Error publishing signal".to_string(),
-                )),
+            let chan_result = ch.await;
+            match chan_result {
+                Ok(transferred_result) => match transferred_result {
+                    Ok(MqttPublishSuccess::Acknowledged) => Ok(()),
+                    Ok(MqttPublishSuccess::Completed) => Ok(()),
+                    Ok(MqttPublishSuccess::Sent) => Ok(()),
+                    Ok(MqttPublishSuccess::Queued) => Ok(()),
+                    Err(e) => Err(MethodReturnCode::TransportError(format!(
+                        "MQTT publish error: {:?}",
+                        e
+                    ))),
+                },
+                Err(e) => Err(MethodReturnCode::TransportError(format!(
+                    "MQTT publish oneshot receive error: {:?}",
+                    e
+                ))),
             }
         })
     }
@@ -374,22 +363,14 @@ impl FullServer {
 
     /// Publishes an error response to the given response topic with the given correlation data.
     async fn publish_error_response(
-        publisher: MqttierClient,
+        mut publisher: C,
         response_topic: Option<String>,
-        correlation_data: Option<Vec<u8>>,
-        err: &MethodReturnCode,
+        correlation_data: Option<Bytes>,
+        err: MethodReturnCode,
     ) {
         if let Some(resp_topic) = response_topic {
-            let corr_data = correlation_data.unwrap_or_default();
-            let (return_code, debug_message) = err.to_code();
-            let _ = publisher
-                .publish_error_response(
-                    resp_topic,
-                    debug_message.unwrap_or_default(),
-                    corr_data,
-                    return_code,
-                )
-                .await;
+            let msg = message::error_response(&resp_topic, correlation_data, err).unwrap();
+            let _ = publisher.publish(msg).await;
         } else {
             info!("No response topic found in message properties; cannot send error response.");
         }
@@ -414,18 +395,44 @@ impl FullServer {
 
             memory_segment: memory_segment,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(format!("full/{}/signal/todayIs", self.instance_id), &data)
-            .await;
-        FullServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("full/{}/signal/todayIs", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let ch = publisher.publish_noblock(msg).await;
+        Self::oneshot_to_future(ch).await
+    }
+
+    /// Emits the todayIs signal with the given arguments, but this is a fire-and-forget version.
+    pub fn emit_today_is_nowait(
+        &mut self,
+        day_of_month: i32,
+        day_of_week: Option<DayOfTheWeek>,
+        timestamp: chrono::DateTime<chrono::Utc>,
+        process_time: chrono::Duration,
+        memory_segment: Vec<u8>,
+    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+        let data = TodayIsSignalPayload {
+            day_of_month: day_of_month,
+
+            day_of_week: day_of_week,
+
+            timestamp: timestamp,
+
+            process_time: process_time,
+
+            memory_segment: memory_segment,
+        };
+        let topic = format!("full/{}/signal/todayIs", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        publisher.publish_nowait(msg)
     }
 
     /// Handles a request message for the addNumbers method.
     async fn handle_add_numbers_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
-        msg: ReceivedMessage,
+        mut publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -436,11 +443,11 @@ impl FullServer {
                 "Error deserializing request payload for addNumbers: {:?}",
                 payload_obj.err()
             );
-            FullServer::publish_error_response(
+            FullServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -463,17 +470,16 @@ impl FullServer {
             match rc {
                 Ok(retval) => {
                     let resp_obj = AddNumbersReturnValues { sum: retval };
-                    let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &resp_obj, corr_data)
-                        .await;
+                    let msg = message::response(&resp_topic, &resp_obj, corr_data, None).unwrap();
+                    let _fut_publish_result = publisher.publish(msg).await;
                 }
                 Err(err) => {
                     info!("Error occurred while handling addNumbers: {:?}", &err);
-                    FullServer::publish_error_response(
+                    FullServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
-                        &err,
+                        err,
                     )
                     .await;
                 }
@@ -486,9 +492,9 @@ impl FullServer {
 
     /// Handles a request message for the doSomething method.
     async fn handle_do_something_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
-        msg: ReceivedMessage,
+        mut publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -499,11 +505,11 @@ impl FullServer {
                 "Error deserializing request payload for doSomething: {:?}",
                 payload_obj.err()
             );
-            FullServer::publish_error_response(
+            FullServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -523,17 +529,16 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
-                        .await;
+                    let msg = message::response(&resp_topic, &retval, corr_data, None).unwrap();
+                    let _fut_publish_result = publisher.publish(msg).await;
                 }
                 Err(err) => {
                     info!("Error occurred while handling doSomething: {:?}", &err);
-                    FullServer::publish_error_response(
+                    FullServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
-                        &err,
+                        err,
                     )
                     .await;
                 }
@@ -546,9 +551,9 @@ impl FullServer {
 
     /// Handles a request message for the echo method.
     async fn handle_echo_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
-        msg: ReceivedMessage,
+        mut publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -559,11 +564,11 @@ impl FullServer {
                 "Error deserializing request payload for echo: {:?}",
                 payload_obj.err()
             );
-            FullServer::publish_error_response(
+            FullServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -584,17 +589,16 @@ impl FullServer {
             match rc {
                 Ok(retval) => {
                     let resp_obj = EchoReturnValues { message: retval };
-                    let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &resp_obj, corr_data)
-                        .await;
+                    let msg = message::response(&resp_topic, &resp_obj, corr_data, None).unwrap();
+                    let _fut_publish_result = publisher.publish(msg).await;
                 }
                 Err(err) => {
                     info!("Error occurred while handling echo: {:?}", &err);
-                    FullServer::publish_error_response(
+                    FullServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
-                        &err,
+                        err,
                     )
                     .await;
                 }
@@ -607,9 +611,9 @@ impl FullServer {
 
     /// Handles a request message for the what_time_is_it method.
     async fn handle_what_time_is_it_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
-        msg: ReceivedMessage,
+        mut publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -620,11 +624,11 @@ impl FullServer {
                 "Error deserializing request payload for what_time_is_it: {:?}",
                 payload_obj.err()
             );
-            FullServer::publish_error_response(
+            FullServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -647,17 +651,16 @@ impl FullServer {
             match rc {
                 Ok(retval) => {
                     let resp_obj = WhatTimeIsItReturnValues { timestamp: retval };
-                    let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &resp_obj, corr_data)
-                        .await;
+                    let msg = message::response(&resp_topic, &resp_obj, corr_data, None).unwrap();
+                    let _fut_publish_result = publisher.publish(msg).await;
                 }
                 Err(err) => {
                     info!("Error occurred while handling what_time_is_it: {:?}", &err);
-                    FullServer::publish_error_response(
+                    FullServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
-                        &err,
+                        err,
                     )
                     .await;
                 }
@@ -670,9 +673,9 @@ impl FullServer {
 
     /// Handles a request message for the set_the_time method.
     async fn handle_set_the_time_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
-        msg: ReceivedMessage,
+        mut publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -683,11 +686,11 @@ impl FullServer {
                 "Error deserializing request payload for set_the_time: {:?}",
                 payload_obj.err()
             );
-            FullServer::publish_error_response(
+            FullServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -709,17 +712,16 @@ impl FullServer {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &retval, corr_data)
-                        .await;
+                    let msg = message::response(&resp_topic, &retval, corr_data, None).unwrap();
+                    let _fut_publish_result = publisher.publish(msg).await;
                 }
                 Err(err) => {
                     info!("Error occurred while handling set_the_time: {:?}", &err);
-                    FullServer::publish_error_response(
+                    FullServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
-                        &err,
+                        err,
                     )
                     .await;
                 }
@@ -732,9 +734,9 @@ impl FullServer {
 
     /// Handles a request message for the forward_time method.
     async fn handle_forward_time_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
-        msg: ReceivedMessage,
+        mut publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -745,11 +747,11 @@ impl FullServer {
                 "Error deserializing request payload for forward_time: {:?}",
                 payload_obj.err()
             );
-            FullServer::publish_error_response(
+            FullServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -770,17 +772,16 @@ impl FullServer {
             match rc {
                 Ok(retval) => {
                     let resp_obj = ForwardTimeReturnValues { new_time: retval };
-                    let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &resp_obj, corr_data)
-                        .await;
+                    let msg = message::response(&resp_topic, &resp_obj, corr_data, None).unwrap();
+                    let _fut_publish_result = publisher.publish(msg).await;
                 }
                 Err(err) => {
                     info!("Error occurred while handling forward_time: {:?}", &err);
-                    FullServer::publish_error_response(
+                    FullServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
-                        &err,
+                        err,
                     )
                     .await;
                 }
@@ -793,9 +794,9 @@ impl FullServer {
 
     /// Handles a request message for the how_off_is_the_clock method.
     async fn handle_how_off_is_the_clock_request(
-        publisher: MqttierClient,
-        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers>>>,
-        msg: ReceivedMessage,
+        mut publisher: C,
+        handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
+        msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
@@ -806,11 +807,11 @@ impl FullServer {
                 "Error deserializing request payload for how_off_is_the_clock: {:?}",
                 payload_obj.err()
             );
-            FullServer::publish_error_response(
+            FullServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
-                &MethodReturnCode::ServerDeserializationError(
+                MethodReturnCode::ServerDeserializationError(
                     "Failed to deserialize request payload".to_string(),
                 ),
             )
@@ -833,20 +834,19 @@ impl FullServer {
             match rc {
                 Ok(retval) => {
                     let resp_obj = HowOffIsTheClockReturnValues { difference: retval };
-                    let _fut_publish_result = publisher
-                        .publish_response(resp_topic, &resp_obj, corr_data)
-                        .await;
+                    let msg = message::response(&resp_topic, &resp_obj, corr_data, None).unwrap();
+                    let _fut_publish_result = publisher.publish(msg).await;
                 }
                 Err(err) => {
                     info!(
                         "Error occurred while handling how_off_is_the_clock: {:?}",
                         &err
                     );
-                    FullServer::publish_error_response(
+                    FullServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
-                        &err,
+                        err,
                     )
                     .await;
                 }
@@ -860,32 +860,35 @@ impl FullServer {
     }
 
     async fn publish_favorite_number_value(
-        publisher: MqttierClient,
+        mut publisher: C,
         topic: String,
         data: FavoriteNumberProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        FullServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
+        let ch = publisher.publish_noblock(msg).await;
+        FullServer::<C>::oneshot_to_future(ch).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_favorite_number_value(
-        publisher: MqttierClient,
-        topic: Arc<String>,
+        publisher: C,
+        topic: String,
         property_pointer: Arc<AsyncMutex<Option<FavoriteNumberProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<i32>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: FavoriteNumberProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
                     error!("Failed to parse JSON received over MQTT to update 'favorite_number' property: {:?}", e);
-                    return FullServer::wrap_return_code_in_future(
+                    return FullServer::<C>::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'favorite_number' payload".to_string(),
                         ),
@@ -899,7 +902,7 @@ impl FullServer {
         *property_guard = Some(new_property_structure.clone());
         drop(property_guard);
 
-        let topic2: String = topic.as_ref().clone();
+        let topic2: String = topic.clone();
         let data_to_send_to_watchers = new_property_structure.number.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
@@ -910,7 +913,14 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_favorite_number_value(publisher, topic2, new_property_structure).await
+
+        FullServer::publish_favorite_number_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_favorite_number(&self) -> watch::Receiver<Option<i32>> {
@@ -949,14 +959,24 @@ impl FullServer {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'favorite_number' value not changed, so not notifying watchers.");
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
-                let topic2 = self.properties.favorite_number_topic.as_ref().clone();
-                FullServer::publish_favorite_number_value(publisher2, topic2, prop_obj).await
+                let publisher2 = self.mqtt_client.clone();
+                let topic2 = format!("full/{}/property/favoriteNumber/value", self.instance_id);
+                let new_version = self
+                    .properties
+                    .favorite_number_version
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                FullServer::<C>::publish_favorite_number_value(
+                    publisher2,
+                    topic2,
+                    prop_obj,
+                    new_version,
+                )
+                .await
             } else {
-                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
                     "Could not find property object".to_string(),
                 ))
                 .await
@@ -965,32 +985,35 @@ impl FullServer {
     }
 
     async fn publish_favorite_foods_value(
-        publisher: MqttierClient,
+        mut publisher: C,
         topic: String,
         data: FavoriteFoodsProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        FullServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
+        let ch = publisher.publish_noblock(msg).await;
+        FullServer::<C>::oneshot_to_future(ch).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_favorite_foods_value(
-        publisher: MqttierClient,
-        topic: Arc<String>,
+        publisher: C,
+        topic: String,
         property_pointer: Arc<AsyncMutex<Option<FavoriteFoodsProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<FavoriteFoodsProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: FavoriteFoodsProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
                     error!("Failed to parse JSON received over MQTT to update 'favorite_foods' property: {:?}", e);
-                    return FullServer::wrap_return_code_in_future(
+                    return FullServer::<C>::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'favorite_foods' payload".to_string(),
                         ),
@@ -1004,7 +1027,7 @@ impl FullServer {
         *property_guard = Some(new_property_structure.clone());
         drop(property_guard);
 
-        let topic2: String = topic.as_ref().clone();
+        let topic2: String = topic.clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
@@ -1015,7 +1038,14 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_favorite_foods_value(publisher, topic2, new_property_structure).await
+
+        FullServer::publish_favorite_foods_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_favorite_foods(&self) -> watch::Receiver<Option<FavoriteFoodsProperty>> {
@@ -1052,14 +1082,24 @@ impl FullServer {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'favorite_foods' value not changed, so not notifying watchers.");
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
-                let topic2 = self.properties.favorite_foods_topic.as_ref().clone();
-                FullServer::publish_favorite_foods_value(publisher2, topic2, prop_obj).await
+                let publisher2 = self.mqtt_client.clone();
+                let topic2 = format!("full/{}/property/favoriteFoods/value", self.instance_id);
+                let new_version = self
+                    .properties
+                    .favorite_foods_version
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                FullServer::<C>::publish_favorite_foods_value(
+                    publisher2,
+                    topic2,
+                    prop_obj,
+                    new_version,
+                )
+                .await
             } else {
-                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
                     "Could not find property object".to_string(),
                 ))
                 .await
@@ -1068,32 +1108,35 @@ impl FullServer {
     }
 
     async fn publish_lunch_menu_value(
-        publisher: MqttierClient,
+        mut publisher: C,
         topic: String,
         data: LunchMenuProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        FullServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
+        let ch = publisher.publish_noblock(msg).await;
+        FullServer::<C>::oneshot_to_future(ch).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_lunch_menu_value(
-        publisher: MqttierClient,
-        topic: Arc<String>,
+        publisher: C,
+        topic: String,
         property_pointer: Arc<AsyncMutex<Option<LunchMenuProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<LunchMenuProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: LunchMenuProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
                     error!("Failed to parse JSON received over MQTT to update 'lunch_menu' property: {:?}", e);
-                    return FullServer::wrap_return_code_in_future(
+                    return FullServer::<C>::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'lunch_menu' payload".to_string(),
                         ),
@@ -1107,7 +1150,7 @@ impl FullServer {
         *property_guard = Some(new_property_structure.clone());
         drop(property_guard);
 
-        let topic2: String = topic.as_ref().clone();
+        let topic2: String = topic.clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
@@ -1118,7 +1161,9 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_lunch_menu_value(publisher, topic2, new_property_structure).await
+
+        FullServer::publish_lunch_menu_value(publisher, topic2, new_property_structure, new_version)
+            .await
     }
 
     pub async fn watch_lunch_menu(&self) -> watch::Receiver<Option<LunchMenuProperty>> {
@@ -1155,14 +1200,19 @@ impl FullServer {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'lunch_menu' value not changed, so not notifying watchers.");
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
-                let topic2 = self.properties.lunch_menu_topic.as_ref().clone();
-                FullServer::publish_lunch_menu_value(publisher2, topic2, prop_obj).await
+                let publisher2 = self.mqtt_client.clone();
+                let topic2 = format!("full/{}/property/lunchMenu/value", self.instance_id);
+                let new_version = self
+                    .properties
+                    .lunch_menu_version
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                FullServer::<C>::publish_lunch_menu_value(publisher2, topic2, prop_obj, new_version)
+                    .await
             } else {
-                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
                     "Could not find property object".to_string(),
                 ))
                 .await
@@ -1171,32 +1221,35 @@ impl FullServer {
     }
 
     async fn publish_family_name_value(
-        publisher: MqttierClient,
+        mut publisher: C,
         topic: String,
         data: FamilyNameProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        FullServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
+        let ch = publisher.publish_noblock(msg).await;
+        FullServer::<C>::oneshot_to_future(ch).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_family_name_value(
-        publisher: MqttierClient,
-        topic: Arc<String>,
+        publisher: C,
+        topic: String,
         property_pointer: Arc<AsyncMutex<Option<FamilyNameProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<String>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: FamilyNameProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
                     error!("Failed to parse JSON received over MQTT to update 'family_name' property: {:?}", e);
-                    return FullServer::wrap_return_code_in_future(
+                    return FullServer::<C>::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'family_name' payload".to_string(),
                         ),
@@ -1210,7 +1263,7 @@ impl FullServer {
         *property_guard = Some(new_property_structure.clone());
         drop(property_guard);
 
-        let topic2: String = topic.as_ref().clone();
+        let topic2: String = topic.clone();
         let data_to_send_to_watchers = new_property_structure.family_name.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
@@ -1221,7 +1274,14 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_family_name_value(publisher, topic2, new_property_structure).await
+
+        FullServer::publish_family_name_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_family_name(&self) -> watch::Receiver<Option<String>> {
@@ -1260,14 +1320,24 @@ impl FullServer {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'family_name' value not changed, so not notifying watchers.");
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
-                let topic2 = self.properties.family_name_topic.as_ref().clone();
-                FullServer::publish_family_name_value(publisher2, topic2, prop_obj).await
+                let publisher2 = self.mqtt_client.clone();
+                let topic2 = format!("full/{}/property/familyName/value", self.instance_id);
+                let new_version = self
+                    .properties
+                    .family_name_version
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                FullServer::<C>::publish_family_name_value(
+                    publisher2,
+                    topic2,
+                    prop_obj,
+                    new_version,
+                )
+                .await
             } else {
-                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
                     "Could not find property object".to_string(),
                 ))
                 .await
@@ -1276,32 +1346,35 @@ impl FullServer {
     }
 
     async fn publish_last_breakfast_time_value(
-        publisher: MqttierClient,
+        mut publisher: C,
         topic: String,
         data: LastBreakfastTimeProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        FullServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
+        let ch = publisher.publish_noblock(msg).await;
+        FullServer::<C>::oneshot_to_future(ch).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_last_breakfast_time_value(
-        publisher: MqttierClient,
-        topic: Arc<String>,
+        publisher: C,
+        topic: String,
         property_pointer: Arc<AsyncMutex<Option<LastBreakfastTimeProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: LastBreakfastTimeProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
                     error!("Failed to parse JSON received over MQTT to update 'last_breakfast_time' property: {:?}", e);
-                    return FullServer::wrap_return_code_in_future(
+                    return FullServer::<C>::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'last_breakfast_time' payload"
                                 .to_string(),
@@ -1316,7 +1389,7 @@ impl FullServer {
         *property_guard = Some(new_property_structure.clone());
         drop(property_guard);
 
-        let topic2: String = topic.as_ref().clone();
+        let topic2: String = topic.clone();
         let data_to_send_to_watchers = new_property_structure.timestamp.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
@@ -1327,8 +1400,14 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_last_breakfast_time_value(publisher, topic2, new_property_structure)
-            .await
+
+        FullServer::publish_last_breakfast_time_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_last_breakfast_time(
@@ -1372,14 +1451,24 @@ impl FullServer {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'last_breakfast_time' value not changed, so not notifying watchers.");
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
-                let topic2 = self.properties.last_breakfast_time_topic.as_ref().clone();
-                FullServer::publish_last_breakfast_time_value(publisher2, topic2, prop_obj).await
+                let publisher2 = self.mqtt_client.clone();
+                let topic2 = format!("full/{}/property/lastBreakfastTime/value", self.instance_id);
+                let new_version = self
+                    .properties
+                    .last_breakfast_time_version
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                FullServer::<C>::publish_last_breakfast_time_value(
+                    publisher2,
+                    topic2,
+                    prop_obj,
+                    new_version,
+                )
+                .await
             } else {
-                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
                     "Could not find property object".to_string(),
                 ))
                 .await
@@ -1388,32 +1477,35 @@ impl FullServer {
     }
 
     async fn publish_breakfast_length_value(
-        publisher: MqttierClient,
+        mut publisher: C,
         topic: String,
         data: BreakfastLengthProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        FullServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
+        let ch = publisher.publish_noblock(msg).await;
+        FullServer::<C>::oneshot_to_future(ch).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_breakfast_length_value(
-        publisher: MqttierClient,
-        topic: Arc<String>,
+        publisher: C,
+        topic: String,
         property_pointer: Arc<AsyncMutex<Option<BreakfastLengthProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<chrono::Duration>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: BreakfastLengthProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
                     error!("Failed to parse JSON received over MQTT to update 'breakfast_length' property: {:?}", e);
-                    return FullServer::wrap_return_code_in_future(
+                    return FullServer::<C>::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'breakfast_length' payload".to_string(),
                         ),
@@ -1427,7 +1519,7 @@ impl FullServer {
         *property_guard = Some(new_property_structure.clone());
         drop(property_guard);
 
-        let topic2: String = topic.as_ref().clone();
+        let topic2: String = topic.clone();
         let data_to_send_to_watchers = new_property_structure.length.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
@@ -1438,7 +1530,14 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_breakfast_length_value(publisher, topic2, new_property_structure).await
+
+        FullServer::publish_breakfast_length_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_breakfast_length(&self) -> watch::Receiver<Option<chrono::Duration>> {
@@ -1477,14 +1576,24 @@ impl FullServer {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'breakfast_length' value not changed, so not notifying watchers.");
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
-                let topic2 = self.properties.breakfast_length_topic.as_ref().clone();
-                FullServer::publish_breakfast_length_value(publisher2, topic2, prop_obj).await
+                let publisher2 = self.mqtt_client.clone();
+                let topic2 = format!("full/{}/property/breakfastLength/value", self.instance_id);
+                let new_version = self
+                    .properties
+                    .breakfast_length_version
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                FullServer::<C>::publish_breakfast_length_value(
+                    publisher2,
+                    topic2,
+                    prop_obj,
+                    new_version,
+                )
+                .await
             } else {
-                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
                     "Could not find property object".to_string(),
                 ))
                 .await
@@ -1493,32 +1602,35 @@ impl FullServer {
     }
 
     async fn publish_last_birthdays_value(
-        publisher: MqttierClient,
+        mut publisher: C,
         topic: String,
         data: LastBirthdaysProperty,
+        property_version: u32,
     ) -> SentMessageFuture {
-        let published_oneshot = publisher.publish_state(topic, &data, 1).await;
-        FullServer::oneshot_to_future(published_oneshot).await
+        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
+        let ch = publisher.publish_noblock(msg).await;
+        FullServer::<C>::oneshot_to_future(ch).await
     }
 
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_last_birthdays_value(
-        publisher: MqttierClient,
-        topic: Arc<String>,
+        publisher: C,
+        topic: String,
         property_pointer: Arc<AsyncMutex<Option<LastBirthdaysProperty>>>,
+        property_version: Arc<AtomicU32>,
         watch_sender: watch::Sender<Option<LastBirthdaysProperty>>,
-        msg: ReceivedMessage,
+        msg: MqttMessage,
     ) -> SentMessageFuture {
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-
+        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
         let new_property_structure: LastBirthdaysProperty = {
             match serde_json::from_str(&payload_str) {
                 Ok(obj) => obj,
                 Err(e) => {
                     error!("Failed to parse JSON received over MQTT to update 'last_birthdays' property: {:?}", e);
-                    return FullServer::wrap_return_code_in_future(
+                    return FullServer::<C>::wrap_return_code_in_future(
                         MethodReturnCode::ServerDeserializationError(
                             "Failed to deserialize property 'last_birthdays' payload".to_string(),
                         ),
@@ -1532,7 +1644,7 @@ impl FullServer {
         *property_guard = Some(new_property_structure.clone());
         drop(property_guard);
 
-        let topic2: String = topic.as_ref().clone();
+        let topic2: String = topic.clone();
         let data_to_send_to_watchers = new_property_structure.clone();
         match watch_sender.send(Some(data_to_send_to_watchers)) {
             Ok(_) => {}
@@ -1543,7 +1655,14 @@ impl FullServer {
                 );
             }
         };
-        FullServer::publish_last_birthdays_value(publisher, topic2, new_property_structure).await
+
+        FullServer::publish_last_birthdays_value(
+            publisher,
+            topic2,
+            new_property_structure,
+            new_version,
+        )
+        .await
     }
 
     pub async fn watch_last_birthdays(&self) -> watch::Receiver<Option<LastBirthdaysProperty>> {
@@ -1580,14 +1699,24 @@ impl FullServer {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'last_birthdays' value not changed, so not notifying watchers.");
-            return FullServer::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
         } else {
             if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqttier_client.clone();
-                let topic2 = self.properties.last_birthdays_topic.as_ref().clone();
-                FullServer::publish_last_birthdays_value(publisher2, topic2, prop_obj).await
+                let publisher2 = self.mqtt_client.clone();
+                let topic2 = format!("full/{}/property/lastBirthdays/value", self.instance_id);
+                let new_version = self
+                    .properties
+                    .last_birthdays_version
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                FullServer::<C>::publish_last_birthdays_value(
+                    publisher2,
+                    topic2,
+                    prop_obj,
+                    new_version,
+                )
+                .await
             } else {
-                FullServer::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
                     "Could not find property object".to_string(),
                 ))
                 .await
@@ -1599,9 +1728,12 @@ impl FullServer {
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn run_loop(&mut self) -> Result<(), JoinError> {
-        // Make sure the MqttierClient is connected and running.
-        let _ = self.mqttier_client.run_loop().await;
+    pub async fn run_loop(&mut self) -> Result<(), JoinError>
+    where
+        C: 'static,
+    {
+        // Make sure the MqttClient is connected and running.
+        let _ = self.mqtt_client.start().await;
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
@@ -1620,173 +1752,232 @@ impl FullServer {
             .initialize(self.clone())
             .await;
         let sub_ids = self.subscription_ids.clone();
-        let publisher = self.mqttier_client.clone();
+        let publisher = self.mqtt_client.clone();
 
         let properties = self.properties.clone();
 
-        let interface_publisher = self.mqttier_client.clone();
+        // Spawn a task to periodically publish interface info.
+        let mut interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(120));
             loop {
                 interval.tick().await;
+                let topic = format!("full/{}/interface", instance_id);
                 let info = crate::interface::InterfaceInfo::new()
                     .interface_name("Full".to_string())
                     .title("Fully Featured Example Interface".to_string())
                     .version("0.0.1".to_string())
                     .instance(instance_id.clone())
-                    .connection_topic(format!("client/{}/online", interface_publisher.client_id))
+                    .connection_topic(topic.clone())
                     .build();
-                let _ = interface_publisher
-                    .publish_status(format!("full/{}/interface", instance_id), &info, 150)
-                    .await;
+                let msg = message::interface_online(&topic, &info, 150 /*seconds*/).unwrap();
+                let _ = interface_publisher.publish(msg).await;
             }
         });
-        let loop_task = tokio::spawn(async move {
-            while let Some(msg) = message_receiver.recv().await {
-                let opt_resp_topic = msg.response_topic.clone();
-                let opt_corr_data = msg.correlation_data.clone();
 
-                if msg.subscription_id == sub_ids.add_numbers_method_req {
-                    FullServer::handle_add_numbers_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.do_something_method_req {
-                    FullServer::handle_do_something_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.echo_method_req {
-                    FullServer::handle_echo_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.what_time_is_it_method_req {
-                    FullServer::handle_what_time_is_it_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.set_the_time_method_req {
-                    FullServer::handle_set_the_time_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.forward_time_method_req {
-                    FullServer::handle_forward_time_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else if msg.subscription_id == sub_ids.how_off_is_the_clock_method_req {
-                    FullServer::handle_how_off_is_the_clock_request(
-                        publisher.clone(),
-                        method_handlers.clone(),
-                        msg,
-                    )
-                    .await;
-                } else {
-                    let update_prop_future = {
-                        if msg.subscription_id == sub_ids.favorite_number_property_update {
-                            FullServer::update_favorite_number_value(
-                                publisher.clone(),
-                                properties.favorite_number_topic.clone(),
-                                properties.favorite_number.clone(),
-                                properties.favorite_number_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.favorite_foods_property_update {
-                            FullServer::update_favorite_foods_value(
-                                publisher.clone(),
-                                properties.favorite_foods_topic.clone(),
-                                properties.favorite_foods.clone(),
-                                properties.favorite_foods_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.lunch_menu_property_update {
-                            FullServer::update_lunch_menu_value(
-                                publisher.clone(),
-                                properties.lunch_menu_topic.clone(),
-                                properties.lunch_menu.clone(),
-                                properties.lunch_menu_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.family_name_property_update {
-                            FullServer::update_family_name_value(
-                                publisher.clone(),
-                                properties.family_name_topic.clone(),
-                                properties.family_name.clone(),
-                                properties.family_name_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.last_breakfast_time_property_update
-                        {
-                            FullServer::update_last_breakfast_time_value(
-                                publisher.clone(),
-                                properties.last_breakfast_time_topic.clone(),
-                                properties.last_breakfast_time.clone(),
-                                properties.last_breakfast_time_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.breakfast_length_property_update {
-                            FullServer::update_breakfast_length_value(
-                                publisher.clone(),
-                                properties.breakfast_length_topic.clone(),
-                                properties.breakfast_length.clone(),
-                                properties.breakfast_length_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else if msg.subscription_id == sub_ids.last_birthdays_property_update {
-                            FullServer::update_last_birthdays_value(
-                                publisher.clone(),
-                                properties.last_birthdays_topic.clone(),
-                                properties.last_birthdays.clone(),
-                                properties.last_birthdays_tx_channel.clone(),
-                                msg,
-                            )
-                            .await
-                        } else {
-                            FullServer::wrap_return_code_in_future(
-                                MethodReturnCode::NotImplemented(
-                                    "Could not find a property matching the request".to_string(),
-                                ),
-                            )
-                            .await
-                        }
-                    };
-                    match update_prop_future.await {
-                        Ok(_) => debug!("Successfully processed update  property"),
-                        Err(e) => {
-                            error!("Error processing update to '' property: {:?}", e);
-                            if let Some(resp_topic) = opt_resp_topic {
-                                FullServer::publish_error_response(
+        let instance_id = self.instance_id.clone();
+        let loop_task = tokio::spawn(async move {
+            loop {
+                match message_receiver.recv().await {
+                    Ok(msg) => {
+                        let opt_resp_topic = msg.response_topic.clone();
+                        let opt_corr_data = msg.correlation_data.clone();
+
+                        if let Some(subscription_id) = msg.subscription_id {
+                            if subscription_id == sub_ids.add_numbers_method_req {
+                                FullServer::<C>::handle_add_numbers_request(
                                     publisher.clone(),
-                                    Some(resp_topic),
-                                    opt_corr_data,
-                                    &e,
+                                    method_handlers.clone(),
+                                    msg,
+                                )
+                                .await;
+                            } else if subscription_id == sub_ids.do_something_method_req {
+                                FullServer::<C>::handle_do_something_request(
+                                    publisher.clone(),
+                                    method_handlers.clone(),
+                                    msg,
+                                )
+                                .await;
+                            } else if subscription_id == sub_ids.echo_method_req {
+                                FullServer::<C>::handle_echo_request(
+                                    publisher.clone(),
+                                    method_handlers.clone(),
+                                    msg,
+                                )
+                                .await;
+                            } else if subscription_id == sub_ids.what_time_is_it_method_req {
+                                FullServer::<C>::handle_what_time_is_it_request(
+                                    publisher.clone(),
+                                    method_handlers.clone(),
+                                    msg,
+                                )
+                                .await;
+                            } else if subscription_id == sub_ids.set_the_time_method_req {
+                                FullServer::<C>::handle_set_the_time_request(
+                                    publisher.clone(),
+                                    method_handlers.clone(),
+                                    msg,
+                                )
+                                .await;
+                            } else if subscription_id == sub_ids.forward_time_method_req {
+                                FullServer::<C>::handle_forward_time_request(
+                                    publisher.clone(),
+                                    method_handlers.clone(),
+                                    msg,
+                                )
+                                .await;
+                            } else if subscription_id == sub_ids.how_off_is_the_clock_method_req {
+                                FullServer::<C>::handle_how_off_is_the_clock_request(
+                                    publisher.clone(),
+                                    method_handlers.clone(),
+                                    msg,
                                 )
                                 .await;
                             } else {
-                                warn!("No response topic found in message properties; cannot send error response.");
+                                let update_prop_future = {
+                                    if subscription_id == sub_ids.favorite_number_property_update {
+                                        let prop_topic = format!(
+                                            "full/{}/property/favoriteNumber/value",
+                                            instance_id
+                                        );
+                                        FullServer::<C>::update_favorite_number_value(
+                                            publisher.clone(),
+                                            prop_topic,
+                                            properties.favorite_number.clone(),
+                                            properties.favorite_number_version.clone(),
+                                            properties.favorite_number_tx_channel.clone(),
+                                            msg,
+                                        )
+                                        .await
+                                    } else if subscription_id
+                                        == sub_ids.favorite_foods_property_update
+                                    {
+                                        let prop_topic = format!(
+                                            "full/{}/property/favoriteFoods/value",
+                                            instance_id
+                                        );
+                                        FullServer::<C>::update_favorite_foods_value(
+                                            publisher.clone(),
+                                            prop_topic,
+                                            properties.favorite_foods.clone(),
+                                            properties.favorite_foods_version.clone(),
+                                            properties.favorite_foods_tx_channel.clone(),
+                                            msg,
+                                        )
+                                        .await
+                                    } else if subscription_id == sub_ids.lunch_menu_property_update
+                                    {
+                                        let prop_topic = format!(
+                                            "full/{}/property/lunchMenu/value",
+                                            instance_id
+                                        );
+                                        FullServer::<C>::update_lunch_menu_value(
+                                            publisher.clone(),
+                                            prop_topic,
+                                            properties.lunch_menu.clone(),
+                                            properties.lunch_menu_version.clone(),
+                                            properties.lunch_menu_tx_channel.clone(),
+                                            msg,
+                                        )
+                                        .await
+                                    } else if subscription_id == sub_ids.family_name_property_update
+                                    {
+                                        let prop_topic = format!(
+                                            "full/{}/property/familyName/value",
+                                            instance_id
+                                        );
+                                        FullServer::<C>::update_family_name_value(
+                                            publisher.clone(),
+                                            prop_topic,
+                                            properties.family_name.clone(),
+                                            properties.family_name_version.clone(),
+                                            properties.family_name_tx_channel.clone(),
+                                            msg,
+                                        )
+                                        .await
+                                    } else if subscription_id
+                                        == sub_ids.last_breakfast_time_property_update
+                                    {
+                                        let prop_topic = format!(
+                                            "full/{}/property/lastBreakfastTime/value",
+                                            instance_id
+                                        );
+                                        FullServer::<C>::update_last_breakfast_time_value(
+                                            publisher.clone(),
+                                            prop_topic,
+                                            properties.last_breakfast_time.clone(),
+                                            properties.last_breakfast_time_version.clone(),
+                                            properties.last_breakfast_time_tx_channel.clone(),
+                                            msg,
+                                        )
+                                        .await
+                                    } else if subscription_id
+                                        == sub_ids.breakfast_length_property_update
+                                    {
+                                        let prop_topic = format!(
+                                            "full/{}/property/breakfastLength/value",
+                                            instance_id
+                                        );
+                                        FullServer::<C>::update_breakfast_length_value(
+                                            publisher.clone(),
+                                            prop_topic,
+                                            properties.breakfast_length.clone(),
+                                            properties.breakfast_length_version.clone(),
+                                            properties.breakfast_length_tx_channel.clone(),
+                                            msg,
+                                        )
+                                        .await
+                                    } else if subscription_id
+                                        == sub_ids.last_birthdays_property_update
+                                    {
+                                        let prop_topic = format!(
+                                            "full/{}/property/lastBirthdays/value",
+                                            instance_id
+                                        );
+                                        FullServer::<C>::update_last_birthdays_value(
+                                            publisher.clone(),
+                                            prop_topic,
+                                            properties.last_birthdays.clone(),
+                                            properties.last_birthdays_version.clone(),
+                                            properties.last_birthdays_tx_channel.clone(),
+                                            msg,
+                                        )
+                                        .await
+                                    } else {
+                                        FullServer::<C>::wrap_return_code_in_future(
+                                            MethodReturnCode::NotImplemented(
+                                                "Could not find a property matching the request"
+                                                    .to_string(),
+                                            ),
+                                        )
+                                        .await
+                                    }
+                                };
+                                match update_prop_future.await {
+                                    Ok(_) => debug!("Successfully processed update  property"),
+                                    Err(e) => {
+                                        error!("Error processing update to '' property: {:?}", e);
+                                        if let Some(resp_topic) = opt_resp_topic {
+                                            FullServer::<C>::publish_error_response(
+                                                publisher.clone(),
+                                                Some(resp_topic),
+                                                opt_corr_data,
+                                                e,
+                                            )
+                                            .await;
+                                        } else {
+                                            warn!("No response topic found in message properties; cannot send error response.");
+                                        }
+                                    }
+                                }
                             }
+                        } else {
+                            warn!("Received MQTT message without subscription id; cannot process.");
                         }
+                    }
+                    Err(e) => {
+                        warn!("Error receiving MQTT message in server loop: {:?}", e);
                     }
                 }
             }
@@ -1799,8 +1990,8 @@ impl FullServer {
 }
 
 #[async_trait]
-pub trait FullMethodHandlers: Send + Sync {
-    async fn initialize(&mut self, server: FullServer) -> Result<(), MethodReturnCode>;
+pub trait FullMethodHandlers<C: MqttClient>: Send + Sync {
+    async fn initialize(&mut self, server: FullServer<C>) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the addNumbers method request.
     async fn handle_add_numbers(

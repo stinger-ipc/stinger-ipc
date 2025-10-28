@@ -4,8 +4,8 @@ on the next generation.
 
 It contains enumerations used by the Test Able interface.
 
-LICENSE: This generated code is not subject to any license restrictions.
-You may use, modify, and distribute it under any license of your choosing.
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 use std::any::Any;
 
@@ -23,7 +23,7 @@ use test_able_ipc::payloads::{MethodReturnCode, *};
 use tokio::join;
 
 struct TestAbleMethodImpl {
-    server: Option<TestAbleServer>,
+    server: Option<TestAbleServer<MqttierClient>>,
 }
 
 impl TestAbleMethodImpl {
@@ -33,8 +33,11 @@ impl TestAbleMethodImpl {
 }
 
 #[async_trait]
-impl TestAbleMethodHandlers for TestAbleMethodImpl {
-    async fn initialize(&mut self, server: TestAbleServer) -> Result<(), MethodReturnCode> {
+impl TestAbleMethodHandlers<MqttierClient> for TestAbleMethodImpl {
+    async fn initialize(
+        &mut self,
+        server: TestAbleServer<MqttierClient>,
+    ) -> Result<(), MethodReturnCode> {
         self.server = Some(server.clone());
         Ok(())
     }
@@ -710,13 +713,13 @@ async fn main() {
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
         .build();
-    let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    let connection = MqttierClient::new(mqttier_options).unwrap();
 
-    let handlers: Arc<Mutex<Box<dyn TestAbleMethodHandlers>>> =
+    let handlers: Arc<Mutex<Box<dyn TestAbleMethodHandlers<MqttierClient>>>> =
         Arc::new(Mutex::new(Box::new(TestAbleMethodImpl::new())));
 
     let mut server = TestAbleServer::new(
-        &mut connection,
+        connection,
         handlers.clone(),
         "rust-server-demo:1".to_string(),
     )

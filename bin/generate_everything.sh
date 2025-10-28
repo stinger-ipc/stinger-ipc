@@ -16,10 +16,10 @@ function generate_python() {
     return 0
 }
 
-#generate_python signal_only || exit 1
-#generate_python full || exit 1
-#generate_python weather || exit 1
-#generate_python testable || exit 1
+generate_python signal_only || exit 1
+generate_python full || exit 1
+generate_python weather || exit 1
+generate_python testable || exit 1
 
 #### C++
 
@@ -42,10 +42,10 @@ function generate_cpp() {
     return 0
 }
 
-#generate_cpp testable || exit 1
-#generate_cpp full || exit 1
-#generate_cpp signal_only || exit 1
-#generate_cpp weather || exit 1
+generate_cpp testable || exit 1
+generate_cpp full || exit 1
+generate_cpp signal_only || exit 1
+generate_cpp weather || exit 1
 
 
 #### Rust
@@ -59,8 +59,11 @@ function generate_rust() {
     uv run stinger generate rust ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     RC=$?
     if [ $RC -eq 0 ]; then
+        echo "${IFACE_NAME} | cargo update"
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo update)
+        echo "${IFACE_NAME} | cargo fmt"
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo fmt)
+        echo "${IFACE_NAME} | cargo check"
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --features client,server,payloads)
         if [ $? -ne 0 ]; then
             RC=1
@@ -68,7 +71,9 @@ function generate_rust() {
         if [ "${IFACE_NAME}" == "testable" ]; then
             EXAMPLE_PREFIX="test_able"
         fi
+        echo "${IFACE_NAME} | cargo check client_demo"
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${EXAMPLE_PREFIX}_client_demo --features client)
+        echo "${IFACE_NAME} | cargo check server_demo"
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${EXAMPLE_PREFIX}_server_demo --features server)
     fi
     return $RC

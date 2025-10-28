@@ -9,6 +9,9 @@
 
 pub mod interface;
 
+#[cfg(any(feature = "client", feature = "server"))]
+mod message;
+
 #[cfg(feature = "client")]
 pub mod discovery;
 

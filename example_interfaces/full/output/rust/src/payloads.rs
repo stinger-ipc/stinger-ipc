@@ -7,6 +7,9 @@ DO NOT MODIFY THIS FILE .  It is automatically generated and changes will be ove
 on the next generation.
 
 It contains enumerations used by the Full interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 
 use num_derive::{FromPrimitive, ToPrimitive};

@@ -3,6 +3,9 @@ DO NOT MODIFY THIS FILE .  It is automatically generated and changes will be ove
 on the next generation.
 
 It contains enumerations used by the Full interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 use std::any::Any;
 
@@ -20,7 +23,7 @@ use full_ipc::payloads::{MethodReturnCode, *};
 use tokio::join;
 
 struct FullMethodImpl {
-    server: Option<FullServer>,
+    server: Option<FullServer<MqttierClient>>,
 }
 
 impl FullMethodImpl {
@@ -30,8 +33,11 @@ impl FullMethodImpl {
 }
 
 #[async_trait]
-impl FullMethodHandlers for FullMethodImpl {
-    async fn initialize(&mut self, server: FullServer) -> Result<(), MethodReturnCode> {
+impl FullMethodHandlers<MqttierClient> for FullMethodImpl {
+    async fn initialize(
+        &mut self,
+        server: FullServer<MqttierClient>,
+    ) -> Result<(), MethodReturnCode> {
         self.server = Some(server.clone());
         Ok(())
     }
@@ -120,13 +126,13 @@ async fn main() {
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
         .build();
-    let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    let connection = MqttierClient::new(mqttier_options).unwrap();
 
-    let handlers: Arc<Mutex<Box<dyn FullMethodHandlers>>> =
+    let handlers: Arc<Mutex<Box<dyn FullMethodHandlers<MqttierClient>>>> =
         Arc::new(Mutex::new(Box::new(FullMethodImpl::new())));
 
     let mut server = FullServer::new(
-        &mut connection,
+        connection,
         handlers.clone(),
         "rust-server-demo:1".to_string(),
     )

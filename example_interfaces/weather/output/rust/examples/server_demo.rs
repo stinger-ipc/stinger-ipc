@@ -3,6 +3,9 @@ DO NOT MODIFY THIS FILE .  It is automatically generated and changes will be ove
 on the next generation.
 
 It contains enumerations used by the weather interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 use std::any::Any;
 
@@ -20,7 +23,7 @@ use tokio::join;
 use weather_ipc::payloads::{MethodReturnCode, *};
 
 struct WeatherMethodImpl {
-    server: Option<WeatherServer>,
+    server: Option<WeatherServer<MqttierClient>>,
 }
 
 impl WeatherMethodImpl {
@@ -30,8 +33,11 @@ impl WeatherMethodImpl {
 }
 
 #[async_trait]
-impl WeatherMethodHandlers for WeatherMethodImpl {
-    async fn initialize(&mut self, server: WeatherServer) -> Result<(), MethodReturnCode> {
+impl WeatherMethodHandlers<MqttierClient> for WeatherMethodImpl {
+    async fn initialize(
+        &mut self,
+        server: WeatherServer<MqttierClient>,
+    ) -> Result<(), MethodReturnCode> {
         self.server = Some(server.clone());
         Ok(())
     }
@@ -70,13 +76,13 @@ async fn main() {
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
         .build();
-    let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    let connection = MqttierClient::new(mqttier_options).unwrap();
 
-    let handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers>>> =
+    let handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers<MqttierClient>>>> =
         Arc::new(Mutex::new(Box::new(WeatherMethodImpl::new())));
 
     let mut server = WeatherServer::new(
-        &mut connection,
+        connection,
         handlers.clone(),
         "rust-server-demo:1".to_string(),
     )

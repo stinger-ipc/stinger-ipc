@@ -1,4 +1,10 @@
-# _SignalOnly_ API Overview
+# _SignalOnly_ API Overview 
+
+<!--
+This is automatically generated documentation.
+LICENSE: This generated content is not subject to any license restrictions.
+TODO: Get license text from stinger file
+-->
 
 [[_TOC_]]
 

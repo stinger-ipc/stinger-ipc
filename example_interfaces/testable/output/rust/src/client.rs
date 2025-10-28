@@ -8,8 +8,8 @@ on the next generation.
 
 This is the Client for the Test Able interface.
 
-LICENSE: This generated code is not subject to any license restrictions.
-You may use, modify, and distribute it under any license of your choosing.
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 use crate::message;
 use serde_json;
@@ -2812,8 +2812,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_integer_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -2848,8 +2847,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_optional_integer_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -2880,8 +2878,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_two_integers_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -2911,8 +2908,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_string_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -2941,8 +2937,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_optional_string_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -2973,8 +2968,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_two_strings_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -2998,8 +2992,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_struct_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3028,8 +3021,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_optional_struct_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3060,8 +3052,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_two_structs_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3091,8 +3082,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_enum_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3121,8 +3111,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_optional_enum_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3149,8 +3138,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_two_enums_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3179,8 +3167,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_datetime_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3211,8 +3198,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_optional_datetime_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3243,8 +3229,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_two_datetimes_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3271,8 +3256,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_duration_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3303,8 +3287,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_optional_duration_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3335,8 +3318,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_two_durations_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3360,8 +3342,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_binary_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3390,8 +3371,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_optional_binary_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3422,8 +3402,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_two_binaries_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3452,8 +3431,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_list_of_strings_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3480,8 +3458,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
             &data,
             self.properties
                 .read_write_lists_version
-                .load(Ordering::Relaxed)
-                .to_string(),
+                .load(Ordering::Relaxed),
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
@@ -3514,6 +3491,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                     msg.correlation_data.clone().map(|b| b.to_vec());
                 let opt_corr_id: Option<Uuid> =
                     opt_corr_data.and_then(|b| Uuid::from_slice(b.as_slice()).ok());
+
                 if let Some(subscription_id) = msg.subscription_id {
                     let payload = String::from_utf8_lossy(&msg.payload).to_string();
                     if subscription_id == sub_ids.call_with_nothing_method_resp {
@@ -3530,329 +3508,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 }
                             }
                         }
-                    } else if subscription_id == sub_ids.call_one_integer_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_optional_integer_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_three_integers_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_one_string_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_optional_string_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_three_strings_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_one_enum_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_optional_enum_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_three_enums_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_one_struct_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_optional_struct_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_three_structs_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_one_date_time_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_optional_date_time_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_three_date_times_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_one_duration_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_optional_duration_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_three_durations_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_one_binary_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_optional_binary_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_three_binaries_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_one_list_of_integers_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_optional_list_of_floats_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
-                                }
-                            }
-                        }
-                    } else if subscription_id == sub_ids.call_two_lists_method_resp {
+                    }
+                    // end callWithNothing method response handling
+                    else if subscription_id == sub_ids.call_one_integer_method_resp {
                         if opt_corr_id.is_some() {
                             let opt_sender = opt_corr_id.and_then(|uuid| {
                                 let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
@@ -3867,12 +3525,381 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                             }
                         }
                     }
-
+                    // end callOneInteger method response handling
+                    else if subscription_id == sub_ids.call_optional_integer_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOptionalInteger method response handling
+                    else if subscription_id == sub_ids.call_three_integers_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callThreeIntegers method response handling
+                    else if subscription_id == sub_ids.call_one_string_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOneString method response handling
+                    else if subscription_id == sub_ids.call_optional_string_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOptionalString method response handling
+                    else if subscription_id == sub_ids.call_three_strings_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callThreeStrings method response handling
+                    else if subscription_id == sub_ids.call_one_enum_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOneEnum method response handling
+                    else if subscription_id == sub_ids.call_optional_enum_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOptionalEnum method response handling
+                    else if subscription_id == sub_ids.call_three_enums_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callThreeEnums method response handling
+                    else if subscription_id == sub_ids.call_one_struct_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOneStruct method response handling
+                    else if subscription_id == sub_ids.call_optional_struct_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOptionalStruct method response handling
+                    else if subscription_id == sub_ids.call_three_structs_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callThreeStructs method response handling
+                    else if subscription_id == sub_ids.call_one_date_time_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOneDateTime method response handling
+                    else if subscription_id == sub_ids.call_optional_date_time_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOptionalDateTime method response handling
+                    else if subscription_id == sub_ids.call_three_date_times_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callThreeDateTimes method response handling
+                    else if subscription_id == sub_ids.call_one_duration_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOneDuration method response handling
+                    else if subscription_id == sub_ids.call_optional_duration_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOptionalDuration method response handling
+                    else if subscription_id == sub_ids.call_three_durations_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callThreeDurations method response handling
+                    else if subscription_id == sub_ids.call_one_binary_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOneBinary method response handling
+                    else if subscription_id == sub_ids.call_optional_binary_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOptionalBinary method response handling
+                    else if subscription_id == sub_ids.call_three_binaries_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callThreeBinaries method response handling
+                    else if subscription_id == sub_ids.call_one_list_of_integers_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOneListOfIntegers method response handling
+                    else if subscription_id == sub_ids.call_optional_list_of_floats_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    }
+                    // end callOptionalListOfFloats method response handling
+                    else if subscription_id == sub_ids.call_two_lists_method_resp {
+                        if opt_corr_id.is_some() {
+                            let opt_sender = opt_corr_id.and_then(|uuid| {
+                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                hashmap.remove(&uuid)
+                            });
+                            if let Some(sender) = opt_sender {
+                                let oss: oneshot::Sender<String> = sender;
+                                match oss.send(payload) {
+                                    Ok(_) => (),
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                    } // end callTwoLists method response handling
                     if Some(subscription_id) == sub_ids.empty_signal {
                         let chan = sig_chans.empty_sender.clone();
 
                         let _send_result = chan.send(());
-                    } else if Some(subscription_id) == sub_ids.single_int_signal {
+                    }
+                    // end empty signal handling
+                    else if Some(subscription_id) == sub_ids.single_int_signal {
                         let chan = sig_chans.single_int_sender.clone();
 
                         match serde_json::from_slice::<SingleIntSignalPayload>(&msg.payload) {
@@ -3888,7 +3915,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_optional_int_signal {
+                    }
+                    // end singleInt signal handling
+                    else if Some(subscription_id) == sub_ids.single_optional_int_signal {
                         let chan = sig_chans.single_optional_int_sender.clone();
 
                         match serde_json::from_slice::<SingleOptionalIntSignalPayload>(&msg.payload)
@@ -3901,7 +3930,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.three_integers_signal {
+                    }
+                    // end singleOptionalInt signal handling
+                    else if Some(subscription_id) == sub_ids.three_integers_signal {
                         let chan = sig_chans.three_integers_sender.clone();
 
                         match serde_json::from_slice::<ThreeIntegersSignalPayload>(&msg.payload) {
@@ -3913,7 +3944,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_string_signal {
+                    }
+                    // end threeIntegers signal handling
+                    else if Some(subscription_id) == sub_ids.single_string_signal {
                         let chan = sig_chans.single_string_sender.clone();
 
                         match serde_json::from_slice::<SingleStringSignalPayload>(&msg.payload) {
@@ -3929,7 +3962,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_optional_string_signal {
+                    }
+                    // end singleString signal handling
+                    else if Some(subscription_id) == sub_ids.single_optional_string_signal {
                         let chan = sig_chans.single_optional_string_sender.clone();
 
                         match serde_json::from_slice::<SingleOptionalStringSignalPayload>(
@@ -3943,7 +3978,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.three_strings_signal {
+                    }
+                    // end singleOptionalString signal handling
+                    else if Some(subscription_id) == sub_ids.three_strings_signal {
                         let chan = sig_chans.three_strings_sender.clone();
 
                         match serde_json::from_slice::<ThreeStringsSignalPayload>(&msg.payload) {
@@ -3959,7 +3996,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_enum_signal {
+                    }
+                    // end threeStrings signal handling
+                    else if Some(subscription_id) == sub_ids.single_enum_signal {
                         let chan = sig_chans.single_enum_sender.clone();
 
                         match serde_json::from_slice::<SingleEnumSignalPayload>(&msg.payload) {
@@ -3975,7 +4014,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_optional_enum_signal {
+                    }
+                    // end singleEnum signal handling
+                    else if Some(subscription_id) == sub_ids.single_optional_enum_signal {
                         let chan = sig_chans.single_optional_enum_sender.clone();
 
                         match serde_json::from_slice::<SingleOptionalEnumSignalPayload>(
@@ -3989,7 +4030,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.three_enums_signal {
+                    }
+                    // end singleOptionalEnum signal handling
+                    else if Some(subscription_id) == sub_ids.three_enums_signal {
                         let chan = sig_chans.three_enums_sender.clone();
 
                         match serde_json::from_slice::<ThreeEnumsSignalPayload>(&msg.payload) {
@@ -4005,7 +4048,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_struct_signal {
+                    }
+                    // end threeEnums signal handling
+                    else if Some(subscription_id) == sub_ids.single_struct_signal {
                         let chan = sig_chans.single_struct_sender.clone();
 
                         match serde_json::from_slice::<SingleStructSignalPayload>(&msg.payload) {
@@ -4021,7 +4066,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_optional_struct_signal {
+                    }
+                    // end singleStruct signal handling
+                    else if Some(subscription_id) == sub_ids.single_optional_struct_signal {
                         let chan = sig_chans.single_optional_struct_sender.clone();
 
                         match serde_json::from_slice::<SingleOptionalStructSignalPayload>(
@@ -4035,7 +4082,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.three_structs_signal {
+                    }
+                    // end singleOptionalStruct signal handling
+                    else if Some(subscription_id) == sub_ids.three_structs_signal {
                         let chan = sig_chans.three_structs_sender.clone();
 
                         match serde_json::from_slice::<ThreeStructsSignalPayload>(&msg.payload) {
@@ -4051,7 +4100,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_date_time_signal {
+                    }
+                    // end threeStructs signal handling
+                    else if Some(subscription_id) == sub_ids.single_date_time_signal {
                         let chan = sig_chans.single_date_time_sender.clone();
 
                         match serde_json::from_slice::<SingleDateTimeSignalPayload>(&msg.payload) {
@@ -4063,7 +4114,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_optional_datetime_signal {
+                    }
+                    // end singleDateTime signal handling
+                    else if Some(subscription_id) == sub_ids.single_optional_datetime_signal {
                         let chan = sig_chans.single_optional_datetime_sender.clone();
 
                         match serde_json::from_slice::<SingleOptionalDatetimeSignalPayload>(
@@ -4077,7 +4130,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.three_date_times_signal {
+                    }
+                    // end singleOptionalDatetime signal handling
+                    else if Some(subscription_id) == sub_ids.three_date_times_signal {
                         let chan = sig_chans.three_date_times_sender.clone();
 
                         match serde_json::from_slice::<ThreeDateTimesSignalPayload>(&msg.payload) {
@@ -4089,7 +4144,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_duration_signal {
+                    }
+                    // end threeDateTimes signal handling
+                    else if Some(subscription_id) == sub_ids.single_duration_signal {
                         let chan = sig_chans.single_duration_sender.clone();
 
                         match serde_json::from_slice::<SingleDurationSignalPayload>(&msg.payload) {
@@ -4101,7 +4158,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_optional_duration_signal {
+                    }
+                    // end singleDuration signal handling
+                    else if Some(subscription_id) == sub_ids.single_optional_duration_signal {
                         let chan = sig_chans.single_optional_duration_sender.clone();
 
                         match serde_json::from_slice::<SingleOptionalDurationSignalPayload>(
@@ -4115,7 +4174,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.three_durations_signal {
+                    }
+                    // end singleOptionalDuration signal handling
+                    else if Some(subscription_id) == sub_ids.three_durations_signal {
                         let chan = sig_chans.three_durations_sender.clone();
 
                         match serde_json::from_slice::<ThreeDurationsSignalPayload>(&msg.payload) {
@@ -4127,7 +4188,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_binary_signal {
+                    }
+                    // end threeDurations signal handling
+                    else if Some(subscription_id) == sub_ids.single_binary_signal {
                         let chan = sig_chans.single_binary_sender.clone();
 
                         match serde_json::from_slice::<SingleBinarySignalPayload>(&msg.payload) {
@@ -4143,7 +4206,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_optional_binary_signal {
+                    }
+                    // end singleBinary signal handling
+                    else if Some(subscription_id) == sub_ids.single_optional_binary_signal {
                         let chan = sig_chans.single_optional_binary_sender.clone();
 
                         match serde_json::from_slice::<SingleOptionalBinarySignalPayload>(
@@ -4157,7 +4222,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.three_binaries_signal {
+                    }
+                    // end singleOptionalBinary signal handling
+                    else if Some(subscription_id) == sub_ids.three_binaries_signal {
                         let chan = sig_chans.three_binaries_sender.clone();
 
                         match serde_json::from_slice::<ThreeBinariesSignalPayload>(&msg.payload) {
@@ -4169,7 +4236,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.single_array_of_integers_signal {
+                    }
+                    // end threeBinaries signal handling
+                    else if Some(subscription_id) == sub_ids.single_array_of_integers_signal {
                         let chan = sig_chans.single_array_of_integers_sender.clone();
 
                         match serde_json::from_slice::<SingleArrayOfIntegersSignalPayload>(
@@ -4183,7 +4252,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id)
+                    }
+                    // end singleArrayOfIntegers signal handling
+                    else if Some(subscription_id)
                         == sub_ids.single_optional_array_of_strings_signal
                     {
                         let chan = sig_chans.single_optional_array_of_strings_sender.clone();
@@ -4199,7 +4270,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if Some(subscription_id) == sub_ids.array_of_every_type_signal {
+                    }
+                    // end singleOptionalArrayOfStrings signal handling
+                    else if Some(subscription_id) == sub_ids.array_of_every_type_signal {
                         let chan = sig_chans.array_of_every_type_sender.clone();
 
                         match serde_json::from_slice::<ArrayOfEveryTypeSignalPayload>(&msg.payload)
@@ -4212,7 +4285,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    }
+                    } // end arrayOfEveryType signal handling
 
                     if subscription_id == sub_ids.read_write_integer_property_value {
                         match serde_json::from_slice::<ReadWriteIntegerProperty>(&msg.payload) {
@@ -4232,7 +4305,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_only_integer_property_value {
+                    }
+                    // end read_write_integer property value update
+                    else if subscription_id == sub_ids.read_only_integer_property_value {
                         match serde_json::from_slice::<ReadOnlyIntegerProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard =
@@ -4250,7 +4325,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_optional_integer_property_value
+                    }
+                    // end read_only_integer property value update
+                    else if subscription_id == sub_ids.read_write_optional_integer_property_value
                     {
                         match serde_json::from_slice::<ReadWriteOptionalIntegerProperty>(
                             &msg.payload,
@@ -4275,7 +4352,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_two_integers_property_value {
+                    }
+                    // end read_write_optional_integer property value update
+                    else if subscription_id == sub_ids.read_write_two_integers_property_value {
                         match serde_json::from_slice::<ReadWriteTwoIntegersProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard = props
@@ -4295,7 +4374,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_only_string_property_value {
+                    }
+                    // end read_write_two_integers property value update
+                    else if subscription_id == sub_ids.read_only_string_property_value {
                         match serde_json::from_slice::<ReadOnlyStringProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard =
@@ -4313,7 +4394,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_string_property_value {
+                    }
+                    // end read_only_string property value update
+                    else if subscription_id == sub_ids.read_write_string_property_value {
                         match serde_json::from_slice::<ReadWriteStringProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard =
@@ -4331,7 +4414,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_optional_string_property_value {
+                    }
+                    // end read_write_string property value update
+                    else if subscription_id == sub_ids.read_write_optional_string_property_value {
                         match serde_json::from_slice::<ReadWriteOptionalStringProperty>(
                             &msg.payload,
                         ) {
@@ -4355,7 +4440,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_two_strings_property_value {
+                    }
+                    // end read_write_optional_string property value update
+                    else if subscription_id == sub_ids.read_write_two_strings_property_value {
                         match serde_json::from_slice::<ReadWriteTwoStringsProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard = props
@@ -4375,7 +4462,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_struct_property_value {
+                    }
+                    // end read_write_two_strings property value update
+                    else if subscription_id == sub_ids.read_write_struct_property_value {
                         match serde_json::from_slice::<ReadWriteStructProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard =
@@ -4393,7 +4482,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_optional_struct_property_value {
+                    }
+                    // end read_write_struct property value update
+                    else if subscription_id == sub_ids.read_write_optional_struct_property_value {
                         match serde_json::from_slice::<ReadWriteOptionalStructProperty>(
                             &msg.payload,
                         ) {
@@ -4417,7 +4508,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_two_structs_property_value {
+                    }
+                    // end read_write_optional_struct property value update
+                    else if subscription_id == sub_ids.read_write_two_structs_property_value {
                         match serde_json::from_slice::<ReadWriteTwoStructsProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard = props
@@ -4437,7 +4530,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_only_enum_property_value {
+                    }
+                    // end read_write_two_structs property value update
+                    else if subscription_id == sub_ids.read_only_enum_property_value {
                         match serde_json::from_slice::<ReadOnlyEnumProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard =
@@ -4455,7 +4550,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_enum_property_value {
+                    }
+                    // end read_only_enum property value update
+                    else if subscription_id == sub_ids.read_write_enum_property_value {
                         match serde_json::from_slice::<ReadWriteEnumProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard =
@@ -4473,7 +4570,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_optional_enum_property_value {
+                    }
+                    // end read_write_enum property value update
+                    else if subscription_id == sub_ids.read_write_optional_enum_property_value {
                         match serde_json::from_slice::<ReadWriteOptionalEnumProperty>(&msg.payload)
                         {
                             Ok(pl) => {
@@ -4496,7 +4595,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_two_enums_property_value {
+                    }
+                    // end read_write_optional_enum property value update
+                    else if subscription_id == sub_ids.read_write_two_enums_property_value {
                         match serde_json::from_slice::<ReadWriteTwoEnumsProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard = props
@@ -4516,7 +4617,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_datetime_property_value {
+                    }
+                    // end read_write_two_enums property value update
+                    else if subscription_id == sub_ids.read_write_datetime_property_value {
                         match serde_json::from_slice::<ReadWriteDatetimeProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard = props
@@ -4536,7 +4639,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_optional_datetime_property_value
+                    }
+                    // end read_write_datetime property value update
+                    else if subscription_id == sub_ids.read_write_optional_datetime_property_value
                     {
                         match serde_json::from_slice::<ReadWriteOptionalDatetimeProperty>(
                             &msg.payload,
@@ -4561,7 +4666,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_two_datetimes_property_value {
+                    }
+                    // end read_write_optional_datetime property value update
+                    else if subscription_id == sub_ids.read_write_two_datetimes_property_value {
                         match serde_json::from_slice::<ReadWriteTwoDatetimesProperty>(&msg.payload)
                         {
                             Ok(pl) => {
@@ -4582,7 +4689,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_duration_property_value {
+                    }
+                    // end read_write_two_datetimes property value update
+                    else if subscription_id == sub_ids.read_write_duration_property_value {
                         match serde_json::from_slice::<ReadWriteDurationProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard = props
@@ -4602,7 +4711,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_optional_duration_property_value
+                    }
+                    // end read_write_duration property value update
+                    else if subscription_id == sub_ids.read_write_optional_duration_property_value
                     {
                         match serde_json::from_slice::<ReadWriteOptionalDurationProperty>(
                             &msg.payload,
@@ -4627,7 +4738,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_two_durations_property_value {
+                    }
+                    // end read_write_optional_duration property value update
+                    else if subscription_id == sub_ids.read_write_two_durations_property_value {
                         match serde_json::from_slice::<ReadWriteTwoDurationsProperty>(&msg.payload)
                         {
                             Ok(pl) => {
@@ -4648,7 +4761,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_binary_property_value {
+                    }
+                    // end read_write_two_durations property value update
+                    else if subscription_id == sub_ids.read_write_binary_property_value {
                         match serde_json::from_slice::<ReadWriteBinaryProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard =
@@ -4666,7 +4781,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_optional_binary_property_value {
+                    }
+                    // end read_write_binary property value update
+                    else if subscription_id == sub_ids.read_write_optional_binary_property_value {
                         match serde_json::from_slice::<ReadWriteOptionalBinaryProperty>(
                             &msg.payload,
                         ) {
@@ -4690,7 +4807,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_two_binaries_property_value {
+                    }
+                    // end read_write_optional_binary property value update
+                    else if subscription_id == sub_ids.read_write_two_binaries_property_value {
                         match serde_json::from_slice::<ReadWriteTwoBinariesProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard = props
@@ -4710,7 +4829,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_list_of_strings_property_value {
+                    }
+                    // end read_write_two_binaries property value update
+                    else if subscription_id == sub_ids.read_write_list_of_strings_property_value {
                         match serde_json::from_slice::<ReadWriteListOfStringsProperty>(&msg.payload)
                         {
                             Ok(pl) => {
@@ -4733,7 +4854,9 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    } else if subscription_id == sub_ids.read_write_lists_property_value {
+                    }
+                    // end read_write_list_of_strings property value update
+                    else if subscription_id == sub_ids.read_write_lists_property_value {
                         match serde_json::from_slice::<ReadWriteListsProperty>(&msg.payload) {
                             Ok(pl) => {
                                 let mut guard =
@@ -4751,7 +4874,7 @@ impl<C: MqttClient + Clone> TestAbleClient<C> {
                                 continue;
                             }
                         }
-                    }
+                    } // end read_write_lists property value update
                 }
             }
         });

@@ -7,6 +7,9 @@ DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over
 on the next generation.
 
 This is the Client for the Full interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 
 use full_ipc::client::FullClient;
@@ -37,9 +40,9 @@ async fn main() {
     let discovery = FullDiscovery::new(&mut mqttier_client).await.unwrap();
     let singleton_info = discovery.get_singleton_service().await;
 
-    let mut api_client = FullClient::new(&mut mqttier_client, singleton_info.instance).await;
+    let mut api_client = FullClient::new(mqttier_client.clone(), singleton_info.instance).await;
 
-    let client_for_loop = api_client.clone();
+    let mut client_for_loop = api_client.clone();
     tokio::spawn(async move {
         let _conn_loop = client_for_loop.run_loop().await;
     });

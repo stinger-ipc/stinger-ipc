@@ -4,8 +4,8 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions.
-You may use, modify, and distribute it under any license of your choosing.
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 use std::any::Any;
 
@@ -24,7 +24,7 @@ use {{stinger.rust.package_name}}::payloads::{MethodReturnCode, *};
 
 {%if stinger.methods|length > 0%}
 struct {{stinger.name | UpperCamelCase }}MethodImpl {
-    server: Option<{{stinger.rust.server_struct_name}}>,
+    server: Option<{{stinger.rust.server_struct_name}}<MqttierClient>>,
 }
 
 impl {{stinger.name | UpperCamelCase }}MethodImpl {
@@ -36,9 +36,9 @@ impl {{stinger.name | UpperCamelCase }}MethodImpl {
 }
 
 #[async_trait]
-impl {{stinger.name | UpperCamelCase }}MethodHandlers for {{stinger.name | UpperCamelCase }}MethodImpl {
+impl {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient> for {{stinger.name | UpperCamelCase }}MethodImpl {
 
-    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}) -> Result<(), MethodReturnCode> {
+    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}<MqttierClient>) -> Result<(), MethodReturnCode> {
         self.server = Some(server.clone());
         Ok(())
     }
@@ -93,14 +93,14 @@ async fn main() {
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
         .build();
-    let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    let connection = MqttierClient::new(mqttier_options).unwrap();
 
     {%if stinger.methods|length > 0%}
-    let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
+    let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient>>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
 
-    let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, handlers.clone(), "rust-server-demo:1".to_string()).await;
+    let mut server = {{stinger.rust.server_struct_name}}::new(connection, handlers.clone(), "rust-server-demo:1".to_string()).await;
     {%else%}
-    let mut server = {{stinger.rust.server_struct_name}}::new(&mut connection, "rust-server-demo:1".to_string()).await;
+    let mut server = {{stinger.rust.server_struct_name}}::new(connection, "rust-server-demo:1".to_string()).await;
     {%endif%}
 
     let mut looping_server = server.clone();

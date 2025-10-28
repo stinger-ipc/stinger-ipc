@@ -7,10 +7,13 @@
 //! - `server`: Includes server and payloads modules  
 //! - `payloads`: Includes only payloads module
 
+pub mod interface;
+
+#[cfg(any(feature = "client", feature = "server"))]
+mod message;
+
 #[cfg(feature = "client")]
 pub mod discovery;
-pub mod interface;
-mod message;
 
 #[cfg(feature = "payloads")]
 pub mod payloads;

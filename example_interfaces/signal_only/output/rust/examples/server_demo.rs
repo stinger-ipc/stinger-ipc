@@ -3,6 +3,9 @@ DO NOT MODIFY THIS FILE .  It is automatically generated and changes will be ove
 on the next generation.
 
 It contains enumerations used by the SignalOnly interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 use std::any::Any;
 
@@ -28,9 +31,9 @@ async fn main() {
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
         .build();
-    let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    let connection = MqttierClient::new(mqttier_options).unwrap();
 
-    let mut server = SignalOnlyServer::new(&mut connection, "rust-server-demo:1".to_string()).await;
+    let mut server = SignalOnlyServer::new(connection, "rust-server-demo:1".to_string()).await;
 
     let mut looping_server = server.clone();
     let _loop_join_handle = tokio::spawn(async move {

@@ -7,24 +7,30 @@ DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over
 on the next generation.
 
 This is the Server for the SignalOnly interface.
-*/
 
-use mqttier::{MqttierClient, PublishResult};
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+use bytes::Bytes;
+use tokio::sync::oneshot;
 
 use std::future::Future;
 use std::pin::Pin;
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+use stinger_mqtt_trait::{MqttClient, MqttError, MqttPublishSuccess};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
+use crate::message;
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
 #[derive(Clone)]
-pub struct SignalOnlyServer {
-    mqttier_client: MqttierClient,
+pub struct SignalOnlyServer<C: MqttClient> {
+    mqtt_client: C,
 
     /// Copy of MQTT Client ID
     #[allow(dead_code)]
@@ -33,40 +39,36 @@ pub struct SignalOnlyServer {
     pub instance_id: String,
 }
 
-impl SignalOnlyServer {
-    pub async fn new(connection: &mut MqttierClient, instance_id: String) -> Self {
+impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
+    pub async fn new(mut connection: C, instance_id: String) -> Self {
         SignalOnlyServer {
-            mqttier_client: connection.clone(),
+            mqtt_client: connection.clone(),
 
-            client_id: connection.client_id.to_string(),
+            client_id: connection.get_client_id(),
             instance_id,
         }
     }
 
-    /// Converts a oneshot receiver for the publish result into a Future that resolves to
     pub async fn oneshot_to_future(
-        publish_oneshot: tokio::sync::oneshot::Receiver<PublishResult>,
+        ch: oneshot::Receiver<Result<MqttPublishSuccess, MqttError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
-            let publish_result = publish_oneshot.await;
-            match publish_result {
-                Ok(PublishResult::Acknowledged(_))
-                | Ok(PublishResult::Completed(_))
-                | Ok(PublishResult::Sent(_)) => Ok(()),
-
-                Ok(PublishResult::TimedOut) => Err(MethodReturnCode::Timeout(
-                    "Timed out publishing signal".to_string(),
-                )),
-
-                Ok(PublishResult::SerializationError(s)) => {
-                    Err(MethodReturnCode::ServerSerializationError(s))
-                }
-
-                Ok(PublishResult::Error(s)) => Err(MethodReturnCode::TransportError(s)),
-
-                Err(_) => Err(MethodReturnCode::UnknownError(
-                    "Error publishing signal".to_string(),
-                )),
+            let chan_result = ch.await;
+            match chan_result {
+                Ok(transferred_result) => match transferred_result {
+                    Ok(MqttPublishSuccess::Acknowledged) => Ok(()),
+                    Ok(MqttPublishSuccess::Completed) => Ok(()),
+                    Ok(MqttPublishSuccess::Sent) => Ok(()),
+                    Ok(MqttPublishSuccess::Queued) => Ok(()),
+                    Err(e) => Err(MethodReturnCode::TransportError(format!(
+                        "MQTT publish error: {:?}",
+                        e
+                    ))),
+                },
+                Err(e) => Err(MethodReturnCode::TransportError(format!(
+                    "MQTT publish oneshot receive error: {:?}",
+                    e
+                ))),
             }
         })
     }
@@ -93,50 +95,94 @@ impl SignalOnlyServer {
 
             three: three,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("signalOnly/{}/signal/anotherSignal", self.instance_id),
-                &data,
-            )
-            .await;
-        SignalOnlyServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("signalOnly/{}/signal/anotherSignal", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let ch = publisher.publish_noblock(msg).await;
+        Self::oneshot_to_future(ch).await
+    }
+
+    /// Emits the anotherSignal signal with the given arguments, but this is a fire-and-forget version.
+    pub fn emit_another_signal_nowait(
+        &mut self,
+        one: f32,
+        two: bool,
+        three: String,
+    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+        let data = AnotherSignalSignalPayload {
+            one: one,
+
+            two: two,
+
+            three: three,
+        };
+        let topic = format!("signalOnly/{}/signal/anotherSignal", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        publisher.publish_nowait(msg)
     }
     /// Emits the bark signal with the given arguments.
     pub async fn emit_bark(&mut self, word: String) -> SentMessageFuture {
         let data = BarkSignalPayload { word: word };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("signalOnly/{}/signal/bark", self.instance_id),
-                &data,
-            )
-            .await;
-        SignalOnlyServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("signalOnly/{}/signal/bark", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let ch = publisher.publish_noblock(msg).await;
+        Self::oneshot_to_future(ch).await
+    }
+
+    /// Emits the bark signal with the given arguments, but this is a fire-and-forget version.
+    pub fn emit_bark_nowait(
+        &mut self,
+        word: String,
+    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+        let data = BarkSignalPayload { word: word };
+        let topic = format!("signalOnly/{}/signal/bark", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        publisher.publish_nowait(msg)
     }
     /// Emits the maybe_number signal with the given arguments.
     pub async fn emit_maybe_number(&mut self, number: Option<i32>) -> SentMessageFuture {
         let data = MaybeNumberSignalPayload { number: number };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("signalOnly/{}/signal/maybeNumber", self.instance_id),
-                &data,
-            )
-            .await;
-        SignalOnlyServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("signalOnly/{}/signal/maybeNumber", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let ch = publisher.publish_noblock(msg).await;
+        Self::oneshot_to_future(ch).await
+    }
+
+    /// Emits the maybe_number signal with the given arguments, but this is a fire-and-forget version.
+    pub fn emit_maybe_number_nowait(
+        &mut self,
+        number: Option<i32>,
+    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+        let data = MaybeNumberSignalPayload { number: number };
+        let topic = format!("signalOnly/{}/signal/maybeNumber", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        publisher.publish_nowait(msg)
     }
     /// Emits the maybe_name signal with the given arguments.
     pub async fn emit_maybe_name(&mut self, name: Option<String>) -> SentMessageFuture {
         let data = MaybeNameSignalPayload { name: name };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(
-                format!("signalOnly/{}/signal/maybeName", self.instance_id),
-                &data,
-            )
-            .await;
-        SignalOnlyServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("signalOnly/{}/signal/maybeName", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let ch = publisher.publish_noblock(msg).await;
+        Self::oneshot_to_future(ch).await
+    }
+
+    /// Emits the maybe_name signal with the given arguments, but this is a fire-and-forget version.
+    pub fn emit_maybe_name_nowait(
+        &mut self,
+        name: Option<String>,
+    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+        let data = MaybeNameSignalPayload { name: name };
+        let topic = format!("signalOnly/{}/signal/maybeName", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        publisher.publish_nowait(msg)
     }
     /// Emits the now signal with the given arguments.
     pub async fn emit_now(
@@ -146,20 +192,37 @@ impl SignalOnlyServer {
         let data = NowSignalPayload {
             timestamp: timestamp,
         };
-        let published_oneshot = self
-            .mqttier_client
-            .publish_structure(format!("signalOnly/{}/signal/now", self.instance_id), &data)
-            .await;
-        SignalOnlyServer::oneshot_to_future(published_oneshot).await
+        let topic = format!("signalOnly/{}/signal/now", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        let ch = publisher.publish_noblock(msg).await;
+        Self::oneshot_to_future(ch).await
+    }
+
+    /// Emits the now signal with the given arguments, but this is a fire-and-forget version.
+    pub fn emit_now_nowait(
+        &mut self,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+        let data = NowSignalPayload {
+            timestamp: timestamp,
+        };
+        let topic = format!("signalOnly/{}/signal/now", self.instance_id);
+        let msg = message::signal(&topic, &data).unwrap();
+        let mut publisher = self.mqtt_client.clone();
+        publisher.publish_nowait(msg)
     }
 
     /// Starts the tasks that process messages received.
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
     /// received message.
-    pub async fn run_loop(&mut self) -> Result<(), JoinError> {
-        // Make sure the MqttierClient is connected and running.
-        let _ = self.mqttier_client.run_loop().await;
+    pub async fn run_loop(&mut self) -> Result<(), JoinError>
+    where
+        C: 'static,
+    {
+        // Make sure the MqttClient is connected and running.
+        let _ = self.mqtt_client.start().await;
 
         warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())

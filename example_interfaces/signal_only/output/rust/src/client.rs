@@ -7,17 +7,22 @@ DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over
 on the next generation.
 
 This is the Client for the SignalOnly interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
-#[cfg(feature = "client")]
-use mqttier::{MqttierClient, ReceivedMessage};
+use crate::message;
 use serde_json;
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+#[cfg(feature = "client")]
+use stinger_mqtt_trait::MqttClient;
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::broadcast;
 use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -26,11 +31,11 @@ use tracing::{debug, error, info, warn};
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct SignalOnlySubscriptionIds {
-    another_signal_signal: Option<usize>,
-    bark_signal: Option<usize>,
-    maybe_number_signal: Option<usize>,
-    maybe_name_signal: Option<usize>,
-    now_signal: Option<usize>,
+    another_signal_signal: Option<u32>,
+    bark_signal: Option<u32>,
+    maybe_number_signal: Option<u32>,
+    maybe_name_signal: Option<u32>,
+    now_signal: Option<u32>,
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -48,17 +53,17 @@ struct SignalOnlySignalChannels {
 
 /// This is the struct for our API client.
 #[derive(Clone)]
-pub struct SignalOnlyClient {
-    mqttier_client: MqttierClient,
+pub struct SignalOnlyClient<C: MqttClient> {
+    mqtt_client: C,
 
-    /// Temporarily holds the receiver for the MPSC channel.  The Receiver will be moved
+    /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
-    msg_streamer_rx: Arc<Mutex<Option<mpsc::Receiver<ReceivedMessage>>>>,
+    msg_streamer_rx: Arc<Mutex<Option<broadcast::Receiver<MqttMessage>>>>,
 
     /// The Sender side of MQTT messages that are received from the broker.  This tx
     /// side is cloned for each subscription made.
     #[allow(dead_code)]
-    msg_streamer_tx: mpsc::Sender<ReceivedMessage>,
+    msg_streamer_tx: broadcast::Sender<MqttMessage>,
 
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: SignalOnlySubscriptionIds,
@@ -69,43 +74,64 @@ pub struct SignalOnlyClient {
     pub client_id: String,
 }
 
-impl SignalOnlyClient {
-    /// Creates a new SignalOnlyClient that uses an MqttierClient.
-    pub async fn new(connection: &mut MqttierClient, service_id: String) -> Self {
+impl<C: MqttClient + Clone> SignalOnlyClient<C> {
+    /// Creates a new SignalOnlyClient that uses an MqttClient.
+    pub async fn new(mut connection: C, service_id: String) -> Self {
         // Create a channel for messages to get from the Connection object to this SignalOnlyClient object.
         // The Connection object uses a clone of the tx side of the channel.
-        let (message_received_tx, message_received_rx) = mpsc::channel(64);
+        let (message_received_tx, message_received_rx) = broadcast::channel(64);
+
+        let client_id = connection.get_client_id();
 
         // Subscribe to all the topics needed for signals.
         let topic_another_signal_signal = format!("signalOnly/{}/signal/anotherSignal", service_id);
         let subscription_id_another_signal_signal = connection
-            .subscribe(topic_another_signal_signal, 2, message_received_tx.clone())
+            .subscribe(
+                topic_another_signal_signal,
+                QoS::ExactlyOnce,
+                message_received_tx.clone(),
+            )
             .await;
         let subscription_id_another_signal_signal =
-            subscription_id_another_signal_signal.unwrap_or_else(|_| usize::MAX);
+            subscription_id_another_signal_signal.unwrap_or_else(|_| u32::MAX);
         let topic_bark_signal = format!("signalOnly/{}/signal/bark", service_id);
         let subscription_id_bark_signal = connection
-            .subscribe(topic_bark_signal, 2, message_received_tx.clone())
+            .subscribe(
+                topic_bark_signal,
+                QoS::ExactlyOnce,
+                message_received_tx.clone(),
+            )
             .await;
-        let subscription_id_bark_signal =
-            subscription_id_bark_signal.unwrap_or_else(|_| usize::MAX);
+        let subscription_id_bark_signal = subscription_id_bark_signal.unwrap_or_else(|_| u32::MAX);
         let topic_maybe_number_signal = format!("signalOnly/{}/signal/maybeNumber", service_id);
         let subscription_id_maybe_number_signal = connection
-            .subscribe(topic_maybe_number_signal, 2, message_received_tx.clone())
+            .subscribe(
+                topic_maybe_number_signal,
+                QoS::ExactlyOnce,
+                message_received_tx.clone(),
+            )
             .await;
         let subscription_id_maybe_number_signal =
-            subscription_id_maybe_number_signal.unwrap_or_else(|_| usize::MAX);
+            subscription_id_maybe_number_signal.unwrap_or_else(|_| u32::MAX);
         let topic_maybe_name_signal = format!("signalOnly/{}/signal/maybeName", service_id);
         let subscription_id_maybe_name_signal = connection
-            .subscribe(topic_maybe_name_signal, 2, message_received_tx.clone())
+            .subscribe(
+                topic_maybe_name_signal,
+                QoS::ExactlyOnce,
+                message_received_tx.clone(),
+            )
             .await;
         let subscription_id_maybe_name_signal =
-            subscription_id_maybe_name_signal.unwrap_or_else(|_| usize::MAX);
+            subscription_id_maybe_name_signal.unwrap_or_else(|_| u32::MAX);
         let topic_now_signal = format!("signalOnly/{}/signal/now", service_id);
         let subscription_id_now_signal = connection
-            .subscribe(topic_now_signal, 2, message_received_tx.clone())
+            .subscribe(
+                topic_now_signal,
+                QoS::ExactlyOnce,
+                message_received_tx.clone(),
+            )
             .await;
-        let subscription_id_now_signal = subscription_id_now_signal.unwrap_or_else(|_| usize::MAX);
+        let subscription_id_now_signal = subscription_id_now_signal.unwrap_or_else(|_| u32::MAX);
 
         // Subscribe to all the topics needed for properties.
 
@@ -129,14 +155,14 @@ impl SignalOnlyClient {
 
         // Create SignalOnlyClient structure.
         let inst = SignalOnlyClient {
-            mqttier_client: connection.clone(),
+            mqtt_client: connection,
 
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
 
             subscription_ids: sub_ids,
             signal_channels: signal_channels,
-            client_id: connection.client_id.to_string(),
+            client_id: client_id,
         };
         inst
     }
@@ -168,9 +194,9 @@ impl SignalOnlyClient {
     }
 
     /// Starts the tasks that process messages received.
-    pub async fn run_loop(&self) -> Result<(), JoinError> {
-        // Make sure the MqttierClient is connected and running.
-        let _ = self.mqttier_client.run_loop().await;
+    pub async fn run_loop(&mut self) -> Result<(), JoinError> {
+        // Make sure the MqttClient is connected and running.
+        let _ = self.mqtt_client.start().await;
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
@@ -182,87 +208,94 @@ impl SignalOnlyClient {
 
         let sub_ids = self.subscription_ids.clone();
         let _loop_task = tokio::spawn(async move {
-            while let Some(msg) = message_receiver.recv().await {
-                if msg.subscription_id == sub_ids.another_signal_signal.unwrap_or_default() {
-                    let chan = sig_chans.another_signal_sender.clone();
+            while let Ok(msg) = message_receiver.recv().await {
+                if let Some(subscription_id) = msg.subscription_id {
+                    let payload = String::from_utf8_lossy(&msg.payload).to_string();
+                    if Some(subscription_id) == sub_ids.another_signal_signal {
+                        let chan = sig_chans.another_signal_sender.clone();
 
-                    match serde_json::from_slice::<AnotherSignalSignalPayload>(&msg.payload) {
-                        Ok(pl) => {
-                            let _send_result = chan.send(pl);
-                        }
-                        Err(e) => {
-                            warn!(
-                                "Failed to deserialize '{}' into AnotherSignalSignalPayload: {}",
-                                String::from_utf8_lossy(&msg.payload),
-                                e
-                            );
-                            continue;
+                        match serde_json::from_slice::<AnotherSignalSignalPayload>(&msg.payload) {
+                            Ok(pl) => {
+                                let _send_result = chan.send(pl);
+                            }
+                            Err(e) => {
+                                warn!("Failed to deserialize '{}' into AnotherSignalSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                continue;
+                            }
                         }
                     }
-                } else if msg.subscription_id == sub_ids.bark_signal.unwrap_or_default() {
-                    let chan = sig_chans.bark_sender.clone();
+                    // end anotherSignal signal handling
+                    else if Some(subscription_id) == sub_ids.bark_signal {
+                        let chan = sig_chans.bark_sender.clone();
 
-                    match serde_json::from_slice::<BarkSignalPayload>(&msg.payload) {
-                        Ok(pl) => {
-                            let _send_result = chan.send(pl.word);
-                        }
-                        Err(e) => {
-                            warn!(
-                                "Failed to deserialize '{}' into BarkSignalPayload: {}",
-                                String::from_utf8_lossy(&msg.payload),
-                                e
-                            );
-                            continue;
+                        match serde_json::from_slice::<BarkSignalPayload>(&msg.payload) {
+                            Ok(pl) => {
+                                let _send_result = chan.send(pl.word);
+                            }
+                            Err(e) => {
+                                warn!(
+                                    "Failed to deserialize '{}' into BarkSignalPayload: {}",
+                                    String::from_utf8_lossy(&msg.payload),
+                                    e
+                                );
+                                continue;
+                            }
                         }
                     }
-                } else if msg.subscription_id == sub_ids.maybe_number_signal.unwrap_or_default() {
-                    let chan = sig_chans.maybe_number_sender.clone();
+                    // end bark signal handling
+                    else if Some(subscription_id) == sub_ids.maybe_number_signal {
+                        let chan = sig_chans.maybe_number_sender.clone();
 
-                    match serde_json::from_slice::<MaybeNumberSignalPayload>(&msg.payload) {
-                        Ok(pl) => {
-                            let _send_result = chan.send(pl.number);
-                        }
-                        Err(e) => {
-                            warn!(
-                                "Failed to deserialize '{}' into MaybeNumberSignalPayload: {}",
-                                String::from_utf8_lossy(&msg.payload),
-                                e
-                            );
-                            continue;
+                        match serde_json::from_slice::<MaybeNumberSignalPayload>(&msg.payload) {
+                            Ok(pl) => {
+                                let _send_result = chan.send(pl.number);
+                            }
+                            Err(e) => {
+                                warn!(
+                                    "Failed to deserialize '{}' into MaybeNumberSignalPayload: {}",
+                                    String::from_utf8_lossy(&msg.payload),
+                                    e
+                                );
+                                continue;
+                            }
                         }
                     }
-                } else if msg.subscription_id == sub_ids.maybe_name_signal.unwrap_or_default() {
-                    let chan = sig_chans.maybe_name_sender.clone();
+                    // end maybe_number signal handling
+                    else if Some(subscription_id) == sub_ids.maybe_name_signal {
+                        let chan = sig_chans.maybe_name_sender.clone();
 
-                    match serde_json::from_slice::<MaybeNameSignalPayload>(&msg.payload) {
-                        Ok(pl) => {
-                            let _send_result = chan.send(pl.name);
-                        }
-                        Err(e) => {
-                            warn!(
-                                "Failed to deserialize '{}' into MaybeNameSignalPayload: {}",
-                                String::from_utf8_lossy(&msg.payload),
-                                e
-                            );
-                            continue;
+                        match serde_json::from_slice::<MaybeNameSignalPayload>(&msg.payload) {
+                            Ok(pl) => {
+                                let _send_result = chan.send(pl.name);
+                            }
+                            Err(e) => {
+                                warn!(
+                                    "Failed to deserialize '{}' into MaybeNameSignalPayload: {}",
+                                    String::from_utf8_lossy(&msg.payload),
+                                    e
+                                );
+                                continue;
+                            }
                         }
                     }
-                } else if msg.subscription_id == sub_ids.now_signal.unwrap_or_default() {
-                    let chan = sig_chans.now_sender.clone();
+                    // end maybe_name signal handling
+                    else if Some(subscription_id) == sub_ids.now_signal {
+                        let chan = sig_chans.now_sender.clone();
 
-                    match serde_json::from_slice::<NowSignalPayload>(&msg.payload) {
-                        Ok(pl) => {
-                            let _send_result = chan.send(pl.timestamp);
+                        match serde_json::from_slice::<NowSignalPayload>(&msg.payload) {
+                            Ok(pl) => {
+                                let _send_result = chan.send(pl.timestamp);
+                            }
+                            Err(e) => {
+                                warn!(
+                                    "Failed to deserialize '{}' into NowSignalPayload: {}",
+                                    String::from_utf8_lossy(&msg.payload),
+                                    e
+                                );
+                                continue;
+                            }
                         }
-                        Err(e) => {
-                            warn!(
-                                "Failed to deserialize '{}' into NowSignalPayload: {}",
-                                String::from_utf8_lossy(&msg.payload),
-                                e
-                            );
-                            continue;
-                        }
-                    }
+                    } // end now signal handling
                 }
             }
         });

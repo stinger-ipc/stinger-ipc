@@ -4,8 +4,8 @@ on the next generation.
 
 This is the Client for the Test Able interface.
 
-LICENSE: This generated code is not subject to any license restrictions.
-You may use, modify, and distribute it under any license of your choosing.
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 use std::collections::HashMap;
 use std::fmt;

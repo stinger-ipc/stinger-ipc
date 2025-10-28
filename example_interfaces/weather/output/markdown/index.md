@@ -1,4 +1,10 @@
 # _NWS weather forecast_ API Overview 
+
+<!--
+This is automatically generated documentation.
+LICENSE: This generated content is not subject to any license restrictions.
+TODO: Get license text from stinger file
+--> 
 _Current conditions, daily and hourly forecasts from the NWS API_
 
 

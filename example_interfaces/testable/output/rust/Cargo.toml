@@ -36,6 +36,9 @@ features = [
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ]
 
+[dev-dependencies]
+mqttier = "0.6.1"
+
 [[example]]
 name = "test_able_client_demo"
 path = "examples/client_demo.rs"

@@ -3,21 +3,25 @@ DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over
 on the next generation.
 
 This is the Client for the weather interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
 */
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::{Arc, RwLock};
 
 use crate::interface::InterfaceInfo;
-use mqttier::{MqttierClient, MqttierError, ReceivedMessage};
-use tokio::sync::{broadcast, mpsc};
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+use stinger_mqtt_trait::{MqttClient, MqttError};
+use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
 #[derive(Debug)]
 pub enum WeatherDiscoveryError {
-    Subscribe(MqttierError),
+    Subscribe(MqttError),
 }
 
 impl fmt::Display for WeatherDiscoveryError {
@@ -32,15 +36,15 @@ impl fmt::Display for WeatherDiscoveryError {
 
 impl std::error::Error for WeatherDiscoveryError {}
 
-impl From<MqttierError> for WeatherDiscoveryError {
-    fn from(value: MqttierError) -> Self {
+impl From<MqttError> for WeatherDiscoveryError {
+    fn from(value: MqttError) -> Self {
         WeatherDiscoveryError::Subscribe(value)
     }
 }
 
 pub struct WeatherDiscovery {
     service_name: String,
-    subscription_id: usize,
+    subscription_id: u32,
     discovered_interfaces: Arc<RwLock<HashMap<String, InterfaceInfo>>>,
     listener_handle: JoinHandle<()>,
     notification_tx: broadcast::Sender<InterfaceInfo>,
@@ -50,17 +54,17 @@ pub struct WeatherDiscovery {
 pub type WeatherDiscoveryReceiver = broadcast::Receiver<InterfaceInfo>;
 
 impl WeatherDiscovery {
-    pub async fn new(connection: &mut MqttierClient) -> Result<Self, WeatherDiscoveryError> {
-        debug!("Starting mqttier loop if not already started.");
-        let _ = connection.run_loop().await;
+    pub async fn new(connection: &mut impl MqttClient) -> Result<Self, WeatherDiscoveryError> {
+        debug!("Starting client loop if not already started.");
+        let _ = connection.start().await;
 
         let service_name = "weather".to_string();
         let discovery_topic = format!("weather/{}/interface", "+");
 
-        let (message_tx, message_rx) = mpsc::channel::<ReceivedMessage>(32);
+        let (message_tx, message_rx) = broadcast::channel::<MqttMessage>(32);
         debug!("Subscribing to discovery topic: {discovery_topic}");
         let subscription_id = connection
-            .subscribe(discovery_topic, 1, message_tx.clone())
+            .subscribe(discovery_topic, QoS::AtLeastOnce, message_tx.clone())
             .await
             .map_err(WeatherDiscoveryError::from)?;
         let discovered_interfaces = Arc::new(RwLock::new(HashMap::new()));
@@ -112,7 +116,7 @@ impl WeatherDiscovery {
         receiver.recv().await.expect("notification channel closed")
     }
 
-    pub fn subscription_id(&self) -> usize {
+    pub fn subscription_id(&self) -> u32 {
         self.subscription_id
     }
 
@@ -152,20 +156,20 @@ impl WeatherDiscovery {
     }
 
     fn spawn_listener(
-        mut message_rx: mpsc::Receiver<ReceivedMessage>,
+        mut message_rx: broadcast::Receiver<MqttMessage>,
         discovered_interfaces: Arc<RwLock<HashMap<String, InterfaceInfo>>>,
         notification_tx: broadcast::Sender<InterfaceInfo>,
     ) -> JoinHandle<()> {
         tokio::spawn(async move {
             debug!("Listening for discovery messages");
-            while let Some(message) = message_rx.recv().await {
+            while let Ok(message) = message_rx.recv().await {
                 Self::handle_message(message, &discovered_interfaces, &notification_tx);
             }
         })
     }
 
     fn handle_message(
-        message: ReceivedMessage,
+        message: MqttMessage,
         discovered_interfaces: &Arc<RwLock<HashMap<String, InterfaceInfo>>>,
         notification_tx: &broadcast::Sender<InterfaceInfo>,
     ) {
@@ -221,7 +225,7 @@ impl Drop for WeatherDiscovery {
 mod tests {
     use super::*;
 
-    fn sample_message(topic: &str, instance: &str) -> ReceivedMessage {
+    fn sample_message(topic: &str, instance: &str) -> MqttMessage {
         let info = InterfaceInfo {
             interface_name: "sample".into(),
             title: "Sample".into(),
@@ -232,7 +236,7 @@ mod tests {
         };
         let payload = serde_json::to_vec(&info).expect("serialize");
 
-        ReceivedMessage {
+        MqttMessage {
             topic: topic.into(),
             payload,
             qos: 1,
