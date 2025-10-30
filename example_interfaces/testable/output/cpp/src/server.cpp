@@ -20,8 +20,7 @@
 constexpr const char TestAbleServer::NAME[];
 constexpr const char TestAbleServer::INTERFACE_VERSION[];
 
-TestAbleServer::TestAbleServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
-    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
+TestAbleServer::TestAbleServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId): _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,

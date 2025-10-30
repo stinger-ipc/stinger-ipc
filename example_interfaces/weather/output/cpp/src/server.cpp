@@ -20,8 +20,7 @@
 constexpr const char WeatherServer::NAME[];
 constexpr const char WeatherServer::INTERFACE_VERSION[];
 
-WeatherServer::WeatherServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
-    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
+WeatherServer::WeatherServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId): _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,
