@@ -26,8 +26,7 @@
 constexpr const char TestAbleClient::NAME[];
 constexpr const char TestAbleClient::INTERFACE_VERSION[];
 
-TestAbleClient::TestAbleClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
-    _broker(broker), _instanceId(instanceId)
+TestAbleClient::TestAbleClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId): _broker(broker), _instanceId(instanceId)
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,
