@@ -16,7 +16,7 @@ use serde_json;
 use std::collections::HashMap;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 #[cfg(feature = "client")]
-use stinger_mqtt_trait::MqttClient;
+use stinger_mqtt_trait::Mqtt5PubSub;
 use uuid::Uuid;
 
 #[allow(unused_imports)]
@@ -30,6 +30,11 @@ use tokio::task::JoinError;
 use tracing::{debug, error, info, warn};
 
 use std::sync::atomic::{AtomicU32, Ordering};
+#[allow(unused_imports)]
+use stinger_rwlock_watch::ReadOnlyLockWatch;
+use stinger_rwlock_watch::RwLockWatch;
+#[allow(unused_imports)]
+use stinger_rwlock_watch::WriteRequestLockWatch;
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -61,42 +66,37 @@ struct WeatherSignalChannels {
 
 #[derive(Clone)]
 pub struct WeatherProperties {
-    pub location: Arc<Mutex<Option<LocationProperty>>>,
-    location_tx_channel: watch::Sender<Option<LocationProperty>>,
+    pub location: Arc<RwLockWatch<Option<LocationProperty>>>,
     pub location_version: Arc<AtomicU32>,
-    pub current_temperature: Arc<Mutex<Option<f32>>>,
 
-    current_temperature_tx_channel: watch::Sender<Option<f32>>,
+    pub current_temperature: Arc<RwLockWatch<Option<f32>>>,
     pub current_temperature_version: Arc<AtomicU32>,
-    pub current_condition: Arc<Mutex<Option<CurrentConditionProperty>>>,
-    current_condition_tx_channel: watch::Sender<Option<CurrentConditionProperty>>,
+
+    pub current_condition: Arc<RwLockWatch<Option<CurrentConditionProperty>>>,
     pub current_condition_version: Arc<AtomicU32>,
-    pub daily_forecast: Arc<Mutex<Option<DailyForecastProperty>>>,
-    daily_forecast_tx_channel: watch::Sender<Option<DailyForecastProperty>>,
+
+    pub daily_forecast: Arc<RwLockWatch<Option<DailyForecastProperty>>>,
     pub daily_forecast_version: Arc<AtomicU32>,
-    pub hourly_forecast: Arc<Mutex<Option<HourlyForecastProperty>>>,
-    hourly_forecast_tx_channel: watch::Sender<Option<HourlyForecastProperty>>,
+
+    pub hourly_forecast: Arc<RwLockWatch<Option<HourlyForecastProperty>>>,
     pub hourly_forecast_version: Arc<AtomicU32>,
-    pub current_condition_refresh_interval: Arc<Mutex<Option<i32>>>,
 
-    current_condition_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
+    pub current_condition_refresh_interval: Arc<RwLockWatch<Option<i32>>>,
     pub current_condition_refresh_interval_version: Arc<AtomicU32>,
-    pub hourly_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
 
-    hourly_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
+    pub hourly_forecast_refresh_interval: Arc<RwLockWatch<Option<i32>>>,
     pub hourly_forecast_refresh_interval_version: Arc<AtomicU32>,
-    pub daily_forecast_refresh_interval: Arc<Mutex<Option<i32>>>,
 
-    daily_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
+    pub daily_forecast_refresh_interval: Arc<RwLockWatch<Option<i32>>>,
     pub daily_forecast_refresh_interval_version: Arc<AtomicU32>,
 }
 
 /// This is the struct for our API client.
 #[derive(Clone)]
-pub struct WeatherClient<C: MqttClient> {
+pub struct WeatherClient<C: Mqtt5PubSub> {
     mqtt_client: C,
     /// Temporarily holds oneshot channels for responses to method calls.
-    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>>,
+    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<MethodReturnCode>>>>,
 
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
@@ -122,8 +122,8 @@ pub struct WeatherClient<C: MqttClient> {
     service_instance_id: String,
 }
 
-impl<C: MqttClient + Clone> WeatherClient<C> {
-    /// Creates a new WeatherClient that uses an MqttClient.
+impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
+    /// Creates a new WeatherClient that uses an Mqtt5PubSub.
     pub async fn new(mut connection: C, service_id: String) -> Self {
         // Create a channel for messages to get from the Connection object to this WeatherClient object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -285,33 +285,25 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                 .unwrap_or_else(|_| u32::MAX);
 
         let property_values = WeatherProperties {
-            location: Arc::new(Mutex::new(None)),
-            location_tx_channel: watch::channel(None).0,
+            location: Arc::new(RwLockWatch::new(None)),
             location_version: Arc::new(AtomicU32::new(0)),
 
-            current_temperature: Arc::new(Mutex::new(None)),
-            current_temperature_tx_channel: watch::channel(None).0,
+            current_temperature: Arc::new(RwLockWatch::new(None)),
             current_temperature_version: Arc::new(AtomicU32::new(0)),
-            current_condition: Arc::new(Mutex::new(None)),
-            current_condition_tx_channel: watch::channel(None).0,
+            current_condition: Arc::new(RwLockWatch::new(None)),
             current_condition_version: Arc::new(AtomicU32::new(0)),
-            daily_forecast: Arc::new(Mutex::new(None)),
-            daily_forecast_tx_channel: watch::channel(None).0,
+            daily_forecast: Arc::new(RwLockWatch::new(None)),
             daily_forecast_version: Arc::new(AtomicU32::new(0)),
-            hourly_forecast: Arc::new(Mutex::new(None)),
-            hourly_forecast_tx_channel: watch::channel(None).0,
+            hourly_forecast: Arc::new(RwLockWatch::new(None)),
             hourly_forecast_version: Arc::new(AtomicU32::new(0)),
 
-            current_condition_refresh_interval: Arc::new(Mutex::new(None)),
-            current_condition_refresh_interval_tx_channel: watch::channel(None).0,
+            current_condition_refresh_interval: Arc::new(RwLockWatch::new(None)),
             current_condition_refresh_interval_version: Arc::new(AtomicU32::new(0)),
 
-            hourly_forecast_refresh_interval: Arc::new(Mutex::new(None)),
-            hourly_forecast_refresh_interval_tx_channel: watch::channel(None).0,
+            hourly_forecast_refresh_interval: Arc::new(RwLockWatch::new(None)),
             hourly_forecast_refresh_interval_version: Arc::new(AtomicU32::new(0)),
 
-            daily_forecast_refresh_interval: Arc::new(Mutex::new(None)),
-            daily_forecast_refresh_interval_tx_channel: watch::channel(None).0,
+            daily_forecast_refresh_interval: Arc::new(RwLockWatch::new(None)),
             daily_forecast_refresh_interval_version: Arc::new(AtomicU32::new(0)),
         };
 
@@ -365,7 +357,7 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
         self.signal_channels.current_time_sender.subscribe()
     }
 
-    async fn start_refresh_daily_forecast(&mut self) -> oneshot::Receiver<String> {
+    async fn start_refresh_daily_forecast(&mut self) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -400,12 +392,16 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
     pub async fn refresh_daily_forecast(&mut self) -> Result<(), MethodReturnCode> {
         let receiver = self.start_refresh_daily_forecast().await;
 
-        let _resp_str: String = receiver.await.unwrap();
-
-        Ok(())
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(_) => Ok(()),
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
-    async fn start_refresh_hourly_forecast(&mut self) -> oneshot::Receiver<String> {
+    async fn start_refresh_hourly_forecast(&mut self) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -440,12 +436,16 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
     pub async fn refresh_hourly_forecast(&mut self) -> Result<(), MethodReturnCode> {
         let receiver = self.start_refresh_hourly_forecast().await;
 
-        let _resp_str: String = receiver.await.unwrap();
-
-        Ok(())
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(_) => Ok(()),
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
-    async fn start_refresh_current_conditions(&mut self) -> oneshot::Receiver<String> {
+    async fn start_refresh_current_conditions(&mut self) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -482,148 +482,251 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
     pub async fn refresh_current_conditions(&mut self) -> Result<(), MethodReturnCode> {
         let receiver = self.start_refresh_current_conditions().await;
 
-        let _resp_str: String = receiver.await.unwrap();
-
-        Ok(())
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(_) => Ok(()),
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
     /// Watch for changes to the `location` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_location(&self) -> watch::Receiver<Option<LocationProperty>> {
-        self.properties.location_tx_channel.subscribe()
+        self.properties.location.subscribe()
     }
 
-    pub fn set_location(&mut self, value: LocationProperty) -> Result<(), MethodReturnCode> {
+    /// Sets the `location` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_location(&mut self, value: LocationProperty) -> MethodReturnCode {
         let data = value;
         let topic: String = format!("weather/{}/property/location/setValue", self.client_id);
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties.location_version.load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_location_handle(&self) -> Arc<WriteRequestLockWatch<Option<LocationProperty>>> {
+        self.properties.location.write_request().into()
     }
 
     /// Watch for changes to the `current_temperature` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_current_temperature(&self) -> watch::Receiver<Option<f32>> {
-        self.properties.current_temperature_tx_channel.subscribe()
+        self.properties.current_temperature.subscribe()
+    }
+
+    pub fn get_current_temperature_handle(&self) -> ReadOnlyLockWatch<Option<f32>> {
+        self.properties.current_temperature.read_only()
     }
 
     /// Watch for changes to the `current_condition` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_current_condition(&self) -> watch::Receiver<Option<CurrentConditionProperty>> {
-        self.properties.current_condition_tx_channel.subscribe()
+        self.properties.current_condition.subscribe()
+    }
+
+    pub fn get_current_condition_handle(&self) -> ReadOnlyLockWatch<CurrentConditionProperty> {
+        self.properties.current_condition.read_only()
     }
 
     /// Watch for changes to the `daily_forecast` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_daily_forecast(&self) -> watch::Receiver<Option<DailyForecastProperty>> {
-        self.properties.daily_forecast_tx_channel.subscribe()
+        self.properties.daily_forecast.subscribe()
+    }
+
+    pub fn get_daily_forecast_handle(&self) -> ReadOnlyLockWatch<DailyForecastProperty> {
+        self.properties.daily_forecast.read_only()
     }
 
     /// Watch for changes to the `hourly_forecast` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_hourly_forecast(&self) -> watch::Receiver<Option<HourlyForecastProperty>> {
-        self.properties.hourly_forecast_tx_channel.subscribe()
+        self.properties.hourly_forecast.subscribe()
+    }
+
+    pub fn get_hourly_forecast_handle(&self) -> ReadOnlyLockWatch<HourlyForecastProperty> {
+        self.properties.hourly_forecast.read_only()
     }
 
     /// Watch for changes to the `current_condition_refresh_interval` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_current_condition_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
         self.properties
-            .current_condition_refresh_interval_tx_channel
+            .current_condition_refresh_interval
             .subscribe()
     }
 
-    pub fn set_current_condition_refresh_interval(
-        &mut self,
-        value: i32,
-    ) -> Result<(), MethodReturnCode> {
+    /// Sets the `current_condition_refresh_interval` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_current_condition_refresh_interval(&mut self, value: i32) -> MethodReturnCode {
         let data = CurrentConditionRefreshIntervalProperty { seconds: value };
         let topic: String = format!(
             "weather/{}/property/currentConditionRefreshInterval/setValue",
             self.client_id
         );
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties
                 .current_condition_refresh_interval_version
                 .load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_current_condition_refresh_interval_handle(
+        &self,
+    ) -> Arc<WriteRequestLockWatch<Option<i32>>> {
+        self.properties
+            .current_condition_refresh_interval
+            .write_request()
+            .into()
     }
 
     /// Watch for changes to the `hourly_forecast_refresh_interval` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_hourly_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
-        self.properties
-            .hourly_forecast_refresh_interval_tx_channel
-            .subscribe()
+        self.properties.hourly_forecast_refresh_interval.subscribe()
     }
 
-    pub fn set_hourly_forecast_refresh_interval(
-        &mut self,
-        value: i32,
-    ) -> Result<(), MethodReturnCode> {
+    /// Sets the `hourly_forecast_refresh_interval` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_hourly_forecast_refresh_interval(&mut self, value: i32) -> MethodReturnCode {
         let data = HourlyForecastRefreshIntervalProperty { seconds: value };
         let topic: String = format!(
             "weather/{}/property/hourlyForecastRefreshInterval/setValue",
             self.client_id
         );
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties
                 .hourly_forecast_refresh_interval_version
                 .load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_hourly_forecast_refresh_interval_handle(
+        &self,
+    ) -> Arc<WriteRequestLockWatch<Option<i32>>> {
+        self.properties
+            .hourly_forecast_refresh_interval
+            .write_request()
+            .into()
     }
 
     /// Watch for changes to the `daily_forecast_refresh_interval` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_daily_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
-        self.properties
-            .daily_forecast_refresh_interval_tx_channel
-            .subscribe()
+        self.properties.daily_forecast_refresh_interval.subscribe()
     }
 
-    pub fn set_daily_forecast_refresh_interval(
-        &mut self,
-        value: i32,
-    ) -> Result<(), MethodReturnCode> {
+    /// Sets the `daily_forecast_refresh_interval` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_daily_forecast_refresh_interval(&mut self, value: i32) -> MethodReturnCode {
         let data = DailyForecastRefreshIntervalProperty { seconds: value };
         let topic: String = format!(
             "weather/{}/property/dailyForecastRefreshInterval/setValue",
             self.client_id
         );
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties
                 .daily_forecast_refresh_interval_version
                 .load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_daily_forecast_refresh_interval_handle(
+        &self,
+    ) -> Arc<WriteRequestLockWatch<Option<i32>>> {
+        self.properties
+            .daily_forecast_refresh_interval
+            .write_request()
+            .into()
+    }
+
+    fn get_return_code_from_message(msg: &MqttMessage) -> MethodReturnCode {
+        let payload = String::from_utf8_lossy(&msg.payload).to_string();
+        let mut return_code: MethodReturnCode = MethodReturnCode::Success(None);
+        if let Some(retval) = msg.user_properties.get("ReturnCode") {
+            let opt_dbg_info = msg.user_properties.get("DebugInfo").cloned();
+            if let Ok(return_code_u32) = retval.parse::<u32>() {
+                if return_code_u32 == 0 {
+                    return_code = MethodReturnCode::from_code(return_code_u32, Some(payload));
+                } else {
+                    return_code = MethodReturnCode::from_code(return_code_u32, opt_dbg_info);
+                }
+            }
+        }
+        return_code
     }
 
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&mut self) -> Result<(), JoinError> {
-        // Make sure the MqttClient is connected and running.
-        let _ = self.mqtt_client.start().await;
-
         // Clone the Arc pointer to the map.  This will be moved into the loop_task.
-        let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>> =
+        let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<MethodReturnCode>>>> =
             self.pending_responses.clone();
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -636,6 +739,237 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
 
         let sub_ids = self.subscription_ids.clone();
         let props = self.properties.clone();
+        {
+            // Set up property change request handling task
+            let client_id_for_location_prop = self.client_id.clone();
+            let mut publisher_for_location_prop = self.mqtt_client.clone();
+            let location_prop_version = props.location_version.clone();
+            if let Some(mut rx_for_location_prop) = props.location.take_request_receiver() {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_location_prop.recv().await {
+                        let topic: String = format!(
+                            "weather/{}/property/location/setValue",
+                            client_id_for_location_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            location_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_location_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_current_temperature_prop = self.client_id.clone();
+            let mut publisher_for_current_temperature_prop = self.mqtt_client.clone();
+            let current_temperature_prop_version = props.current_temperature_version.clone();
+            if let Some(mut rx_for_current_temperature_prop) =
+                props.current_temperature.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_current_temperature_prop.recv().await {
+                        let topic: String = format!(
+                            "weather/{}/property/currentTemperature/setValue",
+                            client_id_for_current_temperature_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            current_temperature_prop_version
+                                .load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result =
+                            publisher_for_current_temperature_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_current_condition_prop = self.client_id.clone();
+            let mut publisher_for_current_condition_prop = self.mqtt_client.clone();
+            let current_condition_prop_version = props.current_condition_version.clone();
+            if let Some(mut rx_for_current_condition_prop) =
+                props.current_condition.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_current_condition_prop.recv().await {
+                        let topic: String = format!(
+                            "weather/{}/property/currentCondition/setValue",
+                            client_id_for_current_condition_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            current_condition_prop_version
+                                .load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result =
+                            publisher_for_current_condition_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_daily_forecast_prop = self.client_id.clone();
+            let mut publisher_for_daily_forecast_prop = self.mqtt_client.clone();
+            let daily_forecast_prop_version = props.daily_forecast_version.clone();
+            if let Some(mut rx_for_daily_forecast_prop) =
+                props.daily_forecast.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_daily_forecast_prop.recv().await {
+                        let topic: String = format!(
+                            "weather/{}/property/dailyForecast/setValue",
+                            client_id_for_daily_forecast_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            daily_forecast_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_daily_forecast_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_hourly_forecast_prop = self.client_id.clone();
+            let mut publisher_for_hourly_forecast_prop = self.mqtt_client.clone();
+            let hourly_forecast_prop_version = props.hourly_forecast_version.clone();
+            if let Some(mut rx_for_hourly_forecast_prop) =
+                props.hourly_forecast.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_hourly_forecast_prop.recv().await {
+                        let topic: String = format!(
+                            "weather/{}/property/hourlyForecast/setValue",
+                            client_id_for_hourly_forecast_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            hourly_forecast_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_hourly_forecast_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_current_condition_refresh_interval_prop = self.client_id.clone();
+            let mut publisher_for_current_condition_refresh_interval_prop =
+                self.mqtt_client.clone();
+            let current_condition_refresh_interval_prop_version =
+                props.current_condition_refresh_interval_version.clone();
+            if let Some(mut rx_for_current_condition_refresh_interval_prop) = props
+                .current_condition_refresh_interval
+                .take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) =
+                        rx_for_current_condition_refresh_interval_prop.recv().await
+                    {
+                        let topic: String = format!(
+                            "weather/{}/property/currentConditionRefreshInterval/setValue",
+                            client_id_for_current_condition_refresh_interval_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            current_condition_refresh_interval_prop_version
+                                .load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_current_condition_refresh_interval_prop
+                            .publish(msg)
+                            .await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_hourly_forecast_refresh_interval_prop = self.client_id.clone();
+            let mut publisher_for_hourly_forecast_refresh_interval_prop = self.mqtt_client.clone();
+            let hourly_forecast_refresh_interval_prop_version =
+                props.hourly_forecast_refresh_interval_version.clone();
+            if let Some(mut rx_for_hourly_forecast_refresh_interval_prop) = props
+                .hourly_forecast_refresh_interval
+                .take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) =
+                        rx_for_hourly_forecast_refresh_interval_prop.recv().await
+                    {
+                        let topic: String = format!(
+                            "weather/{}/property/hourlyForecastRefreshInterval/setValue",
+                            client_id_for_hourly_forecast_refresh_interval_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            hourly_forecast_refresh_interval_prop_version
+                                .load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_hourly_forecast_refresh_interval_prop
+                            .publish(msg)
+                            .await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_daily_forecast_refresh_interval_prop = self.client_id.clone();
+            let mut publisher_for_daily_forecast_refresh_interval_prop = self.mqtt_client.clone();
+            let daily_forecast_refresh_interval_prop_version =
+                props.daily_forecast_refresh_interval_version.clone();
+            if let Some(mut rx_for_daily_forecast_refresh_interval_prop) = props
+                .daily_forecast_refresh_interval
+                .take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) =
+                        rx_for_daily_forecast_refresh_interval_prop.recv().await
+                    {
+                        let topic: String = format!(
+                            "weather/{}/property/dailyForecastRefreshInterval/setValue",
+                            client_id_for_daily_forecast_refresh_interval_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            daily_forecast_refresh_interval_prop_version
+                                .load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_daily_forecast_refresh_interval_prop
+                            .publish(msg)
+                            .await;
+                    }
+                });
+            }
+        }
 
         let _loop_task = tokio::spawn(async move {
             while let Ok(msg) = message_receiver.recv().await {
@@ -645,7 +979,7 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                     opt_corr_data.and_then(|b| Uuid::from_slice(b.as_slice()).ok());
 
                 if let Some(subscription_id) = msg.subscription_id {
-                    let payload = String::from_utf8_lossy(&msg.payload).to_string();
+                    let return_code = WeatherClient::<C>::get_return_code_from_message(&msg);
                     if subscription_id == sub_ids.refresh_daily_forecast_method_resp {
                         if opt_corr_id.is_some() {
                             let opt_sender = opt_corr_id.and_then(|uuid| {
@@ -653,8 +987,8 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -669,8 +1003,8 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -685,8 +1019,8 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -714,10 +1048,32 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                     if subscription_id == sub_ids.location_property_value {
                         match serde_json::from_slice::<LocationProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard = props.location.lock().expect("Mutex was poisoned");
+                                let mut guard = props.location.write().await;
 
                                 *guard = Some(pl.clone());
-                                let _ = props.location_tx_channel.send(Some(pl));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.location_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -733,15 +1089,32 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                     else if subscription_id == sub_ids.current_temperature_property_value {
                         match serde_json::from_slice::<CurrentTemperatureProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard = props
-                                    .current_temperature
-                                    .lock()
-                                    .expect("Mutex was poisoned");
+                                let mut guard = props.current_temperature.write().await;
 
                                 *guard = Some(pl.temperature_f.clone());
-                                let _ = props
-                                    .current_temperature_tx_channel
-                                    .send(Some(pl.temperature_f));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.current_temperature_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -757,11 +1130,32 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                     else if subscription_id == sub_ids.current_condition_property_value {
                         match serde_json::from_slice::<CurrentConditionProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard =
-                                    props.current_condition.lock().expect("Mutex was poisoned");
+                                let mut guard = props.current_condition.write().await;
 
                                 *guard = Some(pl.clone());
-                                let _ = props.current_condition_tx_channel.send(Some(pl));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.current_condition_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -777,11 +1171,32 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                     else if subscription_id == sub_ids.daily_forecast_property_value {
                         match serde_json::from_slice::<DailyForecastProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard =
-                                    props.daily_forecast.lock().expect("Mutex was poisoned");
+                                let mut guard = props.daily_forecast.write().await;
 
                                 *guard = Some(pl.clone());
-                                let _ = props.daily_forecast_tx_channel.send(Some(pl));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.daily_forecast_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -797,11 +1212,32 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                     else if subscription_id == sub_ids.hourly_forecast_property_value {
                         match serde_json::from_slice::<HourlyForecastProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard =
-                                    props.hourly_forecast.lock().expect("Mutex was poisoned");
+                                let mut guard = props.hourly_forecast.write().await;
 
                                 *guard = Some(pl.clone());
-                                let _ = props.hourly_forecast_tx_channel.send(Some(pl));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.hourly_forecast_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -821,15 +1257,33 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                             &msg.payload,
                         ) {
                             Ok(pl) => {
-                                let mut guard = props
-                                    .current_condition_refresh_interval
-                                    .lock()
-                                    .expect("Mutex was poisoned");
+                                let mut guard =
+                                    props.current_condition_refresh_interval.write().await;
 
                                 *guard = Some(pl.seconds.clone());
-                                let _ = props
-                                    .current_condition_refresh_interval_tx_channel
-                                    .send(Some(pl.seconds));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.current_condition_refresh_interval_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -849,15 +1303,33 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                             &msg.payload,
                         ) {
                             Ok(pl) => {
-                                let mut guard = props
-                                    .hourly_forecast_refresh_interval
-                                    .lock()
-                                    .expect("Mutex was poisoned");
+                                let mut guard =
+                                    props.hourly_forecast_refresh_interval.write().await;
 
                                 *guard = Some(pl.seconds.clone());
-                                let _ = props
-                                    .hourly_forecast_refresh_interval_tx_channel
-                                    .send(Some(pl.seconds));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.hourly_forecast_refresh_interval_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -877,15 +1349,32 @@ impl<C: MqttClient + Clone> WeatherClient<C> {
                             &msg.payload,
                         ) {
                             Ok(pl) => {
-                                let mut guard = props
-                                    .daily_forecast_refresh_interval
-                                    .lock()
-                                    .expect("Mutex was poisoned");
+                                let mut guard = props.daily_forecast_refresh_interval.write().await;
 
                                 *guard = Some(pl.seconds.clone());
-                                let _ = props
-                                    .daily_forecast_refresh_interval_tx_channel
-                                    .send(Some(pl.seconds));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.daily_forecast_refresh_interval_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(

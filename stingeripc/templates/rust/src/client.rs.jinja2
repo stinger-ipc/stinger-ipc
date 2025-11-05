@@ -32,7 +32,7 @@ use tokio::task::JoinError;
 use tracing::{debug, error, info, warn};
 {% if stinger.properties|length > 0 %}
 use std::sync::atomic::{AtomicU32, Ordering};
-use stinger_rwlock_watch::RwLockWatch;
+use stinger_rwlock_watch::{RwLockWatch};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::ReadOnlyLockWatch;
 #[allow(unused_imports)]
@@ -71,10 +71,10 @@ pub struct {{stinger.name | UpperCamelCase}}Properties {
     {%-if prop.arg_list | length > 1%}
     pub {{prop_name | snake_case}}: Arc<RwLockWatch<Option<{{prop.rust_type}}>>>,
     {%-else%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<Option<{{prop.arg_list[0].rust_type}}>>>,
-    {%endif%}
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{%if prop.arg_list[0].optional%}{{prop.arg_list[0].rust_type}}{%else%}Option<{{prop.arg_list[0].rust_type}}>{%endif%}>>,
+    {%endif-%}
     pub {{prop_name | snake_case}}_version: Arc<AtomicU32>,
-    {%-endfor%}
+    {%endfor%}
 }
 {%endif%}
 
@@ -113,7 +113,7 @@ pub struct {{stinger.rust.client_struct_name}}<C: Mqtt5PubSub> {
     {%endif%}
 }
 
-impl<C: Mqtt5PubSub + Clone> {{stinger.rust.client_struct_name}}<C> {
+impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}}<C> {
 
     /// Creates a new {{stinger.rust.client_struct_name}} that uses an Mqtt5PubSub.
     pub async fn new(mut connection: C, service_id: String) -> Self {
@@ -237,9 +237,9 @@ impl<C: Mqtt5PubSub + Clone> {{stinger.rust.client_struct_name}}<C> {
 
         let {%if method.return_value_type is false %}{%endif%}return_code: MethodReturnCode = receiver.await.unwrap();
         match return_code {
-            MethodReturnCode::Success(payload_str) => {
+            MethodReturnCode::Success({%if method.return_arg_list |length == 0 %}_{%else%}payload_str{%endif%}) => {
                 {%if method.return_arg_list |length > 0%}
-                let return_obj: {{method_name|UpperCamelCase}}ReturnValues = serde_json::from_str(payload_str.as_ref().unwrap_or("{}"))
+                let return_obj: {{method_name|UpperCamelCase}}ReturnValues = serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
                     .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
                 {%endif%}
                 {%if method.return_arg_list |length == 0 %}
@@ -260,7 +260,7 @@ impl<C: Mqtt5PubSub + Clone> {{stinger.rust.client_struct_name}}<C> {
     {%for prop_name, prop in stinger.properties.items()%}
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>> {
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}Option<{{prop.rust_type}}>{% elif prop.arg_list[0].optional %}{{prop.arg_list[0].rust_type}}{%else%}Option<{{prop.arg_list[0].rust_type}}>{% endif %}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
     {%if not prop.read_only %}
@@ -283,11 +283,11 @@ impl<C: Mqtt5PubSub + Clone> {{stinger.rust.client_struct_name}}<C> {
         receiver.await.unwrap_or_else(|_| MethodReturnCode::ClientError("Failed to receive property set acknowledgment".to_string()))
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>>> {
-        self.properties.{{prop_name | snake_case}}.write_request()
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}Option<{{prop.rust_type}}>{%elif prop.arg_list[0].optional %}{{prop.arg_list[0].rust_type}}{% else %}Option<{{prop.arg_list[0].rust_type}}>{% endif %}>> {
+        self.properties.{{prop_name | snake_case}}.write_request().into()
     }
     {%else%}
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> ReadOnlyLockWatch<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> ReadOnlyLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{%elif prop.arg_list[0].optional %}{{prop.arg_list[0].rust_type}}{% else %}Option<{{prop.arg_list[0].rust_type}}>{% endif %}> {
         self.properties.{{prop_name | snake_case}}.read_only()
     }
     {%endif%}
@@ -329,12 +329,13 @@ impl<C: Mqtt5PubSub + Clone> {{stinger.rust.client_struct_name}}<C> {
         {%-for prop_name, prop in stinger.properties.items()%}
         { // Set up property change request handling task
             let client_id_for_{{prop_name|snake_case}}_prop = self.client_id.clone();
-            let publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
-            if let Some(rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
+            let mut publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
+            let {{prop_name|snake_case}}_prop_version = props.{{prop_name | snake_case}}_version.clone();
+            if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
                             let topic: String = format!("{{prop.update_topic}}", client_id_for_{{prop_name|snake_case}}_prop);
-                            let msg = message::property_update_message(&topic, &request, props.{{prop_name | snake_case}}_version.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
+                            let msg = message::property_update_message(&topic, &request, {{prop_name|snake_case}}_prop_version.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
                             let _publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
                     };
                 });
@@ -361,7 +362,7 @@ impl<C: Mqtt5PubSub + Clone> {{stinger.rust.client_struct_name}}<C> {
                                 });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code) {
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -401,9 +402,9 @@ impl<C: Mqtt5PubSub + Clone> {{stinger.rust.client_struct_name}}<C> {
                     {%if not loop.first%}else {%endif%}if subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
                         match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard = props.{{prop_name | snake_case}}.write().expect("Mutex was poisoned");
+                                let mut guard = props.{{prop_name | snake_case}}.write().await;
                                 {%if prop.arg_list | length == 1 %}
-                                *guard = Some(pl.{{prop.arg_list[0].name}}.clone());
+                                *guard = {%if prop.arg_list[0].optional%}pl.{{prop.arg_list[0].name}}.clone(){%else%}Some(pl.{{prop.arg_list[0].name}}.clone()){%endif%};
                                 {%else%}
                                 *guard = Some(pl.clone());
                                 {%endif%}

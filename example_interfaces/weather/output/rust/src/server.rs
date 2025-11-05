@@ -30,7 +30,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::future::Future;
 use std::pin::Pin;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
-use stinger_mqtt_trait::{MqttClient, MqttError, MqttPublishSuccess};
+use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError, MqttPublishSuccess};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
@@ -86,7 +86,7 @@ struct WeatherProperties {
 }
 
 #[derive(Clone)]
-pub struct WeatherServer<C: MqttClient> {
+pub struct WeatherServer<C: Mqtt5PubSub> {
     mqtt_client: C,
 
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
@@ -114,13 +114,13 @@ pub struct WeatherServer<C: MqttClient> {
     pub instance_id: String,
 }
 
-impl<C: MqttClient + Clone + Send> WeatherServer<C> {
+impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
     pub async fn new(
         mut connection: C,
         method_handlers: Arc<AsyncMutex<Box<dyn WeatherMethodHandlers<C>>>>,
         instance_id: String,
     ) -> Self {
-        // Create a channel for messages to get from the MqttClient object to this WeatherServer object.
+        // Create a channel for messages to get from the Mqtt5PubSub object to this WeatherServer object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
@@ -265,7 +265,7 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
     }
 
     pub async fn oneshot_to_future(
-        ch: oneshot::Receiver<Result<MqttPublishSuccess, MqttError>>,
+        ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
             let chan_result = ch.await;
@@ -291,7 +291,7 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
     pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
-                MethodReturnCode::Success => Ok(()),
+                MethodReturnCode::Success(_) => Ok(()),
                 _ => Err(rc),
             }
         })
@@ -327,7 +327,7 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
     pub fn emit_current_time_nowait(
         &mut self,
         current_time: String,
-    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+    ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = CurrentTimeSignalPayload {
             current_time: current_time,
         };
@@ -564,7 +564,8 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'location' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -632,7 +633,8 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'current_temperature' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -704,7 +706,8 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'current_condition' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -773,7 +776,8 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'daily_forecast' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -839,7 +843,8 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'hourly_forecast' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -958,7 +963,8 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'current_condition_refresh_interval' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1080,7 +1086,8 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'hourly_forecast_refresh_interval' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1202,7 +1209,8 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'daily_forecast_refresh_interval' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1238,9 +1246,6 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
     where
         C: 'static,
     {
-        // Make sure the MqttClient is connected and running.
-        let _ = self.mqtt_client.start().await;
-
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
             self.msg_streamer_rx
@@ -1411,7 +1416,7 @@ impl<C: MqttClient + Clone + Send> WeatherServer<C> {
 }
 
 #[async_trait]
-pub trait WeatherMethodHandlers<C: MqttClient>: Send + Sync {
+pub trait WeatherMethodHandlers<C: Mqtt5PubSub>: Send + Sync {
     async fn initialize(&mut self, server: WeatherServer<C>) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the refresh_daily_forecast method request.

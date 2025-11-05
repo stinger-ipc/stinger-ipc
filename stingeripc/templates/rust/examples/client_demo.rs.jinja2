@@ -14,7 +14,7 @@ TODO: Get license text from stinger file
 
 use {{stinger.rust.package_name}}::client::{{stinger.rust.client_struct_name}};
 use {{stinger.rust.package_name}}::discovery::{{stinger.name|UpperCamelCase}}Discovery;
-use mqttier::{MqttierClient, MqttierOptions, Connection};
+use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
 use tokio::time::{sleep, Duration};
 use tokio::join;
 #[allow(unused_imports)]
@@ -32,10 +32,10 @@ async fn main() {
         .init();
 
     info!("Starting {{stinger.name}} client demo...");
-    let mqttier_options = MqttierOptions::new()
+    let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-client-demo".to_string())
-        .build();
+        .build().unwrap();
     let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
     let discovery = {{stinger.name|UpperCamelCase}}Discovery::new(&mut mqttier_client).await.unwrap();
     let singleton_info = discovery.get_singleton_service().await;

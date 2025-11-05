@@ -12,7 +12,7 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 */
 
-use mqttier::{Connection, MqttierClient, MqttierOptions};
+use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
 use signal_only_ipc::client::SignalOnlyClient;
 use signal_only_ipc::discovery::SignalOnlyDiscovery;
 #[allow(unused_imports)]
@@ -32,10 +32,11 @@ async fn main() {
         .init();
 
     info!("Starting SignalOnly client demo...");
-    let mqttier_options = MqttierOptions::new()
+    let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-client-demo".to_string())
-        .build();
+        .build()
+        .unwrap();
     let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
     let discovery = SignalOnlyDiscovery::new(&mut mqttier_client).await.unwrap();
     let singleton_info = discovery.get_singleton_service().await;

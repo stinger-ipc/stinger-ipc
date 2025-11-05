@@ -6,7 +6,7 @@ edition = "2021"
 [features]
 default = []
 client = ["payloads", "tracing", "tracing-subscriber", "stinger-rwlock-watch/read_only", "stinger-rwlock-watch/write_request"]
-server = ["payloads", "async-trait", "tracing", "tracing-subscriber"]
+server = ["payloads", "async-trait", "tracing", "tracing-subscriber", "stinger-mqtt-trait/availability_publish"]
 payloads = []
 
 [dependencies]
@@ -37,7 +37,8 @@ features = [
 ]
 
 [dev-dependencies]
-mqttier = "0.6.2"
+mqttier = "0.7.0"
+stinger-mqtt-trait = { version = "0.5.1", features = ["mock_client"] }
 
 [[example]]
 name = "test_able_client_demo"

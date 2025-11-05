@@ -184,7 +184,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
-                MethodReturnCode::Success => Ok(()),
+                MethodReturnCode::Success(_) => Ok(()),
                 _ => Err(rc),
             }
         })
@@ -356,7 +356,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property '{{prop_name}}' value not changed, so not notifying watchers.");
-            return {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();

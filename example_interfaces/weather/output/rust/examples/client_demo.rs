@@ -12,7 +12,7 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 */
 
-use mqttier::{Connection, MqttierClient, MqttierOptions};
+use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
 use tokio::join;
 use tokio::time::{sleep, Duration};
 #[allow(unused_imports)]
@@ -32,10 +32,11 @@ async fn main() {
         .init();
 
     info!("Starting weather client demo...");
-    let mqttier_options = MqttierOptions::new()
+    let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-client-demo".to_string())
-        .build();
+        .build()
+        .unwrap();
     let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
     let discovery = WeatherDiscovery::new(&mut mqttier_client).await.unwrap();
     let singleton_info = discovery.get_singleton_service().await;

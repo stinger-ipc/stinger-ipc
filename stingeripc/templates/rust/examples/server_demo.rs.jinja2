@@ -9,7 +9,7 @@ TODO: Get license text from stinger file
 */
 use std::any::Any;
 
-use mqttier::{MqttierClient, MqttierOptions, Connection};
+use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
 use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
 use tokio::time::{sleep, Duration};
 {%if stinger.methods|length > 0%}
@@ -89,10 +89,10 @@ async fn main() {
         )
         .init();
 
-    let mqttier_options = MqttierOptions::new()
+    let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
-        .build();
+        .build().unwrap();
     let connection = MqttierClient::new(mqttier_options).unwrap();
 
     {%if stinger.methods|length > 0%}

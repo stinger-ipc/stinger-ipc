@@ -16,7 +16,7 @@ use serde_json;
 use std::collections::HashMap;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 #[cfg(feature = "client")]
-use stinger_mqtt_trait::MqttClient;
+use stinger_mqtt_trait::Mqtt5PubSub;
 use uuid::Uuid;
 
 #[allow(unused_imports)]
@@ -30,6 +30,11 @@ use tokio::task::JoinError;
 use tracing::{debug, error, info, warn};
 
 use std::sync::atomic::{AtomicU32, Ordering};
+#[allow(unused_imports)]
+use stinger_rwlock_watch::ReadOnlyLockWatch;
+use stinger_rwlock_watch::RwLockWatch;
+#[allow(unused_imports)]
+use stinger_rwlock_watch::WriteRequestLockWatch;
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -64,39 +69,34 @@ struct FullSignalChannels {
 
 #[derive(Clone)]
 pub struct FullProperties {
-    pub favorite_number: Arc<Mutex<Option<i32>>>,
-
-    favorite_number_tx_channel: watch::Sender<Option<i32>>,
+    pub favorite_number: Arc<RwLockWatch<Option<i32>>>,
     pub favorite_number_version: Arc<AtomicU32>,
-    pub favorite_foods: Arc<Mutex<Option<FavoriteFoodsProperty>>>,
-    favorite_foods_tx_channel: watch::Sender<Option<FavoriteFoodsProperty>>,
+
+    pub favorite_foods: Arc<RwLockWatch<Option<FavoriteFoodsProperty>>>,
     pub favorite_foods_version: Arc<AtomicU32>,
-    pub lunch_menu: Arc<Mutex<Option<LunchMenuProperty>>>,
-    lunch_menu_tx_channel: watch::Sender<Option<LunchMenuProperty>>,
+
+    pub lunch_menu: Arc<RwLockWatch<Option<LunchMenuProperty>>>,
     pub lunch_menu_version: Arc<AtomicU32>,
-    pub family_name: Arc<Mutex<Option<String>>>,
 
-    family_name_tx_channel: watch::Sender<Option<String>>,
+    pub family_name: Arc<RwLockWatch<Option<String>>>,
     pub family_name_version: Arc<AtomicU32>,
-    pub last_breakfast_time: Arc<Mutex<Option<chrono::DateTime<chrono::Utc>>>>,
 
-    last_breakfast_time_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+    pub last_breakfast_time: Arc<RwLockWatch<Option<chrono::DateTime<chrono::Utc>>>>,
     pub last_breakfast_time_version: Arc<AtomicU32>,
-    pub breakfast_length: Arc<Mutex<Option<chrono::Duration>>>,
 
-    breakfast_length_tx_channel: watch::Sender<Option<chrono::Duration>>,
+    pub breakfast_length: Arc<RwLockWatch<Option<chrono::Duration>>>,
     pub breakfast_length_version: Arc<AtomicU32>,
-    pub last_birthdays: Arc<Mutex<Option<LastBirthdaysProperty>>>,
-    last_birthdays_tx_channel: watch::Sender<Option<LastBirthdaysProperty>>,
+
+    pub last_birthdays: Arc<RwLockWatch<Option<LastBirthdaysProperty>>>,
     pub last_birthdays_version: Arc<AtomicU32>,
 }
 
 /// This is the struct for our API client.
 #[derive(Clone)]
-pub struct FullClient<C: MqttClient> {
+pub struct FullClient<C: Mqtt5PubSub> {
     mqtt_client: C,
     /// Temporarily holds oneshot channels for responses to method calls.
-    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>>,
+    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<MethodReturnCode>>>>,
 
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
@@ -122,8 +122,8 @@ pub struct FullClient<C: MqttClient> {
     service_instance_id: String,
 }
 
-impl<C: MqttClient + Clone> FullClient<C> {
-    /// Creates a new FullClient that uses an MqttClient.
+impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
+    /// Creates a new FullClient that uses an Mqtt5PubSub.
     pub async fn new(mut connection: C, service_id: String) -> Self {
         // Create a channel for messages to get from the Connection object to this FullClient object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -303,29 +303,22 @@ impl<C: MqttClient + Clone> FullClient<C> {
             subscription_id_last_birthdays_property_value.unwrap_or_else(|_| u32::MAX);
 
         let property_values = FullProperties {
-            favorite_number: Arc::new(Mutex::new(None)),
-            favorite_number_tx_channel: watch::channel(None).0,
+            favorite_number: Arc::new(RwLockWatch::new(None)),
             favorite_number_version: Arc::new(AtomicU32::new(0)),
-            favorite_foods: Arc::new(Mutex::new(None)),
-            favorite_foods_tx_channel: watch::channel(None).0,
+            favorite_foods: Arc::new(RwLockWatch::new(None)),
             favorite_foods_version: Arc::new(AtomicU32::new(0)),
-            lunch_menu: Arc::new(Mutex::new(None)),
-            lunch_menu_tx_channel: watch::channel(None).0,
+            lunch_menu: Arc::new(RwLockWatch::new(None)),
             lunch_menu_version: Arc::new(AtomicU32::new(0)),
 
-            family_name: Arc::new(Mutex::new(None)),
-            family_name_tx_channel: watch::channel(None).0,
+            family_name: Arc::new(RwLockWatch::new(None)),
             family_name_version: Arc::new(AtomicU32::new(0)),
 
-            last_breakfast_time: Arc::new(Mutex::new(None)),
-            last_breakfast_time_tx_channel: watch::channel(None).0,
+            last_breakfast_time: Arc::new(RwLockWatch::new(None)),
             last_breakfast_time_version: Arc::new(AtomicU32::new(0)),
 
-            breakfast_length: Arc::new(Mutex::new(None)),
-            breakfast_length_tx_channel: watch::channel(None).0,
+            breakfast_length: Arc::new(RwLockWatch::new(None)),
             breakfast_length_version: Arc::new(AtomicU32::new(0)),
-            last_birthdays: Arc::new(Mutex::new(None)),
-            last_birthdays_tx_channel: watch::channel(None).0,
+            last_birthdays: Arc::new(RwLockWatch::new(None)),
             last_birthdays_version: Arc::new(AtomicU32::new(0)),
         };
 
@@ -382,7 +375,7 @@ impl<C: MqttClient + Clone> FullClient<C> {
         first: i32,
         second: i32,
         third: Option<i32>,
-    ) -> oneshot::Receiver<String> {
+    ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -422,15 +415,25 @@ impl<C: MqttClient + Clone> FullClient<C> {
     ) -> Result<i32, MethodReturnCode> {
         let receiver = self.start_add_numbers(first, second, third).await;
 
-        let resp_str: String = receiver.await.unwrap();
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(payload_str) => {
+                let return_obj: AddNumbersReturnValues =
+                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
+                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
-        let return_values: AddNumbersReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-        Ok(return_values.sum)
+                Ok(return_obj.sum)
+            }
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
-    async fn start_do_something(&mut self, a_string: String) -> oneshot::Receiver<String> {
+    async fn start_do_something(
+        &mut self,
+        a_string: String,
+    ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -464,15 +467,22 @@ impl<C: MqttClient + Clone> FullClient<C> {
     ) -> Result<DoSomethingReturnValues, MethodReturnCode> {
         let receiver = self.start_do_something(a_string).await;
 
-        let resp_str: String = receiver.await.unwrap();
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(payload_str) => {
+                let return_obj: DoSomethingReturnValues =
+                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
+                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
-        let return_values: DoSomethingReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-        Ok(return_values)
+                Ok(return_obj)
+            }
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
-    async fn start_echo(&mut self, message: String) -> oneshot::Receiver<String> {
+    async fn start_echo(&mut self, message: String) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -503,18 +513,25 @@ impl<C: MqttClient + Clone> FullClient<C> {
     pub async fn echo(&mut self, message: String) -> Result<String, MethodReturnCode> {
         let receiver = self.start_echo(message).await;
 
-        let resp_str: String = receiver.await.unwrap();
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(payload_str) => {
+                let return_obj: EchoReturnValues =
+                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
+                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
-        let return_values: EchoReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-        Ok(return_values.message)
+                Ok(return_obj.message)
+            }
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
     async fn start_what_time_is_it(
         &mut self,
         the_first_time: chrono::DateTime<chrono::Utc>,
-    ) -> oneshot::Receiver<String> {
+    ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -550,19 +567,26 @@ impl<C: MqttClient + Clone> FullClient<C> {
     ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
         let receiver = self.start_what_time_is_it(the_first_time).await;
 
-        let resp_str: String = receiver.await.unwrap();
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(payload_str) => {
+                let return_obj: WhatTimeIsItReturnValues =
+                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
+                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
-        let return_values: WhatTimeIsItReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-        Ok(return_values.timestamp)
+                Ok(return_obj.timestamp)
+            }
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
     async fn start_set_the_time(
         &mut self,
         the_first_time: chrono::DateTime<chrono::Utc>,
         the_second_time: chrono::DateTime<chrono::Utc>,
-    ) -> oneshot::Receiver<String> {
+    ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -602,18 +626,25 @@ impl<C: MqttClient + Clone> FullClient<C> {
             .start_set_the_time(the_first_time, the_second_time)
             .await;
 
-        let resp_str: String = receiver.await.unwrap();
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(payload_str) => {
+                let return_obj: SetTheTimeReturnValues =
+                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
+                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
-        let return_values: SetTheTimeReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-        Ok(return_values)
+                Ok(return_obj)
+            }
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
     async fn start_forward_time(
         &mut self,
         adjustment: chrono::Duration,
-    ) -> oneshot::Receiver<String> {
+    ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -649,18 +680,25 @@ impl<C: MqttClient + Clone> FullClient<C> {
     ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
         let receiver = self.start_forward_time(adjustment).await;
 
-        let resp_str: String = receiver.await.unwrap();
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(payload_str) => {
+                let return_obj: ForwardTimeReturnValues =
+                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
+                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
-        let return_values: ForwardTimeReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-        Ok(return_values.new_time)
+                Ok(return_obj.new_time)
+            }
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
     async fn start_how_off_is_the_clock(
         &mut self,
         actual_time: chrono::DateTime<chrono::Utc>,
-    ) -> oneshot::Receiver<String> {
+    ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -697,95 +735,169 @@ impl<C: MqttClient + Clone> FullClient<C> {
     ) -> Result<chrono::Duration, MethodReturnCode> {
         let receiver = self.start_how_off_is_the_clock(actual_time).await;
 
-        let resp_str: String = receiver.await.unwrap();
+        let return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(payload_str) => {
+                let return_obj: HowOffIsTheClockReturnValues =
+                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
+                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
-        let return_values: HowOffIsTheClockReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-        Ok(return_values.difference)
+                Ok(return_obj.difference)
+            }
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
     /// Watch for changes to the `favorite_number` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_favorite_number(&self) -> watch::Receiver<Option<i32>> {
-        self.properties.favorite_number_tx_channel.subscribe()
+        self.properties.favorite_number.subscribe()
     }
 
-    pub fn set_favorite_number(&mut self, value: i32) -> Result<(), MethodReturnCode> {
+    /// Sets the `favorite_number` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_favorite_number(&mut self, value: i32) -> MethodReturnCode {
         let data = FavoriteNumberProperty { number: value };
         let topic: String = format!("full/{}/property/favoriteNumber/setValue", self.client_id);
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties
                 .favorite_number_version
                 .load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_favorite_number_handle(&self) -> Arc<WriteRequestLockWatch<Option<i32>>> {
+        self.properties.favorite_number.write_request().into()
     }
 
     /// Watch for changes to the `favorite_foods` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_favorite_foods(&self) -> watch::Receiver<Option<FavoriteFoodsProperty>> {
-        self.properties.favorite_foods_tx_channel.subscribe()
+        self.properties.favorite_foods.subscribe()
     }
 
-    pub fn set_favorite_foods(
-        &mut self,
-        value: FavoriteFoodsProperty,
-    ) -> Result<(), MethodReturnCode> {
+    /// Sets the `favorite_foods` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_favorite_foods(&mut self, value: FavoriteFoodsProperty) -> MethodReturnCode {
         let data = value;
         let topic: String = format!("full/{}/property/favoriteFoods/setValue", self.client_id);
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties
                 .favorite_foods_version
                 .load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_favorite_foods_handle(
+        &self,
+    ) -> Arc<WriteRequestLockWatch<Option<FavoriteFoodsProperty>>> {
+        self.properties.favorite_foods.write_request().into()
     }
 
     /// Watch for changes to the `lunch_menu` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_lunch_menu(&self) -> watch::Receiver<Option<LunchMenuProperty>> {
-        self.properties.lunch_menu_tx_channel.subscribe()
+        self.properties.lunch_menu.subscribe()
     }
 
-    pub fn set_lunch_menu(&mut self, value: LunchMenuProperty) -> Result<(), MethodReturnCode> {
+    /// Sets the `lunch_menu` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_lunch_menu(&mut self, value: LunchMenuProperty) -> MethodReturnCode {
         let data = value;
         let topic: String = format!("full/{}/property/lunchMenu/setValue", self.client_id);
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties.lunch_menu_version.load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_lunch_menu_handle(&self) -> Arc<WriteRequestLockWatch<Option<LunchMenuProperty>>> {
+        self.properties.lunch_menu.write_request().into()
     }
 
     /// Watch for changes to the `family_name` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_family_name(&self) -> watch::Receiver<Option<String>> {
-        self.properties.family_name_tx_channel.subscribe()
+        self.properties.family_name.subscribe()
     }
 
-    pub fn set_family_name(&mut self, value: String) -> Result<(), MethodReturnCode> {
+    /// Sets the `family_name` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_family_name(&mut self, value: String) -> MethodReturnCode {
         let data = FamilyNameProperty { family_name: value };
         let topic: String = format!("full/{}/property/familyName/setValue", self.client_id);
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties.family_name_version.load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_family_name_handle(&self) -> Arc<WriteRequestLockWatch<Option<String>>> {
+        self.properties.family_name.write_request().into()
     }
 
     /// Watch for changes to the `last_breakfast_time` property.
@@ -793,85 +905,149 @@ impl<C: MqttClient + Clone> FullClient<C> {
     pub fn watch_last_breakfast_time(
         &self,
     ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
-        self.properties.last_breakfast_time_tx_channel.subscribe()
+        self.properties.last_breakfast_time.subscribe()
     }
 
-    pub fn set_last_breakfast_time(
+    /// Sets the `last_breakfast_time` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_last_breakfast_time(
         &mut self,
         value: chrono::DateTime<chrono::Utc>,
-    ) -> Result<(), MethodReturnCode> {
+    ) -> MethodReturnCode {
         let data = LastBreakfastTimeProperty { timestamp: value };
         let topic: String = format!(
             "full/{}/property/lastBreakfastTime/setValue",
             self.client_id
         );
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties
                 .last_breakfast_time_version
                 .load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_last_breakfast_time_handle(
+        &self,
+    ) -> Arc<WriteRequestLockWatch<Option<chrono::DateTime<chrono::Utc>>>> {
+        self.properties.last_breakfast_time.write_request().into()
     }
 
     /// Watch for changes to the `breakfast_length` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_breakfast_length(&self) -> watch::Receiver<Option<chrono::Duration>> {
-        self.properties.breakfast_length_tx_channel.subscribe()
+        self.properties.breakfast_length.subscribe()
     }
 
-    pub fn set_breakfast_length(
-        &mut self,
-        value: chrono::Duration,
-    ) -> Result<(), MethodReturnCode> {
+    /// Sets the `breakfast_length` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_breakfast_length(&mut self, value: chrono::Duration) -> MethodReturnCode {
         let data = BreakfastLengthProperty { length: value };
         let topic: String = format!("full/{}/property/breakfastLength/setValue", self.client_id);
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties
                 .breakfast_length_version
                 .load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_breakfast_length_handle(
+        &self,
+    ) -> Arc<WriteRequestLockWatch<Option<chrono::Duration>>> {
+        self.properties.breakfast_length.write_request().into()
     }
 
     /// Watch for changes to the `last_birthdays` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_last_birthdays(&self) -> watch::Receiver<Option<LastBirthdaysProperty>> {
-        self.properties.last_birthdays_tx_channel.subscribe()
+        self.properties.last_birthdays.subscribe()
     }
 
-    pub fn set_last_birthdays(
-        &mut self,
-        value: LastBirthdaysProperty,
-    ) -> Result<(), MethodReturnCode> {
+    /// Sets the `last_birthdays` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_last_birthdays(&mut self, value: LastBirthdaysProperty) -> MethodReturnCode {
         let data = value;
         let topic: String = format!("full/{}/property/lastBirthdays/setValue", self.client_id);
-        let msg = message::property_update_message(
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(
             &topic,
             &data,
             self.properties
                 .last_birthdays_version
                 .load(Ordering::Relaxed),
+            correlation_id,
         )
         .unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| {
+            MethodReturnCode::ClientError(
+                "Failed to receive property set acknowledgment".to_string(),
+            )
+        })
+    }
+
+    pub fn get_last_birthdays_handle(
+        &self,
+    ) -> Arc<WriteRequestLockWatch<Option<LastBirthdaysProperty>>> {
+        self.properties.last_birthdays.write_request().into()
+    }
+
+    fn get_return_code_from_message(msg: &MqttMessage) -> MethodReturnCode {
+        let payload = String::from_utf8_lossy(&msg.payload).to_string();
+        let mut return_code: MethodReturnCode = MethodReturnCode::Success(None);
+        if let Some(retval) = msg.user_properties.get("ReturnCode") {
+            let opt_dbg_info = msg.user_properties.get("DebugInfo").cloned();
+            if let Ok(return_code_u32) = retval.parse::<u32>() {
+                if return_code_u32 == 0 {
+                    return_code = MethodReturnCode::from_code(return_code_u32, Some(payload));
+                } else {
+                    return_code = MethodReturnCode::from_code(return_code_u32, opt_dbg_info);
+                }
+            }
+        }
+        return_code
     }
 
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&mut self) -> Result<(), JoinError> {
-        // Make sure the MqttClient is connected and running.
-        let _ = self.mqtt_client.start().await;
-
         // Clone the Arc pointer to the map.  This will be moved into the loop_task.
-        let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>> =
+        let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<MethodReturnCode>>>> =
             self.pending_responses.clone();
 
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -884,6 +1060,187 @@ impl<C: MqttClient + Clone> FullClient<C> {
 
         let sub_ids = self.subscription_ids.clone();
         let props = self.properties.clone();
+        {
+            // Set up property change request handling task
+            let client_id_for_favorite_number_prop = self.client_id.clone();
+            let mut publisher_for_favorite_number_prop = self.mqtt_client.clone();
+            let favorite_number_prop_version = props.favorite_number_version.clone();
+            if let Some(mut rx_for_favorite_number_prop) =
+                props.favorite_number.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_favorite_number_prop.recv().await {
+                        let topic: String = format!(
+                            "full/{}/property/favoriteNumber/setValue",
+                            client_id_for_favorite_number_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            favorite_number_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_favorite_number_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_favorite_foods_prop = self.client_id.clone();
+            let mut publisher_for_favorite_foods_prop = self.mqtt_client.clone();
+            let favorite_foods_prop_version = props.favorite_foods_version.clone();
+            if let Some(mut rx_for_favorite_foods_prop) =
+                props.favorite_foods.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_favorite_foods_prop.recv().await {
+                        let topic: String = format!(
+                            "full/{}/property/favoriteFoods/setValue",
+                            client_id_for_favorite_foods_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            favorite_foods_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_favorite_foods_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_lunch_menu_prop = self.client_id.clone();
+            let mut publisher_for_lunch_menu_prop = self.mqtt_client.clone();
+            let lunch_menu_prop_version = props.lunch_menu_version.clone();
+            if let Some(mut rx_for_lunch_menu_prop) = props.lunch_menu.take_request_receiver() {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_lunch_menu_prop.recv().await {
+                        let topic: String = format!(
+                            "full/{}/property/lunchMenu/setValue",
+                            client_id_for_lunch_menu_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            lunch_menu_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_lunch_menu_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_family_name_prop = self.client_id.clone();
+            let mut publisher_for_family_name_prop = self.mqtt_client.clone();
+            let family_name_prop_version = props.family_name_version.clone();
+            if let Some(mut rx_for_family_name_prop) = props.family_name.take_request_receiver() {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_family_name_prop.recv().await {
+                        let topic: String = format!(
+                            "full/{}/property/familyName/setValue",
+                            client_id_for_family_name_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            family_name_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_family_name_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_last_breakfast_time_prop = self.client_id.clone();
+            let mut publisher_for_last_breakfast_time_prop = self.mqtt_client.clone();
+            let last_breakfast_time_prop_version = props.last_breakfast_time_version.clone();
+            if let Some(mut rx_for_last_breakfast_time_prop) =
+                props.last_breakfast_time.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_last_breakfast_time_prop.recv().await {
+                        let topic: String = format!(
+                            "full/{}/property/lastBreakfastTime/setValue",
+                            client_id_for_last_breakfast_time_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            last_breakfast_time_prop_version
+                                .load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result =
+                            publisher_for_last_breakfast_time_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_breakfast_length_prop = self.client_id.clone();
+            let mut publisher_for_breakfast_length_prop = self.mqtt_client.clone();
+            let breakfast_length_prop_version = props.breakfast_length_version.clone();
+            if let Some(mut rx_for_breakfast_length_prop) =
+                props.breakfast_length.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_breakfast_length_prop.recv().await {
+                        let topic: String = format!(
+                            "full/{}/property/breakfastLength/setValue",
+                            client_id_for_breakfast_length_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            breakfast_length_prop_version
+                                .load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result =
+                            publisher_for_breakfast_length_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let client_id_for_last_birthdays_prop = self.client_id.clone();
+            let mut publisher_for_last_birthdays_prop = self.mqtt_client.clone();
+            let last_birthdays_prop_version = props.last_birthdays_version.clone();
+            if let Some(mut rx_for_last_birthdays_prop) =
+                props.last_birthdays.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_last_birthdays_prop.recv().await {
+                        let topic: String = format!(
+                            "full/{}/property/lastBirthdays/setValue",
+                            client_id_for_last_birthdays_prop
+                        );
+                        let msg = message::property_update_message(
+                            &topic,
+                            &request,
+                            last_birthdays_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                        )
+                        .unwrap();
+                        let _publish_result = publisher_for_last_birthdays_prop.publish(msg).await;
+                    }
+                });
+            }
+        }
 
         let _loop_task = tokio::spawn(async move {
             while let Ok(msg) = message_receiver.recv().await {
@@ -893,7 +1250,7 @@ impl<C: MqttClient + Clone> FullClient<C> {
                     opt_corr_data.and_then(|b| Uuid::from_slice(b.as_slice()).ok());
 
                 if let Some(subscription_id) = msg.subscription_id {
-                    let payload = String::from_utf8_lossy(&msg.payload).to_string();
+                    let return_code = FullClient::<C>::get_return_code_from_message(&msg);
                     if subscription_id == sub_ids.add_numbers_method_resp {
                         if opt_corr_id.is_some() {
                             let opt_sender = opt_corr_id.and_then(|uuid| {
@@ -901,8 +1258,8 @@ impl<C: MqttClient + Clone> FullClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -917,8 +1274,8 @@ impl<C: MqttClient + Clone> FullClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -933,8 +1290,8 @@ impl<C: MqttClient + Clone> FullClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -949,8 +1306,8 @@ impl<C: MqttClient + Clone> FullClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -965,8 +1322,8 @@ impl<C: MqttClient + Clone> FullClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -981,8 +1338,8 @@ impl<C: MqttClient + Clone> FullClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -997,8 +1354,8 @@ impl<C: MqttClient + Clone> FullClient<C> {
                                 hashmap.remove(&uuid)
                             });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code.clone()) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -1026,11 +1383,32 @@ impl<C: MqttClient + Clone> FullClient<C> {
                     if subscription_id == sub_ids.favorite_number_property_value {
                         match serde_json::from_slice::<FavoriteNumberProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard =
-                                    props.favorite_number.lock().expect("Mutex was poisoned");
+                                let mut guard = props.favorite_number.write().await;
 
                                 *guard = Some(pl.number.clone());
-                                let _ = props.favorite_number_tx_channel.send(Some(pl.number));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.favorite_number_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -1046,11 +1424,32 @@ impl<C: MqttClient + Clone> FullClient<C> {
                     else if subscription_id == sub_ids.favorite_foods_property_value {
                         match serde_json::from_slice::<FavoriteFoodsProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard =
-                                    props.favorite_foods.lock().expect("Mutex was poisoned");
+                                let mut guard = props.favorite_foods.write().await;
 
                                 *guard = Some(pl.clone());
-                                let _ = props.favorite_foods_tx_channel.send(Some(pl));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.favorite_foods_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -1066,11 +1465,32 @@ impl<C: MqttClient + Clone> FullClient<C> {
                     else if subscription_id == sub_ids.lunch_menu_property_value {
                         match serde_json::from_slice::<LunchMenuProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard =
-                                    props.lunch_menu.lock().expect("Mutex was poisoned");
+                                let mut guard = props.lunch_menu.write().await;
 
                                 *guard = Some(pl.clone());
-                                let _ = props.lunch_menu_tx_channel.send(Some(pl));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.lunch_menu_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -1086,11 +1506,32 @@ impl<C: MqttClient + Clone> FullClient<C> {
                     else if subscription_id == sub_ids.family_name_property_value {
                         match serde_json::from_slice::<FamilyNameProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard =
-                                    props.family_name.lock().expect("Mutex was poisoned");
+                                let mut guard = props.family_name.write().await;
 
                                 *guard = Some(pl.family_name.clone());
-                                let _ = props.family_name_tx_channel.send(Some(pl.family_name));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.family_name_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -1106,15 +1547,32 @@ impl<C: MqttClient + Clone> FullClient<C> {
                     else if subscription_id == sub_ids.last_breakfast_time_property_value {
                         match serde_json::from_slice::<LastBreakfastTimeProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard = props
-                                    .last_breakfast_time
-                                    .lock()
-                                    .expect("Mutex was poisoned");
+                                let mut guard = props.last_breakfast_time.write().await;
 
                                 *guard = Some(pl.timestamp.clone());
-                                let _ = props
-                                    .last_breakfast_time_tx_channel
-                                    .send(Some(pl.timestamp));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.last_breakfast_time_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -1130,11 +1588,32 @@ impl<C: MqttClient + Clone> FullClient<C> {
                     else if subscription_id == sub_ids.breakfast_length_property_value {
                         match serde_json::from_slice::<BreakfastLengthProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard =
-                                    props.breakfast_length.lock().expect("Mutex was poisoned");
+                                let mut guard = props.breakfast_length.write().await;
 
                                 *guard = Some(pl.length.clone());
-                                let _ = props.breakfast_length_tx_channel.send(Some(pl.length));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.breakfast_length_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(
@@ -1150,11 +1629,32 @@ impl<C: MqttClient + Clone> FullClient<C> {
                     else if subscription_id == sub_ids.last_birthdays_property_value {
                         match serde_json::from_slice::<LastBirthdaysProperty>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard =
-                                    props.last_birthdays.lock().expect("Mutex was poisoned");
+                                let mut guard = props.last_birthdays.write().await;
 
                                 *guard = Some(pl.clone());
-                                let _ = props.last_birthdays_tx_channel.send(Some(pl));
+
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.last_birthdays_version.store(
+                                            version_num,
+                                            std::sync::atomic::Ordering::Relaxed,
+                                        );
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                    let opt_sender = opt_corr_id.and_then(|uuid| {
+                                        let mut hashmap =
+                                            resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                    if let Some(sender) = opt_sender {
+                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                        match oss.send(return_code) {
+                                            Ok(_) => (),
+                                            Err(_) => (),
+                                        }
+                                    }
+                                }
                             }
                             Err(e) => {
                                 warn!(

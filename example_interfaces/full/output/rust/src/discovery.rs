@@ -13,7 +13,7 @@ use std::sync::{Arc, RwLock};
 
 use crate::interface::InterfaceInfo;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
-use stinger_mqtt_trait::{MqttClient, MqttError};
+use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError};
 use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 #[allow(unused_imports)]
@@ -21,7 +21,7 @@ use tracing::{debug, error, info, warn};
 
 #[derive(Debug)]
 pub enum FullDiscoveryError {
-    Subscribe(MqttError),
+    Subscribe(Mqtt5PubSubError),
 }
 
 impl fmt::Display for FullDiscoveryError {
@@ -36,8 +36,8 @@ impl fmt::Display for FullDiscoveryError {
 
 impl std::error::Error for FullDiscoveryError {}
 
-impl From<MqttError> for FullDiscoveryError {
-    fn from(value: MqttError) -> Self {
+impl From<Mqtt5PubSubError> for FullDiscoveryError {
+    fn from(value: Mqtt5PubSubError) -> Self {
         FullDiscoveryError::Subscribe(value)
     }
 }
@@ -54,10 +54,7 @@ pub struct FullDiscovery {
 pub type FullDiscoveryReceiver = broadcast::Receiver<InterfaceInfo>;
 
 impl FullDiscovery {
-    pub async fn new(connection: &mut impl MqttClient) -> Result<Self, FullDiscoveryError> {
-        debug!("Starting client loop if not already started.");
-        let _ = connection.start().await;
-
+    pub async fn new(connection: &mut impl Mqtt5PubSub) -> Result<Self, FullDiscoveryError> {
         let service_name = "Full".to_string();
         let discovery_topic = format!("full/{}/interface", "+");
 

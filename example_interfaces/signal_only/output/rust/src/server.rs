@@ -20,7 +20,7 @@ use tokio::sync::oneshot;
 use std::future::Future;
 use std::pin::Pin;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
-use stinger_mqtt_trait::{MqttClient, MqttError, MqttPublishSuccess};
+use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError, MqttPublishSuccess};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
@@ -29,7 +29,7 @@ use crate::message;
 use tracing::{debug, error, info, warn};
 
 #[derive(Clone)]
-pub struct SignalOnlyServer<C: MqttClient> {
+pub struct SignalOnlyServer<C: Mqtt5PubSub> {
     mqtt_client: C,
 
     /// Copy of MQTT Client ID
@@ -39,7 +39,7 @@ pub struct SignalOnlyServer<C: MqttClient> {
     pub instance_id: String,
 }
 
-impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
+impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
     pub async fn new(mut connection: C, instance_id: String) -> Self {
         SignalOnlyServer {
             mqtt_client: connection.clone(),
@@ -50,7 +50,7 @@ impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
     }
 
     pub async fn oneshot_to_future(
-        ch: oneshot::Receiver<Result<MqttPublishSuccess, MqttError>>,
+        ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
             let chan_result = ch.await;
@@ -76,7 +76,7 @@ impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
     pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
-                MethodReturnCode::Success => Ok(()),
+                MethodReturnCode::Success(_) => Ok(()),
                 _ => Err(rc),
             }
         })
@@ -108,7 +108,7 @@ impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
         one: f32,
         two: bool,
         three: String,
-    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+    ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = AnotherSignalSignalPayload {
             one: one,
 
@@ -135,7 +135,7 @@ impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
     pub fn emit_bark_nowait(
         &mut self,
         word: String,
-    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+    ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = BarkSignalPayload { word: word };
         let topic = format!("signalOnly/{}/signal/bark", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -156,7 +156,7 @@ impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
     pub fn emit_maybe_number_nowait(
         &mut self,
         number: Option<i32>,
-    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+    ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = MaybeNumberSignalPayload { number: number };
         let topic = format!("signalOnly/{}/signal/maybeNumber", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -177,7 +177,7 @@ impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
     pub fn emit_maybe_name_nowait(
         &mut self,
         name: Option<String>,
-    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+    ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = MaybeNameSignalPayload { name: name };
         let topic = format!("signalOnly/{}/signal/maybeName", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -203,7 +203,7 @@ impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
     pub fn emit_now_nowait(
         &mut self,
         timestamp: chrono::DateTime<chrono::Utc>,
-    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+    ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = NowSignalPayload {
             timestamp: timestamp,
         };
@@ -221,9 +221,6 @@ impl<C: MqttClient + Clone + Send> SignalOnlyServer<C> {
     where
         C: 'static,
     {
-        // Make sure the MqttClient is connected and running.
-        let _ = self.mqtt_client.start().await;
-
         warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())
     }

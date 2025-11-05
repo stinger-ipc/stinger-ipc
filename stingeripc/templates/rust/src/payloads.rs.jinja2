@@ -401,7 +401,7 @@ pub mod duration_iso_format {
 
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MethodReturnCode { {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
     {{rc_name | UpperCamelCase}}{%if not loop.first%}(String){%else%}(Option<String>){%endif%},
     {%-endfor%}
@@ -411,7 +411,7 @@ impl MethodReturnCode {
     pub fn from_code(code: u32, message: Option<String>) -> Self {
         match code {
             {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
-            {{rc_i}} => MethodReturnCode::{{rc_name | UpperCamelCase}}(message.unwrap_or_default()),
+            {{rc_i}} => MethodReturnCode::{{rc_name | UpperCamelCase}}({%if loop.first%}message{%else%}message.unwrap_or_default(){%endif%}),
             {%-endfor%}
             _ => MethodReturnCode::UnknownError(message.unwrap_or_default()),
         }
@@ -420,7 +420,7 @@ impl MethodReturnCode {
     pub fn to_code(&self) -> (u32, Option<String>) {
         match self {
             {%-for rc_i, rc_name in stinger.method_return_codes.items() %}
-            MethodReturnCode::{{rc_name | UpperCamelCase}}{%if not loop.first%}(msg){%else%}(opt_msg){%endif%} => ({{rc_i}}, {%if not loop.first%}Some(msg.clone()){%else%}opt_msg{%endif%}),
+            MethodReturnCode::{{rc_name | UpperCamelCase}}{%if not loop.first%}(msg){%else%}(opt_msg){%endif%} => ({{rc_i}}, {%if not loop.first%}Some(msg.clone()){%else%}opt_msg.clone(){%endif%}),
             {%-endfor%}
         }
     }

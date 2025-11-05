@@ -30,7 +30,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::future::Future;
 use std::pin::Pin;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
-use stinger_mqtt_trait::{MqttClient, MqttError, MqttPublishSuccess};
+use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError, MqttPublishSuccess};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
@@ -91,7 +91,7 @@ struct FullProperties {
 }
 
 #[derive(Clone)]
-pub struct FullServer<C: MqttClient> {
+pub struct FullServer<C: Mqtt5PubSub> {
     mqtt_client: C,
 
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
@@ -119,13 +119,13 @@ pub struct FullServer<C: MqttClient> {
     pub instance_id: String,
 }
 
-impl<C: MqttClient + Clone + Send> FullServer<C> {
+impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
     pub async fn new(
         mut connection: C,
         method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
         instance_id: String,
     ) -> Self {
-        // Create a channel for messages to get from the MqttClient object to this FullServer object.
+        // Create a channel for messages to get from the Mqtt5PubSub object to this FullServer object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
@@ -329,7 +329,7 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
     }
 
     pub async fn oneshot_to_future(
-        ch: oneshot::Receiver<Result<MqttPublishSuccess, MqttError>>,
+        ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
             let chan_result = ch.await;
@@ -355,7 +355,7 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
     pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
-                MethodReturnCode::Success => Ok(()),
+                MethodReturnCode::Success(_) => Ok(()),
                 _ => Err(rc),
             }
         })
@@ -410,7 +410,7 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
         timestamp: chrono::DateTime<chrono::Utc>,
         process_time: chrono::Duration,
         memory_segment: Vec<u8>,
-    ) -> std::result::Result<MqttPublishSuccess, MqttError> {
+    ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = TodayIsSignalPayload {
             day_of_month: day_of_month,
 
@@ -959,7 +959,8 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'favorite_number' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1082,7 +1083,8 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'favorite_foods' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1200,7 +1202,8 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'lunch_menu' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1320,7 +1323,8 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'family_name' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1451,7 +1455,8 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'last_breakfast_time' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1576,7 +1581,8 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'breakfast_length' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1699,7 +1705,8 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'last_birthdays' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success).await;
+            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
+                .await;
         } else {
             if let Some(prop_obj) = property_obj {
                 let publisher2 = self.mqtt_client.clone();
@@ -1732,9 +1739,6 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
     where
         C: 'static,
     {
-        // Make sure the MqttClient is connected and running.
-        let _ = self.mqtt_client.start().await;
-
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
             self.msg_streamer_rx
@@ -1990,7 +1994,7 @@ impl<C: MqttClient + Clone + Send> FullServer<C> {
 }
 
 #[async_trait]
-pub trait FullMethodHandlers<C: MqttClient>: Send + Sync {
+pub trait FullMethodHandlers<C: Mqtt5PubSub>: Send + Sync {
     async fn initialize(&mut self, server: FullServer<C>) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the addNumbers method request.

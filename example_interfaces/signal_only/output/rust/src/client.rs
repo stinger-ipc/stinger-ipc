@@ -15,7 +15,7 @@ use crate::message;
 use serde_json;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 #[cfg(feature = "client")]
-use stinger_mqtt_trait::MqttClient;
+use stinger_mqtt_trait::Mqtt5PubSub;
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
@@ -53,7 +53,7 @@ struct SignalOnlySignalChannels {
 
 /// This is the struct for our API client.
 #[derive(Clone)]
-pub struct SignalOnlyClient<C: MqttClient> {
+pub struct SignalOnlyClient<C: Mqtt5PubSub> {
     mqtt_client: C,
 
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
@@ -74,8 +74,8 @@ pub struct SignalOnlyClient<C: MqttClient> {
     pub client_id: String,
 }
 
-impl<C: MqttClient + Clone> SignalOnlyClient<C> {
-    /// Creates a new SignalOnlyClient that uses an MqttClient.
+impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
+    /// Creates a new SignalOnlyClient that uses an Mqtt5PubSub.
     pub async fn new(mut connection: C, service_id: String) -> Self {
         // Create a channel for messages to get from the Connection object to this SignalOnlyClient object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -193,11 +193,24 @@ impl<C: MqttClient + Clone> SignalOnlyClient<C> {
         self.signal_channels.now_sender.subscribe()
     }
 
+    fn get_return_code_from_message(msg: &MqttMessage) -> MethodReturnCode {
+        let payload = String::from_utf8_lossy(&msg.payload).to_string();
+        let mut return_code: MethodReturnCode = MethodReturnCode::Success(None);
+        if let Some(retval) = msg.user_properties.get("ReturnCode") {
+            let opt_dbg_info = msg.user_properties.get("DebugInfo").cloned();
+            if let Ok(return_code_u32) = retval.parse::<u32>() {
+                if return_code_u32 == 0 {
+                    return_code = MethodReturnCode::from_code(return_code_u32, Some(payload));
+                } else {
+                    return_code = MethodReturnCode::from_code(return_code_u32, opt_dbg_info);
+                }
+            }
+        }
+        return_code
+    }
+
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&mut self) -> Result<(), JoinError> {
-        // Make sure the MqttClient is connected and running.
-        let _ = self.mqtt_client.start().await;
-
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
             let mut guard = self.msg_streamer_rx.lock().expect("Mutex was poisoned");
@@ -210,7 +223,7 @@ impl<C: MqttClient + Clone> SignalOnlyClient<C> {
         let _loop_task = tokio::spawn(async move {
             while let Ok(msg) = message_receiver.recv().await {
                 if let Some(subscription_id) = msg.subscription_id {
-                    let payload = String::from_utf8_lossy(&msg.payload).to_string();
+                    let return_code = SignalOnlyClient::<C>::get_return_code_from_message(&msg);
                     if Some(subscription_id) == sub_ids.another_signal_signal {
                         let chan = sig_chans.another_signal_sender.clone();
 

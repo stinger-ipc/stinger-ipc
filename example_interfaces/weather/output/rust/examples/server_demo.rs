@@ -9,7 +9,7 @@ TODO: Get license text from stinger file
 */
 use std::any::Any;
 
-use mqttier::{Connection, MqttierClient, MqttierOptions};
+use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
 use tokio::time::{sleep, Duration};
 use weather_ipc::server::{WeatherMethodHandlers, WeatherServer};
 
@@ -72,10 +72,11 @@ async fn main() {
         )
         .init();
 
-    let mqttier_options = MqttierOptions::new()
+    let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
-        .build();
+        .build()
+        .unwrap();
     let connection = MqttierClient::new(mqttier_options).unwrap();
 
     let handlers: Arc<Mutex<Box<dyn WeatherMethodHandlers<MqttierClient>>>> =

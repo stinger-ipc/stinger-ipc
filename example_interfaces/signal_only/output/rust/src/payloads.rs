@@ -392,9 +392,9 @@ pub mod duration_iso_format {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MethodReturnCode {
-    Success,
+    Success(Option<String>),
     ClientError(String),
     ServerError(String),
     TransportError(String),
@@ -415,7 +415,7 @@ pub enum MethodReturnCode {
 impl MethodReturnCode {
     pub fn from_code(code: u32, message: Option<String>) -> Self {
         match code {
-            0 => MethodReturnCode::Success,
+            0 => MethodReturnCode::Success(message),
             1 => MethodReturnCode::ClientError(message.unwrap_or_default()),
             2 => MethodReturnCode::ServerError(message.unwrap_or_default()),
             3 => MethodReturnCode::TransportError(message.unwrap_or_default()),
@@ -437,7 +437,7 @@ impl MethodReturnCode {
 
     pub fn to_code(&self) -> (u32, Option<String>) {
         match self {
-            MethodReturnCode::Success => (0, None),
+            MethodReturnCode::Success(opt_msg) => (0, opt_msg.clone()),
             MethodReturnCode::ClientError(msg) => (1, Some(msg.clone())),
             MethodReturnCode::ServerError(msg) => (2, Some(msg.clone())),
             MethodReturnCode::TransportError(msg) => (3, Some(msg.clone())),

@@ -13,7 +13,7 @@ use std::sync::{Arc, RwLock};
 
 use crate::interface::InterfaceInfo;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
-use stinger_mqtt_trait::{MqttClient, MqttError};
+use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError};
 use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 #[allow(unused_imports)]
@@ -21,7 +21,7 @@ use tracing::{debug, error, info, warn};
 
 #[derive(Debug)]
 pub enum WeatherDiscoveryError {
-    Subscribe(MqttError),
+    Subscribe(Mqtt5PubSubError),
 }
 
 impl fmt::Display for WeatherDiscoveryError {
@@ -36,8 +36,8 @@ impl fmt::Display for WeatherDiscoveryError {
 
 impl std::error::Error for WeatherDiscoveryError {}
 
-impl From<MqttError> for WeatherDiscoveryError {
-    fn from(value: MqttError) -> Self {
+impl From<Mqtt5PubSubError> for WeatherDiscoveryError {
+    fn from(value: Mqtt5PubSubError) -> Self {
         WeatherDiscoveryError::Subscribe(value)
     }
 }
@@ -54,10 +54,7 @@ pub struct WeatherDiscovery {
 pub type WeatherDiscoveryReceiver = broadcast::Receiver<InterfaceInfo>;
 
 impl WeatherDiscovery {
-    pub async fn new(connection: &mut impl MqttClient) -> Result<Self, WeatherDiscoveryError> {
-        debug!("Starting client loop if not already started.");
-        let _ = connection.start().await;
-
+    pub async fn new(connection: &mut impl Mqtt5PubSub) -> Result<Self, WeatherDiscoveryError> {
         let service_name = "weather".to_string();
         let discovery_topic = format!("weather/{}/interface", "+");
 
