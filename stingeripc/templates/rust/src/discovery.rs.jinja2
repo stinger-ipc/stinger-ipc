@@ -12,7 +12,7 @@ use std::fmt;
 use std::sync::{Arc, RwLock};
 
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
-use stinger_mqtt_trait::{MqttClient, MqttError};
+use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError};
 use tokio::sync::{broadcast};
 use tokio::task::JoinHandle;
 #[allow(unused_imports)]
@@ -21,7 +21,7 @@ use crate::interface::InterfaceInfo;
 
 #[derive(Debug)]
 pub enum {{stinger.name|UpperCamelCase}}DiscoveryError {
-    Subscribe(MqttError),
+    Subscribe(Mqtt5PubSubError),
 }
 
 impl fmt::Display for {{stinger.name|UpperCamelCase}}DiscoveryError {
@@ -34,8 +34,8 @@ impl fmt::Display for {{stinger.name|UpperCamelCase}}DiscoveryError {
 
 impl std::error::Error for {{stinger.name|UpperCamelCase}}DiscoveryError {}
 
-impl From<MqttError> for {{stinger.name|UpperCamelCase}}DiscoveryError {
-    fn from(value: MqttError) -> Self {
+impl From<Mqtt5PubSubError> for {{stinger.name|UpperCamelCase}}DiscoveryError {
+    fn from(value: Mqtt5PubSubError) -> Self {
         {{stinger.name|UpperCamelCase}}DiscoveryError::Subscribe(value)
     }
 }
@@ -53,10 +53,8 @@ pub type {{stinger.name|UpperCamelCase}}DiscoveryReceiver = broadcast::Receiver<
 
 impl {{stinger.name|UpperCamelCase}}Discovery {
     pub async fn new(
-        connection: &mut impl MqttClient,
+        connection: &mut impl Mqtt5PubSub,
     ) -> Result<Self, {{stinger.name|UpperCamelCase}}DiscoveryError> {
-        debug!("Starting client loop if not already started.");
-        let _ = connection.start().await;
 
         let service_name = "{{stinger.name}}".to_string();
         let discovery_topic = format!("{{stinger.interface_info_topic}}", "+");

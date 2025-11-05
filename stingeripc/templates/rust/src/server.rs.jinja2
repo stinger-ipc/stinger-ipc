@@ -30,7 +30,7 @@ use tokio::sync::{broadcast{%if stinger.properties|length > 0 %}, watch{%endif%}
 {%if stinger.properties | length > 0%}
 use std::sync::atomic::{AtomicU32, Ordering};
 {%endif%}
-use stinger_mqtt_trait::{MqttClient, MqttPublishSuccess, MqttError};
+use stinger_mqtt_trait::{Mqtt5PubSub, MqttPublishSuccess, Mqtt5PubSubError};
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use tokio::task::JoinError;
 use std::future::Future;
@@ -67,7 +67,7 @@ struct {{stinger.name | UpperCamelCase}}Properties {
 {%endif%}
 {%endif%}{# any methods or properties #}
 #[derive(Clone)]
-pub struct {{stinger.rust.server_struct_name}}<C: MqttClient> {
+pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
     mqtt_client: C,
     {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
@@ -99,10 +99,10 @@ pub struct {{stinger.rust.server_struct_name}}<C: MqttClient> {
     pub instance_id: String,
 }
 
-impl<C: MqttClient + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
+impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     pub async fn new(mut connection: C{%if stinger.methods|length > 0%}, method_handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<C>>>> {%endif%}, instance_id: String) -> Self {
         {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
-        // Create a channel for messages to get from the MqttClient object to this {{stinger.rust.server_struct_name}} object.
+        // Create a channel for messages to get from the Mqtt5PubSub object to this {{stinger.rust.server_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
@@ -158,7 +158,7 @@ impl<C: MqttClient + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     }
 
     pub async fn oneshot_to_future(
-        ch: oneshot::Receiver<Result<MqttPublishSuccess, MqttError>>,
+        ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
             let chan_result = ch.await;
@@ -216,7 +216,7 @@ impl<C: MqttClient + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     }
 
     /// Emits the {{sig_name}} signal with the given arguments, but this is a fire-and-forget version.
-    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, MqttError>{
+    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
             {{arg.name|snake_case}}: {{arg.name|snake_case}},
@@ -378,8 +378,6 @@ impl<C: MqttClient + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     where
         C: 'static,
     {
-        // Make sure the MqttClient is connected and running.
-        let _ = self.mqtt_client.start().await;
 
         {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -490,7 +488,7 @@ impl<C: MqttClient + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
 }
 {%if stinger.methods|length > 0 %}
 #[async_trait]
-pub trait {{stinger.name | UpperCamelCase }}MethodHandlers<C: MqttClient>: Send + Sync {
+pub trait {{stinger.name | UpperCamelCase }}MethodHandlers<C: Mqtt5PubSub>: Send + Sync {
 
     async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}<C>) -> Result<(), MethodReturnCode>;
 

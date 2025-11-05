@@ -102,8 +102,8 @@ class MqttBrokerConnection(IBrokerConnection):
         self._next_subscription_id = 10
 
     def __del__(self):
-        if self._last_will is not None:
-            self._client.publish(**self._last_will).wait_for_publish()
+        if self._lwt is not None:
+            self._client.publish(**self._lwt).wait_for_publish()
         self._client.disconnect()
         self._client.loop_stop()
 
@@ -171,7 +171,7 @@ class MqttBrokerConnection(IBrokerConnection):
             online_msg["payload"] = '{"online":true}'
             self._client.publish(**online_msg)
         else:
-            self._logger.error("Connection failed with reason code %d", reason_code)
+            self._logger.error("Connection failed with reason code %s", str(reason_code))
             self._connected = False
 
     def publish(

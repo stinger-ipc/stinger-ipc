@@ -16,6 +16,7 @@ from . import markdown_generator
 from . import python_generator
 from . import rust_generator
 from . import cpp_generator
+from . import generic_generator
 
 app = typer.Typer(help="stinger-ipc generator CLI")
 
@@ -25,6 +26,7 @@ def generate(
     language: Annotated[str, typer.Argument(...)],
     input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)],
     output_dir: Annotated[Path, typer.Argument(..., file_okay=False, dir_okay=True, writable=True, readable=True)],
+    templates: Annotated[list[Path], typer.Option("--templates", help="Additional template directories")] = None,
 ):
     """Generate code for a Stinger interface.
 
@@ -72,7 +74,7 @@ def generate(
             stinger = StingerInterface.from_yaml(f)
         ct.render_template("proto.jinja2", f"{stinger.name}.proto", stinger=stinger)
     else:
-        raise RuntimeError("Unreachable code reached")
+        generic_generator.main(lang, input_file, output_dir)
 
     print(f"Generation for '{lang}' completed.")
 

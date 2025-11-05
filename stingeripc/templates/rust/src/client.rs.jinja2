@@ -12,7 +12,7 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 */
 #[cfg(feature = "client")]
-use stinger_mqtt_trait::{MqttClient};
+use stinger_mqtt_trait::{Mqtt5PubSub};
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use crate::message;
 {%if stinger.methods|length > 0 -%}
@@ -32,6 +32,11 @@ use tokio::task::JoinError;
 use tracing::{debug, error, info, warn};
 {% if stinger.properties|length > 0 %}
 use std::sync::atomic::{AtomicU32, Ordering};
+use stinger_rwlock_watch::RwLockWatch;
+#[allow(unused_imports)]
+use stinger_rwlock_watch::ReadOnlyLockWatch;
+#[allow(unused_imports)]
+use stinger_rwlock_watch::WriteRequestLockWatch;
 {%endif%}
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
@@ -64,11 +69,10 @@ struct {{stinger.name | UpperCamelCase }}SignalChannels {
 pub struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
     {%-if prop.arg_list | length > 1%}
-    pub {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.rust_type}}>>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<Option<{{prop.rust_type}}>>>,
     {%-else%}
-    pub {{prop_name | snake_case}}: Arc<Mutex<Option<{{prop.arg_list[0].rust_type}}>>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<Option<{{prop.arg_list[0].rust_type}}>>>,
     {%endif%}
-    {{prop_name | snake_case}}_tx_channel: watch::Sender<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>>,
     pub {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%-endfor%}
 }
@@ -76,10 +80,10 @@ pub struct {{stinger.name | UpperCamelCase}}Properties {
 
 /// This is the struct for our API client.
 #[derive(Clone)]
-pub struct {{stinger.rust.client_struct_name}}<C: MqttClient> {
+pub struct {{stinger.rust.client_struct_name}}<C: Mqtt5PubSub> {
     mqtt_client: C,
     {%if stinger.methods | length > 0 %}/// Temporarily holds oneshot channels for responses to method calls.
-    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<String>>>>,
+    pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<MethodReturnCode>>>>,
     {%endif%}
 
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
@@ -109,9 +113,9 @@ pub struct {{stinger.rust.client_struct_name}}<C: MqttClient> {
     {%endif%}
 }
 
-impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
+impl<C: Mqtt5PubSub + Clone> {{stinger.rust.client_struct_name}}<C> {
 
-    /// Creates a new {{stinger.rust.client_struct_name}} that uses an MqttClient.
+    /// Creates a new {{stinger.rust.client_struct_name}} that uses an Mqtt5PubSub.
     pub async fn new(mut connection: C, service_id: String) -> Self {
 
         // Create a channel for messages to get from the Connection object to this {{stinger.rust.client_struct_name}} object.
@@ -144,11 +148,10 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
             {%if prop.arg_list | length > 1 -%}
-            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(None)),
             {%-else%}
-            {{prop_name | snake_case}}: Arc::new(Mutex::new(None)),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(None)),
             {%-endif-%}
-            {{prop_name | snake_case}}_tx_channel: watch::channel(None).0,
             {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(0)),
         {%-endfor%}
         };
@@ -202,7 +205,7 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
 
     {%for method_name, method in stinger.methods.items()-%}
 
-    async fn start_{{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> oneshot::Receiver<String> {
+    async fn start_{{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -232,20 +235,25 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
 
         let receiver = self.start_{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
 
-        let {%if method.return_value_type is false %}_{%endif%}resp_str: String = receiver.await.unwrap();
-        
-        {%if method.return_arg_list |length > 0%}
-        let return_values: {{method_name|UpperCamelCase}}ReturnValues = serde_json::from_str(&resp_str)
-            .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-        {%endif%}
-        
-        {%if method.return_arg_list |length == 0 %}
-        Ok(())
-        {%elif method.return_arg_list |length == 1 %}
-        Ok(return_values.{{method.return_arg_list[0].name}})
-        {%else%}
-        Ok(return_values)
-        {%endif%}
+        let {%if method.return_value_type is false %}{%endif%}return_code: MethodReturnCode = receiver.await.unwrap();
+        match return_code {
+            MethodReturnCode::Success(payload_str) => {
+                {%if method.return_arg_list |length > 0%}
+                let return_obj: {{method_name|UpperCamelCase}}ReturnValues = serde_json::from_str(payload_str.as_ref().unwrap_or("{}"))
+                    .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
+                {%endif%}
+                {%if method.return_arg_list |length == 0 %}
+                Ok(())
+                {%elif method.return_arg_list |length == 1 %}
+                Ok(return_obj.{{method.return_arg_list[0].name}})
+                {%else%}
+                Ok(return_obj)
+                {%endif%}
+            },
+            _ => {
+                return Err(return_code);
+            }
+        }
     }
 
     {%endfor%}
@@ -253,28 +261,59 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>> {
-        self.properties.{{prop_name | snake_case}}_tx_channel.subscribe()
+        self.properties.{{prop_name | snake_case}}.subscribe()
     }
     {%if not prop.read_only %}
-    pub fn set_{{prop_name | snake_case}}(&mut self, value: {%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}) -> Result<(), MethodReturnCode> {
+    /// Sets the `{{prop_name}}` property and returns a oneshot that receives the acknowledgment back from the server.
+    pub async fn set_{{prop_name | snake_case}}(&mut self, value: {%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}) -> MethodReturnCode {
+        
         let data = {%if prop.arg_list | length > 1 %}value{% else %}{{prop_name | UpperCamelCase}}Property { 
             {{prop.arg_list[0].name}}: value
         } {%- endif %};
         let topic: String = format!("{{prop.update_topic}}", self.client_id);
-        let msg = message::property_update_message(&topic, &data, self.properties.{{prop_name | snake_case}}_version.load(Ordering::Relaxed)).unwrap();
+        let correlation_id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id.clone(), sender);
+        }
+        let msg = message::property_update_request_message(&topic, &data, self.properties.{{prop_name | snake_case}}_version.load(Ordering::Relaxed), correlation_id).unwrap();
         let _publish_result = self.mqtt_client.publish(msg);
-        Ok(())
+
+        receiver.await.unwrap_or_else(|_| MethodReturnCode::ClientError("Failed to receive property set acknowledgment".to_string()))
+    }
+
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>>> {
+        self.properties.{{prop_name | snake_case}}.write_request()
+    }
+    {%else%}
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> ReadOnlyLockWatch<Option<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>> {
+        self.properties.{{prop_name | snake_case}}.read_only()
     }
     {%endif%}
     {%endfor%}
 
+    fn get_return_code_from_message(msg: &MqttMessage) -> MethodReturnCode {
+        let payload = String::from_utf8_lossy(&msg.payload).to_string();
+        let mut return_code: MethodReturnCode = MethodReturnCode::Success(None);
+        if let Some(retval) = msg.user_properties.get("ReturnCode") {
+            let opt_dbg_info = msg.user_properties.get("DebugInfo").cloned();
+            if let Ok(return_code_u32) = retval.parse::<u32>() {
+                if return_code_u32 == 0 {
+                    return_code = MethodReturnCode::from_code(return_code_u32, Some(payload));
+                } else {
+                    return_code = MethodReturnCode::from_code(return_code_u32, opt_dbg_info);
+                }
+            }
+        }
+        return_code
+    }
+
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&mut self) -> Result<(), JoinError> {
-        // Make sure the MqttClient is connected and running.
-        let _ = self.mqtt_client.start().await;
 
         {%if stinger.methods | length > 0%}// Clone the Arc pointer to the map.  This will be moved into the loop_task.
-        let resp_map: Arc<Mutex<HashMap::<Uuid, oneshot::Sender::<String>>>> = self.pending_responses.clone();
+        let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<MethodReturnCode>>>> = self.pending_responses.clone();
         {%endif%}
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
@@ -287,6 +326,21 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
         let sub_ids = self.subscription_ids.clone();
         {%-if stinger.properties|length > 0%}
         let props = self.properties.clone();
+        {%-for prop_name, prop in stinger.properties.items()%}
+        { // Set up property change request handling task
+            let client_id_for_{{prop_name|snake_case}}_prop = self.client_id.clone();
+            let publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
+            if let Some(rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
+                            let topic: String = format!("{{prop.update_topic}}", client_id_for_{{prop_name|snake_case}}_prop);
+                            let msg = message::property_update_message(&topic, &request, props.{{prop_name | snake_case}}_version.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
+                            let _publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
+                    };
+                });
+            }
+        }
+        {% endfor %}
         {%endif%}
         let _loop_task = tokio::spawn(async move {
             while let Ok(msg) = message_receiver.recv().await {
@@ -295,8 +349,8 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
                 let opt_corr_id: Option<Uuid> = opt_corr_data.and_then(|b| Uuid::from_slice(b.as_slice()).ok());
                 {%endif%} {# if there are some methods #}
                 if let Some(subscription_id) = msg.subscription_id {
-
-                    let payload = String::from_utf8_lossy(&msg.payload).to_string();
+                    let return_code = {{stinger.rust.client_struct_name}}::<C>::get_return_code_from_message(&msg);
+                        
                     {%-for method_name, method in stinger.methods.items()%}
                     {%if not loop.first%}else {%endif%}if subscription_id == sub_ids.{{method_name | snake_case}}_method_resp {
                         if opt_corr_id.is_some() {
@@ -306,8 +360,8 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
                                     hashmap.remove(&uuid)
                                 });
                             if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<String> = sender;
-                                match oss.send(payload) {
+                                let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                match oss.send(return_code) {
                                     Ok(_) => (),
                                     Err(_) => (),
                                 }
@@ -345,16 +399,33 @@ impl<C: MqttClient + Clone> {{stinger.rust.client_struct_name}}<C> {
                     {%endfor%}
                     {%-for prop_name, prop in stinger.properties.items()%}
                     {%if not loop.first%}else {%endif%}if subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
-                        match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property >(&msg.payload) {
+                        match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property>(&msg.payload) {
                             Ok(pl) => {
-                                let mut guard = props.{{prop_name | snake_case}}.lock().expect("Mutex was poisoned");
+                                let mut guard = props.{{prop_name | snake_case}}.write().expect("Mutex was poisoned");
                                 {%if prop.arg_list | length == 1 %}
                                 *guard = Some(pl.{{prop.arg_list[0].name}}.clone());
-                                let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl.{{prop.arg_list[0].name}}));
                                 {%else%}
                                 *guard = Some(pl.clone());
-                                let _ = props.{{prop_name | snake_case}}_tx_channel.send(Some(pl));
                                 {%endif%}
+                                if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Ok(version_num) = version_str.parse::<u32>() {
+                                        props.{{prop_name | snake_case}}_version.store(version_num, std::sync::atomic::Ordering::Relaxed);
+                                    }
+                                }
+                                if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id
+                                    .and_then(|uuid| {
+                                        let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    match oss.send(return_code) {
+                                        Ok(_) => (),
+                                        Err(_) => (),
+                                    }
+                                }
+                            }
                             },
                             Err(e) => {
                                 warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
