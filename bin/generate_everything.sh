@@ -1,8 +1,11 @@
 #!/bin/bash
 
 BASE_DIR=$(dirname $0)
+if [ -z "$THREADS" ]; then
+    THREADS=16
+fi
 
-#### Python
+#### Generate Function
 
 function generate_python() {
     echo
@@ -16,12 +19,6 @@ function generate_python() {
     return 0
 }
 
-generate_python signal_only || exit 1
-generate_python full || exit 1
-generate_python weather || exit 1
-generate_python testable || exit 1
-
-#### C++
 
 function generate_cpp() {
     echo
@@ -37,18 +34,10 @@ function generate_cpp() {
         clang-format --style=file:${BASE_DIR}/../clang-format-config.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/include/*.hpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/src/*.cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/examples/*.cpp -i
     fi
     if [ $? -eq 0 ]; then
-        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j8)
+        (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j${THREADS})
     fi
     return 0
 }
-
-generate_cpp testable || exit 1
-generate_cpp full || exit 1
-generate_cpp signal_only || exit 1
-generate_cpp weather || exit 1
-
-
-#### Rust
 
 function generate_rust() {
     echo
@@ -73,18 +62,46 @@ function generate_rust() {
         fi
         echo "${IFACE_NAME} | cargo check client_demo"
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${EXAMPLE_PREFIX}_client_demo --features client)
+        if [ $? -ne 0 ]; then
+            RC=1
+        fi
         echo "${IFACE_NAME} | cargo check server_demo"
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${EXAMPLE_PREFIX}_server_demo --features server)
+        if [ $? -ne 0 ]; then
+            RC=1
+        fi
     fi
     return $RC
 }
+
+#### Start With Simple
+
+generate_python simple || exit 1
+generate_cpp simple || exit 1
+generate_rust simple || exit 1
+
+#### Python
+
+generate_python signal_only || exit 1
+generate_python full || exit 1
+generate_python weather || exit 1
+generate_python testable || exit 1
+
+#### C++
+
+
+generate_cpp testable || exit 1
+generate_cpp full || exit 1
+generate_cpp signal_only || exit 1
+generate_cpp weather || exit 1
+
+
+#### Rust
 
 generate_rust testable || exit 1
 generate_rust signal_only || exit 1
 generate_rust full || exit 1
 generate_rust weather || exit 1
-
-(cd ${BASE_DIR}/../example_interfaces/full/output/rust/ && cargo build --example full_connection_demo --features payloads)
 
 # AsyncAPI
 #echo "----------- Creating AsyncAPI Spec ----------------"

@@ -1,0 +1,57 @@
+stingeripc:
+  version: 0.0.7
+
+interface:
+  name: Simple
+  version: 0.0.1
+  title: Simple Example Interface
+  summary: Example StingerAPI interface which demonstrates just a bit.
+
+structures:
+
+  person:
+    members:
+      - name: name
+        type: string
+        documentation: The name of the person
+      - name: gender
+        type: enum
+        enumName: gender
+        documentation: The gender of the person
+
+enums:
+
+  gender:
+    values:
+      - name: male
+      - name: female
+      - name: other
+
+signals:
+  
+  person_entered:
+    payload:
+      - name: person
+        type: struct
+        structName: person
+
+methods:
+
+  trade_numbers:
+    description: A simple method which trades favorite numbers.
+    arguments:
+      - name: your_number
+        type: integer
+        documentation: Your favorite number.
+    returnValues:
+      - name: my_number
+        type: integer
+        documentation: My favorite number.
+
+properties:
+
+  school:
+    values:
+      - name: name
+        type: string
+        documentation: The name of the school where the person studies.

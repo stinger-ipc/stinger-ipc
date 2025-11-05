@@ -714,7 +714,8 @@ async fn main() {
         .client_id("rust-server-demo".to_string())
         .build()
         .unwrap();
-    let connection = MqttierClient::new(mqttier_options).unwrap();
+    let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    let _ = connection.start().await.unwrap();
 
     let handlers: Arc<Mutex<Box<dyn TestAbleMethodHandlers<MqttierClient>>>> =
         Arc::new(Mutex::new(Box::new(TestAbleMethodImpl::new())));

@@ -37,9 +37,6 @@ cargo run --example full_client_demo --features client
 
 # Server example
 cargo run --example full_server_demo --features server
-
-# Payloads example
-cargo run --example full_connection_demo --features payloads
 ```
 
 ### Building with Specific Features
@@ -51,7 +48,7 @@ cargo build --features client
 # Build with server feature
 cargo build --features server
 
-# Build with just payloads
+# Build with just payloads (not a common use case to only need the payload structures)
 cargo build --features payloads
 
 ```
@@ -67,8 +64,7 @@ src/
 
 examples/
 ├── client.rs       # Client usage example
-├── server.rs       # Server usage example
-└── pub_and_recv.rs # Payloads usage example
+└── server.rs       # Server usage example
 ```
 
 ## Generated Code

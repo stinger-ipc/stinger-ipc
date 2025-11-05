@@ -1,0 +1,52 @@
+[package]
+name = "simple_ipc"
+version = "0.0.1"
+edition = "2021"
+
+[features]
+default = []
+client = ["payloads", "tracing", "tracing-subscriber", "stinger-rwlock-watch/read_only", "stinger-rwlock-watch/write_request"]
+server = ["payloads", "async-trait", "tracing", "tracing-subscriber", "stinger-mqtt-trait/availability_publish"]
+payloads = []
+metrics = ["payloads"]
+
+[dependencies]
+# Core dependencies (always available)
+futures = "0.3.31"
+stinger-mqtt-trait = "0.5.1"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.142"
+tokio = { version = "1", features = ["full"] }
+num-derive = "0.4.2"
+num-traits = "0.2.19"
+chrono = "0.4.42"
+iso8601-duration = "0.2.0"
+builder-pattern = "0.4"
+base64 = "0.22.1"
+tracing = { version = "0.1.41", optional = true }
+tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter", "fmt"] }
+bytes = "1.10.1"
+async-trait = { version = "0.1", optional = true } # For server-side async traits
+stinger-rwlock-watch = "0.2.0"
+
+[dependencies.uuid]
+version = "1.17.0"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]
+
+[dev-dependencies]
+mqttier = "0.7.0"
+stinger-mqtt-trait = { version = "0.5.1", features = ["mock_client"] }
+
+[[example]]
+name = "simple_client_demo"
+path = "examples/client_demo.rs"
+required-features = ["client"]
+
+[[example]]
+name = "simple_server_demo" 
+path = "examples/server_demo.rs"
+required-features = ["server"]

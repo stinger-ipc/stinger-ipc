@@ -287,7 +287,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         self.properties.{{prop_name | snake_case}}.write_request().into()
     }
     {%else%}
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> ReadOnlyLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{%elif prop.arg_list[0].optional %}{{prop.arg_list[0].rust_type}}{% else %}Option<{{prop.arg_list[0].rust_type}}>{% endif %}> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> ReadOnlyLockWatch<{%if prop.arg_list | length > 1 %}Option<{{prop.rust_type}}>{%elif prop.arg_list[0].optional %}{{prop.arg_list[0].rust_type}}{% else %}Option<{{prop.arg_list[0].rust_type}}>{% endif %}> {
         self.properties.{{prop_name | snake_case}}.read_only()
     }
     {%endif%}

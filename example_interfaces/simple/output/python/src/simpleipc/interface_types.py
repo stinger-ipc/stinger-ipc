@@ -1,0 +1,75 @@
+"""
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the Simple interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+"""
+
+from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
+from datetime import datetime, timedelta, UTC
+from typing import Optional, Annotated, Union, List
+import base64
+from enum import IntEnum
+
+
+def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
+    """If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
+    if isinstance(value, str):
+        return base64.b64decode(value)
+    return value
+
+
+class InterfaceInfo(BaseModel):
+    interface_name: str = Field(default="Simple")
+    title: str = Field(default="Simple Example Interface")
+    version: str = Field(default="0.0.1")
+    instance: str
+    connection_topic: str
+    timestamp: str
+
+
+class Gender(IntEnum):
+    """Interface enum `gender`."""
+
+    MALE = 1
+    FEMALE = 2
+    OTHER = 3
+
+
+class Person(BaseModel):
+    """Interface struct `person`."""
+
+    model_config = ConfigDict(populate_by_name=True)
+    name: Annotated[str, Field()]
+    gender: Annotated[Gender, Field()]
+
+
+class PersonEnteredSignalPayload(BaseModel):
+    """Interface signal `person_entered`."""
+
+    model_config = ConfigDict(populate_by_name=True)
+    person: Annotated[Person, Field()]
+
+
+class SchoolProperty(BaseModel):
+    """Interface property `school` (multi-value struct)."""
+
+    model_config = ConfigDict(populate_by_name=True)
+    name: Annotated[str, Field()]
+
+
+class TradeNumbersMethodRequest(BaseModel):
+    """Interface method `trade_numbers` request object."""
+
+    model_config = ConfigDict(populate_by_name=True)
+    your_number: Annotated[int, Field()]
+
+
+class TradeNumbersMethodResponse(BaseModel):
+    """Interface method `trade_numbers` response object."""
+
+    model_config = ConfigDict(populate_by_name=True)
+    my_number: Annotated[int, Field()]

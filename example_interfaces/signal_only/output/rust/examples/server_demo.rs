@@ -32,7 +32,8 @@ async fn main() {
         .client_id("rust-server-demo".to_string())
         .build()
         .unwrap();
-    let connection = MqttierClient::new(mqttier_options).unwrap();
+    let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    let _ = connection.start().await.unwrap();
 
     let mut server = SignalOnlyServer::new(connection, "rust-server-demo:1".to_string()).await;
 

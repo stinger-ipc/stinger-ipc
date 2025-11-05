@@ -543,7 +543,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         self.properties.current_condition.subscribe()
     }
 
-    pub fn get_current_condition_handle(&self) -> ReadOnlyLockWatch<CurrentConditionProperty> {
+    pub fn get_current_condition_handle(
+        &self,
+    ) -> ReadOnlyLockWatch<Option<CurrentConditionProperty>> {
         self.properties.current_condition.read_only()
     }
 
@@ -553,7 +555,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         self.properties.daily_forecast.subscribe()
     }
 
-    pub fn get_daily_forecast_handle(&self) -> ReadOnlyLockWatch<DailyForecastProperty> {
+    pub fn get_daily_forecast_handle(&self) -> ReadOnlyLockWatch<Option<DailyForecastProperty>> {
         self.properties.daily_forecast.read_only()
     }
 
@@ -563,7 +565,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         self.properties.hourly_forecast.subscribe()
     }
 
-    pub fn get_hourly_forecast_handle(&self) -> ReadOnlyLockWatch<HourlyForecastProperty> {
+    pub fn get_hourly_forecast_handle(&self) -> ReadOnlyLockWatch<Option<HourlyForecastProperty>> {
         self.properties.hourly_forecast.read_only()
     }
 

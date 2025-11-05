@@ -8,6 +8,7 @@ default = []
 client = ["payloads", "tracing", "tracing-subscriber", "stinger-rwlock-watch/read_only", "stinger-rwlock-watch/write_request"]
 server = ["payloads", "async-trait", "tracing", "tracing-subscriber", "stinger-mqtt-trait/availability_publish"]
 payloads = []
+metrics = ["payloads"]
 
 [dependencies]
 # Core dependencies (always available)
@@ -49,8 +50,3 @@ required-features = ["client"]
 name = "{{stinger.name | snake_case|replace('__', '_')}}_server_demo" 
 path = "examples/server_demo.rs"
 required-features = ["server"]
-
-[[example]]
-name = "{{stinger.name | snake_case|replace('__', '_')}}_connection_demo"
-path = "examples/pub_and_recv.rs"
-required-features = ["payloads"]

@@ -93,7 +93,8 @@ async fn main() {
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
         .build().unwrap();
-    let connection = MqttierClient::new(mqttier_options).unwrap();
+    let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    let _ = connection.start().await.unwrap();
 
     {%if stinger.methods|length > 0%}
     let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient>>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));

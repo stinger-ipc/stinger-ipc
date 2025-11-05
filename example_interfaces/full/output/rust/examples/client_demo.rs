@@ -38,6 +38,8 @@ async fn main() {
         .build()
         .unwrap();
     let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
+    let _ = mqttier_client.start().await.unwrap();
+
     let discovery = FullDiscovery::new(&mut mqttier_client).await.unwrap();
     let singleton_info = discovery.get_singleton_service().await;
 
