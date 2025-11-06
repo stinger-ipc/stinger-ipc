@@ -31,6 +31,7 @@ use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 {% if stinger.properties|length > 0 %}
+use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
 use std::sync::atomic::{AtomicU32, Ordering};
 use stinger_rwlock_watch::{RwLockWatch};
 #[allow(unused_imports)]
@@ -66,12 +67,12 @@ struct {{stinger.name | UpperCamelCase }}SignalChannels {
 
 {%if stinger.properties | length > 0%}
 #[derive(Clone)]
-pub struct {{stinger.name | UpperCamelCase}}Properties {
+struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
     {%-if prop.arg_list | length > 1%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<Option<{{prop.rust_type}}>>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust_type}}>>,
     {%-else%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{%if prop.arg_list[0].optional%}{{prop.arg_list[0].rust_type}}{%else%}Option<{{prop.arg_list[0].rust_type}}>{%endif%}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust_type}}>>,
     {%endif-%}
     pub {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%endfor%}
@@ -116,7 +117,7 @@ pub struct {{stinger.rust.client_struct_name}}<C: Mqtt5PubSub> {
 impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}}<C> {
 
     /// Creates a new {{stinger.rust.client_struct_name}} that uses an Mqtt5PubSub.
-    pub async fn new(mut connection: C, service_id: String) -> Self {
+    pub async fn new(mut connection: C, service_id: String{%if stinger.properties|length > 0%}, initial_property_values: {{stinger.name | UpperCamelCase}}InitialPropertyValues{%endif%}) -> Self {
 
         // Create a channel for messages to get from the Connection object to this {{stinger.rust.client_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -148,11 +149,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
             {%if prop.arg_list | length > 1 -%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(None)),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}})),
             {%-else%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(None)),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}})),
             {%-endif-%}
-            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(0)),
+            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(initial_property_values.{{prop_name | snake_case}}_version)),
         {%-endfor%}
         };
         {%endif%}
@@ -260,7 +261,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     {%for prop_name, prop in stinger.properties.items()%}
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}Option<{{prop.rust_type}}>{% elif prop.arg_list[0].optional %}{{prop.arg_list[0].rust_type}}{%else%}Option<{{prop.arg_list[0].rust_type}}>{% endif %}> {
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
     {%if not prop.read_only %}
@@ -283,12 +284,12 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         receiver.await.unwrap_or_else(|_| MethodReturnCode::ClientError("Failed to receive property set acknowledgment".to_string()))
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}Option<{{prop.rust_type}}>{%elif prop.arg_list[0].optional %}{{prop.arg_list[0].rust_type}}{% else %}Option<{{prop.arg_list[0].rust_type}}>{% endif %}>> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{%else%}{{prop.arg_list[0].rust_type}}{% endif %}>> {
         self.properties.{{prop_name | snake_case}}.write_request().into()
     }
     {%else%}
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> ReadOnlyLockWatch<{%if prop.arg_list | length > 1 %}Option<{{prop.rust_type}}>{%elif prop.arg_list[0].optional %}{{prop.arg_list[0].rust_type}}{% else %}Option<{{prop.arg_list[0].rust_type}}>{% endif %}> {
-        self.properties.{{prop_name | snake_case}}.read_only()
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<ReadOnlyLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{%else%}{{prop.arg_list[0].rust_type}}{%endif%}>> {
+        self.properties.{{prop_name | snake_case}}.read_only().into()
     }
     {%endif%}
     {%endfor%}
@@ -404,7 +405,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             Ok(pl) => {
                                 let mut guard = props.{{prop_name | snake_case}}.write().await;
                                 {%if prop.arg_list | length == 1 %}
-                                *guard = {%if prop.arg_list[0].optional%}pl.{{prop.arg_list[0].name}}.clone(){%else%}Some(pl.{{prop.arg_list[0].name}}.clone()){%endif%};
+                                *guard = pl.{{prop.arg_list[0].name}}.clone();
                                 {%else%}
                                 *guard = Some(pl.clone());
                                 {%endif%}

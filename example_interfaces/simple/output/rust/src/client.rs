@@ -29,6 +29,7 @@ use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
+use crate::property::SimpleInitialPropertyValues;
 use std::sync::atomic::{AtomicU32, Ordering};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::ReadOnlyLockWatch;
@@ -56,8 +57,8 @@ struct SimpleSignalChannels {
 }
 
 #[derive(Clone)]
-pub struct SimpleProperties {
-    pub school: Arc<RwLockWatch<Option<String>>>,
+struct SimpleProperties {
+    pub school: Arc<RwLockWatch<String>>,
     pub school_version: Arc<AtomicU32>,
 }
 
@@ -94,7 +95,11 @@ pub struct SimpleClient<C: Mqtt5PubSub> {
 
 impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
     /// Creates a new SimpleClient that uses an Mqtt5PubSub.
-    pub async fn new(mut connection: C, service_id: String) -> Self {
+    pub async fn new(
+        mut connection: C,
+        service_id: String,
+        initial_property_values: SimpleInitialPropertyValues,
+    ) -> Self {
         // Create a channel for messages to get from the Connection object to this SimpleClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel(64);
@@ -139,8 +144,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             subscription_id_school_property_value.unwrap_or_else(|_| u32::MAX);
 
         let property_values = SimpleProperties {
-            school: Arc::new(RwLockWatch::new(None)),
-            school_version: Arc::new(AtomicU32::new(0)),
+            school: Arc::new(RwLockWatch::new(initial_property_values.school)),
+            school_version: Arc::new(AtomicU32::new(initial_property_values.school_version)),
         };
 
         // Create structure for subscription ids.
@@ -232,7 +237,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
 
     /// Watch for changes to the `school` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_school(&self) -> watch::Receiver<Option<String>> {
+    pub fn watch_school(&self) -> watch::Receiver<String> {
         self.properties.school.subscribe()
     }
 
@@ -262,7 +267,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
         })
     }
 
-    pub fn get_school_handle(&self) -> Arc<WriteRequestLockWatch<Option<String>>> {
+    pub fn get_school_handle(&self) -> Arc<WriteRequestLockWatch<String>> {
         self.properties.school.write_request().into()
     }
 
@@ -365,7 +370,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.school.write().await;
 
-                                *guard = Some(pl.name.clone());
+                                *guard = pl.name.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {

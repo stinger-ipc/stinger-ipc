@@ -1,0 +1,16 @@
+use derive_builder::Builder;
+
+{%if stinger.properties | length > 0%}
+#[derive(Clone, Builder)]
+pub struct {{stinger.name | UpperCamelCase}}InitialPropertyValues {
+    {%for prop_name, prop in stinger.properties.items()-%}
+    {%-if prop.arg_list | length > 1%}
+    pub {{prop_name | snake_case}}: {{prop.rust_type}},
+    {%-else%}
+    {%if prop.arg_list[0].optional%}#[builder(default = "None")]{%endif-%}
+    pub {{prop_name | snake_case}}: {{prop.arg_list[0].rust_type}},
+    {%endif-%}
+    pub {{prop_name | snake_case}}_version: u32,
+    {%endfor%}
+}
+{%endif%}

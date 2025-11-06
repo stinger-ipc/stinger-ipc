@@ -21,7 +21,7 @@ num-derive = "0.4.2"
 num-traits = "0.2.19"
 chrono = "0.4.42"
 iso8601-duration = "0.2.0"
-builder-pattern = "0.4"
+derive_builder = "0.20"
 base64 = "0.22.1"
 tracing = { version = "0.1.41", optional = true }
 tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter", "fmt"] }

@@ -8,6 +8,7 @@
 //! - `payloads`: Includes only payloads module
 
 pub mod interface;
+pub mod property;
 
 #[cfg(any(feature = "client", feature = "server"))]
 mod message;
