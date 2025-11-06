@@ -26,8 +26,7 @@
 constexpr const char SignalOnlyClient::NAME[];
 constexpr const char SignalOnlyClient::INTERFACE_VERSION[];
 
-SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
-    _broker(broker), _instanceId(instanceId)
+SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId): _broker(broker), _instanceId(instanceId)
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,
