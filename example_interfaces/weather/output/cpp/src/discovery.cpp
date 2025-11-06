@@ -6,8 +6,7 @@
 #include <sstream>
 #include <boost/format.hpp>
 
-WeatherDiscovery::WeatherDiscovery(std::shared_ptr<IBrokerConnection> broker):
-    _broker(broker)
+WeatherDiscovery::WeatherDiscovery(std::shared_ptr<IBrokerConnection> broker): _broker(broker)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;
