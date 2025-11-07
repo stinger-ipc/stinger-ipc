@@ -1275,13 +1275,14 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
             loop {
                 interval.tick().await;
                 let topic = format!("weather/{}/interface", instance_id);
-                let info = crate::interface::InterfaceInfo::new()
+                let info = crate::interface::InterfaceInfoBuilder::default()
                     .interface_name("weather".to_string())
                     .title("NWS weather forecast".to_string())
                     .version("0.1.2".to_string())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
-                    .build();
+                    .build()
+                    .unwrap();
                 let msg = message::interface_online(&topic, &info, 150 /*seconds*/).unwrap();
                 let _ = interface_publisher.publish(msg).await;
             }

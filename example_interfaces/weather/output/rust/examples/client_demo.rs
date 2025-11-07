@@ -38,12 +38,25 @@ async fn main() {
         .build()
         .unwrap();
     let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
-    let _ = mqttier_client.start().await.unwrap();
+    let _ = mqttier_client.start().await;
 
-    let discovery = WeatherDiscovery::new(&mut mqttier_client).await.unwrap();
-    let singleton_info = discovery.get_singleton_service().await;
+    let service_discovery = WeatherDiscovery::new(&mut mqttier_client).await.unwrap();
+    let discovered_singleton = service_discovery.get_singleton_service().await;
 
-    let mut api_client = WeatherClient::new(mqttier_client.clone(), singleton_info.instance).await;
+    #[cfg(feature = "metrics")]
+    {
+        let metrics = service_discovery
+            .metrics
+            .lock()
+            .expect("Failed to lock metrics");
+        println!("Discovery complete.  Metrics: {:?}", metrics);
+        println!(
+            "Time to first discovery (ms): {:?}",
+            metrics.time_to_first_discovery_ms()
+        );
+    };
+    drop(service_discovery);
+    let mut api_client = WeatherClient::new(mqttier_client.clone(), discovered_singleton).await;
 
     let mut client_for_loop = api_client.clone();
     tokio::spawn(async move {
@@ -146,6 +159,12 @@ async fn main() {
     let _ = api_client.set_hourly_forecast_refresh_interval(42);
 
     let _ = api_client.set_daily_forecast_refresh_interval(42);
+
+    println!("Waiting for Ctrl-C to exit...");
+    tokio::signal::ctrl_c()
+        .await
+        .expect("Failed to listen for Ctrl-C");
+    println!("Ctrl-C received, shutting down...");
 
     // Join on all the signal emitting tasks.
     let _ = join!(sig_rx_task1);

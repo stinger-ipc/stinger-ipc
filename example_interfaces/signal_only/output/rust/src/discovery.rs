@@ -19,6 +19,11 @@ use tokio::task::JoinHandle;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
+#[allow(unused_imports)]
+use crate::payloads::*;
+#[cfg(feature = "metrics")]
+use std::sync::Mutex;
+
 #[derive(Debug)]
 pub enum SignalOnlyDiscoveryError {
     Subscribe(Mqtt5PubSubError),
@@ -42,45 +47,127 @@ impl From<Mqtt5PubSubError> for SignalOnlyDiscoveryError {
     }
 }
 
+struct ServiceInDiscovery {
+    pub interface_info: Option<InterfaceInfo>,
+
+    pub fully_discovered: std::sync::atomic::AtomicBool,
+}
+
+impl Default for ServiceInDiscovery {
+    fn default() -> Self {
+        Self {
+            interface_info: None,
+
+            fully_discovered: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct DiscoveredService {
+    pub interface_info: InterfaceInfo,
+}
+
+impl ServiceInDiscovery {
+    /// Attempts to convert a ServiceInDiscovery into a DiscoveredService
+    pub fn to_discovered_service(&self) -> Option<DiscoveredService> {
+        match &self.interface_info {
+            Some(info) => Some(DiscoveredService {
+                interface_info: info.clone(),
+            }),
+            _ => None,
+        }
+    }
+}
+
+#[cfg(feature = "metrics")]
+#[derive(Debug)]
+pub struct SignalOnlyDiscoveryMetrics {
+    pub discovery_start_time: std::time::Instant,
+    pub time_of_first_discovery: Option<std::time::Instant>,
+    pub received_property_values: std::sync::atomic::AtomicU32,
+}
+
+#[cfg(feature = "metrics")]
+impl Default for SignalOnlyDiscoveryMetrics {
+    fn default() -> Self {
+        Self {
+            discovery_start_time: std::time::Instant::now(),
+            time_of_first_discovery: None,
+            received_property_values: std::sync::atomic::AtomicU32::new(0),
+        }
+    }
+}
+
+#[cfg(feature = "metrics")]
+impl SignalOnlyDiscoveryMetrics {
+    /// Sets the time_of_first_discovery if it hasn't been set yet
+    pub fn set_time_of_first_discovery(&mut self) {
+        if self.time_of_first_discovery.is_none() {
+            self.time_of_first_discovery = Some(std::time::Instant::now());
+        }
+    }
+
+    /// Returns the time in milliseconds between `discovery_start_time` and
+    /// `time_of_first_discovery`, or `None` if `time_of_first_discovery` is not set.
+    pub fn time_to_first_discovery_ms(&self) -> Option<u128> {
+        self.time_of_first_discovery
+            .as_ref()
+            .map(|t| t.duration_since(self.discovery_start_time).as_millis())
+    }
+}
+
 pub struct SignalOnlyDiscovery {
     service_name: String,
-    subscription_id: u32,
-    discovered_interfaces: Arc<RwLock<HashMap<String, InterfaceInfo>>>,
-    listener_handle: JoinHandle<()>,
-    notification_tx: broadcast::Sender<InterfaceInfo>,
+    instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
+    info_listener_handle: JoinHandle<()>,
+
+    info_subscription_id: u32,
+
+    notification_tx: broadcast::Sender<DiscoveredService>,
+    #[cfg(feature = "metrics")]
+    pub metrics: Arc<Mutex<SignalOnlyDiscoveryMetrics>>,
 }
 
 /// Event receiver for new interface discovery notifications
-pub type SignalOnlyDiscoveryReceiver = broadcast::Receiver<InterfaceInfo>;
+pub type SignalOnlyDiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
 
 impl SignalOnlyDiscovery {
     pub async fn new(connection: &mut impl Mqtt5PubSub) -> Result<Self, SignalOnlyDiscoveryError> {
         let service_name = "SignalOnly".to_string();
         let discovery_topic = format!("signalOnly/{}/interface", "+");
 
-        let (message_tx, message_rx) = broadcast::channel::<MqttMessage>(32);
+        let (info_tx, info_rx) = broadcast::channel::<MqttMessage>(32);
         debug!("Subscribing to discovery topic: {discovery_topic}");
-        let subscription_id = connection
-            .subscribe(discovery_topic, QoS::AtLeastOnce, message_tx.clone())
+        let _subscription_id = connection
+            .subscribe(discovery_topic, QoS::AtLeastOnce, info_tx.clone())
             .await
             .map_err(SignalOnlyDiscoveryError::from)?;
-        let discovered_interfaces = Arc::new(RwLock::new(HashMap::new()));
+
+        let instances_in_discovery = Arc::new(RwLock::new(HashMap::new()));
 
         // Clients can get a notification receiver by calling the subscribe() method.
-        let (notification_tx, _notification_rx) = broadcast::channel::<InterfaceInfo>(32);
+        let (notification_tx, _notification_rx) = broadcast::channel::<DiscoveredService>(32);
 
-        let listener_handle = Self::spawn_listener(
-            message_rx,
-            discovered_interfaces.clone(),
+        #[cfg(feature = "metrics")]
+        let metrics = Arc::new(Mutex::new(SignalOnlyDiscoveryMetrics::default()));
+
+        let info_listener_handle = Self::spawn_listener(
+            info_rx,
+            instances_in_discovery.clone(),
             notification_tx.clone(),
+            #[cfg(feature = "metrics")]
+            metrics.clone(),
         );
 
         Ok(Self {
             service_name,
-            subscription_id,
-            discovered_interfaces,
-            listener_handle,
+            instances_in_discovery,
+            info_listener_handle,
+
             notification_tx,
+            #[cfg(feature = "metrics")]
+            metrics,
         })
     }
 
@@ -88,23 +175,36 @@ impl SignalOnlyDiscovery {
         &self.service_name
     }
 
-    pub fn discovered_interfaces(&self) -> Vec<InterfaceInfo> {
+    pub fn instances_in_discovery(&self) -> Vec<DiscoveredService> {
         let guard = self
-            .discovered_interfaces
+            .instances_in_discovery
             .read()
             .expect("interfaces poisoned");
-        guard.values().cloned().collect()
+        guard
+            .values()
+            .filter(|sd| {
+                sd.fully_discovered
+                    .load(std::sync::atomic::Ordering::Relaxed)
+            })
+            .filter_map(|sd| sd.to_discovered_service())
+            .collect()
     }
 
-    pub async fn get_singleton_service(&self) -> InterfaceInfo {
+    pub async fn get_singleton_service(&self) -> DiscoveredService {
         // First check if we already have an interface
         {
-            let guard = self
-                .discovered_interfaces
+            let instance_map = self
+                .instances_in_discovery
                 .read()
                 .expect("interfaces poisoned");
-            if let Some(info) = guard.values().next() {
-                return info.clone();
+            if let Some(entry) = instance_map.values().next() {
+                if entry.interface_info.is_some() {
+                    {
+                        return DiscoveredService {
+                            interface_info: entry.interface_info.clone().unwrap(),
+                        };
+                    }
+                }
             }
         }
 
@@ -113,62 +213,55 @@ impl SignalOnlyDiscovery {
         receiver.recv().await.expect("notification channel closed")
     }
 
-    pub fn subscription_id(&self) -> u32 {
-        self.subscription_id
-    }
-
-    /// Subscribe to notifications for newly discovered interfaces.
-    ///
-    /// Returns a receiver that will be notified when a new interface is discovered.
-    /// Notifications are only sent for new interfaces, not for updates to existing ones.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use signal_only_ipc::discovery::SignalOnlyDiscovery;
-    /// use mqttier::{Connection, MqttierClient, MqttierOptions};
-    ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let options = MqttierOptions::new()
-    ///         .connection(Connection::TcpLocalhost(1883))
-    ///         .build();
-    ///     let mut client = MqttierClient::new(options).unwrap();
-    ///
-    ///     let discovery = SignalOnlyDiscovery::new(&mut client).await.unwrap();
-    ///     let mut notifications = discovery.subscribe();
-    ///     
-    ///     tokio::spawn(async move {
-    ///         while let Ok(interface_info) = notifications.recv().await {
-    ///             println!("New interface discovered: {}", interface_info.instance);
-    ///             println!("  Connection topic: {}", interface_info.connection_topic);
-    ///         }
-    ///     });
-    ///     
-    ///     // ... rest of your application
-    /// }
-    /// ```
     pub fn subscribe(&self) -> SignalOnlyDiscoveryReceiver {
         self.notification_tx.subscribe()
     }
 
+    fn try_publish_discovered_service(
+        service_in_discovery: &ServiceInDiscovery,
+        notification_tx: &broadcast::Sender<DiscoveredService>,
+        #[cfg(feature = "metrics")] metrics: &Arc<Mutex<SimpleDiscoveryMetrics>>,
+    ) {
+        // Check if this completes the discovery
+
+        if let Some(discovered) = service_in_discovery.to_discovered_service() {
+            service_in_discovery
+                .fully_discovered
+                .store(true, std::sync::atomic::Ordering::Relaxed);
+            let _ = notification_tx.send(discovered);
+            #[cfg(feature = "metrics")]
+            {
+                let metrics_guard = metrics.lock().unwrap();
+                metrics_guard.set_time_of_first_discovery();
+            }
+        }
+    }
+
     fn spawn_listener(
         mut message_rx: broadcast::Receiver<MqttMessage>,
-        discovered_interfaces: Arc<RwLock<HashMap<String, InterfaceInfo>>>,
-        notification_tx: broadcast::Sender<InterfaceInfo>,
+        instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
+        notification_tx: broadcast::Sender<DiscoveredService>,
+        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
     ) -> JoinHandle<()> {
         tokio::spawn(async move {
             debug!("Listening for discovery messages");
             while let Ok(message) = message_rx.recv().await {
-                Self::handle_message(message, &discovered_interfaces, &notification_tx);
+                Self::handle_message(
+                    message,
+                    &instances_in_discovery,
+                    &notification_tx,
+                    #[cfg(feature = "metrics")]
+                    metrics.clone(),
+                );
             }
         })
     }
 
     fn handle_message(
         message: MqttMessage,
-        discovered_interfaces: &Arc<RwLock<HashMap<String, InterfaceInfo>>>,
-        notification_tx: &broadcast::Sender<InterfaceInfo>,
+        instances_in_discovery: &Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
+        notification_tx: &broadcast::Sender<DiscoveredService>,
+        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
     ) {
         if message.payload.is_empty() {
             info!("Service represented by {} is now offline", message.topic);
@@ -176,7 +269,7 @@ impl SignalOnlyDiscovery {
             let topic_parts: Vec<&str> = message.topic.split('/').collect();
             if topic_parts.len() >= 2 {
                 let instance_id = topic_parts[topic_parts.len() - 2].to_string();
-                let mut interfaces_guard = discovered_interfaces
+                let mut interfaces_guard = instances_in_discovery
                     .write()
                     .expect("interfaces write lock poisoned");
                 interfaces_guard.remove(&instance_id);
@@ -187,18 +280,20 @@ impl SignalOnlyDiscovery {
             match deserialized {
                 Ok(info) => {
                     info!("Discovered service instance: {:?}", info);
-                    let mut interfaces_guard = discovered_interfaces
-                        .write()
-                        .expect("interfaces write lock poisoned");
-                    let instance_id = info.instance.clone();
-                    let is_new_instance = interfaces_guard
-                        .insert(instance_id.clone(), info.clone())
-                        .is_none();
-                    drop(interfaces_guard);
-
-                    // Send notification only for new interfaces
-                    if is_new_instance {
-                        let _ = notification_tx.send(info);
+                    {
+                        let mut instance_map = instances_in_discovery
+                            .write()
+                            .expect("interfaces write lock poisoned");
+                        let service_in_discovery = instance_map
+                            .entry(info.instance.clone())
+                            .or_insert_with(ServiceInDiscovery::default);
+                        service_in_discovery.interface_info = Some(info);
+                        Self::try_publish_discovered_service(
+                            service_in_discovery,
+                            &notification_tx,
+                            #[cfg(feature = "metrics")]
+                            &metrics,
+                        );
                     }
                 }
                 Err(err) => {
@@ -214,7 +309,7 @@ impl SignalOnlyDiscovery {
 
 impl Drop for SignalOnlyDiscovery {
     fn drop(&mut self) {
-        self.listener_handle.abort();
+        self.info_listener_handle.abort();
     }
 }
 

@@ -11,23 +11,23 @@ This is the Client for the Full interface.
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
 */
+use crate::discovery::DiscoveredService;
 use crate::message;
-use serde_json;
-use std::collections::HashMap;
-use stinger_mqtt_trait::message::{MqttMessage, QoS};
-#[cfg(feature = "client")]
-use stinger_mqtt_trait::Mqtt5PubSub;
-use uuid::Uuid;
-
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
+use serde_json;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+#[cfg(feature = "client")]
+use stinger_mqtt_trait::Mqtt5PubSub;
 use tokio::sync::{broadcast, oneshot, watch};
 use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
+use uuid::Uuid;
 
 use std::sync::atomic::{AtomicU32, Ordering};
 #[allow(unused_imports)]
@@ -68,26 +68,26 @@ struct FullSignalChannels {
 }
 
 #[derive(Clone)]
-pub struct FullProperties {
-    pub favorite_number: Arc<RwLockWatch<Option<i32>>>,
+struct FullProperties {
+    pub favorite_number: Arc<RwLockWatch<i32>>,
     pub favorite_number_version: Arc<AtomicU32>,
 
-    pub favorite_foods: Arc<RwLockWatch<Option<FavoriteFoodsProperty>>>,
+    pub favorite_foods: Arc<RwLockWatch<FavoriteFoodsProperty>>,
     pub favorite_foods_version: Arc<AtomicU32>,
 
-    pub lunch_menu: Arc<RwLockWatch<Option<LunchMenuProperty>>>,
+    pub lunch_menu: Arc<RwLockWatch<LunchMenuProperty>>,
     pub lunch_menu_version: Arc<AtomicU32>,
 
-    pub family_name: Arc<RwLockWatch<Option<String>>>,
+    pub family_name: Arc<RwLockWatch<String>>,
     pub family_name_version: Arc<AtomicU32>,
 
-    pub last_breakfast_time: Arc<RwLockWatch<Option<chrono::DateTime<chrono::Utc>>>>,
+    pub last_breakfast_time: Arc<RwLockWatch<chrono::DateTime<chrono::Utc>>>,
     pub last_breakfast_time_version: Arc<AtomicU32>,
 
-    pub breakfast_length: Arc<RwLockWatch<Option<chrono::Duration>>>,
+    pub breakfast_length: Arc<RwLockWatch<chrono::Duration>>,
     pub breakfast_length_version: Arc<AtomicU32>,
 
-    pub last_birthdays: Arc<RwLockWatch<Option<LastBirthdaysProperty>>>,
+    pub last_birthdays: Arc<RwLockWatch<LastBirthdaysProperty>>,
     pub last_birthdays_version: Arc<AtomicU32>,
 }
 
@@ -108,7 +108,7 @@ pub struct FullClient<C: Mqtt5PubSub> {
     msg_streamer_tx: broadcast::Sender<MqttMessage>,
 
     /// Struct contains all the properties.
-    pub properties: FullProperties,
+    properties: FullProperties,
 
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: FullSubscriptionIds,
@@ -124,7 +124,7 @@ pub struct FullClient<C: Mqtt5PubSub> {
 
 impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// Creates a new FullClient that uses an Mqtt5PubSub.
-    pub async fn new(mut connection: C, service_id: String) -> Self {
+    pub async fn new(mut connection: C, discovery_info: DiscoveredService) -> Self {
         // Create a channel for messages to get from the Connection object to this FullClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel(64);
@@ -205,7 +205,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             subscription_id_how_off_is_the_clock_method_resp.unwrap_or_else(|_| u32::MAX);
 
         // Subscribe to all the topics needed for signals.
-        let topic_today_is_signal = format!("full/{}/signal/todayIs", service_id);
+        let topic_today_is_signal = format!(
+            "full/{}/signal/todayIs",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_today_is_signal = connection
             .subscribe(
                 topic_today_is_signal,
@@ -218,8 +221,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         // Subscribe to all the topics needed for properties.
 
-        let topic_favorite_number_property_value =
-            format!("full/{}/property/favoriteNumber/value", service_id);
+        let topic_favorite_number_property_value = format!(
+            "full/{}/property/favoriteNumber/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_favorite_number_property_value = connection
             .subscribe(
                 topic_favorite_number_property_value,
@@ -230,8 +235,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let subscription_id_favorite_number_property_value =
             subscription_id_favorite_number_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_favorite_foods_property_value =
-            format!("full/{}/property/favoriteFoods/value", service_id);
+        let topic_favorite_foods_property_value = format!(
+            "full/{}/property/favoriteFoods/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_favorite_foods_property_value = connection
             .subscribe(
                 topic_favorite_foods_property_value,
@@ -242,8 +249,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let subscription_id_favorite_foods_property_value =
             subscription_id_favorite_foods_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_lunch_menu_property_value =
-            format!("full/{}/property/lunchMenu/value", service_id);
+        let topic_lunch_menu_property_value = format!(
+            "full/{}/property/lunchMenu/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_lunch_menu_property_value = connection
             .subscribe(
                 topic_lunch_menu_property_value,
@@ -254,8 +263,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let subscription_id_lunch_menu_property_value =
             subscription_id_lunch_menu_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_family_name_property_value =
-            format!("full/{}/property/familyName/value", service_id);
+        let topic_family_name_property_value = format!(
+            "full/{}/property/familyName/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_family_name_property_value = connection
             .subscribe(
                 topic_family_name_property_value,
@@ -266,8 +277,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let subscription_id_family_name_property_value =
             subscription_id_family_name_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_last_breakfast_time_property_value =
-            format!("full/{}/property/lastBreakfastTime/value", service_id);
+        let topic_last_breakfast_time_property_value = format!(
+            "full/{}/property/lastBreakfastTime/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_last_breakfast_time_property_value = connection
             .subscribe(
                 topic_last_breakfast_time_property_value,
@@ -278,8 +291,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let subscription_id_last_breakfast_time_property_value =
             subscription_id_last_breakfast_time_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_breakfast_length_property_value =
-            format!("full/{}/property/breakfastLength/value", service_id);
+        let topic_breakfast_length_property_value = format!(
+            "full/{}/property/breakfastLength/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_breakfast_length_property_value = connection
             .subscribe(
                 topic_breakfast_length_property_value,
@@ -290,8 +305,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let subscription_id_breakfast_length_property_value =
             subscription_id_breakfast_length_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_last_birthdays_property_value =
-            format!("full/{}/property/lastBirthdays/value", service_id);
+        let topic_last_birthdays_property_value = format!(
+            "full/{}/property/lastBirthdays/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_last_birthdays_property_value = connection
             .subscribe(
                 topic_last_birthdays_property_value,
@@ -303,23 +320,41 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             subscription_id_last_birthdays_property_value.unwrap_or_else(|_| u32::MAX);
 
         let property_values = FullProperties {
-            favorite_number: Arc::new(RwLockWatch::new(None)),
-            favorite_number_version: Arc::new(AtomicU32::new(0)),
-            favorite_foods: Arc::new(RwLockWatch::new(None)),
-            favorite_foods_version: Arc::new(AtomicU32::new(0)),
-            lunch_menu: Arc::new(RwLockWatch::new(None)),
-            lunch_menu_version: Arc::new(AtomicU32::new(0)),
+            favorite_number: Arc::new(RwLockWatch::new(discovery_info.properties.favorite_number)),
+            favorite_number_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.favorite_number_version,
+            )),
+            favorite_foods: Arc::new(RwLockWatch::new(discovery_info.properties.favorite_foods)),
+            favorite_foods_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.favorite_foods_version,
+            )),
+            lunch_menu: Arc::new(RwLockWatch::new(discovery_info.properties.lunch_menu)),
+            lunch_menu_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.lunch_menu_version,
+            )),
 
-            family_name: Arc::new(RwLockWatch::new(None)),
-            family_name_version: Arc::new(AtomicU32::new(0)),
+            family_name: Arc::new(RwLockWatch::new(discovery_info.properties.family_name)),
+            family_name_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.family_name_version,
+            )),
 
-            last_breakfast_time: Arc::new(RwLockWatch::new(None)),
-            last_breakfast_time_version: Arc::new(AtomicU32::new(0)),
+            last_breakfast_time: Arc::new(RwLockWatch::new(
+                discovery_info.properties.last_breakfast_time,
+            )),
+            last_breakfast_time_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.last_breakfast_time_version,
+            )),
 
-            breakfast_length: Arc::new(RwLockWatch::new(None)),
-            breakfast_length_version: Arc::new(AtomicU32::new(0)),
-            last_birthdays: Arc::new(RwLockWatch::new(None)),
-            last_birthdays_version: Arc::new(AtomicU32::new(0)),
+            breakfast_length: Arc::new(RwLockWatch::new(
+                discovery_info.properties.breakfast_length,
+            )),
+            breakfast_length_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.breakfast_length_version,
+            )),
+            last_birthdays: Arc::new(RwLockWatch::new(discovery_info.properties.last_birthdays)),
+            last_birthdays_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.last_birthdays_version,
+            )),
         };
 
         // Create structure for subscription ids.
@@ -359,7 +394,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             signal_channels: signal_channels,
             client_id: client_id,
 
-            service_instance_id: service_id,
+            service_instance_id: discovery_info.interface_info.instance,
         };
         inst
     }
@@ -752,7 +787,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
     /// Watch for changes to the `favorite_number` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_favorite_number(&self) -> watch::Receiver<Option<i32>> {
+    pub fn watch_favorite_number(&self) -> watch::Receiver<i32> {
         self.properties.favorite_number.subscribe()
     }
 
@@ -784,13 +819,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         })
     }
 
-    pub fn get_favorite_number_handle(&self) -> Arc<WriteRequestLockWatch<Option<i32>>> {
+    pub fn get_favorite_number_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
         self.properties.favorite_number.write_request().into()
     }
 
     /// Watch for changes to the `favorite_foods` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_favorite_foods(&self) -> watch::Receiver<Option<FavoriteFoodsProperty>> {
+    pub fn watch_favorite_foods(&self) -> watch::Receiver<FavoriteFoodsProperty> {
         self.properties.favorite_foods.subscribe()
     }
 
@@ -822,15 +857,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         })
     }
 
-    pub fn get_favorite_foods_handle(
-        &self,
-    ) -> Arc<WriteRequestLockWatch<Option<FavoriteFoodsProperty>>> {
+    pub fn get_favorite_foods_handle(&self) -> Arc<WriteRequestLockWatch<FavoriteFoodsProperty>> {
         self.properties.favorite_foods.write_request().into()
     }
 
     /// Watch for changes to the `lunch_menu` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_lunch_menu(&self) -> watch::Receiver<Option<LunchMenuProperty>> {
+    pub fn watch_lunch_menu(&self) -> watch::Receiver<LunchMenuProperty> {
         self.properties.lunch_menu.subscribe()
     }
 
@@ -860,13 +893,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         })
     }
 
-    pub fn get_lunch_menu_handle(&self) -> Arc<WriteRequestLockWatch<Option<LunchMenuProperty>>> {
+    pub fn get_lunch_menu_handle(&self) -> Arc<WriteRequestLockWatch<LunchMenuProperty>> {
         self.properties.lunch_menu.write_request().into()
     }
 
     /// Watch for changes to the `family_name` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_family_name(&self) -> watch::Receiver<Option<String>> {
+    pub fn watch_family_name(&self) -> watch::Receiver<String> {
         self.properties.family_name.subscribe()
     }
 
@@ -896,15 +929,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         })
     }
 
-    pub fn get_family_name_handle(&self) -> Arc<WriteRequestLockWatch<Option<String>>> {
+    pub fn get_family_name_handle(&self) -> Arc<WriteRequestLockWatch<String>> {
         self.properties.family_name.write_request().into()
     }
 
     /// Watch for changes to the `last_breakfast_time` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_last_breakfast_time(
-        &self,
-    ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
+    pub fn watch_last_breakfast_time(&self) -> watch::Receiver<chrono::DateTime<chrono::Utc>> {
         self.properties.last_breakfast_time.subscribe()
     }
 
@@ -944,13 +975,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
     pub fn get_last_breakfast_time_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<chrono::DateTime<chrono::Utc>>>> {
+    ) -> Arc<WriteRequestLockWatch<chrono::DateTime<chrono::Utc>>> {
         self.properties.last_breakfast_time.write_request().into()
     }
 
     /// Watch for changes to the `breakfast_length` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_breakfast_length(&self) -> watch::Receiver<Option<chrono::Duration>> {
+    pub fn watch_breakfast_length(&self) -> watch::Receiver<chrono::Duration> {
         self.properties.breakfast_length.subscribe()
     }
 
@@ -982,15 +1013,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         })
     }
 
-    pub fn get_breakfast_length_handle(
-        &self,
-    ) -> Arc<WriteRequestLockWatch<Option<chrono::Duration>>> {
+    pub fn get_breakfast_length_handle(&self) -> Arc<WriteRequestLockWatch<chrono::Duration>> {
         self.properties.breakfast_length.write_request().into()
     }
 
     /// Watch for changes to the `last_birthdays` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_last_birthdays(&self) -> watch::Receiver<Option<LastBirthdaysProperty>> {
+    pub fn watch_last_birthdays(&self) -> watch::Receiver<LastBirthdaysProperty> {
         self.properties.last_birthdays.subscribe()
     }
 
@@ -1022,9 +1051,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         })
     }
 
-    pub fn get_last_birthdays_handle(
-        &self,
-    ) -> Arc<WriteRequestLockWatch<Option<LastBirthdaysProperty>>> {
+    pub fn get_last_birthdays_handle(&self) -> Arc<WriteRequestLockWatch<LastBirthdaysProperty>> {
         self.properties.last_birthdays.write_request().into()
     }
 
@@ -1385,7 +1412,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.favorite_number.write().await;
 
-                                *guard = Some(pl.number.clone());
+                                *guard = pl.number.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1426,7 +1453,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.favorite_foods.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1467,7 +1494,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.lunch_menu.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1508,7 +1535,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.family_name.write().await;
 
-                                *guard = Some(pl.family_name.clone());
+                                *guard = pl.family_name.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1549,7 +1576,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.last_breakfast_time.write().await;
 
-                                *guard = Some(pl.timestamp.clone());
+                                *guard = pl.timestamp.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1590,7 +1617,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.breakfast_length.write().await;
 
-                                *guard = Some(pl.length.clone());
+                                *guard = pl.length.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1631,7 +1658,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.last_birthdays.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {

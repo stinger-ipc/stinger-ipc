@@ -1768,13 +1768,14 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             loop {
                 interval.tick().await;
                 let topic = format!("full/{}/interface", instance_id);
-                let info = crate::interface::InterfaceInfo::new()
+                let info = crate::interface::InterfaceInfoBuilder::default()
                     .interface_name("Full".to_string())
                     .title("Fully Featured Example Interface".to_string())
                     .version("0.0.1".to_string())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
-                    .build();
+                    .build()
+                    .unwrap();
                 let msg = message::interface_online(&topic, &info, 150 /*seconds*/).unwrap();
                 let _ = interface_publisher.publish(msg).await;
             }

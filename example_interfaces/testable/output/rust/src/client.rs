@@ -11,23 +11,23 @@ This is the Client for the Test Able interface.
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
 */
+use crate::discovery::DiscoveredService;
 use crate::message;
-use serde_json;
-use std::collections::HashMap;
-use stinger_mqtt_trait::message::{MqttMessage, QoS};
-#[cfg(feature = "client")]
-use stinger_mqtt_trait::Mqtt5PubSub;
-use uuid::Uuid;
-
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
+use serde_json;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+#[cfg(feature = "client")]
+use stinger_mqtt_trait::Mqtt5PubSub;
 use tokio::sync::{broadcast, oneshot, watch};
 use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
+use uuid::Uuid;
 
 use std::sync::atomic::{AtomicU32, Ordering};
 #[allow(unused_imports)]
@@ -153,83 +153,83 @@ struct TestAbleSignalChannels {
 }
 
 #[derive(Clone)]
-pub struct TestAbleProperties {
-    pub read_write_integer: Arc<RwLockWatch<Option<i32>>>,
+struct TestAbleProperties {
+    pub read_write_integer: Arc<RwLockWatch<i32>>,
     pub read_write_integer_version: Arc<AtomicU32>,
 
-    pub read_only_integer: Arc<RwLockWatch<Option<i32>>>,
+    pub read_only_integer: Arc<RwLockWatch<i32>>,
     pub read_only_integer_version: Arc<AtomicU32>,
 
     pub read_write_optional_integer: Arc<RwLockWatch<Option<i32>>>,
     pub read_write_optional_integer_version: Arc<AtomicU32>,
 
-    pub read_write_two_integers: Arc<RwLockWatch<Option<ReadWriteTwoIntegersProperty>>>,
+    pub read_write_two_integers: Arc<RwLockWatch<ReadWriteTwoIntegersProperty>>,
     pub read_write_two_integers_version: Arc<AtomicU32>,
 
-    pub read_only_string: Arc<RwLockWatch<Option<String>>>,
+    pub read_only_string: Arc<RwLockWatch<String>>,
     pub read_only_string_version: Arc<AtomicU32>,
 
-    pub read_write_string: Arc<RwLockWatch<Option<String>>>,
+    pub read_write_string: Arc<RwLockWatch<String>>,
     pub read_write_string_version: Arc<AtomicU32>,
 
     pub read_write_optional_string: Arc<RwLockWatch<Option<String>>>,
     pub read_write_optional_string_version: Arc<AtomicU32>,
 
-    pub read_write_two_strings: Arc<RwLockWatch<Option<ReadWriteTwoStringsProperty>>>,
+    pub read_write_two_strings: Arc<RwLockWatch<ReadWriteTwoStringsProperty>>,
     pub read_write_two_strings_version: Arc<AtomicU32>,
 
-    pub read_write_struct: Arc<RwLockWatch<Option<AllTypes>>>,
+    pub read_write_struct: Arc<RwLockWatch<AllTypes>>,
     pub read_write_struct_version: Arc<AtomicU32>,
 
     pub read_write_optional_struct: Arc<RwLockWatch<Option<AllTypes>>>,
     pub read_write_optional_struct_version: Arc<AtomicU32>,
 
-    pub read_write_two_structs: Arc<RwLockWatch<Option<ReadWriteTwoStructsProperty>>>,
+    pub read_write_two_structs: Arc<RwLockWatch<ReadWriteTwoStructsProperty>>,
     pub read_write_two_structs_version: Arc<AtomicU32>,
 
-    pub read_only_enum: Arc<RwLockWatch<Option<Numbers>>>,
+    pub read_only_enum: Arc<RwLockWatch<Numbers>>,
     pub read_only_enum_version: Arc<AtomicU32>,
 
-    pub read_write_enum: Arc<RwLockWatch<Option<Numbers>>>,
+    pub read_write_enum: Arc<RwLockWatch<Numbers>>,
     pub read_write_enum_version: Arc<AtomicU32>,
 
     pub read_write_optional_enum: Arc<RwLockWatch<Option<Numbers>>>,
     pub read_write_optional_enum_version: Arc<AtomicU32>,
 
-    pub read_write_two_enums: Arc<RwLockWatch<Option<ReadWriteTwoEnumsProperty>>>,
+    pub read_write_two_enums: Arc<RwLockWatch<ReadWriteTwoEnumsProperty>>,
     pub read_write_two_enums_version: Arc<AtomicU32>,
 
-    pub read_write_datetime: Arc<RwLockWatch<Option<chrono::DateTime<chrono::Utc>>>>,
+    pub read_write_datetime: Arc<RwLockWatch<chrono::DateTime<chrono::Utc>>>,
     pub read_write_datetime_version: Arc<AtomicU32>,
 
     pub read_write_optional_datetime: Arc<RwLockWatch<Option<chrono::DateTime<chrono::Utc>>>>,
     pub read_write_optional_datetime_version: Arc<AtomicU32>,
 
-    pub read_write_two_datetimes: Arc<RwLockWatch<Option<ReadWriteTwoDatetimesProperty>>>,
+    pub read_write_two_datetimes: Arc<RwLockWatch<ReadWriteTwoDatetimesProperty>>,
     pub read_write_two_datetimes_version: Arc<AtomicU32>,
 
-    pub read_write_duration: Arc<RwLockWatch<Option<chrono::Duration>>>,
+    pub read_write_duration: Arc<RwLockWatch<chrono::Duration>>,
     pub read_write_duration_version: Arc<AtomicU32>,
 
     pub read_write_optional_duration: Arc<RwLockWatch<Option<chrono::Duration>>>,
     pub read_write_optional_duration_version: Arc<AtomicU32>,
 
-    pub read_write_two_durations: Arc<RwLockWatch<Option<ReadWriteTwoDurationsProperty>>>,
+    pub read_write_two_durations: Arc<RwLockWatch<ReadWriteTwoDurationsProperty>>,
     pub read_write_two_durations_version: Arc<AtomicU32>,
 
-    pub read_write_binary: Arc<RwLockWatch<Option<Vec<u8>>>>,
+    pub read_write_binary: Arc<RwLockWatch<Vec<u8>>>,
     pub read_write_binary_version: Arc<AtomicU32>,
 
     pub read_write_optional_binary: Arc<RwLockWatch<Option<Vec<u8>>>>,
     pub read_write_optional_binary_version: Arc<AtomicU32>,
 
-    pub read_write_two_binaries: Arc<RwLockWatch<Option<ReadWriteTwoBinariesProperty>>>,
+    pub read_write_two_binaries: Arc<RwLockWatch<ReadWriteTwoBinariesProperty>>,
     pub read_write_two_binaries_version: Arc<AtomicU32>,
 
-    pub read_write_list_of_strings: Arc<RwLockWatch<Option<Vec<String>>>>,
+    pub read_write_list_of_strings: Arc<RwLockWatch<Vec<String>>>,
     pub read_write_list_of_strings_version: Arc<AtomicU32>,
 
-    pub read_write_lists: Arc<RwLockWatch<Option<ReadWriteListsProperty>>>,
+    pub read_write_lists: Arc<RwLockWatch<ReadWriteListsProperty>>,
     pub read_write_lists_version: Arc<AtomicU32>,
 }
 
@@ -250,7 +250,7 @@ pub struct TestAbleClient<C: Mqtt5PubSub> {
     msg_streamer_tx: broadcast::Sender<MqttMessage>,
 
     /// Struct contains all the properties.
-    pub properties: TestAbleProperties,
+    properties: TestAbleProperties,
 
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: TestAbleSubscriptionIds,
@@ -266,7 +266,7 @@ pub struct TestAbleClient<C: Mqtt5PubSub> {
 
 impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
     /// Creates a new TestAbleClient that uses an Mqtt5PubSub.
-    pub async fn new(mut connection: C, service_id: String) -> Self {
+    pub async fn new(mut connection: C, discovery_info: DiscoveredService) -> Self {
         // Create a channel for messages to get from the Connection object to this TestAbleClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel(64);
@@ -549,7 +549,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             subscription_id_call_two_lists_method_resp.unwrap_or_else(|_| u32::MAX);
 
         // Subscribe to all the topics needed for signals.
-        let topic_empty_signal = format!("testAble/{}/signal/empty", service_id);
+        let topic_empty_signal = format!(
+            "testAble/{}/signal/empty",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_empty_signal = connection
             .subscribe(
                 topic_empty_signal,
@@ -559,7 +562,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_empty_signal =
             subscription_id_empty_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_int_signal = format!("testAble/{}/signal/singleInt", service_id);
+        let topic_single_int_signal = format!(
+            "testAble/{}/signal/singleInt",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_int_signal = connection
             .subscribe(
                 topic_single_int_signal,
@@ -569,8 +575,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_int_signal =
             subscription_id_single_int_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_optional_int_signal =
-            format!("testAble/{}/signal/singleOptionalInt", service_id);
+        let topic_single_optional_int_signal = format!(
+            "testAble/{}/signal/singleOptionalInt",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_optional_int_signal = connection
             .subscribe(
                 topic_single_optional_int_signal,
@@ -580,7 +588,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_optional_int_signal =
             subscription_id_single_optional_int_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_three_integers_signal = format!("testAble/{}/signal/threeIntegers", service_id);
+        let topic_three_integers_signal = format!(
+            "testAble/{}/signal/threeIntegers",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_three_integers_signal = connection
             .subscribe(
                 topic_three_integers_signal,
@@ -590,7 +601,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_three_integers_signal =
             subscription_id_three_integers_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_string_signal = format!("testAble/{}/signal/singleString", service_id);
+        let topic_single_string_signal = format!(
+            "testAble/{}/signal/singleString",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_string_signal = connection
             .subscribe(
                 topic_single_string_signal,
@@ -600,8 +614,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_string_signal =
             subscription_id_single_string_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_optional_string_signal =
-            format!("testAble/{}/signal/singleOptionalString", service_id);
+        let topic_single_optional_string_signal = format!(
+            "testAble/{}/signal/singleOptionalString",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_optional_string_signal = connection
             .subscribe(
                 topic_single_optional_string_signal,
@@ -611,7 +627,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_optional_string_signal =
             subscription_id_single_optional_string_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_three_strings_signal = format!("testAble/{}/signal/threeStrings", service_id);
+        let topic_three_strings_signal = format!(
+            "testAble/{}/signal/threeStrings",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_three_strings_signal = connection
             .subscribe(
                 topic_three_strings_signal,
@@ -621,7 +640,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_three_strings_signal =
             subscription_id_three_strings_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_enum_signal = format!("testAble/{}/signal/singleEnum", service_id);
+        let topic_single_enum_signal = format!(
+            "testAble/{}/signal/singleEnum",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_enum_signal = connection
             .subscribe(
                 topic_single_enum_signal,
@@ -631,8 +653,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_enum_signal =
             subscription_id_single_enum_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_optional_enum_signal =
-            format!("testAble/{}/signal/singleOptionalEnum", service_id);
+        let topic_single_optional_enum_signal = format!(
+            "testAble/{}/signal/singleOptionalEnum",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_optional_enum_signal = connection
             .subscribe(
                 topic_single_optional_enum_signal,
@@ -642,7 +666,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_optional_enum_signal =
             subscription_id_single_optional_enum_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_three_enums_signal = format!("testAble/{}/signal/threeEnums", service_id);
+        let topic_three_enums_signal = format!(
+            "testAble/{}/signal/threeEnums",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_three_enums_signal = connection
             .subscribe(
                 topic_three_enums_signal,
@@ -652,7 +679,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_three_enums_signal =
             subscription_id_three_enums_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_struct_signal = format!("testAble/{}/signal/singleStruct", service_id);
+        let topic_single_struct_signal = format!(
+            "testAble/{}/signal/singleStruct",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_struct_signal = connection
             .subscribe(
                 topic_single_struct_signal,
@@ -662,8 +692,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_struct_signal =
             subscription_id_single_struct_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_optional_struct_signal =
-            format!("testAble/{}/signal/singleOptionalStruct", service_id);
+        let topic_single_optional_struct_signal = format!(
+            "testAble/{}/signal/singleOptionalStruct",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_optional_struct_signal = connection
             .subscribe(
                 topic_single_optional_struct_signal,
@@ -673,7 +705,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_optional_struct_signal =
             subscription_id_single_optional_struct_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_three_structs_signal = format!("testAble/{}/signal/threeStructs", service_id);
+        let topic_three_structs_signal = format!(
+            "testAble/{}/signal/threeStructs",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_three_structs_signal = connection
             .subscribe(
                 topic_three_structs_signal,
@@ -683,8 +718,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_three_structs_signal =
             subscription_id_three_structs_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_date_time_signal =
-            format!("testAble/{}/signal/singleDateTime", service_id);
+        let topic_single_date_time_signal = format!(
+            "testAble/{}/signal/singleDateTime",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_date_time_signal = connection
             .subscribe(
                 topic_single_date_time_signal,
@@ -694,8 +731,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_date_time_signal =
             subscription_id_single_date_time_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_optional_datetime_signal =
-            format!("testAble/{}/signal/singleOptionalDatetime", service_id);
+        let topic_single_optional_datetime_signal = format!(
+            "testAble/{}/signal/singleOptionalDatetime",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_optional_datetime_signal = connection
             .subscribe(
                 topic_single_optional_datetime_signal,
@@ -705,8 +744,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_optional_datetime_signal =
             subscription_id_single_optional_datetime_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_three_date_times_signal =
-            format!("testAble/{}/signal/threeDateTimes", service_id);
+        let topic_three_date_times_signal = format!(
+            "testAble/{}/signal/threeDateTimes",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_three_date_times_signal = connection
             .subscribe(
                 topic_three_date_times_signal,
@@ -716,7 +757,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_three_date_times_signal =
             subscription_id_three_date_times_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_duration_signal = format!("testAble/{}/signal/singleDuration", service_id);
+        let topic_single_duration_signal = format!(
+            "testAble/{}/signal/singleDuration",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_duration_signal = connection
             .subscribe(
                 topic_single_duration_signal,
@@ -726,8 +770,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_duration_signal =
             subscription_id_single_duration_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_optional_duration_signal =
-            format!("testAble/{}/signal/singleOptionalDuration", service_id);
+        let topic_single_optional_duration_signal = format!(
+            "testAble/{}/signal/singleOptionalDuration",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_optional_duration_signal = connection
             .subscribe(
                 topic_single_optional_duration_signal,
@@ -737,7 +783,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_optional_duration_signal =
             subscription_id_single_optional_duration_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_three_durations_signal = format!("testAble/{}/signal/threeDurations", service_id);
+        let topic_three_durations_signal = format!(
+            "testAble/{}/signal/threeDurations",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_three_durations_signal = connection
             .subscribe(
                 topic_three_durations_signal,
@@ -747,7 +796,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_three_durations_signal =
             subscription_id_three_durations_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_binary_signal = format!("testAble/{}/signal/singleBinary", service_id);
+        let topic_single_binary_signal = format!(
+            "testAble/{}/signal/singleBinary",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_binary_signal = connection
             .subscribe(
                 topic_single_binary_signal,
@@ -757,8 +809,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_binary_signal =
             subscription_id_single_binary_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_optional_binary_signal =
-            format!("testAble/{}/signal/singleOptionalBinary", service_id);
+        let topic_single_optional_binary_signal = format!(
+            "testAble/{}/signal/singleOptionalBinary",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_optional_binary_signal = connection
             .subscribe(
                 topic_single_optional_binary_signal,
@@ -768,7 +822,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_optional_binary_signal =
             subscription_id_single_optional_binary_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_three_binaries_signal = format!("testAble/{}/signal/threeBinaries", service_id);
+        let topic_three_binaries_signal = format!(
+            "testAble/{}/signal/threeBinaries",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_three_binaries_signal = connection
             .subscribe(
                 topic_three_binaries_signal,
@@ -778,8 +835,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_three_binaries_signal =
             subscription_id_three_binaries_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_single_array_of_integers_signal =
-            format!("testAble/{}/signal/singleArrayOfIntegers", service_id);
+        let topic_single_array_of_integers_signal = format!(
+            "testAble/{}/signal/singleArrayOfIntegers",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_single_array_of_integers_signal = connection
             .subscribe(
                 topic_single_array_of_integers_signal,
@@ -791,7 +850,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             subscription_id_single_array_of_integers_signal.unwrap_or_else(|_| u32::MAX);
         let topic_single_optional_array_of_strings_signal = format!(
             "testAble/{}/signal/singleOptionalArrayOfStrings",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_single_optional_array_of_strings_signal = connection
             .subscribe(
@@ -802,8 +861,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             .await;
         let subscription_id_single_optional_array_of_strings_signal =
             subscription_id_single_optional_array_of_strings_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_array_of_every_type_signal =
-            format!("testAble/{}/signal/arrayOfEveryType", service_id);
+        let topic_array_of_every_type_signal = format!(
+            "testAble/{}/signal/arrayOfEveryType",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_array_of_every_type_signal = connection
             .subscribe(
                 topic_array_of_every_type_signal,
@@ -816,8 +877,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         // Subscribe to all the topics needed for properties.
 
-        let topic_read_write_integer_property_value =
-            format!("testAble/{}/property/readWriteInteger/value", service_id);
+        let topic_read_write_integer_property_value = format!(
+            "testAble/{}/property/readWriteInteger/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_integer_property_value = connection
             .subscribe(
                 topic_read_write_integer_property_value,
@@ -828,8 +891,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_integer_property_value =
             subscription_id_read_write_integer_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_only_integer_property_value =
-            format!("testAble/{}/property/readOnlyInteger/value", service_id);
+        let topic_read_only_integer_property_value = format!(
+            "testAble/{}/property/readOnlyInteger/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_only_integer_property_value = connection
             .subscribe(
                 topic_read_only_integer_property_value,
@@ -842,7 +907,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_optional_integer_property_value = format!(
             "testAble/{}/property/readWriteOptionalInteger/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_optional_integer_property_value = connection
             .subscribe(
@@ -856,7 +921,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_two_integers_property_value = format!(
             "testAble/{}/property/readWriteTwoIntegers/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_two_integers_property_value = connection
             .subscribe(
@@ -868,8 +933,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_two_integers_property_value =
             subscription_id_read_write_two_integers_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_only_string_property_value =
-            format!("testAble/{}/property/readOnlyString/value", service_id);
+        let topic_read_only_string_property_value = format!(
+            "testAble/{}/property/readOnlyString/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_only_string_property_value = connection
             .subscribe(
                 topic_read_only_string_property_value,
@@ -880,8 +947,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_only_string_property_value =
             subscription_id_read_only_string_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_string_property_value =
-            format!("testAble/{}/property/readWriteString/value", service_id);
+        let topic_read_write_string_property_value = format!(
+            "testAble/{}/property/readWriteString/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_string_property_value = connection
             .subscribe(
                 topic_read_write_string_property_value,
@@ -894,7 +963,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_optional_string_property_value = format!(
             "testAble/{}/property/readWriteOptionalString/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_optional_string_property_value = connection
             .subscribe(
@@ -906,8 +975,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_optional_string_property_value =
             subscription_id_read_write_optional_string_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_two_strings_property_value =
-            format!("testAble/{}/property/readWriteTwoStrings/value", service_id);
+        let topic_read_write_two_strings_property_value = format!(
+            "testAble/{}/property/readWriteTwoStrings/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_two_strings_property_value = connection
             .subscribe(
                 topic_read_write_two_strings_property_value,
@@ -918,8 +989,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_two_strings_property_value =
             subscription_id_read_write_two_strings_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_struct_property_value =
-            format!("testAble/{}/property/readWriteStruct/value", service_id);
+        let topic_read_write_struct_property_value = format!(
+            "testAble/{}/property/readWriteStruct/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_struct_property_value = connection
             .subscribe(
                 topic_read_write_struct_property_value,
@@ -932,7 +1005,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_optional_struct_property_value = format!(
             "testAble/{}/property/readWriteOptionalStruct/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_optional_struct_property_value = connection
             .subscribe(
@@ -944,8 +1017,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_optional_struct_property_value =
             subscription_id_read_write_optional_struct_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_two_structs_property_value =
-            format!("testAble/{}/property/readWriteTwoStructs/value", service_id);
+        let topic_read_write_two_structs_property_value = format!(
+            "testAble/{}/property/readWriteTwoStructs/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_two_structs_property_value = connection
             .subscribe(
                 topic_read_write_two_structs_property_value,
@@ -956,8 +1031,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_two_structs_property_value =
             subscription_id_read_write_two_structs_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_only_enum_property_value =
-            format!("testAble/{}/property/readOnlyEnum/value", service_id);
+        let topic_read_only_enum_property_value = format!(
+            "testAble/{}/property/readOnlyEnum/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_only_enum_property_value = connection
             .subscribe(
                 topic_read_only_enum_property_value,
@@ -968,8 +1045,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_only_enum_property_value =
             subscription_id_read_only_enum_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_enum_property_value =
-            format!("testAble/{}/property/readWriteEnum/value", service_id);
+        let topic_read_write_enum_property_value = format!(
+            "testAble/{}/property/readWriteEnum/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_enum_property_value = connection
             .subscribe(
                 topic_read_write_enum_property_value,
@@ -982,7 +1061,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_optional_enum_property_value = format!(
             "testAble/{}/property/readWriteOptionalEnum/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_optional_enum_property_value = connection
             .subscribe(
@@ -994,8 +1073,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_optional_enum_property_value =
             subscription_id_read_write_optional_enum_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_two_enums_property_value =
-            format!("testAble/{}/property/readWriteTwoEnums/value", service_id);
+        let topic_read_write_two_enums_property_value = format!(
+            "testAble/{}/property/readWriteTwoEnums/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_two_enums_property_value = connection
             .subscribe(
                 topic_read_write_two_enums_property_value,
@@ -1006,8 +1087,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_two_enums_property_value =
             subscription_id_read_write_two_enums_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_datetime_property_value =
-            format!("testAble/{}/property/readWriteDatetime/value", service_id);
+        let topic_read_write_datetime_property_value = format!(
+            "testAble/{}/property/readWriteDatetime/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_datetime_property_value = connection
             .subscribe(
                 topic_read_write_datetime_property_value,
@@ -1020,7 +1103,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_optional_datetime_property_value = format!(
             "testAble/{}/property/readWriteOptionalDatetime/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_optional_datetime_property_value = connection
             .subscribe(
@@ -1035,7 +1118,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_two_datetimes_property_value = format!(
             "testAble/{}/property/readWriteTwoDatetimes/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_two_datetimes_property_value = connection
             .subscribe(
@@ -1047,8 +1130,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_two_datetimes_property_value =
             subscription_id_read_write_two_datetimes_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_duration_property_value =
-            format!("testAble/{}/property/readWriteDuration/value", service_id);
+        let topic_read_write_duration_property_value = format!(
+            "testAble/{}/property/readWriteDuration/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_duration_property_value = connection
             .subscribe(
                 topic_read_write_duration_property_value,
@@ -1061,7 +1146,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_optional_duration_property_value = format!(
             "testAble/{}/property/readWriteOptionalDuration/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_optional_duration_property_value = connection
             .subscribe(
@@ -1076,7 +1161,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_two_durations_property_value = format!(
             "testAble/{}/property/readWriteTwoDurations/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_two_durations_property_value = connection
             .subscribe(
@@ -1088,8 +1173,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_two_durations_property_value =
             subscription_id_read_write_two_durations_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_binary_property_value =
-            format!("testAble/{}/property/readWriteBinary/value", service_id);
+        let topic_read_write_binary_property_value = format!(
+            "testAble/{}/property/readWriteBinary/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_binary_property_value = connection
             .subscribe(
                 topic_read_write_binary_property_value,
@@ -1102,7 +1189,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_optional_binary_property_value = format!(
             "testAble/{}/property/readWriteOptionalBinary/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_optional_binary_property_value = connection
             .subscribe(
@@ -1116,7 +1203,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_two_binaries_property_value = format!(
             "testAble/{}/property/readWriteTwoBinaries/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_two_binaries_property_value = connection
             .subscribe(
@@ -1130,7 +1217,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let topic_read_write_list_of_strings_property_value = format!(
             "testAble/{}/property/readWriteListOfStrings/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_read_write_list_of_strings_property_value = connection
             .subscribe(
@@ -1142,8 +1229,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let subscription_id_read_write_list_of_strings_property_value =
             subscription_id_read_write_list_of_strings_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_read_write_lists_property_value =
-            format!("testAble/{}/property/readWriteLists/value", service_id);
+        let topic_read_write_lists_property_value = format!(
+            "testAble/{}/property/readWriteLists/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_read_write_lists_property_value = connection
             .subscribe(
                 topic_read_write_lists_property_value,
@@ -1155,75 +1244,181 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             subscription_id_read_write_lists_property_value.unwrap_or_else(|_| u32::MAX);
 
         let property_values = TestAbleProperties {
-            read_write_integer: Arc::new(RwLockWatch::new(None)),
-            read_write_integer_version: Arc::new(AtomicU32::new(0)),
+            read_write_integer: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_integer,
+            )),
+            read_write_integer_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_integer_version,
+            )),
 
-            read_only_integer: Arc::new(RwLockWatch::new(None)),
-            read_only_integer_version: Arc::new(AtomicU32::new(0)),
+            read_only_integer: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_only_integer,
+            )),
+            read_only_integer_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_only_integer_version,
+            )),
 
-            read_write_optional_integer: Arc::new(RwLockWatch::new(None)),
-            read_write_optional_integer_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_integers: Arc::new(RwLockWatch::new(None)),
-            read_write_two_integers_version: Arc::new(AtomicU32::new(0)),
+            read_write_optional_integer: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_optional_integer,
+            )),
+            read_write_optional_integer_version: Arc::new(AtomicU32::new(
+                discovery_info
+                    .properties
+                    .read_write_optional_integer_version,
+            )),
+            read_write_two_integers: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_two_integers,
+            )),
+            read_write_two_integers_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_two_integers_version,
+            )),
 
-            read_only_string: Arc::new(RwLockWatch::new(None)),
-            read_only_string_version: Arc::new(AtomicU32::new(0)),
+            read_only_string: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_only_string,
+            )),
+            read_only_string_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_only_string_version,
+            )),
 
-            read_write_string: Arc::new(RwLockWatch::new(None)),
-            read_write_string_version: Arc::new(AtomicU32::new(0)),
+            read_write_string: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_string,
+            )),
+            read_write_string_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_string_version,
+            )),
 
-            read_write_optional_string: Arc::new(RwLockWatch::new(None)),
-            read_write_optional_string_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_strings: Arc::new(RwLockWatch::new(None)),
-            read_write_two_strings_version: Arc::new(AtomicU32::new(0)),
+            read_write_optional_string: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_optional_string,
+            )),
+            read_write_optional_string_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_optional_string_version,
+            )),
+            read_write_two_strings: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_two_strings,
+            )),
+            read_write_two_strings_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_two_strings_version,
+            )),
 
-            read_write_struct: Arc::new(RwLockWatch::new(None)),
-            read_write_struct_version: Arc::new(AtomicU32::new(0)),
+            read_write_struct: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_struct,
+            )),
+            read_write_struct_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_struct_version,
+            )),
 
-            read_write_optional_struct: Arc::new(RwLockWatch::new(None)),
-            read_write_optional_struct_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_structs: Arc::new(RwLockWatch::new(None)),
-            read_write_two_structs_version: Arc::new(AtomicU32::new(0)),
+            read_write_optional_struct: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_optional_struct,
+            )),
+            read_write_optional_struct_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_optional_struct_version,
+            )),
+            read_write_two_structs: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_two_structs,
+            )),
+            read_write_two_structs_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_two_structs_version,
+            )),
 
-            read_only_enum: Arc::new(RwLockWatch::new(None)),
-            read_only_enum_version: Arc::new(AtomicU32::new(0)),
+            read_only_enum: Arc::new(RwLockWatch::new(discovery_info.properties.read_only_enum)),
+            read_only_enum_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_only_enum_version,
+            )),
 
-            read_write_enum: Arc::new(RwLockWatch::new(None)),
-            read_write_enum_version: Arc::new(AtomicU32::new(0)),
+            read_write_enum: Arc::new(RwLockWatch::new(discovery_info.properties.read_write_enum)),
+            read_write_enum_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_enum_version,
+            )),
 
-            read_write_optional_enum: Arc::new(RwLockWatch::new(None)),
-            read_write_optional_enum_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_enums: Arc::new(RwLockWatch::new(None)),
-            read_write_two_enums_version: Arc::new(AtomicU32::new(0)),
+            read_write_optional_enum: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_optional_enum,
+            )),
+            read_write_optional_enum_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_optional_enum_version,
+            )),
+            read_write_two_enums: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_two_enums,
+            )),
+            read_write_two_enums_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_two_enums_version,
+            )),
 
-            read_write_datetime: Arc::new(RwLockWatch::new(None)),
-            read_write_datetime_version: Arc::new(AtomicU32::new(0)),
+            read_write_datetime: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_datetime,
+            )),
+            read_write_datetime_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_datetime_version,
+            )),
 
-            read_write_optional_datetime: Arc::new(RwLockWatch::new(None)),
-            read_write_optional_datetime_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_datetimes: Arc::new(RwLockWatch::new(None)),
-            read_write_two_datetimes_version: Arc::new(AtomicU32::new(0)),
+            read_write_optional_datetime: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_optional_datetime,
+            )),
+            read_write_optional_datetime_version: Arc::new(AtomicU32::new(
+                discovery_info
+                    .properties
+                    .read_write_optional_datetime_version,
+            )),
+            read_write_two_datetimes: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_two_datetimes,
+            )),
+            read_write_two_datetimes_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_two_datetimes_version,
+            )),
 
-            read_write_duration: Arc::new(RwLockWatch::new(None)),
-            read_write_duration_version: Arc::new(AtomicU32::new(0)),
+            read_write_duration: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_duration,
+            )),
+            read_write_duration_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_duration_version,
+            )),
 
-            read_write_optional_duration: Arc::new(RwLockWatch::new(None)),
-            read_write_optional_duration_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_durations: Arc::new(RwLockWatch::new(None)),
-            read_write_two_durations_version: Arc::new(AtomicU32::new(0)),
+            read_write_optional_duration: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_optional_duration,
+            )),
+            read_write_optional_duration_version: Arc::new(AtomicU32::new(
+                discovery_info
+                    .properties
+                    .read_write_optional_duration_version,
+            )),
+            read_write_two_durations: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_two_durations,
+            )),
+            read_write_two_durations_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_two_durations_version,
+            )),
 
-            read_write_binary: Arc::new(RwLockWatch::new(None)),
-            read_write_binary_version: Arc::new(AtomicU32::new(0)),
+            read_write_binary: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_binary,
+            )),
+            read_write_binary_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_binary_version,
+            )),
 
-            read_write_optional_binary: Arc::new(RwLockWatch::new(None)),
-            read_write_optional_binary_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_binaries: Arc::new(RwLockWatch::new(None)),
-            read_write_two_binaries_version: Arc::new(AtomicU32::new(0)),
+            read_write_optional_binary: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_optional_binary,
+            )),
+            read_write_optional_binary_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_optional_binary_version,
+            )),
+            read_write_two_binaries: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_two_binaries,
+            )),
+            read_write_two_binaries_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_two_binaries_version,
+            )),
 
-            read_write_list_of_strings: Arc::new(RwLockWatch::new(None)),
-            read_write_list_of_strings_version: Arc::new(AtomicU32::new(0)),
-            read_write_lists: Arc::new(RwLockWatch::new(None)),
-            read_write_lists_version: Arc::new(AtomicU32::new(0)),
+            read_write_list_of_strings: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_list_of_strings,
+            )),
+            read_write_list_of_strings_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_list_of_strings_version,
+            )),
+            read_write_lists: Arc::new(RwLockWatch::new(
+                discovery_info.properties.read_write_lists,
+            )),
+            read_write_lists_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.read_write_lists_version,
+            )),
         };
 
         // Create structure for subscription ids.
@@ -1368,7 +1563,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             signal_channels: signal_channels,
             client_id: client_id,
 
-            service_instance_id: service_id,
+            service_instance_id: discovery_info.interface_info.instance,
         };
         inst
     }
@@ -2939,7 +3134,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_integer` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_integer(&self) -> watch::Receiver<Option<i32>> {
+    pub fn watch_read_write_integer(&self) -> watch::Receiver<i32> {
         self.properties.read_write_integer.subscribe()
     }
 
@@ -2974,18 +3169,18 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         })
     }
 
-    pub fn get_read_write_integer_handle(&self) -> Arc<WriteRequestLockWatch<Option<i32>>> {
+    pub fn get_read_write_integer_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
         self.properties.read_write_integer.write_request().into()
     }
 
     /// Watch for changes to the `read_only_integer` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_only_integer(&self) -> watch::Receiver<Option<i32>> {
+    pub fn watch_read_only_integer(&self) -> watch::Receiver<i32> {
         self.properties.read_only_integer.subscribe()
     }
 
-    pub fn get_read_only_integer_handle(&self) -> ReadOnlyLockWatch<Option<i32>> {
-        self.properties.read_only_integer.read_only()
+    pub fn get_read_only_integer_handle(&self) -> Arc<ReadOnlyLockWatch<i32>> {
+        self.properties.read_only_integer.read_only().into()
     }
 
     /// Watch for changes to the `read_write_optional_integer` property.
@@ -3039,9 +3234,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_two_integers` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_two_integers(
-        &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoIntegersProperty>> {
+    pub fn watch_read_write_two_integers(&self) -> watch::Receiver<ReadWriteTwoIntegersProperty> {
         self.properties.read_write_two_integers.subscribe()
     }
 
@@ -3081,7 +3274,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     pub fn get_read_write_two_integers_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<ReadWriteTwoIntegersProperty>>> {
+    ) -> Arc<WriteRequestLockWatch<ReadWriteTwoIntegersProperty>> {
         self.properties
             .read_write_two_integers
             .write_request()
@@ -3090,17 +3283,17 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_only_string` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_only_string(&self) -> watch::Receiver<Option<String>> {
+    pub fn watch_read_only_string(&self) -> watch::Receiver<String> {
         self.properties.read_only_string.subscribe()
     }
 
-    pub fn get_read_only_string_handle(&self) -> ReadOnlyLockWatch<Option<String>> {
-        self.properties.read_only_string.read_only()
+    pub fn get_read_only_string_handle(&self) -> Arc<ReadOnlyLockWatch<String>> {
+        self.properties.read_only_string.read_only().into()
     }
 
     /// Watch for changes to the `read_write_string` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_string(&self) -> watch::Receiver<Option<String>> {
+    pub fn watch_read_write_string(&self) -> watch::Receiver<String> {
         self.properties.read_write_string.subscribe()
     }
 
@@ -3135,7 +3328,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         })
     }
 
-    pub fn get_read_write_string_handle(&self) -> Arc<WriteRequestLockWatch<Option<String>>> {
+    pub fn get_read_write_string_handle(&self) -> Arc<WriteRequestLockWatch<String>> {
         self.properties.read_write_string.write_request().into()
     }
 
@@ -3190,9 +3383,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_two_strings` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_two_strings(
-        &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoStringsProperty>> {
+    pub fn watch_read_write_two_strings(&self) -> watch::Receiver<ReadWriteTwoStringsProperty> {
         self.properties.read_write_two_strings.subscribe()
     }
 
@@ -3232,7 +3423,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     pub fn get_read_write_two_strings_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<ReadWriteTwoStringsProperty>>> {
+    ) -> Arc<WriteRequestLockWatch<ReadWriteTwoStringsProperty>> {
         self.properties
             .read_write_two_strings
             .write_request()
@@ -3241,7 +3432,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_struct` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_struct(&self) -> watch::Receiver<Option<AllTypes>> {
+    pub fn watch_read_write_struct(&self) -> watch::Receiver<AllTypes> {
         self.properties.read_write_struct.subscribe()
     }
 
@@ -3276,7 +3467,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         })
     }
 
-    pub fn get_read_write_struct_handle(&self) -> Arc<WriteRequestLockWatch<Option<AllTypes>>> {
+    pub fn get_read_write_struct_handle(&self) -> Arc<WriteRequestLockWatch<AllTypes>> {
         self.properties.read_write_struct.write_request().into()
     }
 
@@ -3331,9 +3522,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_two_structs` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_two_structs(
-        &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoStructsProperty>> {
+    pub fn watch_read_write_two_structs(&self) -> watch::Receiver<ReadWriteTwoStructsProperty> {
         self.properties.read_write_two_structs.subscribe()
     }
 
@@ -3373,7 +3562,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     pub fn get_read_write_two_structs_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<ReadWriteTwoStructsProperty>>> {
+    ) -> Arc<WriteRequestLockWatch<ReadWriteTwoStructsProperty>> {
         self.properties
             .read_write_two_structs
             .write_request()
@@ -3382,17 +3571,17 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_only_enum` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_only_enum(&self) -> watch::Receiver<Option<Numbers>> {
+    pub fn watch_read_only_enum(&self) -> watch::Receiver<Numbers> {
         self.properties.read_only_enum.subscribe()
     }
 
-    pub fn get_read_only_enum_handle(&self) -> ReadOnlyLockWatch<Option<Numbers>> {
-        self.properties.read_only_enum.read_only()
+    pub fn get_read_only_enum_handle(&self) -> Arc<ReadOnlyLockWatch<Numbers>> {
+        self.properties.read_only_enum.read_only().into()
     }
 
     /// Watch for changes to the `read_write_enum` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_enum(&self) -> watch::Receiver<Option<Numbers>> {
+    pub fn watch_read_write_enum(&self) -> watch::Receiver<Numbers> {
         self.properties.read_write_enum.subscribe()
     }
 
@@ -3427,7 +3616,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         })
     }
 
-    pub fn get_read_write_enum_handle(&self) -> Arc<WriteRequestLockWatch<Option<Numbers>>> {
+    pub fn get_read_write_enum_handle(&self) -> Arc<WriteRequestLockWatch<Numbers>> {
         self.properties.read_write_enum.write_request().into()
     }
 
@@ -3482,7 +3671,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_two_enums` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_two_enums(&self) -> watch::Receiver<Option<ReadWriteTwoEnumsProperty>> {
+    pub fn watch_read_write_two_enums(&self) -> watch::Receiver<ReadWriteTwoEnumsProperty> {
         self.properties.read_write_two_enums.subscribe()
     }
 
@@ -3522,15 +3711,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     pub fn get_read_write_two_enums_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<ReadWriteTwoEnumsProperty>>> {
+    ) -> Arc<WriteRequestLockWatch<ReadWriteTwoEnumsProperty>> {
         self.properties.read_write_two_enums.write_request().into()
     }
 
     /// Watch for changes to the `read_write_datetime` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_datetime(
-        &self,
-    ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
+    pub fn watch_read_write_datetime(&self) -> watch::Receiver<chrono::DateTime<chrono::Utc>> {
         self.properties.read_write_datetime.subscribe()
     }
 
@@ -3570,7 +3757,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     pub fn get_read_write_datetime_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<chrono::DateTime<chrono::Utc>>>> {
+    ) -> Arc<WriteRequestLockWatch<chrono::DateTime<chrono::Utc>>> {
         self.properties.read_write_datetime.write_request().into()
     }
 
@@ -3627,9 +3814,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_two_datetimes` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_two_datetimes(
-        &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoDatetimesProperty>> {
+    pub fn watch_read_write_two_datetimes(&self) -> watch::Receiver<ReadWriteTwoDatetimesProperty> {
         self.properties.read_write_two_datetimes.subscribe()
     }
 
@@ -3669,7 +3854,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     pub fn get_read_write_two_datetimes_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<ReadWriteTwoDatetimesProperty>>> {
+    ) -> Arc<WriteRequestLockWatch<ReadWriteTwoDatetimesProperty>> {
         self.properties
             .read_write_two_datetimes
             .write_request()
@@ -3678,7 +3863,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_duration` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_duration(&self) -> watch::Receiver<Option<chrono::Duration>> {
+    pub fn watch_read_write_duration(&self) -> watch::Receiver<chrono::Duration> {
         self.properties.read_write_duration.subscribe()
     }
 
@@ -3713,9 +3898,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         })
     }
 
-    pub fn get_read_write_duration_handle(
-        &self,
-    ) -> Arc<WriteRequestLockWatch<Option<chrono::Duration>>> {
+    pub fn get_read_write_duration_handle(&self) -> Arc<WriteRequestLockWatch<chrono::Duration>> {
         self.properties.read_write_duration.write_request().into()
     }
 
@@ -3770,9 +3953,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_two_durations` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_two_durations(
-        &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoDurationsProperty>> {
+    pub fn watch_read_write_two_durations(&self) -> watch::Receiver<ReadWriteTwoDurationsProperty> {
         self.properties.read_write_two_durations.subscribe()
     }
 
@@ -3812,7 +3993,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     pub fn get_read_write_two_durations_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<ReadWriteTwoDurationsProperty>>> {
+    ) -> Arc<WriteRequestLockWatch<ReadWriteTwoDurationsProperty>> {
         self.properties
             .read_write_two_durations
             .write_request()
@@ -3821,7 +4002,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_binary` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_binary(&self) -> watch::Receiver<Option<Vec<u8>>> {
+    pub fn watch_read_write_binary(&self) -> watch::Receiver<Vec<u8>> {
         self.properties.read_write_binary.subscribe()
     }
 
@@ -3856,7 +4037,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         })
     }
 
-    pub fn get_read_write_binary_handle(&self) -> Arc<WriteRequestLockWatch<Option<Vec<u8>>>> {
+    pub fn get_read_write_binary_handle(&self) -> Arc<WriteRequestLockWatch<Vec<u8>>> {
         self.properties.read_write_binary.write_request().into()
     }
 
@@ -3911,9 +4092,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_two_binaries` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_two_binaries(
-        &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoBinariesProperty>> {
+    pub fn watch_read_write_two_binaries(&self) -> watch::Receiver<ReadWriteTwoBinariesProperty> {
         self.properties.read_write_two_binaries.subscribe()
     }
 
@@ -3953,7 +4132,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     pub fn get_read_write_two_binaries_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<ReadWriteTwoBinariesProperty>>> {
+    ) -> Arc<WriteRequestLockWatch<ReadWriteTwoBinariesProperty>> {
         self.properties
             .read_write_two_binaries
             .write_request()
@@ -3962,7 +4141,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_list_of_strings` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_list_of_strings(&self) -> watch::Receiver<Option<Vec<String>>> {
+    pub fn watch_read_write_list_of_strings(&self) -> watch::Receiver<Vec<String>> {
         self.properties.read_write_list_of_strings.subscribe()
     }
 
@@ -3997,9 +4176,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         })
     }
 
-    pub fn get_read_write_list_of_strings_handle(
-        &self,
-    ) -> Arc<WriteRequestLockWatch<Option<Vec<String>>>> {
+    pub fn get_read_write_list_of_strings_handle(&self) -> Arc<WriteRequestLockWatch<Vec<String>>> {
         self.properties
             .read_write_list_of_strings
             .write_request()
@@ -4008,7 +4185,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Watch for changes to the `read_write_lists` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_read_write_lists(&self) -> watch::Receiver<Option<ReadWriteListsProperty>> {
+    pub fn watch_read_write_lists(&self) -> watch::Receiver<ReadWriteListsProperty> {
         self.properties.read_write_lists.subscribe()
     }
 
@@ -4048,7 +4225,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     pub fn get_read_write_lists_handle(
         &self,
-    ) -> Arc<WriteRequestLockWatch<Option<ReadWriteListsProperty>>> {
+    ) -> Arc<WriteRequestLockWatch<ReadWriteListsProperty>> {
         self.properties.read_write_lists.write_request().into()
     }
 
@@ -5641,7 +5818,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_integer.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -5682,7 +5859,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_only_integer.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -5767,7 +5944,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_two_integers.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -5808,7 +5985,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_only_string.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -5849,7 +6026,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_string.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -5933,7 +6110,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_two_strings.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -5974,7 +6151,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_struct.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6058,7 +6235,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_two_structs.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6099,7 +6276,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_only_enum.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6140,7 +6317,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_enum.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6223,7 +6400,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_two_enums.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6264,7 +6441,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_datetime.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6350,7 +6527,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_two_datetimes.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6391,7 +6568,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_duration.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6477,7 +6654,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_two_durations.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6518,7 +6695,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_binary.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6602,7 +6779,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_two_binaries.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6644,7 +6821,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_list_of_strings.write().await;
 
-                                *guard = Some(pl.value.clone());
+                                *guard = pl.value.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -6685,7 +6862,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.read_write_lists.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {

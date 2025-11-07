@@ -18,7 +18,13 @@ use tokio::task::JoinHandle;
 #[allow(unused_imports)]
 use tracing::{debug, info, warn, error};
 use crate::interface::InterfaceInfo;
+{%if stinger.properties|length > 0%}
 use crate::property::{ {{-stinger.name | UpperCamelCase}}InitialPropertyValuesBuilder, {{stinger.name | UpperCamelCase}}InitialPropertyValues};
+{%endif%}
+#[allow(unused_imports)]
+use crate::payloads::{*};
+#[cfg(feature = "metrics")]
+use std::sync::Mutex;
 
 #[derive(Debug)]
 pub enum {{stinger.name|UpperCamelCase}}DiscoveryError {
@@ -41,40 +47,61 @@ impl From<Mqtt5PubSubError> for {{stinger.name|UpperCamelCase}}DiscoveryError {
     }
 }
 
-struct ServiceDiscovery {
-    interface_info: Option<InterfaceInfo>,
-    properties: {{stinger.name | UpperCamelCase}}InitialPropertyValuesBuilder,
-    fully_discovered: std::sync::atomic::AtomicBool,
+struct ServiceInDiscovery {
+    pub interface_info: Option<InterfaceInfo>,
+    {% if stinger.properties|length > 0 %}
+    pub property_builder: {{stinger.name | UpperCamelCase}}InitialPropertyValuesBuilder,
+    pub property_count: u32,
+    {% endif %}
+    pub fully_discovered: std::sync::atomic::AtomicBool,
 }
 
-impl Default for ServiceDiscovery {
+impl Default for ServiceInDiscovery {
     fn default() -> Self {
         Self {
             interface_info: None,
-            properties: {{stinger.name | UpperCamelCase}}InitialPropertyValuesBuilder::default(),
+            {% if stinger.properties|length > 0 %}
+            property_builder: {{stinger.name | UpperCamelCase}}InitialPropertyValuesBuilder::default(),
+            property_count: 0,
+            {% endif %}
+            fully_discovered: std::sync::atomic::AtomicBool::new(false),
         }
     }
 }
 
-struct DiscoveredService {
-    interface_info: InterfaceInfo,
-    properties: {{stinger.name | UpperCamelCase}}InitialPropertyValues,
+#[derive(Clone, Debug)]
+pub struct DiscoveredService {
+    pub interface_info: InterfaceInfo,
+    {% if stinger.properties|length > 0 %}
+    pub properties: {{stinger.name | UpperCamelCase}}InitialPropertyValues,
+    {% endif %}
 }
 
-impl ServiceDiscovery {
-    /// Attempts to convert a ServiceDiscovery into a DiscoveredService
+impl ServiceInDiscovery {
+    /// Attempts to convert a ServiceInDiscovery into a DiscoveredService
     pub fn to_discovered_service(&self) -> Option<DiscoveredService> {
-        match (&self.interface_info, self.properties.build()) {
-            (Some(info), Some(props)) => Some(DiscoveredService {
+        {% if stinger.properties|length > 0 %}
+        let built_properties_result = self.property_builder.build();
+        match (&self.interface_info, built_properties_result) {
+            (Some(info), Ok(props)) => Some(DiscoveredService {
                 interface_info: info.clone(),
                 properties: props,
             }),
             _ => None,
         }
+        {%else%}
+        match &self.interface_info {
+            Some(info) => Some(DiscoveredService {
+                interface_info: info.clone(),
+            }),
+            _ => None,
+        }
+        {%endif%}
     }
 }
 
 #[cfg(feature = "metrics")]
+#[derive(Debug)]
 pub struct {{stinger.name|UpperCamelCase}}DiscoveryMetrics {
     pub discovery_start_time: std::time::Instant,
     pub time_of_first_discovery: Option<std::time::Instant>,
@@ -87,8 +114,6 @@ impl Default for {{stinger.name|UpperCamelCase}}DiscoveryMetrics {
         Self {
             discovery_start_time: std::time::Instant::now(),
             time_of_first_discovery: None,
-            total_discovered_instances: std::sync::atomic::AtomicU32::new(0),
-            total_instances_seen: std::sync::atomic::AtomicU32::new(0),
             received_property_values: std::sync::atomic::AtomicU32::new(0),
         }
     }
@@ -102,27 +127,37 @@ impl {{stinger.name|UpperCamelCase}}DiscoveryMetrics {
             self.time_of_first_discovery = Some(std::time::Instant::now());
         }
     }
-
+    {%if stinger.properties|length > 0 %}
     /// Increments received_property_values by 1
     pub fn increment_received_property_values(&self) {
         self.received_property_values.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+    {%endif%}
+
+    /// Returns the time in milliseconds between `discovery_start_time` and
+    /// `time_of_first_discovery`, or `None` if `time_of_first_discovery` is not set.
+    pub fn time_to_first_discovery_ms(&self) -> Option<u128> {
+        self.time_of_first_discovery
+            .as_ref()
+            .map(|t| t.duration_since(self.discovery_start_time).as_millis())
     }
 }
 
 
 pub struct {{stinger.name|UpperCamelCase}}Discovery {
+    connection: Arc<dyn Mqtt5PubSub + Send + Sync>,
     service_name: String,
-    subscription_id: u32,
-    property_subscription_id: u32,
-    discovered_interfaces: Arc<RwLock<HashMap<String, ServiceDiscovery>>>,
+    instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
     info_listener_handle: JoinHandle<()>,
+    {% if stinger.properties|length > 0 %}
     prop_listener_handle: JoinHandle<()>,
-    notification_tx: broadcast::Sender<InterfaceInfo>,
+    {%endif%}
+    notification_tx: broadcast::Sender<DiscoveredService>,
     #[cfg(feature = "metrics")] pub metrics: Arc<Mutex<{{stinger.name|UpperCamelCase}}DiscoveryMetrics>>,
 }
 
 /// Event receiver for new interface discovery notifications
-pub type {{stinger.name|UpperCamelCase}}DiscoveryReceiver = broadcast::Receiver<InterfaceInfo>;
+pub type {{stinger.name|UpperCamelCase}}DiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
 
 impl {{stinger.name|UpperCamelCase}}Discovery {
     pub async fn new(
@@ -134,43 +169,49 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
 
         let (info_tx, info_rx) = broadcast::channel::<MqttMessage>(32);
         debug!("Subscribing to discovery topic: {discovery_topic}");
-        let subscription_id = connection
+        let _subscription_id = connection
             .subscribe(discovery_topic, QoS::AtLeastOnce, info_tx.clone())
             .await
             .map_err({{stinger.name|UpperCamelCase}}DiscoveryError::from)?;
-
+        {%if stinger.properties|length > 0 %}
         let (prop_tx, prop_rx) = broadcast::channel::<MqttMessage>(32);
-        let property_subscription_id = connection
-            .subscribe(format!("{{stinger.property_base_topic}}+/value", ""), QoS::AtLeastOnce, prop_tx.clone())
+        let _property_subscription_id = connection
+            .subscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value".to_string(), QoS::AtLeastOnce, prop_tx.clone())
             .await
             .map_err({{stinger.name|UpperCamelCase}}DiscoveryError::from)?;
-
-        let discovered_interfaces = Arc::new(RwLock::new(HashMap::new()));
+        {%endif%}
+        let instances_in_discovery = Arc::new(RwLock::new(HashMap::new()));
 
         // Clients can get a notification receiver by calling the subscribe() method.
-        let (notification_tx, _notification_rx) = broadcast::channel::<InterfaceInfo>(32);
+        let (notification_tx, _notification_rx) = broadcast::channel::<DiscoveredService>(32);
+
+        #[cfg(feature = "metrics")]
+        let metrics = Arc::new(Mutex::new({{stinger.name|UpperCamelCase}}DiscoveryMetrics::default()));
 
         let info_listener_handle = Self::spawn_listener(
             info_rx,
-            discovered_interfaces.clone(),
+            instances_in_discovery.clone(),
             notification_tx.clone(),
+            #[cfg(feature = "metrics")] metrics.clone(),
         );
-
+        {%if stinger.properties|length > 0 %}
         let prop_listener_handle = Self::spawn_property_listener(
             prop_rx,
-            discovered_interfaces.clone(),
+            instances_in_discovery.clone(),
             notification_tx.clone(),
+            #[cfg(feature = "metrics")] metrics.clone(),
         );
-
+        {%endif%}
         Ok(Self {
+            connection: connection.clone(),
             service_name,
-            subscription_id,
-            property_subscription_id,
-            discovered_interfaces,
+            instances_in_discovery,
             info_listener_handle,
+            {%if stinger.properties|length > 0 %}
             prop_listener_handle,
+            {%endif%}
             notification_tx,
-            #[cfg(feature = "metrics")] metrics: Arc::new(Mutex::new({{stinger.name|UpperCamelCase}}DiscoveryMetrics::default())),
+            #[cfg(feature = "metrics")] metrics,
         })
     }
 
@@ -178,8 +219,8 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
         &self.service_name
     }
 
-    pub fn discovered_interfaces(&self) -> Vec<DiscoveredService> {
-           let guard = self.discovered_interfaces.read().expect("interfaces poisoned");
+    pub fn instances_in_discovery(&self) -> Vec<DiscoveredService> {
+           let guard = self.instances_in_discovery.read().expect("interfaces poisoned");
            guard.values()
               .filter(|sd| sd.fully_discovered.load(std::sync::atomic::Ordering::Relaxed))
               .filter_map(|sd| sd.to_discovered_service())
@@ -189,17 +230,20 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
     pub async fn get_singleton_service(&self) -> DiscoveredService {
         // First check if we already have an interface
         {
-            let guard = self
-                .discovered_interfaces
+            let instance_map = self
+                .instances_in_discovery
                 .read()
                 .expect("interfaces poisoned");
-            if let Some(entry) = guard.values().next() {
+            if let Some(entry) = instance_map.values().next() {
                 if entry.interface_info.is_some() {
-                    let prop_build_result = entry.properties.build();
-                    if prop_build_result.is_ok() {
+                    {%if stinger.properties|length > 0 %}
+                    let prop_build_result = entry.property_builder.build();
+                    if prop_build_result.is_ok(){%endif%} {
                         return DiscoveredService {
                             interface_info: entry.interface_info.clone().unwrap(),
+                            {% if stinger.properties|length > 0 %}
                             properties: prop_build_result.unwrap(),
+                            {% endif %}
                         };
                     }
                 }
@@ -218,30 +262,65 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
         self.notification_tx.subscribe()
     }
 
+    fn try_publish_discovered_service(
+            service_in_discovery: &ServiceInDiscovery, 
+            notification_tx: &broadcast::Sender<DiscoveredService>,
+            #[cfg(feature = "metrics")] metrics: &Arc<Mutex<SimpleDiscoveryMetrics>>,
+        ) {
+        // Check if this completes the discovery
+        {% if stinger.properties|length > 0 %}
+        if service_in_discovery.property_count  >= {{stinger.properties | length}} {
+            if let Some(discovered) = service_in_discovery.to_discovered_service() {
+                service_in_discovery.fully_discovered.store(true, std::sync::atomic::Ordering::Relaxed);
+                let _ = notification_tx.send(discovered);
+                #[cfg(feature = "metrics")] {
+                    let mut metrics_guard = metrics.lock().unwrap();
+                    metrics_guard.set_time_of_first_discovery();
+                }
+            }
+        }
+        {% else %}
+        if let Some(discovered) = service_in_discovery.to_discovered_service() {
+            service_in_discovery.fully_discovered.store(true, std::sync::atomic::Ordering::Relaxed);
+            let _ = notification_tx.send(discovered);
+            #[cfg(feature = "metrics")] {
+                let metrics_guard = metrics.lock().unwrap();
+                metrics_guard.set_time_of_first_discovery();
+            }
+        }
+        {% endif %}
+    }
+
     fn spawn_listener(
         mut message_rx: broadcast::Receiver<MqttMessage>,
-        discovered_interfaces: Arc<RwLock<HashMap<String, InterfaceInfo>>>,
-        notification_tx: broadcast::Sender<InterfaceInfo>,
+        instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
+        notification_tx: broadcast::Sender<DiscoveredService>,
+        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
     ) -> JoinHandle<()> {
         tokio::spawn(async move {
             debug!("Listening for discovery messages");
             while let Ok(message) = message_rx.recv().await {
-                Self::handle_message(message, &discovered_interfaces, &notification_tx);
+                Self::handle_message(
+                    message, 
+                    &instances_in_discovery, 
+                    &notification_tx, 
+                    #[cfg(feature = "metrics")] metrics.clone(),
+                );
             }
         })
     }
-
+    {%if stinger.properties|length > 0 %}
     fn spawn_property_listener(
         mut message_rx: broadcast::Receiver<MqttMessage>,
-        discovered_interfaces: Arc<RwLock<HashMap<String, InterfaceInfo>>>,
-        notification_tx: broadcast::Sender<InterfaceInfo>,
+        instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
+        notification_tx: broadcast::Sender<DiscoveredService>,
         #[cfg(feature = "metrics")] metrics: Arc<Mutex<{{stinger.name|UpperCamelCase}}DiscoveryMetrics>>,
     ) -> JoinHandle<()> {
         tokio::spawn(async move {
             debug!("Listening for property value messages");
             while let Ok(message) = message_rx.recv().await {
                 #[cfg(feature = "metrics")] {
-                    let mut metrics_guard = metrics.lock().unwrap();
+                    let metrics_guard = metrics.lock().unwrap();
                     metrics_guard.increment_received_property_values();
                 }
 
@@ -251,44 +330,60 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
                     let instance_id = topic_parts[1];
                     let property_name = topic_parts[3];
                     
-                    let mut interfaces_guard = discovered_interfaces
+                    let mut instance_map = instances_in_discovery
                         .write()
                         .expect("interfaces write lock poisoned");
-                    
-                    if let Some(service_discovery) = interfaces_guard.get_mut(instance_id) {
-                        // Update the property value in the builder
-                        match property_name {
-                            {%for prop_name in stinger.properties.keys() %}
-                            "{{prop_name}}" => {
-                                service_discovery.properties.{{prop_name|snake_case}}.(&message.payload);
-                            }
-                            {%endfor%}
-                            _ => {
-                                // Ignore unknown properties
+                    let service_in_discovery = instance_map
+                        .entry(instance_id.to_string())
+                        .or_insert_with(ServiceInDiscovery::default);
+
+                    match property_name {
+                        {%for prop_name, prop in stinger.properties.items() %}
+                        "{{prop_name|lowerCamelCase}}" => {
+                            
+                            let deserialized_property = serde_json::from_slice::<{{prop_name|UpperCamelCase}}Property>(&message.payload);
+                            let version = message.user_properties
+                                .get("Version")
+                                .and_then(|v| v.parse::<u32>().ok())
+                                .unwrap_or(0);
+                            match deserialized_property {
+                                Ok(prop_value) => {
+                                    {%if prop.arg_list|length > 1%}
+                                    service_in_discovery.property_builder.{{prop_name|snake_case}}(prop_value);
+                                    {%elif prop.arg_list[0].optional%}
+                                    service_in_discovery.property_builder.{{prop_name|snake_case}}(prop_value.{{prop.arg_list[0].name|snake_case}});
+                                    {%else%}
+                                    service_in_discovery.property_builder.{{prop_name|snake_case}}(prop_value.{{prop.arg_list[0].name|snake_case}});
+                                    {%endif%}
+                                    service_in_discovery.property_builder.{{prop_name|snake_case}}_version(version);
+                                    service_in_discovery.property_count += 1;
+                                },
+                                Err(e) => {
+                                    error!("Failed to deserialize property '{{prop_name}}' for instance '{}': {}", instance_id, e);
+                                }
                             }
                         }
-                        service_discovery.properties.set_property(property_name, &message.payload);
-                        
-                        // Check if this completes the discovery
-                        if let Some(discovered) = service_discovery.to_discovered_service() {
-                            service_discovery.fully_discovered.store(true, std::sync::atomic::Ordering::Relaxed);
-                            let _ = notification_tx.send(discovered.interface_info);
-                            #[cfg(feature = "metrics")] {
-                                let mut metrics_guard = metrics.lock().unwrap();
-                                metrics_guard.set_time_of_first_discovery();
-                            }
+                        {%endfor%}
+                        _ => {
+                            // Ignore unknown properties
                         }
                     }
+                    Self::try_publish_discovered_service(
+                        service_in_discovery, 
+                        &notification_tx,
+                        #[cfg(feature = "metrics")] &metrics,
+                    );
                 }
             }
         })
     }
-    
+    {%endif%}
 
     fn handle_message(
         message: MqttMessage,
-        discovered_interfaces: &Arc<RwLock<HashMap<String, InterfaceInfo>>>,
-        notification_tx: &broadcast::Sender<InterfaceInfo>,
+        instances_in_discovery: &Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
+        notification_tx: &broadcast::Sender<DiscoveredService>,
+        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
     ) {
         if message.payload.is_empty() {
             info!("Service represented by {} is now offline", message.topic);
@@ -296,7 +391,7 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
             let topic_parts: Vec<&str> = message.topic.split('/').collect();
             if topic_parts.len() >= 2 {
                 let instance_id = topic_parts[topic_parts.len() - 2].to_string();
-                let mut interfaces_guard = discovered_interfaces
+                let mut interfaces_guard = instances_in_discovery
                     .write()
                     .expect("interfaces write lock poisoned");
                 interfaces_guard.remove(&instance_id);
@@ -307,16 +402,19 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
             match deserialized {
                 Ok(info) => {
                     info!("Discovered service instance: {:?}", info);
-                    let mut interfaces_guard = discovered_interfaces
-                        .write()
-                        .expect("interfaces write lock poisoned");
-                    let instance_id = info.instance.clone();
-                    let is_new_instance = interfaces_guard.insert(instance_id.clone(), info.clone()).is_none();
-                    drop(interfaces_guard);
-
-                    // Send notification only for new interfaces
-                    if is_new_instance {
-                        let _ = notification_tx.send(info);
+                    {
+                        let mut instance_map = instances_in_discovery
+                            .write()
+                            .expect("interfaces write lock poisoned");
+                        let service_in_discovery = instance_map
+                            .entry(info.instance.clone())
+                            .or_insert_with(ServiceInDiscovery::default);
+                        service_in_discovery.interface_info = Some(info);
+                        Self::try_publish_discovered_service(
+                            service_in_discovery, 
+                            &notification_tx,
+                            #[cfg(feature = "metrics")] &metrics,
+                        );
                     }
                 },
                 Err(err) => {
@@ -330,7 +428,12 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
 
 impl Drop for {{stinger.name|UpperCamelCase}}Discovery {
     fn drop(&mut self) {
-        self.listener_handle.abort();
+        self.info_listener_handle.abort();
+        self.connection.unsubscribe(format!("{{stinger.interface_info_topic}}", "+"));
+        {% if stinger.properties|length > 0 %}
+        self.prop_listener_handle.abort();
+        self.connection.unsubscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value".to_string());
+        {% endif %}
     }
 }
 

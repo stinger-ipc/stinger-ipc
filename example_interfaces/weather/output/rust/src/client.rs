@@ -11,23 +11,23 @@ This is the Client for the weather interface.
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
 */
+use crate::discovery::DiscoveredService;
 use crate::message;
-use serde_json;
-use std::collections::HashMap;
-use stinger_mqtt_trait::message::{MqttMessage, QoS};
-#[cfg(feature = "client")]
-use stinger_mqtt_trait::Mqtt5PubSub;
-use uuid::Uuid;
-
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
+use serde_json;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+#[cfg(feature = "client")]
+use stinger_mqtt_trait::Mqtt5PubSub;
 use tokio::sync::{broadcast, oneshot, watch};
 use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
+use uuid::Uuid;
 
 use std::sync::atomic::{AtomicU32, Ordering};
 #[allow(unused_imports)]
@@ -65,29 +65,29 @@ struct WeatherSignalChannels {
 }
 
 #[derive(Clone)]
-pub struct WeatherProperties {
-    pub location: Arc<RwLockWatch<Option<LocationProperty>>>,
+struct WeatherProperties {
+    pub location: Arc<RwLockWatch<LocationProperty>>,
     pub location_version: Arc<AtomicU32>,
 
-    pub current_temperature: Arc<RwLockWatch<Option<f32>>>,
+    pub current_temperature: Arc<RwLockWatch<f32>>,
     pub current_temperature_version: Arc<AtomicU32>,
 
-    pub current_condition: Arc<RwLockWatch<Option<CurrentConditionProperty>>>,
+    pub current_condition: Arc<RwLockWatch<CurrentConditionProperty>>,
     pub current_condition_version: Arc<AtomicU32>,
 
-    pub daily_forecast: Arc<RwLockWatch<Option<DailyForecastProperty>>>,
+    pub daily_forecast: Arc<RwLockWatch<DailyForecastProperty>>,
     pub daily_forecast_version: Arc<AtomicU32>,
 
-    pub hourly_forecast: Arc<RwLockWatch<Option<HourlyForecastProperty>>>,
+    pub hourly_forecast: Arc<RwLockWatch<HourlyForecastProperty>>,
     pub hourly_forecast_version: Arc<AtomicU32>,
 
-    pub current_condition_refresh_interval: Arc<RwLockWatch<Option<i32>>>,
+    pub current_condition_refresh_interval: Arc<RwLockWatch<i32>>,
     pub current_condition_refresh_interval_version: Arc<AtomicU32>,
 
-    pub hourly_forecast_refresh_interval: Arc<RwLockWatch<Option<i32>>>,
+    pub hourly_forecast_refresh_interval: Arc<RwLockWatch<i32>>,
     pub hourly_forecast_refresh_interval_version: Arc<AtomicU32>,
 
-    pub daily_forecast_refresh_interval: Arc<RwLockWatch<Option<i32>>>,
+    pub daily_forecast_refresh_interval: Arc<RwLockWatch<i32>>,
     pub daily_forecast_refresh_interval_version: Arc<AtomicU32>,
 }
 
@@ -108,7 +108,7 @@ pub struct WeatherClient<C: Mqtt5PubSub> {
     msg_streamer_tx: broadcast::Sender<MqttMessage>,
 
     /// Struct contains all the properties.
-    pub properties: WeatherProperties,
+    properties: WeatherProperties,
 
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: WeatherSubscriptionIds,
@@ -124,7 +124,7 @@ pub struct WeatherClient<C: Mqtt5PubSub> {
 
 impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
     /// Creates a new WeatherClient that uses an Mqtt5PubSub.
-    pub async fn new(mut connection: C, service_id: String) -> Self {
+    pub async fn new(mut connection: C, discovery_info: DiscoveredService) -> Self {
         // Create a channel for messages to get from the Connection object to this WeatherClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel(64);
@@ -166,7 +166,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             subscription_id_refresh_current_conditions_method_resp.unwrap_or_else(|_| u32::MAX);
 
         // Subscribe to all the topics needed for signals.
-        let topic_current_time_signal = format!("weather/{}/signal/currentTime", service_id);
+        let topic_current_time_signal = format!(
+            "weather/{}/signal/currentTime",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_current_time_signal = connection
             .subscribe(
                 topic_current_time_signal,
@@ -179,8 +182,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         // Subscribe to all the topics needed for properties.
 
-        let topic_location_property_value =
-            format!("weather/{}/property/location/value", service_id);
+        let topic_location_property_value = format!(
+            "weather/{}/property/location/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_location_property_value = connection
             .subscribe(
                 topic_location_property_value,
@@ -191,8 +196,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let subscription_id_location_property_value =
             subscription_id_location_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_current_temperature_property_value =
-            format!("weather/{}/property/currentTemperature/value", service_id);
+        let topic_current_temperature_property_value = format!(
+            "weather/{}/property/currentTemperature/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_current_temperature_property_value = connection
             .subscribe(
                 topic_current_temperature_property_value,
@@ -203,8 +210,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let subscription_id_current_temperature_property_value =
             subscription_id_current_temperature_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_current_condition_property_value =
-            format!("weather/{}/property/currentCondition/value", service_id);
+        let topic_current_condition_property_value = format!(
+            "weather/{}/property/currentCondition/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_current_condition_property_value = connection
             .subscribe(
                 topic_current_condition_property_value,
@@ -215,8 +224,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let subscription_id_current_condition_property_value =
             subscription_id_current_condition_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_daily_forecast_property_value =
-            format!("weather/{}/property/dailyForecast/value", service_id);
+        let topic_daily_forecast_property_value = format!(
+            "weather/{}/property/dailyForecast/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_daily_forecast_property_value = connection
             .subscribe(
                 topic_daily_forecast_property_value,
@@ -227,8 +238,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let subscription_id_daily_forecast_property_value =
             subscription_id_daily_forecast_property_value.unwrap_or_else(|_| u32::MAX);
 
-        let topic_hourly_forecast_property_value =
-            format!("weather/{}/property/hourlyForecast/value", service_id);
+        let topic_hourly_forecast_property_value = format!(
+            "weather/{}/property/hourlyForecast/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_hourly_forecast_property_value = connection
             .subscribe(
                 topic_hourly_forecast_property_value,
@@ -241,7 +254,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         let topic_current_condition_refresh_interval_property_value = format!(
             "weather/{}/property/currentConditionRefreshInterval/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_current_condition_refresh_interval_property_value = connection
             .subscribe(
@@ -256,7 +269,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         let topic_hourly_forecast_refresh_interval_property_value = format!(
             "weather/{}/property/hourlyForecastRefreshInterval/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_hourly_forecast_refresh_interval_property_value = connection
             .subscribe(
@@ -271,7 +284,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         let topic_daily_forecast_refresh_interval_property_value = format!(
             "weather/{}/property/dailyForecastRefreshInterval/value",
-            service_id
+            discovery_info.interface_info.instance
         );
         let subscription_id_daily_forecast_refresh_interval_property_value = connection
             .subscribe(
@@ -285,26 +298,56 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                 .unwrap_or_else(|_| u32::MAX);
 
         let property_values = WeatherProperties {
-            location: Arc::new(RwLockWatch::new(None)),
-            location_version: Arc::new(AtomicU32::new(0)),
+            location: Arc::new(RwLockWatch::new(discovery_info.properties.location)),
+            location_version: Arc::new(AtomicU32::new(discovery_info.properties.location_version)),
 
-            current_temperature: Arc::new(RwLockWatch::new(None)),
-            current_temperature_version: Arc::new(AtomicU32::new(0)),
-            current_condition: Arc::new(RwLockWatch::new(None)),
-            current_condition_version: Arc::new(AtomicU32::new(0)),
-            daily_forecast: Arc::new(RwLockWatch::new(None)),
-            daily_forecast_version: Arc::new(AtomicU32::new(0)),
-            hourly_forecast: Arc::new(RwLockWatch::new(None)),
-            hourly_forecast_version: Arc::new(AtomicU32::new(0)),
+            current_temperature: Arc::new(RwLockWatch::new(
+                discovery_info.properties.current_temperature,
+            )),
+            current_temperature_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.current_temperature_version,
+            )),
+            current_condition: Arc::new(RwLockWatch::new(
+                discovery_info.properties.current_condition,
+            )),
+            current_condition_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.current_condition_version,
+            )),
+            daily_forecast: Arc::new(RwLockWatch::new(discovery_info.properties.daily_forecast)),
+            daily_forecast_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.daily_forecast_version,
+            )),
+            hourly_forecast: Arc::new(RwLockWatch::new(discovery_info.properties.hourly_forecast)),
+            hourly_forecast_version: Arc::new(AtomicU32::new(
+                discovery_info.properties.hourly_forecast_version,
+            )),
 
-            current_condition_refresh_interval: Arc::new(RwLockWatch::new(None)),
-            current_condition_refresh_interval_version: Arc::new(AtomicU32::new(0)),
+            current_condition_refresh_interval: Arc::new(RwLockWatch::new(
+                discovery_info.properties.current_condition_refresh_interval,
+            )),
+            current_condition_refresh_interval_version: Arc::new(AtomicU32::new(
+                discovery_info
+                    .properties
+                    .current_condition_refresh_interval_version,
+            )),
 
-            hourly_forecast_refresh_interval: Arc::new(RwLockWatch::new(None)),
-            hourly_forecast_refresh_interval_version: Arc::new(AtomicU32::new(0)),
+            hourly_forecast_refresh_interval: Arc::new(RwLockWatch::new(
+                discovery_info.properties.hourly_forecast_refresh_interval,
+            )),
+            hourly_forecast_refresh_interval_version: Arc::new(AtomicU32::new(
+                discovery_info
+                    .properties
+                    .hourly_forecast_refresh_interval_version,
+            )),
 
-            daily_forecast_refresh_interval: Arc::new(RwLockWatch::new(None)),
-            daily_forecast_refresh_interval_version: Arc::new(AtomicU32::new(0)),
+            daily_forecast_refresh_interval: Arc::new(RwLockWatch::new(
+                discovery_info.properties.daily_forecast_refresh_interval,
+            )),
+            daily_forecast_refresh_interval_version: Arc::new(AtomicU32::new(
+                discovery_info
+                    .properties
+                    .daily_forecast_refresh_interval_version,
+            )),
         };
 
         // Create structure for subscription ids.
@@ -346,7 +389,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             signal_channels: signal_channels,
             client_id: client_id,
 
-            service_instance_id: service_id,
+            service_instance_id: discovery_info.interface_info.instance,
         };
         inst
     }
@@ -493,7 +536,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
     /// Watch for changes to the `location` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_location(&self) -> watch::Receiver<Option<LocationProperty>> {
+    pub fn watch_location(&self) -> watch::Receiver<LocationProperty> {
         self.properties.location.subscribe()
     }
 
@@ -523,55 +566,53 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         })
     }
 
-    pub fn get_location_handle(&self) -> Arc<WriteRequestLockWatch<Option<LocationProperty>>> {
+    pub fn get_location_handle(&self) -> Arc<WriteRequestLockWatch<LocationProperty>> {
         self.properties.location.write_request().into()
     }
 
     /// Watch for changes to the `current_temperature` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_current_temperature(&self) -> watch::Receiver<Option<f32>> {
+    pub fn watch_current_temperature(&self) -> watch::Receiver<f32> {
         self.properties.current_temperature.subscribe()
     }
 
-    pub fn get_current_temperature_handle(&self) -> ReadOnlyLockWatch<Option<f32>> {
-        self.properties.current_temperature.read_only()
+    pub fn get_current_temperature_handle(&self) -> Arc<ReadOnlyLockWatch<f32>> {
+        self.properties.current_temperature.read_only().into()
     }
 
     /// Watch for changes to the `current_condition` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_current_condition(&self) -> watch::Receiver<Option<CurrentConditionProperty>> {
+    pub fn watch_current_condition(&self) -> watch::Receiver<CurrentConditionProperty> {
         self.properties.current_condition.subscribe()
     }
 
-    pub fn get_current_condition_handle(
-        &self,
-    ) -> ReadOnlyLockWatch<Option<CurrentConditionProperty>> {
-        self.properties.current_condition.read_only()
+    pub fn get_current_condition_handle(&self) -> Arc<ReadOnlyLockWatch<CurrentConditionProperty>> {
+        self.properties.current_condition.read_only().into()
     }
 
     /// Watch for changes to the `daily_forecast` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_daily_forecast(&self) -> watch::Receiver<Option<DailyForecastProperty>> {
+    pub fn watch_daily_forecast(&self) -> watch::Receiver<DailyForecastProperty> {
         self.properties.daily_forecast.subscribe()
     }
 
-    pub fn get_daily_forecast_handle(&self) -> ReadOnlyLockWatch<Option<DailyForecastProperty>> {
-        self.properties.daily_forecast.read_only()
+    pub fn get_daily_forecast_handle(&self) -> Arc<ReadOnlyLockWatch<DailyForecastProperty>> {
+        self.properties.daily_forecast.read_only().into()
     }
 
     /// Watch for changes to the `hourly_forecast` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_hourly_forecast(&self) -> watch::Receiver<Option<HourlyForecastProperty>> {
+    pub fn watch_hourly_forecast(&self) -> watch::Receiver<HourlyForecastProperty> {
         self.properties.hourly_forecast.subscribe()
     }
 
-    pub fn get_hourly_forecast_handle(&self) -> ReadOnlyLockWatch<Option<HourlyForecastProperty>> {
-        self.properties.hourly_forecast.read_only()
+    pub fn get_hourly_forecast_handle(&self) -> Arc<ReadOnlyLockWatch<HourlyForecastProperty>> {
+        self.properties.hourly_forecast.read_only().into()
     }
 
     /// Watch for changes to the `current_condition_refresh_interval` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_current_condition_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+    pub fn watch_current_condition_refresh_interval(&self) -> watch::Receiver<i32> {
         self.properties
             .current_condition_refresh_interval
             .subscribe()
@@ -608,9 +649,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         })
     }
 
-    pub fn get_current_condition_refresh_interval_handle(
-        &self,
-    ) -> Arc<WriteRequestLockWatch<Option<i32>>> {
+    pub fn get_current_condition_refresh_interval_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
         self.properties
             .current_condition_refresh_interval
             .write_request()
@@ -619,7 +658,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
     /// Watch for changes to the `hourly_forecast_refresh_interval` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_hourly_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+    pub fn watch_hourly_forecast_refresh_interval(&self) -> watch::Receiver<i32> {
         self.properties.hourly_forecast_refresh_interval.subscribe()
     }
 
@@ -654,9 +693,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         })
     }
 
-    pub fn get_hourly_forecast_refresh_interval_handle(
-        &self,
-    ) -> Arc<WriteRequestLockWatch<Option<i32>>> {
+    pub fn get_hourly_forecast_refresh_interval_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
         self.properties
             .hourly_forecast_refresh_interval
             .write_request()
@@ -665,7 +702,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
     /// Watch for changes to the `daily_forecast_refresh_interval` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_daily_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+    pub fn watch_daily_forecast_refresh_interval(&self) -> watch::Receiver<i32> {
         self.properties.daily_forecast_refresh_interval.subscribe()
     }
 
@@ -700,9 +737,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         })
     }
 
-    pub fn get_daily_forecast_refresh_interval_handle(
-        &self,
-    ) -> Arc<WriteRequestLockWatch<Option<i32>>> {
+    pub fn get_daily_forecast_refresh_interval_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
         self.properties
             .daily_forecast_refresh_interval
             .write_request()
@@ -1052,7 +1087,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.location.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1093,7 +1128,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.current_temperature.write().await;
 
-                                *guard = Some(pl.temperature_f.clone());
+                                *guard = pl.temperature_f.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1134,7 +1169,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.current_condition.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1175,7 +1210,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.daily_forecast.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1216,7 +1251,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.hourly_forecast.write().await;
 
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1262,7 +1297,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                                 let mut guard =
                                     props.current_condition_refresh_interval.write().await;
 
-                                *guard = Some(pl.seconds.clone());
+                                *guard = pl.seconds.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1308,7 +1343,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                                 let mut guard =
                                     props.hourly_forecast_refresh_interval.write().await;
 
-                                *guard = Some(pl.seconds.clone());
+                                *guard = pl.seconds.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {
@@ -1353,7 +1388,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             Ok(pl) => {
                                 let mut guard = props.daily_forecast_refresh_interval.write().await;
 
-                                *guard = Some(pl.seconds.clone());
+                                *guard = pl.seconds.clone();
 
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {

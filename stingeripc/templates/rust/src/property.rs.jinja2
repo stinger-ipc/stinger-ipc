@@ -1,7 +1,9 @@
-use derive_builder::Builder;
-
 {%if stinger.properties | length > 0%}
-#[derive(Clone, Builder)]
+use derive_builder::Builder;
+#[allow(unused_imports)]
+use crate::payloads::{*};
+
+#[derive(Clone, Builder, Debug)]
 pub struct {{stinger.name | UpperCamelCase}}InitialPropertyValues {
     {%for prop_name, prop in stinger.properties.items()-%}
     {%-if prop.arg_list | length > 1%}

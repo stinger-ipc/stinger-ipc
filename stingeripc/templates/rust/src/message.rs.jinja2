@@ -15,7 +15,7 @@ pub fn interface_online(topic: &str, payload: &crate::interface::InterfaceInfo, 
         .message_expiry_interval(message_expiry_seconds)
         .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))
 }
-
+{%if stinger.properties|length > 0 %}
 #[cfg(feature = "server")]
 pub fn property_value_message<T: Serialize>(topic: &str, payload: &T, property_version: u32) -> Result<MqttMessage, MethodReturnCode> {
     MqttMessageBuilder::default()
@@ -49,6 +49,7 @@ pub fn property_update_request_message<T: Serialize>(topic: &str, payload: &T, p
         .correlation_data(Bytes::from(correlation_id.to_string()))
         .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))
 }
+{%endif%}
 
 #[cfg(feature = "client")]
 pub fn request<T: Serialize>(topic: &str, payload: &T, correlation_id: Uuid, response_topic: String) -> Result<MqttMessage, MethodReturnCode> {

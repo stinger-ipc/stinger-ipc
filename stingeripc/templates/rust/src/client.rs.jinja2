@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 {%endif-%}
 use serde_json;
-
+use crate::discovery::DiscoveredService;
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 #[allow(unused_imports)]
@@ -31,7 +31,6 @@ use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 {% if stinger.properties|length > 0 %}
-use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
 use std::sync::atomic::{AtomicU32, Ordering};
 use stinger_rwlock_watch::{RwLockWatch};
 #[allow(unused_imports)]
@@ -97,7 +96,7 @@ pub struct {{stinger.rust.client_struct_name}}<C: Mqtt5PubSub> {
     msg_streamer_tx: broadcast::Sender<MqttMessage>,
     {%if stinger.properties|length > 0%}
     /// Struct contains all the properties.
-    pub properties: {{stinger.name | UpperCamelCase}}Properties,
+    properties: {{stinger.name | UpperCamelCase}}Properties,
     {%endif%}
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: {{stinger.name | UpperCamelCase }}SubscriptionIds,
@@ -117,7 +116,7 @@ pub struct {{stinger.rust.client_struct_name}}<C: Mqtt5PubSub> {
 impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}}<C> {
 
     /// Creates a new {{stinger.rust.client_struct_name}} that uses an Mqtt5PubSub.
-    pub async fn new(mut connection: C, service_id: String{%if stinger.properties|length > 0%}, initial_property_values: {{stinger.name | UpperCamelCase}}InitialPropertyValues{%endif%}) -> Self {
+    pub async fn new(mut connection: C, discovery_info: DiscoveredService) -> Self {
 
         // Create a channel for messages to get from the Connection object to this {{stinger.rust.client_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -133,14 +132,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
         // Subscribe to all the topics needed for signals.
         {%for signal_name, signal in stinger.signals.items()-%}
-        let topic_{{signal_name | snake_case}}_signal = format!("{{signal.topic}}", service_id);
+        let topic_{{signal_name | snake_case}}_signal = format!("{{signal.topic}}", discovery_info.interface_info.instance);
         let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(topic_{{signal_name | snake_case}}_signal, QoS::ExactlyOnce, message_received_tx.clone()).await;
         let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| u32::MAX);
         {%endfor%}
 
         // Subscribe to all the topics needed for properties.
         {% for prop_name, prop in stinger.properties.items() %}
-        let topic_{{prop_name | snake_case}}_property_value = format!("{{prop.value_topic}}", service_id);
+        let topic_{{prop_name | snake_case}}_property_value = format!("{{prop.value_topic}}", discovery_info.interface_info.instance);
         let subscription_id_{{prop_name | snake_case}}_property_value = connection.subscribe(topic_{{prop_name | snake_case}}_property_value, QoS::AtLeastOnce, message_received_tx.clone()).await;
         let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or_else(|_| u32::MAX);
         {% endfor %}
@@ -149,11 +148,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
             {%if prop.arg_list | length > 1 -%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}})),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(discovery_info.properties.{{prop_name | snake_case}})),
             {%-else%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}})),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(discovery_info.properties.{{prop_name | snake_case}})),
             {%-endif-%}
-            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(initial_property_values.{{prop_name | snake_case}}_version)),
+            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(discovery_info.properties.{{prop_name | snake_case}}_version)),
         {%-endfor%}
         };
         {%endif%}
@@ -190,7 +189,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             {%if stinger.signals | length > 0 %}signal_channels: signal_channels,{%endif%}
             client_id: client_id,
             {%if stinger.methods | length > 0 %}
-            service_instance_id: service_id,
+            service_instance_id: discovery_info.interface_info.instance,
             {%endif%}
         };
         inst
@@ -407,7 +406,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                 {%if prop.arg_list | length == 1 %}
                                 *guard = pl.{{prop.arg_list[0].name}}.clone();
                                 {%else%}
-                                *guard = Some(pl.clone());
+                                *guard = pl.clone();
                                 {%endif%}
                                 if let Some(version_str) = msg.user_properties.get("Version") {
                                     if let Ok(version_num) = version_str.parse::<u32>() {

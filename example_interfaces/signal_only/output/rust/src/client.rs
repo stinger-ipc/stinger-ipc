@@ -11,17 +11,17 @@ This is the Client for the SignalOnly interface.
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
 */
+use crate::discovery::DiscoveredService;
 use crate::message;
-use serde_json;
-use stinger_mqtt_trait::message::{MqttMessage, QoS};
-#[cfg(feature = "client")]
-use stinger_mqtt_trait::Mqtt5PubSub;
-
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
+use serde_json;
 use std::sync::{Arc, Mutex};
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+#[cfg(feature = "client")]
+use stinger_mqtt_trait::Mqtt5PubSub;
 use tokio::sync::broadcast;
 use tokio::task::JoinError;
 #[allow(unused_imports)]
@@ -76,7 +76,7 @@ pub struct SignalOnlyClient<C: Mqtt5PubSub> {
 
 impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
     /// Creates a new SignalOnlyClient that uses an Mqtt5PubSub.
-    pub async fn new(mut connection: C, service_id: String) -> Self {
+    pub async fn new(mut connection: C, discovery_info: DiscoveredService) -> Self {
         // Create a channel for messages to get from the Connection object to this SignalOnlyClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel(64);
@@ -84,7 +84,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
         let client_id = connection.get_client_id();
 
         // Subscribe to all the topics needed for signals.
-        let topic_another_signal_signal = format!("signalOnly/{}/signal/anotherSignal", service_id);
+        let topic_another_signal_signal = format!(
+            "signalOnly/{}/signal/anotherSignal",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_another_signal_signal = connection
             .subscribe(
                 topic_another_signal_signal,
@@ -94,7 +97,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             .await;
         let subscription_id_another_signal_signal =
             subscription_id_another_signal_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_bark_signal = format!("signalOnly/{}/signal/bark", service_id);
+        let topic_bark_signal = format!(
+            "signalOnly/{}/signal/bark",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_bark_signal = connection
             .subscribe(
                 topic_bark_signal,
@@ -103,7 +109,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             )
             .await;
         let subscription_id_bark_signal = subscription_id_bark_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_maybe_number_signal = format!("signalOnly/{}/signal/maybeNumber", service_id);
+        let topic_maybe_number_signal = format!(
+            "signalOnly/{}/signal/maybeNumber",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_maybe_number_signal = connection
             .subscribe(
                 topic_maybe_number_signal,
@@ -113,7 +122,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             .await;
         let subscription_id_maybe_number_signal =
             subscription_id_maybe_number_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_maybe_name_signal = format!("signalOnly/{}/signal/maybeName", service_id);
+        let topic_maybe_name_signal = format!(
+            "signalOnly/{}/signal/maybeName",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_maybe_name_signal = connection
             .subscribe(
                 topic_maybe_name_signal,
@@ -123,7 +135,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             .await;
         let subscription_id_maybe_name_signal =
             subscription_id_maybe_name_signal.unwrap_or_else(|_| u32::MAX);
-        let topic_now_signal = format!("signalOnly/{}/signal/now", service_id);
+        let topic_now_signal = format!(
+            "signalOnly/{}/signal/now",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_now_signal = connection
             .subscribe(
                 topic_now_signal,

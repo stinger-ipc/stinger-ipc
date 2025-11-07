@@ -11,25 +11,24 @@ This is the Client for the Simple interface.
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
 */
+use crate::discovery::DiscoveredService;
 use crate::message;
-use serde_json;
-use std::collections::HashMap;
-use stinger_mqtt_trait::message::{MqttMessage, QoS};
-#[cfg(feature = "client")]
-use stinger_mqtt_trait::Mqtt5PubSub;
-use uuid::Uuid;
-
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
+use serde_json;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+#[cfg(feature = "client")]
+use stinger_mqtt_trait::Mqtt5PubSub;
 use tokio::sync::{broadcast, oneshot, watch};
 use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
+use uuid::Uuid;
 
-use crate::property::SimpleInitialPropertyValues;
 use std::sync::atomic::{AtomicU32, Ordering};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::ReadOnlyLockWatch;
@@ -79,7 +78,7 @@ pub struct SimpleClient<C: Mqtt5PubSub> {
     msg_streamer_tx: broadcast::Sender<MqttMessage>,
 
     /// Struct contains all the properties.
-    pub properties: SimpleProperties,
+    properties: SimpleProperties,
 
     /// Contains all the MQTTv5 subscription ids.
     subscription_ids: SimpleSubscriptionIds,
@@ -95,11 +94,7 @@ pub struct SimpleClient<C: Mqtt5PubSub> {
 
 impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
     /// Creates a new SimpleClient that uses an Mqtt5PubSub.
-    pub async fn new(
-        mut connection: C,
-        service_id: String,
-        initial_property_values: SimpleInitialPropertyValues,
-    ) -> Self {
+    pub async fn new(mut connection: C, discovery_info: DiscoveredService) -> Self {
         // Create a channel for messages to get from the Connection object to this SimpleClient object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel(64);
@@ -119,7 +114,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             subscription_id_trade_numbers_method_resp.unwrap_or_else(|_| u32::MAX);
 
         // Subscribe to all the topics needed for signals.
-        let topic_person_entered_signal = format!("simple/{}/signal/personEntered", service_id);
+        let topic_person_entered_signal = format!(
+            "simple/{}/signal/personEntered",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_person_entered_signal = connection
             .subscribe(
                 topic_person_entered_signal,
@@ -132,7 +130,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
 
         // Subscribe to all the topics needed for properties.
 
-        let topic_school_property_value = format!("simple/{}/property/school/value", service_id);
+        let topic_school_property_value = format!(
+            "simple/{}/property/school/value",
+            discovery_info.interface_info.instance
+        );
         let subscription_id_school_property_value = connection
             .subscribe(
                 topic_school_property_value,
@@ -144,8 +145,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             subscription_id_school_property_value.unwrap_or_else(|_| u32::MAX);
 
         let property_values = SimpleProperties {
-            school: Arc::new(RwLockWatch::new(initial_property_values.school)),
-            school_version: Arc::new(AtomicU32::new(initial_property_values.school_version)),
+            school: Arc::new(RwLockWatch::new(discovery_info.properties.school)),
+            school_version: Arc::new(AtomicU32::new(discovery_info.properties.school_version)),
         };
 
         // Create structure for subscription ids.
@@ -173,7 +174,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             signal_channels: signal_channels,
             client_id: client_id,
 
-            service_instance_id: service_id,
+            service_instance_id: discovery_info.interface_info.instance,
         };
         inst
     }
