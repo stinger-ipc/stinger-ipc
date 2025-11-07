@@ -274,7 +274,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let data = {%if prop.arg_list | length > 1 %}value{% else %}{{prop_name | UpperCamelCase}}Property { 
             {{prop.arg_list[0].name}}: value
         } {%- endif %};
-        let topic: String = format!("{{prop.update_topic}}", self.client_id);
+        let topic: String = format!("{{prop.update_topic}}", self.service_instance_id);
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -332,14 +332,21 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let props = self.properties.clone();
         {%-for prop_name, prop in stinger.properties.items()%}
         { // Set up property change request handling task
-            let client_id_for_{{prop_name|snake_case}}_prop = self.client_id.clone();
+            let instance_id_for_{{prop_name|snake_case}}_prop = self.service_instance_id.clone();
             let mut publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
             let {{prop_name|snake_case}}_prop_version = props.{{prop_name | snake_case}}_version.clone();
             if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
-                            let topic: String = format!("{{prop.update_topic}}", client_id_for_{{prop_name|snake_case}}_prop);
-                            let msg = message::property_update_message(&topic, &request, {{prop_name|snake_case}}_prop_version.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
+                            {%if prop.arg_list | length == 1 %}
+                            let payload_obj = {{prop_name | UpperCamelCase}}Property { 
+                                {{prop.arg_list[0].name}}: request
+                            };
+                            {%else%}
+                            let payload_obj = request;
+                            {%endif%}
+                            let topic: String = format!("{{prop.update_topic}}", instance_id_for_{{prop_name|snake_case}}_prop);
+                            let msg = message::property_update_message(&topic, &payload_obj, {{prop_name|snake_case}}_prop_version.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
                             let _publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
                     };
                 });

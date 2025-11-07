@@ -891,7 +891,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// Sets the `favorite_number` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_favorite_number(&mut self, value: i32) -> MethodReturnCode {
         let data = FavoriteNumberProperty { number: value };
-        let topic: String = format!("full/{}/property/favoriteNumber/setValue", self.client_id);
+        let topic: String = format!(
+            "full/{}/property/favoriteNumber/setValue",
+            self.service_instance_id
+        );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -929,7 +932,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// Sets the `favorite_foods` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_favorite_foods(&mut self, value: FavoriteFoodsProperty) -> MethodReturnCode {
         let data = value;
-        let topic: String = format!("full/{}/property/favoriteFoods/setValue", self.client_id);
+        let topic: String = format!(
+            "full/{}/property/favoriteFoods/setValue",
+            self.service_instance_id
+        );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -967,7 +973,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// Sets the `lunch_menu` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_lunch_menu(&mut self, value: LunchMenuProperty) -> MethodReturnCode {
         let data = value;
-        let topic: String = format!("full/{}/property/lunchMenu/setValue", self.client_id);
+        let topic: String = format!(
+            "full/{}/property/lunchMenu/setValue",
+            self.service_instance_id
+        );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -1003,7 +1012,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// Sets the `family_name` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_family_name(&mut self, value: String) -> MethodReturnCode {
         let data = FamilyNameProperty { family_name: value };
-        let topic: String = format!("full/{}/property/familyName/setValue", self.client_id);
+        let topic: String = format!(
+            "full/{}/property/familyName/setValue",
+            self.service_instance_id
+        );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -1044,7 +1056,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let data = LastBreakfastTimeProperty { timestamp: value };
         let topic: String = format!(
             "full/{}/property/lastBreakfastTime/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -1085,7 +1097,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// Sets the `breakfast_length` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_breakfast_length(&mut self, value: chrono::Duration) -> MethodReturnCode {
         let data = BreakfastLengthProperty { length: value };
-        let topic: String = format!("full/{}/property/breakfastLength/setValue", self.client_id);
+        let topic: String = format!(
+            "full/{}/property/breakfastLength/setValue",
+            self.service_instance_id
+        );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -1123,7 +1138,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// Sets the `last_birthdays` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_last_birthdays(&mut self, value: LastBirthdaysProperty) -> MethodReturnCode {
         let data = value;
-        let topic: String = format!("full/{}/property/lastBirthdays/setValue", self.client_id);
+        let topic: String = format!(
+            "full/{}/property/lastBirthdays/setValue",
+            self.service_instance_id
+        );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -1186,7 +1204,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let props = self.properties.clone();
         {
             // Set up property change request handling task
-            let client_id_for_favorite_number_prop = self.client_id.clone();
+            let instance_id_for_favorite_number_prop = self.service_instance_id.clone();
             let mut publisher_for_favorite_number_prop = self.mqtt_client.clone();
             let favorite_number_prop_version = props.favorite_number_version.clone();
             if let Some(mut rx_for_favorite_number_prop) =
@@ -1194,13 +1212,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_favorite_number_prop.recv().await {
+                        let payload_obj = FavoriteNumberProperty { number: request };
+
                         let topic: String = format!(
                             "full/{}/property/favoriteNumber/setValue",
-                            client_id_for_favorite_number_prop
+                            instance_id_for_favorite_number_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             favorite_number_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();
@@ -1212,7 +1232,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_favorite_foods_prop = self.client_id.clone();
+            let instance_id_for_favorite_foods_prop = self.service_instance_id.clone();
             let mut publisher_for_favorite_foods_prop = self.mqtt_client.clone();
             let favorite_foods_prop_version = props.favorite_foods_version.clone();
             if let Some(mut rx_for_favorite_foods_prop) =
@@ -1220,13 +1240,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_favorite_foods_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "full/{}/property/favoriteFoods/setValue",
-                            client_id_for_favorite_foods_prop
+                            instance_id_for_favorite_foods_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             favorite_foods_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();
@@ -1238,19 +1260,21 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_lunch_menu_prop = self.client_id.clone();
+            let instance_id_for_lunch_menu_prop = self.service_instance_id.clone();
             let mut publisher_for_lunch_menu_prop = self.mqtt_client.clone();
             let lunch_menu_prop_version = props.lunch_menu_version.clone();
             if let Some(mut rx_for_lunch_menu_prop) = props.lunch_menu.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_lunch_menu_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "full/{}/property/lunchMenu/setValue",
-                            client_id_for_lunch_menu_prop
+                            instance_id_for_lunch_menu_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             lunch_menu_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();
@@ -1262,19 +1286,23 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_family_name_prop = self.client_id.clone();
+            let instance_id_for_family_name_prop = self.service_instance_id.clone();
             let mut publisher_for_family_name_prop = self.mqtt_client.clone();
             let family_name_prop_version = props.family_name_version.clone();
             if let Some(mut rx_for_family_name_prop) = props.family_name.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_family_name_prop.recv().await {
+                        let payload_obj = FamilyNameProperty {
+                            family_name: request,
+                        };
+
                         let topic: String = format!(
                             "full/{}/property/familyName/setValue",
-                            client_id_for_family_name_prop
+                            instance_id_for_family_name_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             family_name_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();
@@ -1286,7 +1314,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_last_breakfast_time_prop = self.client_id.clone();
+            let instance_id_for_last_breakfast_time_prop = self.service_instance_id.clone();
             let mut publisher_for_last_breakfast_time_prop = self.mqtt_client.clone();
             let last_breakfast_time_prop_version = props.last_breakfast_time_version.clone();
             if let Some(mut rx_for_last_breakfast_time_prop) =
@@ -1294,13 +1322,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_last_breakfast_time_prop.recv().await {
+                        let payload_obj = LastBreakfastTimeProperty { timestamp: request };
+
                         let topic: String = format!(
                             "full/{}/property/lastBreakfastTime/setValue",
-                            client_id_for_last_breakfast_time_prop
+                            instance_id_for_last_breakfast_time_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             last_breakfast_time_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -1314,7 +1344,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_breakfast_length_prop = self.client_id.clone();
+            let instance_id_for_breakfast_length_prop = self.service_instance_id.clone();
             let mut publisher_for_breakfast_length_prop = self.mqtt_client.clone();
             let breakfast_length_prop_version = props.breakfast_length_version.clone();
             if let Some(mut rx_for_breakfast_length_prop) =
@@ -1322,13 +1352,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_breakfast_length_prop.recv().await {
+                        let payload_obj = BreakfastLengthProperty { length: request };
+
                         let topic: String = format!(
                             "full/{}/property/breakfastLength/setValue",
-                            client_id_for_breakfast_length_prop
+                            instance_id_for_breakfast_length_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             breakfast_length_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -1342,7 +1374,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_last_birthdays_prop = self.client_id.clone();
+            let instance_id_for_last_birthdays_prop = self.service_instance_id.clone();
             let mut publisher_for_last_birthdays_prop = self.mqtt_client.clone();
             let last_birthdays_prop_version = props.last_birthdays_version.clone();
             if let Some(mut rx_for_last_birthdays_prop) =
@@ -1350,13 +1382,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_last_birthdays_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "full/{}/property/lastBirthdays/setValue",
-                            client_id_for_last_birthdays_prop
+                            instance_id_for_last_birthdays_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             last_birthdays_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();

@@ -170,6 +170,8 @@ async fn main() {
         }
     });
 
+    // Property handles are Send so we can move them into tasks.
+
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c()
         .await

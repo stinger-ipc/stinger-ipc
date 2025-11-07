@@ -76,9 +76,10 @@ function generate_rust() {
 
 #### Start With Simple
 
+generate_rust simple || exit 1
 generate_python simple || exit 1
 generate_cpp simple || exit 1
-generate_rust simple || exit 1
+
 
 #### Python
 

@@ -1332,192 +1332,1164 @@ async fn main() {
         .await;
     println!("<<< callTwoLists response: {:?}", result);
 
-    let _ = test__able_client.set_read_write_integer(42);
+    // Property handles are Send so we can move them into tasks.
 
-    let _ = test__able_client.set_read_write_optional_integer(Some(42));
+    let read_write_integer_handle = test__able_client.get_read_write_integer_handle();
 
+    let read_only_integer_handle = test__able_client.get_read_only_integer_handle();
+
+    let read_write_optional_integer_handle =
+        test__able_client.get_read_write_optional_integer_handle();
+
+    let read_write_two_integers_handle = test__able_client.get_read_write_two_integers_handle();
+
+    let read_only_string_handle = test__able_client.get_read_only_string_handle();
+
+    let read_write_string_handle = test__able_client.get_read_write_string_handle();
+
+    let read_write_optional_string_handle =
+        test__able_client.get_read_write_optional_string_handle();
+
+    let read_write_two_strings_handle = test__able_client.get_read_write_two_strings_handle();
+
+    let read_write_struct_handle = test__able_client.get_read_write_struct_handle();
+
+    let read_write_optional_struct_handle =
+        test__able_client.get_read_write_optional_struct_handle();
+
+    let read_write_two_structs_handle = test__able_client.get_read_write_two_structs_handle();
+
+    let read_only_enum_handle = test__able_client.get_read_only_enum_handle();
+
+    let read_write_enum_handle = test__able_client.get_read_write_enum_handle();
+
+    let read_write_optional_enum_handle = test__able_client.get_read_write_optional_enum_handle();
+
+    let read_write_two_enums_handle = test__able_client.get_read_write_two_enums_handle();
+
+    let read_write_datetime_handle = test__able_client.get_read_write_datetime_handle();
+
+    let read_write_optional_datetime_handle =
+        test__able_client.get_read_write_optional_datetime_handle();
+
+    let read_write_two_datetimes_handle = test__able_client.get_read_write_two_datetimes_handle();
+
+    let read_write_duration_handle = test__able_client.get_read_write_duration_handle();
+
+    let read_write_optional_duration_handle =
+        test__able_client.get_read_write_optional_duration_handle();
+
+    let read_write_two_durations_handle = test__able_client.get_read_write_two_durations_handle();
+
+    let read_write_binary_handle = test__able_client.get_read_write_binary_handle();
+
+    let read_write_optional_binary_handle =
+        test__able_client.get_read_write_optional_binary_handle();
+
+    let read_write_two_binaries_handle = test__able_client.get_read_write_two_binaries_handle();
+
+    let read_write_list_of_strings_handle =
+        test__able_client.get_read_write_list_of_strings_handle();
+
+    let read_write_lists_handle = test__able_client.get_read_write_lists_handle();
+
+    let property_update_task = tokio::spawn(async move {
+        let mut i = 0;
+        loop {
+            sleep(Duration::from_secs(20)).await;
+
+            {
+                // Scoping for 'read_write_integer' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_integer_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_integer': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_integer' property.  Demonstrates creating a request to set the value.
+                let read_write_integer_new_value = 42;
+                let mut write_lock = read_write_integer_handle.write().await;
+                *write_lock = read_write_integer_new_value;
+                println!(
+                    "Sending request to update property 'read_write_integer' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_only_integer' property.  Demonstrates reading the value.
+                let current_value_ref = read_only_integer_handle.read().await;
+                println!(
+                    "Current value of property 'read_only_integer': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            // We can't do `read_only_integer_handle.write()` here because it is a read-only lock.
+
+            {
+                // Scoping for 'read_write_optional_integer' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_optional_integer_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_optional_integer': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_optional_integer' property.  Demonstrates creating a request to set the value.
+                let read_write_optional_integer_new_value = Some(42);
+                let mut write_lock = read_write_optional_integer_handle.write().await;
+                *write_lock = read_write_optional_integer_new_value;
+                println!("Sending request to update property 'read_write_optional_integer' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_two_integers' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_two_integers_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_two_integers': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_two_integers' property.  Demonstrates creating a request to set the value.
+                let read_write_two_integers_new_value = ReadWriteTwoIntegersProperty {
+                    first: 42,
+                    second: Some(42),
+                };
+                let mut write_lock = read_write_two_integers_handle.write().await;
+                *write_lock = read_write_two_integers_new_value;
+                println!("Sending request to update property 'read_write_two_integers' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_only_string' property.  Demonstrates reading the value.
+                let current_value_ref = read_only_string_handle.read().await;
+                println!(
+                    "Current value of property 'read_only_string': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            // We can't do `read_only_string_handle.write()` here because it is a read-only lock.
+
+            {
+                // Scoping for 'read_write_string' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_string_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_string': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_string' property.  Demonstrates creating a request to set the value.
+                let read_write_string_new_value = format!("new-value-{}", i).into();
+                let mut write_lock = read_write_string_handle.write().await;
+                *write_lock = read_write_string_new_value;
+                println!(
+                    "Sending request to update property 'read_write_string' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_optional_string' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_optional_string_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_optional_string': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_optional_string' property.  Demonstrates creating a request to set the value.
+                let read_write_optional_string_new_value = format!("new-value-{}", i).into();
+                let mut write_lock = read_write_optional_string_handle.write().await;
+                *write_lock = read_write_optional_string_new_value;
+                println!("Sending request to update property 'read_write_optional_string' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_two_strings' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_two_strings_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_two_strings': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_two_strings' property.  Demonstrates creating a request to set the value.
+                let read_write_two_strings_new_value = ReadWriteTwoStringsProperty {
+                    first: format!("new-value-{}", i).into(),
+                    second: format!("new-value-{}", i).into(),
+                };
+                let mut write_lock = read_write_two_strings_handle.write().await;
+                *write_lock = read_write_two_strings_new_value;
+                println!("Sending request to update property 'read_write_two_strings' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_struct' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_struct_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_struct': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_struct' property.  Demonstrates creating a request to set the value.
+                let read_write_struct_new_value = AllTypes {
+                    the_bool: true,
+                    the_int: 42,
+                    the_number: 3.14,
+                    the_str: "apples".to_string(),
+                    the_enum: Numbers::One,
+                    an_entry_object: Entry {
+                        key: 42,
+                        value: "apples".to_string(),
+                    },
+                    date_and_time: chrono::Utc::now(),
+                    time_duration: chrono::Duration::seconds(3536),
+                    data: vec![101, 120, 97, 109, 112, 108, 101],
+                    optional_integer: Some(42),
+                    optional_string: Some("apples".to_string()),
+                    optional_enum: Some(Numbers::One),
+                    optional_entry_object: Some(Entry {
+                        key: 42,
+                        value: "apples".to_string(),
+                    }),
+                    optional_date_time: Some(chrono::Utc::now()),
+                    optional_duration: Some(chrono::Duration::seconds(3536)),
+                    optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                    array_of_integers: vec![42, 2022],
+                    optional_array_of_integers: Some(vec![42, 2022, 2022]),
+                    array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+                    optional_array_of_strings: Some(vec![
+                        "apples".to_string(),
+                        "foo".to_string(),
+                        "foo".to_string(),
+                    ]),
+                    array_of_enums: vec![Numbers::One, Numbers::One],
+                    optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
+                    array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                    optional_array_of_datetimes: Some(vec![
+                        chrono::Utc::now(),
+                        chrono::Utc::now(),
+                        chrono::Utc::now(),
+                    ]),
+                    array_of_durations: vec![
+                        chrono::Duration::seconds(3536),
+                        chrono::Duration::seconds(975),
+                    ],
+                    optional_array_of_durations: Some(vec![
+                        chrono::Duration::seconds(3536),
+                        chrono::Duration::seconds(975),
+                        chrono::Duration::seconds(967),
+                    ]),
+                    array_of_binaries: vec![
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                    ],
+                    optional_array_of_binaries: Some(vec![
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                    ]),
+                    array_of_entry_objects: vec![
+                        Entry {
+                            key: 42,
+                            value: "apples".to_string(),
+                        },
+                        Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        },
+                    ],
+                    optional_array_of_entry_objects: Some(vec![
+                        Entry {
+                            key: 42,
+                            value: "apples".to_string(),
+                        },
+                        Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        },
+                        Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        },
+                    ]),
+                };
+                let mut write_lock = read_write_struct_handle.write().await;
+                *write_lock = read_write_struct_new_value;
+                println!(
+                    "Sending request to update property 'read_write_struct' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_optional_struct' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_optional_struct_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_optional_struct': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_optional_struct' property.  Demonstrates creating a request to set the value.
+                let read_write_optional_struct_new_value = Some(AllTypes {
+                    the_bool: true,
+                    the_int: 42,
+                    the_number: 3.14,
+                    the_str: "apples".to_string(),
+                    the_enum: Numbers::One,
+                    an_entry_object: Entry {
+                        key: 42,
+                        value: "apples".to_string(),
+                    },
+                    date_and_time: chrono::Utc::now(),
+                    time_duration: chrono::Duration::seconds(3536),
+                    data: vec![101, 120, 97, 109, 112, 108, 101],
+                    optional_integer: Some(42),
+                    optional_string: Some("apples".to_string()),
+                    optional_enum: Some(Numbers::One),
+                    optional_entry_object: Some(Entry {
+                        key: 42,
+                        value: "apples".to_string(),
+                    }),
+                    optional_date_time: Some(chrono::Utc::now()),
+                    optional_duration: Some(chrono::Duration::seconds(3536)),
+                    optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                    array_of_integers: vec![42, 2022],
+                    optional_array_of_integers: Some(vec![42, 2022, 2022]),
+                    array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+                    optional_array_of_strings: Some(vec![
+                        "apples".to_string(),
+                        "foo".to_string(),
+                        "foo".to_string(),
+                    ]),
+                    array_of_enums: vec![Numbers::One, Numbers::One],
+                    optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
+                    array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                    optional_array_of_datetimes: Some(vec![
+                        chrono::Utc::now(),
+                        chrono::Utc::now(),
+                        chrono::Utc::now(),
+                    ]),
+                    array_of_durations: vec![
+                        chrono::Duration::seconds(3536),
+                        chrono::Duration::seconds(975),
+                    ],
+                    optional_array_of_durations: Some(vec![
+                        chrono::Duration::seconds(3536),
+                        chrono::Duration::seconds(975),
+                        chrono::Duration::seconds(967),
+                    ]),
+                    array_of_binaries: vec![
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                    ],
+                    optional_array_of_binaries: Some(vec![
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                        vec![101, 120, 97, 109, 112, 108, 101],
+                    ]),
+                    array_of_entry_objects: vec![
+                        Entry {
+                            key: 42,
+                            value: "apples".to_string(),
+                        },
+                        Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        },
+                    ],
+                    optional_array_of_entry_objects: Some(vec![
+                        Entry {
+                            key: 42,
+                            value: "apples".to_string(),
+                        },
+                        Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        },
+                        Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        },
+                    ]),
+                });
+                let mut write_lock = read_write_optional_struct_handle.write().await;
+                *write_lock = read_write_optional_struct_new_value;
+                println!("Sending request to update property 'read_write_optional_struct' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_two_structs' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_two_structs_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_two_structs': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_two_structs' property.  Demonstrates creating a request to set the value.
+                let read_write_two_structs_new_value = ReadWriteTwoStructsProperty {
+                    first: AllTypes {
+                        the_bool: true,
+                        the_int: 42,
+                        the_number: 3.14,
+                        the_str: "apples".to_string(),
+                        the_enum: Numbers::One,
+                        an_entry_object: Entry {
+                            key: 42,
+                            value: "apples".to_string(),
+                        },
+                        date_and_time: chrono::Utc::now(),
+                        time_duration: chrono::Duration::seconds(3536),
+                        data: vec![101, 120, 97, 109, 112, 108, 101],
+                        optional_integer: Some(42),
+                        optional_string: Some("apples".to_string()),
+                        optional_enum: Some(Numbers::One),
+                        optional_entry_object: Some(Entry {
+                            key: 42,
+                            value: "apples".to_string(),
+                        }),
+                        optional_date_time: Some(chrono::Utc::now()),
+                        optional_duration: Some(chrono::Duration::seconds(3536)),
+                        optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                        array_of_integers: vec![42, 2022],
+                        optional_array_of_integers: Some(vec![42, 2022, 2022]),
+                        array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+                        optional_array_of_strings: Some(vec![
+                            "apples".to_string(),
+                            "foo".to_string(),
+                            "foo".to_string(),
+                        ]),
+                        array_of_enums: vec![Numbers::One, Numbers::One],
+                        optional_array_of_enums: Some(vec![
+                            Numbers::One,
+                            Numbers::One,
+                            Numbers::One,
+                        ]),
+                        array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                        optional_array_of_datetimes: Some(vec![
+                            chrono::Utc::now(),
+                            chrono::Utc::now(),
+                            chrono::Utc::now(),
+                        ]),
+                        array_of_durations: vec![
+                            chrono::Duration::seconds(3536),
+                            chrono::Duration::seconds(975),
+                        ],
+                        optional_array_of_durations: Some(vec![
+                            chrono::Duration::seconds(3536),
+                            chrono::Duration::seconds(975),
+                            chrono::Duration::seconds(967),
+                        ]),
+                        array_of_binaries: vec![
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                        ],
+                        optional_array_of_binaries: Some(vec![
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                        ]),
+                        array_of_entry_objects: vec![
+                            Entry {
+                                key: 42,
+                                value: "apples".to_string(),
+                            },
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                        ],
+                        optional_array_of_entry_objects: Some(vec![
+                            Entry {
+                                key: 42,
+                                value: "apples".to_string(),
+                            },
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                        ]),
+                    },
+                    second: Some(AllTypes {
+                        the_bool: true,
+                        the_int: 42,
+                        the_number: 3.14,
+                        the_str: "apples".to_string(),
+                        the_enum: Numbers::One,
+                        an_entry_object: Entry {
+                            key: 42,
+                            value: "apples".to_string(),
+                        },
+                        date_and_time: chrono::Utc::now(),
+                        time_duration: chrono::Duration::seconds(3536),
+                        data: vec![101, 120, 97, 109, 112, 108, 101],
+                        optional_integer: Some(42),
+                        optional_string: Some("apples".to_string()),
+                        optional_enum: Some(Numbers::One),
+                        optional_entry_object: Some(Entry {
+                            key: 42,
+                            value: "apples".to_string(),
+                        }),
+                        optional_date_time: Some(chrono::Utc::now()),
+                        optional_duration: Some(chrono::Duration::seconds(3536)),
+                        optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                        array_of_integers: vec![42, 2022],
+                        optional_array_of_integers: Some(vec![42, 2022, 2022]),
+                        array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+                        optional_array_of_strings: Some(vec![
+                            "apples".to_string(),
+                            "foo".to_string(),
+                            "foo".to_string(),
+                        ]),
+                        array_of_enums: vec![Numbers::One, Numbers::One],
+                        optional_array_of_enums: Some(vec![
+                            Numbers::One,
+                            Numbers::One,
+                            Numbers::One,
+                        ]),
+                        array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                        optional_array_of_datetimes: Some(vec![
+                            chrono::Utc::now(),
+                            chrono::Utc::now(),
+                            chrono::Utc::now(),
+                        ]),
+                        array_of_durations: vec![
+                            chrono::Duration::seconds(3536),
+                            chrono::Duration::seconds(975),
+                        ],
+                        optional_array_of_durations: Some(vec![
+                            chrono::Duration::seconds(3536),
+                            chrono::Duration::seconds(975),
+                            chrono::Duration::seconds(967),
+                        ]),
+                        array_of_binaries: vec![
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                        ],
+                        optional_array_of_binaries: Some(vec![
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                        ]),
+                        array_of_entry_objects: vec![
+                            Entry {
+                                key: 42,
+                                value: "apples".to_string(),
+                            },
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                        ],
+                        optional_array_of_entry_objects: Some(vec![
+                            Entry {
+                                key: 42,
+                                value: "apples".to_string(),
+                            },
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                        ]),
+                    }),
+                };
+                let mut write_lock = read_write_two_structs_handle.write().await;
+                *write_lock = read_write_two_structs_new_value;
+                println!("Sending request to update property 'read_write_two_structs' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_only_enum' property.  Demonstrates reading the value.
+                let current_value_ref = read_only_enum_handle.read().await;
+                println!(
+                    "Current value of property 'read_only_enum': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            // We can't do `read_only_enum_handle.write()` here because it is a read-only lock.
+
+            {
+                // Scoping for 'read_write_enum' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_enum_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_enum': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_enum' property.  Demonstrates creating a request to set the value.
+                let read_write_enum_new_value = Numbers::One;
+                let mut write_lock = read_write_enum_handle.write().await;
+                *write_lock = read_write_enum_new_value;
+                println!(
+                    "Sending request to update property 'read_write_enum' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_optional_enum' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_optional_enum_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_optional_enum': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_optional_enum' property.  Demonstrates creating a request to set the value.
+                let read_write_optional_enum_new_value = Some(Numbers::One);
+                let mut write_lock = read_write_optional_enum_handle.write().await;
+                *write_lock = read_write_optional_enum_new_value;
+                println!("Sending request to update property 'read_write_optional_enum' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_two_enums' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_two_enums_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_two_enums': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_two_enums' property.  Demonstrates creating a request to set the value.
+                let read_write_two_enums_new_value = ReadWriteTwoEnumsProperty {
+                    first: Numbers::One,
+                    second: Some(Numbers::One),
+                };
+                let mut write_lock = read_write_two_enums_handle.write().await;
+                *write_lock = read_write_two_enums_new_value;
+                println!(
+                    "Sending request to update property 'read_write_two_enums' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_datetime' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_datetime_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_datetime': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_datetime' property.  Demonstrates creating a request to set the value.
+                let read_write_datetime_new_value = chrono::Utc::now();
+                let mut write_lock = read_write_datetime_handle.write().await;
+                *write_lock = read_write_datetime_new_value;
+                println!(
+                    "Sending request to update property 'read_write_datetime' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_optional_datetime' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_optional_datetime_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_optional_datetime': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_optional_datetime' property.  Demonstrates creating a request to set the value.
+                let read_write_optional_datetime_new_value = Some(chrono::Utc::now());
+                let mut write_lock = read_write_optional_datetime_handle.write().await;
+                *write_lock = read_write_optional_datetime_new_value;
+                println!("Sending request to update property 'read_write_optional_datetime' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_two_datetimes' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_two_datetimes_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_two_datetimes': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_two_datetimes' property.  Demonstrates creating a request to set the value.
+                let read_write_two_datetimes_new_value = ReadWriteTwoDatetimesProperty {
+                    first: chrono::Utc::now(),
+                    second: Some(chrono::Utc::now()),
+                };
+                let mut write_lock = read_write_two_datetimes_handle.write().await;
+                *write_lock = read_write_two_datetimes_new_value;
+                println!("Sending request to update property 'read_write_two_datetimes' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_duration' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_duration_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_duration': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_duration' property.  Demonstrates creating a request to set the value.
+                let read_write_duration_new_value = chrono::Duration::seconds(3536);
+                let mut write_lock = read_write_duration_handle.write().await;
+                *write_lock = read_write_duration_new_value;
+                println!(
+                    "Sending request to update property 'read_write_duration' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_optional_duration' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_optional_duration_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_optional_duration': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_optional_duration' property.  Demonstrates creating a request to set the value.
+                let read_write_optional_duration_new_value = Some(chrono::Duration::seconds(3536));
+                let mut write_lock = read_write_optional_duration_handle.write().await;
+                *write_lock = read_write_optional_duration_new_value;
+                println!("Sending request to update property 'read_write_optional_duration' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_two_durations' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_two_durations_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_two_durations': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_two_durations' property.  Demonstrates creating a request to set the value.
+                let read_write_two_durations_new_value = ReadWriteTwoDurationsProperty {
+                    first: chrono::Duration::seconds(3536),
+                    second: Some(chrono::Duration::seconds(3536)),
+                };
+                let mut write_lock = read_write_two_durations_handle.write().await;
+                *write_lock = read_write_two_durations_new_value;
+                println!("Sending request to update property 'read_write_two_durations' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_binary' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_binary_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_binary': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_binary' property.  Demonstrates creating a request to set the value.
+                let read_write_binary_new_value = vec![101, 120, 97, 109, 112, 108, 101];
+                let mut write_lock = read_write_binary_handle.write().await;
+                *write_lock = read_write_binary_new_value;
+                println!(
+                    "Sending request to update property 'read_write_binary' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_optional_binary' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_optional_binary_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_optional_binary': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_optional_binary' property.  Demonstrates creating a request to set the value.
+                let read_write_optional_binary_new_value =
+                    Some(vec![101, 120, 97, 109, 112, 108, 101]);
+                let mut write_lock = read_write_optional_binary_handle.write().await;
+                *write_lock = read_write_optional_binary_new_value;
+                println!("Sending request to update property 'read_write_optional_binary' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_two_binaries' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_two_binaries_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_two_binaries': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_two_binaries' property.  Demonstrates creating a request to set the value.
+                let read_write_two_binaries_new_value = ReadWriteTwoBinariesProperty {
+                    first: vec![101, 120, 97, 109, 112, 108, 101],
+                    second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                };
+                let mut write_lock = read_write_two_binaries_handle.write().await;
+                *write_lock = read_write_two_binaries_new_value;
+                println!("Sending request to update property 'read_write_two_binaries' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_list_of_strings' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_list_of_strings_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_list_of_strings': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_list_of_strings' property.  Demonstrates creating a request to set the value.
+                let read_write_list_of_strings_new_value =
+                    vec!["apples".to_string(), "foo".to_string()];
+                let mut write_lock = read_write_list_of_strings_handle.write().await;
+                *write_lock = read_write_list_of_strings_new_value;
+                println!("Sending request to update property 'read_write_list_of_strings' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'read_write_lists' property.  Demonstrates reading the value.
+                let current_value_ref = read_write_lists_handle.read().await;
+                println!(
+                    "Current value of property 'read_write_lists': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'read_write_lists' property.  Demonstrates creating a request to set the value.
+                let read_write_lists_new_value = ReadWriteListsProperty {
+                    the_list: vec![Numbers::One, Numbers::One],
+                    optional_list: Some(vec![
+                        chrono::Utc::now(),
+                        chrono::Utc::now(),
+                        chrono::Utc::now(),
+                    ]),
+                };
+                let mut write_lock = read_write_lists_handle.write().await;
+                *write_lock = read_write_lists_new_value;
+                println!(
+                    "Sending request to update property 'read_write_lists' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            i += 1;
+        }
+    });
+
+    println!("Setting 'read_write_integer' property to new value using blocking method...");
+
+    // Set 'read_write_integer' property using the blocking setter.
+    let _ = test__able_client.set_read_write_integer(42).await;
+
+    println!(
+        "Setting 'read_write_optional_integer' property to new value using blocking method..."
+    );
+
+    // Set 'read_write_optional_integer' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_optional_integer(Some(42))
+        .await;
+
+    println!("Setting 'read_write_two_integers' property to new value using blocking method...");
+
+    // Set 'read_write_two_integers' property values using the blocking setter.
     let read_write_two_integers_new_value = ReadWriteTwoIntegersProperty {
         first: 42,
         second: Some(42),
     };
-    let _ = test__able_client.set_read_write_two_integers(read_write_two_integers_new_value);
+    let _ = test__able_client
+        .set_read_write_two_integers(read_write_two_integers_new_value)
+        .await;
 
-    let _ = test__able_client.set_read_write_string("apples".to_string());
+    println!("Setting 'read_write_string' property to new value using blocking method...");
 
-    let _ = test__able_client.set_read_write_optional_string(Some("apples".to_string()));
+    // Set 'read_write_string' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_string("apples".to_string())
+        .await;
 
+    println!("Setting 'read_write_optional_string' property to new value using blocking method...");
+
+    // Set 'read_write_optional_string' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_optional_string(Some("apples".to_string()))
+        .await;
+
+    println!("Setting 'read_write_two_strings' property to new value using blocking method...");
+
+    // Set 'read_write_two_strings' property values using the blocking setter.
     let read_write_two_strings_new_value = ReadWriteTwoStringsProperty {
         first: "apples".to_string(),
         second: Some("apples".to_string()),
     };
-    let _ = test__able_client.set_read_write_two_strings(read_write_two_strings_new_value);
+    let _ = test__able_client
+        .set_read_write_two_strings(read_write_two_strings_new_value)
+        .await;
 
-    let _ = test__able_client.set_read_write_struct(AllTypes {
-        the_bool: true,
-        the_int: 42,
-        the_number: 3.14,
-        the_str: "apples".to_string(),
-        the_enum: Numbers::One,
-        an_entry_object: Entry {
-            key: 42,
-            value: "apples".to_string(),
-        },
-        date_and_time: chrono::Utc::now(),
-        time_duration: chrono::Duration::seconds(3536),
-        data: vec![101, 120, 97, 109, 112, 108, 101],
-        optional_integer: Some(42),
-        optional_string: Some("apples".to_string()),
-        optional_enum: Some(Numbers::One),
-        optional_entry_object: Some(Entry {
-            key: 42,
-            value: "apples".to_string(),
-        }),
-        optional_date_time: Some(chrono::Utc::now()),
-        optional_duration: Some(chrono::Duration::seconds(3536)),
-        optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-        array_of_integers: vec![42, 2022],
-        optional_array_of_integers: Some(vec![42, 2022, 2022]),
-        array_of_strings: vec!["apples".to_string(), "foo".to_string()],
-        optional_array_of_strings: Some(vec![
-            "apples".to_string(),
-            "foo".to_string(),
-            "foo".to_string(),
-        ]),
-        array_of_enums: vec![Numbers::One, Numbers::One],
-        optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
-        array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-        optional_array_of_datetimes: Some(vec![
-            chrono::Utc::now(),
-            chrono::Utc::now(),
-            chrono::Utc::now(),
-        ]),
-        array_of_durations: vec![
-            chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(975),
-        ],
-        optional_array_of_durations: Some(vec![
-            chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(975),
-            chrono::Duration::seconds(967),
-        ]),
-        array_of_binaries: vec![
-            vec![101, 120, 97, 109, 112, 108, 101],
-            vec![101, 120, 97, 109, 112, 108, 101],
-        ],
-        optional_array_of_binaries: Some(vec![
-            vec![101, 120, 97, 109, 112, 108, 101],
-            vec![101, 120, 97, 109, 112, 108, 101],
-            vec![101, 120, 97, 109, 112, 108, 101],
-        ]),
-        array_of_entry_objects: vec![
-            Entry {
-                key: 42,
-                value: "apples".to_string(),
-            },
-            Entry {
-                key: 2022,
-                value: "foo".to_string(),
-            },
-        ],
-        optional_array_of_entry_objects: Some(vec![
-            Entry {
-                key: 42,
-                value: "apples".to_string(),
-            },
-            Entry {
-                key: 2022,
-                value: "foo".to_string(),
-            },
-            Entry {
-                key: 2022,
-                value: "foo".to_string(),
-            },
-        ]),
-    });
+    println!("Setting 'read_write_struct' property to new value using blocking method...");
 
-    let _ = test__able_client.set_read_write_optional_struct(Some(AllTypes {
-        the_bool: true,
-        the_int: 42,
-        the_number: 3.14,
-        the_str: "apples".to_string(),
-        the_enum: Numbers::One,
-        an_entry_object: Entry {
-            key: 42,
-            value: "apples".to_string(),
-        },
-        date_and_time: chrono::Utc::now(),
-        time_duration: chrono::Duration::seconds(3536),
-        data: vec![101, 120, 97, 109, 112, 108, 101],
-        optional_integer: Some(42),
-        optional_string: Some("apples".to_string()),
-        optional_enum: Some(Numbers::One),
-        optional_entry_object: Some(Entry {
-            key: 42,
-            value: "apples".to_string(),
-        }),
-        optional_date_time: Some(chrono::Utc::now()),
-        optional_duration: Some(chrono::Duration::seconds(3536)),
-        optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-        array_of_integers: vec![42, 2022],
-        optional_array_of_integers: Some(vec![42, 2022, 2022]),
-        array_of_strings: vec!["apples".to_string(), "foo".to_string()],
-        optional_array_of_strings: Some(vec![
-            "apples".to_string(),
-            "foo".to_string(),
-            "foo".to_string(),
-        ]),
-        array_of_enums: vec![Numbers::One, Numbers::One],
-        optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
-        array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-        optional_array_of_datetimes: Some(vec![
-            chrono::Utc::now(),
-            chrono::Utc::now(),
-            chrono::Utc::now(),
-        ]),
-        array_of_durations: vec![
-            chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(975),
-        ],
-        optional_array_of_durations: Some(vec![
-            chrono::Duration::seconds(3536),
-            chrono::Duration::seconds(975),
-            chrono::Duration::seconds(967),
-        ]),
-        array_of_binaries: vec![
-            vec![101, 120, 97, 109, 112, 108, 101],
-            vec![101, 120, 97, 109, 112, 108, 101],
-        ],
-        optional_array_of_binaries: Some(vec![
-            vec![101, 120, 97, 109, 112, 108, 101],
-            vec![101, 120, 97, 109, 112, 108, 101],
-            vec![101, 120, 97, 109, 112, 108, 101],
-        ]),
-        array_of_entry_objects: vec![
-            Entry {
+    // Set 'read_write_struct' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_struct(AllTypes {
+            the_bool: true,
+            the_int: 42,
+            the_number: 3.14,
+            the_str: "apples".to_string(),
+            the_enum: Numbers::One,
+            an_entry_object: Entry {
                 key: 42,
                 value: "apples".to_string(),
             },
-            Entry {
-                key: 2022,
-                value: "foo".to_string(),
-            },
-        ],
-        optional_array_of_entry_objects: Some(vec![
-            Entry {
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(3536),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_entry_object: Some(Entry {
                 key: 42,
                 value: "apples".to_string(),
-            },
-            Entry {
-                key: 2022,
-                value: "foo".to_string(),
-            },
-            Entry {
-                key: 2022,
-                value: "foo".to_string(),
-            },
-        ]),
-    }));
+            }),
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+            array_of_integers: vec![42, 2022],
+            optional_array_of_integers: Some(vec![42, 2022, 2022]),
+            array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+            optional_array_of_strings: Some(vec![
+                "apples".to_string(),
+                "foo".to_string(),
+                "foo".to_string(),
+            ]),
+            array_of_enums: vec![Numbers::One, Numbers::One],
+            optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
+            array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+            optional_array_of_datetimes: Some(vec![
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+            ]),
+            array_of_durations: vec![
+                chrono::Duration::seconds(3536),
+                chrono::Duration::seconds(975),
+            ],
+            optional_array_of_durations: Some(vec![
+                chrono::Duration::seconds(3536),
+                chrono::Duration::seconds(975),
+                chrono::Duration::seconds(967),
+            ]),
+            array_of_binaries: vec![
+                vec![101, 120, 97, 109, 112, 108, 101],
+                vec![101, 120, 97, 109, 112, 108, 101],
+            ],
+            optional_array_of_binaries: Some(vec![
+                vec![101, 120, 97, 109, 112, 108, 101],
+                vec![101, 120, 97, 109, 112, 108, 101],
+                vec![101, 120, 97, 109, 112, 108, 101],
+            ]),
+            array_of_entry_objects: vec![
+                Entry {
+                    key: 42,
+                    value: "apples".to_string(),
+                },
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+            ],
+            optional_array_of_entry_objects: Some(vec![
+                Entry {
+                    key: 42,
+                    value: "apples".to_string(),
+                },
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+            ]),
+        })
+        .await;
 
+    println!("Setting 'read_write_optional_struct' property to new value using blocking method...");
+
+    // Set 'read_write_optional_struct' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_optional_struct(Some(AllTypes {
+            the_bool: true,
+            the_int: 42,
+            the_number: 3.14,
+            the_str: "apples".to_string(),
+            the_enum: Numbers::One,
+            an_entry_object: Entry {
+                key: 42,
+                value: "apples".to_string(),
+            },
+            date_and_time: chrono::Utc::now(),
+            time_duration: chrono::Duration::seconds(3536),
+            data: vec![101, 120, 97, 109, 112, 108, 101],
+            optional_integer: Some(42),
+            optional_string: Some("apples".to_string()),
+            optional_enum: Some(Numbers::One),
+            optional_entry_object: Some(Entry {
+                key: 42,
+                value: "apples".to_string(),
+            }),
+            optional_date_time: Some(chrono::Utc::now()),
+            optional_duration: Some(chrono::Duration::seconds(3536)),
+            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+            array_of_integers: vec![42, 2022],
+            optional_array_of_integers: Some(vec![42, 2022, 2022]),
+            array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+            optional_array_of_strings: Some(vec![
+                "apples".to_string(),
+                "foo".to_string(),
+                "foo".to_string(),
+            ]),
+            array_of_enums: vec![Numbers::One, Numbers::One],
+            optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
+            array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+            optional_array_of_datetimes: Some(vec![
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+            ]),
+            array_of_durations: vec![
+                chrono::Duration::seconds(3536),
+                chrono::Duration::seconds(975),
+            ],
+            optional_array_of_durations: Some(vec![
+                chrono::Duration::seconds(3536),
+                chrono::Duration::seconds(975),
+                chrono::Duration::seconds(967),
+            ]),
+            array_of_binaries: vec![
+                vec![101, 120, 97, 109, 112, 108, 101],
+                vec![101, 120, 97, 109, 112, 108, 101],
+            ],
+            optional_array_of_binaries: Some(vec![
+                vec![101, 120, 97, 109, 112, 108, 101],
+                vec![101, 120, 97, 109, 112, 108, 101],
+                vec![101, 120, 97, 109, 112, 108, 101],
+            ]),
+            array_of_entry_objects: vec![
+                Entry {
+                    key: 42,
+                    value: "apples".to_string(),
+                },
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+            ],
+            optional_array_of_entry_objects: Some(vec![
+                Entry {
+                    key: 42,
+                    value: "apples".to_string(),
+                },
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+                Entry {
+                    key: 2022,
+                    value: "foo".to_string(),
+                },
+            ]),
+        }))
+        .await;
+
+    println!("Setting 'read_write_two_structs' property to new value using blocking method...");
+
+    // Set 'read_write_two_structs' property values using the blocking setter.
     let read_write_two_structs_new_value = ReadWriteTwoStructsProperty {
         first: AllTypes {
             the_bool: true,
@@ -1684,53 +2656,122 @@ async fn main() {
             ]),
         }),
     };
-    let _ = test__able_client.set_read_write_two_structs(read_write_two_structs_new_value);
+    let _ = test__able_client
+        .set_read_write_two_structs(read_write_two_structs_new_value)
+        .await;
 
-    let _ = test__able_client.set_read_write_enum(Numbers::One);
+    println!("Setting 'read_write_enum' property to new value using blocking method...");
 
-    let _ = test__able_client.set_read_write_optional_enum(Some(Numbers::One));
+    // Set 'read_write_enum' property using the blocking setter.
+    let _ = test__able_client.set_read_write_enum(Numbers::One).await;
 
+    println!("Setting 'read_write_optional_enum' property to new value using blocking method...");
+
+    // Set 'read_write_optional_enum' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_optional_enum(Some(Numbers::One))
+        .await;
+
+    println!("Setting 'read_write_two_enums' property to new value using blocking method...");
+
+    // Set 'read_write_two_enums' property values using the blocking setter.
     let read_write_two_enums_new_value = ReadWriteTwoEnumsProperty {
         first: Numbers::One,
         second: Some(Numbers::One),
     };
-    let _ = test__able_client.set_read_write_two_enums(read_write_two_enums_new_value);
+    let _ = test__able_client
+        .set_read_write_two_enums(read_write_two_enums_new_value)
+        .await;
 
-    let _ = test__able_client.set_read_write_datetime(chrono::Utc::now());
+    println!("Setting 'read_write_datetime' property to new value using blocking method...");
 
-    let _ = test__able_client.set_read_write_optional_datetime(Some(chrono::Utc::now()));
+    // Set 'read_write_datetime' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_datetime(chrono::Utc::now())
+        .await;
 
+    println!(
+        "Setting 'read_write_optional_datetime' property to new value using blocking method..."
+    );
+
+    // Set 'read_write_optional_datetime' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_optional_datetime(Some(chrono::Utc::now()))
+        .await;
+
+    println!("Setting 'read_write_two_datetimes' property to new value using blocking method...");
+
+    // Set 'read_write_two_datetimes' property values using the blocking setter.
     let read_write_two_datetimes_new_value = ReadWriteTwoDatetimesProperty {
         first: chrono::Utc::now(),
         second: Some(chrono::Utc::now()),
     };
-    let _ = test__able_client.set_read_write_two_datetimes(read_write_two_datetimes_new_value);
+    let _ = test__able_client
+        .set_read_write_two_datetimes(read_write_two_datetimes_new_value)
+        .await;
 
-    let _ = test__able_client.set_read_write_duration(chrono::Duration::seconds(3536));
+    println!("Setting 'read_write_duration' property to new value using blocking method...");
 
-    let _ =
-        test__able_client.set_read_write_optional_duration(Some(chrono::Duration::seconds(3536)));
+    // Set 'read_write_duration' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_duration(chrono::Duration::seconds(3536))
+        .await;
 
+    println!(
+        "Setting 'read_write_optional_duration' property to new value using blocking method..."
+    );
+
+    // Set 'read_write_optional_duration' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_optional_duration(Some(chrono::Duration::seconds(3536)))
+        .await;
+
+    println!("Setting 'read_write_two_durations' property to new value using blocking method...");
+
+    // Set 'read_write_two_durations' property values using the blocking setter.
     let read_write_two_durations_new_value = ReadWriteTwoDurationsProperty {
         first: chrono::Duration::seconds(3536),
         second: Some(chrono::Duration::seconds(3536)),
     };
-    let _ = test__able_client.set_read_write_two_durations(read_write_two_durations_new_value);
-
-    let _ = test__able_client.set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101]);
-
     let _ = test__able_client
-        .set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]));
+        .set_read_write_two_durations(read_write_two_durations_new_value)
+        .await;
 
+    println!("Setting 'read_write_binary' property to new value using blocking method...");
+
+    // Set 'read_write_binary' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101])
+        .await;
+
+    println!("Setting 'read_write_optional_binary' property to new value using blocking method...");
+
+    // Set 'read_write_optional_binary' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]))
+        .await;
+
+    println!("Setting 'read_write_two_binaries' property to new value using blocking method...");
+
+    // Set 'read_write_two_binaries' property values using the blocking setter.
     let read_write_two_binaries_new_value = ReadWriteTwoBinariesProperty {
         first: vec![101, 120, 97, 109, 112, 108, 101],
         second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
     };
-    let _ = test__able_client.set_read_write_two_binaries(read_write_two_binaries_new_value);
-
     let _ = test__able_client
-        .set_read_write_list_of_strings(vec!["apples".to_string(), "foo".to_string()]);
+        .set_read_write_two_binaries(read_write_two_binaries_new_value)
+        .await;
 
+    println!("Setting 'read_write_list_of_strings' property to new value using blocking method...");
+
+    // Set 'read_write_list_of_strings' property using the blocking setter.
+    let _ = test__able_client
+        .set_read_write_list_of_strings(vec!["apples".to_string(), "foo".to_string()])
+        .await;
+
+    println!("Setting 'read_write_lists' property to new value using blocking method...");
+
+    // Set 'read_write_lists' property values using the blocking setter.
     let read_write_lists_new_value = ReadWriteListsProperty {
         the_list: vec![Numbers::One, Numbers::One],
         optional_list: Some(vec![
@@ -1739,7 +2780,9 @@ async fn main() {
             chrono::Utc::now(),
         ]),
     };
-    let _ = test__able_client.set_read_write_lists(read_write_lists_new_value);
+    let _ = test__able_client
+        .set_read_write_lists(read_write_lists_new_value)
+        .await;
 
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c()
@@ -1797,8 +2840,11 @@ async fn main() {
 
     sig_rx_task25.abort();
 
+    property_update_task.abort();
+
     // Join on all the signal emitting tasks.
     let _ = join!(
+        property_update_task,
         sig_rx_task1,
         sig_rx_task2,
         sig_rx_task3,

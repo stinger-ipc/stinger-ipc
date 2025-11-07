@@ -3675,7 +3675,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteIntegerProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteInteger/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -3729,7 +3729,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteOptionalIntegerProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteOptionalInteger/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -3778,7 +3778,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = value;
         let topic: String = format!(
             "testAble/{}/property/readWriteTwoIntegers/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -3834,7 +3834,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteStringProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteString/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -3878,7 +3878,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteOptionalStringProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteOptionalString/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -3927,7 +3927,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = value;
         let topic: String = format!(
             "testAble/{}/property/readWriteTwoStrings/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -3973,7 +3973,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteStructProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteStruct/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4017,7 +4017,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteOptionalStructProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteOptionalStruct/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4066,7 +4066,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = value;
         let topic: String = format!(
             "testAble/{}/property/readWriteTwoStructs/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4122,7 +4122,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteEnumProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteEnum/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4166,7 +4166,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteOptionalEnumProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteOptionalEnum/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4215,7 +4215,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = value;
         let topic: String = format!(
             "testAble/{}/property/readWriteTwoEnums/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4261,7 +4261,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteDatetimeProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteDatetime/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4309,7 +4309,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteOptionalDatetimeProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteOptionalDatetime/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4358,7 +4358,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = value;
         let topic: String = format!(
             "testAble/{}/property/readWriteTwoDatetimes/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4404,7 +4404,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteDurationProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteDuration/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4448,7 +4448,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteOptionalDurationProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteOptionalDuration/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4497,7 +4497,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = value;
         let topic: String = format!(
             "testAble/{}/property/readWriteTwoDurations/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4543,7 +4543,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteBinaryProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteBinary/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4587,7 +4587,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteOptionalBinaryProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteOptionalBinary/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4636,7 +4636,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = value;
         let topic: String = format!(
             "testAble/{}/property/readWriteTwoBinaries/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4682,7 +4682,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = ReadWriteListOfStringsProperty { value: value };
         let topic: String = format!(
             "testAble/{}/property/readWriteListOfStrings/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4729,7 +4729,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let data = value;
         let topic: String = format!(
             "testAble/{}/property/readWriteLists/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -4795,7 +4795,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let props = self.properties.clone();
         {
             // Set up property change request handling task
-            let client_id_for_read_write_integer_prop = self.client_id.clone();
+            let instance_id_for_read_write_integer_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_integer_prop = self.mqtt_client.clone();
             let read_write_integer_prop_version = props.read_write_integer_version.clone();
             if let Some(mut rx_for_read_write_integer_prop) =
@@ -4803,13 +4803,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_integer_prop.recv().await {
+                        let payload_obj = ReadWriteIntegerProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteInteger/setValue",
-                            client_id_for_read_write_integer_prop
+                            instance_id_for_read_write_integer_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_integer_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -4823,7 +4825,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_only_integer_prop = self.client_id.clone();
+            let instance_id_for_read_only_integer_prop = self.service_instance_id.clone();
             let mut publisher_for_read_only_integer_prop = self.mqtt_client.clone();
             let read_only_integer_prop_version = props.read_only_integer_version.clone();
             if let Some(mut rx_for_read_only_integer_prop) =
@@ -4831,13 +4833,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_only_integer_prop.recv().await {
+                        let payload_obj = ReadOnlyIntegerProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readOnlyInteger/setValue",
-                            client_id_for_read_only_integer_prop
+                            instance_id_for_read_only_integer_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_only_integer_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -4851,7 +4855,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_optional_integer_prop = self.client_id.clone();
+            let instance_id_for_read_write_optional_integer_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_optional_integer_prop = self.mqtt_client.clone();
             let read_write_optional_integer_prop_version =
                 props.read_write_optional_integer_version.clone();
@@ -4860,13 +4864,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_optional_integer_prop.recv().await {
+                        let payload_obj = ReadWriteOptionalIntegerProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalInteger/setValue",
-                            client_id_for_read_write_optional_integer_prop
+                            instance_id_for_read_write_optional_integer_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_optional_integer_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -4881,7 +4887,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_two_integers_prop = self.client_id.clone();
+            let instance_id_for_read_write_two_integers_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_two_integers_prop = self.mqtt_client.clone();
             let read_write_two_integers_prop_version =
                 props.read_write_two_integers_version.clone();
@@ -4890,13 +4896,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_two_integers_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoIntegers/setValue",
-                            client_id_for_read_write_two_integers_prop
+                            instance_id_for_read_write_two_integers_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_two_integers_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -4911,7 +4919,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_only_string_prop = self.client_id.clone();
+            let instance_id_for_read_only_string_prop = self.service_instance_id.clone();
             let mut publisher_for_read_only_string_prop = self.mqtt_client.clone();
             let read_only_string_prop_version = props.read_only_string_version.clone();
             if let Some(mut rx_for_read_only_string_prop) =
@@ -4919,13 +4927,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_only_string_prop.recv().await {
+                        let payload_obj = ReadOnlyStringProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readOnlyString/setValue",
-                            client_id_for_read_only_string_prop
+                            instance_id_for_read_only_string_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_only_string_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -4939,7 +4949,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_string_prop = self.client_id.clone();
+            let instance_id_for_read_write_string_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_string_prop = self.mqtt_client.clone();
             let read_write_string_prop_version = props.read_write_string_version.clone();
             if let Some(mut rx_for_read_write_string_prop) =
@@ -4947,13 +4957,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_string_prop.recv().await {
+                        let payload_obj = ReadWriteStringProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteString/setValue",
-                            client_id_for_read_write_string_prop
+                            instance_id_for_read_write_string_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_string_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -4967,7 +4979,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_optional_string_prop = self.client_id.clone();
+            let instance_id_for_read_write_optional_string_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_optional_string_prop = self.mqtt_client.clone();
             let read_write_optional_string_prop_version =
                 props.read_write_optional_string_version.clone();
@@ -4976,13 +4988,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_optional_string_prop.recv().await {
+                        let payload_obj = ReadWriteOptionalStringProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalString/setValue",
-                            client_id_for_read_write_optional_string_prop
+                            instance_id_for_read_write_optional_string_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_optional_string_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -4997,7 +5011,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_two_strings_prop = self.client_id.clone();
+            let instance_id_for_read_write_two_strings_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_two_strings_prop = self.mqtt_client.clone();
             let read_write_two_strings_prop_version = props.read_write_two_strings_version.clone();
             if let Some(mut rx_for_read_write_two_strings_prop) =
@@ -5005,13 +5019,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_two_strings_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoStrings/setValue",
-                            client_id_for_read_write_two_strings_prop
+                            instance_id_for_read_write_two_strings_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_two_strings_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5025,7 +5041,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_struct_prop = self.client_id.clone();
+            let instance_id_for_read_write_struct_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_struct_prop = self.mqtt_client.clone();
             let read_write_struct_prop_version = props.read_write_struct_version.clone();
             if let Some(mut rx_for_read_write_struct_prop) =
@@ -5033,13 +5049,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_struct_prop.recv().await {
+                        let payload_obj = ReadWriteStructProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteStruct/setValue",
-                            client_id_for_read_write_struct_prop
+                            instance_id_for_read_write_struct_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_struct_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5053,7 +5071,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_optional_struct_prop = self.client_id.clone();
+            let instance_id_for_read_write_optional_struct_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_optional_struct_prop = self.mqtt_client.clone();
             let read_write_optional_struct_prop_version =
                 props.read_write_optional_struct_version.clone();
@@ -5062,13 +5080,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_optional_struct_prop.recv().await {
+                        let payload_obj = ReadWriteOptionalStructProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalStruct/setValue",
-                            client_id_for_read_write_optional_struct_prop
+                            instance_id_for_read_write_optional_struct_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_optional_struct_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5083,7 +5103,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_two_structs_prop = self.client_id.clone();
+            let instance_id_for_read_write_two_structs_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_two_structs_prop = self.mqtt_client.clone();
             let read_write_two_structs_prop_version = props.read_write_two_structs_version.clone();
             if let Some(mut rx_for_read_write_two_structs_prop) =
@@ -5091,13 +5111,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_two_structs_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoStructs/setValue",
-                            client_id_for_read_write_two_structs_prop
+                            instance_id_for_read_write_two_structs_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_two_structs_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5111,7 +5133,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_only_enum_prop = self.client_id.clone();
+            let instance_id_for_read_only_enum_prop = self.service_instance_id.clone();
             let mut publisher_for_read_only_enum_prop = self.mqtt_client.clone();
             let read_only_enum_prop_version = props.read_only_enum_version.clone();
             if let Some(mut rx_for_read_only_enum_prop) =
@@ -5119,13 +5141,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_only_enum_prop.recv().await {
+                        let payload_obj = ReadOnlyEnumProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readOnlyEnum/setValue",
-                            client_id_for_read_only_enum_prop
+                            instance_id_for_read_only_enum_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_only_enum_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();
@@ -5137,7 +5161,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_enum_prop = self.client_id.clone();
+            let instance_id_for_read_write_enum_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_enum_prop = self.mqtt_client.clone();
             let read_write_enum_prop_version = props.read_write_enum_version.clone();
             if let Some(mut rx_for_read_write_enum_prop) =
@@ -5145,13 +5169,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_enum_prop.recv().await {
+                        let payload_obj = ReadWriteEnumProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteEnum/setValue",
-                            client_id_for_read_write_enum_prop
+                            instance_id_for_read_write_enum_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_enum_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();
@@ -5163,7 +5189,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_optional_enum_prop = self.client_id.clone();
+            let instance_id_for_read_write_optional_enum_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_optional_enum_prop = self.mqtt_client.clone();
             let read_write_optional_enum_prop_version =
                 props.read_write_optional_enum_version.clone();
@@ -5172,13 +5198,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_optional_enum_prop.recv().await {
+                        let payload_obj = ReadWriteOptionalEnumProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalEnum/setValue",
-                            client_id_for_read_write_optional_enum_prop
+                            instance_id_for_read_write_optional_enum_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_optional_enum_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5193,7 +5221,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_two_enums_prop = self.client_id.clone();
+            let instance_id_for_read_write_two_enums_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_two_enums_prop = self.mqtt_client.clone();
             let read_write_two_enums_prop_version = props.read_write_two_enums_version.clone();
             if let Some(mut rx_for_read_write_two_enums_prop) =
@@ -5201,13 +5229,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_two_enums_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoEnums/setValue",
-                            client_id_for_read_write_two_enums_prop
+                            instance_id_for_read_write_two_enums_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_two_enums_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5221,7 +5251,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_datetime_prop = self.client_id.clone();
+            let instance_id_for_read_write_datetime_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_datetime_prop = self.mqtt_client.clone();
             let read_write_datetime_prop_version = props.read_write_datetime_version.clone();
             if let Some(mut rx_for_read_write_datetime_prop) =
@@ -5229,13 +5259,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_datetime_prop.recv().await {
+                        let payload_obj = ReadWriteDatetimeProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteDatetime/setValue",
-                            client_id_for_read_write_datetime_prop
+                            instance_id_for_read_write_datetime_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_datetime_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5249,7 +5281,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_optional_datetime_prop = self.client_id.clone();
+            let instance_id_for_read_write_optional_datetime_prop =
+                self.service_instance_id.clone();
             let mut publisher_for_read_write_optional_datetime_prop = self.mqtt_client.clone();
             let read_write_optional_datetime_prop_version =
                 props.read_write_optional_datetime_version.clone();
@@ -5259,13 +5292,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_optional_datetime_prop.recv().await
                     {
+                        let payload_obj = ReadWriteOptionalDatetimeProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalDatetime/setValue",
-                            client_id_for_read_write_optional_datetime_prop
+                            instance_id_for_read_write_optional_datetime_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_optional_datetime_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5280,7 +5315,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_two_datetimes_prop = self.client_id.clone();
+            let instance_id_for_read_write_two_datetimes_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_two_datetimes_prop = self.mqtt_client.clone();
             let read_write_two_datetimes_prop_version =
                 props.read_write_two_datetimes_version.clone();
@@ -5289,13 +5324,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_two_datetimes_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoDatetimes/setValue",
-                            client_id_for_read_write_two_datetimes_prop
+                            instance_id_for_read_write_two_datetimes_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_two_datetimes_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5310,7 +5347,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_duration_prop = self.client_id.clone();
+            let instance_id_for_read_write_duration_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_duration_prop = self.mqtt_client.clone();
             let read_write_duration_prop_version = props.read_write_duration_version.clone();
             if let Some(mut rx_for_read_write_duration_prop) =
@@ -5318,13 +5355,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_duration_prop.recv().await {
+                        let payload_obj = ReadWriteDurationProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteDuration/setValue",
-                            client_id_for_read_write_duration_prop
+                            instance_id_for_read_write_duration_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_duration_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5338,7 +5377,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_optional_duration_prop = self.client_id.clone();
+            let instance_id_for_read_write_optional_duration_prop =
+                self.service_instance_id.clone();
             let mut publisher_for_read_write_optional_duration_prop = self.mqtt_client.clone();
             let read_write_optional_duration_prop_version =
                 props.read_write_optional_duration_version.clone();
@@ -5348,13 +5388,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_optional_duration_prop.recv().await
                     {
+                        let payload_obj = ReadWriteOptionalDurationProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalDuration/setValue",
-                            client_id_for_read_write_optional_duration_prop
+                            instance_id_for_read_write_optional_duration_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_optional_duration_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5369,7 +5411,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_two_durations_prop = self.client_id.clone();
+            let instance_id_for_read_write_two_durations_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_two_durations_prop = self.mqtt_client.clone();
             let read_write_two_durations_prop_version =
                 props.read_write_two_durations_version.clone();
@@ -5378,13 +5420,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_two_durations_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoDurations/setValue",
-                            client_id_for_read_write_two_durations_prop
+                            instance_id_for_read_write_two_durations_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_two_durations_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5399,7 +5443,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_binary_prop = self.client_id.clone();
+            let instance_id_for_read_write_binary_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_binary_prop = self.mqtt_client.clone();
             let read_write_binary_prop_version = props.read_write_binary_version.clone();
             if let Some(mut rx_for_read_write_binary_prop) =
@@ -5407,13 +5451,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_binary_prop.recv().await {
+                        let payload_obj = ReadWriteBinaryProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteBinary/setValue",
-                            client_id_for_read_write_binary_prop
+                            instance_id_for_read_write_binary_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_binary_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5427,7 +5473,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_optional_binary_prop = self.client_id.clone();
+            let instance_id_for_read_write_optional_binary_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_optional_binary_prop = self.mqtt_client.clone();
             let read_write_optional_binary_prop_version =
                 props.read_write_optional_binary_version.clone();
@@ -5436,13 +5482,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_optional_binary_prop.recv().await {
+                        let payload_obj = ReadWriteOptionalBinaryProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalBinary/setValue",
-                            client_id_for_read_write_optional_binary_prop
+                            instance_id_for_read_write_optional_binary_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_optional_binary_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5457,7 +5505,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_two_binaries_prop = self.client_id.clone();
+            let instance_id_for_read_write_two_binaries_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_two_binaries_prop = self.mqtt_client.clone();
             let read_write_two_binaries_prop_version =
                 props.read_write_two_binaries_version.clone();
@@ -5466,13 +5514,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_two_binaries_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoBinaries/setValue",
-                            client_id_for_read_write_two_binaries_prop
+                            instance_id_for_read_write_two_binaries_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_two_binaries_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5487,7 +5537,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_list_of_strings_prop = self.client_id.clone();
+            let instance_id_for_read_write_list_of_strings_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_list_of_strings_prop = self.mqtt_client.clone();
             let read_write_list_of_strings_prop_version =
                 props.read_write_list_of_strings_version.clone();
@@ -5496,13 +5546,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_list_of_strings_prop.recv().await {
+                        let payload_obj = ReadWriteListOfStringsProperty { value: request };
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteListOfStrings/setValue",
-                            client_id_for_read_write_list_of_strings_prop
+                            instance_id_for_read_write_list_of_strings_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_list_of_strings_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -5517,7 +5569,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_read_write_lists_prop = self.client_id.clone();
+            let instance_id_for_read_write_lists_prop = self.service_instance_id.clone();
             let mut publisher_for_read_write_lists_prop = self.mqtt_client.clone();
             let read_write_lists_prop_version = props.read_write_lists_version.clone();
             if let Some(mut rx_for_read_write_lists_prop) =
@@ -5525,13 +5577,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_read_write_lists_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "testAble/{}/property/readWriteLists/setValue",
-                            client_id_for_read_write_lists_prop
+                            instance_id_for_read_write_lists_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             read_write_lists_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )

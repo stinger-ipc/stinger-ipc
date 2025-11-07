@@ -38,7 +38,7 @@ if __name__ == "__main__":
     server.last_birthdays = LastBirthdaysProperty(
         mom=datetime.now(UTC),
         dad=datetime.now(UTC),
-        sister=None,
+        sister=datetime.now(UTC),
         brothers_age=42,
     )
 

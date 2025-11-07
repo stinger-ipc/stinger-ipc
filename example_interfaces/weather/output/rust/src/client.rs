@@ -617,7 +617,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
     /// Sets the `location` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_location(&mut self, value: LocationProperty) -> MethodReturnCode {
         let data = value;
-        let topic: String = format!("weather/{}/property/location/setValue", self.client_id);
+        let topic: String = format!(
+            "weather/{}/property/location/setValue",
+            self.service_instance_id
+        );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -697,7 +700,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let data = CurrentConditionRefreshIntervalProperty { seconds: value };
         let topic: String = format!(
             "weather/{}/property/currentConditionRefreshInterval/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -741,7 +744,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let data = HourlyForecastRefreshIntervalProperty { seconds: value };
         let topic: String = format!(
             "weather/{}/property/hourlyForecastRefreshInterval/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -785,7 +788,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let data = DailyForecastRefreshIntervalProperty { seconds: value };
         let topic: String = format!(
             "weather/{}/property/dailyForecastRefreshInterval/setValue",
-            self.client_id
+            self.service_instance_id
         );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -852,19 +855,21 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let props = self.properties.clone();
         {
             // Set up property change request handling task
-            let client_id_for_location_prop = self.client_id.clone();
+            let instance_id_for_location_prop = self.service_instance_id.clone();
             let mut publisher_for_location_prop = self.mqtt_client.clone();
             let location_prop_version = props.location_version.clone();
             if let Some(mut rx_for_location_prop) = props.location.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_location_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "weather/{}/property/location/setValue",
-                            client_id_for_location_prop
+                            instance_id_for_location_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             location_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();
@@ -876,7 +881,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_current_temperature_prop = self.client_id.clone();
+            let instance_id_for_current_temperature_prop = self.service_instance_id.clone();
             let mut publisher_for_current_temperature_prop = self.mqtt_client.clone();
             let current_temperature_prop_version = props.current_temperature_version.clone();
             if let Some(mut rx_for_current_temperature_prop) =
@@ -884,13 +889,17 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_current_temperature_prop.recv().await {
+                        let payload_obj = CurrentTemperatureProperty {
+                            temperature_f: request,
+                        };
+
                         let topic: String = format!(
                             "weather/{}/property/currentTemperature/setValue",
-                            client_id_for_current_temperature_prop
+                            instance_id_for_current_temperature_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             current_temperature_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -904,7 +913,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_current_condition_prop = self.client_id.clone();
+            let instance_id_for_current_condition_prop = self.service_instance_id.clone();
             let mut publisher_for_current_condition_prop = self.mqtt_client.clone();
             let current_condition_prop_version = props.current_condition_version.clone();
             if let Some(mut rx_for_current_condition_prop) =
@@ -912,13 +921,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_current_condition_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "weather/{}/property/currentCondition/setValue",
-                            client_id_for_current_condition_prop
+                            instance_id_for_current_condition_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             current_condition_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -932,7 +943,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_daily_forecast_prop = self.client_id.clone();
+            let instance_id_for_daily_forecast_prop = self.service_instance_id.clone();
             let mut publisher_for_daily_forecast_prop = self.mqtt_client.clone();
             let daily_forecast_prop_version = props.daily_forecast_version.clone();
             if let Some(mut rx_for_daily_forecast_prop) =
@@ -940,13 +951,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_daily_forecast_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "weather/{}/property/dailyForecast/setValue",
-                            client_id_for_daily_forecast_prop
+                            instance_id_for_daily_forecast_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             daily_forecast_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();
@@ -958,7 +971,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_hourly_forecast_prop = self.client_id.clone();
+            let instance_id_for_hourly_forecast_prop = self.service_instance_id.clone();
             let mut publisher_for_hourly_forecast_prop = self.mqtt_client.clone();
             let hourly_forecast_prop_version = props.hourly_forecast_version.clone();
             if let Some(mut rx_for_hourly_forecast_prop) =
@@ -966,13 +979,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_hourly_forecast_prop.recv().await {
+                        let payload_obj = request;
+
                         let topic: String = format!(
                             "weather/{}/property/hourlyForecast/setValue",
-                            client_id_for_hourly_forecast_prop
+                            instance_id_for_hourly_forecast_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             hourly_forecast_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();
@@ -984,7 +999,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_current_condition_refresh_interval_prop = self.client_id.clone();
+            let instance_id_for_current_condition_refresh_interval_prop =
+                self.service_instance_id.clone();
             let mut publisher_for_current_condition_refresh_interval_prop =
                 self.mqtt_client.clone();
             let current_condition_refresh_interval_prop_version =
@@ -997,13 +1013,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                     while let Some(request) =
                         rx_for_current_condition_refresh_interval_prop.recv().await
                     {
+                        let payload_obj =
+                            CurrentConditionRefreshIntervalProperty { seconds: request };
+
                         let topic: String = format!(
                             "weather/{}/property/currentConditionRefreshInterval/setValue",
-                            client_id_for_current_condition_refresh_interval_prop
+                            instance_id_for_current_condition_refresh_interval_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             current_condition_refresh_interval_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -1018,7 +1037,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_hourly_forecast_refresh_interval_prop = self.client_id.clone();
+            let instance_id_for_hourly_forecast_refresh_interval_prop =
+                self.service_instance_id.clone();
             let mut publisher_for_hourly_forecast_refresh_interval_prop = self.mqtt_client.clone();
             let hourly_forecast_refresh_interval_prop_version =
                 props.hourly_forecast_refresh_interval_version.clone();
@@ -1030,13 +1050,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                     while let Some(request) =
                         rx_for_hourly_forecast_refresh_interval_prop.recv().await
                     {
+                        let payload_obj =
+                            HourlyForecastRefreshIntervalProperty { seconds: request };
+
                         let topic: String = format!(
                             "weather/{}/property/hourlyForecastRefreshInterval/setValue",
-                            client_id_for_hourly_forecast_refresh_interval_prop
+                            instance_id_for_hourly_forecast_refresh_interval_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             hourly_forecast_refresh_interval_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )
@@ -1051,7 +1074,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         {
             // Set up property change request handling task
-            let client_id_for_daily_forecast_refresh_interval_prop = self.client_id.clone();
+            let instance_id_for_daily_forecast_refresh_interval_prop =
+                self.service_instance_id.clone();
             let mut publisher_for_daily_forecast_refresh_interval_prop = self.mqtt_client.clone();
             let daily_forecast_refresh_interval_prop_version =
                 props.daily_forecast_refresh_interval_version.clone();
@@ -1063,13 +1087,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                     while let Some(request) =
                         rx_for_daily_forecast_refresh_interval_prop.recv().await
                     {
+                        let payload_obj = DailyForecastRefreshIntervalProperty { seconds: request };
+
                         let topic: String = format!(
                             "weather/{}/property/dailyForecastRefreshInterval/setValue",
-                            client_id_for_daily_forecast_refresh_interval_prop
+                            instance_id_for_daily_forecast_refresh_interval_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             daily_forecast_refresh_interval_prop_version
                                 .load(std::sync::atomic::Ordering::Relaxed),
                         )

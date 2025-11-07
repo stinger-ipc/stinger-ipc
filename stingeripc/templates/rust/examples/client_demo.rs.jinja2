@@ -103,16 +103,61 @@ async fn main() {
     println!("<<< {{method_name}} response: {:?}", result);
     {%endfor%}
 
-    {%for prop_name, prop in stinger.properties.items()%}{%if not prop.read_only %}
+
+    // Property handles are Send so we can move them into tasks.
+    {%for prop_name, prop in stinger.properties.items()%}
+    let {{prop_name|snake_case}}_handle = {{stinger.name|snake_case}}_client.get_{{prop_name|snake_case}}_handle();
+    {%endfor%}
+    {%if stinger.properties|length > 0 %}
+    let property_update_task = tokio::spawn(async move {
+        let mut i = 0;
+        loop {
+            sleep(Duration::from_secs(20)).await;
+            {%for prop_name, prop in stinger.properties.items()%}
+            { // Scoping for '{{prop_name}}' property.  Demonstrates reading the value.
+                let current_value_ref = {{prop_name|snake_case}}_handle.read().await;
+                println!("Current value of property '{{prop_name}}': {:?}", *current_value_ref);
+            }
+            {%if prop.read_only%}
+            // We can't do `{{prop_name|snake_case}}_handle.write()` here because it is a read-only lock.
+            {%else%}
+            sleep(Duration::from_secs(2)).await;
+            { // Scoping for '{{prop_name}}' property.  Demonstrates creating a request to set the value.
+                {%if prop.arg_list|length == 1 -%}
+                let {{prop_name|snake_case}}_new_value = {%if prop.arg_list[0].arg_type.name.lower() == "primitive" and prop.arg_list[0].type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{prop.arg_list[0].get_random_example_value(lang="rust")}}{%endif%};
+                {%else-%}
+                let {{prop_name|snake_case}}_new_value = {{prop.rust_type}} {
+                    {%-for arg in prop.arg_list %}
+                        {{arg.name|snake_case}}: {%if arg.arg_type.name.lower() == "primitive" and arg.type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{arg.get_random_example_value(lang="rust")}}{%endif%},
+                    {%-endfor%}
+                };
+                {%endif-%}
+                let mut write_lock = {{prop_name|snake_case}}_handle.write().await;
+                *write_lock = {{prop_name|snake_case}}_new_value;
+                println!("Sending request to update property '{{prop_name}}' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+            {%endif%}
+            {%endfor%}
+            i += 1;
+        }
+    });
+    {%endif%} {# has any properties #}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    {%if not prop.read_only %}
+    println!("Setting '{{prop_name}}' property to new value using blocking method...");
     {%if prop.arg_list|length == 1 %}
-    let _ = {{stinger.name|snake_case}}_client.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}});
+    // Set '{{prop_name}}' property using the blocking setter.
+    let _ = {{stinger.name|snake_case}}_client.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
     {%else%}
+    // Set '{{prop_name}}' property values using the blocking setter.
     let {{prop_name|snake_case}}_new_value = {{prop.rust_type}} {
         {%-for arg in prop.arg_list %}
             {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
         {%-endfor%}
     };
-    let _ = {{stinger.name|snake_case}}_client.set_{{prop_name | snake_case}}({{prop_name|snake_case}}_new_value);
+    let _ = {{stinger.name|snake_case}}_client.set_{{prop_name | snake_case}}({{prop_name|snake_case}}_new_value).await;
     {%endif%}
     {%endif%}{%endfor%}
 
@@ -123,9 +168,12 @@ async fn main() {
     {%for _ in stinger.signals%}
     sig_rx_task{{loop.index}}.abort();
     {%endfor%}
+    {%if stinger.properties|length > 0 %}
+    property_update_task.abort();
+    {%endif%}
 
     // Join on all the signal emitting tasks.
-    let _ = join!({%for _ in stinger.signals%}sig_rx_task{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%});
+    let _ = join!({%if stinger.properties|length > 0 %}property_update_task, {%endif%}{%for _ in stinger.signals%}sig_rx_task{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%});
 
     // Ctrl-C to stop
 }

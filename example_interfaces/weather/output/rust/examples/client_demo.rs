@@ -142,17 +142,193 @@ async fn main() {
     let result = weather_client.refresh_current_conditions().await;
     println!("<<< refresh_current_conditions response: {:?}", result);
 
+    // Property handles are Send so we can move them into tasks.
+
+    let location_handle = weather_client.get_location_handle();
+
+    let current_temperature_handle = weather_client.get_current_temperature_handle();
+
+    let current_condition_handle = weather_client.get_current_condition_handle();
+
+    let daily_forecast_handle = weather_client.get_daily_forecast_handle();
+
+    let hourly_forecast_handle = weather_client.get_hourly_forecast_handle();
+
+    let current_condition_refresh_interval_handle =
+        weather_client.get_current_condition_refresh_interval_handle();
+
+    let hourly_forecast_refresh_interval_handle =
+        weather_client.get_hourly_forecast_refresh_interval_handle();
+
+    let daily_forecast_refresh_interval_handle =
+        weather_client.get_daily_forecast_refresh_interval_handle();
+
+    let property_update_task = tokio::spawn(async move {
+        let mut i = 0;
+        loop {
+            sleep(Duration::from_secs(20)).await;
+
+            {
+                // Scoping for 'location' property.  Demonstrates reading the value.
+                let current_value_ref = location_handle.read().await;
+                println!(
+                    "Current value of property 'location': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'location' property.  Demonstrates creating a request to set the value.
+                let location_new_value = LocationProperty {
+                    latitude: 3.14,
+                    longitude: 3.14,
+                };
+                let mut write_lock = location_handle.write().await;
+                *write_lock = location_new_value;
+                println!(
+                    "Sending request to update property 'location' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'current_temperature' property.  Demonstrates reading the value.
+                let current_value_ref = current_temperature_handle.read().await;
+                println!(
+                    "Current value of property 'current_temperature': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            // We can't do `current_temperature_handle.write()` here because it is a read-only lock.
+
+            {
+                // Scoping for 'current_condition' property.  Demonstrates reading the value.
+                let current_value_ref = current_condition_handle.read().await;
+                println!(
+                    "Current value of property 'current_condition': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            // We can't do `current_condition_handle.write()` here because it is a read-only lock.
+
+            {
+                // Scoping for 'daily_forecast' property.  Demonstrates reading the value.
+                let current_value_ref = daily_forecast_handle.read().await;
+                println!(
+                    "Current value of property 'daily_forecast': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            // We can't do `daily_forecast_handle.write()` here because it is a read-only lock.
+
+            {
+                // Scoping for 'hourly_forecast' property.  Demonstrates reading the value.
+                let current_value_ref = hourly_forecast_handle.read().await;
+                println!(
+                    "Current value of property 'hourly_forecast': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            // We can't do `hourly_forecast_handle.write()` here because it is a read-only lock.
+
+            {
+                // Scoping for 'current_condition_refresh_interval' property.  Demonstrates reading the value.
+                let current_value_ref = current_condition_refresh_interval_handle.read().await;
+                println!(
+                    "Current value of property 'current_condition_refresh_interval': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'current_condition_refresh_interval' property.  Demonstrates creating a request to set the value.
+                let current_condition_refresh_interval_new_value = 42;
+                let mut write_lock = current_condition_refresh_interval_handle.write().await;
+                *write_lock = current_condition_refresh_interval_new_value;
+                println!("Sending request to update property 'current_condition_refresh_interval' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'hourly_forecast_refresh_interval' property.  Demonstrates reading the value.
+                let current_value_ref = hourly_forecast_refresh_interval_handle.read().await;
+                println!(
+                    "Current value of property 'hourly_forecast_refresh_interval': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'hourly_forecast_refresh_interval' property.  Demonstrates creating a request to set the value.
+                let hourly_forecast_refresh_interval_new_value = 42;
+                let mut write_lock = hourly_forecast_refresh_interval_handle.write().await;
+                *write_lock = hourly_forecast_refresh_interval_new_value;
+                println!("Sending request to update property 'hourly_forecast_refresh_interval' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            {
+                // Scoping for 'daily_forecast_refresh_interval' property.  Demonstrates reading the value.
+                let current_value_ref = daily_forecast_refresh_interval_handle.read().await;
+                println!(
+                    "Current value of property 'daily_forecast_refresh_interval': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'daily_forecast_refresh_interval' property.  Demonstrates creating a request to set the value.
+                let daily_forecast_refresh_interval_new_value = 42;
+                let mut write_lock = daily_forecast_refresh_interval_handle.write().await;
+                *write_lock = daily_forecast_refresh_interval_new_value;
+                println!("Sending request to update property 'daily_forecast_refresh_interval' to new value: {:?}", *write_lock);
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            i += 1;
+        }
+    });
+
+    println!("Setting 'location' property to new value using blocking method...");
+
+    // Set 'location' property values using the blocking setter.
     let location_new_value = LocationProperty {
         latitude: 3.14,
         longitude: 3.14,
     };
-    let _ = weather_client.set_location(location_new_value);
+    let _ = weather_client.set_location(location_new_value).await;
 
-    let _ = weather_client.set_current_condition_refresh_interval(42);
+    println!("Setting 'current_condition_refresh_interval' property to new value using blocking method...");
 
-    let _ = weather_client.set_hourly_forecast_refresh_interval(42);
+    // Set 'current_condition_refresh_interval' property using the blocking setter.
+    let _ = weather_client
+        .set_current_condition_refresh_interval(42)
+        .await;
 
-    let _ = weather_client.set_daily_forecast_refresh_interval(42);
+    println!(
+        "Setting 'hourly_forecast_refresh_interval' property to new value using blocking method..."
+    );
+
+    // Set 'hourly_forecast_refresh_interval' property using the blocking setter.
+    let _ = weather_client
+        .set_hourly_forecast_refresh_interval(42)
+        .await;
+
+    println!(
+        "Setting 'daily_forecast_refresh_interval' property to new value using blocking method..."
+    );
+
+    // Set 'daily_forecast_refresh_interval' property using the blocking setter.
+    let _ = weather_client.set_daily_forecast_refresh_interval(42).await;
 
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c()
@@ -162,8 +338,10 @@ async fn main() {
 
     sig_rx_task1.abort();
 
+    property_update_task.abort();
+
     // Join on all the signal emitting tasks.
-    let _ = join!(sig_rx_task1);
+    let _ = join!(property_update_task, sig_rx_task1);
 
     // Ctrl-C to stop
 }

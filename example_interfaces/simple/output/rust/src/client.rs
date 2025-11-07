@@ -261,7 +261,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
     /// Sets the `school` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_school(&mut self, value: String) -> MethodReturnCode {
         let data = SchoolProperty { name: value };
-        let topic: String = format!("simple/{}/property/school/setValue", self.client_id);
+        let topic: String = format!(
+            "simple/{}/property/school/setValue",
+            self.service_instance_id
+        );
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
         {
@@ -322,19 +325,21 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
         let props = self.properties.clone();
         {
             // Set up property change request handling task
-            let client_id_for_school_prop = self.client_id.clone();
+            let instance_id_for_school_prop = self.service_instance_id.clone();
             let mut publisher_for_school_prop = self.mqtt_client.clone();
             let school_prop_version = props.school_version.clone();
             if let Some(mut rx_for_school_prop) = props.school.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some(request) = rx_for_school_prop.recv().await {
+                        let payload_obj = SchoolProperty { name: request };
+
                         let topic: String = format!(
                             "simple/{}/property/school/setValue",
-                            client_id_for_school_prop
+                            instance_id_for_school_prop
                         );
                         let msg = message::property_update_message(
                             &topic,
-                            &request,
+                            &payload_obj,
                             school_prop_version.load(std::sync::atomic::Ordering::Relaxed),
                         )
                         .unwrap();

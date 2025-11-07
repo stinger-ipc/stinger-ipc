@@ -103,7 +103,45 @@ async fn main() {
     let result = simple_client.trade_numbers(42).await;
     println!("<<< trade_numbers response: {:?}", result);
 
-    let _ = simple_client.set_school("apples".to_string());
+    // Property handles are Send so we can move them into tasks.
+
+    let school_handle = simple_client.get_school_handle();
+
+    let property_update_task = tokio::spawn(async move {
+        let mut i = 0;
+        loop {
+            sleep(Duration::from_secs(20)).await;
+
+            {
+                // Scoping for 'school' property.  Demonstrates reading the value.
+                let current_value_ref = school_handle.read().await;
+                println!(
+                    "Current value of property 'school': {:?}",
+                    *current_value_ref
+                );
+            }
+
+            sleep(Duration::from_secs(2)).await;
+            {
+                // Scoping for 'school' property.  Demonstrates creating a request to set the value.
+                let school_new_value = format!("new-value-{}", i).into();
+                let mut write_lock = school_handle.write().await;
+                *write_lock = school_new_value;
+                println!(
+                    "Sending request to update property 'school' to new value: {:?}",
+                    *write_lock
+                );
+            }
+            sleep(Duration::from_secs(10)).await;
+
+            i += 1;
+        }
+    });
+
+    println!("Setting 'school' property to new value using blocking method...");
+
+    // Set 'school' property using the blocking setter.
+    let _ = simple_client.set_school("apples".to_string()).await;
 
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c()
@@ -113,8 +151,10 @@ async fn main() {
 
     sig_rx_task1.abort();
 
+    property_update_task.abort();
+
     // Join on all the signal emitting tasks.
-    let _ = join!(sig_rx_task1);
+    let _ = join!(property_update_task, sig_rx_task1);
 
     // Ctrl-C to stop
 }
