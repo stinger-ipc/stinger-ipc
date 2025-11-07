@@ -1,6 +1,6 @@
 [project]
 name = "stinger-ipc"
-version = "0.2.0"
+version = "0.3.0"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -13,6 +13,7 @@ dependencies = [
     "jacobs-json-schema>=0.4.2",
     "packaging>=25.0",
     "pydantic>=2.11.7",
+    "pydantic-asyncapi>=0.3.0",
     "pyyaml>=6.0.2",
     "ruamel-yaml>=0.18.14",
     "stringcase>=1.2.0",

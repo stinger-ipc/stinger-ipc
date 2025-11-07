@@ -1,31 +1,35 @@
 from pydantic import BaseModel as PydanticBaseModel, Field
 from typing import Optional, List, Dict, Literal
-from enum import Enum 
-import symbols.rust
-
+from enum import Enum
+import importlib
+from . import symbols
 class BaseModel(PydanticBaseModel):
     @property
     def rust(self):
-        symbols_class_name = f"symbols.rust.{self.__class__.__name__}Symbols"
-        symbols_class = symbols.rust.__dict__.get(symbols_class_name)
+        # import symbols.rust module dynamically
+        rust_mod = importlib.import_module("stingeripc.symbols.rust")
+        symbols_class_name = f"{self.__class__.__name__}Symbols"
+        symbols_class = getattr(rust_mod, symbols_class_name, None)
         if symbols_class is None:
-            raise AttributeError(f"Symbols class '{symbols_class_name}' not found")
+            raise AttributeError(f"Symbols class '{symbols_class_name}' not found in symbols.rust")
         return symbols_class(self)
 
     @property
     def python(self):
-        symbols_class_name = f"symbols.python.{self.__class__.__name__}Symbols"
-        symbols_class = symbols.python.__dict__.get(symbols_class_name)
+        py_mod = importlib.import_module("stingeripc.symbols.python")
+        symbols_class_name = f"{self.__class__.__name__}Symbols"
+        symbols_class = getattr(py_mod, symbols_class_name, None)
         if symbols_class is None:
-            raise AttributeError(f"Symbols class '{symbols_class_name}' not found")
+            raise AttributeError(f"Symbols class '{symbols_class_name}' not found in symbols.python")
         return symbols_class(self)
     
     @property
     def cpp(self):
-        symbols_class_name = f"symbols.cpp.{self.__class__.__name__}Symbols"
-        symbols_class = symbols.cpp.__dict__.get(symbols_class_name)
+        cpp_mod = importlib.import_module("stingeripc.symbols.cpp")
+        symbols_class_name = f"{self.__class__.__name__}Symbols"
+        symbols_class = getattr(cpp_mod, symbols_class_name, None)
         if symbols_class is None:
-            raise AttributeError(f"Symbols class '{symbols_class_name}' not found")
+            raise AttributeError(f"Symbols class '{symbols_class_name}' not found in symbols.cpp")
         return symbols_class(self)
 
 class SpecMetadata(BaseModel):

@@ -220,6 +220,8 @@ async fn main() {
         .expect("Failed to listen for Ctrl-C");
     println!("Ctrl-C received, shutting down...");
 
+    sig_rx_task1.abort();
+
     // Join on all the signal emitting tasks.
     let _ = join!(sig_rx_task1);
 

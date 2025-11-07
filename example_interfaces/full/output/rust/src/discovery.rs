@@ -135,7 +135,8 @@ impl FullDiscoveryMetrics {
     }
 }
 
-pub struct FullDiscovery {
+pub struct FullDiscovery<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {
+    connection: C,
     service_name: String,
     instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
     info_listener_handle: JoinHandle<()>,
@@ -150,8 +151,8 @@ pub struct FullDiscovery {
 /// Event receiver for new interface discovery notifications
 pub type FullDiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
 
-impl FullDiscovery {
-    pub async fn new(connection: &mut impl Mqtt5PubSub) -> Result<Self, FullDiscoveryError> {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
+    pub async fn new(connection: &mut C) -> Result<Self, FullDiscoveryError> {
         let service_name = "Full".to_string();
         let discovery_topic = format!("full/{}/interface", "+");
 
@@ -197,6 +198,7 @@ impl FullDiscovery {
         );
 
         Ok(Self {
+            connection: connection.clone(),
             service_name,
             instances_in_discovery,
             info_listener_handle,
@@ -569,11 +571,17 @@ impl FullDiscovery {
     }
 }
 
-impl Drop for FullDiscovery {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for FullDiscovery<C> {
     fn drop(&mut self) {
         self.info_listener_handle.abort();
+        let _ = self
+            .connection
+            .unsubscribe(format!("full/{}/interface", "+"));
 
         self.prop_listener_handle.abort();
+        let _ = self
+            .connection
+            .unsubscribe("full/+/property/+/value".to_string());
     }
 }
 

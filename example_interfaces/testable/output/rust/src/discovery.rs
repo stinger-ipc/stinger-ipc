@@ -135,7 +135,8 @@ impl TestAbleDiscoveryMetrics {
     }
 }
 
-pub struct TestAbleDiscovery {
+pub struct TestAbleDiscovery<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {
+    connection: C,
     service_name: String,
     instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
     info_listener_handle: JoinHandle<()>,
@@ -150,8 +151,8 @@ pub struct TestAbleDiscovery {
 /// Event receiver for new interface discovery notifications
 pub type TestAbleDiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
 
-impl TestAbleDiscovery {
-    pub async fn new(connection: &mut impl Mqtt5PubSub) -> Result<Self, TestAbleDiscoveryError> {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestAbleDiscovery<C> {
+    pub async fn new(connection: &mut C) -> Result<Self, TestAbleDiscoveryError> {
         let service_name = "Test Able".to_string();
         let discovery_topic = format!("testAble/{}/interface", "+");
 
@@ -197,6 +198,7 @@ impl TestAbleDiscovery {
         );
 
         Ok(Self {
+            connection: connection.clone(),
             service_name,
             instances_in_discovery,
             info_listener_handle,
@@ -1080,11 +1082,17 @@ impl TestAbleDiscovery {
     }
 }
 
-impl Drop for TestAbleDiscovery {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for TestAbleDiscovery<C> {
     fn drop(&mut self) {
         self.info_listener_handle.abort();
+        let _ = self
+            .connection
+            .unsubscribe(format!("testAble/{}/interface", "+"));
 
         self.prop_listener_handle.abort();
+        let _ = self
+            .connection
+            .unsubscribe("testAble/+/property/+/value".to_string());
     }
 }
 

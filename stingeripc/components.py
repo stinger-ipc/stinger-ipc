@@ -3,7 +3,7 @@ from enum import Enum
 import random
 import stringcase
 from abc import abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Mapping
 from .topic import (
     SignalTopicCreator,
     InterfaceTopicCreator,
@@ -16,7 +16,7 @@ from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
 from copy import copy
 
-YamlArg = dict[str, str | bool]
+YamlArg = Mapping[str, str | bool]
 YamlArgList = list[YamlArg]
 YamlIfaceEnum = dict[str, str | YamlArgList]
 YamlIfaceEnums = dict[str, YamlIfaceEnum]
@@ -37,7 +37,7 @@ class Arg:
         self._description = description.strip()
         return self
 
-    def try_set_description_from_spec(self, spec: dict[str, Any]) -> Arg:
+    def try_set_description_from_spec(self, spec: Mapping[str, Any]) -> Arg:
         if "description" in spec and isinstance(spec["description"], str):
             self.set_description(spec["description"])
         return self
@@ -79,6 +79,14 @@ class Arg:
         return self.python_class
 
     @property
+    def markdown_type(self) -> str:
+        """Default markdown representation for an Arg.
+
+        Subclasses may override this to provide richer markdown links.
+        """
+        return self.python_type
+
+    @property
     def rust_type(self) -> str:
         return self.name
 
@@ -106,20 +114,27 @@ class Arg:
     def new_arg_from_stinger(
         cls, arg_spec: YamlArg, stinger_spec: Optional[StingerSpec] = None
     ) -> Arg:
-        if "type" not in arg_spec:
+        # arg_spec may be an immutable Mapping; copy to mutable dict for validation/mutation
+        spec: dict[str, Any]
+        if isinstance(arg_spec, dict):
+            spec = arg_spec
+        else:
+            spec = dict(arg_spec)
+
+        if "type" not in spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
-        if "name" not in arg_spec:
+        if "name" not in spec:
             raise InvalidStingerStructure("No 'name' in arg structure")
-        elif arg_spec["name"] in RESTRICTED_NAMES:
-            arg_spec["name"] = f"{arg_spec['name']}_"
+        elif spec["name"] in RESTRICTED_NAMES:
+            spec["name"] = f"{spec['name']}_"
         if not isinstance(arg_spec["type"], str):
             raise InvalidStingerStructure("'type' in arg structure must be a string")
         if not isinstance(arg_spec["name"], str):
             raise InvalidStingerStructure("'name' in arg structure must be a string")
 
-        if hasattr(ArgPrimitiveType, arg_spec["type"].upper()):
-            arg = ArgPrimitive.new_arg_primitive_from_stinger(arg_spec)
-            if opt := arg_spec.get("optional", False):
+        if hasattr(ArgPrimitiveType, spec["type"].upper()):
+            arg = ArgPrimitive.new_arg_primitive_from_stinger(spec)
+            if opt := spec.get("optional", False):
                 assert isinstance(opt, bool), "Optional field must be a boolean"
                 arg.optional = opt
             return arg
@@ -129,7 +144,7 @@ class Arg:
                     "Need the root StingerSpec when creating an enum or struct Arg"
                 )
 
-        if arg_spec["type"] == "enum":
+        if spec["type"] == "enum":
             if "enumName" not in arg_spec:
                 raise InvalidStingerStructure(f"Enum args need a 'enumName'")
             if not isinstance(arg_spec["enumName"], str):
@@ -139,75 +154,75 @@ class Arg:
                     f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums"
                 )
             enum_arg = ArgEnum(
-                arg_spec["name"], stinger_spec.get_interface_enum(arg_spec["enumName"])
+                spec["name"], stinger_spec.get_interface_enum(spec["enumName"])
             )
-            if opt := arg_spec.get("optional", False):
+            if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 enum_arg.optional = opt
-            enum_arg.try_set_description_from_spec(arg_spec)
+            enum_arg.try_set_description_from_spec(spec)
             return enum_arg
 
-        if arg_spec["type"] == "struct":
-            if "structName" not in arg_spec:
+        if spec["type"] == "struct":
+            if "structName" not in spec:
                 raise InvalidStingerStructure("Struct args need a 'structName'")
-            if not isinstance(arg_spec["structName"], str):
+            if not isinstance(spec["structName"], str):
                 raise InvalidStingerStructure("'structName' in arg structure must be a string")
-            if arg_spec["structName"] not in stinger_spec.structs:
+            if spec["structName"] not in stinger_spec.structs:
                 raise InvalidStingerStructure(
-                    f"Struct arg '{arg_spec["structName"]}' was not found in the list of stinger spec structs"
+                    f"Struct arg '{spec["structName"]}' was not found in the list of stinger spec structs"
                 )
             st_arg = ArgStruct(
-                arg_spec["name"], stinger_spec.structs[arg_spec["structName"]]
+                spec["name"], stinger_spec.structs[spec["structName"]]
             )
-            if opt := arg_spec.get("optional", False):
+            if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 st_arg.optional = opt
-            st_arg.try_set_description_from_spec(arg_spec)
+            st_arg.try_set_description_from_spec(spec)
             return st_arg
         
-        if arg_spec["type"] == "datetime":
-            dt_arg = ArgDateTime(arg_spec["name"])
-            if opt := arg_spec.get("optional", False):
+        if spec["type"] == "datetime":
+            dt_arg = ArgDateTime(spec["name"])
+            if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 dt_arg.optional = opt
-            dt_arg.try_set_description_from_spec(arg_spec)
+            dt_arg.try_set_description_from_spec(spec)
             return dt_arg
 
-        if arg_spec["type"] == "duration":
-            dur_arg = ArgDuration(arg_spec["name"])
-            if opt := arg_spec.get("optional", False):
+        if spec["type"] == "duration":
+            dur_arg = ArgDuration(spec["name"])
+            if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 dur_arg.optional = opt
-            dur_arg.try_set_description_from_spec(arg_spec)
+            dur_arg.try_set_description_from_spec(spec)
             return dur_arg
         
-        if arg_spec["type"] == "binary":
-            bin_arg = ArgBinary(arg_spec["name"])
-            if opt := arg_spec.get("optional", False):
+        if spec["type"] == "binary":
+            bin_arg = ArgBinary(spec["name"])
+            if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 bin_arg.optional = opt
-            bin_arg.try_set_description_from_spec(arg_spec)
+            bin_arg.try_set_description_from_spec(spec)
             return bin_arg
         
-        if arg_spec["type"] == "array":
-            if "itemType" not in arg_spec:
+        if spec["type"] == "array":
+            if "itemType" not in spec:
                 raise InvalidStingerStructure("Array args need an 'itemType'")
-            element_arg_spec = copy(arg_spec["itemType"])
+            element_arg_spec = copy(spec["itemType"])
             if not isinstance(element_arg_spec, dict):
                 raise InvalidStingerStructure("'itemType' in arg structure must be a dict")
             element_arg_spec["name"] = "name_not_used_in_array_element"
             element_arg = Arg.new_arg_from_stinger(element_arg_spec, stinger_spec)
-            array_arg = ArgArray(arg_spec["name"], element_arg)
-            if opt := arg_spec.get("optional", False):
+            array_arg = ArgArray(spec["name"], element_arg)
+            if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 array_arg.optional = opt
-            array_arg.try_set_description_from_spec(arg_spec)
+            array_arg.try_set_description_from_spec(spec)
             return array_arg
 
         raise RuntimeError(f"unknown arg type: {arg_spec['type']}")
@@ -381,7 +396,7 @@ class ArgPrimitive(Arg):
 
     @classmethod
     def new_arg_primitive_from_stinger(
-        cls, arg_spec: dict[str, str | bool]
+        cls, arg_spec: Mapping[str, Any]
     ) -> ArgPrimitive:
         if "type" not in arg_spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
@@ -449,13 +464,15 @@ class ArgStruct(Arg):
         return "Object"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        # Build a dict of example values keyed appropriately depending on language.
+        example_list: dict[str, str]
         if lang in ["rust", "python"]:
-            example_list: dict[str, str] = {
+            example_list = {
                 stringcase.snakecase(a.name): str(a.get_random_example_value(lang, seed=seed))
                 for a in self.members
             }
         else:
-            example_list: dict[str, str] = {
+            example_list = {
                 a.name: str(a.get_random_example_value(lang, seed=seed))
                 for a in self.members
             }
@@ -1254,51 +1271,6 @@ class MqttTransportProtocol(Enum):
     WEBSOCKETS = 1
 
 
-class Broker:
-    def __init__(self, name: str = "Default"):
-        self._name: str = name
-        self._host: Optional[str] = None
-        self._port: Optional[int] = None
-        self._auth = None
-        self._transport_protocol: MqttTransportProtocol = MqttTransportProtocol.TCP
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def class_name(self) -> str:
-        return f"{stringmanip.upper_camel_case(self.name)}Connection"
-
-    @property
-    def hostname(self) -> str | None:
-        return self._host
-
-    @hostname.setter
-    def hostname(self, value: str):
-        self._host = value
-
-    @property
-    def port(self) -> int | None:
-        return self._port
-
-    @port.setter
-    def port(self, port: int):
-        self._port = port
-
-    @classmethod
-    def new_broker_from_stinger(cls, name: str, spec: dict[str, Any]) -> Broker:
-        new_broker = cls(name=name)
-        if "host" in spec:
-            new_broker.hostname = spec["host"]
-        if "port" in spec:
-            new_broker.port = int(spec["port"])
-        return new_broker
-
-    def __repr__(self) -> str:
-        return f"<Broker name={self.name} host={self.hostname}:{self.port}>"
-
-
 class StingerSpec:
     def __init__(self, topic_creator: InterfaceTopicCreator, interface: dict[str, Any]):
         self._topic_creator = topic_creator
@@ -1387,6 +1359,13 @@ class StingerSpec:
     def add_struct(self, interface_struct: InterfaceStruct):
         assert interface_struct is not None
         self.structs[interface_struct.name] = interface_struct
+
+    @property
+    def interface_info(self) -> tuple[str, dict[str, str]]:
+        # Return the topic and the minimal info mapping used by AsyncAPI generation
+        topic = self.interface_info_topic
+        info = {"version": self.version, "title": self.title}
+        return (topic, info)
 
     def uses_enums(self) -> bool:
         return bool(self.enums)

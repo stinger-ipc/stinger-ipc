@@ -135,7 +135,8 @@ impl WeatherDiscoveryMetrics {
     }
 }
 
-pub struct WeatherDiscovery {
+pub struct WeatherDiscovery<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {
+    connection: C,
     service_name: String,
     instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
     info_listener_handle: JoinHandle<()>,
@@ -150,8 +151,8 @@ pub struct WeatherDiscovery {
 /// Event receiver for new interface discovery notifications
 pub type WeatherDiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
 
-impl WeatherDiscovery {
-    pub async fn new(connection: &mut impl Mqtt5PubSub) -> Result<Self, WeatherDiscoveryError> {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
+    pub async fn new(connection: &mut C) -> Result<Self, WeatherDiscoveryError> {
         let service_name = "weather".to_string();
         let discovery_topic = format!("weather/{}/interface", "+");
 
@@ -197,6 +198,7 @@ impl WeatherDiscovery {
         );
 
         Ok(Self {
+            connection: connection.clone(),
             service_name,
             instances_in_discovery,
             info_listener_handle,
@@ -602,11 +604,17 @@ impl WeatherDiscovery {
     }
 }
 
-impl Drop for WeatherDiscovery {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for WeatherDiscovery<C> {
     fn drop(&mut self) {
         self.info_listener_handle.abort();
+        let _ = self
+            .connection
+            .unsubscribe(format!("weather/{}/interface", "+"));
 
         self.prop_listener_handle.abort();
+        let _ = self
+            .connection
+            .unsubscribe("weather/+/property/+/value".to_string());
     }
 }
 

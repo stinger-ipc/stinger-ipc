@@ -7,6 +7,7 @@ from pathlib import Path
 from rich import print
 
 from stingeripc import StingerInterface
+from typing import Any
 
 
 def main(
@@ -18,7 +19,7 @@ def main(
     with inname.open(mode="r") as f:
         stinger = StingerInterface.from_yaml(f, placeholder="%1%")
 
-    params = {
+    params: dict[str, Any] = {
         "stinger": stinger,
         "client_source_files": [],
         "server_source_files": [],

@@ -117,12 +117,11 @@ impl SignalOnlyDiscoveryMetrics {
     }
 }
 
-pub struct SignalOnlyDiscovery {
+pub struct SignalOnlyDiscovery<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {
+    connection: C,
     service_name: String,
     instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
     info_listener_handle: JoinHandle<()>,
-
-    info_subscription_id: u32,
 
     notification_tx: broadcast::Sender<DiscoveredService>,
     #[cfg(feature = "metrics")]
@@ -132,8 +131,8 @@ pub struct SignalOnlyDiscovery {
 /// Event receiver for new interface discovery notifications
 pub type SignalOnlyDiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
 
-impl SignalOnlyDiscovery {
-    pub async fn new(connection: &mut impl Mqtt5PubSub) -> Result<Self, SignalOnlyDiscoveryError> {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SignalOnlyDiscovery<C> {
+    pub async fn new(connection: &mut C) -> Result<Self, SignalOnlyDiscoveryError> {
         let service_name = "SignalOnly".to_string();
         let discovery_topic = format!("signalOnly/{}/interface", "+");
 
@@ -161,6 +160,7 @@ impl SignalOnlyDiscovery {
         );
 
         Ok(Self {
+            connection: connection.clone(),
             service_name,
             instances_in_discovery,
             info_listener_handle,
@@ -307,9 +307,12 @@ impl SignalOnlyDiscovery {
     }
 }
 
-impl Drop for SignalOnlyDiscovery {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for SignalOnlyDiscovery<C> {
     fn drop(&mut self) {
         self.info_listener_handle.abort();
+        let _ = self
+            .connection
+            .unsubscribe(format!("signalOnly/{}/interface", "+"));
     }
 }
 

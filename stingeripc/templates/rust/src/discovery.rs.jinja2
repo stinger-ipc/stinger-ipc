@@ -143,9 +143,8 @@ impl {{stinger.name|UpperCamelCase}}DiscoveryMetrics {
     }
 }
 
-
-pub struct {{stinger.name|UpperCamelCase}}Discovery {
-    connection: Arc<dyn Mqtt5PubSub + Send + Sync>,
+pub struct {{stinger.name|UpperCamelCase}}Discovery<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {
+    connection: C,
     service_name: String,
     instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
     info_listener_handle: JoinHandle<()>,
@@ -159,10 +158,8 @@ pub struct {{stinger.name|UpperCamelCase}}Discovery {
 /// Event receiver for new interface discovery notifications
 pub type {{stinger.name|UpperCamelCase}}DiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
 
-impl {{stinger.name|UpperCamelCase}}Discovery {
-    pub async fn new(
-        connection: &mut impl Mqtt5PubSub,
-    ) -> Result<Self, {{stinger.name|UpperCamelCase}}DiscoveryError> {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCase}}Discovery<C> {
+    pub async fn new(connection: &mut C) -> Result<Self, {{stinger.name|UpperCamelCase}}DiscoveryError> {
 
         let service_name = "{{stinger.name}}".to_string();
         let discovery_topic = format!("{{stinger.interface_info_topic}}", "+");
@@ -425,14 +422,13 @@ impl {{stinger.name|UpperCamelCase}}Discovery {
     }
 }
 
-
-impl Drop for {{stinger.name|UpperCamelCase}}Discovery {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for {{stinger.name|UpperCamelCase}}Discovery<C> {
     fn drop(&mut self) {
         self.info_listener_handle.abort();
-        self.connection.unsubscribe(format!("{{stinger.interface_info_topic}}", "+"));
+        let _ = self.connection.unsubscribe(format!("{{stinger.interface_info_topic}}", "+"));
         {% if stinger.properties|length > 0 %}
         self.prop_listener_handle.abort();
-        self.connection.unsubscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value".to_string());
+        let _ = self.connection.unsubscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value".to_string());
         {% endif %}
     }
 }

@@ -6,8 +6,12 @@ from rich import print
 from pathlib import Path
 import typer
 from typing_extensions import Annotated
+from typing import Optional
 from jacobsjinjatoo import templator as jj2
-from jacobsjsonschema.draft7 import Validator
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    # jacobsjsonschema doesn't ship stubs; only import for type checking
+    from jacobsjsonschema.draft7 import Validator  # type: ignore
 import yaml
 import yamlloader
 from stingeripc.interface import StingerInterface
@@ -26,7 +30,7 @@ def generate(
     language: Annotated[str, typer.Argument(...)],
     input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)],
     output_dir: Annotated[Path, typer.Argument(..., file_okay=False, dir_okay=True, writable=True, readable=True)],
-    templates: Annotated[list[Path], typer.Option("--templates", help="Additional template directories")] = None,
+    templates: Annotated[Optional[list[Path]], typer.Option("--templates", help="Additional template directories")] = None,
 ):
     """Generate code for a Stinger interface.
 
