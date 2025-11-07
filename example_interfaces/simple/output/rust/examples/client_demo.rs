@@ -56,14 +56,14 @@ async fn main() {
         );
     };
     drop(service_discovery);
-    let mut api_client = SimpleClient::new(mqttier_client.clone(), discovered_singleton).await;
+    let mut simple_client = SimpleClient::new(mqttier_client.clone(), discovered_singleton).await;
 
-    let mut client_for_loop = api_client.clone();
+    let mut client_for_loop = simple_client.clone();
     tokio::spawn(async move {
         let _conn_loop = client_for_loop.run_loop().await;
     });
 
-    let mut sig_rx = api_client.get_person_entered_receiver();
+    let mut sig_rx = simple_client.get_person_entered_receiver();
     println!("Got signal receiver for person_entered");
 
     sleep(Duration::from_secs(5)).await;
@@ -73,7 +73,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received person_entered signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received person_entered signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving person_entered signal: {:?}", e);
@@ -83,7 +86,7 @@ async fn main() {
         }
     });
 
-    let client_for_prop_change = api_client.clone();
+    let client_for_prop_change = simple_client.clone();
     let _prop_change_rx_task = tokio::spawn(async move {
         let mut school_change_rx = client_for_prop_change.watch_school();
 
@@ -96,14 +99,11 @@ async fn main() {
         }
     });
 
-    println!("Calling trade_numbers with example values...");
-    let result = api_client
-        .trade_numbers(42)
-        .await
-        .expect("Failed to call trade_numbers");
-    println!("trade_numbers response: {:?}", result);
+    println!(">>> Calling trade_numbers with example values...");
+    let result = simple_client.trade_numbers(42).await;
+    println!("<<< trade_numbers response: {:?}", result);
 
-    let _ = api_client.set_school("apples".to_string());
+    let _ = simple_client.set_school("apples".to_string());
 
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c()

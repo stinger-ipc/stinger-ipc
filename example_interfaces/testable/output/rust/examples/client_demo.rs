@@ -56,14 +56,15 @@ async fn main() {
         );
     };
     drop(service_discovery);
-    let mut api_client = TestAbleClient::new(mqttier_client.clone(), discovered_singleton).await;
+    let mut test__able_client =
+        TestAbleClient::new(mqttier_client.clone(), discovered_singleton).await;
 
-    let mut client_for_loop = api_client.clone();
+    let mut client_for_loop = test__able_client.clone();
     tokio::spawn(async move {
         let _conn_loop = client_for_loop.run_loop().await;
     });
 
-    let mut sig_rx = api_client.get_empty_receiver();
+    let mut sig_rx = test__able_client.get_empty_receiver();
     println!("Got signal receiver for empty");
 
     sleep(Duration::from_secs(5)).await;
@@ -73,7 +74,7 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received empty signal with payload: {:?}", payload);
+                    println!("*** Received empty signal with payload: {:?}", payload);
                 }
                 Err(e) => {
                     eprintln!("Error receiving empty signal: {:?}", e);
@@ -83,7 +84,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_int_receiver();
+    let mut sig_rx = test__able_client.get_single_int_receiver();
     println!("Got signal receiver for singleInt");
 
     sleep(Duration::from_secs(5)).await;
@@ -93,7 +94,7 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received singleInt signal with payload: {:?}", payload);
+                    println!("*** Received singleInt signal with payload: {:?}", payload);
                 }
                 Err(e) => {
                     eprintln!("Error receiving singleInt signal: {:?}", e);
@@ -103,7 +104,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_optional_int_receiver();
+    let mut sig_rx = test__able_client.get_single_optional_int_receiver();
     println!("Got signal receiver for singleOptionalInt");
 
     sleep(Duration::from_secs(5)).await;
@@ -114,7 +115,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received singleOptionalInt signal with payload: {:?}",
+                        "*** Received singleOptionalInt signal with payload: {:?}",
                         payload
                     );
                 }
@@ -126,7 +127,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_three_integers_receiver();
+    let mut sig_rx = test__able_client.get_three_integers_receiver();
     println!("Got signal receiver for threeIntegers");
 
     sleep(Duration::from_secs(5)).await;
@@ -136,7 +137,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received threeIntegers signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received threeIntegers signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving threeIntegers signal: {:?}", e);
@@ -146,7 +150,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_string_receiver();
+    let mut sig_rx = test__able_client.get_single_string_receiver();
     println!("Got signal receiver for singleString");
 
     sleep(Duration::from_secs(5)).await;
@@ -156,7 +160,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received singleString signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received singleString signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving singleString signal: {:?}", e);
@@ -166,7 +173,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_optional_string_receiver();
+    let mut sig_rx = test__able_client.get_single_optional_string_receiver();
     println!("Got signal receiver for singleOptionalString");
 
     sleep(Duration::from_secs(5)).await;
@@ -177,7 +184,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received singleOptionalString signal with payload: {:?}",
+                        "*** Received singleOptionalString signal with payload: {:?}",
                         payload
                     );
                 }
@@ -189,7 +196,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_three_strings_receiver();
+    let mut sig_rx = test__able_client.get_three_strings_receiver();
     println!("Got signal receiver for threeStrings");
 
     sleep(Duration::from_secs(5)).await;
@@ -199,7 +206,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received threeStrings signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received threeStrings signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving threeStrings signal: {:?}", e);
@@ -209,7 +219,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_enum_receiver();
+    let mut sig_rx = test__able_client.get_single_enum_receiver();
     println!("Got signal receiver for singleEnum");
 
     sleep(Duration::from_secs(5)).await;
@@ -219,7 +229,7 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received singleEnum signal with payload: {:?}", payload);
+                    println!("*** Received singleEnum signal with payload: {:?}", payload);
                 }
                 Err(e) => {
                     eprintln!("Error receiving singleEnum signal: {:?}", e);
@@ -229,7 +239,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_optional_enum_receiver();
+    let mut sig_rx = test__able_client.get_single_optional_enum_receiver();
     println!("Got signal receiver for singleOptionalEnum");
 
     sleep(Duration::from_secs(5)).await;
@@ -240,7 +250,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received singleOptionalEnum signal with payload: {:?}",
+                        "*** Received singleOptionalEnum signal with payload: {:?}",
                         payload
                     );
                 }
@@ -252,7 +262,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_three_enums_receiver();
+    let mut sig_rx = test__able_client.get_three_enums_receiver();
     println!("Got signal receiver for threeEnums");
 
     sleep(Duration::from_secs(5)).await;
@@ -262,7 +272,7 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received threeEnums signal with payload: {:?}", payload);
+                    println!("*** Received threeEnums signal with payload: {:?}", payload);
                 }
                 Err(e) => {
                     eprintln!("Error receiving threeEnums signal: {:?}", e);
@@ -272,7 +282,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_struct_receiver();
+    let mut sig_rx = test__able_client.get_single_struct_receiver();
     println!("Got signal receiver for singleStruct");
 
     sleep(Duration::from_secs(5)).await;
@@ -282,7 +292,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received singleStruct signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received singleStruct signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving singleStruct signal: {:?}", e);
@@ -292,7 +305,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_optional_struct_receiver();
+    let mut sig_rx = test__able_client.get_single_optional_struct_receiver();
     println!("Got signal receiver for singleOptionalStruct");
 
     sleep(Duration::from_secs(5)).await;
@@ -303,7 +316,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received singleOptionalStruct signal with payload: {:?}",
+                        "*** Received singleOptionalStruct signal with payload: {:?}",
                         payload
                     );
                 }
@@ -315,7 +328,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_three_structs_receiver();
+    let mut sig_rx = test__able_client.get_three_structs_receiver();
     println!("Got signal receiver for threeStructs");
 
     sleep(Duration::from_secs(5)).await;
@@ -325,7 +338,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received threeStructs signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received threeStructs signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving threeStructs signal: {:?}", e);
@@ -335,7 +351,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_date_time_receiver();
+    let mut sig_rx = test__able_client.get_single_date_time_receiver();
     println!("Got signal receiver for singleDateTime");
 
     sleep(Duration::from_secs(5)).await;
@@ -345,7 +361,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received singleDateTime signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received singleDateTime signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving singleDateTime signal: {:?}", e);
@@ -355,7 +374,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_optional_datetime_receiver();
+    let mut sig_rx = test__able_client.get_single_optional_datetime_receiver();
     println!("Got signal receiver for singleOptionalDatetime");
 
     sleep(Duration::from_secs(5)).await;
@@ -366,7 +385,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received singleOptionalDatetime signal with payload: {:?}",
+                        "*** Received singleOptionalDatetime signal with payload: {:?}",
                         payload
                     );
                 }
@@ -378,7 +397,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_three_date_times_receiver();
+    let mut sig_rx = test__able_client.get_three_date_times_receiver();
     println!("Got signal receiver for threeDateTimes");
 
     sleep(Duration::from_secs(5)).await;
@@ -388,7 +407,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received threeDateTimes signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received threeDateTimes signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving threeDateTimes signal: {:?}", e);
@@ -398,7 +420,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_duration_receiver();
+    let mut sig_rx = test__able_client.get_single_duration_receiver();
     println!("Got signal receiver for singleDuration");
 
     sleep(Duration::from_secs(5)).await;
@@ -408,7 +430,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received singleDuration signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received singleDuration signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving singleDuration signal: {:?}", e);
@@ -418,7 +443,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_optional_duration_receiver();
+    let mut sig_rx = test__able_client.get_single_optional_duration_receiver();
     println!("Got signal receiver for singleOptionalDuration");
 
     sleep(Duration::from_secs(5)).await;
@@ -429,7 +454,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received singleOptionalDuration signal with payload: {:?}",
+                        "*** Received singleOptionalDuration signal with payload: {:?}",
                         payload
                     );
                 }
@@ -441,7 +466,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_three_durations_receiver();
+    let mut sig_rx = test__able_client.get_three_durations_receiver();
     println!("Got signal receiver for threeDurations");
 
     sleep(Duration::from_secs(5)).await;
@@ -451,7 +476,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received threeDurations signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received threeDurations signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving threeDurations signal: {:?}", e);
@@ -461,7 +489,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_binary_receiver();
+    let mut sig_rx = test__able_client.get_single_binary_receiver();
     println!("Got signal receiver for singleBinary");
 
     sleep(Duration::from_secs(5)).await;
@@ -471,7 +499,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received singleBinary signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received singleBinary signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving singleBinary signal: {:?}", e);
@@ -481,7 +512,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_optional_binary_receiver();
+    let mut sig_rx = test__able_client.get_single_optional_binary_receiver();
     println!("Got signal receiver for singleOptionalBinary");
 
     sleep(Duration::from_secs(5)).await;
@@ -492,7 +523,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received singleOptionalBinary signal with payload: {:?}",
+                        "*** Received singleOptionalBinary signal with payload: {:?}",
                         payload
                     );
                 }
@@ -504,7 +535,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_three_binaries_receiver();
+    let mut sig_rx = test__able_client.get_three_binaries_receiver();
     println!("Got signal receiver for threeBinaries");
 
     sleep(Duration::from_secs(5)).await;
@@ -514,7 +545,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received threeBinaries signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received threeBinaries signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving threeBinaries signal: {:?}", e);
@@ -524,7 +558,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_array_of_integers_receiver();
+    let mut sig_rx = test__able_client.get_single_array_of_integers_receiver();
     println!("Got signal receiver for singleArrayOfIntegers");
 
     sleep(Duration::from_secs(5)).await;
@@ -535,7 +569,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received singleArrayOfIntegers signal with payload: {:?}",
+                        "*** Received singleArrayOfIntegers signal with payload: {:?}",
                         payload
                     );
                 }
@@ -547,7 +581,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_single_optional_array_of_strings_receiver();
+    let mut sig_rx = test__able_client.get_single_optional_array_of_strings_receiver();
     println!("Got signal receiver for singleOptionalArrayOfStrings");
 
     sleep(Duration::from_secs(5)).await;
@@ -558,7 +592,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received singleOptionalArrayOfStrings signal with payload: {:?}",
+                        "*** Received singleOptionalArrayOfStrings signal with payload: {:?}",
                         payload
                     );
                 }
@@ -573,7 +607,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_array_of_every_type_receiver();
+    let mut sig_rx = test__able_client.get_array_of_every_type_receiver();
     println!("Got signal receiver for arrayOfEveryType");
 
     sleep(Duration::from_secs(5)).await;
@@ -584,7 +618,7 @@ async fn main() {
             match sig_rx.recv().await {
                 Ok(payload) => {
                     println!(
-                        "Received arrayOfEveryType signal with payload: {:?}",
+                        "*** Received arrayOfEveryType signal with payload: {:?}",
                         payload
                     );
                 }
@@ -596,7 +630,7 @@ async fn main() {
         }
     });
 
-    let client_for_prop_change = api_client.clone();
+    let client_for_prop_change = test__able_client.clone();
     let _prop_change_rx_task = tokio::spawn(async move {
         let mut read_write_integer_change_rx = client_for_prop_change.watch_read_write_integer();
         let mut read_only_integer_change_rx = client_for_prop_change.watch_read_only_integer();
@@ -724,82 +758,64 @@ async fn main() {
         }
     });
 
-    println!("Calling callWithNothing with example values...");
-    let result = api_client
-        .call_with_nothing()
-        .await
-        .expect("Failed to call callWithNothing");
-    println!("callWithNothing response: {:?}", result);
+    println!(">>> Calling callWithNothing with example values...");
+    let result = test__able_client.call_with_nothing().await;
+    println!("<<< callWithNothing response: {:?}", result);
 
-    println!("Calling callOneInteger with example values...");
-    let result = api_client
-        .call_one_integer(42)
-        .await
-        .expect("Failed to call callOneInteger");
-    println!("callOneInteger response: {:?}", result);
+    println!(">>> Calling callOneInteger with example values...");
+    let result = test__able_client.call_one_integer(42).await;
+    println!("<<< callOneInteger response: {:?}", result);
 
-    println!("Calling callOptionalInteger with example values...");
-    let result = api_client
-        .call_optional_integer(Some(42))
-        .await
-        .expect("Failed to call callOptionalInteger");
-    println!("callOptionalInteger response: {:?}", result);
+    println!(">>> Calling callOptionalInteger with example values...");
+    let result = test__able_client.call_optional_integer(Some(42)).await;
+    println!("<<< callOptionalInteger response: {:?}", result);
 
-    println!("Calling callThreeIntegers with example values...");
-    let result = api_client
+    println!(">>> Calling callThreeIntegers with example values...");
+    let result = test__able_client
         .call_three_integers(42, 42, Some(42))
-        .await
-        .expect("Failed to call callThreeIntegers");
-    println!("callThreeIntegers response: {:?}", result);
+        .await;
+    println!("<<< callThreeIntegers response: {:?}", result);
 
-    println!("Calling callOneString with example values...");
-    let result = api_client
+    println!(">>> Calling callOneString with example values...");
+    let result = test__able_client
         .call_one_string("apples".to_string())
-        .await
-        .expect("Failed to call callOneString");
-    println!("callOneString response: {:?}", result);
+        .await;
+    println!("<<< callOneString response: {:?}", result);
 
-    println!("Calling callOptionalString with example values...");
-    let result = api_client
+    println!(">>> Calling callOptionalString with example values...");
+    let result = test__able_client
         .call_optional_string(Some("apples".to_string()))
-        .await
-        .expect("Failed to call callOptionalString");
-    println!("callOptionalString response: {:?}", result);
+        .await;
+    println!("<<< callOptionalString response: {:?}", result);
 
-    println!("Calling callThreeStrings with example values...");
-    let result = api_client
+    println!(">>> Calling callThreeStrings with example values...");
+    let result = test__able_client
         .call_three_strings(
             "apples".to_string(),
             Some("apples".to_string()),
             "apples".to_string(),
         )
-        .await
-        .expect("Failed to call callThreeStrings");
-    println!("callThreeStrings response: {:?}", result);
+        .await;
+    println!("<<< callThreeStrings response: {:?}", result);
 
-    println!("Calling callOneEnum with example values...");
-    let result = api_client
-        .call_one_enum(Numbers::One)
-        .await
-        .expect("Failed to call callOneEnum");
-    println!("callOneEnum response: {:?}", result);
+    println!(">>> Calling callOneEnum with example values...");
+    let result = test__able_client.call_one_enum(Numbers::One).await;
+    println!("<<< callOneEnum response: {:?}", result);
 
-    println!("Calling callOptionalEnum with example values...");
-    let result = api_client
+    println!(">>> Calling callOptionalEnum with example values...");
+    let result = test__able_client
         .call_optional_enum(Some(Numbers::One))
-        .await
-        .expect("Failed to call callOptionalEnum");
-    println!("callOptionalEnum response: {:?}", result);
+        .await;
+    println!("<<< callOptionalEnum response: {:?}", result);
 
-    println!("Calling callThreeEnums with example values...");
-    let result = api_client
+    println!(">>> Calling callThreeEnums with example values...");
+    let result = test__able_client
         .call_three_enums(Numbers::One, Numbers::One, Some(Numbers::One))
-        .await
-        .expect("Failed to call callThreeEnums");
-    println!("callThreeEnums response: {:?}", result);
+        .await;
+    println!("<<< callThreeEnums response: {:?}", result);
 
-    println!("Calling callOneStruct with example values...");
-    let result = api_client
+    println!(">>> Calling callOneStruct with example values...");
+    let result = test__able_client
         .call_one_struct(AllTypes {
             the_bool: true,
             the_int: 42,
@@ -882,12 +898,11 @@ async fn main() {
                 },
             ]),
         })
-        .await
-        .expect("Failed to call callOneStruct");
-    println!("callOneStruct response: {:?}", result);
+        .await;
+    println!("<<< callOneStruct response: {:?}", result);
 
-    println!("Calling callOptionalStruct with example values...");
-    let result = api_client
+    println!(">>> Calling callOptionalStruct with example values...");
+    let result = test__able_client
         .call_optional_struct(Some(AllTypes {
             the_bool: true,
             the_int: 42,
@@ -970,12 +985,11 @@ async fn main() {
                 },
             ]),
         }))
-        .await
-        .expect("Failed to call callOptionalStruct");
-    println!("callOptionalStruct response: {:?}", result);
+        .await;
+    println!("<<< callOptionalStruct response: {:?}", result);
 
-    println!("Calling callThreeStructs with example values...");
-    let result = api_client
+    println!(">>> Calling callThreeStructs with example values...");
+    let result = test__able_client
         .call_three_structs(
             Some(AllTypes {
                 the_bool: true,
@@ -1224,101 +1238,89 @@ async fn main() {
                 ]),
             },
         )
-        .await
-        .expect("Failed to call callThreeStructs");
-    println!("callThreeStructs response: {:?}", result);
+        .await;
+    println!("<<< callThreeStructs response: {:?}", result);
 
-    println!("Calling callOneDateTime with example values...");
-    let result = api_client
+    println!(">>> Calling callOneDateTime with example values...");
+    let result = test__able_client
         .call_one_date_time(chrono::Utc::now())
-        .await
-        .expect("Failed to call callOneDateTime");
-    println!("callOneDateTime response: {:?}", result);
+        .await;
+    println!("<<< callOneDateTime response: {:?}", result);
 
-    println!("Calling callOptionalDateTime with example values...");
-    let result = api_client
+    println!(">>> Calling callOptionalDateTime with example values...");
+    let result = test__able_client
         .call_optional_date_time(Some(chrono::Utc::now()))
-        .await
-        .expect("Failed to call callOptionalDateTime");
-    println!("callOptionalDateTime response: {:?}", result);
+        .await;
+    println!("<<< callOptionalDateTime response: {:?}", result);
 
-    println!("Calling callThreeDateTimes with example values...");
-    let result = api_client
+    println!(">>> Calling callThreeDateTimes with example values...");
+    let result = test__able_client
         .call_three_date_times(
             chrono::Utc::now(),
             chrono::Utc::now(),
             Some(chrono::Utc::now()),
         )
-        .await
-        .expect("Failed to call callThreeDateTimes");
-    println!("callThreeDateTimes response: {:?}", result);
+        .await;
+    println!("<<< callThreeDateTimes response: {:?}", result);
 
-    println!("Calling callOneDuration with example values...");
-    let result = api_client
+    println!(">>> Calling callOneDuration with example values...");
+    let result = test__able_client
         .call_one_duration(chrono::Duration::seconds(3536))
-        .await
-        .expect("Failed to call callOneDuration");
-    println!("callOneDuration response: {:?}", result);
+        .await;
+    println!("<<< callOneDuration response: {:?}", result);
 
-    println!("Calling callOptionalDuration with example values...");
-    let result = api_client
+    println!(">>> Calling callOptionalDuration with example values...");
+    let result = test__able_client
         .call_optional_duration(Some(chrono::Duration::seconds(3536)))
-        .await
-        .expect("Failed to call callOptionalDuration");
-    println!("callOptionalDuration response: {:?}", result);
+        .await;
+    println!("<<< callOptionalDuration response: {:?}", result);
 
-    println!("Calling callThreeDurations with example values...");
-    let result = api_client
+    println!(">>> Calling callThreeDurations with example values...");
+    let result = test__able_client
         .call_three_durations(
             chrono::Duration::seconds(3536),
             chrono::Duration::seconds(3536),
             Some(chrono::Duration::seconds(3536)),
         )
-        .await
-        .expect("Failed to call callThreeDurations");
-    println!("callThreeDurations response: {:?}", result);
+        .await;
+    println!("<<< callThreeDurations response: {:?}", result);
 
-    println!("Calling callOneBinary with example values...");
-    let result = api_client
+    println!(">>> Calling callOneBinary with example values...");
+    let result = test__able_client
         .call_one_binary(vec![101, 120, 97, 109, 112, 108, 101])
-        .await
-        .expect("Failed to call callOneBinary");
-    println!("callOneBinary response: {:?}", result);
+        .await;
+    println!("<<< callOneBinary response: {:?}", result);
 
-    println!("Calling callOptionalBinary with example values...");
-    let result = api_client
+    println!(">>> Calling callOptionalBinary with example values...");
+    let result = test__able_client
         .call_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]))
-        .await
-        .expect("Failed to call callOptionalBinary");
-    println!("callOptionalBinary response: {:?}", result);
+        .await;
+    println!("<<< callOptionalBinary response: {:?}", result);
 
-    println!("Calling callThreeBinaries with example values...");
-    let result = api_client
+    println!(">>> Calling callThreeBinaries with example values...");
+    let result = test__able_client
         .call_three_binaries(
             vec![101, 120, 97, 109, 112, 108, 101],
             vec![101, 120, 97, 109, 112, 108, 101],
             Some(vec![101, 120, 97, 109, 112, 108, 101]),
         )
-        .await
-        .expect("Failed to call callThreeBinaries");
-    println!("callThreeBinaries response: {:?}", result);
+        .await;
+    println!("<<< callThreeBinaries response: {:?}", result);
 
-    println!("Calling callOneListOfIntegers with example values...");
-    let result = api_client
+    println!(">>> Calling callOneListOfIntegers with example values...");
+    let result = test__able_client
         .call_one_list_of_integers(vec![42, 2022])
-        .await
-        .expect("Failed to call callOneListOfIntegers");
-    println!("callOneListOfIntegers response: {:?}", result);
+        .await;
+    println!("<<< callOneListOfIntegers response: {:?}", result);
 
-    println!("Calling callOptionalListOfFloats with example values...");
-    let result = api_client
+    println!(">>> Calling callOptionalListOfFloats with example values...");
+    let result = test__able_client
         .call_optional_list_of_floats(Some(vec![3.14, 1.0, 1.0]))
-        .await
-        .expect("Failed to call callOptionalListOfFloats");
-    println!("callOptionalListOfFloats response: {:?}", result);
+        .await;
+    println!("<<< callOptionalListOfFloats response: {:?}", result);
 
-    println!("Calling callTwoLists with example values...");
-    let result = api_client
+    println!(">>> Calling callTwoLists with example values...");
+    let result = test__able_client
         .call_two_lists(
             vec![Numbers::One, Numbers::One],
             Some(vec![
@@ -1327,31 +1329,30 @@ async fn main() {
                 "foo".to_string(),
             ]),
         )
-        .await
-        .expect("Failed to call callTwoLists");
-    println!("callTwoLists response: {:?}", result);
+        .await;
+    println!("<<< callTwoLists response: {:?}", result);
 
-    let _ = api_client.set_read_write_integer(42);
+    let _ = test__able_client.set_read_write_integer(42);
 
-    let _ = api_client.set_read_write_optional_integer(Some(42));
+    let _ = test__able_client.set_read_write_optional_integer(Some(42));
 
     let read_write_two_integers_new_value = ReadWriteTwoIntegersProperty {
         first: 42,
         second: Some(42),
     };
-    let _ = api_client.set_read_write_two_integers(read_write_two_integers_new_value);
+    let _ = test__able_client.set_read_write_two_integers(read_write_two_integers_new_value);
 
-    let _ = api_client.set_read_write_string("apples".to_string());
+    let _ = test__able_client.set_read_write_string("apples".to_string());
 
-    let _ = api_client.set_read_write_optional_string(Some("apples".to_string()));
+    let _ = test__able_client.set_read_write_optional_string(Some("apples".to_string()));
 
     let read_write_two_strings_new_value = ReadWriteTwoStringsProperty {
         first: "apples".to_string(),
         second: Some("apples".to_string()),
     };
-    let _ = api_client.set_read_write_two_strings(read_write_two_strings_new_value);
+    let _ = test__able_client.set_read_write_two_strings(read_write_two_strings_new_value);
 
-    let _ = api_client.set_read_write_struct(AllTypes {
+    let _ = test__able_client.set_read_write_struct(AllTypes {
         the_bool: true,
         the_int: 42,
         the_number: 3.14,
@@ -1434,7 +1435,7 @@ async fn main() {
         ]),
     });
 
-    let _ = api_client.set_read_write_optional_struct(Some(AllTypes {
+    let _ = test__able_client.set_read_write_optional_struct(Some(AllTypes {
         the_bool: true,
         the_int: 42,
         the_number: 3.14,
@@ -1683,50 +1684,52 @@ async fn main() {
             ]),
         }),
     };
-    let _ = api_client.set_read_write_two_structs(read_write_two_structs_new_value);
+    let _ = test__able_client.set_read_write_two_structs(read_write_two_structs_new_value);
 
-    let _ = api_client.set_read_write_enum(Numbers::One);
+    let _ = test__able_client.set_read_write_enum(Numbers::One);
 
-    let _ = api_client.set_read_write_optional_enum(Some(Numbers::One));
+    let _ = test__able_client.set_read_write_optional_enum(Some(Numbers::One));
 
     let read_write_two_enums_new_value = ReadWriteTwoEnumsProperty {
         first: Numbers::One,
         second: Some(Numbers::One),
     };
-    let _ = api_client.set_read_write_two_enums(read_write_two_enums_new_value);
+    let _ = test__able_client.set_read_write_two_enums(read_write_two_enums_new_value);
 
-    let _ = api_client.set_read_write_datetime(chrono::Utc::now());
+    let _ = test__able_client.set_read_write_datetime(chrono::Utc::now());
 
-    let _ = api_client.set_read_write_optional_datetime(Some(chrono::Utc::now()));
+    let _ = test__able_client.set_read_write_optional_datetime(Some(chrono::Utc::now()));
 
     let read_write_two_datetimes_new_value = ReadWriteTwoDatetimesProperty {
         first: chrono::Utc::now(),
         second: Some(chrono::Utc::now()),
     };
-    let _ = api_client.set_read_write_two_datetimes(read_write_two_datetimes_new_value);
+    let _ = test__able_client.set_read_write_two_datetimes(read_write_two_datetimes_new_value);
 
-    let _ = api_client.set_read_write_duration(chrono::Duration::seconds(3536));
+    let _ = test__able_client.set_read_write_duration(chrono::Duration::seconds(3536));
 
-    let _ = api_client.set_read_write_optional_duration(Some(chrono::Duration::seconds(3536)));
+    let _ =
+        test__able_client.set_read_write_optional_duration(Some(chrono::Duration::seconds(3536)));
 
     let read_write_two_durations_new_value = ReadWriteTwoDurationsProperty {
         first: chrono::Duration::seconds(3536),
         second: Some(chrono::Duration::seconds(3536)),
     };
-    let _ = api_client.set_read_write_two_durations(read_write_two_durations_new_value);
+    let _ = test__able_client.set_read_write_two_durations(read_write_two_durations_new_value);
 
-    let _ = api_client.set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101]);
+    let _ = test__able_client.set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101]);
 
-    let _ = api_client.set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]));
+    let _ = test__able_client
+        .set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]));
 
     let read_write_two_binaries_new_value = ReadWriteTwoBinariesProperty {
         first: vec![101, 120, 97, 109, 112, 108, 101],
         second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
     };
-    let _ = api_client.set_read_write_two_binaries(read_write_two_binaries_new_value);
+    let _ = test__able_client.set_read_write_two_binaries(read_write_two_binaries_new_value);
 
-    let _ =
-        api_client.set_read_write_list_of_strings(vec!["apples".to_string(), "foo".to_string()]);
+    let _ = test__able_client
+        .set_read_write_list_of_strings(vec!["apples".to_string(), "foo".to_string()]);
 
     let read_write_lists_new_value = ReadWriteListsProperty {
         the_list: vec![Numbers::One, Numbers::One],
@@ -1736,7 +1739,7 @@ async fn main() {
             chrono::Utc::now(),
         ]),
     };
-    let _ = api_client.set_read_write_lists(read_write_lists_new_value);
+    let _ = test__able_client.set_read_write_lists(read_write_lists_new_value);
 
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c()

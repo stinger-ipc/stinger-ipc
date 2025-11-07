@@ -56,14 +56,14 @@ async fn main() {
         );
     };
     drop(service_discovery);
-    let mut api_client = FullClient::new(mqttier_client.clone(), discovered_singleton).await;
+    let mut full_client = FullClient::new(mqttier_client.clone(), discovered_singleton).await;
 
-    let mut client_for_loop = api_client.clone();
+    let mut client_for_loop = full_client.clone();
     tokio::spawn(async move {
         let _conn_loop = client_for_loop.run_loop().await;
     });
 
-    let mut sig_rx = api_client.get_today_is_receiver();
+    let mut sig_rx = full_client.get_today_is_receiver();
     println!("Got signal receiver for todayIs");
 
     sleep(Duration::from_secs(5)).await;
@@ -73,7 +73,7 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received todayIs signal with payload: {:?}", payload);
+                    println!("*** Received todayIs signal with payload: {:?}", payload);
                 }
                 Err(e) => {
                     eprintln!("Error receiving todayIs signal: {:?}", e);
@@ -83,7 +83,7 @@ async fn main() {
         }
     });
 
-    let client_for_prop_change = api_client.clone();
+    let client_for_prop_change = full_client.clone();
     let _prop_change_rx_task = tokio::spawn(async move {
         let mut favorite_number_change_rx = client_for_prop_change.watch_favorite_number();
         let mut favorite_foods_change_rx = client_for_prop_change.watch_favorite_foods();
@@ -120,63 +120,46 @@ async fn main() {
         }
     });
 
-    println!("Calling addNumbers with example values...");
-    let result = api_client
-        .add_numbers(42, 42, Some(42))
-        .await
-        .expect("Failed to call addNumbers");
-    println!("addNumbers response: {:?}", result);
+    println!(">>> Calling addNumbers with example values...");
+    let result = full_client.add_numbers(42, 42, Some(42)).await;
+    println!("<<< addNumbers response: {:?}", result);
 
-    println!("Calling doSomething with example values...");
-    let result = api_client
-        .do_something("apples".to_string())
-        .await
-        .expect("Failed to call doSomething");
-    println!("doSomething response: {:?}", result);
+    println!(">>> Calling doSomething with example values...");
+    let result = full_client.do_something("apples".to_string()).await;
+    println!("<<< doSomething response: {:?}", result);
 
-    println!("Calling echo with example values...");
-    let result = api_client
-        .echo("apples".to_string())
-        .await
-        .expect("Failed to call echo");
-    println!("echo response: {:?}", result);
+    println!(">>> Calling echo with example values...");
+    let result = full_client.echo("apples".to_string()).await;
+    println!("<<< echo response: {:?}", result);
 
-    println!("Calling what_time_is_it with example values...");
-    let result = api_client
-        .what_time_is_it(chrono::Utc::now())
-        .await
-        .expect("Failed to call what_time_is_it");
-    println!("what_time_is_it response: {:?}", result);
+    println!(">>> Calling what_time_is_it with example values...");
+    let result = full_client.what_time_is_it(chrono::Utc::now()).await;
+    println!("<<< what_time_is_it response: {:?}", result);
 
-    println!("Calling set_the_time with example values...");
-    let result = api_client
+    println!(">>> Calling set_the_time with example values...");
+    let result = full_client
         .set_the_time(chrono::Utc::now(), chrono::Utc::now())
-        .await
-        .expect("Failed to call set_the_time");
-    println!("set_the_time response: {:?}", result);
+        .await;
+    println!("<<< set_the_time response: {:?}", result);
 
-    println!("Calling forward_time with example values...");
-    let result = api_client
+    println!(">>> Calling forward_time with example values...");
+    let result = full_client
         .forward_time(chrono::Duration::seconds(3536))
-        .await
-        .expect("Failed to call forward_time");
-    println!("forward_time response: {:?}", result);
+        .await;
+    println!("<<< forward_time response: {:?}", result);
 
-    println!("Calling how_off_is_the_clock with example values...");
-    let result = api_client
-        .how_off_is_the_clock(chrono::Utc::now())
-        .await
-        .expect("Failed to call how_off_is_the_clock");
-    println!("how_off_is_the_clock response: {:?}", result);
+    println!(">>> Calling how_off_is_the_clock with example values...");
+    let result = full_client.how_off_is_the_clock(chrono::Utc::now()).await;
+    println!("<<< how_off_is_the_clock response: {:?}", result);
 
-    let _ = api_client.set_favorite_number(42);
+    let _ = full_client.set_favorite_number(42);
 
     let favorite_foods_new_value = FavoriteFoodsProperty {
         drink: "apples".to_string(),
         slices_of_pizza: 42,
         breakfast: Some("apples".to_string()),
     };
-    let _ = api_client.set_favorite_foods(favorite_foods_new_value);
+    let _ = full_client.set_favorite_foods(favorite_foods_new_value);
 
     let lunch_menu_new_value = LunchMenuProperty {
         monday: Lunch {
@@ -198,13 +181,13 @@ async fn main() {
             duration_of_lunch: chrono::Duration::seconds(3536),
         },
     };
-    let _ = api_client.set_lunch_menu(lunch_menu_new_value);
+    let _ = full_client.set_lunch_menu(lunch_menu_new_value);
 
-    let _ = api_client.set_family_name("apples".to_string());
+    let _ = full_client.set_family_name("apples".to_string());
 
-    let _ = api_client.set_last_breakfast_time(chrono::Utc::now());
+    let _ = full_client.set_last_breakfast_time(chrono::Utc::now());
 
-    let _ = api_client.set_breakfast_length(chrono::Duration::seconds(3536));
+    let _ = full_client.set_breakfast_length(chrono::Duration::seconds(3536));
 
     let last_birthdays_new_value = LastBirthdaysProperty {
         mom: chrono::Utc::now(),
@@ -212,7 +195,7 @@ async fn main() {
         sister: Some(chrono::Utc::now()),
         brothers_age: Some(42),
     };
-    let _ = api_client.set_last_birthdays(last_birthdays_new_value);
+    let _ = full_client.set_last_birthdays(last_birthdays_new_value);
 
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c()

@@ -51,13 +51,24 @@ pub fn response<T: Serialize>(
     let mut builder = MqttMessageBuilder::default();
     builder
         .topic(topic)
-        .object_payload(payload)
-        .map_err(|e| MethodReturnCode::ServerSerializationError(e.to_string()))?
         .qos(QoS::AtLeastOnce)
         .retain(false)
         .correlation_data(correlation_data);
-    if let Some(info) = debug_info {
-        builder.user_property("DebugInfo", info);
+    match builder.object_payload(payload) {
+        Ok(_) => {
+            builder.user_property("ReturnCode", "0");
+            if let Some(info) = debug_info {
+                builder.user_property("DebugInfo", info).payload("{}");
+            }
+        }
+        Err(e) => {
+            let retcode = MethodReturnCode::ServerSerializationError(e.to_string());
+            let (code_num, debug_info) = retcode.to_code();
+            builder.user_property("ReturnCode", code_num.to_string());
+            if let Some(info) = debug_info {
+                builder.user_property("DebugInfo", info);
+            }
+        }
     }
     builder
         .build()

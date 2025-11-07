@@ -128,6 +128,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let topic_{{method_name | snake_case}}_method_resp = format!("{{method.response_topic('{}')}}", client_id);
         let subscription_id_{{method_name | snake_case}}_method_resp = connection.subscribe(topic_{{method_name | snake_case}}_method_resp, QoS::ExactlyOnce, message_received_tx.clone()).await;
         let subscription_id_{{method_name | snake_case}}_method_resp = subscription_id_{{method_name | snake_case}}_method_resp.unwrap_or_else(|_| u32::MAX);
+        debug!("Subscription (id={}) to method response topic for '{{method_name}}'", subscription_id_{{method_name | snake_case}}_method_resp);
         {%endfor%}
 
         // Subscribe to all the topics needed for signals.
@@ -135,6 +136,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let topic_{{signal_name | snake_case}}_signal = format!("{{signal.topic}}", discovery_info.interface_info.instance);
         let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(topic_{{signal_name | snake_case}}_signal, QoS::ExactlyOnce, message_received_tx.clone()).await;
         let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| u32::MAX);
+        debug!("Subscription (id={}) to signal topic for '{{signal_name}}'", subscription_id_{{signal_name | snake_case}}_signal);
         {%endfor%}
 
         // Subscribe to all the topics needed for properties.
@@ -142,6 +144,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let topic_{{prop_name | snake_case}}_property_value = format!("{{prop.value_topic}}", discovery_info.interface_info.instance);
         let subscription_id_{{prop_name | snake_case}}_property_value = connection.subscribe(topic_{{prop_name | snake_case}}_property_value, QoS::AtLeastOnce, message_received_tx.clone()).await;
         let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or_else(|_| u32::MAX);
+        debug!("Subscription (id={}) to property value topic for '{{prop_name}}'", subscription_id_{{prop_name | snake_case}}_property_value);
         {% endfor %}
 
         {%if stinger.properties|length > 0%}
@@ -222,6 +225,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
         let response_topic: String = format!("{{method.response_topic('{}')}}", self.client_id);
         let msg = message::request(&format!("{{method.topic}}", self.service_instance_id), &data, correlation_id, response_topic).unwrap();
+        info!("Sending request to topic '{}': {:?}", format!("{{method.topic}}", self.service_instance_id), data);
         let _ = self.mqtt_client.publish(msg).await;
         receiver
     }
@@ -236,6 +240,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let receiver = self.start_{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
 
         let {%if method.return_value_type is false %}{%endif%}return_code: MethodReturnCode = receiver.await.unwrap();
+        info!("Received response for method '{{method_name}}': {:?}", return_code);
         match return_code {
             MethodReturnCode::Success({%if method.return_arg_list |length == 0 %}_{%else%}payload_str{%endif%}) => {
                 {%if method.return_arg_list |length > 0%}
@@ -295,14 +300,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
     fn get_return_code_from_message(msg: &MqttMessage) -> MethodReturnCode {
         let payload = String::from_utf8_lossy(&msg.payload).to_string();
-        let mut return_code: MethodReturnCode = MethodReturnCode::Success(None);
+        let mut return_code: MethodReturnCode = MethodReturnCode::Success(Some(payload));
         if let Some(retval) = msg.user_properties.get("ReturnCode") {
             let opt_dbg_info = msg.user_properties.get("DebugInfo").cloned();
             if let Ok(return_code_u32) = retval.parse::<u32>() {
-                if return_code_u32 == 0 {
-                    return_code = MethodReturnCode::from_code(return_code_u32, Some(payload));
-                } else {
+                if return_code_u32 != 0 {
                     return_code = MethodReturnCode::from_code(return_code_u32, opt_dbg_info);
+                } else {
+                    info!("Received Debug Info: {:?}", opt_dbg_info);
                 }
             }
         }
@@ -346,8 +351,17 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let _loop_task = tokio::spawn(async move {
             while let Ok(msg) = message_receiver.recv().await {
                 {% if stinger.methods|length > 0 %}
-                let opt_corr_data: Option<Vec<u8>> = msg.correlation_data.clone().map(|b| b.to_vec());
-                let opt_corr_id: Option<Uuid> = opt_corr_data.and_then(|b| Uuid::from_slice(b.as_slice()).ok());
+                let opt_corr_id: Option<Uuid> = msg.correlation_data.as_ref().and_then(|b| {
+                    // Try parsing as 16-byte binary UUID first
+                    if b.len() == 16 {
+                        Uuid::from_slice(b.as_ref()).ok()
+                    } else {
+                        // Try parsing as string UUID (36 bytes for hyphenated format)
+                        String::from_utf8(b.to_vec())
+                            .ok()
+                            .and_then(|s| Uuid::parse_str(&s).ok())
+                    }
+                });
                 {%endif%} {# if there are some methods #}
                 if let Some(subscription_id) = msg.subscription_id {
                     let return_code = {{stinger.rust.client_struct_name}}::<C>::get_return_code_from_message(&msg);
@@ -367,6 +381,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                     Err(_) => (),
                                 }
                             }
+                        } else {
+                            warn!("Received method response for '{{method_name}}' without correlation ID");
                         }
                     } // end {{method_name}} method response handling
                     {%-endfor%} {# end for each method #}

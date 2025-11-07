@@ -112,6 +112,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             .await;
         let subscription_id_trade_numbers_method_resp =
             subscription_id_trade_numbers_method_resp.unwrap_or_else(|_| u32::MAX);
+        debug!(
+            "Subscription (id={}) to method response topic for 'trade_numbers'",
+            subscription_id_trade_numbers_method_resp
+        );
 
         // Subscribe to all the topics needed for signals.
         let topic_person_entered_signal = format!(
@@ -127,6 +131,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             .await;
         let subscription_id_person_entered_signal =
             subscription_id_person_entered_signal.unwrap_or_else(|_| u32::MAX);
+        debug!(
+            "Subscription (id={}) to signal topic for 'person_entered'",
+            subscription_id_person_entered_signal
+        );
 
         // Subscribe to all the topics needed for properties.
 
@@ -143,6 +151,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             .await;
         let subscription_id_school_property_value =
             subscription_id_school_property_value.unwrap_or_else(|_| u32::MAX);
+        debug!(
+            "Subscription (id={}) to property value topic for 'school'",
+            subscription_id_school_property_value
+        );
 
         let property_values = SimpleProperties {
             school: Arc::new(RwLockWatch::new(discovery_info.properties.school)),
@@ -209,6 +221,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             response_topic,
         )
         .unwrap();
+        info!(
+            "Sending request to topic '{}': {:?}",
+            format!("simple/{}/method/tradeNumbers", self.service_instance_id),
+            data
+        );
         let _ = self.mqtt_client.publish(msg).await;
         receiver
     }
@@ -222,6 +239,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
         let receiver = self.start_trade_numbers(your_number).await;
 
         let return_code: MethodReturnCode = receiver.await.unwrap();
+        info!(
+            "Received response for method 'trade_numbers': {:?}",
+            return_code
+        );
         match return_code {
             MethodReturnCode::Success(payload_str) => {
                 let return_obj: TradeNumbersReturnValues =
@@ -274,14 +295,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
 
     fn get_return_code_from_message(msg: &MqttMessage) -> MethodReturnCode {
         let payload = String::from_utf8_lossy(&msg.payload).to_string();
-        let mut return_code: MethodReturnCode = MethodReturnCode::Success(None);
+        let mut return_code: MethodReturnCode = MethodReturnCode::Success(Some(payload));
         if let Some(retval) = msg.user_properties.get("ReturnCode") {
             let opt_dbg_info = msg.user_properties.get("DebugInfo").cloned();
             if let Ok(return_code_u32) = retval.parse::<u32>() {
-                if return_code_u32 == 0 {
-                    return_code = MethodReturnCode::from_code(return_code_u32, Some(payload));
-                } else {
+                if return_code_u32 != 0 {
                     return_code = MethodReturnCode::from_code(return_code_u32, opt_dbg_info);
+                } else {
+                    info!("Received Debug Info: {:?}", opt_dbg_info);
                 }
             }
         }
@@ -330,10 +351,17 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
 
         let _loop_task = tokio::spawn(async move {
             while let Ok(msg) = message_receiver.recv().await {
-                let opt_corr_data: Option<Vec<u8>> =
-                    msg.correlation_data.clone().map(|b| b.to_vec());
-                let opt_corr_id: Option<Uuid> =
-                    opt_corr_data.and_then(|b| Uuid::from_slice(b.as_slice()).ok());
+                let opt_corr_id: Option<Uuid> = msg.correlation_data.as_ref().and_then(|b| {
+                    // Try parsing as 16-byte binary UUID first
+                    if b.len() == 16 {
+                        Uuid::from_slice(b.as_ref()).ok()
+                    } else {
+                        // Try parsing as string UUID (36 bytes for hyphenated format)
+                        String::from_utf8(b.to_vec())
+                            .ok()
+                            .and_then(|s| Uuid::parse_str(&s).ok())
+                    }
+                });
 
                 if let Some(subscription_id) = msg.subscription_id {
                     let return_code = SimpleClient::<C>::get_return_code_from_message(&msg);
@@ -350,6 +378,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
                                     Err(_) => (),
                                 }
                             }
+                        } else {
+                            warn!("Received method response for 'trade_numbers' without correlation ID");
                         }
                     } // end trade_numbers method response handling
                     if Some(subscription_id) == sub_ids.person_entered_signal {

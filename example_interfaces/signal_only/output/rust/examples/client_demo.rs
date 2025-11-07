@@ -56,14 +56,15 @@ async fn main() {
         );
     };
     drop(service_discovery);
-    let api_client = SignalOnlyClient::new(mqttier_client.clone(), discovered_singleton).await;
+    let signal_only_client =
+        SignalOnlyClient::new(mqttier_client.clone(), discovered_singleton).await;
 
-    let mut client_for_loop = api_client.clone();
+    let mut client_for_loop = signal_only_client.clone();
     tokio::spawn(async move {
         let _conn_loop = client_for_loop.run_loop().await;
     });
 
-    let mut sig_rx = api_client.get_another_signal_receiver();
+    let mut sig_rx = signal_only_client.get_another_signal_receiver();
     println!("Got signal receiver for anotherSignal");
 
     sleep(Duration::from_secs(5)).await;
@@ -73,7 +74,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received anotherSignal signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received anotherSignal signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving anotherSignal signal: {:?}", e);
@@ -83,7 +87,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_bark_receiver();
+    let mut sig_rx = signal_only_client.get_bark_receiver();
     println!("Got signal receiver for bark");
 
     sleep(Duration::from_secs(5)).await;
@@ -93,7 +97,7 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received bark signal with payload: {:?}", payload);
+                    println!("*** Received bark signal with payload: {:?}", payload);
                 }
                 Err(e) => {
                     eprintln!("Error receiving bark signal: {:?}", e);
@@ -103,7 +107,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_maybe_number_receiver();
+    let mut sig_rx = signal_only_client.get_maybe_number_receiver();
     println!("Got signal receiver for maybe_number");
 
     sleep(Duration::from_secs(5)).await;
@@ -113,7 +117,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received maybe_number signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received maybe_number signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving maybe_number signal: {:?}", e);
@@ -123,7 +130,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_maybe_name_receiver();
+    let mut sig_rx = signal_only_client.get_maybe_name_receiver();
     println!("Got signal receiver for maybe_name");
 
     sleep(Duration::from_secs(5)).await;
@@ -133,7 +140,7 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received maybe_name signal with payload: {:?}", payload);
+                    println!("*** Received maybe_name signal with payload: {:?}", payload);
                 }
                 Err(e) => {
                     eprintln!("Error receiving maybe_name signal: {:?}", e);
@@ -143,7 +150,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = api_client.get_now_receiver();
+    let mut sig_rx = signal_only_client.get_now_receiver();
     println!("Got signal receiver for now");
 
     sleep(Duration::from_secs(5)).await;
@@ -153,7 +160,7 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received now signal with payload: {:?}", payload);
+                    println!("*** Received now signal with payload: {:?}", payload);
                 }
                 Err(e) => {
                     eprintln!("Error receiving now signal: {:?}", e);

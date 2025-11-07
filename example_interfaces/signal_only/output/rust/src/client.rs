@@ -97,6 +97,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             .await;
         let subscription_id_another_signal_signal =
             subscription_id_another_signal_signal.unwrap_or_else(|_| u32::MAX);
+        debug!(
+            "Subscription (id={}) to signal topic for 'anotherSignal'",
+            subscription_id_another_signal_signal
+        );
         let topic_bark_signal = format!(
             "signalOnly/{}/signal/bark",
             discovery_info.interface_info.instance
@@ -109,6 +113,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             )
             .await;
         let subscription_id_bark_signal = subscription_id_bark_signal.unwrap_or_else(|_| u32::MAX);
+        debug!(
+            "Subscription (id={}) to signal topic for 'bark'",
+            subscription_id_bark_signal
+        );
         let topic_maybe_number_signal = format!(
             "signalOnly/{}/signal/maybeNumber",
             discovery_info.interface_info.instance
@@ -122,6 +130,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             .await;
         let subscription_id_maybe_number_signal =
             subscription_id_maybe_number_signal.unwrap_or_else(|_| u32::MAX);
+        debug!(
+            "Subscription (id={}) to signal topic for 'maybe_number'",
+            subscription_id_maybe_number_signal
+        );
         let topic_maybe_name_signal = format!(
             "signalOnly/{}/signal/maybeName",
             discovery_info.interface_info.instance
@@ -135,6 +147,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             .await;
         let subscription_id_maybe_name_signal =
             subscription_id_maybe_name_signal.unwrap_or_else(|_| u32::MAX);
+        debug!(
+            "Subscription (id={}) to signal topic for 'maybe_name'",
+            subscription_id_maybe_name_signal
+        );
         let topic_now_signal = format!(
             "signalOnly/{}/signal/now",
             discovery_info.interface_info.instance
@@ -147,6 +163,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             )
             .await;
         let subscription_id_now_signal = subscription_id_now_signal.unwrap_or_else(|_| u32::MAX);
+        debug!(
+            "Subscription (id={}) to signal topic for 'now'",
+            subscription_id_now_signal
+        );
 
         // Subscribe to all the topics needed for properties.
 
@@ -210,14 +230,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
 
     fn get_return_code_from_message(msg: &MqttMessage) -> MethodReturnCode {
         let payload = String::from_utf8_lossy(&msg.payload).to_string();
-        let mut return_code: MethodReturnCode = MethodReturnCode::Success(None);
+        let mut return_code: MethodReturnCode = MethodReturnCode::Success(Some(payload));
         if let Some(retval) = msg.user_properties.get("ReturnCode") {
             let opt_dbg_info = msg.user_properties.get("DebugInfo").cloned();
             if let Ok(return_code_u32) = retval.parse::<u32>() {
-                if return_code_u32 == 0 {
-                    return_code = MethodReturnCode::from_code(return_code_u32, Some(payload));
-                } else {
+                if return_code_u32 != 0 {
                     return_code = MethodReturnCode::from_code(return_code_u32, opt_dbg_info);
+                } else {
+                    info!("Received Debug Info: {:?}", opt_dbg_info);
                 }
             }
         }

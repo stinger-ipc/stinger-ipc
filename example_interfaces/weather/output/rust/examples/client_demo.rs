@@ -56,14 +56,14 @@ async fn main() {
         );
     };
     drop(service_discovery);
-    let mut api_client = WeatherClient::new(mqttier_client.clone(), discovered_singleton).await;
+    let mut weather_client = WeatherClient::new(mqttier_client.clone(), discovered_singleton).await;
 
-    let mut client_for_loop = api_client.clone();
+    let mut client_for_loop = weather_client.clone();
     tokio::spawn(async move {
         let _conn_loop = client_for_loop.run_loop().await;
     });
 
-    let mut sig_rx = api_client.get_current_time_receiver();
+    let mut sig_rx = weather_client.get_current_time_receiver();
     println!("Got signal receiver for current_time");
 
     sleep(Duration::from_secs(5)).await;
@@ -73,7 +73,10 @@ async fn main() {
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
-                    println!("Received current_time signal with payload: {:?}", payload);
+                    println!(
+                        "*** Received current_time signal with payload: {:?}",
+                        payload
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error receiving current_time signal: {:?}", e);
@@ -83,7 +86,7 @@ async fn main() {
         }
     });
 
-    let client_for_prop_change = api_client.clone();
+    let client_for_prop_change = weather_client.clone();
     let _prop_change_rx_task = tokio::spawn(async move {
         let mut location_change_rx = client_for_prop_change.watch_location();
         let mut current_temperature_change_rx = client_for_prop_change.watch_current_temperature();
@@ -127,38 +130,29 @@ async fn main() {
         }
     });
 
-    println!("Calling refresh_daily_forecast with example values...");
-    let result = api_client
-        .refresh_daily_forecast()
-        .await
-        .expect("Failed to call refresh_daily_forecast");
-    println!("refresh_daily_forecast response: {:?}", result);
+    println!(">>> Calling refresh_daily_forecast with example values...");
+    let result = weather_client.refresh_daily_forecast().await;
+    println!("<<< refresh_daily_forecast response: {:?}", result);
 
-    println!("Calling refresh_hourly_forecast with example values...");
-    let result = api_client
-        .refresh_hourly_forecast()
-        .await
-        .expect("Failed to call refresh_hourly_forecast");
-    println!("refresh_hourly_forecast response: {:?}", result);
+    println!(">>> Calling refresh_hourly_forecast with example values...");
+    let result = weather_client.refresh_hourly_forecast().await;
+    println!("<<< refresh_hourly_forecast response: {:?}", result);
 
-    println!("Calling refresh_current_conditions with example values...");
-    let result = api_client
-        .refresh_current_conditions()
-        .await
-        .expect("Failed to call refresh_current_conditions");
-    println!("refresh_current_conditions response: {:?}", result);
+    println!(">>> Calling refresh_current_conditions with example values...");
+    let result = weather_client.refresh_current_conditions().await;
+    println!("<<< refresh_current_conditions response: {:?}", result);
 
     let location_new_value = LocationProperty {
         latitude: 3.14,
         longitude: 3.14,
     };
-    let _ = api_client.set_location(location_new_value);
+    let _ = weather_client.set_location(location_new_value);
 
-    let _ = api_client.set_current_condition_refresh_interval(42);
+    let _ = weather_client.set_current_condition_refresh_interval(42);
 
-    let _ = api_client.set_hourly_forecast_refresh_interval(42);
+    let _ = weather_client.set_hourly_forecast_refresh_interval(42);
 
-    let _ = api_client.set_daily_forecast_refresh_interval(42);
+    let _ = weather_client.set_daily_forecast_refresh_interval(42);
 
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c()
