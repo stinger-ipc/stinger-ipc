@@ -140,7 +140,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_add_numbers_method_resp =
-            subscription_id_add_numbers_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_add_numbers_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'addNumbers'",
             subscription_id_add_numbers_method_resp
@@ -154,7 +154,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_do_something_method_resp =
-            subscription_id_do_something_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_do_something_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'doSomething'",
             subscription_id_do_something_method_resp
@@ -167,8 +167,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                 message_received_tx.clone(),
             )
             .await;
-        let subscription_id_echo_method_resp =
-            subscription_id_echo_method_resp.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_echo_method_resp = subscription_id_echo_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'echo'",
             subscription_id_echo_method_resp
@@ -183,7 +182,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_what_time_is_it_method_resp =
-            subscription_id_what_time_is_it_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_what_time_is_it_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'what_time_is_it'",
             subscription_id_what_time_is_it_method_resp
@@ -197,7 +196,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_set_the_time_method_resp =
-            subscription_id_set_the_time_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_set_the_time_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'set_the_time'",
             subscription_id_set_the_time_method_resp
@@ -211,7 +210,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_forward_time_method_resp =
-            subscription_id_forward_time_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_forward_time_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'forward_time'",
             subscription_id_forward_time_method_resp
@@ -226,7 +225,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_how_off_is_the_clock_method_resp =
-            subscription_id_how_off_is_the_clock_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_how_off_is_the_clock_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'how_off_is_the_clock'",
             subscription_id_how_off_is_the_clock_method_resp
@@ -244,8 +243,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                 message_received_tx.clone(),
             )
             .await;
-        let subscription_id_today_is_signal =
-            subscription_id_today_is_signal.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_today_is_signal = subscription_id_today_is_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'todayIs'",
             subscription_id_today_is_signal
@@ -265,7 +263,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_favorite_number_property_value =
-            subscription_id_favorite_number_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_favorite_number_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'favorite_number'",
             subscription_id_favorite_number_property_value
@@ -283,7 +281,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_favorite_foods_property_value =
-            subscription_id_favorite_foods_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_favorite_foods_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'favorite_foods'",
             subscription_id_favorite_foods_property_value
@@ -301,7 +299,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_lunch_menu_property_value =
-            subscription_id_lunch_menu_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_lunch_menu_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'lunch_menu'",
             subscription_id_lunch_menu_property_value
@@ -319,7 +317,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_family_name_property_value =
-            subscription_id_family_name_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_family_name_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'family_name'",
             subscription_id_family_name_property_value
@@ -337,7 +335,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_last_breakfast_time_property_value =
-            subscription_id_last_breakfast_time_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_last_breakfast_time_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'last_breakfast_time'",
             subscription_id_last_breakfast_time_property_value
@@ -355,7 +353,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_breakfast_length_property_value =
-            subscription_id_breakfast_length_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_breakfast_length_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'breakfast_length'",
             subscription_id_breakfast_length_property_value
@@ -373,7 +371,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             )
             .await;
         let subscription_id_last_birthdays_property_value =
-            subscription_id_last_birthdays_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_last_birthdays_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'last_birthdays'",
             subscription_id_last_birthdays_property_value
@@ -442,7 +440,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         };
 
         // Create FullClient structure.
-        let inst = FullClient {
+        FullClient {
             mqtt_client: connection,
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
@@ -451,12 +449,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             properties: property_values,
 
             subscription_ids: sub_ids,
-            signal_channels: signal_channels,
-            client_id: client_id,
+            signal_channels,
+            client_id,
 
             service_instance_id: discovery_info.interface_info.instance,
-        };
-        inst
+        }
     }
 
     /// Get the RX receiver side of the broadcast channel for the todayIs signal.
@@ -476,13 +473,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = AddNumbersRequestObject {
-            first: first,
-            second: second,
-            third: third,
+            first,
+            second,
+            third,
         };
 
         let response_topic: String = format!("client/{}/addNumbers/response", self.client_id);
@@ -528,9 +525,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
                 Ok(return_obj.sum)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -543,10 +538,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = DoSomethingRequestObject { a_string: a_string };
+        let data = DoSomethingRequestObject { a_string };
 
         let response_topic: String = format!("client/{}/doSomething/response", self.client_id);
         let msg = message::request(
@@ -589,9 +584,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -601,10 +594,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = EchoRequestObject { message: message };
+        let data = EchoRequestObject { message };
 
         let response_topic: String = format!("client/{}/echo/response", self.client_id);
         let msg = message::request(
@@ -641,9 +634,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
                 Ok(return_obj.message)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -656,12 +647,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = WhatTimeIsItRequestObject {
-            the_first_time: the_first_time,
-        };
+        let data = WhatTimeIsItRequestObject { the_first_time };
 
         let response_topic: String = format!("client/{}/what_time_is_it/response", self.client_id);
         let msg = message::request(
@@ -704,9 +693,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
                 Ok(return_obj.timestamp)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -720,12 +707,12 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = SetTheTimeRequestObject {
-            the_first_time: the_first_time,
-            the_second_time: the_second_time,
+            the_first_time,
+            the_second_time,
         };
 
         let response_topic: String = format!("client/{}/set_the_time/response", self.client_id);
@@ -772,9 +759,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -787,12 +772,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = ForwardTimeRequestObject {
-            adjustment: adjustment,
-        };
+        let data = ForwardTimeRequestObject { adjustment };
 
         let response_topic: String = format!("client/{}/forward_time/response", self.client_id);
         let msg = message::request(
@@ -835,9 +818,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
                 Ok(return_obj.new_time)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -850,12 +831,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = HowOffIsTheClockRequestObject {
-            actual_time: actual_time,
-        };
+        let data = HowOffIsTheClockRequestObject { actual_time };
 
         let response_topic: String =
             format!("client/{}/how_off_is_the_clock/response", self.client_id);
@@ -899,9 +878,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
                 Ok(return_obj.difference)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -1413,9 +1390,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'addNumbers' to waiting receiver");
                                 }
                             }
                         } else {
@@ -1433,9 +1409,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'doSomething' to waiting receiver");
                                 }
                             }
                         } else {
@@ -1453,9 +1428,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'echo' to waiting receiver");
                                 }
                             }
                         } else {
@@ -1471,9 +1445,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'what_time_is_it' to waiting receiver");
                                 }
                             }
                         } else {
@@ -1489,9 +1462,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'set_the_time' to waiting receiver");
                                 }
                             }
                         } else {
@@ -1507,9 +1479,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'forward_time' to waiting receiver");
                                 }
                             }
                         } else {
@@ -1525,9 +1496,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'how_off_is_the_clock' to waiting receiver");
                                 }
                             }
                         } else {

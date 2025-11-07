@@ -96,7 +96,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             )
             .await;
         let subscription_id_another_signal_signal =
-            subscription_id_another_signal_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_another_signal_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'anotherSignal'",
             subscription_id_another_signal_signal
@@ -112,7 +112,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
                 message_received_tx.clone(),
             )
             .await;
-        let subscription_id_bark_signal = subscription_id_bark_signal.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_bark_signal = subscription_id_bark_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'bark'",
             subscription_id_bark_signal
@@ -129,7 +129,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             )
             .await;
         let subscription_id_maybe_number_signal =
-            subscription_id_maybe_number_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_maybe_number_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'maybe_number'",
             subscription_id_maybe_number_signal
@@ -146,7 +146,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
             )
             .await;
         let subscription_id_maybe_name_signal =
-            subscription_id_maybe_name_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_maybe_name_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'maybe_name'",
             subscription_id_maybe_name_signal
@@ -162,7 +162,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
                 message_received_tx.clone(),
             )
             .await;
-        let subscription_id_now_signal = subscription_id_now_signal.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_now_signal = subscription_id_now_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'now'",
             subscription_id_now_signal
@@ -189,17 +189,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
         };
 
         // Create SignalOnlyClient structure.
-        let inst = SignalOnlyClient {
+        SignalOnlyClient {
             mqtt_client: connection,
 
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
 
             subscription_ids: sub_ids,
-            signal_channels: signal_channels,
-            client_id: client_id,
-        };
-        inst
+            signal_channels,
+            client_id,
+        }
     }
 
     /// Get the RX receiver side of the broadcast channel for the anotherSignal signal.

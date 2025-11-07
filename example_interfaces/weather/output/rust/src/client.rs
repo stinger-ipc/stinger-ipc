@@ -141,7 +141,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_refresh_daily_forecast_method_resp =
-            subscription_id_refresh_daily_forecast_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_refresh_daily_forecast_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'refresh_daily_forecast'",
             subscription_id_refresh_daily_forecast_method_resp
@@ -156,7 +156,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_refresh_hourly_forecast_method_resp =
-            subscription_id_refresh_hourly_forecast_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_refresh_hourly_forecast_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'refresh_hourly_forecast'",
             subscription_id_refresh_hourly_forecast_method_resp
@@ -171,7 +171,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_refresh_current_conditions_method_resp =
-            subscription_id_refresh_current_conditions_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_refresh_current_conditions_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'refresh_current_conditions'",
             subscription_id_refresh_current_conditions_method_resp
@@ -190,7 +190,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_current_time_signal =
-            subscription_id_current_time_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_current_time_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'current_time'",
             subscription_id_current_time_signal
@@ -210,7 +210,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_location_property_value =
-            subscription_id_location_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_location_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'location'",
             subscription_id_location_property_value
@@ -228,7 +228,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_current_temperature_property_value =
-            subscription_id_current_temperature_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_current_temperature_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'current_temperature'",
             subscription_id_current_temperature_property_value
@@ -246,7 +246,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_current_condition_property_value =
-            subscription_id_current_condition_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_current_condition_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'current_condition'",
             subscription_id_current_condition_property_value
@@ -264,7 +264,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_daily_forecast_property_value =
-            subscription_id_daily_forecast_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_daily_forecast_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'daily_forecast'",
             subscription_id_daily_forecast_property_value
@@ -282,7 +282,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_hourly_forecast_property_value =
-            subscription_id_hourly_forecast_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_hourly_forecast_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'hourly_forecast'",
             subscription_id_hourly_forecast_property_value
@@ -300,8 +300,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_current_condition_refresh_interval_property_value =
-            subscription_id_current_condition_refresh_interval_property_value
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_current_condition_refresh_interval_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'current_condition_refresh_interval'",
             subscription_id_current_condition_refresh_interval_property_value
@@ -319,8 +318,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_hourly_forecast_refresh_interval_property_value =
-            subscription_id_hourly_forecast_refresh_interval_property_value
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_hourly_forecast_refresh_interval_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'hourly_forecast_refresh_interval'",
             subscription_id_hourly_forecast_refresh_interval_property_value
@@ -338,8 +336,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             )
             .await;
         let subscription_id_daily_forecast_refresh_interval_property_value =
-            subscription_id_daily_forecast_refresh_interval_property_value
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_daily_forecast_refresh_interval_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'daily_forecast_refresh_interval'",
             subscription_id_daily_forecast_refresh_interval_property_value
@@ -425,7 +422,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         };
 
         // Create WeatherClient structure.
-        let inst = WeatherClient {
+        WeatherClient {
             mqtt_client: connection,
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
@@ -434,12 +431,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             properties: property_values,
 
             subscription_ids: sub_ids,
-            signal_channels: signal_channels,
-            client_id: client_id,
+            signal_channels,
+            client_id,
 
             service_instance_id: discovery_info.interface_info.instance,
-        };
-        inst
+        }
     }
 
     /// Get the RX receiver side of the broadcast channel for the current_time signal.
@@ -454,7 +450,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = RefreshDailyForecastRequestObject {};
@@ -498,9 +494,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         );
         match return_code {
             MethodReturnCode::Success(_) => Ok(()),
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -510,7 +504,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = RefreshHourlyForecastRequestObject {};
@@ -554,9 +548,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         );
         match return_code {
             MethodReturnCode::Success(_) => Ok(()),
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -566,7 +558,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = RefreshCurrentConditionsRequestObject {};
@@ -612,9 +604,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         );
         match return_code {
             MethodReturnCode::Success(_) => Ok(()),
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -1116,9 +1106,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'refresh_daily_forecast' to waiting receiver");
                                 }
                             }
                         } else {
@@ -1134,9 +1123,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'refresh_hourly_forecast' to waiting receiver");
                                 }
                             }
                         } else {
@@ -1152,9 +1140,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'refresh_current_conditions' to waiting receiver");
                                 }
                             }
                         } else {

@@ -138,7 +138,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_add_numbers_method_req =
-            subscription_id_add_numbers_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_add_numbers_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_do_something_method_req = connection
             .subscribe(
@@ -148,7 +148,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_do_something_method_req =
-            subscription_id_do_something_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_do_something_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_echo_method_req = connection
             .subscribe(
@@ -157,8 +157,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
                 message_received_tx.clone(),
             )
             .await;
-        let subscription_id_echo_method_req =
-            subscription_id_echo_method_req.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_echo_method_req = subscription_id_echo_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_what_time_is_it_method_req = connection
             .subscribe(
@@ -168,7 +167,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_what_time_is_it_method_req =
-            subscription_id_what_time_is_it_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_what_time_is_it_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_set_the_time_method_req = connection
             .subscribe(
@@ -178,7 +177,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_set_the_time_method_req =
-            subscription_id_set_the_time_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_set_the_time_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_forward_time_method_req = connection
             .subscribe(
@@ -188,7 +187,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_forward_time_method_req =
-            subscription_id_forward_time_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_forward_time_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_how_off_is_the_clock_method_req = connection
             .subscribe(
@@ -198,7 +197,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_how_off_is_the_clock_method_req =
-            subscription_id_how_off_is_the_clock_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_how_off_is_the_clock_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_favorite_number_property_update = connection
             .subscribe(
@@ -208,7 +207,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_favorite_number_property_update =
-            subscription_id_favorite_number_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_favorite_number_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_favorite_foods_property_update = connection
             .subscribe(
@@ -218,7 +217,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_favorite_foods_property_update =
-            subscription_id_favorite_foods_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_favorite_foods_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_lunch_menu_property_update = connection
             .subscribe(
@@ -228,7 +227,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_lunch_menu_property_update =
-            subscription_id_lunch_menu_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_lunch_menu_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_family_name_property_update = connection
             .subscribe(
@@ -238,7 +237,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_family_name_property_update =
-            subscription_id_family_name_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_family_name_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_last_breakfast_time_property_update = connection
             .subscribe(
@@ -248,7 +247,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_last_breakfast_time_property_update =
-            subscription_id_last_breakfast_time_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_last_breakfast_time_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_breakfast_length_property_update = connection
             .subscribe(
@@ -258,7 +257,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_breakfast_length_property_update =
-            subscription_id_breakfast_length_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_breakfast_length_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_last_birthdays_property_update = connection
             .subscribe(
@@ -268,7 +267,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             )
             .await;
         let subscription_id_last_birthdays_property_update =
-            subscription_id_last_birthdays_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_last_birthdays_property_update.unwrap_or(u32::MAX);
 
         // Create structure for subscription ids.
         let sub_ids = FullServerSubscriptionIds {
@@ -319,7 +318,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
-            method_handlers: method_handlers,
+            method_handlers,
             properties: property_values,
             subscription_ids: sub_ids,
 
@@ -385,15 +384,15 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         memory_segment: Vec<u8>,
     ) -> SentMessageFuture {
         let data = TodayIsSignalPayload {
-            day_of_month: day_of_month,
+            day_of_month,
 
-            day_of_week: day_of_week,
+            day_of_week,
 
-            timestamp: timestamp,
+            timestamp,
 
-            process_time: process_time,
+            process_time,
 
-            memory_segment: memory_segment,
+            memory_segment,
         };
         let topic = format!("full/{}/signal/todayIs", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -412,15 +411,15 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         memory_segment: Vec<u8>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = TodayIsSignalPayload {
-            day_of_month: day_of_month,
+            day_of_month,
 
-            day_of_week: day_of_week,
+            day_of_week,
 
-            timestamp: timestamp,
+            timestamp,
 
-            process_time: process_time,
+            process_time,
 
-            memory_segment: memory_segment,
+            memory_segment,
         };
         let topic = format!("full/{}/signal/todayIs", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -959,29 +958,26 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'favorite_number' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("full/{}/property/favoriteNumber/value", self.instance_id);
+            let new_version = self
+                .properties
+                .favorite_number_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            FullServer::<C>::publish_favorite_number_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("full/{}/property/favoriteNumber/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .favorite_number_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                FullServer::<C>::publish_favorite_number_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -1083,29 +1079,21 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'favorite_foods' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("full/{}/property/favoriteFoods/value", self.instance_id);
+            let new_version = self
+                .properties
+                .favorite_foods_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            FullServer::<C>::publish_favorite_foods_value(publisher2, topic2, prop_obj, new_version)
+                .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("full/{}/property/favoriteFoods/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .favorite_foods_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                FullServer::<C>::publish_favorite_foods_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -1202,24 +1190,21 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'lunch_menu' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
-        } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("full/{}/property/lunchMenu/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .lunch_menu_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                FullServer::<C>::publish_lunch_menu_value(publisher2, topic2, prop_obj, new_version)
-                    .await
-            } else {
-                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("full/{}/property/lunchMenu/value", self.instance_id);
+            let new_version = self
+                .properties
+                .lunch_menu_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            FullServer::<C>::publish_lunch_menu_value(publisher2, topic2, prop_obj, new_version)
                 .await
-            }
+        } else {
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -1323,29 +1308,21 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'family_name' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("full/{}/property/familyName/value", self.instance_id);
+            let new_version = self
+                .properties
+                .family_name_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            FullServer::<C>::publish_family_name_value(publisher2, topic2, prop_obj, new_version)
+                .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("full/{}/property/familyName/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .family_name_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                FullServer::<C>::publish_family_name_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -1455,29 +1432,26 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'last_breakfast_time' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("full/{}/property/lastBreakfastTime/value", self.instance_id);
+            let new_version = self
+                .properties
+                .last_breakfast_time_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            FullServer::<C>::publish_last_breakfast_time_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("full/{}/property/lastBreakfastTime/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .last_breakfast_time_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                FullServer::<C>::publish_last_breakfast_time_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -1581,29 +1555,26 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'breakfast_length' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("full/{}/property/breakfastLength/value", self.instance_id);
+            let new_version = self
+                .properties
+                .breakfast_length_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            FullServer::<C>::publish_breakfast_length_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("full/{}/property/breakfastLength/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .breakfast_length_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                FullServer::<C>::publish_breakfast_length_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -1705,29 +1676,21 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'last_birthdays' value not changed, so not notifying watchers.");
-            return FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("full/{}/property/lastBirthdays/value", self.instance_id);
+            let new_version = self
+                .properties
+                .last_birthdays_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            FullServer::<C>::publish_last_birthdays_value(publisher2, topic2, prop_obj, new_version)
+                .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("full/{}/property/lastBirthdays/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .last_birthdays_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                FullServer::<C>::publish_last_birthdays_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 

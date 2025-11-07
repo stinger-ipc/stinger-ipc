@@ -283,7 +283,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_with_nothing_method_resp =
-            subscription_id_call_with_nothing_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_with_nothing_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callWithNothing'",
             subscription_id_call_with_nothing_method_resp
@@ -298,7 +298,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_one_integer_method_resp =
-            subscription_id_call_one_integer_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_integer_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOneInteger'",
             subscription_id_call_one_integer_method_resp
@@ -313,7 +313,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_optional_integer_method_resp =
-            subscription_id_call_optional_integer_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_integer_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOptionalInteger'",
             subscription_id_call_optional_integer_method_resp
@@ -328,7 +328,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_three_integers_method_resp =
-            subscription_id_call_three_integers_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_integers_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callThreeIntegers'",
             subscription_id_call_three_integers_method_resp
@@ -343,7 +343,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_one_string_method_resp =
-            subscription_id_call_one_string_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_string_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOneString'",
             subscription_id_call_one_string_method_resp
@@ -358,7 +358,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_optional_string_method_resp =
-            subscription_id_call_optional_string_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_string_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOptionalString'",
             subscription_id_call_optional_string_method_resp
@@ -373,7 +373,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_three_strings_method_resp =
-            subscription_id_call_three_strings_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_strings_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callThreeStrings'",
             subscription_id_call_three_strings_method_resp
@@ -387,7 +387,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_one_enum_method_resp =
-            subscription_id_call_one_enum_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_enum_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOneEnum'",
             subscription_id_call_one_enum_method_resp
@@ -402,7 +402,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_optional_enum_method_resp =
-            subscription_id_call_optional_enum_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_enum_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOptionalEnum'",
             subscription_id_call_optional_enum_method_resp
@@ -417,7 +417,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_three_enums_method_resp =
-            subscription_id_call_three_enums_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_enums_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callThreeEnums'",
             subscription_id_call_three_enums_method_resp
@@ -432,7 +432,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_one_struct_method_resp =
-            subscription_id_call_one_struct_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_struct_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOneStruct'",
             subscription_id_call_one_struct_method_resp
@@ -447,7 +447,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_optional_struct_method_resp =
-            subscription_id_call_optional_struct_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_struct_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOptionalStruct'",
             subscription_id_call_optional_struct_method_resp
@@ -462,7 +462,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_three_structs_method_resp =
-            subscription_id_call_three_structs_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_structs_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callThreeStructs'",
             subscription_id_call_three_structs_method_resp
@@ -477,7 +477,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_one_date_time_method_resp =
-            subscription_id_call_one_date_time_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_date_time_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOneDateTime'",
             subscription_id_call_one_date_time_method_resp
@@ -492,7 +492,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_optional_date_time_method_resp =
-            subscription_id_call_optional_date_time_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_date_time_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOptionalDateTime'",
             subscription_id_call_optional_date_time_method_resp
@@ -507,7 +507,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_three_date_times_method_resp =
-            subscription_id_call_three_date_times_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_date_times_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callThreeDateTimes'",
             subscription_id_call_three_date_times_method_resp
@@ -522,7 +522,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_one_duration_method_resp =
-            subscription_id_call_one_duration_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_duration_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOneDuration'",
             subscription_id_call_one_duration_method_resp
@@ -537,7 +537,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_optional_duration_method_resp =
-            subscription_id_call_optional_duration_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_duration_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOptionalDuration'",
             subscription_id_call_optional_duration_method_resp
@@ -552,7 +552,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_three_durations_method_resp =
-            subscription_id_call_three_durations_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_durations_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callThreeDurations'",
             subscription_id_call_three_durations_method_resp
@@ -567,7 +567,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_one_binary_method_resp =
-            subscription_id_call_one_binary_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_binary_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOneBinary'",
             subscription_id_call_one_binary_method_resp
@@ -582,7 +582,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_optional_binary_method_resp =
-            subscription_id_call_optional_binary_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_binary_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOptionalBinary'",
             subscription_id_call_optional_binary_method_resp
@@ -597,7 +597,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_three_binaries_method_resp =
-            subscription_id_call_three_binaries_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_binaries_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callThreeBinaries'",
             subscription_id_call_three_binaries_method_resp
@@ -612,7 +612,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_one_list_of_integers_method_resp =
-            subscription_id_call_one_list_of_integers_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_list_of_integers_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOneListOfIntegers'",
             subscription_id_call_one_list_of_integers_method_resp
@@ -627,7 +627,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_optional_list_of_floats_method_resp =
-            subscription_id_call_optional_list_of_floats_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_list_of_floats_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callOptionalListOfFloats'",
             subscription_id_call_optional_list_of_floats_method_resp
@@ -642,7 +642,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_call_two_lists_method_resp =
-            subscription_id_call_two_lists_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_two_lists_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'callTwoLists'",
             subscription_id_call_two_lists_method_resp
@@ -660,8 +660,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                 message_received_tx.clone(),
             )
             .await;
-        let subscription_id_empty_signal =
-            subscription_id_empty_signal.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_empty_signal = subscription_id_empty_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'empty'",
             subscription_id_empty_signal
@@ -678,7 +677,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_int_signal =
-            subscription_id_single_int_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_int_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleInt'",
             subscription_id_single_int_signal
@@ -695,7 +694,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_optional_int_signal =
-            subscription_id_single_optional_int_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_optional_int_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleOptionalInt'",
             subscription_id_single_optional_int_signal
@@ -712,7 +711,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_three_integers_signal =
-            subscription_id_three_integers_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_three_integers_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'threeIntegers'",
             subscription_id_three_integers_signal
@@ -729,7 +728,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_string_signal =
-            subscription_id_single_string_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_string_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleString'",
             subscription_id_single_string_signal
@@ -746,7 +745,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_optional_string_signal =
-            subscription_id_single_optional_string_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_optional_string_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleOptionalString'",
             subscription_id_single_optional_string_signal
@@ -763,7 +762,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_three_strings_signal =
-            subscription_id_three_strings_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_three_strings_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'threeStrings'",
             subscription_id_three_strings_signal
@@ -780,7 +779,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_enum_signal =
-            subscription_id_single_enum_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_enum_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleEnum'",
             subscription_id_single_enum_signal
@@ -797,7 +796,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_optional_enum_signal =
-            subscription_id_single_optional_enum_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_optional_enum_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleOptionalEnum'",
             subscription_id_single_optional_enum_signal
@@ -814,7 +813,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_three_enums_signal =
-            subscription_id_three_enums_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_three_enums_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'threeEnums'",
             subscription_id_three_enums_signal
@@ -831,7 +830,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_struct_signal =
-            subscription_id_single_struct_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_struct_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleStruct'",
             subscription_id_single_struct_signal
@@ -848,7 +847,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_optional_struct_signal =
-            subscription_id_single_optional_struct_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_optional_struct_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleOptionalStruct'",
             subscription_id_single_optional_struct_signal
@@ -865,7 +864,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_three_structs_signal =
-            subscription_id_three_structs_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_three_structs_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'threeStructs'",
             subscription_id_three_structs_signal
@@ -882,7 +881,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_date_time_signal =
-            subscription_id_single_date_time_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_date_time_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleDateTime'",
             subscription_id_single_date_time_signal
@@ -899,7 +898,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_optional_datetime_signal =
-            subscription_id_single_optional_datetime_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_optional_datetime_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleOptionalDatetime'",
             subscription_id_single_optional_datetime_signal
@@ -916,7 +915,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_three_date_times_signal =
-            subscription_id_three_date_times_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_three_date_times_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'threeDateTimes'",
             subscription_id_three_date_times_signal
@@ -933,7 +932,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_duration_signal =
-            subscription_id_single_duration_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_duration_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleDuration'",
             subscription_id_single_duration_signal
@@ -950,7 +949,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_optional_duration_signal =
-            subscription_id_single_optional_duration_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_optional_duration_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleOptionalDuration'",
             subscription_id_single_optional_duration_signal
@@ -967,7 +966,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_three_durations_signal =
-            subscription_id_three_durations_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_three_durations_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'threeDurations'",
             subscription_id_three_durations_signal
@@ -984,7 +983,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_binary_signal =
-            subscription_id_single_binary_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_binary_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleBinary'",
             subscription_id_single_binary_signal
@@ -1001,7 +1000,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_optional_binary_signal =
-            subscription_id_single_optional_binary_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_optional_binary_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleOptionalBinary'",
             subscription_id_single_optional_binary_signal
@@ -1018,7 +1017,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_three_binaries_signal =
-            subscription_id_three_binaries_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_three_binaries_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'threeBinaries'",
             subscription_id_three_binaries_signal
@@ -1035,7 +1034,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_array_of_integers_signal =
-            subscription_id_single_array_of_integers_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_array_of_integers_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleArrayOfIntegers'",
             subscription_id_single_array_of_integers_signal
@@ -1052,7 +1051,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_single_optional_array_of_strings_signal =
-            subscription_id_single_optional_array_of_strings_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_single_optional_array_of_strings_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'singleOptionalArrayOfStrings'",
             subscription_id_single_optional_array_of_strings_signal
@@ -1069,7 +1068,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_array_of_every_type_signal =
-            subscription_id_array_of_every_type_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_array_of_every_type_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'arrayOfEveryType'",
             subscription_id_array_of_every_type_signal
@@ -1089,7 +1088,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_integer_property_value =
-            subscription_id_read_write_integer_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_integer_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_integer'",
             subscription_id_read_write_integer_property_value
@@ -1107,7 +1106,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_only_integer_property_value =
-            subscription_id_read_only_integer_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_only_integer_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_only_integer'",
             subscription_id_read_only_integer_property_value
@@ -1125,7 +1124,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_optional_integer_property_value =
-            subscription_id_read_write_optional_integer_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_integer_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_optional_integer'",
             subscription_id_read_write_optional_integer_property_value
@@ -1143,7 +1142,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_two_integers_property_value =
-            subscription_id_read_write_two_integers_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_integers_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_two_integers'",
             subscription_id_read_write_two_integers_property_value
@@ -1161,7 +1160,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_only_string_property_value =
-            subscription_id_read_only_string_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_only_string_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_only_string'",
             subscription_id_read_only_string_property_value
@@ -1179,7 +1178,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_string_property_value =
-            subscription_id_read_write_string_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_string_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_string'",
             subscription_id_read_write_string_property_value
@@ -1197,7 +1196,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_optional_string_property_value =
-            subscription_id_read_write_optional_string_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_string_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_optional_string'",
             subscription_id_read_write_optional_string_property_value
@@ -1215,7 +1214,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_two_strings_property_value =
-            subscription_id_read_write_two_strings_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_strings_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_two_strings'",
             subscription_id_read_write_two_strings_property_value
@@ -1233,7 +1232,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_struct_property_value =
-            subscription_id_read_write_struct_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_struct_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_struct'",
             subscription_id_read_write_struct_property_value
@@ -1251,7 +1250,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_optional_struct_property_value =
-            subscription_id_read_write_optional_struct_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_struct_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_optional_struct'",
             subscription_id_read_write_optional_struct_property_value
@@ -1269,7 +1268,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_two_structs_property_value =
-            subscription_id_read_write_two_structs_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_structs_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_two_structs'",
             subscription_id_read_write_two_structs_property_value
@@ -1287,7 +1286,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_only_enum_property_value =
-            subscription_id_read_only_enum_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_only_enum_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_only_enum'",
             subscription_id_read_only_enum_property_value
@@ -1305,7 +1304,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_enum_property_value =
-            subscription_id_read_write_enum_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_enum_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_enum'",
             subscription_id_read_write_enum_property_value
@@ -1323,7 +1322,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_optional_enum_property_value =
-            subscription_id_read_write_optional_enum_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_enum_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_optional_enum'",
             subscription_id_read_write_optional_enum_property_value
@@ -1341,7 +1340,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_two_enums_property_value =
-            subscription_id_read_write_two_enums_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_enums_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_two_enums'",
             subscription_id_read_write_two_enums_property_value
@@ -1359,7 +1358,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_datetime_property_value =
-            subscription_id_read_write_datetime_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_datetime_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_datetime'",
             subscription_id_read_write_datetime_property_value
@@ -1377,8 +1376,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_optional_datetime_property_value =
-            subscription_id_read_write_optional_datetime_property_value
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_datetime_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_optional_datetime'",
             subscription_id_read_write_optional_datetime_property_value
@@ -1396,7 +1394,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_two_datetimes_property_value =
-            subscription_id_read_write_two_datetimes_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_datetimes_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_two_datetimes'",
             subscription_id_read_write_two_datetimes_property_value
@@ -1414,7 +1412,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_duration_property_value =
-            subscription_id_read_write_duration_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_duration_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_duration'",
             subscription_id_read_write_duration_property_value
@@ -1432,8 +1430,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_optional_duration_property_value =
-            subscription_id_read_write_optional_duration_property_value
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_duration_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_optional_duration'",
             subscription_id_read_write_optional_duration_property_value
@@ -1451,7 +1448,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_two_durations_property_value =
-            subscription_id_read_write_two_durations_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_durations_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_two_durations'",
             subscription_id_read_write_two_durations_property_value
@@ -1469,7 +1466,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_binary_property_value =
-            subscription_id_read_write_binary_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_binary_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_binary'",
             subscription_id_read_write_binary_property_value
@@ -1487,7 +1484,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_optional_binary_property_value =
-            subscription_id_read_write_optional_binary_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_binary_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_optional_binary'",
             subscription_id_read_write_optional_binary_property_value
@@ -1505,7 +1502,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_two_binaries_property_value =
-            subscription_id_read_write_two_binaries_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_binaries_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_two_binaries'",
             subscription_id_read_write_two_binaries_property_value
@@ -1523,7 +1520,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_list_of_strings_property_value =
-            subscription_id_read_write_list_of_strings_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_list_of_strings_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_list_of_strings'",
             subscription_id_read_write_list_of_strings_property_value
@@ -1541,7 +1538,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             )
             .await;
         let subscription_id_read_write_lists_property_value =
-            subscription_id_read_write_lists_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_lists_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'read_write_lists'",
             subscription_id_read_write_lists_property_value
@@ -1855,7 +1852,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         };
 
         // Create TestAbleClient structure.
-        let inst = TestAbleClient {
+        TestAbleClient {
             mqtt_client: connection,
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
@@ -1864,12 +1861,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             properties: property_values,
 
             subscription_ids: sub_ids,
-            signal_channels: signal_channels,
-            client_id: client_id,
+            signal_channels,
+            client_id,
 
             service_instance_id: discovery_info.interface_info.instance,
-        };
-        inst
+        }
     }
 
     /// Get the RX receiver side of the broadcast channel for the empty signal.
@@ -2030,7 +2026,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = CallWithNothingRequestObject {};
@@ -2073,9 +2069,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         );
         match return_code {
             MethodReturnCode::Success(_) => Ok(()),
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2085,10 +2079,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOneIntegerRequestObject { input1: input1 };
+        let data = CallOneIntegerRequestObject { input1 };
 
         let response_topic: String = format!("client/{}/callOneInteger/response", self.client_id);
         let msg = message::request(
@@ -2134,9 +2128,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2149,10 +2141,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOptionalIntegerRequestObject { input1: input1 };
+        let data = CallOptionalIntegerRequestObject { input1 };
 
         let response_topic: String =
             format!("client/{}/callOptionalInteger/response", self.client_id);
@@ -2202,9 +2194,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2219,13 +2209,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = CallThreeIntegersRequestObject {
-            input1: input1,
-            input2: input2,
-            input3: input3,
+            input1,
+            input2,
+            input3,
         };
 
         let response_topic: String =
@@ -2278,9 +2268,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2293,10 +2281,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOneStringRequestObject { input1: input1 };
+        let data = CallOneStringRequestObject { input1 };
 
         let response_topic: String = format!("client/{}/callOneString/response", self.client_id);
         let msg = message::request(
@@ -2336,9 +2324,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2351,10 +2337,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOptionalStringRequestObject { input1: input1 };
+        let data = CallOptionalStringRequestObject { input1 };
 
         let response_topic: String =
             format!("client/{}/callOptionalString/response", self.client_id);
@@ -2404,9 +2390,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2421,13 +2405,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = CallThreeStringsRequestObject {
-            input1: input1,
-            input2: input2,
-            input3: input3,
+            input1,
+            input2,
+            input3,
         };
 
         let response_topic: String = format!("client/{}/callThreeStrings/response", self.client_id);
@@ -2479,9 +2463,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2494,10 +2476,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOneEnumRequestObject { input1: input1 };
+        let data = CallOneEnumRequestObject { input1 };
 
         let response_topic: String = format!("client/{}/callOneEnum/response", self.client_id);
         let msg = message::request(
@@ -2537,9 +2519,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2552,10 +2532,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOptionalEnumRequestObject { input1: input1 };
+        let data = CallOptionalEnumRequestObject { input1 };
 
         let response_topic: String = format!("client/{}/callOptionalEnum/response", self.client_id);
         let msg = message::request(
@@ -2604,9 +2584,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2621,13 +2599,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = CallThreeEnumsRequestObject {
-            input1: input1,
-            input2: input2,
-            input3: input3,
+            input1,
+            input2,
+            input3,
         };
 
         let response_topic: String = format!("client/{}/callThreeEnums/response", self.client_id);
@@ -2679,9 +2657,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2694,10 +2670,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOneStructRequestObject { input1: input1 };
+        let data = CallOneStructRequestObject { input1 };
 
         let response_topic: String = format!("client/{}/callOneStruct/response", self.client_id);
         let msg = message::request(
@@ -2740,9 +2716,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2755,10 +2729,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOptionalStructRequestObject { input1: input1 };
+        let data = CallOptionalStructRequestObject { input1 };
 
         let response_topic: String =
             format!("client/{}/callOptionalStruct/response", self.client_id);
@@ -2808,9 +2782,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2825,13 +2797,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = CallThreeStructsRequestObject {
-            input1: input1,
-            input2: input2,
-            input3: input3,
+            input1,
+            input2,
+            input3,
         };
 
         let response_topic: String = format!("client/{}/callThreeStructs/response", self.client_id);
@@ -2883,9 +2855,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2898,10 +2868,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOneDateTimeRequestObject { input1: input1 };
+        let data = CallOneDateTimeRequestObject { input1 };
 
         let response_topic: String = format!("client/{}/callOneDateTime/response", self.client_id);
         let msg = message::request(
@@ -2950,9 +2920,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -2965,10 +2933,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOptionalDateTimeRequestObject { input1: input1 };
+        let data = CallOptionalDateTimeRequestObject { input1 };
 
         let response_topic: String =
             format!("client/{}/callOptionalDateTime/response", self.client_id);
@@ -3018,9 +2986,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3035,13 +3001,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = CallThreeDateTimesRequestObject {
-            input1: input1,
-            input2: input2,
-            input3: input3,
+            input1,
+            input2,
+            input3,
         };
 
         let response_topic: String =
@@ -3096,9 +3062,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3111,10 +3075,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOneDurationRequestObject { input1: input1 };
+        let data = CallOneDurationRequestObject { input1 };
 
         let response_topic: String = format!("client/{}/callOneDuration/response", self.client_id);
         let msg = message::request(
@@ -3163,9 +3127,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3178,10 +3140,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOptionalDurationRequestObject { input1: input1 };
+        let data = CallOptionalDurationRequestObject { input1 };
 
         let response_topic: String =
             format!("client/{}/callOptionalDuration/response", self.client_id);
@@ -3231,9 +3193,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3248,13 +3208,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = CallThreeDurationsRequestObject {
-            input1: input1,
-            input2: input2,
-            input3: input3,
+            input1,
+            input2,
+            input3,
         };
 
         let response_topic: String =
@@ -3309,9 +3269,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3324,10 +3282,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOneBinaryRequestObject { input1: input1 };
+        let data = CallOneBinaryRequestObject { input1 };
 
         let response_topic: String = format!("client/{}/callOneBinary/response", self.client_id);
         let msg = message::request(
@@ -3367,9 +3325,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3382,10 +3338,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOptionalBinaryRequestObject { input1: input1 };
+        let data = CallOptionalBinaryRequestObject { input1 };
 
         let response_topic: String =
             format!("client/{}/callOptionalBinary/response", self.client_id);
@@ -3435,9 +3391,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3452,13 +3406,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = CallThreeBinariesRequestObject {
-            input1: input1,
-            input2: input2,
-            input3: input3,
+            input1,
+            input2,
+            input3,
         };
 
         let response_topic: String =
@@ -3511,9 +3465,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3526,10 +3478,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOneListOfIntegersRequestObject { input1: input1 };
+        let data = CallOneListOfIntegersRequestObject { input1 };
 
         let response_topic: String =
             format!("client/{}/callOneListOfIntegers/response", self.client_id);
@@ -3579,9 +3531,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3594,10 +3544,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallOptionalListOfFloatsRequestObject { input1: input1 };
+        let data = CallOptionalListOfFloatsRequestObject { input1 };
 
         let response_topic: String = format!(
             "client/{}/callOptionalListOfFloats/response",
@@ -3649,9 +3599,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj.output1)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -3665,13 +3613,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = CallTwoListsRequestObject {
-            input1: input1,
-            input2: input2,
-        };
+        let data = CallTwoListsRequestObject { input1, input2 };
 
         let response_topic: String = format!("client/{}/callTwoLists/response", self.client_id);
         let msg = message::request(
@@ -3715,9 +3660,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
                 Ok(return_obj)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -5624,9 +5567,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callWithNothing' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5642,9 +5584,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOneInteger' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5660,9 +5601,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOptionalInteger' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5678,9 +5618,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callThreeIntegers' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5696,9 +5635,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOneString' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5714,9 +5652,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOptionalString' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5732,9 +5669,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callThreeStrings' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5750,9 +5686,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOneEnum' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5770,9 +5705,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOptionalEnum' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5788,9 +5722,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callThreeEnums' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5806,9 +5739,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOneStruct' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5824,9 +5756,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOptionalStruct' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5842,9 +5773,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callThreeStructs' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5860,9 +5790,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOneDateTime' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5878,9 +5807,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOptionalDateTime' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5896,9 +5824,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callThreeDateTimes' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5914,9 +5841,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOneDuration' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5932,9 +5858,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOptionalDuration' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5950,9 +5875,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callThreeDurations' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5968,9 +5892,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOneBinary' to waiting receiver");
                                 }
                             }
                         } else {
@@ -5986,9 +5909,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOptionalBinary' to waiting receiver");
                                 }
                             }
                         } else {
@@ -6004,9 +5926,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callThreeBinaries' to waiting receiver");
                                 }
                             }
                         } else {
@@ -6022,9 +5943,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOneListOfIntegers' to waiting receiver");
                                 }
                             }
                         } else {
@@ -6040,9 +5960,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callOptionalListOfFloats' to waiting receiver");
                                 }
                             }
                         } else {
@@ -6058,9 +5977,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'callTwoLists' to waiting receiver");
                                 }
                             }
                         } else {

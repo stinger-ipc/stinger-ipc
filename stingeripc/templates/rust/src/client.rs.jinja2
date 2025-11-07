@@ -127,7 +127,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         {%for method_name, method in stinger.methods.items()-%}
         let topic_{{method_name | snake_case}}_method_resp = format!("{{method.response_topic('{}')}}", client_id);
         let subscription_id_{{method_name | snake_case}}_method_resp = connection.subscribe(topic_{{method_name | snake_case}}_method_resp, QoS::ExactlyOnce, message_received_tx.clone()).await;
-        let subscription_id_{{method_name | snake_case}}_method_resp = subscription_id_{{method_name | snake_case}}_method_resp.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_{{method_name | snake_case}}_method_resp = subscription_id_{{method_name | snake_case}}_method_resp.unwrap_or(u32::MAX);
         debug!("Subscription (id={}) to method response topic for '{{method_name}}'", subscription_id_{{method_name | snake_case}}_method_resp);
         {%endfor%}
 
@@ -135,7 +135,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         {%for signal_name, signal in stinger.signals.items()-%}
         let topic_{{signal_name | snake_case}}_signal = format!("{{signal.topic}}", discovery_info.interface_info.instance);
         let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(topic_{{signal_name | snake_case}}_signal, QoS::ExactlyOnce, message_received_tx.clone()).await;
-        let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or(u32::MAX);
         debug!("Subscription (id={}) to signal topic for '{{signal_name}}'", subscription_id_{{signal_name | snake_case}}_signal);
         {%endfor%}
 
@@ -143,7 +143,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         {% for prop_name, prop in stinger.properties.items() %}
         let topic_{{prop_name | snake_case}}_property_value = format!("{{prop.value_topic}}", discovery_info.interface_info.instance);
         let subscription_id_{{prop_name | snake_case}}_property_value = connection.subscribe(topic_{{prop_name | snake_case}}_property_value, QoS::AtLeastOnce, message_received_tx.clone()).await;
-        let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or(u32::MAX);
         debug!("Subscription (id={}) to property value topic for '{{prop_name}}'", subscription_id_{{prop_name | snake_case}}_property_value);
         {% endfor %}
 
@@ -180,7 +180,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         };{%endif%}
 
         // Create {{stinger.rust.client_struct_name}} structure.
-        let inst = {{stinger.rust.client_struct_name}} {
+        {{stinger.rust.client_struct_name}} {
             mqtt_client: connection,
             {%if stinger.methods | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
@@ -189,13 +189,12 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             properties: property_values,
             {%endif%}
             subscription_ids: sub_ids,
-            {%if stinger.signals | length > 0 %}signal_channels: signal_channels,{%endif%}
-            client_id: client_id,
+            {%if stinger.signals | length > 0 %}signal_channels,{%endif%}
+            client_id,
             {%if stinger.methods | length > 0 %}
             service_instance_id: discovery_info.interface_info.instance,
             {%endif%}
-        };
-        inst
+        }
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
@@ -214,12 +213,12 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
         let data = {{method_name | UpperCamelCase}}RequestObject {
             {%-for arg in method.arg_list%}
-            {{arg.name|snake_case}}: {{arg.name|snake_case}},
+            {{arg.name|snake_case}},
             {%-endfor%}
         };
 
@@ -256,7 +255,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 {%endif%}
             },
             _ => {
-                return Err(return_code);
+                Err(return_code)
             }
         }
     }
@@ -376,9 +375,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                 });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for '{{method_name}}' to waiting receiver");
                                 }
                             }
                         } else {

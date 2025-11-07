@@ -88,13 +88,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         two: bool,
         three: String,
     ) -> SentMessageFuture {
-        let data = AnotherSignalSignalPayload {
-            one: one,
-
-            two: two,
-
-            three: three,
-        };
+        let data = AnotherSignalSignalPayload { one, two, three };
         let topic = format!("signalOnly/{}/signal/anotherSignal", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -109,13 +103,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         two: bool,
         three: String,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = AnotherSignalSignalPayload {
-            one: one,
-
-            two: two,
-
-            three: three,
-        };
+        let data = AnotherSignalSignalPayload { one, two, three };
         let topic = format!("signalOnly/{}/signal/anotherSignal", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -123,7 +111,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
     }
     /// Emits the bark signal with the given arguments.
     pub async fn emit_bark(&mut self, word: String) -> SentMessageFuture {
-        let data = BarkSignalPayload { word: word };
+        let data = BarkSignalPayload { word };
         let topic = format!("signalOnly/{}/signal/bark", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -136,7 +124,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         &mut self,
         word: String,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = BarkSignalPayload { word: word };
+        let data = BarkSignalPayload { word };
         let topic = format!("signalOnly/{}/signal/bark", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -144,7 +132,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
     }
     /// Emits the maybe_number signal with the given arguments.
     pub async fn emit_maybe_number(&mut self, number: Option<i32>) -> SentMessageFuture {
-        let data = MaybeNumberSignalPayload { number: number };
+        let data = MaybeNumberSignalPayload { number };
         let topic = format!("signalOnly/{}/signal/maybeNumber", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -157,7 +145,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         &mut self,
         number: Option<i32>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = MaybeNumberSignalPayload { number: number };
+        let data = MaybeNumberSignalPayload { number };
         let topic = format!("signalOnly/{}/signal/maybeNumber", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -165,7 +153,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
     }
     /// Emits the maybe_name signal with the given arguments.
     pub async fn emit_maybe_name(&mut self, name: Option<String>) -> SentMessageFuture {
-        let data = MaybeNameSignalPayload { name: name };
+        let data = MaybeNameSignalPayload { name };
         let topic = format!("signalOnly/{}/signal/maybeName", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -178,7 +166,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         &mut self,
         name: Option<String>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = MaybeNameSignalPayload { name: name };
+        let data = MaybeNameSignalPayload { name };
         let topic = format!("signalOnly/{}/signal/maybeName", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -189,9 +177,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         &mut self,
         timestamp: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
-        let data = NowSignalPayload {
-            timestamp: timestamp,
-        };
+        let data = NowSignalPayload { timestamp };
         let topic = format!("signalOnly/{}/signal/now", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -204,9 +190,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         &mut self,
         timestamp: chrono::DateTime<chrono::Utc>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = NowSignalPayload {
-            timestamp: timestamp,
-        };
+        let data = NowSignalPayload { timestamp };
         let topic = format!("signalOnly/{}/signal/now", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();

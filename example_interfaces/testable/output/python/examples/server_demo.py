@@ -52,7 +52,7 @@ if __name__ == "__main__":
         optional_string="apples",
         optional_enum=Numbers.ONE,
         optional_entry_object=Entry(key=42, value="apples"),
-        optional_date_time=datetime.now(UTC),
+        optional_date_time=None,
         optional_duration=None,
         optional_binary=b"example binary data",
         array_of_integers=[42, 2022],
@@ -119,7 +119,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -151,7 +151,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
     server.read_write_datetime = datetime.now(UTC)
 
-    server.read_write_optional_datetime = None
+    server.read_write_optional_datetime = datetime.now(UTC)
 
     server.read_write_two_datetimes = ReadWriteTwoDatetimesProperty(
         first=datetime.now(UTC),
@@ -331,7 +331,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=None,
+            optional_date_time=datetime.now(UTC),
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -369,7 +369,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -433,7 +433,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -658,7 +658,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -726,7 +726,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -810,7 +810,7 @@ if __name__ == "__main__":
                 ),
             )
             server.emit_single_date_time(datetime.now(UTC))
-            server.emit_single_optional_datetime(datetime.now(UTC))
+            server.emit_single_optional_datetime(None)
             server.emit_three_date_times(datetime.now(UTC), datetime.now(UTC), None)
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
@@ -1010,7 +1010,7 @@ if __name__ == "__main__":
             )
             server.emit_single_date_time(value=datetime.now(UTC))
             server.emit_single_optional_datetime(value=None)
-            server.emit_three_date_times(first=datetime.now(UTC), second=datetime.now(UTC), third=None)
+            server.emit_three_date_times(first=datetime.now(UTC), second=datetime.now(UTC), third=datetime.now(UTC))
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)
             server.emit_three_durations(first=timedelta(seconds=3536), second=timedelta(seconds=3536), third=None)

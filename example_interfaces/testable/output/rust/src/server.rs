@@ -246,7 +246,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_with_nothing_method_req =
-            subscription_id_call_with_nothing_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_with_nothing_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_one_integer_method_req = connection
             .subscribe(
@@ -256,7 +256,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_one_integer_method_req =
-            subscription_id_call_one_integer_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_integer_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_optional_integer_method_req = connection
             .subscribe(
@@ -266,7 +266,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_optional_integer_method_req =
-            subscription_id_call_optional_integer_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_integer_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_three_integers_method_req = connection
             .subscribe(
@@ -276,7 +276,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_three_integers_method_req =
-            subscription_id_call_three_integers_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_integers_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_one_string_method_req = connection
             .subscribe(
@@ -286,7 +286,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_one_string_method_req =
-            subscription_id_call_one_string_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_string_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_optional_string_method_req = connection
             .subscribe(
@@ -296,7 +296,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_optional_string_method_req =
-            subscription_id_call_optional_string_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_string_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_three_strings_method_req = connection
             .subscribe(
@@ -306,7 +306,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_three_strings_method_req =
-            subscription_id_call_three_strings_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_strings_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_one_enum_method_req = connection
             .subscribe(
@@ -316,7 +316,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_one_enum_method_req =
-            subscription_id_call_one_enum_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_enum_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_optional_enum_method_req = connection
             .subscribe(
@@ -326,7 +326,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_optional_enum_method_req =
-            subscription_id_call_optional_enum_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_enum_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_three_enums_method_req = connection
             .subscribe(
@@ -336,7 +336,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_three_enums_method_req =
-            subscription_id_call_three_enums_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_enums_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_one_struct_method_req = connection
             .subscribe(
@@ -346,7 +346,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_one_struct_method_req =
-            subscription_id_call_one_struct_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_struct_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_optional_struct_method_req = connection
             .subscribe(
@@ -356,7 +356,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_optional_struct_method_req =
-            subscription_id_call_optional_struct_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_struct_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_three_structs_method_req = connection
             .subscribe(
@@ -366,7 +366,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_three_structs_method_req =
-            subscription_id_call_three_structs_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_structs_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_one_date_time_method_req = connection
             .subscribe(
@@ -376,7 +376,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_one_date_time_method_req =
-            subscription_id_call_one_date_time_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_date_time_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_optional_date_time_method_req = connection
             .subscribe(
@@ -386,7 +386,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_optional_date_time_method_req =
-            subscription_id_call_optional_date_time_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_date_time_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_three_date_times_method_req = connection
             .subscribe(
@@ -396,7 +396,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_three_date_times_method_req =
-            subscription_id_call_three_date_times_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_date_times_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_one_duration_method_req = connection
             .subscribe(
@@ -406,7 +406,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_one_duration_method_req =
-            subscription_id_call_one_duration_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_duration_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_optional_duration_method_req = connection
             .subscribe(
@@ -416,7 +416,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_optional_duration_method_req =
-            subscription_id_call_optional_duration_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_duration_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_three_durations_method_req = connection
             .subscribe(
@@ -426,7 +426,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_three_durations_method_req =
-            subscription_id_call_three_durations_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_durations_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_one_binary_method_req = connection
             .subscribe(
@@ -436,7 +436,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_one_binary_method_req =
-            subscription_id_call_one_binary_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_binary_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_optional_binary_method_req = connection
             .subscribe(
@@ -446,7 +446,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_optional_binary_method_req =
-            subscription_id_call_optional_binary_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_binary_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_three_binaries_method_req = connection
             .subscribe(
@@ -456,7 +456,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_three_binaries_method_req =
-            subscription_id_call_three_binaries_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_three_binaries_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_one_list_of_integers_method_req = connection
             .subscribe(
@@ -466,7 +466,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_one_list_of_integers_method_req =
-            subscription_id_call_one_list_of_integers_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_one_list_of_integers_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_optional_list_of_floats_method_req = connection
             .subscribe(
@@ -476,7 +476,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_optional_list_of_floats_method_req =
-            subscription_id_call_optional_list_of_floats_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_optional_list_of_floats_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_call_two_lists_method_req = connection
             .subscribe(
@@ -486,7 +486,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_call_two_lists_method_req =
-            subscription_id_call_two_lists_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_call_two_lists_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_integer_property_update = connection
             .subscribe(
@@ -499,7 +499,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_integer_property_update =
-            subscription_id_read_write_integer_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_integer_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_optional_integer_property_update = connection
             .subscribe(
@@ -512,8 +512,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_optional_integer_property_update =
-            subscription_id_read_write_optional_integer_property_update
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_integer_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_two_integers_property_update = connection
             .subscribe(
@@ -526,7 +525,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_two_integers_property_update =
-            subscription_id_read_write_two_integers_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_integers_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_string_property_update = connection
             .subscribe(
@@ -536,7 +535,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_string_property_update =
-            subscription_id_read_write_string_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_string_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_optional_string_property_update = connection
             .subscribe(
@@ -549,7 +548,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_optional_string_property_update =
-            subscription_id_read_write_optional_string_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_string_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_two_strings_property_update = connection
             .subscribe(
@@ -562,7 +561,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_two_strings_property_update =
-            subscription_id_read_write_two_strings_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_strings_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_struct_property_update = connection
             .subscribe(
@@ -572,7 +571,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_struct_property_update =
-            subscription_id_read_write_struct_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_struct_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_optional_struct_property_update = connection
             .subscribe(
@@ -585,7 +584,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_optional_struct_property_update =
-            subscription_id_read_write_optional_struct_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_struct_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_two_structs_property_update = connection
             .subscribe(
@@ -598,7 +597,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_two_structs_property_update =
-            subscription_id_read_write_two_structs_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_structs_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_enum_property_update = connection
             .subscribe(
@@ -608,7 +607,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_enum_property_update =
-            subscription_id_read_write_enum_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_enum_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_optional_enum_property_update = connection
             .subscribe(
@@ -621,7 +620,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_optional_enum_property_update =
-            subscription_id_read_write_optional_enum_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_enum_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_two_enums_property_update = connection
             .subscribe(
@@ -634,7 +633,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_two_enums_property_update =
-            subscription_id_read_write_two_enums_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_enums_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_datetime_property_update = connection
             .subscribe(
@@ -647,7 +646,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_datetime_property_update =
-            subscription_id_read_write_datetime_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_datetime_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_optional_datetime_property_update = connection
             .subscribe(
@@ -660,8 +659,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_optional_datetime_property_update =
-            subscription_id_read_write_optional_datetime_property_update
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_datetime_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_two_datetimes_property_update = connection
             .subscribe(
@@ -674,7 +672,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_two_datetimes_property_update =
-            subscription_id_read_write_two_datetimes_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_datetimes_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_duration_property_update = connection
             .subscribe(
@@ -687,7 +685,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_duration_property_update =
-            subscription_id_read_write_duration_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_duration_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_optional_duration_property_update = connection
             .subscribe(
@@ -700,8 +698,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_optional_duration_property_update =
-            subscription_id_read_write_optional_duration_property_update
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_duration_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_two_durations_property_update = connection
             .subscribe(
@@ -714,7 +711,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_two_durations_property_update =
-            subscription_id_read_write_two_durations_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_durations_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_binary_property_update = connection
             .subscribe(
@@ -724,7 +721,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_binary_property_update =
-            subscription_id_read_write_binary_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_binary_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_optional_binary_property_update = connection
             .subscribe(
@@ -737,7 +734,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_optional_binary_property_update =
-            subscription_id_read_write_optional_binary_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_optional_binary_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_two_binaries_property_update = connection
             .subscribe(
@@ -750,7 +747,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_two_binaries_property_update =
-            subscription_id_read_write_two_binaries_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_two_binaries_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_list_of_strings_property_update = connection
             .subscribe(
@@ -763,7 +760,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_list_of_strings_property_update =
-            subscription_id_read_write_list_of_strings_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_list_of_strings_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_read_write_lists_property_update = connection
             .subscribe(
@@ -773,7 +770,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             )
             .await;
         let subscription_id_read_write_lists_property_update =
-            subscription_id_read_write_lists_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_read_write_lists_property_update.unwrap_or(u32::MAX);
 
         // Create structure for subscription ids.
         let sub_ids = TestAbleServerSubscriptionIds {
@@ -933,7 +930,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
-            method_handlers: method_handlers,
+            method_handlers,
             properties: property_values,
             subscription_ids: sub_ids,
 
@@ -1011,7 +1008,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
     /// Emits the singleInt signal with the given arguments.
     pub async fn emit_single_int(&mut self, value: i32) -> SentMessageFuture {
-        let data = SingleIntSignalPayload { value: value };
+        let data = SingleIntSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleInt", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1024,7 +1021,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: i32,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleIntSignalPayload { value: value };
+        let data = SingleIntSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleInt", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1032,7 +1029,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
     /// Emits the singleOptionalInt signal with the given arguments.
     pub async fn emit_single_optional_int(&mut self, value: Option<i32>) -> SentMessageFuture {
-        let data = SingleOptionalIntSignalPayload { value: value };
+        let data = SingleOptionalIntSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalInt", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1045,7 +1042,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<i32>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleOptionalIntSignalPayload { value: value };
+        let data = SingleOptionalIntSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalInt", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1059,11 +1056,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<i32>,
     ) -> SentMessageFuture {
         let data = ThreeIntegersSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeIntegers", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1080,11 +1077,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<i32>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = ThreeIntegersSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeIntegers", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1093,7 +1090,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
     /// Emits the singleString signal with the given arguments.
     pub async fn emit_single_string(&mut self, value: String) -> SentMessageFuture {
-        let data = SingleStringSignalPayload { value: value };
+        let data = SingleStringSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleString", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1106,7 +1103,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: String,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleStringSignalPayload { value: value };
+        let data = SingleStringSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleString", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1117,7 +1114,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<String>,
     ) -> SentMessageFuture {
-        let data = SingleOptionalStringSignalPayload { value: value };
+        let data = SingleOptionalStringSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalString", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1130,7 +1127,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<String>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleOptionalStringSignalPayload { value: value };
+        let data = SingleOptionalStringSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalString", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1144,11 +1141,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<String>,
     ) -> SentMessageFuture {
         let data = ThreeStringsSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeStrings", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1165,11 +1162,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<String>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = ThreeStringsSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeStrings", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1178,7 +1175,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
     /// Emits the singleEnum signal with the given arguments.
     pub async fn emit_single_enum(&mut self, value: Numbers) -> SentMessageFuture {
-        let data = SingleEnumSignalPayload { value: value };
+        let data = SingleEnumSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleEnum", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1191,7 +1188,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Numbers,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleEnumSignalPayload { value: value };
+        let data = SingleEnumSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleEnum", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1199,7 +1196,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
     /// Emits the singleOptionalEnum signal with the given arguments.
     pub async fn emit_single_optional_enum(&mut self, value: Option<Numbers>) -> SentMessageFuture {
-        let data = SingleOptionalEnumSignalPayload { value: value };
+        let data = SingleOptionalEnumSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalEnum", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1212,7 +1209,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<Numbers>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleOptionalEnumSignalPayload { value: value };
+        let data = SingleOptionalEnumSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalEnum", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1226,11 +1223,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<Numbers>,
     ) -> SentMessageFuture {
         let data = ThreeEnumsSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeEnums", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1247,11 +1244,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<Numbers>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = ThreeEnumsSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeEnums", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1260,7 +1257,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
     /// Emits the singleStruct signal with the given arguments.
     pub async fn emit_single_struct(&mut self, value: AllTypes) -> SentMessageFuture {
-        let data = SingleStructSignalPayload { value: value };
+        let data = SingleStructSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleStruct", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1273,7 +1270,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: AllTypes,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleStructSignalPayload { value: value };
+        let data = SingleStructSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleStruct", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1284,7 +1281,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<AllTypes>,
     ) -> SentMessageFuture {
-        let data = SingleOptionalStructSignalPayload { value: value };
+        let data = SingleOptionalStructSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalStruct", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1297,7 +1294,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<AllTypes>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleOptionalStructSignalPayload { value: value };
+        let data = SingleOptionalStructSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalStruct", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1311,11 +1308,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<AllTypes>,
     ) -> SentMessageFuture {
         let data = ThreeStructsSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeStructs", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1332,11 +1329,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<AllTypes>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = ThreeStructsSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeStructs", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1348,7 +1345,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
-        let data = SingleDateTimeSignalPayload { value: value };
+        let data = SingleDateTimeSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleDateTime", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1361,7 +1358,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: chrono::DateTime<chrono::Utc>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleDateTimeSignalPayload { value: value };
+        let data = SingleDateTimeSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleDateTime", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1372,7 +1369,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<chrono::DateTime<chrono::Utc>>,
     ) -> SentMessageFuture {
-        let data = SingleOptionalDatetimeSignalPayload { value: value };
+        let data = SingleOptionalDatetimeSignalPayload { value };
         let topic = format!(
             "testAble/{}/signal/singleOptionalDatetime",
             self.instance_id
@@ -1388,7 +1385,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<chrono::DateTime<chrono::Utc>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleOptionalDatetimeSignalPayload { value: value };
+        let data = SingleOptionalDatetimeSignalPayload { value };
         let topic = format!(
             "testAble/{}/signal/singleOptionalDatetime",
             self.instance_id
@@ -1405,11 +1402,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<chrono::DateTime<chrono::Utc>>,
     ) -> SentMessageFuture {
         let data = ThreeDateTimesSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeDateTimes", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1426,11 +1423,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<chrono::DateTime<chrono::Utc>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = ThreeDateTimesSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeDateTimes", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1439,7 +1436,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
     /// Emits the singleDuration signal with the given arguments.
     pub async fn emit_single_duration(&mut self, value: chrono::Duration) -> SentMessageFuture {
-        let data = SingleDurationSignalPayload { value: value };
+        let data = SingleDurationSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleDuration", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1452,7 +1449,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: chrono::Duration,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleDurationSignalPayload { value: value };
+        let data = SingleDurationSignalPayload { value };
         let topic = format!("testAble/{}/signal/singleDuration", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1463,7 +1460,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<chrono::Duration>,
     ) -> SentMessageFuture {
-        let data = SingleOptionalDurationSignalPayload { value: value };
+        let data = SingleOptionalDurationSignalPayload { value };
         let topic = format!(
             "testAble/{}/signal/singleOptionalDuration",
             self.instance_id
@@ -1479,7 +1476,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<chrono::Duration>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleOptionalDurationSignalPayload { value: value };
+        let data = SingleOptionalDurationSignalPayload { value };
         let topic = format!(
             "testAble/{}/signal/singleOptionalDuration",
             self.instance_id
@@ -1496,11 +1493,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<chrono::Duration>,
     ) -> SentMessageFuture {
         let data = ThreeDurationsSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeDurations", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1517,11 +1514,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<chrono::Duration>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = ThreeDurationsSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeDurations", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1530,7 +1527,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
     /// Emits the singleBinary signal with the given arguments.
     pub async fn emit_single_binary(&mut self, value: Vec<u8>) -> SentMessageFuture {
-        let data = SingleBinarySignalPayload { value: value };
+        let data = SingleBinarySignalPayload { value };
         let topic = format!("testAble/{}/signal/singleBinary", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1543,7 +1540,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Vec<u8>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleBinarySignalPayload { value: value };
+        let data = SingleBinarySignalPayload { value };
         let topic = format!("testAble/{}/signal/singleBinary", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1554,7 +1551,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<Vec<u8>>,
     ) -> SentMessageFuture {
-        let data = SingleOptionalBinarySignalPayload { value: value };
+        let data = SingleOptionalBinarySignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalBinary", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1567,7 +1564,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         value: Option<Vec<u8>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleOptionalBinarySignalPayload { value: value };
+        let data = SingleOptionalBinarySignalPayload { value };
         let topic = format!("testAble/{}/signal/singleOptionalBinary", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1581,11 +1578,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<Vec<u8>>,
     ) -> SentMessageFuture {
         let data = ThreeBinariesSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeBinaries", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1602,11 +1599,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         third: Option<Vec<u8>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = ThreeBinariesSignalPayload {
-            first: first,
+            first,
 
-            second: second,
+            second,
 
-            third: third,
+            third,
         };
         let topic = format!("testAble/{}/signal/threeBinaries", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1615,7 +1612,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
     /// Emits the singleArrayOfIntegers signal with the given arguments.
     pub async fn emit_single_array_of_integers(&mut self, values: Vec<i32>) -> SentMessageFuture {
-        let data = SingleArrayOfIntegersSignalPayload { values: values };
+        let data = SingleArrayOfIntegersSignalPayload { values };
         let topic = format!("testAble/{}/signal/singleArrayOfIntegers", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1628,7 +1625,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         values: Vec<i32>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleArrayOfIntegersSignalPayload { values: values };
+        let data = SingleArrayOfIntegersSignalPayload { values };
         let topic = format!("testAble/{}/signal/singleArrayOfIntegers", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -1639,7 +1636,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         values: Option<Vec<String>>,
     ) -> SentMessageFuture {
-        let data = SingleOptionalArrayOfStringsSignalPayload { values: values };
+        let data = SingleOptionalArrayOfStringsSignalPayload { values };
         let topic = format!(
             "testAble/{}/signal/singleOptionalArrayOfStrings",
             self.instance_id
@@ -1655,7 +1652,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
         values: Option<Vec<String>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = SingleOptionalArrayOfStringsSignalPayload { values: values };
+        let data = SingleOptionalArrayOfStringsSignalPayload { values };
         let topic = format!(
             "testAble/{}/signal/singleOptionalArrayOfStrings",
             self.instance_id
@@ -1677,21 +1674,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         eighth_of_binaries: Vec<Vec<u8>>,
     ) -> SentMessageFuture {
         let data = ArrayOfEveryTypeSignalPayload {
-            first_of_integers: first_of_integers,
+            first_of_integers,
 
-            second_of_floats: second_of_floats,
+            second_of_floats,
 
-            third_of_strings: third_of_strings,
+            third_of_strings,
 
-            fourth_of_enums: fourth_of_enums,
+            fourth_of_enums,
 
-            fifth_of_structs: fifth_of_structs,
+            fifth_of_structs,
 
-            sixth_of_datetimes: sixth_of_datetimes,
+            sixth_of_datetimes,
 
-            seventh_of_durations: seventh_of_durations,
+            seventh_of_durations,
 
-            eighth_of_binaries: eighth_of_binaries,
+            eighth_of_binaries,
         };
         let topic = format!("testAble/{}/signal/arrayOfEveryType", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -1713,21 +1710,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         eighth_of_binaries: Vec<Vec<u8>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = ArrayOfEveryTypeSignalPayload {
-            first_of_integers: first_of_integers,
+            first_of_integers,
 
-            second_of_floats: second_of_floats,
+            second_of_floats,
 
-            third_of_strings: third_of_strings,
+            third_of_strings,
 
-            fourth_of_enums: fourth_of_enums,
+            fourth_of_enums,
 
-            fifth_of_structs: fifth_of_structs,
+            fifth_of_structs,
 
-            sixth_of_datetimes: sixth_of_datetimes,
+            sixth_of_datetimes,
 
-            seventh_of_durations: seventh_of_durations,
+            seventh_of_durations,
 
-            eighth_of_binaries: eighth_of_binaries,
+            eighth_of_binaries,
         };
         let topic = format!("testAble/{}/signal/arrayOfEveryType", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
@@ -3390,34 +3387,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_integer' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteInteger/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_integer_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_integer_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteInteger/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_integer_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_integer_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -3464,34 +3456,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_only_integer' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readOnlyInteger/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_only_integer_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_only_integer_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readOnlyInteger/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_only_integer_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_only_integer_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -3598,34 +3585,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_optional_integer' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteOptionalInteger/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_optional_integer_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_optional_integer_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteOptionalInteger/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_optional_integer_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_optional_integer_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -3737,34 +3719,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             debug!(
                 "Property 'read_write_two_integers' value not changed, so not notifying watchers."
             );
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteTwoIntegers/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_two_integers_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_two_integers_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteTwoIntegers/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_two_integers_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_two_integers_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -3811,34 +3788,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_only_string' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readOnlyString/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_only_string_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_only_string_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readOnlyString/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_only_string_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_only_string_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -3943,34 +3915,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_string' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteString/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_string_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_string_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteString/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_string_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_string_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -4079,34 +4046,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_optional_string' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteOptionalString/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_optional_string_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_optional_string_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteOptionalString/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_optional_string_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_optional_string_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -4218,34 +4180,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             debug!(
                 "Property 'read_write_two_strings' value not changed, so not notifying watchers."
             );
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteTwoStrings/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_two_strings_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_two_strings_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteTwoStrings/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_two_strings_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_two_strings_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -4350,34 +4307,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_struct' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteStruct/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_struct_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_struct_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteStruct/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_struct_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_struct_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -4486,34 +4438,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_optional_struct' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteOptionalStruct/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_optional_struct_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_optional_struct_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteOptionalStruct/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_optional_struct_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_optional_struct_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -4625,34 +4572,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             debug!(
                 "Property 'read_write_two_structs' value not changed, so not notifying watchers."
             );
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteTwoStructs/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_two_structs_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_two_structs_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteTwoStructs/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_two_structs_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_two_structs_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -4699,31 +4641,26 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_only_enum' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("testAble/{}/property/readOnlyEnum/value", self.instance_id);
+            let new_version = self
+                .properties
+                .read_only_enum_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_only_enum_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("testAble/{}/property/readOnlyEnum/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .read_only_enum_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_only_enum_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -4827,31 +4764,26 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_enum' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("testAble/{}/property/readWriteEnum/value", self.instance_id);
+            let new_version = self
+                .properties
+                .read_write_enum_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_enum_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("testAble/{}/property/readWriteEnum/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .read_write_enum_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_enum_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -4963,34 +4895,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             debug!(
                 "Property 'read_write_optional_enum' value not changed, so not notifying watchers."
             );
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteOptionalEnum/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_optional_enum_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_optional_enum_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteOptionalEnum/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_optional_enum_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_optional_enum_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -5098,34 +5025,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_two_enums' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteTwoEnums/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_two_enums_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_two_enums_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteTwoEnums/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_two_enums_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_two_enums_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -5235,34 +5157,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_datetime' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteDatetime/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_datetime_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_datetime_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteDatetime/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_datetime_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_datetime_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -5371,34 +5288,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_optional_datetime' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteOptionalDatetime/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_optional_datetime_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_optional_datetime_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteOptionalDatetime/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_optional_datetime_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_optional_datetime_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -5510,34 +5422,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             debug!(
                 "Property 'read_write_two_datetimes' value not changed, so not notifying watchers."
             );
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteTwoDatetimes/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_two_datetimes_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_two_datetimes_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteTwoDatetimes/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_two_datetimes_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_two_datetimes_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -5642,34 +5549,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_duration' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteDuration/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_duration_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_duration_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteDuration/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_duration_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_duration_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -5778,34 +5680,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_optional_duration' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteOptionalDuration/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_optional_duration_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_optional_duration_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteOptionalDuration/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_optional_duration_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_optional_duration_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -5917,34 +5814,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             debug!(
                 "Property 'read_write_two_durations' value not changed, so not notifying watchers."
             );
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteTwoDurations/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_two_durations_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_two_durations_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteTwoDurations/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_two_durations_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_two_durations_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -6049,34 +5941,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_binary' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteBinary/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_binary_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_binary_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteBinary/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_binary_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_binary_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -6185,34 +6072,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_optional_binary' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteOptionalBinary/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_optional_binary_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_optional_binary_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteOptionalBinary/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_optional_binary_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_optional_binary_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -6324,34 +6206,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             debug!(
                 "Property 'read_write_two_binaries' value not changed, so not notifying watchers."
             );
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteTwoBinaries/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_two_binaries_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_two_binaries_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteTwoBinaries/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_two_binaries_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_two_binaries_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -6455,34 +6332,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_list_of_strings' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteListOfStrings/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_list_of_strings_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_list_of_strings_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteListOfStrings/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_list_of_strings_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_list_of_strings_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -6587,34 +6459,29 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'read_write_lists' value not changed, so not notifying watchers.");
-            return TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(
-                None,
-            ))
-            .await;
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "testAble/{}/property/readWriteLists/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .read_write_lists_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            TestAbleServer::<C>::publish_read_write_lists_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "testAble/{}/property/readWriteLists/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .read_write_lists_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                TestAbleServer::<C>::publish_read_write_lists_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 

@@ -109,12 +109,12 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         // Create method handler struct
         {%for method_name, method in stinger.methods.items()-%}
         let subscription_id_{{method_name | snake_case}}_method_req = connection.subscribe(format!("{{method.topic}}", instance_id), QoS::ExactlyOnce, message_received_tx.clone()).await;
-        let subscription_id_{{method_name | snake_case}}_method_req = subscription_id_{{method_name | snake_case}}_method_req.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_{{method_name | snake_case}}_method_req = subscription_id_{{method_name | snake_case}}_method_req.unwrap_or(u32::MAX);
 
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
         let subscription_id_{{prop_name | snake_case}}_property_update = connection.subscribe(format!("{{prop.update_topic}}", instance_id), QoS::AtLeastOnce, message_received_tx.clone()).await;
-        let subscription_id_{{prop_name | snake_case}}_property_update = subscription_id_{{prop_name | snake_case}}_property_update.unwrap_or_else(|_| u32::MAX);
+        let subscription_id_{{prop_name | snake_case}}_property_update = subscription_id_{{prop_name | snake_case}}_property_update.unwrap_or(u32::MAX);
 
         {%else-%}
         {%endif%}{%endfor%}
@@ -148,7 +148,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,{%if stinger.methods | length > 0 %}
-            method_handlers: method_handlers,{%endif%}{%if stinger.properties | length > 0 %}
+            method_handlers,{%endif%}{%if stinger.properties | length > 0 %}
             properties: property_values,{%endif%}
             subscription_ids: sub_ids,
             {%endif%}
@@ -205,7 +205,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
-            {{arg.name|snake_case}}: {{arg.name|snake_case}},
+            {{arg.name|snake_case}},
             {%endfor%}
         };
         let topic = format!("{{sig.topic}}", self.instance_id);
@@ -219,7 +219,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
-            {{arg.name|snake_case}}: {{arg.name|snake_case}},
+            {{arg.name|snake_case}},
             {%endfor%}
         };
         let topic = format!("{{sig.topic}}", self.instance_id);
@@ -356,16 +356,14 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property '{{prop_name}}' value not changed, so not notifying watchers.");
-            return {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await;
+            {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("{{prop.value_topic}}", self.instance_id);
+            let new_version = self.properties.{{prop_name|snake_case}}_version.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            {{stinger.rust.server_struct_name}}::<C>::publish_{{prop_name}}_value(publisher2, topic2, prop_obj, new_version).await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("{{prop.value_topic}}", self.instance_id);
-                let new_version = self.properties.{{prop_name|snake_case}}_version.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                {{stinger.rust.server_struct_name}}::<C>::publish_{{prop_name}}_value(publisher2, topic2, prop_obj, new_version).await
-            } else {
-                {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError("Could not find property object".to_string())).await
-            }
+            {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError("Could not find property object".to_string())).await
         }
     }
     {%endfor%}

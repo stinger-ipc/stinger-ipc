@@ -111,7 +111,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             )
             .await;
         let subscription_id_trade_numbers_method_resp =
-            subscription_id_trade_numbers_method_resp.unwrap_or_else(|_| u32::MAX);
+            subscription_id_trade_numbers_method_resp.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to method response topic for 'trade_numbers'",
             subscription_id_trade_numbers_method_resp
@@ -130,7 +130,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             )
             .await;
         let subscription_id_person_entered_signal =
-            subscription_id_person_entered_signal.unwrap_or_else(|_| u32::MAX);
+            subscription_id_person_entered_signal.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to signal topic for 'person_entered'",
             subscription_id_person_entered_signal
@@ -150,7 +150,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             )
             .await;
         let subscription_id_school_property_value =
-            subscription_id_school_property_value.unwrap_or_else(|_| u32::MAX);
+            subscription_id_school_property_value.unwrap_or(u32::MAX);
         debug!(
             "Subscription (id={}) to property value topic for 'school'",
             subscription_id_school_property_value
@@ -174,7 +174,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
         };
 
         // Create SimpleClient structure.
-        let inst = SimpleClient {
+        SimpleClient {
             mqtt_client: connection,
             pending_responses: Arc::new(Mutex::new(HashMap::new())),
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
@@ -183,12 +183,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             properties: property_values,
 
             subscription_ids: sub_ids,
-            signal_channels: signal_channels,
-            client_id: client_id,
+            signal_channels,
+            client_id,
 
             service_instance_id: discovery_info.interface_info.instance,
-        };
-        inst
+        }
     }
 
     /// Get the RX receiver side of the broadcast channel for the person_entered signal.
@@ -206,12 +205,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
         let (sender, receiver) = oneshot::channel();
         {
             let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+            hashmap.insert(correlation_id, sender);
         }
 
-        let data = TradeNumbersRequestObject {
-            your_number: your_number,
-        };
+        let data = TradeNumbersRequestObject { your_number };
 
         let response_topic: String = format!("client/{}/trade_numbers/response", self.client_id);
         let msg = message::request(
@@ -251,9 +248,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
 
                 Ok(return_obj.my_number)
             }
-            _ => {
-                return Err(return_code);
-            }
+            _ => Err(return_code),
         }
     }
 
@@ -373,9 +368,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
                             });
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                match oss.send(return_code.clone()) {
-                                    Ok(_) => (),
-                                    Err(_) => (),
+                                if oss.send(return_code.clone()).is_err() {
+                                    warn!("Failed to send method response for 'trade_numbers' to waiting receiver");
                                 }
                             }
                         } else {

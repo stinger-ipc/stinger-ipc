@@ -326,9 +326,8 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestAbleDiscovery<C> {
                     let mut instance_map = instances_in_discovery
                         .write()
                         .expect("interfaces write lock poisoned");
-                    let service_in_discovery = instance_map
-                        .entry(instance_id.to_string())
-                        .or_insert_with(ServiceInDiscovery::default);
+                    let service_in_discovery =
+                        instance_map.entry(instance_id.to_string()).or_default();
 
                     match property_name {
                         "readWriteInteger" => {
@@ -1059,13 +1058,12 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestAbleDiscovery<C> {
                         let mut instance_map = instances_in_discovery
                             .write()
                             .expect("interfaces write lock poisoned");
-                        let service_in_discovery = instance_map
-                            .entry(info.instance.clone())
-                            .or_insert_with(ServiceInDiscovery::default);
+                        let service_in_discovery =
+                            instance_map.entry(info.instance.clone()).or_default();
                         service_in_discovery.interface_info = Some(info);
                         Self::try_publish_discovered_service(
                             service_in_discovery,
-                            &notification_tx,
+                            notification_tx,
                             #[cfg(feature = "metrics")]
                             &metrics,
                         );

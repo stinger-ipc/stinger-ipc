@@ -102,7 +102,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
             )
             .await;
         let subscription_id_trade_numbers_method_req =
-            subscription_id_trade_numbers_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_trade_numbers_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_school_property_update = connection
             .subscribe(
@@ -112,7 +112,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
             )
             .await;
         let subscription_id_school_property_update =
-            subscription_id_school_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_school_property_update.unwrap_or(u32::MAX);
 
         // Create structure for subscription ids.
         let sub_ids = SimpleServerSubscriptionIds {
@@ -132,7 +132,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
 
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
-            method_handlers: method_handlers,
+            method_handlers,
             properties: property_values,
             subscription_ids: sub_ids,
 
@@ -190,7 +190,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
     }
     /// Emits the person_entered signal with the given arguments.
     pub async fn emit_person_entered(&mut self, person: Person) -> SentMessageFuture {
-        let data = PersonEnteredSignalPayload { person: person };
+        let data = PersonEnteredSignalPayload { person };
         let topic = format!("simple/{}/signal/personEntered", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -203,7 +203,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         &mut self,
         person: Person,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = PersonEnteredSignalPayload { person: person };
+        let data = PersonEnteredSignalPayload { person };
         let topic = format!("simple/{}/signal/personEntered", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -368,24 +368,20 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'school' value not changed, so not notifying watchers.");
-            return SimpleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            SimpleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("simple/{}/property/school/value", self.instance_id);
+            let new_version = self
+                .properties
+                .school_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            SimpleServer::<C>::publish_school_value(publisher2, topic2, prop_obj, new_version).await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("simple/{}/property/school/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .school_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                SimpleServer::<C>::publish_school_value(publisher2, topic2, prop_obj, new_version)
-                    .await
-            } else {
-                SimpleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            SimpleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 

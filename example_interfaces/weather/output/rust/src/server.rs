@@ -133,7 +133,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
             )
             .await;
         let subscription_id_refresh_daily_forecast_method_req =
-            subscription_id_refresh_daily_forecast_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_refresh_daily_forecast_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_refresh_hourly_forecast_method_req = connection
             .subscribe(
@@ -143,7 +143,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
             )
             .await;
         let subscription_id_refresh_hourly_forecast_method_req =
-            subscription_id_refresh_hourly_forecast_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_refresh_hourly_forecast_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_refresh_current_conditions_method_req = connection
             .subscribe(
@@ -153,7 +153,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
             )
             .await;
         let subscription_id_refresh_current_conditions_method_req =
-            subscription_id_refresh_current_conditions_method_req.unwrap_or_else(|_| u32::MAX);
+            subscription_id_refresh_current_conditions_method_req.unwrap_or(u32::MAX);
 
         let subscription_id_location_property_update = connection
             .subscribe(
@@ -163,7 +163,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
             )
             .await;
         let subscription_id_location_property_update =
-            subscription_id_location_property_update.unwrap_or_else(|_| u32::MAX);
+            subscription_id_location_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_current_condition_refresh_interval_property_update = connection
             .subscribe(
@@ -176,8 +176,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
             )
             .await;
         let subscription_id_current_condition_refresh_interval_property_update =
-            subscription_id_current_condition_refresh_interval_property_update
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_current_condition_refresh_interval_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_hourly_forecast_refresh_interval_property_update = connection
             .subscribe(
@@ -190,8 +189,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
             )
             .await;
         let subscription_id_hourly_forecast_refresh_interval_property_update =
-            subscription_id_hourly_forecast_refresh_interval_property_update
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_hourly_forecast_refresh_interval_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_daily_forecast_refresh_interval_property_update = connection
             .subscribe(
@@ -204,8 +202,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
             )
             .await;
         let subscription_id_daily_forecast_refresh_interval_property_update =
-            subscription_id_daily_forecast_refresh_interval_property_update
-                .unwrap_or_else(|_| u32::MAX);
+            subscription_id_daily_forecast_refresh_interval_property_update.unwrap_or(u32::MAX);
 
         // Create structure for subscription ids.
         let sub_ids = WeatherServerSubscriptionIds {
@@ -255,7 +252,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
-            method_handlers: method_handlers,
+            method_handlers,
             properties: property_values,
             subscription_ids: sub_ids,
 
@@ -313,9 +310,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
     }
     /// Emits the current_time signal with the given arguments.
     pub async fn emit_current_time(&mut self, current_time: String) -> SentMessageFuture {
-        let data = CurrentTimeSignalPayload {
-            current_time: current_time,
-        };
+        let data = CurrentTimeSignalPayload { current_time };
         let topic = format!("weather/{}/signal/currentTime", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -328,9 +323,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         &mut self,
         current_time: String,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = CurrentTimeSignalPayload {
-            current_time: current_time,
-        };
+        let data = CurrentTimeSignalPayload { current_time };
         let topic = format!("weather/{}/signal/currentTime", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -564,29 +557,21 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'location' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("weather/{}/property/location/value", self.instance_id);
+            let new_version = self
+                .properties
+                .location_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            WeatherServer::<C>::publish_location_value(publisher2, topic2, prop_obj, new_version)
+                .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("weather/{}/property/location/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .location_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                WeatherServer::<C>::publish_location_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -633,32 +618,29 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'current_temperature' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "weather/{}/property/currentTemperature/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .current_temperature_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            WeatherServer::<C>::publish_current_temperature_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "weather/{}/property/currentTemperature/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .current_temperature_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                WeatherServer::<C>::publish_current_temperature_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -706,32 +688,29 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'current_condition' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "weather/{}/property/currentCondition/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .current_condition_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            WeatherServer::<C>::publish_current_condition_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "weather/{}/property/currentCondition/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .current_condition_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                WeatherServer::<C>::publish_current_condition_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -776,29 +755,26 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'daily_forecast' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("weather/{}/property/dailyForecast/value", self.instance_id);
+            let new_version = self
+                .properties
+                .daily_forecast_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            WeatherServer::<C>::publish_daily_forecast_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("weather/{}/property/dailyForecast/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .daily_forecast_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                WeatherServer::<C>::publish_daily_forecast_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -843,29 +819,26 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'hourly_forecast' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!("weather/{}/property/hourlyForecast/value", self.instance_id);
+            let new_version = self
+                .properties
+                .hourly_forecast_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            WeatherServer::<C>::publish_hourly_forecast_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!("weather/{}/property/hourlyForecast/value", self.instance_id);
-                let new_version = self
-                    .properties
-                    .hourly_forecast_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                WeatherServer::<C>::publish_hourly_forecast_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -963,32 +936,29 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'current_condition_refresh_interval' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "weather/{}/property/currentConditionRefreshInterval/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .current_condition_refresh_interval_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            WeatherServer::<C>::publish_current_condition_refresh_interval_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "weather/{}/property/currentConditionRefreshInterval/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .current_condition_refresh_interval_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                WeatherServer::<C>::publish_current_condition_refresh_interval_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -1086,32 +1056,29 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'hourly_forecast_refresh_interval' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "weather/{}/property/hourlyForecastRefreshInterval/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .hourly_forecast_refresh_interval_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            WeatherServer::<C>::publish_hourly_forecast_refresh_interval_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "weather/{}/property/hourlyForecastRefreshInterval/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .hourly_forecast_refresh_interval_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                WeatherServer::<C>::publish_hourly_forecast_refresh_interval_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
@@ -1209,32 +1176,29 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property 'daily_forecast_refresh_interval' value not changed, so not notifying watchers.");
-            return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None))
-                .await;
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
+        } else if let Some(prop_obj) = property_obj {
+            let publisher2 = self.mqtt_client.clone();
+            let topic2 = format!(
+                "weather/{}/property/dailyForecastRefreshInterval/value",
+                self.instance_id
+            );
+            let new_version = self
+                .properties
+                .daily_forecast_refresh_interval_version
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            WeatherServer::<C>::publish_daily_forecast_refresh_interval_value(
+                publisher2,
+                topic2,
+                prop_obj,
+                new_version,
+            )
+            .await
         } else {
-            if let Some(prop_obj) = property_obj {
-                let publisher2 = self.mqtt_client.clone();
-                let topic2 = format!(
-                    "weather/{}/property/dailyForecastRefreshInterval/value",
-                    self.instance_id
-                );
-                let new_version = self
-                    .properties
-                    .daily_forecast_refresh_interval_version
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                WeatherServer::<C>::publish_daily_forecast_refresh_interval_value(
-                    publisher2,
-                    topic2,
-                    prop_obj,
-                    new_version,
-                )
-                .await
-            } else {
-                WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                    "Could not find property object".to_string(),
-                ))
-                .await
-            }
+            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
+                "Could not find property object".to_string(),
+            ))
+            .await
         }
     }
 
