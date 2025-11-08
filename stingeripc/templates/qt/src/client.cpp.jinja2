@@ -1,0 +1,295 @@
+{% import "partials/deserialize.jinja2" as deser %}
+{% import "partials/serialize.jinja2" as ser %}
+{% import "partials/args.jinja2" as ar %}
+{% import "partials/properties.jinja2" as pr %}
+
+#include <vector>
+#include <iostream>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
+#include <syslog.h>
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/functional/hash.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/error/en.h>
+#include <rapidjson/document.h>
+#include "structs.hpp"
+#include "client.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
+#include "ibrokerconnection.hpp"
+#include "interface_exceptions.hpp"
+
+constexpr const char {{stinger.cpp.client_class_name}}::NAME[];
+constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
+
+{{stinger.cpp.client_class_name}}::{{stinger.cpp.client_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId) : _broker(broker), _instanceId(instanceId)
+{
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
+            const std::string& topic, 
+            const std::string& payload, 
+            const MqttProperties& mqttProps)
+    {
+        _receiveMessage(topic, payload, mqttProps);
+    });
+
+    {%-for sig_name, sig in stinger.signals.items() %}
+    _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe((boost::format("{{sig.topic}}") % _instanceId).str(), 2);
+    {%-endfor%}
+    {%-for method_name, method in stinger.methods.items() %}
+    { // Restrict scope
+        std::stringstream responseTopicStringStream;
+        responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
+        _{{method_name | lowerCamelCase}}MethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
+    }
+    {%-endfor%}
+
+    {%-for prop_name, prop in stinger.properties.items() %}
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe((boost::format("{{prop.value_topic}}") % _instanceId).str(), 1);
+    {%-endfor%}
+}
+
+{{stinger.cpp.client_class_name}}::~{{stinger.cpp.client_class_name}}()
+{
+    if (_broker && _brokerMessageCallbackHandle != 0)
+    {
+        _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
+        _brokerMessageCallbackHandle = 0;
+    }
+}
+
+void {{stinger.cpp.client_class_name}}::_receiveMessage(
+        const std::string& topic, 
+        const std::string& payload, 
+        const MqttProperties& mqttProps)
+{
+    const int noSubId = -1;
+    int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
+    _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", topic.c_str(), subscriptionId);
+    {%-for sig_name, sig in stinger.signals.items() %}
+    if ((subscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("{{sig.topic}}") % _instanceId).str())))
+    {
+        _broker->Log(LOG_INFO, "Handling {{sig_name}} signal");
+        rapidjson::Document doc;
+        try {
+            if (_{{sig_name | camelCase}}SignalCallbacks.size() > 0)
+            {
+                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+                if (!ok)
+                {
+                    _broker->Log(LOG_WARNING, "Could not JSON parse {{sig_name}} signal payload.");
+                    return;
+                }
+
+                if (!doc.IsObject()) {
+                    _broker->Log(LOG_WARNING, "Received payload is not an object");
+                    return;
+                }
+
+                {%for arg in sig.arg_list%}
+                {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}};
+                { // Scoping
+                    rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
+                    if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+                        {%if arg.arg_type.name.lower() == 'primitive'%}
+                        temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+                        {%elif arg.arg_type.name.lower() == 'enum'%}
+                        temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                        {%elif arg.arg_type.name.lower() == 'datetime'%}
+                        std::istringstream ss(itr->value.GetString());
+                        std::tm tm = {};
+                        ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+                        if (ss.fail()) {
+                            throw std::runtime_error("Failed to parse datetime string");
+                        }
+                        temp{{arg.name|UpperCamelCase}} = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+                        {%elif arg.arg_type.name.lower() == 'duration'%}
+                        temp{{arg.name|UpperCamelCase}} = parseIsoDuration(itr->value.GetString());
+                        {%elif arg.arg_type.name.lower() == 'binary'%}
+                        temp{{arg.name|UpperCamelCase}} = base64Decode(itr->value.GetString());
+                        {%endif%}
+                    } else {
+                    {%-if arg.optional%}
+                        temp{{arg.name|UpperCamelCase}} = boost::none;
+                    {%else%}
+                        throw std::runtime_error("Received payload for '{{sig_name}}' doesn't have required value/type");
+                    {%endif%}
+                    }
+                }
+                {%endfor%}{# for signal args #}
+                std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
+                for (const auto& cb : _{{sig_name | lowerCamelCase}}SignalCallbacks)
+                {
+                    cb({%for arg in sig.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+                }
+            }
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely. 
+            // TODO: Log this failure
+        }
+    }
+    {%-endfor%}{# for signals #}
+
+    {%-for method_name, method in stinger.methods.items() %}
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | lowerCamelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && mqttProps.correlationId))
+    {
+        _broker->Log(LOG_DEBUG, "Matched topic for {{method_name}} response");
+        _handle{{method_name|UpperCamelCase}}Response(topic, payload, mqttProps);
+    }
+    {%-endfor%}{# for methods #}
+
+    {%-for prop_name, prop in stinger.properties.items() %}
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("{{prop.value_topic}}") % _instanceId).str()))
+    {
+        _receive{{prop_name | UpperCamelCase}}PropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    }
+    {%-endfor%}{# for properties #}
+}
+
+
+{%-for sig_name, sig in stinger.signals.items() %}
+void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb)
+{
+    std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
+    _{{sig_name | lowerCamelCase}}SignalCallbacks.push_back(cb);
+}
+{%-endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+{
+    auto correlationId = boost::uuids::random_generator()();
+    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
+    _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId] = boost::promise<{{method.return_value_cpp_class}}>();
+
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    {%for arg in method.arg_list%}
+    {{ser.addToValue('doc', arg, 'doc.GetAllocator()') | indent(4)}}
+    {%endfor%}
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    std::stringstream responseTopicStringStream;
+    responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
+    MqttProperties mqttProps;
+    mqttProps.correlationId = correlationIdStr;
+    mqttProps.responseTopic = responseTopicStringStream.str();
+    mqttProps.returnCode = MethodReturnCode::SUCCESS;
+    _broker->Publish((boost::format("{{method.topic}}") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+
+    return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
+}
+
+void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Response(
+        const std::string& topic, 
+        const std::string& payload, 
+        const MqttProperties& mqttProps) 
+{
+    _broker->Log(LOG_DEBUG, "In response handler for {{method_name}}");
+    
+    {%if method.return_value_type is not false%}
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse {{method_name}} signal payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received payload for '{{method_name}}' response is not an object");
+    }
+    {%endif%}
+    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
+    auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationIdUuid);
+    if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())
+    {
+        if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
+        {
+            // The method call failed, so set an exception on the promise.
+            promiseItr->second.set_exception(createStingerException(mqttProps.returnCode.value_or(MethodReturnCode::UNKNOWN_ERROR), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            return;
+        }
+
+        // Found the promise for this correlation ID.
+        {%if method.return_arg_list | length == 0 %}
+        // Method doesn't have any return values.
+        promiseItr->second.set_value();
+        {%elif method.return_arg_list | length == 1%}
+        // Method has a single return value.
+        auto returnValue = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc).{{method.return_arg_list[0].name|lowerCamelCase}};
+        promiseItr->second.set_value(returnValue);
+        {%else%}
+        // Method has multiple return values.
+        auto returnValues = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc);
+        promiseItr->second.set_value(returnValues);
+        {%endif%}
+    }
+
+    _broker->Log(LOG_DEBUG, "End of response handler for {{method_name}}");
+}
+{%endfor%}{# end for each method #}
+{%for prop_name, prop in stinger.properties.items()%}
+void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    if (!ok)
+    {
+        //Log("Could not JSON parse {{prop_name}} property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Received '{{prop_name}}' property update payload is not an object");
+    }
+    {{prop.name | UpperCamelCase}}Property tempValue;
+    {{deser.deserialize('tempValue', prop.arg_list, 'doc') | indent(4)}}
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+        _{{prop_name | lowerCamelCase}}Property = tempValue;
+        _last{{prop_name | UpperCamelCase}}PropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+    }
+    // Notify all registered callbacks.
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
+        for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
+        {
+            // Don't need a mutex since we're using tempValue.
+            cb({%for arg in prop.arg_list %}tempValue.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+        }
+    }
+}
+
+{{pr.get_property_definition(stinger.cpp.client_class_name, prop_name, prop)}}
+
+{{pr.callback_registration_definition(stinger.cpp.client_class_name, prop_name, prop)}}
+
+{% if not prop.read_only %}
+boost::future<bool> {{stinger.cpp.client_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    {%for item in prop.arg_list %}
+    {{ser.addToValue('doc', item, 'doc.GetAllocator()') | indent(4)}}
+    {%endfor %}
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish("{{prop.update_topic}}", buf.GetString(), 1, false, mqttProps);
+
+}
+{%endif%}
+{% endfor %} {# for properties #}

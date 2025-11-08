@@ -1,0 +1,178 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+
+
+#pragma once
+
+#include <QFuture>
+#include <QString>
+#include <functional>
+#include <optional>
+#include <string>
+
+
+/*!
+    \enum MethodReturnCode
+    \brief Return codes for method call results in MQTT IPC communication.
+
+    This enumeration defines status codes returned from remote method calls,
+    covering success, various error conditions, and transport-level issues.
+*/
+enum class MethodReturnCode
+{
+    {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
+    {{rc_name | CONST_CASE}} = {{rc_i}}{%if not loop.last%},{%endif%}
+    {%-endfor%}
+};
+
+/*!
+    \struct MqttProperties
+    \brief MQTT message properties for method calls and responses.
+
+    This structure contains MQTT-specific properties used for correlation,
+    routing, error handling, and message expiry in the IPC protocol.
+*/
+struct MqttProperties
+{
+    MqttProperties()
+        : correlationId(std::nullopt),
+            responseTopic(std::nullopt),
+            returnCode(std::nullopt),
+            subscriptionId(std::nullopt),
+            propertyVersion(std::nullopt),
+            messageExpiryInterval(std::nullopt),
+            debugInfo(std::nullopt)
+    {}
+    std::optional<std::string> correlationId;
+    std::optional<std::string> responseTopic;
+    std::optional<MethodReturnCode> returnCode;
+    std::optional<int> subscriptionId;
+    std::optional<int> propertyVersion;
+    std::optional<int> messageExpiryInterval;
+    std::optional<std::string> debugInfo;
+};
+
+using LogFunctionType = std::function<void(int, const char *)>;
+using CallbackHandleType = int;
+
+/*!
+    \class IBrokerConnection
+    \brief Abstract interface for MQTT broker connections.
+
+    This interface defines the contract for MQTT broker implementations,
+    providing methods for publishing, subscribing, and message handling.
+    Implementations should handle connection state and queue operations
+    when disconnected.
+*/
+class IBrokerConnection
+{
+public:
+    /*!
+        \brief Publishes a message to an MQTT topic.
+
+        The \a topic parameter The MQTT topic to publish to.
+        The \a payload parameter The message payload.
+        The \a qos parameter Quality of Service level (0, 1, or 2).
+        The \a retain parameter Whether the broker should retain this message.
+        The \a mqttProps parameter Additional MQTT properties for the message.
+        Returns QFuture<bool> that resolves to true on successful publish.
+
+        Implementations should queue messages when not connected.
+    */
+    virtual QFuture<bool> Publish(const QString& topic,
+                                  const QString& payload,
+                                  unsigned qos,
+                                  bool retain,
+                                  const MqttProperties& mqttProps) = 0;
+
+    /*!
+        \brief Subscribes to an MQTT topic.
+
+        The \a topic parameter The MQTT topic or topic filter to subscribe to.
+        The \a qos parameter Quality of Service level for the subscription.
+        Returns Subscription identifier.
+
+        Implementation should queue subscriptions when not connected.
+    */
+    virtual int Subscribe(const QString& topic, int qos) = 0;
+
+    /*!
+        \brief Unsubscribes from an MQTT topic.
+
+        The \a topic parameter The MQTT topic to unsubscribe from.
+    */
+    virtual void Unsubscribe(const QString& topic) = 0;
+
+    /*!
+        \brief Registers a callback for incoming MQTT messages.
+
+        The \a cb parameter Callback function invoked with topic, payload, and MQTT properties.
+        Returns Handle for removing the callback later.
+
+        Implementation should accept callbacks at any time, even when not connected.
+    */
+    virtual CallbackHandleType AddMessageCallback(
+        const std::function<void(const QString&, const QString&,
+                                 const MqttProperties&)>& cb) = 0;
+
+    /*!
+        \brief Removes a previously registered message callback.
+
+        The \a handle parameter The handle returned from AddMessageCallback.
+    */
+    virtual void RemoveMessageCallback(CallbackHandleType handle) = 0;
+
+    /*!
+        \brief Tests if a topic matches a subscription filter.
+
+        The \a topic parameter The actual topic to test.
+        The \a subscr parameter The subscription filter (may contain wildcards).
+        Returns True if the topic matches the subscription filter.
+
+        Utility for matching MQTT topics with wildcard support.
+    */
+    virtual bool TopicMatchesSubscription(const QString& topic, const QString& subscr) const = 0;
+
+    /*!
+        \brief Returns the MQTT client identifier.
+
+        Returns The client ID string.
+    */
+    virtual std::string GetClientId() const = 0;
+
+    /*!
+        \brief Returns the topic used for online/presence status.
+
+        Returns The online status topic string.
+    */
+    virtual std::string GetOnlineTopic() const = 0;
+
+    /*!
+        \brief Sets the logging callback function.
+
+        The \a logFunc parameter Callback function for log messages.
+    */
+    virtual void SetLogFunction(const LogFunctionType& logFunc) = 0;
+
+    /*!
+        \brief Sets the logging verbosity level.
+
+        The \a level parameter The log level (higher values = more verbose).
+    */
+    virtual void SetLogLevel(int level) = 0;
+
+    /*!
+        \brief Logs a message at the specified level.
+
+        The \a level parameter The log level for this message.
+        The \a fmt parameter Printf-style format string.
+    */
+    virtual void Log(int level, const char *fmt, ...) const = 0;
+};

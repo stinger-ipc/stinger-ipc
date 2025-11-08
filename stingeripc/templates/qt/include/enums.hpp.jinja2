@@ -1,0 +1,35 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+
+#pragma once
+#include <QObject>
+#include <QtQml/qqml.h>
+
+{%for ie_name, ie in stinger.enums.items() %}
+namespace {{ie_name | UpperCamelCase}}s {
+
+Q_NAMESPACE
+QML_ELEMENT
+
+    enum class {{ie_name | UpperCamelCase }} {
+        {%-for value in ie.values %}
+        {{value | CONST_CASE}} = {{loop.index}}{%if not loop.last%},{%endif%}
+        {%-endfor%}
+    };
+
+    {% set string_list -%}{{ie_name | camelCase }}Strings{% endset -%}
+    static const char *{{string_list}}[] = {"{{ie_name | UpperCamelCase }}", {%for value in ie.values %}"{{value}}"{%if not loop.last%}, {%endif%}{%endfor%} };
+
+    {% set to_string_param -%}{{ie_name.split('_') | last}}{% endset -%}
+    static inline const char* toString({{ie_name | UpperCamelCase}} {{to_string_param}}) {
+        return {{string_list}}[static_cast<int>({{to_string_param}})];
+    }
+};
+{%endfor%}

@@ -1,0 +1,119 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+{% import 'partials/args.jinja2' as ar %}
+{% import 'partials/properties.jinja2' as pr %}
+#pragma once
+
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <exception>
+#include <mutex>
+#include <chrono>
+#include <rapidjson/document.h>
+#include <QUuid>
+#include <QString>
+#include <QtQml/qqml.h>
+#include <optional>
+#include <QFuture>
+#include <QObject>
+#include <QPromise>
+#include "ibrokerconnection.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
+#include "method_payloads.hpp"
+#include "signal_payloads.hpp"
+
+class QQmlEngine;
+class QJsEngine;
+
+{%macro prop_value_type(prop) -%}{%if prop.arg_list|length > 1%}struct {%endif%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
+
+{%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
+
+class {{stinger.cpp.client_class_name}} : public QObject {
+    Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
+
+public:
+    // This is the name of the API.
+    static constexpr const char NAME[] = "{{stinger.name}}";
+    // This is the version of the API contract.
+    static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
+
+    // Constructor taking a connection object.
+    {{stinger.cpp.client_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+
+    virtual ~{{stinger.cpp.client_class_name}}();
+    {%if stinger.signals|length > 0 -%}
+    // ------------------ SIGNALS --------------------
+    {%for sig_name, sig in stinger.signals.items()%}
+    // Register a callback for the `{{sig_name}}` signal.  {%if sig.arg_list|length > 0 and sig.arg_list[0].optional %}The argument is optional.{%endif%}
+    // The provided method will be called whenever a `{{sig_name}}` is received.
+    void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
+    {%endfor%}
+    {%endif%}
+    {%if stinger.methods|length > 0 -%}
+    // ------------------- METHODS --------------------
+    {%for method_name, method in stinger.methods.items()%}
+    // Calls the `{{method_name}}` method.
+    // Returns a future.  When that future resolves, it will have the returned value. {{method.return_value}}
+    boost::future<{{method.return_value_cpp_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {%endfor%}
+    {%endif%}
+    {%if stinger.properties|length > 0 -%}
+    // ---------------- PROPERTIES ------------------
+    {%for prop_name, prop in stinger.properties.items()%}
+    {{ pr.public_declarations(prop_name, prop, true) | indent(4) }}
+    {%endfor%}
+    {%endif%}
+private:
+    // Pointer to the broker connection.
+    std::shared_ptr<IBrokerConnection> _broker;
+
+    // Service Instance ID that this client is connected to.
+    std::string _instanceId;
+
+    CallbackHandleType _brokerMessageCallbackHandle = 0;
+
+    // Internal method for receiving messages from the broker.
+    void _receiveMessage(
+            const std::string& topic,
+            const std::string& payload,
+            const MqttProperties& mqttProps);
+    {%if stinger.signals|length > 0 %}
+    // ------------------ SIGNALS --------------------
+    {%for sig_name, sig in stinger.signals.items()%}
+    // List of callbacks to be called whenever the `{{sig_name}}` signal is received.
+    std::vector<std::function<void({%for arg in sig.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> _{{sig_name | lowerCamelCase}}SignalCallbacks;
+    std::mutex _{{sig_name | lowerCamelCase}}SignalCallbacksMutex;
+
+    // MQTT Subscription ID for `{{sig_name}}` signal receptions.
+    int _{{sig_name | lowerCamelCase}}SignalSubscriptionId = -1;
+    {%endfor%}
+    {%endif%}
+    {%if stinger.methods|length > 0 -%}
+    // ------------------- METHODS --------------------
+
+    {%-for method_name, method in stinger.methods.items()%}
+    // Holds promises for pending `{{method_name}}` method calls.
+    std::map<boost::uuids::uuid, boost::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+    int _{{method_name | lowerCamelCase}}MethodSubscriptionId = -1;
+    // This is called internally to process responses to `{{method_name}}` method calls.
+    void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    {%endfor%}
+    {%endif%}
+    {%if stinger.properties|length > 0 -%}
+    // ---------------- PROPERTIES ------------------
+    {%for prop_name, prop in stinger.properties.items()%}
+    {{pr.private_declarations(prop_name, prop, true) | indent(4)}}
+    {%endfor%}
+    {%endif%}
+};

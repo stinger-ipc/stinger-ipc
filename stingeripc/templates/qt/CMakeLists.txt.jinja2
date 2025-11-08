@@ -1,0 +1,198 @@
+cmake_minimum_required(VERSION 3.16)
+cmake_policy(VERSION 3.16)
+{% set project_name %}{{stinger.name|snake_case|replace('_', '-')|replace('--', '-')}}{% endset %}
+{% set cmake_name %}{{stinger.name|PascalCase|replace('_', '')|replace('--', '')}}{% endset %}
+project ({{project_name}}
+	LANGUAGES CXX
+	VERSION {{stinger.version}})
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+# more secure code
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+find_package(Qt6 REQUIRED COMPONENTS Core Concurrent Qml Quick)
+find_package(PkgConfig REQUIRED)
+find_package(RapidJSON REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS thread chrono)
+pkg_check_modules(mosquitto REQUIRED libmosquitto)
+qt_standard_project_setup(REQUIRES 6.8)
+qt_policy (SET QTP0004 NEW) # automated qmldir file generation
+
+set(CLIENT_SOURCE_FILES
+	{%for src_file in client_source_files|sort-%}
+		{{src_file}}
+	{%endfor-%}
+	{%for header_file in client_header_files|sort-%}
+		{{header_file}}
+	{%endfor-%}
+)
+
+set(SERVER_SOURCE_FILES
+	{%for src_file in server_source_files|sort-%}
+		{{src_file}}
+	{%endfor-%}
+	{%for header_file in server_header_files|sort-%}
+		{{header_file}}
+	{%endfor-%}
+)
+
+# server lib
+add_library({{project_name}}-server ${SERVER_SOURCE_FILES})
+add_library({{cmake_name}}::Server ALIAS {{project_name}}-server)
+target_include_directories({{project_name}}-server
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${mosquitto_INCLUDE_DIRS}
+		${rapidJSON_INCLUDE_DIRS}
+)
+target_link_libraries({{project_name}}-server
+	PUBLIC
+		mosquitto
+		Boost::thread
+		Qt6::Core
+		Qt6::Concurrent
+)
+
+# client lib
+qt_add_library({{project_name}}-client STATIC ${CLIENT_SOURCE_FILES})
+add_library({{cmake_name}}::Client ALIAS {{project_name}}-client)
+
+qt_add_qml_module({{project_name}}-client
+	URI {{cmake_name}}Client
+	VERSION {{stinger.version}}
+	#SOURCES ${CLIENT_SOURCE_FILES}}
+	OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/{{cmake_name}}Client
+	OUTPUT_TARGETS {{project_name}}-client-targets
+)
+
+target_include_directories({{project_name}}-client
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${mosquitto_INCLUDE_DIRS}
+		${rapidJSON_INCLUDE_DIRS}
+)
+
+target_link_libraries({{project_name}}-client
+	PUBLIC
+		mosquitto
+		Boost::thread
+		Qt6::Core
+		Qt6::Concurrent
+		Qt6::Qml
+		Qt6::Quick
+)
+
+# example client
+add_executable({{project_name}}-client-demo examples/client_main.cpp)
+target_link_libraries({{project_name}}-client-demo
+	PRIVATE
+		{{cmake_name}}::Client
+)
+
+# example server
+add_executable({{project_name}}-server-demo examples/server_main.cpp)
+target_link_libraries({{project_name}}-server-demo
+	PRIVATE
+		{{cmake_name}}::Server
+)
+
+add_executable({{project_name}}-discovery-example examples/discovery_example.cpp)
+target_link_libraries({{project_name}}-discovery-example
+	PRIVATE
+		{{cmake_name}}::Client
+)
+
+add_executable({{project_name}}-discovery-publisher examples/discovery_publisher.cpp)
+target_link_libraries({{project_name}}-discovery-publisher
+	PRIVATE
+		{{cmake_name}}::Client
+)
+
+# TODO add qml demo
+# qt_add_qml_module({{project_name}}-qml-demo
+#	URI app
+#	VERSION {{stinger.version}}
+#	QML_FILES
+#		??
+# )
+#
+# target_link_libraries({{project_name}}-qml-demo
+#	PRIVATE
+#		{{cmake_name}}::Client
+# )
+
+set_target_properties(
+	{{project_name}}-clientplugin
+	{{project_name}}-server
+	{{project_name}}-client-demo
+	{{project_name}}-server-demo
+	{{project_name}}-discovery-publisher
+	{{project_name}}-discovery-example
+	#{{project_name}}-qml-demo
+	PROPERTIES
+		CXX_STANDARD 11 # use 17, if you can
+		CXX_STANDARD_REQUIRED ON # use 17, I insist
+		CXX_EXTENSIONS OFF # use c++17 not gnu++17
+)
+
+# help cmake find this
+configure_package_config_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/{{cmake_name}}-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/{{cmake_name}}-config.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/{{cmake_name}}
+	PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
+)
+
+# help cmake enforce version rules
+write_basic_package_version_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/{{cmake_name}}-config-version.cmake
+	VERSION {{stinger.version}}
+	COMPATIBILITY AnyNewerVersion
+)
+
+# install configs
+install(FILES
+	${CMAKE_CURRENT_BINARY_DIR}/{{cmake_name}}-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/{{cmake_name}}-config-version.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/{{cmake_name}}
+)
+
+# install includes
+install(DIRECTORY
+	${CMAKE_CURRENT_SOURCE_DIR}/include/{{cmake_name}}
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# install binaries
+install(TARGETS
+	{{project_name}}-server
+	{{project_name}}-client
+	${% raw %}{{% endraw %}{{project_name}}-client-targets}
+	{{project_name}}-server-demo
+	{{project_name}}-client-demo
+	# {{project_name}}-qml-demo
+	{{project_name}}-discovery-example
+	{{project_name}}-discovery-publisher
+	EXPORT {{cmake_name}}Targets
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # .a files
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so files
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # executables
+)
+
+# install exports
+install(EXPORT
+	{{cmake_name}}Targets
+	FILE {{cmake_name}}-targets.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/{{cmake_name}}
+	NAMESPACE {{cmake_name}}::
+)
+
+# export installs
+export (EXPORT {{cmake_name}}Targets
+	FILE ${CMAKE_CURRENT_BINARY_DIR}/{{cmake_name}}-targets.cmake
+	NAMESPACE {{cmake_name}}::
+)

@@ -1,0 +1,93 @@
+
+
+{%-macro addToValue(value, arg, allocator)%}
+{%-if arg.arg_type.name.lower() == 'primitive'%}
+{%-if arg.optional %}if ({{arg.name|lowerCamelCase}}) {%endif-%}
+{%-if arg.type.name.lower() == 'string'%}
+{ {%if not arg.optional %}// restrict scope{%endif%}
+    rapidjson::Value tempStringValue;
+    tempStringValue.SetString({{arg.name|lowerCamelCase}}{%-if arg.optional %}->{%else%}.{%endif-%}c_str(), {{arg.name|lowerCamelCase}}{%-if arg.optional %}->{%else%}.{%endif-%}size(), {{allocator}});
+    {{value}}.AddMember("{{arg.name}}", tempStringValue, {{allocator}});
+}
+{%-else%}
+{{value}}.AddMember("{{arg.name}}", {%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}}, {{allocator}});
+{%-endif%}
+{%elif arg.arg_type.name.lower() == 'struct'%}
+{ // Restrict Scope for struct serialization
+    rapidjson::Value tempStructValue;
+    {%if arg.optional %}if ({{arg.name|lowerCamelCase}}) { {%-endif%}
+        tempStructValue.SetObject();
+        {{arg.name|lowerCamelCase}}{%if arg.optional %}->{%else%}.{%endif%}AddToRapidJsonObject(tempStructValue, {{allocator}});
+    {%if arg.optional %} }
+    else
+    {
+        tempStructValue.SetNull();
+    }{%-endif%}
+    {{value}}.AddMember("{{arg.name}}", tempStructValue, {{allocator}});
+}
+{%elif arg.arg_type.name.lower() == 'enum'%}
+{{value}}.AddMember("{{arg.name}}", static_cast<int>({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}}), {{allocator}});
+{%elif arg.arg_type.name.lower() == 'datetime'%}
+{ // Restrict Scope for datetime ISO string conversion
+    rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+    std::string {{arg.name|lowerCamelCase}}IsoString = timePointToIsoString({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}});
+    temp{{arg.name|UpperCamelCase}}StringValue.SetString({{arg.name|lowerCamelCase}}IsoString.c_str(), {{arg.name|lowerCamelCase}}IsoString.size(), {{allocator}});
+    {{value}}.AddMember("{{arg.name}}", temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+}
+{%elif arg.arg_type.name.lower() == 'duration'%}
+{ // Restrict Scope for duration ISO string conversion
+    rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+    std::string {{arg.name|lowerCamelCase}}IsoString = durationToIsoString({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}});
+    temp{{arg.name|UpperCamelCase}}StringValue.SetString({{arg.name|lowerCamelCase}}IsoString.c_str(), {{arg.name|lowerCamelCase}}IsoString.size(), {{allocator}});
+    {{value}}.AddMember("{{arg.name}}", temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+}
+{%elif arg.arg_type.name.lower() == 'binary'%}
+{ // Restrict Scope for binary base64 encoding
+    rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+    std::string {{arg.name|lowerCamelCase}}B64String = base64Encode({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}});
+    temp{{arg.name|UpperCamelCase}}StringValue.SetString({{arg.name|lowerCamelCase}}B64String.c_str(), {{arg.name|lowerCamelCase}}B64String.size(), {{allocator}});
+    {{value}}.AddMember("{{arg.name}}", temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+}
+{%elif arg.arg_type.name.lower() == 'array'%}
+{ // Restrict Scope for array serialization
+    rapidjson::Value tempArrayValue;
+    tempArrayValue.SetArray();
+    for (const auto& item : {%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}}) {
+        {%if arg.element.arg_type.name.lower() == 'primitive'%}
+        {%-if arg.element.type.name.lower() == 'string'%}
+        rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+        temp{{arg.name|UpperCamelCase}}StringValue.SetString(item.c_str(), item.size(), {{allocator}});
+        tempArrayValue.PushBack(temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+        {%-else%}
+        tempArrayValue.PushBack(item, {{allocator}});
+        {%-endif%}
+        {%elif arg.element.arg_type.name.lower() == 'struct'%}
+        rapidjson::Value temp{{arg.name|UpperCamelCase}}ObjectValue;
+        temp{{arg.name|UpperCamelCase}}ObjectValue.SetObject();
+        item.AddToRapidJsonObject(temp{{arg.name|UpperCamelCase}}ObjectValue, {{allocator}});
+        tempArrayValue.PushBack(temp{{arg.name|UpperCamelCase}}ObjectValue, {{allocator}});
+        {%elif arg.element.arg_type.name.lower() == 'enum'%}
+        tempArrayValue.PushBack(static_cast<int>(item), {{allocator}});
+        {%elif arg.element.arg_type.name.lower() == 'datetime'%}
+        rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+        std::string itemIsoString = timePointToIsoString(item);
+        temp{{arg.name|UpperCamelCase}}StringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), {{allocator}});
+        tempArrayValue.PushBack(temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+        {%elif arg.element.arg_type.name.lower() == 'duration'%}
+        rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+        std::string itemIsoString = durationToIsoString(item);
+        temp{{arg.name|UpperCamelCase}}StringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), {{allocator}});
+        tempArrayValue.PushBack(temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+        {%elif arg.element.arg_type.name.lower() == 'binary'%}
+        rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
+        std::string itemB64String = base64Encode(item);
+        temp{{arg.name|UpperCamelCase}}StringValue.SetString(itemB64String.c_str(), itemB64String.size(), {{allocator}});
+        tempArrayValue.PushBack(temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
+        {% else %}
+        TEMPLATE ERROR BECAUSE {{arg.element.arg_type.name.lower()}} NOT HANDLED
+        {%endif%}
+    }
+    {{value}}.AddMember("{{arg.name}}", tempArrayValue, {{allocator}});
+}
+{%-endif-%}
+{%endmacro%}

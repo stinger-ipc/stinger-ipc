@@ -1,0 +1,68 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+
+
+#pragma once
+#include <rapidjson/document.h>
+#include <QObject>
+#include <optional>
+#include "{{stinger.qt.enum_header_file}}"
+#include "structs.hpp"
+
+{%for ie_name, ie in stinger.enums.items() %}
+using {{ie_name | UpperCamelCase}}s::{{ie_name | UpperCamelCase}};
+{%endfor%}
+
+// NOTE TO SELF: Need to unfurl single properties?
+
+{%for prop_name, prop in stinger.properties.items()%}
+{%-if prop.documentation %}/**
+{{prop.documentation |commentblock(' * ')}}
+ */{%endif%}
+class {{prop.name | UpperCamelCase}}Property : public QObject {
+    Q_OBJECT
+
+{% for arg in prop.arg_list -%}
+    Q_PROPERTY({{arg.qt_property_type}} READ {{arg.name|lowerCamelCase}} NOTIFY {{arg.name|lowerCamelCase}}Changed)
+    {% if arg.optional -%}Q_PROPERTY(bool READ {{arg.name|lowerCamelCase}}Valid NOTIFY {{arg.name|lowerCamelCase}}Changed){% endif %}
+{%endfor-%}
+
+public:
+
+    explicit {{prop.name | UpperCamelCase}}Property(QObject* parent = nullptr) : QObject(parent) { }
+
+    static {{prop.name | UpperCamelCase}}Property FromRapidJsonObject(const rapidjson::Value& jsonObj,
+                                                                      QObject* parent = nullptr);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+{%-for arg in prop.arg_list %}
+    {%if arg.arg_type.name.lower() == "struct"-%}
+    {{arg.qt_type}}{%if arg.optional%}*{%endif%} {{arg.name|lowerCamelCase}}() { return m_{{arg.name|lowerCamelCase}}; }
+    {%-else-%}
+    {{arg.qt_property_type}} {{arg.name|lowerCamelCase}}() { {% if arg.optional -%}return m_{{arg.name|lowerCamelCase}}.value_or({{arg.qt_default}});{% else -%}return m_{{arg.name|lowerCamelCase}};{% endif -%} }
+    {%if arg.optional -%}bool {{arg.name|lowerCamelCase}}Valid() { return m_{{arg.name|lowerCamelCase}}.has_value(); }{% endif %}
+    {%-endif-%}
+{%-endfor-%}{# end for arg #}
+
+signals:
+{%for arg in prop.arg_list %}
+    void {{arg.name|lowerCamelCase}}Changed();
+{%endfor-%}{# end for arg #}
+
+private:
+{%-for arg in prop.arg_list %}
+    {%if arg.arg_type.name.lower() == "struct"-%}
+    {{arg.qt_type}} m_{{arg.name|lowerCamelCase}};{%if arg.description %}  ///< {{arg.description}}{%endif%}
+    //{{arg.qt_type}}{%if arg.optional%}*{%endif%} m_{{arg.name|lowerCamelCase}};{%if arg.description %}  ///< {{arg.description}}{%endif%}
+    {%-else-%}
+    {{arg.qt_type}} m_{{arg.name|lowerCamelCase}};{%if arg.description %}  ///< {{arg.description}}{%endif%}
+    {%-endif-%}
+{%endfor-%}{# end for arg #}
+};
+{%endfor%}{# end for each property #}

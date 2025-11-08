@@ -1,0 +1,17 @@
+{%macro methodParams(arglist)%}
+    {%- for arg in arglist -%}
+        {{ arg.cpp_temp_type }} {{ arg.name |lowerCamelCase}}{% if not loop.last %}, {% endif %}
+    {%- endfor -%}
+{%-endmacro%}
+
+{%macro declarationParams(arglist)%}
+    {%- for arg in arglist -%}
+        {{ arg.cpp_temp_type }}{% if not loop.last %}, {% endif %}
+    {%- endfor -%}
+{%-endmacro%}
+
+{%macro callParams(arglist)%}
+    {%- for arg in arglist -%}
+        {{ arg.name |lowerCamelCase}}{% if not loop.last %}, {% endif %}
+    {%- endfor -%}
+{%endmacro%}

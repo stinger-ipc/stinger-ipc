@@ -1,0 +1,21 @@
+{% import "partials/deserialize.jinja2"  as deser %}
+{% import "partials/serialize.jinja2" as ser %}
+#include "property_structs.hpp"
+#include <rapidjson/document.h>
+
+{%for prop_name, prop in stinger.properties.items()%}
+{{prop.name | UpperCamelCase}}Property {{prop.name | UpperCamelCase}}Property::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    {{prop.name | UpperCamelCase}}Property {{prop.name | lowerCamelCase }};
+    {{deser.deserialize(prop.name|lowerCamelCase, prop.arg_list, 'jsonObj') | indent(4)}}
+
+    return {{prop.name | lowerCamelCase}};
+};
+
+void {{prop.name | UpperCamelCase}}Property::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    {%for arg in prop.arg_list%}
+    {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
+    {%- endfor %}
+}
+{% endfor %}

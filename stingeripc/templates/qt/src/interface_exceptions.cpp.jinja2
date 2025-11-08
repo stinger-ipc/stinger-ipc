@@ -1,0 +1,16 @@
+#include "interface_exceptions.hpp"
+
+
+std::exception_ptr createStingerException(MethodReturnCode code, const std::string& message)
+{
+    switch (code)
+    {
+        {%for rc_i, rc_name in stinger.method_return_codes.items()%}
+        case MethodReturnCode::{{rc_name | CONST_CASE}}:
+            return std::make_exception_ptr({{rc_name | UpperCamelCase}}Exception(message));
+            break;
+        {%endfor%}
+        default:
+            return std::make_exception_ptr(StingerMethodException(code, message));
+    }
+}

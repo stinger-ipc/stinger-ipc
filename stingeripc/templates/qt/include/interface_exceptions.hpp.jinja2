@@ -1,0 +1,28 @@
+#pragma once
+
+#include <exception>
+#include <string>
+#include "ibrokerconnection.hpp"
+
+class StingerMethodException : public std::exception
+{
+public:
+    StingerMethodException(MethodReturnCode code, const std::string& message) : _code(code), _message(message) {}
+    virtual const char* what() const noexcept override { return _message.c_str(); }
+    MethodReturnCode code() const noexcept { return _code; }
+
+private:
+    MethodReturnCode _code;
+    std::string _message;
+};
+
+{%for rc_i, rc_name in stinger.method_return_codes.items()%}
+class {{rc_name | UpperCamelCase}}Exception : public StingerMethodException
+{
+public:
+    {{rc_name | UpperCamelCase}}Exception(const std::string& message)
+        : StingerMethodException(MethodReturnCode::{{rc_name | CONST_CASE}}, message) {}
+};
+{%endfor%}
+
+std::exception_ptr createStingerException(MethodReturnCode code, const std::string& message);

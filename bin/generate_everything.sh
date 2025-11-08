@@ -2,6 +2,31 @@
 
 BASE_DIR=$(dirname $0)
 
+#### Qt
+function generate_qt() {
+    echo
+    echo "----------- Generating Qt for ${IFACE_NAME}----------------"
+    IFACE_NAME=$1
+    mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/qt/build
+    uv run stinger generate qt ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/qt/
+    RC=$?
+    if [ $RC -ne 0 ]; then return $RC; fi
+    which clang-format &> /dev/null
+    if [ $? -eq 0 ]; then
+        echo "Running clang-format on generated Qt/C++ files"
+        clang-format --style=file:${BASE_DIR}/../clang-format-config.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/qt/include/*.hpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/qt/src/*.cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/qt/examples/*.cpp -i
+    fi
+    # let's wait on actually compiling
+    # if [ $? -eq 0 ]; then
+    #     (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/qt/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j8)
+    # fi
+    return 0
+}
+generate_qt testable || exit 1
+generate_qt full || exit 1
+generate_qt signal_only || exit 1
+generate_qt weather || exit 1
+
 #### Python
 
 function generate_python() {
@@ -46,6 +71,8 @@ generate_cpp testable || exit 1
 generate_cpp full || exit 1
 generate_cpp signal_only || exit 1
 generate_cpp weather || exit 1
+
+
 
 
 #### Rust

@@ -89,7 +89,13 @@ class Arg:
     @property
     def cpp_type(self) -> str:
         return stringmanip.upper_camel_case(self.name)
-    
+
+    @property
+    def qt_type(self) -> str:
+        if self.optional and "optional" not in self.name:
+            return f"std::optional<{stringmanip.upper_camel_case(self.name)}>"
+        return stringmanip.upper_camel_case(self.name)
+
     @property
     def cpp_temp_type(self) -> str:
         if self.optional and "optional" not in self.cpp_type:
@@ -101,6 +107,20 @@ class Arg:
         if self.optional and "optional" not in self.cpp_type:
             return f"boost::optional<{self.cpp_type}>"
         return self.cpp_type
+
+    @property
+    def qt_property_type(self) -> str:
+        # if self.optional and "optional" not in self.qt_type:
+        #     return "QVariant"
+            # return f"{self.qt_type}*"
+        return self.qt_type
+
+    @property
+    def qt_func_param_type(self) -> str:
+        if self.optional and "optional" not in self.qt_type:
+            # return self.qt_type
+            return f"{self.qt_type}*" # ???
+        return self.qt_type
 
     @classmethod
     def new_arg_from_stinger(
@@ -166,7 +186,7 @@ class Arg:
                 st_arg.optional = opt
             st_arg.try_set_description_from_spec(arg_spec)
             return st_arg
-        
+
         if arg_spec["type"] == "datetime":
             dt_arg = ArgDateTime(arg_spec["name"])
             if opt := arg_spec.get("optional", False):
@@ -184,7 +204,7 @@ class Arg:
                 dur_arg.optional = opt
             dur_arg.try_set_description_from_spec(arg_spec)
             return dur_arg
-        
+
         if arg_spec["type"] == "binary":
             bin_arg = ArgBinary(arg_spec["name"])
             if opt := arg_spec.get("optional", False):
@@ -193,7 +213,7 @@ class Arg:
                 bin_arg.optional = opt
             bin_arg.try_set_description_from_spec(arg_spec)
             return bin_arg
-        
+
         if arg_spec["type"] == "array":
             if "itemType" not in arg_spec:
                 raise InvalidStingerStructure("Array args need an 'itemType'")
@@ -251,6 +271,12 @@ class ArgEnum(Arg):
         return self._enum.cpp_type
 
     @property
+    def qt_type(self) -> str:
+        if self.optional:
+            return f"std::optional<{self._enum.qt_type}>"
+        return self._enum.qt_type
+
+    @property
     def rust_type(self) -> str:
         if self.optional:
             return f"Option<{self._enum.rust_type}>"
@@ -267,8 +293,16 @@ class ArgEnum(Arg):
         return self.cpp_type
 
     @property
+    def qt_property_type(self) -> str:
+        return self.qt_type
+
+    @property
     def cpp_data_type(self) -> str:
         return self._enum.cpp_type
+
+    @property
+    def qt_data_type(self) -> str:
+        return self._enum.qt_type
 
     @property
     def cpp_rapidjson_type(self) -> str:
@@ -284,7 +318,7 @@ class ArgEnum(Arg):
         value = random.choice(self._enum.values)
         if lang == "python":
             retval = f"{self._enum.class_name}.{stringcase.constcase(value) }"
-        elif lang == "c++":
+        elif lang == "c++" or lang == "qt":
             retval = f"{self._enum.class_name}::{stringcase.constcase(value)}"
         elif lang == "rust":
             if self.optional:
@@ -329,6 +363,10 @@ class ArgPrimitive(Arg):
         return ArgPrimitiveType.to_cpp_type(self._arg_type, optional=self._optional)
 
     @property
+    def qt_type(self) -> str:
+        return ArgPrimitiveType.to_qt_type(self._arg_type, optional=self._optional)
+
+    @property
     def protobuf_type(self) -> str:
         return ArgPrimitiveType.to_protobuf_type(self._arg_type)
 
@@ -342,11 +380,23 @@ class ArgPrimitive(Arg):
             return self.cpp_type
 
     @property
+    def qt_property_type(self) -> str:
+        return ArgPrimitiveType.to_qt_type(self._arg_type, optional=False)
+
+    @property
+    def qt_default(self) -> str:
+        return ArgPrimitiveType.get_qt_default(self._arg_type)
+
+    @property
     def json_type(self) -> str:
         return ArgPrimitiveType.to_json_type(self._arg_type)
 
     @property
     def cpp_rapidjson_type(self) -> str:
+        return ArgPrimitiveType.to_cpp_rapidjson_type_str(self._arg_type)
+
+    @property
+    def qt_rapidjson_type(self) -> str:
         return ArgPrimitiveType.to_cpp_rapidjson_type_str(self._arg_type)
 
     def get_random_example_value(
@@ -417,6 +467,12 @@ class ArgStruct(Arg):
         return self._interface_struct.cpp_type
 
     @property
+    def qt_type(self) -> str:
+        if self.optional:
+            return f"{self._interface_struct.qt_type}*"
+        return self._interface_struct.qt_type
+
+    @property
     def python_type(self) -> str:
         return f"{self._interface_struct.python_local_type}"
 
@@ -447,6 +503,10 @@ class ArgStruct(Arg):
     @property
     def cpp_rapidjson_type(self) -> str:
         return "Object"
+
+    @property
+    def qt_rapidjson_type(self) -> str:
+        return self.cpp_rapidjson_type
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang in ["rust", "python"]:
@@ -493,12 +553,27 @@ class ArgDateTime(Arg):
         return "std::chrono::time_point<std::chrono::system_clock>"
 
     @property
+    def qt_type(self) -> str:
+        # if self.optional:
+        #     return "QVariant"
+            # return "std::chrono::time_point<std::chrono::system_clock>*"
+        return "QDateTime"
+
+    @property
     def cpp_temp_type(self) -> str:
         return self.cpp_type
 
     @property
+    def qt_property_type(self) -> str:
+        return self.qt_type
+
+    @property
     def cpp_rapidjson_type(self) -> str:
         return "String"
+
+    @property
+    def qt_rapidjson_type(self) -> str:
+        return self.cpp_rapidjson_type
 
     @property
     def python_type(self) -> str:
@@ -507,7 +582,7 @@ class ArgDateTime(Arg):
     @property
     def python_local_type(self) -> str:
         return "datetime"
-    
+
     @property
     def python_annotation(self) -> str:
         if self.optional:
@@ -561,6 +636,18 @@ class ArgDuration(Arg):
         return self.cpp_type
 
     @property
+    def qt_type(self) -> str:
+        # if self.optional:
+        #     return "QVariant"
+            # return "std::chrono::duration<double>*"
+        # return "std::chrono::duration<double>"
+        return "QDuration::fixme"
+
+    @property
+    def qt_property_type(self) -> str:
+        return self.qt_type
+
+    @property
     def python_type(self) -> str:
         return "timedelta"
 
@@ -583,6 +670,10 @@ class ArgDuration(Arg):
     @property
     def cpp_rapidjson_type(self) -> str:
         return "String"
+
+    @property
+    def qt_rapidjson_type(self) -> str:
+        return self.cpp_rapidjson_type
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         random_state = random.getstate()
@@ -608,7 +699,7 @@ class ArgDuration(Arg):
 
     def __repr__(self):
         return f"ArgDuration(name={self.name})"
-    
+
 
 class ArgBinary(Arg):
     def __init__(self, name: str):
@@ -632,16 +723,27 @@ class ArgBinary(Arg):
     @property
     def cpp_rapidjson_type(self) -> str:
         return "String"
-    
+
+    @property
+    def qt_rapidjson_type(self) -> str:
+        return self.cpp_rapidjson_type
+
     @property
     def cpp_type(self) -> str:
         if self.optional:
             return "boost::optional<std::vector<uint8_t>>"
         return "std::vector<uint8_t>"
-    
+
     @property
     def cpp_temp_type(self) -> str:
         return self.cpp_type
+
+    @property
+    def qt_type(self) -> str:
+        if self.optional:
+            return "QVariantList"
+            # return "std::vector<uint8_t>*"
+        return "std::vector<uint8_t>"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":
@@ -659,7 +761,7 @@ class ArgBinary(Arg):
 
     def __repr__(self):
         return f"ArgBinary(name={self.name})"
-    
+
 
 class ArgArray(Arg):
     def __init__(self, name: str, element_type: Arg):
@@ -676,6 +778,13 @@ class ArgArray(Arg):
         if self.optional:
             return f"boost::optional<std::vector<{self.element.cpp_temp_type}>>"
         return f"std::vector<{self.element.cpp_temp_type}>"
+
+    @property
+    def qt_type(self) -> str:
+        if self.optional:
+            return "QVariantList"
+            # return f"std::vector<{self.element.qt_temp_type}>*"
+        return f"std::vector<{self.element.qt_temp_type}>"
 
     @property
     def python_annotation(self) -> str:
@@ -698,6 +807,10 @@ class ArgArray(Arg):
     @property
     def cpp_rapidjson_type(self) -> str:
         return "Array"
+
+    @property
+    def qt_rapidjson_type(self) -> str:
+        return self.cpp_rapidjson_type
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         example_value = self.element.get_random_example_value(lang, seed=seed)
@@ -860,6 +973,19 @@ class Method(InterfaceComponent):
             elif isinstance(self._return_value, ArgStruct) and self._return_value.optional:
                 return f"boost::optional<{self._return_value.cpp_type}>"
             return self._return_value.cpp_type
+        elif isinstance(self._return_value, list):
+            return stringmanip.upper_camel_case(self.return_value_name)
+
+    @property
+    def return_value_qt_class(self) -> str:
+        if self._return_value is None:
+            return "void"
+        elif isinstance(self._return_value, Arg):
+            if isinstance(self._return_value, ArgPrimitive) and self._return_value.type == ArgPrimitiveType.STRING:
+                return "QString"
+            elif isinstance(self._return_value, ArgStruct) and self._return_value.optional:
+                return f"b{self._return_value.qt_type}*"
+            return self._return_value.qt_type
         elif isinstance(self._return_value, list):
             return stringmanip.upper_camel_case(self.return_value_name)
 
@@ -1143,9 +1269,13 @@ class InterfaceEnum:
         return stringmanip.upper_camel_case(self.name)
 
     @property
+    def qt_type(self) -> str:
+        return self.cpp_type
+
+    @property
     def values(self):
         return self._values
-    
+
     def value_description(self, index: int) -> str | None:
         if index < 0 or index >= len(self._value_descriptions):
             return None
@@ -1214,6 +1344,10 @@ class InterfaceStruct:
     @property
     def cpp_type(self) -> str:
         return stringmanip.upper_camel_case(self.name)
+
+    @property
+    def qt_type(self) -> str:
+        return self.cpp_type
 
     @property
     def values(self) -> list[Arg]:
@@ -1308,6 +1442,7 @@ class StingerSpec:
             self._python = PythonInterfaceSymbols(self)
             self._rust = RustInterfaceSymbols(self)
             self._cpp = CppInterfaceSymbols(self)
+            self._qt = QtInterfaceSymbols(self)
         except KeyError as e:
             raise InvalidStingerStructure(
                 f"Missing interface property in {interface}: {e}"
@@ -1355,11 +1490,11 @@ class StingerSpec:
     @property
     def summary(self) -> str:
         return self._summary or ""
-    
+
     @property
     def title(self) -> str:
         return self._title or self._name or ""
-    
+
     @property
     def documentation(self) -> str:
         return self._documentation or ""
@@ -1415,6 +1550,10 @@ class StingerSpec:
     @property
     def cpp(self) -> CppInterfaceSymbols:
         return self._cpp
+
+    @property
+    def qt(self) -> QtInterfaceSymbols:
+        return self._qt
 
     @classmethod
     def new_spec_from_stinger(

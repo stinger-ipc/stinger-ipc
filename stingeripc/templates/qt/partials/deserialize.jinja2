@@ -1,0 +1,70 @@
+{%macro deserialize_value(target, arg)%}
+{%-if arg.arg_type.name.lower() == 'primitive'%}
+{{target}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+{%-elif arg.arg_type.name.lower() == 'enum'%}
+{{target}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+{%-elif arg.arg_type.name.lower() == 'struct'%}
+{{target}} = {{arg.cpp_type}}::FromRapidJsonObject(itr->value);
+{%-elif arg.arg_type.name.lower() == 'datetime'%}
+auto temp{{arg.name|UpperCamelCase}}IsoString = itr->value.GetString();
+{{target}} = parseIsoTimestamp(temp{{arg.name|UpperCamelCase}}IsoString);
+{%-elif arg.arg_type.name.lower() == 'duration'%}
+auto temp{{arg.name|UpperCamelCase}}IsoString = itr->value.GetString();
+{{target}} = parseIsoDuration(temp{{arg.name|UpperCamelCase}}IsoString);
+{%-elif arg.arg_type.name.lower() == 'binary'%}
+auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
+{{target}} = base64Decode(temp{{arg.name|UpperCamelCase}}B64String);
+{%elif arg.arg_type.name.lower() == 'array'%}
+{
+    std::vector<{{arg.element.cpp_temp_type}}> tempArray;
+    for (const auto& item : itr->value.GetArray()) {
+        if (item.Is{{arg.element.cpp_rapidjson_type}}()) {
+            {%if arg.element.arg_type.name.lower() == 'primitive'%}
+            tempArray.push_back(item.Get{{arg.element.cpp_rapidjson_type}}());
+            {%elif arg.element.arg_type.name.lower() == 'enum'%}
+            tempArray.push_back(static_cast<{{arg.element.cpp_data_type}}>(item.Get{{arg.element.cpp_rapidjson_type}}()));
+            {%elif arg.element.arg_type.name.lower() == 'struct'%}
+            tempArray.push_back({{arg.element.cpp_type}}::FromRapidJsonObject(item));
+            {%elif arg.element.arg_type.name.lower() == 'datetime'%}
+            {
+                std::string tempIsoString = item.GetString();
+                tempArray.push_back(parseIsoTimestamp(tempIsoString));
+            }
+            {%elif arg.element.arg_type.name.lower() == 'duration'%}
+            {
+                std::string tempIsoString = item.GetString();
+                tempArray.push_back(parseIsoDuration(tempIsoString));
+            }
+            {%elif arg.element.arg_type.name.lower() == 'binary'%}
+            {
+                std::string tempB64String = item.GetString();
+                tempArray.push_back(base64Decode(tempB64String));
+            }
+            {%else%}
+            TEMPLATE ERROR BECAUSE {{arg.element.arg_type.name.lower()}} NOT HANDLED
+            {%endif%}
+        }
+    }
+    {{target}} = std::move(tempArray);
+}
+{%endif%}
+{%endmacro%}
+
+
+{%-macro deserialize(target, arglist, json_obj)%}
+{%-for arg in arglist%}
+{%-set arg_target %}{{target}}.{{arg.name|lowerCamelCase}}{%endset%}
+{ // Scoping
+    rapidjson::Value::ConstMemberIterator itr = {{json_obj}}.FindMember("{{arg.name}}");
+    if (itr != {{json_obj}}.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+        {{deserialize_value(arg_target, arg) | indent(8)}}
+    } else {
+    {%-if arg.optional%}
+        {{arg_target}} = boost::none;
+    {%-else%}
+        throw std::runtime_error("Received payload for the '{{arg.name}}' argument doesn't have required value/type");
+    {%endif%}
+    }
+}
+{%-endfor%}
+{%-endmacro%}

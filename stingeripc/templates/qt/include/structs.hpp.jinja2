@@ -1,0 +1,50 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+
+#pragma once
+#include <QObject>
+#include <QMetaType>
+#include <QString>
+#include <rapidjson/document.h>
+#include "{{stinger.qt.enum_header_file}}"
+
+{%for ie_name, ie in stinger.enums.items() %}
+using {{ie_name | UpperCamelCase}}s::{{ie_name | UpperCamelCase}};
+{%endfor%}
+
+{%for istruct_name, istruct in stinger.structs.items() %}
+class {{istruct_name | UpperCamelCase }} : public QObject {
+    Q_OBJECT
+    {%-for value in istruct.members %}
+    Q_PROPERTY({{value.qt_property_type}} {{value.name|lowerCamelCase}} READ {{value.name|lowerCamelCase}} NOTIFY {{value.name|lowerCamelCase}}Changed)
+    {% if value.optional -%}Q_PROPERTY(bool READ {{value.name|lowerCamelCase}}Valid NOTIFY {{value.name|lowerCamelCase}}Changed){% endif %}
+    {%-endfor%}
+
+public:
+    explicit {{istruct_name | UpperCamelCase}}(QObject* parent = nullptr) : QObject(parent) {}
+    {{istruct_name | UpperCamelCase}}({%for value in istruct.members %}{{value.qt_type}} {{value.name|lowerCamelCase}},{%endfor%} QObject* parent = nullptr)
+        : {%for value in istruct.members %} m_{{value.name|lowerCamelCase}}({{value.name|lowerCamelCase}}),{%endfor%} QObject(parent)  {}
+    static {{istruct_name | UpperCamelCase }} FromRapidJsonObject(const rapidjson::Value& jsonObj, QObject* parent = nullptr);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    {%-for value in istruct.members %}
+    {{value.qt_property_type}} {{value.name|lowerCamelCase}}() { return m_{{value.name|lowerCamelCase}}; }
+    {%if value.optional -%}bool {{value.name|lowerCamelCase}}Valid() { return m_{{value.name|lowerCamelCase}}.has_value(); }{% endif %}
+    {%-endfor%}
+signals:
+    {%-for value in istruct.members %}
+    void {{value.name|lowerCamelCase}}Changed();
+    {%-endfor%}
+
+private:
+    {%-for value in istruct.members %}
+    {{value.qt_type}} m_{{value.name|lowerCamelCase}};
+    {%-endfor%}
+};
+{%endfor%}

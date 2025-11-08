@@ -17,6 +17,7 @@ from . import python_generator
 from . import rust_generator
 from . import cpp_generator
 from . import generic_generator
+from . import qt_generator
 
 app = typer.Typer(help="stinger-ipc generator CLI")
 
@@ -35,8 +36,8 @@ def generate(
     OUTPUT_DIR is the directory that will receive generated files
     """
     lang = language.lower()
-    if lang not in ("rust", "python", "markdown", "cpp", "web", "protobuf"):
-        raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf")
+    if lang not in ("rust", "python", "markdown", "cpp", "web", "protobuf", "qt"):
+        raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf, qt")
 
     if lang == "python":
         # python_generator.main expects Path arguments via typer
@@ -63,6 +64,8 @@ def generate(
         wt.render_template("index.html.jinja2", "index.html", stinger=stinger)
     elif lang == "cpp":
         cpp_generator.main(input_file, output_dir)
+    elif lang == "qt":
+        qt_generator.main(input_file, output_dir)
     elif lang == "rust":
         rust_generator.main(input_file, output_dir)
     elif lang == "protobuf":

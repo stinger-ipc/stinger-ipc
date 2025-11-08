@@ -121,6 +121,34 @@ class ArgPrimitiveType(Enum):
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod
+    def to_qt_type(cls, arg_type: ArgPrimitiveType, optional: bool = False) -> str:
+        if arg_type == cls.BOOLEAN:
+            return "std::optional<bool>" if optional else "bool"
+        elif arg_type == cls.INTEGER:
+            return "std::optional<int>" if optional else "int"
+        elif arg_type == cls.FLOAT:
+            return "std::optional<double>" if optional else "double"
+        elif arg_type == cls.STRING:
+            return "std::optional<QString>" if optional else "QString"
+        raise InvalidStingerStructure("Unhandled arg type")
+
+    @classmethod
+    def get_qt_default(cls, arg_type: ArgPrimitiveType) -> str:
+        if arg_type == cls.BOOLEAN:
+            return "false"
+        elif arg_type == cls.INTEGER:
+            return "0"
+        elif arg_type == cls.FLOAT:
+            return "0.0"
+        elif arg_type == cls.STRING:
+            return '""'
+        raise InvalidStingerStructure("Unhandled arg type")
+
+    @classmethod
+    def to_qt_json_type_str(cls, arg_type: ArgPrimitiveType) -> str:
+        return cls.to_cpp_rapidjson_type_str(arg_type)
+
+    @classmethod
     def to_protobuf_type(cls, arg_type: ArgPrimitiveType) -> str:
         if arg_type == cls.BOOLEAN:
             return "bool"

@@ -1,0 +1,63 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+
+#pragma once
+#include <string>
+#include <chrono>
+#include <vector>
+
+/*!
+    \brief Parses an ISO 8601 timestamp string to a time_point.
+
+    The \a isoTimestamp parameter ISO 8601 formatted timestamp string.
+    Returns Time point representing the parsed timestamp.
+*/
+std::chrono::time_point<std::chrono::system_clock> parseIsoTimestamp(const std::string& isoTimestamp);
+
+/*!
+    \brief Converts a time_point to an ISO 8601 timestamp string.
+
+    The \a timePoint parameter Time point to convert.
+    Returns ISO 8601 formatted timestamp string.
+*/
+std::string timePointToIsoString(const std::chrono::time_point<std::chrono::system_clock>& timePoint);
+
+/*!
+    \brief Converts a duration to an ISO 8601 duration string.
+
+    The \a duration parameter Duration to convert.
+    Returns ISO 8601 formatted duration string.
+*/
+std::string durationToIsoString(const std::chrono::duration<double>& duration);
+
+/*!
+    \brief Parses an ISO 8601 duration string to a duration.
+
+    The \a isoDuration parameter ISO 8601 formatted duration string.
+    Returns Duration representing the parsed value.
+*/
+std::chrono::duration<double> parseIsoDuration(const std::string& isoDuration);
+
+/*!
+    \brief Encodes binary data to base64 string.
+
+    The \a data parameter Vector of bytes to encode.
+    Returns Base64 encoded string.
+*/
+std::string base64Encode(const std::vector<unsigned char>& data);
+
+/*!
+    \brief Decodes a base64 string to binary data.
+
+    The \a b64input parameter Base64 encoded string.
+    Returns Vector of decoded bytes.
+*/
+std::vector<unsigned char> base64Decode(const std::string& b64input);
+

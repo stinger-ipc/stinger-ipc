@@ -1,0 +1,24 @@
+
+#include "signal_payloads.hpp"
+
+{% import "partials/deserialize.jinja2"  as deser %}
+{% import "partials/serialize.jinja2" as ser %}
+
+{%for signal_name, signal in stinger.signals.items()%}
+// --- (De-)Serialization for {{signal_name}} signal payload ---
+{{signal_name | UpperCamelCase}}Payload {{signal_name | UpperCamelCase}}Payload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    {{signal_name | UpperCamelCase}}Payload {{signal.name | lowerCamelCase }}Payload;
+    {{deser.deserialize((signal.name|lowerCamelCase)+"Payload", signal.arg_list, 'jsonObj') | indent(4)}}
+
+    return {{signal.name | lowerCamelCase }}Payload;
+};
+
+void {{signal_name | UpperCamelCase}}Payload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    {%for arg in signal.arg_list%}
+    {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
+    {%- endfor %}
+}
+{% endfor %}
+

@@ -1,0 +1,34 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+
+
+#pragma once
+#include <string>
+#include <chrono>
+#include <vector>
+#include <boost/optional.hpp>
+#include "{{stinger.cpp.enum_header_file}}"
+#include "structs.hpp"
+
+
+{%for signal_name, signal in stinger.signals.items()%}
+
+struct {{signal_name | UpperCamelCase}}Payload {
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static {{signal_name | UpperCamelCase}}Payload FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    {%-if signal.arg_list | length > 0 %}
+    // Values...
+    {%-for arg in signal.arg_list %}
+    {{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}};
+    {%-endfor%}
+    {%endif%}
+};
+
+{%endfor%}

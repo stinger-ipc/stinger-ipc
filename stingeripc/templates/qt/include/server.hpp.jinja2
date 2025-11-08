@@ -1,0 +1,90 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+{% import 'partials/properties.jinja2' as pr %}
+
+#pragma once
+
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <string>
+#include <memory>
+#include <exception>
+#include <mutex>
+#include <chrono>
+#include <thread>
+#include <atomic>
+#include <boost/optional.hpp>
+#include <rapidjson/document.h>
+{%if stinger.properties | length > 0 %}
+#include "property_structs.hpp"
+{%endif%}
+#include "ibrokerconnection.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
+{%if stinger.methods | length > 0%}
+#include "method_payloads.hpp"
+{%endif%}
+
+class {{stinger.cpp.server_class_name}} {
+
+public:
+    static constexpr const char NAME[] = "{{stinger.name}}";
+    static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
+
+    {{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+
+    virtual ~{{stinger.cpp.server_class_name}}();
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    boost::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_func_param_type}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    void register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func);
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    {{ pr.public_declarations(prop_name, prop, false) | indent(4) }}
+    void republish{{prop_name | UpperCamelCase}}Property() const;
+    {%endfor%}
+private: 
+    std::shared_ptr<IBrokerConnection> _broker;
+    std::string _instanceId;
+    CallbackHandleType _brokerMessageCallbackHandle = 0;
+    void _receiveMessage(
+            const std::string& topic, 
+            const std::string& payload, 
+            const MqttProperties& mqttProps
+    );
+
+    {%for method_name, method in stinger.methods.items()%}
+    void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
+    int _{{method_name | camelCase}}MethodSubscriptionId;
+    {%endfor%}
+
+    {%if stinger.properties|length > 0 -%}
+    // ---------------- PROPERTIES ------------------
+    {%for prop_name, prop in stinger.properties.items()%}
+    {{pr.private_declarations(prop_name, prop, false) | indent(4)}}
+    {%endfor%}
+    {%endif%}
+
+    // ---------------- SERVICE ADVERTISEMENT ------------------
+
+    // Thread for publishing service advertisement messages
+    std::thread _advertisementThread;
+
+    // Flag to signal the advertisement thread to stop
+    std::atomic<bool> _advertisementThreadRunning;
+
+    // Method that runs in the advertisement thread
+    void _advertisementThreadLoop();
+};
