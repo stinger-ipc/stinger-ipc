@@ -29,6 +29,7 @@ use tokio::sync::{broadcast{%if stinger.properties|length > 0 %}, watch{%endif%}
 {%endif%}
 {%if stinger.properties | length > 0%}
 use std::sync::atomic::{AtomicU32, Ordering};
+use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
 {%endif%}
 use stinger_mqtt_trait::{Mqtt5PubSub, MqttPublishSuccess, Mqtt5PubSubError};
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
@@ -58,13 +59,16 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
-    {{prop_name | snake_case}}: Arc<AsyncMutex<Option<{{prop_name|UpperCamelCase}}Property>>>,
-    {{prop_name | snake_case}}_tx_channel: watch::Sender<Option<{%if prop.arg_list|length == 1%}{{prop.arg_list[0].rust_type}}{%else%}{{prop_name|UpperCamelCase}}Property{%endif%}>>,
+    {%-if prop.arg_list | length > 1%}
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust_type}}>>,
+    {%-else%}
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust_type}}>>,
+    {%endif-%}
     {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%-endfor%}
 }
+{%endif%}{# if any properties #}
 
-{%endif%}
 {%endif%}{# any methods or properties #}
 #[derive(Clone)]
 pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
@@ -100,7 +104,12 @@ pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
 }
 
 impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
-    pub async fn new(mut connection: C{%if stinger.methods|length > 0%}, method_handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<C>>>> {%endif%}, instance_id: String) -> Self {
+    pub async fn new(
+            mut connection: C,
+            {%if stinger.methods|length > 0%}method_handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<C>>>>, {%endif%}
+            instance_id: String, 
+            initial_property_values: {{stinger.name | UpperCamelCase}}InitialPropertyValues,
+        ) -> Self {
         {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
         // Create a channel for messages to get from the Mqtt5PubSub object to this {{stinger.rust.server_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -133,15 +142,15 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%if stinger.properties|length > 0%}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
-            {{prop_name | snake_case}}: Arc::new(AsyncMutex::new(None)),
-            {{prop_name | snake_case}}_tx_channel: watch::channel(None).0,
-            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(0)),
-
+            {%if prop.arg_list | length > 1 -%}
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(discovery_info.properties.{{prop_name | snake_case}})),
+            {%-else%}
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(discovery_info.properties.{{prop_name | snake_case}})),
+            {%-endif-%}
+            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(discovery_info.properties.{{prop_name | snake_case}}_version)),
         {%-endfor%}
         };
         {%endif%}
-
-
 
         {{stinger.rust.server_struct_name}} {
             mqtt_client: connection.clone(),
@@ -157,7 +166,8 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         }
     }
 
-    pub async fn oneshot_to_future(
+    /// Converts a oneshot channel receiver into a future.
+    async fn oneshot_to_future(
         ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
@@ -181,7 +191,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         })
     }
 
-    pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
+    async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
                 MethodReturnCode::Success(_) => Ok(()),
@@ -282,53 +292,72 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     {%endfor%}
 
     {%-for prop_name, prop in stinger.properties.items()%}
-    async fn publish_{{prop_name}}_value(mut publisher: C, topic: String, data: {{prop_name|UpperCamelCase}}Property, property_version: u32) -> SentMessageFuture
+    /// When the value of the {{prop_name}} property changes, either because of a request or because of a local change,
+    /// this function publishes the new value to MQTT.
+    ///
+    /// As an argument, it takes `data_obj` which is a struct that is serializable.  This is not the Arc<RwWriteLock<T>> property value. 
+    ///
+    /// It returns a future that resolves when getting a PUBACK back from the MQTT broker.
+    async fn publish_{{prop_name}}_value(
+            mut publisher: C, 
+            instance_id: String, 
+            data_obj: {{prop_name|UpperCamelCase}}Property, 
+            property_version: u32,
+            opt_corr_id: Option<Uuid>,
+            opt_return_code: Option<MethodReturnCode>,
+    ) -> SentMessageFuture
     {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
+        let prop_topic = format!("{{prop.value_topic}}", instance_id);
+        let msg = message::property_value_message(&prop_topic, &data_obj, property_version, opt_corr_id, opt_return_code).unwrap();
         let ch = publisher.publish_noblock(msg).await;
         {{stinger.rust.server_struct_name}}::<C>::oneshot_to_future(ch).await
     }
     {%if not prop.read_only %}
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
-    async fn update_{{prop_name}}_value(publisher: C, topic: String, property_pointer: Arc<AsyncMutex<Option<{{prop_name|UpperCamelCase}}Property>>>, property_version: Arc<AtomicU32>,watch_sender: watch::Sender<Option<{%if prop.arg_list|length == 1%}{{prop.arg_list[0].rust_type}}{%else%}{{prop_name|UpperCamelCase}}Property{%endif%}>>, msg: MqttMessage) -> SentMessageFuture
+    async fn update_{{prop_name}}_value(
+            publisher: C, 
+            instance_id: String, 
+            property_pointer: Arc<RwLockWatch<{{prop_name|UpperCamelCase}}Property>>, 
+            property_version: Arc<AtomicU32>, 
+            msg: MqttMessage
+    ) -> SentMessageFuture
     {
+        // This is JSON encoding of an object with {{prop.arg_list | length}} field{%if prop.arg_list | length > 1 %}s{%endif%}.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: {{prop_name | UpperCamelCase}}Property = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
-                    return {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string())).await;
-                }
-            }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = {%if prop.arg_list|length == 1%}new_property_structure.{{prop.arg_list[0].name|snake_case}}.clone(){%else%}new_property_structure.clone(){%endif%};
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for '{{prop_name}}' property: {:?}", e);
-            }
-        };
         
-        {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher, topic2, new_property_structure, new_version).await
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match serde_json::from_str(&payload_str) {
+            Ok(new_property_structure) => {
+                let mut property_guard = property_pointer.write().await;
+                {%if prop.arg_list | length == 1 %}
+                // Single value property.  Use the {{prop.arg_list[0].name | snake_case}} field of the struct.
+                *property_guard = new_property_structure.{{prop.arg_list[0].name | snake_case}}.clone();
+                {%else%}
+                // Multi-value property set as a struct.
+                *property_guard = new_property_structure.clone();
+                {%endif%}
+                let new_version = property_version.fetch_add(1, Ordering::SeqCst);
+            Err(e) => {
+                error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
+                // TODO: make sure this error gets back to the requester.
+                return {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string())).await;
+            }
+        };
+
+        {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher, instance_id, new_property_structure, new_version).await
     }
 
-    pub async fn watch_{{prop_name}}(&self) -> watch::Receiver<Option<{{prop.rust_type}}>> {
-        self.properties.{{prop_name}}_tx_channel.subscribe()
+    /// Watch for changes to the `{{prop_name}}` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+        self.properties.{{prop_name | snake_case}}.subscribe()
     }
     {%endif%}{# not read only property #}
 
     /// Sets the value{%if prop.arg_list|length > 1%}s{%endif%} of the {{prop_name}} property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) -> SentMessageFuture {
         let prop = self.properties.{{prop_name|snake_case}}.clone();
         
@@ -439,13 +468,12 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                                 let update_prop_future = {
                                     {%-for prop_name, prop in stinger.properties_rw.items()%}
                                         {%if not loop.first %}else {%endif%}if subscription_id == sub_ids.{{prop_name | snake_case}}_property_update {
-                                            let prop_topic = format!("{{prop.value_topic}}", instance_id);
+                                            
                                             {{stinger.rust.server_struct_name}}::<C>::update_{{prop_name | snake_case}}_value(
                                                     publisher.clone(),
-                                                    prop_topic,
+                                                    instance_id.clone(),
                                                     properties.{{prop_name | snake_case}}.clone(),
                                                     properties.{{prop_name | snake_case}}_version.clone(),
-                                                    properties.{{prop_name | snake_case}}_tx_channel.clone(),
                                                     msg).await
                                         }
                                     {%endfor%}{# properties #}
