@@ -351,33 +351,46 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             _ => { /* Do nothing, error already set. */ }
         }
 
-        match return_code {
+        let opt_new_value = match return_code {
             MethodReturnCode::Success(_) => {
                 match serde_json::from_str(&payload_str) {
                     Ok(new_property_structure) => {
-                        let mut property_guard = property_pointer.write().await;
+                        let request_lock = property_pointer.write_request().await;
+                        let write_request = request_lock.write().await;
                         {%if prop.arg_list | length == 1 %}
                         // Single value property.  Use the {{prop.arg_list[0].name | snake_case}} field of the struct.
-                        *property_guard = new_property_structure.{{prop.arg_list[0].name | snake_case}}.clone();
+                        *write_request = new_property_structure.{{prop.arg_list[0].name | snake_case}}.clone();
                         {%else%}
                         // Multi-value property set as a struct.
-                        *property_guard = new_property_structure.clone();
+                        *write_request = new_property_structure.clone();
                         {%endif%}
-                        // Dropping the property_guard here will send the new value to the watch channel
-                        // Which will cause it to be published to MQTT.
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request.commit(std::time::Duration::from_secs(2)).await;
+                        *write_request
                     }
                     Err(e) => {
                         error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
                         return_code = MethodReturnCode::ServerDeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string());
+                        None
                     }
                 };
             },
-            _ => { /* Do nothing, error already set. */ }
+            _ => {
+                None
+            }
         }
 
         if let Some(resp_topic) = msg.response_topic {
             let corr_data = msg.correlation_data.unwrap_or_default();
-            match message::property_update_response(&resp_topic, corr_data, return_code) {
+            {%if prop.arg_list | length == 1 %}
+            let payload_obj = {{prop_name | UpperCamelCase}}Property { 
+                {{prop.arg_list[0].name}}: opt_new_value
+            };
+            {%else%}
+            let payload_obj = opt_new_value;
+            {%endif%}
+            match message::property_update_response(&resp_topic, payload_obj, corr_data, return_code) {
                 Ok(msg) => {
                     let _fut_publish_result = publisher.publish(msg).await;
                 }
@@ -397,32 +410,19 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
 
+    pub fn get_{{prop_name | snake_case}}_handler(&self) -> Arc<WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+        self.properties.{{prop_name | snake_case}}.write_request()
+    }
+
     /// Sets the value{%if prop.arg_list|length > 1%}s{%endif%} of the {{prop_name}} property.
     pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust_type}}) -> SentMessageFuture {
-        let guard = self.properties.{{prop_name|snake_case}}.write_no_notify().await;
-        *guard = value;
-        self.properties.{{prop_name|snake_case}}_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
-        {%if prop.arg_list | length == 1 %}
-        let payload_obj = {{prop_name | UpperCamelCase}}Property { 
-            {{prop.arg_list[0].name}}: request
-        };
-        {%else%}
-        let payload_obj = request;
-        {%endif%}
-        
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property '{{prop_name}}' value not changed, so not notifying watchers.");
-            {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("{{prop.value_topic}}", self.instance_id);
-            let new_version = self.properties.{{prop_name|snake_case}}_version.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            {{stinger.rust.server_struct_name}}::<C>::publish_{{prop_name}}_value(publisher2, topic2, prop_obj, new_version).await
-        } else {
-            {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError("Could not find property object".to_string())).await
-        }
+        let write_request_lock = self.get_{{prop_name | snake_case}}_handler();
+        Box::pin(async move { 
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            write_request.commit(std::time::Duration::from_secs(2)).await;
+            
+        });
     }
     {%endfor%}
 
