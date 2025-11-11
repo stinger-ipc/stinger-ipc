@@ -1,6 +1,7 @@
 //! Server module for Simple IPC
-//!
+//! 
 //! This module is only available when the "server" feature is enabled.
+
 
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
@@ -15,49 +16,58 @@ TODO: Get license text from stinger file
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 use bytes::Bytes;
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot};
 
-use async_trait::async_trait;
 use std::any::Any;
+use async_trait::async_trait;
+use tokio::sync::{Mutex as AsyncMutex};
 use std::sync::{Arc, Mutex};
-use tokio::sync::Mutex as AsyncMutex;
+
 
 use serde_json;
 use tokio::sync::{broadcast, watch};
 
-use std::sync::atomic::{AtomicU32, Ordering};
 
+use std::sync::atomic::{AtomicU32, Ordering};
+use crate::property::SimpleInitialPropertyValues;
+
+use stinger_mqtt_trait::{Mqtt5PubSub, MqttPublishSuccess, Mqtt5PubSubError};
+use stinger_mqtt_trait::message::{MqttMessage, QoS};
+use tokio::task::JoinError;
 use std::future::Future;
 use std::pin::Pin;
-use stinger_mqtt_trait::message::{MqttMessage, QoS};
-use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError, MqttPublishSuccess};
-use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
-use crate::message;
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn, error};
+use crate::message;
+
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct SimpleServerSubscriptionIds {
     trade_numbers_method_req: u32,
-
+    
+    
     school_property_update: u32,
+    
 }
+
 
 #[derive(Clone)]
 struct SimpleProperties {
-    school: Arc<AsyncMutex<Option<SchoolProperty>>>,
-    school_tx_channel: watch::Sender<Option<String>>,
+    
+    pub school: Arc<RwLockWatch<String>>,
     school_version: Arc<AtomicU32>,
 }
+
+
 
 #[derive(Clone)]
 pub struct SimpleServer<C: Mqtt5PubSub> {
     mqtt_client: C,
-
+    
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
     msg_streamer_rx: Arc<Mutex<Option<broadcast::Receiver<MqttMessage>>>>,
@@ -66,15 +76,19 @@ pub struct SimpleServer<C: Mqtt5PubSub> {
     /// side is cloned for each subscription made.
     #[allow(dead_code)]
     msg_streamer_tx: broadcast::Sender<MqttMessage>,
-
+    
+    
     /// Struct contains all the method handlers.
     method_handlers: Arc<AsyncMutex<Box<dyn SimpleMethodHandlers<C>>>>,
-
+    
+    
     /// Struct contains all the properties.
     properties: SimpleProperties,
-
+    
+    
     /// Subscription IDs for all the subscriptions this makes.
     subscription_ids: SimpleServerSubscriptionIds,
+    
 
     /// Copy of MQTT Client ID
     #[allow(dead_code)]
@@ -85,63 +99,59 @@ pub struct SimpleServer<C: Mqtt5PubSub> {
 
 impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
     pub async fn new(
-        mut connection: C,
-        method_handlers: Arc<AsyncMutex<Box<dyn SimpleMethodHandlers<C>>>>,
-        instance_id: String,
-    ) -> Self {
+            mut connection: C,
+            method_handlers: Arc<AsyncMutex<Box<dyn SimpleMethodHandlers<C>>>>, 
+            instance_id: String, 
+            initial_property_values: SimpleInitialPropertyValues,
+        ) -> Self {
+        
         // Create a channel for messages to get from the Mqtt5PubSub object to this SimpleServer object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
         // Create method handler struct
-        let subscription_id_trade_numbers_method_req = connection
-            .subscribe(
-                format!("simple/{}/method/tradeNumbers", instance_id),
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_trade_numbers_method_req =
-            subscription_id_trade_numbers_method_req.unwrap_or(u32::MAX);
+        let subscription_id_trade_numbers_method_req = connection.subscribe(format!("simple/{}/method/tradeNumbers", instance_id), QoS::ExactlyOnce, message_received_tx.clone()).await;
+        let subscription_id_trade_numbers_method_req = subscription_id_trade_numbers_method_req.unwrap_or(u32::MAX);
 
-        let subscription_id_school_property_update = connection
-            .subscribe(
-                format!("simple/{}/property/school/setValue", instance_id),
-                QoS::AtLeastOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_school_property_update =
-            subscription_id_school_property_update.unwrap_or(u32::MAX);
+        
+        
+        let subscription_id_school_property_update = connection.subscribe(format!("simple/{}/property/school/setValue", instance_id), QoS::AtLeastOnce, message_received_tx.clone()).await;
+        let subscription_id_school_property_update = subscription_id_school_property_update.unwrap_or(u32::MAX);
 
+        
+        
         // Create structure for subscription ids.
         let sub_ids = SimpleServerSubscriptionIds {
             trade_numbers_method_req: subscription_id_trade_numbers_method_req,
-
+            
             school_property_update: subscription_id_school_property_update,
+            
         };
+        
 
+        
         let property_values = SimpleProperties {
-            school: Arc::new(AsyncMutex::new(None)),
-            school_tx_channel: watch::channel(None).0,
-            school_version: Arc::new(AtomicU32::new(0)),
+            
+            school: Arc::new(RwLockWatch::new(discovery_info.properties.school)),school_version: Arc::new(AtomicU32::new(discovery_info.properties.school_version)),
         };
+        
 
         SimpleServer {
             mqtt_client: connection.clone(),
-
+            
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
             method_handlers,
             properties: property_values,
             subscription_ids: sub_ids,
-
+            
             client_id: connection.get_client_id(),
             instance_id,
         }
     }
 
-    pub async fn oneshot_to_future(
+    /// Converts a oneshot channel receiver into a future.
+    async fn oneshot_to_future(
         ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
@@ -165,7 +175,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         })
     }
 
-    pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
+    async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
                 MethodReturnCode::Success(_) => Ok(()),
@@ -173,14 +183,9 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
             }
         })
     }
-
+    
     /// Publishes an error response to the given response topic with the given correlation data.
-    async fn publish_error_response(
-        mut publisher: C,
-        response_topic: Option<String>,
-        correlation_data: Option<Bytes>,
-        err: MethodReturnCode,
-    ) {
+    async fn publish_error_response(mut publisher: C, response_topic: Option<String>, correlation_data: Option<Bytes>, err: MethodReturnCode) {
         if let Some(resp_topic) = response_topic {
             let msg = message::error_response(&resp_topic, correlation_data, err).unwrap();
             let _ = publisher.publish(msg).await;
@@ -190,7 +195,11 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
     }
     /// Emits the person_entered signal with the given arguments.
     pub async fn emit_person_entered(&mut self, person: Person) -> SentMessageFuture {
-        let data = PersonEnteredSignalPayload { person };
+        let data = PersonEnteredSignalPayload {
+            
+            person,
+            
+        };
         let topic = format!("simple/{}/signal/personEntered", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
@@ -199,71 +208,54 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
     }
 
     /// Emits the person_entered signal with the given arguments, but this is a fire-and-forget version.
-    pub fn emit_person_entered_nowait(
-        &mut self,
-        person: Person,
-    ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
-        let data = PersonEnteredSignalPayload { person };
+    pub fn emit_person_entered_nowait(&mut self, person: Person) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
+        let data = PersonEnteredSignalPayload {
+            
+            person,
+            
+        };
         let topic = format!("simple/{}/signal/personEntered", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
     }
-
+    
+    
     /// Handles a request message for the trade_numbers method.
-    async fn handle_trade_numbers_request(
-        mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn SimpleMethodHandlers<C>>>>,
-        msg: MqttMessage,
-    ) {
+    async fn handle_trade_numbers_request(mut publisher: C, handlers: Arc<AsyncMutex<Box<dyn SimpleMethodHandlers<C>>>>, msg: MqttMessage) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
         let payload_vec = msg.payload;
         let payload_obj = serde_json::from_slice::<TradeNumbersRequestObject>(&payload_vec);
         if payload_obj.is_err() {
-            error!(
-                "Error deserializing request payload for trade_numbers: {:?}",
-                payload_obj.err()
-            );
-            SimpleServer::<C>::publish_error_response(
-                publisher,
-                opt_resp_topic,
-                opt_corr_data,
-                MethodReturnCode::ServerDeserializationError(
-                    "Failed to deserialize request payload".to_string(),
-                ),
-            )
-            .await;
+            error!("Error deserializing request payload for trade_numbers: {:?}", payload_obj.err());
+            SimpleServer::<C>::publish_error_response(publisher, opt_resp_topic, opt_corr_data, MethodReturnCode::ServerDeserializationError("Failed to deserialize request payload".to_string())).await;
             return;
         }
         // Unwrap is OK here because we just checked for error.
         let payload = payload_obj.unwrap();
-
+         
         // call the method handler
         let rc: Result<i32, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
-            handler_guard
-                .handle_trade_numbers(payload.your_number)
-                .await
+            handler_guard.handle_trade_numbers(payload.your_number).await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
                 Ok(retval) => {
-                    let resp_obj = TradeNumbersReturnValues { my_number: retval };
-                    let msg = message::response(&resp_topic, &resp_obj, corr_data, None).unwrap();
+                    
+                    let resp_obj = TradeNumbersReturnValues {
+                        my_number: retval,
+                    };
+                    let msg = message::response(&resp_topic, &resp_obj, corr_data,None).unwrap();
                     let _fut_publish_result = publisher.publish(msg).await;
+                    
                 }
                 Err(err) => {
                     info!("Error occurred while handling trade_numbers: {:?}", &err);
-                    SimpleServer::<C>::publish_error_response(
-                        publisher,
-                        Some(resp_topic),
-                        Some(corr_data),
-                        err,
-                    )
-                    .await;
+                    SimpleServer::<C>::publish_error_response(publisher, Some(resp_topic), Some(corr_data), err).await;
                 }
             }
         } else {
@@ -271,79 +263,98 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
             info!("No response topic provided, so no publishing response to `trade_numbers`.");
         }
     }
-
+    
+    /// When the value of the school property changes, either because of a request or because of a local change,
+    /// this function publishes the new value to MQTT.
+    ///
+    /// As an argument, it takes `data_obj` which is a struct that is serializable.  This is not the Arc<RwWriteLock<T>> property value. 
+    ///
+    /// It returns a future that resolves when getting a PUBACK back from the MQTT broker.
     async fn publish_school_value(
-        mut publisher: C,
-        topic: String,
-        data: SchoolProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
+            mut publisher: C, 
+            instance_id: String, 
+            data_obj: SchoolProperty, 
+            property_version: u32,
+            opt_corr_id: Option<Bytes>, /// If we updated the value as a response to a request, this is the correlation id from that request.
+            opt_return_code: Option<MethodReturnCode>, /// If we failed to update the value as a response to a request, we republish the current value with a return code.
+    ) -> SentMessageFuture
+    {
+        let prop_topic = format!("simple/{}/property/school/value", instance_id);
+        let msg = message::property_value_message(&prop_topic, &data_obj, property_version, opt_corr_id, opt_return_code).unwrap();
         let ch = publisher.publish_noblock(msg).await;
         SimpleServer::<C>::oneshot_to_future(ch).await
     }
 
+     
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_school_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<SchoolProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<String>>,
-        msg: MqttMessage,
-    ) -> SentMessageFuture {
+            publisher: C, 
+            instance_id: String, 
+            property_pointer: Arc<RwLockWatch<SchoolProperty>>, 
+            property_version: Arc<AtomicU32>, 
+            msg: MqttMessage
+    ) -> SentMessageFuture
+    {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: SchoolProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
+        
+        let mut return_code = MethodReturnCode::Success(None);
+
+        let mut incoming_version: Option<u32> = None;
+        if let Some(version_str) = msg.user_properties.get("Version") {
+            match version_str.parse::<u32>() {
+                Ok(v) => incoming_version = Some(v),
                 Err(e) => {
-                    error!(
-                        "Failed to parse JSON received over MQTT to update 'school' property: {:?}",
-                        e
-                    );
-                    return SimpleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'school' payload".to_string(),
-                        ),
-                    )
-                    .await;
+                    error!("Failed to parse 'Version' user property ('{}'): {:?}", version_str, e);
+                    return_code = MethodReturnCode::PayloadError("Invalid 'Version' user property".to_string());
                 }
             }
-        };
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        if let Some(v) = incoming_version {
+            let current = property_version.load(Ordering::SeqCst);
+            if v != current {
+                return_code = MethodReturnCode::OutOfSync(format!(
+                    "Version mismatch: incoming {}, current {}",
+                    v, current
+                ));
+            }
+        }
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.name.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
+        match serde_json::from_str(&payload_str) {
+            Ok(new_property_structure) => {
+                let mut property_guard = property_pointer.write().await;
+                
+                // Single value property.  Use the name field of the struct.
+                *property_guard = new_property_structure.name.clone();
+                
+                let new_version = property_version.fetch_add(1, Ordering::SeqCst);
+            }
             Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'school' property: {:?}",
-                    e
-                );
+                error!("Failed to parse JSON received over MQTT to update 'school' property: {:?}", e);
+                return_code = MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'school' payload".to_string());
             }
         };
 
-        SimpleServer::publish_school_value(publisher, topic2, new_property_structure, new_version)
-            .await
+        SimpleServer::publish_school_value(publisher, instance_id, new_property_structure, new_version, msg.correlation_data, return_code).await
     }
 
-    pub async fn watch_school(&self) -> watch::Receiver<Option<String>> {
-        self.properties.school_tx_channel.subscribe()
+    /// Watch for changes to the `school` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_school(&self) -> watch::Receiver<String> {
+        self.properties.school.subscribe()
     }
+    
 
     /// Sets the value of the school property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_school(&mut self, data: String) -> SentMessageFuture {
         let prop = self.properties.school.clone();
-
-        let new_prop_obj = SchoolProperty { name: data.clone() };
+        
+        let new_prop_obj = SchoolProperty {
+            name: data.clone(),
+        };
 
         // Set the server's copy of the property value.
         let mut property_data_guard = prop.lock().await;
@@ -353,17 +364,14 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
 
         // Notify watchers of the new property value.
         let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .school_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
+        let send_result = self.properties.school_tx_channel.send_if_modified(|current_data| {
+            if current_data != &data_to_send_to_watchers {
+                *current_data = data_to_send_to_watchers;
+                true
+            } else {
+                false
+            }
+        });
 
         // Send value to MQTT if it has changed.
         if !send_result {
@@ -372,18 +380,13 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         } else if let Some(prop_obj) = property_obj {
             let publisher2 = self.mqtt_client.clone();
             let topic2 = format!("simple/{}/property/school/value", self.instance_id);
-            let new_version = self
-                .properties
-                .school_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            let new_version = self.properties.school_version.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             SimpleServer::<C>::publish_school_value(publisher2, topic2, prop_obj, new_version).await
         } else {
-            SimpleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
+            SimpleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError("Could not find property object".to_string())).await
         }
     }
+    
 
     /// Starts the tasks that process messages received.
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
@@ -393,26 +396,20 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
     where
         C: 'static,
     {
+
+        
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
-            self.msg_streamer_rx
-                .lock()
-                .unwrap()
-                .take()
-                .expect("msg_streamer_rx should be Some")
+            self.msg_streamer_rx.lock().unwrap().take().expect("msg_streamer_rx should be Some")
         };
 
         let method_handlers = self.method_handlers.clone();
-        let _ = self
-            .method_handlers
-            .lock()
-            .await
-            .initialize(self.clone())
-            .await;
+        let _ = self.method_handlers.lock().await.initialize(self.clone()).await;
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqtt_client.clone();
-
+        
         let properties = self.properties.clone();
+        
 
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
@@ -428,8 +425,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
                     .version("0.0.1".to_string())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
-                    .build()
-                    .unwrap();
+                    .build().unwrap();
                 let msg = message::interface_online(&topic, &info, 150 /*seconds*/).unwrap();
                 let _ = interface_publisher.publish(msg).await;
             }
@@ -440,63 +436,48 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
             loop {
                 match message_receiver.recv().await {
                     Ok(msg) => {
+                        
                         let opt_resp_topic = msg.response_topic.clone();
                         let opt_corr_data = msg.correlation_data.clone();
-
+                        
                         if let Some(subscription_id) = msg.subscription_id {
                             if subscription_id == sub_ids.trade_numbers_method_req {
-                                SimpleServer::<C>::handle_trade_numbers_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else {
+                                SimpleServer::<C>::handle_trade_numbers_request(publisher.clone(), method_handlers.clone(), msg).await;
+                            }
+                            
+                            else {
                                 let update_prop_future = {
-                                    if subscription_id == sub_ids.school_property_update {
-                                        let prop_topic =
-                                            format!("simple/{}/property/school/value", instance_id);
-                                        SimpleServer::<C>::update_school_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.school.clone(),
-                                            properties.school_version.clone(),
-                                            properties.school_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else {
-                                        SimpleServer::<C>::wrap_return_code_in_future(
-                                            MethodReturnCode::NotImplemented(
-                                                "Could not find a property matching the request"
-                                                    .to_string(),
-                                            ),
-                                        )
-                                        .await
-                                    }
+                                        if subscription_id == sub_ids.school_property_update {
+                                            
+                                            SimpleServer::<C>::update_school_value(
+                                                    publisher.clone(),
+                                                    instance_id.clone(),
+                                                    properties.school.clone(),
+                                                    properties.school_version.clone(),
+                                                    msg).await
+                                        }
+                                    
+                                        else {
+                                            SimpleServer::<C>::wrap_return_code_in_future(MethodReturnCode::NotImplemented("Could not find a property matching the request".to_string())).await
+                                        }
                                 };
                                 match update_prop_future.await {
                                     Ok(_) => debug!("Successfully processed update  property"),
                                     Err(e) => {
                                         error!("Error processing update to '' property: {:?}", e);
                                         if let Some(resp_topic) = opt_resp_topic {
-                                            SimpleServer::<C>::publish_error_response(
-                                                publisher.clone(),
-                                                Some(resp_topic),
-                                                opt_corr_data,
-                                                e,
-                                            )
-                                            .await;
+                                            SimpleServer::<C>::publish_error_response(publisher.clone(), Some(resp_topic), opt_corr_data, e).await;
                                         } else {
                                             warn!("No response topic found in message properties; cannot send error response.");
                                         }
                                     }
                                 }
                             }
+                            
                         } else {
                             warn!("Received MQTT message without subscription id; cannot process.");
                         }
-                    }
+                    },
                     Err(e) => {
                         warn!("Error receiving MQTT message in server loop: {:?}", e);
                     }
@@ -504,18 +485,23 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
             }
         });
         let _ = tokio::join!(loop_task);
-
+         
+        
         warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())
     }
+
 }
 
 #[async_trait]
 pub trait SimpleMethodHandlers<C: Mqtt5PubSub>: Send + Sync {
+
     async fn initialize(&mut self, server: SimpleServer<C>) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the trade_numbers method request.
     async fn handle_trade_numbers(&self, your_number: i32) -> Result<i32, MethodReturnCode>;
+    
+    
 
     fn as_any(&self) -> &dyn Any;
 }

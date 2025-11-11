@@ -240,7 +240,11 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     {%endfor%}
     {%for method_name, method in stinger.methods.items()%}
     /// Handles a request message for the {{method_name}} method.
-    async fn handle_{{method_name|snake_case}}_request(mut publisher: C, handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<C>>>>, msg: MqttMessage) {
+    async fn handle_{{method_name|snake_case}}_request(
+                mut publisher: C, 
+                handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<C>>>>, 
+                msg: MqttMessage
+    ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
         {%if method.arg_list | length > 0 -%}
@@ -292,27 +296,8 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     {%endfor%}
 
     {%-for prop_name, prop in stinger.properties.items()%}
-    /// When the value of the {{prop_name}} property changes, either because of a request or because of a local change,
-    /// this function publishes the new value to MQTT.
-    ///
-    /// As an argument, it takes `data_obj` which is a struct that is serializable.  This is not the Arc<RwWriteLock<T>> property value. 
-    ///
-    /// It returns a future that resolves when getting a PUBACK back from the MQTT broker.
-    async fn publish_{{prop_name}}_value(
-            mut publisher: C, 
-            instance_id: String, 
-            data_obj: {{prop_name|UpperCamelCase}}Property, 
-            property_version: u32,
-            opt_corr_id: Option<Uuid>,
-            opt_return_code: Option<MethodReturnCode>,
-    ) -> SentMessageFuture
-    {
-        let prop_topic = format!("{{prop.value_topic}}", instance_id);
-        let msg = message::property_value_message(&prop_topic, &data_obj, property_version, opt_corr_id, opt_return_code).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        {{stinger.rust.server_struct_name}}::<C>::oneshot_to_future(ch).await
-    }
-    {%if not prop.read_only %}
+
+    {%if not prop.read_only %} {# Enable mechanisms for remote clients to update the property#}
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
@@ -320,7 +305,6 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             publisher: C, 
             instance_id: String, 
             property_pointer: Arc<RwLockWatch<{{prop_name|UpperCamelCase}}Property>>, 
-            property_version: Arc<AtomicU32>, 
             msg: MqttMessage
     ) -> SentMessageFuture
     {
@@ -329,59 +313,104 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         
         let mut return_code = MethodReturnCode::Success(None);
 
-        match serde_json::from_str(&payload_str) {
-            Ok(new_property_structure) => {
-                let mut property_guard = property_pointer.write().await;
-                {%if prop.arg_list | length == 1 %}
-                // Single value property.  Use the {{prop.arg_list[0].name | snake_case}} field of the struct.
-                *property_guard = new_property_structure.{{prop.arg_list[0].name | snake_case}}.clone();
-                {%else%}
-                // Multi-value property set as a struct.
-                *property_guard = new_property_structure.clone();
-                {%endif%}
-                let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-            Err(e) => {
-                error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
-                // TODO: make sure this error gets back to the requester.
-                return {{stinger.rust.server_struct_name}}::<C>::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string())).await;
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!("Invalid Content-Type '{}', expected 'application/json'", ct));
             }
-        };
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError("Missing Content-Type; expected 'application/json'".to_string());
+            }
+        }
 
-        {{stinger.rust.server_struct_name}}::publish_{{prop_name}}_value(publisher, instance_id, new_property_structure, new_version).await
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!("Failed to parse 'Version' user property ('{}'): {:?}", version_str, e);
+                            return_code = MethodReturnCode::PayloadError("Invalid 'Version' user property".to_string());
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = property_version.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let mut property_guard = property_pointer.write().await;
+                        {%if prop.arg_list | length == 1 %}
+                        // Single value property.  Use the {{prop.arg_list[0].name | snake_case}} field of the struct.
+                        *property_guard = new_property_structure.{{prop.arg_list[0].name | snake_case}}.clone();
+                        {%else%}
+                        // Multi-value property set as a struct.
+                        *property_guard = new_property_structure.clone();
+                        {%endif%}
+                        // Dropping the property_guard here will send the new value to the watch channel
+                        // Which will cause it to be published to MQTT.
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string());
+                    }
+                };
+            },
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            match message::property_update_response(&resp_topic, corr_data, return_code) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for '{{prop_name}}': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for '{{prop_name}}'.");
+        }
     }
+    {%endif%}{# not read only property #}
 
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
-    {%endif%}{# not read only property #}
 
     /// Sets the value{%if prop.arg_list|length > 1%}s{%endif%} of the {{prop_name}} property.
-    pub async fn set_{{prop_name}}(&mut self, data: {{prop.rust_type}}) -> SentMessageFuture {
-        let prop = self.properties.{{prop_name|snake_case}}.clone();
+    pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust_type}}) -> SentMessageFuture {
+        let guard = self.properties.{{prop_name|snake_case}}.write_no_notify().await;
+        *guard = value;
+        self.properties.{{prop_name|snake_case}}_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        {%if prop.arg_list | length == 1 %}
+        let payload_obj = {{prop_name | UpperCamelCase}}Property { 
+            {{prop.arg_list[0].name}}: request
+        };
+        {%else%}
+        let payload_obj = request;
+        {%endif%}
         
-        let new_prop_obj = {% if prop.arg_list | length == 1 %}{{prop_name|UpperCamelCase}}Property {
-            {{prop.arg_list[0].name}}: data.clone(),
-        }{% else %}data.clone(){% endif %};
-
-        // Set the server's copy of the property value{%if prop.arg_list|length > 1%}s{%endif%}.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = {%if prop.arg_list|length == 1%}Some(data.clone()){%else%}property_obj.clone(){%endif%};
-        let send_result = self.properties.{{prop_name|snake_case}}_tx_channel.send_if_modified(|current_data| {
-            if current_data != &data_to_send_to_watchers {
-                *current_data = data_to_send_to_watchers;
-                true
-            } else {
-                false
-            }
-        });
-
         // Send value to MQTT if it has changed.
         if !send_result {
             debug!("Property '{{prop_name}}' value not changed, so not notifying watchers.");
@@ -423,8 +452,38 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         let publisher = self.mqtt_client.clone();
         {%endif%}
 
-        {%-if stinger.properties | length > 0 %}
-        let properties = self.properties.clone();
+        {%-if stinger.properties|length > 0%}
+        let props = self.properties.clone();
+        {%-for prop_name, prop in stinger.properties.items()%}
+        { // Set up property change request handling task
+            let instance_id_for_{{prop_name|snake_case}}_prop = self.service_instance_id.clone();
+            let mut publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
+            let {{prop_name|snake_case}}_prop_version = props.{{prop_name | snake_case}}_version.clone();
+            if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.subscribe() {
+                tokio::spawn(async move {
+                    while let Some(request) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
+                        {%if prop.arg_list | length == 1 %}
+                        let payload_obj = {{prop_name | UpperCamelCase}}Property { 
+                            {{prop.arg_list[0].name}}: request
+                        };
+                        {%else%}
+                        let payload_obj = request;
+                        {%endif%}
+                        let version_value = {{prop_name|snake_case}}_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!("{{prop.value_topic}}", instance_id_for_{{prop_name|snake_case}}_prop);
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let _publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
+                            },
+                            Err(e) => {
+                                error!("Error creating property value message for '{{prop_name}}' property: {:?}", e);
+                            }
+                        }
+                    };
+                });
+            }
+        }
+        {% endfor %}
         {%endif%}
 
         // Spawn a task to periodically publish interface info.
