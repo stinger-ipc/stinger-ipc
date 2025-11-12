@@ -31,8 +31,8 @@ class MethodTopicCreator(TopicCreatorBase):
     def method_topic(self, method_name: str) -> str:
         return self.slash("method", stringmanip.lower_camel_case(method_name))
 
-    def method_response_topic(self, method_name: str, client_id: str) -> str:
-        return f"client/{client_id}/{self._base_topic}/methodResponse"
+    def method_response_topic(self, method_name: str, namespace: str, client_id: str) -> str:
+        return f"client/{client_id}/{namespace}/methodResponse"
 
 
 class PropertyTopicCreator(TopicCreatorBase):
@@ -45,8 +45,8 @@ class PropertyTopicCreator(TopicCreatorBase):
     def property_update_topic(self, property_name: str) -> str:
         return self.slash("property", stringmanip.lower_camel_case(property_name), "setValue")
 
-    def property_response_topic(self, property_name: str, client_id: str) -> str:
-        return f"client/{client_id}/{self._base_topic}/propertyUpdateResponse"
+    def property_response_topic(self, property_name: str, namespace: str, client_id: str) -> str:
+        return f"client/{client_id}/{namespace}/propertyUpdateResponse"
 
 class InterfaceTopicCreator(TopicCreatorBase):
     """Helper class for creating MQTT topics for various stinger elements."""

@@ -33,6 +33,9 @@ use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
 {%endif%}
 use stinger_mqtt_trait::{Mqtt5PubSub, MqttPublishSuccess, Mqtt5PubSubError};
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
+use stinger_rwlock_watch::{RwLockWatch};
+#[allow(unused_imports)]
+use stinger_rwlock_watch::{WriteRequestLockWatch, CommitResult};
 use tokio::task::JoinError;
 use std::future::Future;
 use std::pin::Pin;
@@ -143,11 +146,11 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
             {%if prop.arg_list | length > 1 -%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(discovery_info.properties.{{prop_name | snake_case}})),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}})),
             {%-else%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(discovery_info.properties.{{prop_name | snake_case}})),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}})),
             {%-endif-%}
-            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(discovery_info.properties.{{prop_name | snake_case}}_version)),
+            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(initial_property_values.{{prop_name | snake_case}}_version)),
         {%-endfor%}
         };
         {%endif%}
@@ -304,7 +307,8 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     async fn update_{{prop_name}}_value(
             publisher: C, 
             instance_id: String, 
-            property_pointer: Arc<RwLockWatch<{{prop_name|UpperCamelCase}}Property>>, 
+            property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust_type}}{%else%}{{prop.arg_list[0].rust_type}}{%endif%}>>,  // Arc to the property value
+            version_pointer: Arc<AtomicU32>,
             msg: MqttMessage
     ) -> SentMessageFuture
     {
@@ -339,7 +343,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                 }
 
                 if let Some(v) = incoming_version {
-                    let current = property_version.load(Ordering::SeqCst);
+                    let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
                             "Version mismatch: incoming {}, current {}",
@@ -353,9 +357,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
 
         let opt_new_value = match return_code {
             MethodReturnCode::Success(_) => {
-                match serde_json::from_str(&payload_str) {
+                match serde_json::from_str::<{{prop_name|UpperCamelCase}}Property>(&payload_str) {
                     Ok(new_property_structure) => {
-                        let request_lock = property_pointer.write_request().await;
+                        let request_lock = property_pointer.write_request();
                         let write_request = request_lock.write().await;
                         {%if prop.arg_list | length == 1 %}
                         // Single value property.  Use the {{prop.arg_list[0].name | snake_case}} field of the struct.
@@ -367,30 +371,43 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
 
                         // Committing the write request blocks until the message has been published to MQTT.
                         write_request.commit(std::time::Duration::from_secs(2)).await;
-                        *write_request
+                        Some(*write_request)
                     }
                     Err(e) => {
                         error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
                         return_code = MethodReturnCode::ServerDeserializationError("Failed to deserialize property '{{prop_name}}' payload".to_string());
                         None
                     }
-                };
+                }
             },
             _ => {
                 None
             }
-        }
+        };
 
         if let Some(resp_topic) = msg.response_topic {
             let corr_data = msg.correlation_data.unwrap_or_default();
-            {%if prop.arg_list | length == 1 %}
-            let payload_obj = {{prop_name | UpperCamelCase}}Property { 
-                {{prop.arg_list[0].name}}: opt_new_value
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    {%if prop.arg_list | length == 1 %}
+                    {{prop_name | UpperCamelCase}}Property { 
+                        {{prop.arg_list[0].name}}: new_value
+                    }
+                    {%else%}
+                    new_value
+                    {%endif%}
+                } else {
+                    let prop_lock = property_pointer.read().await;
+                    {%if prop.arg_list | length == 1 %}
+                    {{prop_name | UpperCamelCase}}Property { 
+                        {{prop.arg_list[0].name}}: *prop_lock
+                    }
+                    {%else%}
+                    *prop_lock
+                    {%endif%}
+                }
             };
-            {%else%}
-            let payload_obj = opt_new_value;
-            {%endif%}
-            match message::property_update_response(&resp_topic, payload_obj, corr_data, return_code) {
+            match message::property_update_response(&resp_topic, &payload_obj, corr_data, return_code) {
                 Ok(msg) => {
                     let _fut_publish_result = publisher.publish(msg).await;
                 }
@@ -410,7 +427,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
 
-    pub fn get_{{prop_name | snake_case}}_handler(&self) -> Arc<WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+    pub fn get_{{prop_name | snake_case}}_handler(&self) -> Arc<WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}>> {
         self.properties.{{prop_name | snake_case}}.write_request()
     }
 
@@ -421,7 +438,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             let mut write_request = write_request_lock.write().await;
             *write_request = value;
             write_request.commit(std::time::Duration::from_secs(2)).await;
-            
+
         });
     }
     {%endfor%}
@@ -461,7 +478,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             let {{prop_name|snake_case}}_prop_version = props.{{prop_name | snake_case}}_version.clone();
             if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
-                    while let Some((request, opt_responder) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
+                    while let Some((request, opt_responder)) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
                         {%if prop.arg_list | length == 1 %}
                         let payload_obj = {{prop_name | UpperCamelCase}}Property { 
                             {{prop.arg_list[0].name}}: request
@@ -488,7 +505,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                             },
                             Err(e) => {
                                 error!("Error creating property value message for '{{prop_name}}' property: {:?}", e);
-                                let _ = responder.send(None);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
                             }
                         }
                     };
@@ -519,6 +538,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         });
 
         let instance_id = self.instance_id.clone();
+        let properties = self.properties.clone();
         let loop_task = tokio::spawn(async move {
             loop {
                 match message_receiver.recv().await {

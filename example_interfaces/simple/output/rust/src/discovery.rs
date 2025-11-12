@@ -7,22 +7,22 @@ This is the Client for the Simple interface.
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
 */
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use std::fmt;
 use std::sync::{Arc, RwLock};
 
+use crate::interface::InterfaceInfo;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError};
-use tokio::sync::{broadcast};
+use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 #[allow(unused_imports)]
-use tracing::{debug, info, warn, error};
-use crate::interface::InterfaceInfo;
+use tracing::{debug, error, info, warn};
 
-use crate::property::{SimpleInitialPropertyValuesBuilder, SimpleInitialPropertyValues};
+use crate::property::{SimpleInitialPropertyValues, SimpleInitialPropertyValuesBuilder};
 
 #[allow(unused_imports)]
-use crate::payloads::{*};
+use crate::payloads::*;
 #[cfg(feature = "metrics")]
 use std::sync::Mutex;
 
@@ -34,7 +34,9 @@ pub enum SimpleDiscoveryError {
 impl fmt::Display for SimpleDiscoveryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SimpleDiscoveryError::Subscribe(err) => write!(f, "failed to subscribe for discovery: {err}"),
+            SimpleDiscoveryError::Subscribe(err) => {
+                write!(f, "failed to subscribe for discovery: {err}")
+            }
         }
     }
 }
@@ -49,10 +51,10 @@ impl From<Mqtt5PubSubError> for SimpleDiscoveryError {
 
 struct ServiceInDiscovery {
     pub interface_info: Option<InterfaceInfo>,
-    
+
     pub property_builder: SimpleInitialPropertyValuesBuilder,
     pub property_count: u32,
-    
+
     pub fully_discovered: std::sync::atomic::AtomicBool,
 }
 
@@ -60,10 +62,10 @@ impl Default for ServiceInDiscovery {
     fn default() -> Self {
         Self {
             interface_info: None,
-            
+
             property_builder: SimpleInitialPropertyValuesBuilder::default(),
             property_count: 0,
-            
+
             fully_discovered: std::sync::atomic::AtomicBool::new(false),
         }
     }
@@ -72,15 +74,13 @@ impl Default for ServiceInDiscovery {
 #[derive(Clone, Debug)]
 pub struct DiscoveredService {
     pub interface_info: InterfaceInfo,
-    
+
     pub properties: SimpleInitialPropertyValues,
-    
 }
 
 impl ServiceInDiscovery {
     /// Attempts to convert a ServiceInDiscovery into a DiscoveredService
     pub fn to_discovered_service(&self) -> Option<DiscoveredService> {
-        
         let built_properties_result = self.property_builder.build();
         match (&self.interface_info, built_properties_result) {
             (Some(info), Ok(props)) => Some(DiscoveredService {
@@ -89,7 +89,6 @@ impl ServiceInDiscovery {
             }),
             _ => None,
         }
-        
     }
 }
 
@@ -120,12 +119,12 @@ impl SimpleDiscoveryMetrics {
             self.time_of_first_discovery = Some(std::time::Instant::now());
         }
     }
-    
+
     /// Increments received_property_values by 1
     pub fn increment_received_property_values(&self) {
-        self.received_property_values.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.received_property_values
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
-    
 
     /// Returns the time in milliseconds between `discovery_start_time` and
     /// `time_of_first_discovery`, or `None` if `time_of_first_discovery` is not set.
@@ -141,11 +140,12 @@ pub struct SimpleDiscovery<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {
     service_name: String,
     instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
     info_listener_handle: JoinHandle<()>,
-    
+
     prop_listener_handle: JoinHandle<()>,
-    
+
     notification_tx: broadcast::Sender<DiscoveredService>,
-    #[cfg(feature = "metrics")] pub metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
+    #[cfg(feature = "metrics")]
+    pub metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
 }
 
 /// Event receiver for new interface discovery notifications
@@ -153,7 +153,6 @@ pub type SimpleDiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
 
 impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
     pub async fn new(connection: &mut C) -> Result<Self, SimpleDiscoveryError> {
-
         let service_name = "Simple".to_string();
         let discovery_topic = format!("simple/{}/interface", "+");
 
@@ -163,13 +162,17 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
             .subscribe(discovery_topic, QoS::AtLeastOnce, info_tx.clone())
             .await
             .map_err(SimpleDiscoveryError::from)?;
-        
+
         let (prop_tx, prop_rx) = broadcast::channel::<MqttMessage>(32);
         let _property_subscription_id = connection
-            .subscribe("simple/+/property/+/value".to_string(), QoS::AtLeastOnce, prop_tx.clone())
+            .subscribe(
+                "simple/+/property/+/value".to_string(),
+                QoS::AtLeastOnce,
+                prop_tx.clone(),
+            )
             .await
             .map_err(SimpleDiscoveryError::from)?;
-        
+
         let instances_in_discovery = Arc::new(RwLock::new(HashMap::new()));
 
         // Clients can get a notification receiver by calling the subscribe() method.
@@ -182,26 +185,29 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
             info_rx,
             instances_in_discovery.clone(),
             notification_tx.clone(),
-            #[cfg(feature = "metrics")] metrics.clone(),
+            #[cfg(feature = "metrics")]
+            metrics.clone(),
         );
-        
+
         let prop_listener_handle = Self::spawn_property_listener(
             prop_rx,
             instances_in_discovery.clone(),
             notification_tx.clone(),
-            #[cfg(feature = "metrics")] metrics.clone(),
+            #[cfg(feature = "metrics")]
+            metrics.clone(),
         );
-        
+
         Ok(Self {
             connection: connection.clone(),
             service_name,
             instances_in_discovery,
             info_listener_handle,
-            
+
             prop_listener_handle,
-            
+
             notification_tx,
-            #[cfg(feature = "metrics")] metrics,
+            #[cfg(feature = "metrics")]
+            metrics,
         })
     }
 
@@ -210,11 +216,18 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
     }
 
     pub fn instances_in_discovery(&self) -> Vec<DiscoveredService> {
-           let guard = self.instances_in_discovery.read().expect("interfaces poisoned");
-           guard.values()
-              .filter(|sd| sd.fully_discovered.load(std::sync::atomic::Ordering::Relaxed))
-              .filter_map(|sd| sd.to_discovered_service())
-              .collect()
+        let guard = self
+            .instances_in_discovery
+            .read()
+            .expect("interfaces poisoned");
+        guard
+            .values()
+            .filter(|sd| {
+                sd.fully_discovered
+                    .load(std::sync::atomic::Ordering::Relaxed)
+            })
+            .filter_map(|sd| sd.to_discovered_service())
+            .collect()
     }
 
     pub async fn get_singleton_service(&self) -> DiscoveredService {
@@ -226,14 +239,12 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
                 .expect("interfaces poisoned");
             if let Some(entry) = instance_map.values().next() {
                 if entry.interface_info.is_some() {
-                    
                     let prop_build_result = entry.property_builder.build();
                     if prop_build_result.is_ok() {
                         return DiscoveredService {
                             interface_info: entry.interface_info.clone().unwrap(),
-                            
+
                             properties: prop_build_result.unwrap(),
-                            
                         };
                     }
                 }
@@ -242,10 +253,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
 
         // No interfaces yet, wait for the first one to be discovered
         let mut receiver = self.notification_tx.subscribe();
-        receiver
-            .recv()
-            .await
-            .expect("notification channel closed")
+        receiver.recv().await.expect("notification channel closed")
     }
 
     pub fn subscribe(&self) -> SimpleDiscoveryReceiver {
@@ -253,23 +261,25 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
     }
 
     fn try_publish_discovered_service(
-            service_in_discovery: &ServiceInDiscovery, 
-            notification_tx: &broadcast::Sender<DiscoveredService>,
-            #[cfg(feature = "metrics")] metrics: &Arc<Mutex<SimpleDiscoveryMetrics>>,
-        ) {
+        service_in_discovery: &ServiceInDiscovery,
+        notification_tx: &broadcast::Sender<DiscoveredService>,
+        #[cfg(feature = "metrics")] metrics: &Arc<Mutex<SimpleDiscoveryMetrics>>,
+    ) {
         // Check if this completes the discovery
-        
-        if service_in_discovery.property_count  >= 1 {
+
+        if service_in_discovery.property_count >= 1 {
             if let Some(discovered) = service_in_discovery.to_discovered_service() {
-                service_in_discovery.fully_discovered.store(true, std::sync::atomic::Ordering::Relaxed);
+                service_in_discovery
+                    .fully_discovered
+                    .store(true, std::sync::atomic::Ordering::Relaxed);
                 let _ = notification_tx.send(discovered);
-                #[cfg(feature = "metrics")] {
+                #[cfg(feature = "metrics")]
+                {
                     let mut metrics_guard = metrics.lock().unwrap();
                     metrics_guard.set_time_of_first_discovery();
                 }
             }
         }
-        
     }
 
     fn spawn_listener(
@@ -282,15 +292,16 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
             debug!("Listening for discovery messages");
             while let Ok(message) = message_rx.recv().await {
                 Self::handle_message(
-                    message, 
-                    &instances_in_discovery, 
-                    &notification_tx, 
-                    #[cfg(feature = "metrics")] metrics.clone(),
+                    message,
+                    &instances_in_discovery,
+                    &notification_tx,
+                    #[cfg(feature = "metrics")]
+                    metrics.clone(),
                 );
             }
         })
     }
-    
+
     fn spawn_property_listener(
         mut message_rx: broadcast::Receiver<MqttMessage>,
         instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
@@ -300,7 +311,8 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
         tokio::spawn(async move {
             debug!("Listening for property value messages");
             while let Ok(message) = message_rx.recv().await {
-                #[cfg(feature = "metrics")] {
+                #[cfg(feature = "metrics")]
+                {
                     let metrics_guard = metrics.lock().unwrap();
                     metrics_guard.increment_received_property_values();
                 }
@@ -310,51 +322,53 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
                 if topic_parts.len() == 5 {
                     let instance_id = topic_parts[1];
                     let property_name = topic_parts[3];
-                    
+
                     let mut instance_map = instances_in_discovery
                         .write()
                         .expect("interfaces write lock poisoned");
-                    let service_in_discovery = instance_map
-                        .entry(instance_id.to_string())
-                        .or_default();
+                    let service_in_discovery =
+                        instance_map.entry(instance_id.to_string()).or_default();
 
                     match property_name {
-                        
                         "school" => {
-                            
-                            let deserialized_property = serde_json::from_slice::<SchoolProperty>(&message.payload);
-                            let version = message.user_properties
+                            let deserialized_property =
+                                serde_json::from_slice::<SchoolProperty>(&message.payload);
+                            let version = message
+                                .user_properties
                                 .get("Version")
                                 .and_then(|v| v.parse::<u32>().ok())
                                 .unwrap_or(0);
                             match deserialized_property {
                                 Ok(prop_value) => {
-                                    
-                                    service_in_discovery.property_builder.school(prop_value.name);
-                                    
-                                    service_in_discovery.property_builder.school_version(version);
+                                    service_in_discovery
+                                        .property_builder
+                                        .school(prop_value.name);
+
+                                    service_in_discovery
+                                        .property_builder
+                                        .school_version(version);
                                     service_in_discovery.property_count += 1;
-                                },
+                                }
                                 Err(e) => {
                                     error!("Failed to deserialize property 'school' for instance '{}': {}", instance_id, e);
                                 }
                             }
                         }
-                        
+
                         _ => {
                             // Ignore unknown properties
                         }
                     }
                     Self::try_publish_discovered_service(
-                        service_in_discovery, 
+                        service_in_discovery,
                         &notification_tx,
-                        #[cfg(feature = "metrics")] &metrics,
+                        #[cfg(feature = "metrics")]
+                        &metrics,
                     );
                 }
             }
         })
     }
-    
 
     fn handle_message(
         message: MqttMessage,
@@ -383,19 +397,22 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
                         let mut instance_map = instances_in_discovery
                             .write()
                             .expect("interfaces write lock poisoned");
-                        let service_in_discovery = instance_map
-                            .entry(info.instance.clone())
-                            .or_default();
+                        let service_in_discovery =
+                            instance_map.entry(info.instance.clone()).or_default();
                         service_in_discovery.interface_info = Some(info);
                         Self::try_publish_discovered_service(
-                            service_in_discovery, 
+                            service_in_discovery,
                             notification_tx,
-                            #[cfg(feature = "metrics")] &metrics,
+                            #[cfg(feature = "metrics")]
+                            &metrics,
                         );
                     }
-                },
+                }
                 Err(err) => {
-                    error!("Failed to deserialize InterfaceInfo from {}: {}", message.topic, err);
+                    error!(
+                        "Failed to deserialize InterfaceInfo from {}: {}",
+                        message.topic, err
+                    );
                 }
             }
         }
@@ -405,11 +422,14 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
 impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for SimpleDiscovery<C> {
     fn drop(&mut self) {
         self.info_listener_handle.abort();
-        let _ = self.connection.unsubscribe(format!("simple/{}/interface", "+"));
-        
+        let _ = self
+            .connection
+            .unsubscribe(format!("simple/{}/interface", "+"));
+
         self.prop_listener_handle.abort();
-        let _ = self.connection.unsubscribe("simple/+/property/+/value".to_string());
-        
+        let _ = self
+            .connection
+            .unsubscribe("simple/+/property/+/value".to_string());
     }
 }
 
@@ -467,10 +487,17 @@ mod tests {
         assert!(interfaces_guard.contains_key("beta"));
 
         // Check that we received exactly 2 notifications (only for new interfaces)
-        let info1 = notification_rx.try_recv().expect("should have first notification");
+        let info1 = notification_rx
+            .try_recv()
+            .expect("should have first notification");
         assert_eq!(info1.instance, "alpha");
-        let info2 = notification_rx.try_recv().expect("should have second notification");
+        let info2 = notification_rx
+            .try_recv()
+            .expect("should have second notification");
         assert_eq!(info2.instance, "beta");
-        assert!(notification_rx.try_recv().is_err(), "should not have third notification");
+        assert!(
+            notification_rx.try_recv().is_err(),
+            "should not have third notification"
+        );
     }
 }

@@ -972,8 +972,8 @@ class Method(InterfaceComponent):
     def topic(self) -> str:
         return self._topic_creator.method_topic(self.name)
 
-    def response_topic(self, client_id) -> str:
-        return self._topic_creator.method_response_topic(self.name, client_id)
+    def response_topic(self, iface_name, client_id) -> str:
+        return self._topic_creator.method_response_topic(self.name, iface_name, client_id)
 
     @classmethod
     def new_method_from_stinger(
@@ -1075,8 +1075,8 @@ class Property(InterfaceComponent):
     def update_topic(self) -> str:
         return self._topic_creator.property_update_topic(self.name)
 
-    def response_topic(self, client_id) -> str:
-        return self._topic_creator.property_response_topic(self.name, client_id)
+    def response_topic(self, iface_name, client_id) -> str:
+        return self._topic_creator.property_response_topic(self.name, iface_name, client_id)
 
     @property
     def read_only(self) -> bool:
@@ -1400,12 +1400,11 @@ class StingerSpec:
 
     def all_methods_response_topic(self, client_id: str) -> str:
         for method in self.methods.values():
-            return method.response_topic(client_id)
+            return method.response_topic(self._name, client_id)
 
     def all_properties_response_topic(self, client_id: str) -> str:
         for prop in self.properties.values():
-            return prop.response_topic(client_id)
-
+            return prop.response_topic(self._name, client_id)
     @classmethod
     def new_spec_from_stinger(
         cls, topic_creator, stinger: dict[str, Any]

@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use chrono::{Utc, SecondsFormat};
+use chrono::{SecondsFormat, Utc};
 use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
 
 /// Interface information structure similar to Python's InterfaceInfo BaseModel
 #[derive(Debug, Clone, Serialize, Deserialize, Builder)]

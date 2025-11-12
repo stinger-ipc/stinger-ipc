@@ -52,6 +52,7 @@ pub fn property_update_request<T: Serialize>(topic: &str, payload: &T, property_
         .object_payload(payload).map_err(|e| MethodReturnCode::ClientSerializationError(e.to_string()))?
         .qos(QoS::AtLeastOnce)
         .retain(false)
+        .response_topic(response_topic)
         .user_property("Version", property_version.to_string())
         .correlation_data(Bytes::from(correlation_id.to_string()))
         .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
@@ -66,9 +67,11 @@ pub fn property_update_response<T: Serialize>(topic: &str, payload: &T, correlat
         .qos(QoS::AtLeastOnce)
         .retain(false)
         .correlation_data(correlation_data)
-        .object_payload(payload).map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
+        .object_payload(payload).map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?
         .user_property("ReturnCode", code_num.to_string());
-        .user_property("DebugInfo", info);
+    if let Some(info) = debug_info {
+        builder.user_property("DebugInfo", info);
+    }
     let msg = builder.build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
     Ok(msg)
 }
