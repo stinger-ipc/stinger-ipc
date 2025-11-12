@@ -42,15 +42,18 @@ use stinger_rwlock_watch::WriteRequestLockWatch;
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
-    {%for method_name, method in stinger.methods.items()-%}
-    {{method_name | snake_case}}_method_resp: u32,
-    {%endfor%}
+    {%if stinger.methods | length > 0%}
+    any_method_response: u32,
+    {%endif%}
     {%for sig_name, sig in stinger.signals.items()-%}
     {{sig_name | snake_case}}_signal: Option<u32>,
     {%-endfor%}
     {%for prop_name, prop in stinger.properties.items()-%}
     {{prop_name | snake_case}}_property_value: u32,
     {%endfor%}
+    {%if stinger.properties | length > 0 %}
+    any_property_update_response: u32,
+    {%endif%}
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -124,12 +127,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
         let client_id = connection.get_client_id();
 
-        {%for method_name, method in stinger.methods.items()-%}
-        let topic_{{method_name | snake_case}}_method_resp = format!("{{method.response_topic('{}')}}", client_id);
-        let subscription_id_{{method_name | snake_case}}_method_resp = connection.subscribe(topic_{{method_name | snake_case}}_method_resp, QoS::ExactlyOnce, message_received_tx.clone()).await;
-        let subscription_id_{{method_name | snake_case}}_method_resp = subscription_id_{{method_name | snake_case}}_method_resp.unwrap_or(u32::MAX);
-        debug!("Subscription (id={}) to method response topic for '{{method_name}}'", subscription_id_{{method_name | snake_case}}_method_resp);
-        {%endfor%}
+        {%if stinger.methods|length > 0%}
+        let topic_any_method_response = format!("{{stinger.all_methods_response_topic('{}')}}", client_id);
+        let subscription_id_any_method_response = connection.subscribe(topic_any_method_response, QoS::ExactlyOnce, message_received_tx.clone()).await;
+        {%endif%}
 
         // Subscribe to all the topics needed for signals.
         {%for signal_name, signal in stinger.signals.items()-%}
@@ -146,6 +147,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or(u32::MAX);
         debug!("Subscription (id={}) to property value topic for '{{prop_name}}'", subscription_id_{{prop_name | snake_case}}_property_value);
         {% endfor %}
+
+        {%if stinger.properties|length > 0 %}
+        let topic_any_property_update_response = format!("{{stinger.all_properties_response_topic('{}')}}", client_id);
+        let subscription_id_any_property_update_response = connection.subscribe(topic_any_property_update_response, QoS::AtLeastOnce, message_received_tx.clone()).await;
+        {%endif%}
 
         {%if stinger.properties|length > 0%}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
@@ -170,6 +176,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             {%-for prop_name, prop in stinger.properties.items()-%}
             {{prop_name | snake_case}}_property_value: subscription_id_{{prop_name | snake_case}}_property_value,
             {%endfor%}
+            {%if stinger.properties | length > 0 %}
+            any_property_update_response: subscription_id_any_property_update_response.unwrap_or(u32::MAX),
+            {%endif%}
         };
 
         {%if stinger.signals | length > 0 %}// Create structure for the tx side of broadcast channels for signals.
@@ -207,7 +216,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
     {%for method_name, method in stinger.methods.items()-%}
 
-    async fn start_{{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> oneshot::Receiver<MethodReturnCode> {
+    async fn start_{{method_name|snake_case}}(
+            &mut self,
+            {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}, {%endfor%}
+    ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -222,7 +234,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             {%-endfor%}
         };
 
-        let response_topic: String = format!("{{method.response_topic('{}')}}", self.client_id);
+        let response_topic: String = format!("{{method.response_topic('{}')}}", self.client_id).unwrap();
         let msg = message::request(&format!("{{method.topic}}", self.service_instance_id), &data, correlation_id, response_topic).unwrap();
         info!("Sending request to topic '{}': {:?}", format!("{{method.topic}}", self.service_instance_id), data);
         let _ = self.mqtt_client.publish(msg).await;
@@ -333,8 +345,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         {%-for prop_name, prop in stinger.properties.items()%}
         { // Set up property change request handling task
             let instance_id_for_{{prop_name|snake_case}}_prop = self.service_instance_id.clone();
+            let client_id_for_{{prop_name|snake_case}}_prop = self.client_id.clone();
             let mut publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
             let {{prop_name|snake_case}}_prop_version = props.{{prop_name | snake_case}}_version.clone();
+            let resp_map_for_{{prop_name|snake_case}}_prop = self.pending_responses.clone();
             if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some(value, responder) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
@@ -346,9 +360,22 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         let payload_obj = value;
                         {%endif%}
                         let topic: String = format!("{{prop.update_topic}}", instance_id_for_{{prop_name|snake_case}}_prop);
-                        match message::property_update_request(&topic, &payload_obj, {{prop_name|snake_case}}_prop_version.load(std::sync::atomic::Ordering::Relaxed)) {
+                        let resp_topic = format!("{{prop.response_topic('{}')}}", client_id_for_{{prop_name|snake_case}}_prop);
+                        let correlation_id = Uuid::new_v4();
+                        let (sender, receiver) = oneshot::channel();
+                        {
+                            let mut hashmap = resp_map_for_{{prop_name|snake_case}}_prop.lock().expect("Mutex was poisoned");
+                            hashmap.insert(correlation_id.clone(), sender);
+                        }
+                        match message::property_update_request(&topic, &payload_obj, {{prop_name|snake_case}}_prop_version.load(std::sync::atomic::Ordering::Relaxed), correlation_id, resp_topic) {
                             Ok(msg) => {
                                 let _publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
+                                let resp_msg = receiver.await.unwrap();
+                                {%if prop.arg_list | length == 1 %}
+                                let _ = responder.send(resp_msg.{{prop.arg_list[0].name|snake_case}});
+                                {%else%}
+                                let _ = responder.send(resp_msg);
+                                {%endif%}
                             }
                             Err(e) => {
                                 warn!("Failed to create property update message for '{{prop_name}}': {:?}", e);
@@ -378,9 +405,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 {%endif%} {# if there are some methods #}
                 if let Some(subscription_id) = msg.subscription_id {
                     let return_code = {{stinger.rust.client_struct_name}}::<C>::get_return_code_from_message(&msg);
-                        
-                    {%-for method_name, method in stinger.methods.items()%}
-                    {%if not loop.first%}else {%endif%}if subscription_id == sub_ids.{{method_name | snake_case}}_method_resp {
+
+                    {%if stinger.methods|length > 0%}
+                    if subscription_id == sub_ids.any_method_response {
                         if opt_corr_id.is_some() {
                             let opt_sender = opt_corr_id
                                 .and_then(|uuid| {
@@ -390,14 +417,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
                                 if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for '{{method_name}}' to waiting receiver");
+                                    warn!("Failed to send method response  to waiting receiver");
                                 }
                             }
                         } else {
-                            warn!("Received method response for '{{method_name}}' without correlation ID");
+                            warn!("Received method response without correlation ID");
                         }
                     } // end {{method_name}} method response handling
-                    {%-endfor%} {# end for each method #}
+                    {%-endif%} {# end has methods #}
                     {%-for signal_name, signal in stinger.signals.items()%}
                     {%if not loop.first%}else {%endif%}if Some(subscription_id) == sub_ids.{{signal_name | snake_case}}_signal {
                         let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();

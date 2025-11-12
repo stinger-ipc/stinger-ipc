@@ -1075,6 +1075,9 @@ class Property(InterfaceComponent):
     def update_topic(self) -> str:
         return self._topic_creator.property_update_topic(self.name)
 
+    def response_topic(self, client_id) -> str:
+        return self._topic_creator.property_response_topic(self.name, client_id)
+
     @property
     def read_only(self) -> bool:
         return self._read_only
@@ -1394,6 +1397,14 @@ class StingerSpec:
     @property
     def cpp(self) -> CppInterfaceSymbols:
         return self._cpp
+
+    def all_methods_response_topic(self, client_id: str) -> str:
+        for method in self.methods.values():
+            return method.response_topic(client_id)
+
+    def all_properties_response_topic(self, client_id: str) -> str:
+        for prop in self.properties.values():
+            return prop.response_topic(client_id)
 
     @classmethod
     def new_spec_from_stinger(

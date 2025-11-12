@@ -459,9 +459,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             let instance_id_for_{{prop_name|snake_case}}_prop = self.service_instance_id.clone();
             let mut publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
             let {{prop_name|snake_case}}_prop_version = props.{{prop_name | snake_case}}_version.clone();
-            if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.subscribe() {
+            if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
+                    while let Some((request, opt_responder) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
                         {%if prop.arg_list | length == 1 %}
                         let payload_obj = {{prop_name | UpperCamelCase}}Property { 
                             {{prop.arg_list[0].name}}: request
@@ -473,10 +473,22 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                         let topic: String = format!("{{prop.value_topic}}", instance_id_for_{{prop_name|snake_case}}_prop);
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
-                                let _publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
+                                let publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(request);
+                                        },
+                                        Err(_) => {
+                                            error!("Error publishing updated value for '{{prop_name}}' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
                             },
                             Err(e) => {
                                 error!("Error creating property value message for '{{prop_name}}' property: {:?}", e);
+                                let _ = responder.send(None);
                             }
                         }
                     };

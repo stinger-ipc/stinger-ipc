@@ -40,10 +40,14 @@ use stinger_rwlock_watch::WriteRequestLockWatch;
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct SimpleSubscriptionIds {
-    trade_numbers_method_resp: u32,
+    
+    any_method_response: u32,
     
     person_entered_signal: Option<u32>,
     school_property_value: u32,
+    
+    
+    any_property_update_response: u32,
     
 }
 
@@ -111,10 +115,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
 
         let client_id = connection.get_client_id();
 
-        let topic_trade_numbers_method_resp = format!("client/{}/trade_numbers/response", client_id);
-        let subscription_id_trade_numbers_method_resp = connection.subscribe(topic_trade_numbers_method_resp, QoS::ExactlyOnce, message_received_tx.clone()).await;
-        let subscription_id_trade_numbers_method_resp = subscription_id_trade_numbers_method_resp.unwrap_or(u32::MAX);
-        debug!("Subscription (id={}) to method response topic for 'trade_numbers'", subscription_id_trade_numbers_method_resp);
+        
+        let topic_any_method_response = format!("client/{}/simple/{}/methodResponse", client_id);
+        let subscription_id_any_method_response = connection.subscribe(topic_any_method_response, QoS::ExactlyOnce, message_received_tx.clone()).await;
         
 
         // Subscribe to all the topics needed for signals.
@@ -133,6 +136,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
         
 
         
+        let topic_any_property_update_response = format!("client/{}/simple/{}/propertyUpdateResponse", client_id);
+        let subscription_id_any_property_update_response = connection.subscribe(topic_any_property_update_response, QoS::AtLeastOnce, message_received_tx.clone()).await;
+        
+
+        
         let property_values = SimpleProperties {
             
             school: Arc::new(RwLockWatch::new(discovery_info.properties.school)),school_version: Arc::new(AtomicU32::new(discovery_info.properties.school_version)),
@@ -143,6 +151,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             trade_numbers_method_resp: subscription_id_trade_numbers_method_resp,
             person_entered_signal: Some(subscription_id_person_entered_signal),
             school_property_value: subscription_id_school_property_value,
+            
+            
+            any_property_update_response: subscription_id_any_property_update_response.unwrap_or(u32::MAX),
             
         };
 
@@ -177,7 +188,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
     }
     
 
-    async fn start_trade_numbers(&mut self, your_number: i32) -> oneshot::Receiver<MethodReturnCode> {
+    async fn start_trade_numbers(
+            &mut self,
+            your_number: i32, 
+    ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -190,7 +204,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
             your_number,
         };
 
-        let response_topic: String = format!("client/{}/trade_numbers/response", self.client_id);
+        let response_topic: String = format!("client/{}/simple/{}/methodResponse", self.client_id).unwrap();
         let msg = message::request(&format!("simple/{}/method/tradeNumbers", self.service_instance_id), &data, correlation_id, response_topic).unwrap();
         info!("Sending request to topic '{}': {:?}", format!("simple/{}/method/tradeNumbers", self.service_instance_id), data);
         let _ = self.mqtt_client.publish(msg).await;
@@ -291,19 +305,39 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
         let props = self.properties.clone();
         { // Set up property change request handling task
             let instance_id_for_school_prop = self.service_instance_id.clone();
+            let client_id_for_school_prop = self.client_id.clone();
             let mut publisher_for_school_prop = self.mqtt_client.clone();
             let school_prop_version = props.school_version.clone();
+            let resp_map_for_school_prop = self.pending_responses.clone();
             if let Some(mut rx_for_school_prop) = props.school.take_request_receiver() {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_school_prop.recv().await {
-                            
-                            let payload_obj = SchoolProperty { 
-                                name: request
-                            };
-                            
-                            let topic: String = format!("simple/{}/property/school/setValue", instance_id_for_school_prop);
-                            let msg = message::property_update_message(&topic, &payload_obj, school_prop_version.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
-                            let _publish_result = publisher_for_school_prop.publish(msg).await;
+                    while let Some(value, responder) = rx_for_school_prop.recv().await {
+                        
+                        let payload_obj = SchoolProperty { 
+                            name: value
+                        };
+                        
+                        let topic: String = format!("simple/{}/property/school/setValue", instance_id_for_school_prop);
+                        let resp_topic = format!("client/{}/simple/{}/propertyUpdateResponse", client_id_for_school_prop);
+                        let correlation_id = Uuid::new_v4();
+                        let (sender, receiver) = oneshot::channel();
+                        {
+                            let mut hashmap = resp_map_for_school_prop.lock().expect("Mutex was poisoned");
+                            hashmap.insert(correlation_id.clone(), sender);
+                        }
+                        match message::property_update_request(&topic, &payload_obj, school_prop_version.load(std::sync::atomic::Ordering::Relaxed), correlation_id, resp_topic) {
+                            Ok(msg) => {
+                                let _publish_result = publisher_for_school_prop.publish(msg).await;
+                                let resp_msg = receiver.await.unwrap();
+                                
+                                let _ = responder.send(resp_msg.name);
+                                
+                            }
+                            Err(e) => {
+                                warn!("Failed to create property update message for 'school': {:?}", e);
+                                continue;
+                            }
+                        }
                     };
                 });
             }
@@ -327,7 +361,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
                  
                 if let Some(subscription_id) = msg.subscription_id {
                     let return_code = SimpleClient::<C>::get_return_code_from_message(&msg);
-                    if subscription_id == sub_ids.trade_numbers_method_resp {
+
+                    
+                    if subscription_id == sub_ids.any_method_response {
                         if opt_corr_id.is_some() {
                             let opt_sender = opt_corr_id
                                 .and_then(|uuid| {
@@ -337,13 +373,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
                             if let Some(sender) = opt_sender {
                                 let oss: oneshot::Sender<MethodReturnCode> = sender;
                                 if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'trade_numbers' to waiting receiver");
+                                    warn!("Failed to send method response  to waiting receiver");
                                 }
                             }
                         } else {
-                            warn!("Received method response for 'trade_numbers' without correlation ID");
+                            warn!("Received method response without correlation ID");
                         }
-                    } // end trade_numbers method response handling 
+                    } // end  method response handling 
                     if Some(subscription_id) == sub_ids.person_entered_signal {
                         let chan = sig_chans.person_entered_sender.clone();
                         

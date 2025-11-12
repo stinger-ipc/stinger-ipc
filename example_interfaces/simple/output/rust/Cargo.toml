@@ -6,7 +6,7 @@ edition = "2021"
 [features]
 default = []
 client = ["payloads", "tracing", "tracing-subscriber", "stinger-rwlock-watch/read_only", "stinger-rwlock-watch/write_request"]
-server = ["payloads", "async-trait", "tracing", "tracing-subscriber", "stinger-mqtt-trait/availability_publish"]
+server = ["payloads", "async-trait", "tracing", "tracing-subscriber", "stinger-mqtt-trait/availability_publish", "stinger-rwlock-watch/write_request"]
 payloads = []
 metrics = ["payloads"]
 
@@ -27,7 +27,7 @@ tracing = { version = "0.1.41", optional = true }
 tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter", "fmt"] }
 bytes = "1.10.1"
 async-trait = { version = "0.1", optional = true } # For server-side async traits
-stinger-rwlock-watch = "0.2.0"
+stinger-rwlock-watch = "0.3.2"
 
 [dependencies.uuid]
 version = "1.17.0"

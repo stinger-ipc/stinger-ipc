@@ -222,7 +222,11 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
     
     
     /// Handles a request message for the trade_numbers method.
-    async fn handle_trade_numbers_request(mut publisher: C, handlers: Arc<AsyncMutex<Box<dyn SimpleMethodHandlers<C>>>>, msg: MqttMessage) {
+    async fn handle_trade_numbers_request(
+                mut publisher: C, 
+                handlers: Arc<AsyncMutex<Box<dyn SimpleMethodHandlers<C>>>>, 
+                msg: MqttMessage
+    ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
         let payload_vec = msg.payload;
@@ -264,26 +268,6 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         }
     }
     
-    /// When the value of the school property changes, either because of a request or because of a local change,
-    /// this function publishes the new value to MQTT.
-    ///
-    /// As an argument, it takes `data_obj` which is a struct that is serializable.  This is not the Arc<RwWriteLock<T>> property value. 
-    ///
-    /// It returns a future that resolves when getting a PUBACK back from the MQTT broker.
-    async fn publish_school_value(
-            mut publisher: C, 
-            instance_id: String, 
-            data_obj: SchoolProperty, 
-            property_version: u32,
-            opt_corr_id: Option<Bytes>, /// If we updated the value as a response to a request, this is the correlation id from that request.
-            opt_return_code: Option<MethodReturnCode>, /// If we failed to update the value as a response to a request, we republish the current value with a return code.
-    ) -> SentMessageFuture
-    {
-        let prop_topic = format!("simple/{}/property/school/value", instance_id);
-        let msg = message::property_value_message(&prop_topic, &data_obj, property_version, opt_corr_id, opt_return_code).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        SimpleServer::<C>::oneshot_to_future(ch).await
-    }
 
      
     /// This is called because of an MQTT request to update the property value.
@@ -293,7 +277,6 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
             publisher: C, 
             instance_id: String, 
             property_pointer: Arc<RwLockWatch<SchoolProperty>>, 
-            property_version: Arc<AtomicU32>, 
             msg: MqttMessage
     ) -> SentMessageFuture
     {
@@ -302,89 +285,111 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         
         let mut return_code = MethodReturnCode::Success(None);
 
-        let mut incoming_version: Option<u32> = None;
-        if let Some(version_str) = msg.user_properties.get("Version") {
-            match version_str.parse::<u32>() {
-                Ok(v) => incoming_version = Some(v),
-                Err(e) => {
-                    error!("Failed to parse 'Version' user property ('{}'): {:?}", version_str, e);
-                    return_code = MethodReturnCode::PayloadError("Invalid 'Version' user property".to_string());
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!("Invalid Content-Type '{}', expected 'application/json'", ct));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError("Missing Content-Type; expected 'application/json'".to_string());
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!("Failed to parse 'Version' user property ('{}'): {:?}", version_str, e);
+                            return_code = MethodReturnCode::PayloadError("Invalid 'Version' user property".to_string());
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = property_version.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
+            _ => { /* Do nothing, error already set. */ }
         }
 
-        if let Some(v) = incoming_version {
-            let current = property_version.load(Ordering::SeqCst);
-            if v != current {
-                return_code = MethodReturnCode::OutOfSync(format!(
-                    "Version mismatch: incoming {}, current {}",
-                    v, current
-                ));
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request().await;
+                        let write_request = request_lock.write().await;
+                        
+                        // Single value property.  Use the name field of the struct.
+                        *write_request = new_property_structure.name.clone();
+                        
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request.commit(std::time::Duration::from_secs(2)).await;
+                        *write_request
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'school' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'school' payload".to_string());
+                        None
+                    }
+                };
+            },
+            _ => {
+                None
             }
         }
 
-        match serde_json::from_str(&payload_str) {
-            Ok(new_property_structure) => {
-                let mut property_guard = property_pointer.write().await;
-                
-                // Single value property.  Use the name field of the struct.
-                *property_guard = new_property_structure.name.clone();
-                
-                let new_version = property_version.fetch_add(1, Ordering::SeqCst);
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            
+            let payload_obj = SchoolProperty { 
+                name: opt_new_value
+            };
+            
+            match message::property_update_response(&resp_topic, payload_obj, corr_data, return_code) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'school': {:?}", &err);
+                }
             }
-            Err(e) => {
-                error!("Failed to parse JSON received over MQTT to update 'school' property: {:?}", e);
-                return_code = MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'school' payload".to_string());
-            }
-        };
-
-        SimpleServer::publish_school_value(publisher, instance_id, new_property_structure, new_version, msg.correlation_data, return_code).await
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'school'.");
+        }
     }
+    
 
     /// Watch for changes to the `school` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     pub fn watch_school(&self) -> watch::Receiver<String> {
         self.properties.school.subscribe()
     }
-    
+
+    pub fn get_school_handler(&self) -> Arc<WriteRequestLockWatch<String> {
+        self.properties.school.write_request()
+    }
 
     /// Sets the value of the school property.
-    pub async fn set_school(&mut self, data: String) -> SentMessageFuture {
-        let prop = self.properties.school.clone();
-        
-        let new_prop_obj = SchoolProperty {
-            name: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self.properties.school_tx_channel.send_if_modified(|current_data| {
-            if current_data != &data_to_send_to_watchers {
-                *current_data = data_to_send_to_watchers;
-                true
-            } else {
-                false
-            }
+    pub async fn set_school(&mut self, value: String) -> SentMessageFuture {
+        let write_request_lock = self.get_school_handler();
+        Box::pin(async move { 
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            write_request.commit(std::time::Duration::from_secs(2)).await;
+            
         });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'school' value not changed, so not notifying watchers.");
-            SimpleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("simple/{}/property/school/value", self.instance_id);
-            let new_version = self.properties.school_version.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            SimpleServer::<C>::publish_school_value(publisher2, topic2, prop_obj, new_version).await
-        } else {
-            SimpleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError("Could not find property object".to_string())).await
-        }
     }
     
 
@@ -408,7 +413,46 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqtt_client.clone();
         
-        let properties = self.properties.clone();
+        let props = self.properties.clone();
+        { // Set up property change request handling task
+            let instance_id_for_school_prop = self.service_instance_id.clone();
+            let mut publisher_for_school_prop = self.mqtt_client.clone();
+            let school_prop_version = props.school_version.clone();
+            if let Some(mut rx_for_school_prop) = props.school.take_request_receiver() {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder) = rx_for_school_prop.recv().await {
+                        
+                        let payload_obj = SchoolProperty { 
+                            name: request
+                        };
+                        
+                        let version_value = school_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!("simple/{}/property/school/value", instance_id_for_school_prop);
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_school_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(request);
+                                        },
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'school' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            },
+                            Err(e) => {
+                                error!("Error creating property value message for 'school' property: {:?}", e);
+                                let _ = responder.send(None);
+                            }
+                        }
+                    };
+                });
+            }
+        }
+        
         
 
         // Spawn a task to periodically publish interface info.
